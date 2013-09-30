@@ -1,0 +1,134 @@
+ldo.c:
+@@ -324,7 +324,7 @@
+     case LUA_TLCL: {  /* Lua function: prepare its call */
+       StkId base;
+       Proto *p = clLvalue(func)->p;
+-      luaD_checkstack(L, p->maxstacksize);
++      luaD_checkstack(L, p->maxstacksize + p->numparams);
+       func = restorestack(L, funcr);
+       n = cast_int(L->top - func) - 1;  /* number of real arguments */
+       for (; n < p->numparams; n++)
+lgc.c:
+@@ -495,2 +495,3 @@
+ static lu_mem traversestack (global_State *g, lua_State *th) {
++  int n = 0;
+   StkId o = th->stack;
+@@ -505,3 +506,9 @@
+   }
+-  return sizeof(lua_State) + sizeof(TValue) * th->stacksize;
++  else {  /* count call infos to compute size */
++    CallInfo *ci;
++    for (ci = &th->base_ci; ci != th->ci; ci = ci->next)
++      n++;
++  }
++  return sizeof(lua_State) + sizeof(TValue) * th->stacksize +
++         sizeof(CallInfo) * n;
+ }
+ldebug.c:
+@@ -519,5 +519,5 @@
+ l_noret luaG_concaterror (lua_State *L, StkId p1, StkId p2) {
+   if (ttisstring(p1) || ttisnumber(p1)) p1 = p2;
+-  lua_assert(!ttisstring(p1) && !ttisnumber(p2));
++  lua_assert(!ttisstring(p1) && !ttisnumber(p1));
+   luaG_typeerror(L, p1, "concatenate");
+ }
+ldebug.c:
+@@ -327,12 +327,20 @@
+ }
+ 
+ 
++static int filterpc (int pc, int jmptarget) {
++  if (pc < jmptarget)  /* is code conditional (inside a jump)? */
++    return -1;  /* cannot know who sets that register */
++  else return pc;  /* current position sets that register */
++}
++
++
+ /*
+ ** try to find last instruction before 'lastpc' that modified register 'reg'
+ */
+ static int findsetreg (Proto *p, int lastpc, int reg) {
+   int pc;
+   int setreg = -1;  /* keep last instruction that changed 'reg' */
++  int jmptarget = 0;  /* any code before this address is conditional */
+   for (pc = 0; pc < lastpc; pc++) {
+     Instruction i = p->code[pc];
+     OpCode op = GET_OPCODE(i);
+@@ -341,33 +349,38 @@
+       case OP_LOADNIL: {
+         int b = GETARG_B(i);
+         if (a <= reg && reg <= a + b)  /* set registers from 'a' to 'a+b' */
+-          setreg = pc;
++          setreg = filterpc(pc, jmptarget);
+         break;
+       }
+       case OP_TFORCALL: {
+-        if (reg >= a + 2) setreg = pc;  /* affect all regs above its base */
++        if (reg >= a + 2)  /* affect all regs above its base */
++          setreg = filterpc(pc, jmptarget);
+         break;
+       }
+       case OP_CALL:
+       case OP_TAILCALL: {
+-        if (reg >= a) setreg = pc;  /* affect all registers above base */
++        if (reg >= a)  /* affect all registers above base */
++          setreg = filterpc(pc, jmptarget);
+         break;
+       }
+       case OP_JMP: {
+         int b = GETARG_sBx(i);
+         int dest = pc + 1 + b;
+         /* jump is forward and do not skip `lastpc'? */
+-        if (pc < dest && dest <= lastpc)
+-          pc += b;  /* do the jump */
++        if (pc < dest && dest <= lastpc) {
++          if (dest > jmptarget)
++            jmptarget = dest;  /* update 'jmptarget' */
++        }
+         break;
+       }
+       case OP_TEST: {
+-        if (reg == a) setreg = pc;  /* jumped code can change 'a' */
++        if (reg == a)  /* jumped code can change 'a' */
++          setreg = filterpc(pc, jmptarget);
+         break;
+       }
+       default:
+         if (testAMode(op) && reg == a)  /* any instruction that set A */
+-          setreg = pc;
++          setreg = filterpc(pc, jmptarget);
+         break;
+     }
+   }
+luac.c:
+@@ -251,7 +251,7 @@
+ static void PrintConstant(const Proto* f, int i)
+ {
+  const TValue* o=&f->k[i];
+- switch (ttype(o))
++ switch (ttypenv(o))
+  {
+   case LUA_TNIL:
+        printf("nil");
+--- ltable.h	2013/04/12 18:48:47	2.16.1.1
++++ ltable.h	2013/08/30 15:34:24
+@@ -18,4 +18,8 @@
+ #define invalidateTMcache(t)	((t)->flags = 0)
+ 
++/* returns the key, given the value of a table entry */
++#define keyfromval(v) \
++  (gkey(cast(Node *, cast(char *, (v)) - offsetof(Node, i_val))))
++
+ 
+ LUAI_FUNC const TValue *luaH_getint (Table *t, int key);
+
+--- llex.c	2013/04/12 18:48:47	2.63.1.1
++++ llex.c	2013/08/30 15:34:59
+@@ -134,4 +134,7 @@
+     luaC_checkGC(L);
+   }
++  else {  /* string already present */
++    ts = rawtsvalue(keyfromval(o));  /* re-use value previously stored */
++  }
+   L->top--;  /* remove string from stack */
+   return ts;
