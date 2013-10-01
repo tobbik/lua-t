@@ -13,6 +13,12 @@
 #else
 #define QTC_TARGET_LINUX  1
 #endif
+#include "qtc_types.h"
+
+/* includes the Lua headers */
+#include "lua.h"
+#include "lualib.h"
+#include "lauxlib.h"
 
 #define CRC16             0xA001
 #define MAX_PKT_BYTES     1500

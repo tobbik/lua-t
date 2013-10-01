@@ -17,8 +17,8 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <sys/select.h>
+#include <errno.h>
 #endif
-//#include "qtc_types.h"
 #include "l_sock.h"
 //#include "l_byte_buffer.h"
 
@@ -29,14 +29,14 @@
  * @param info An error string to return to the caller.
  *             Pass NULL to use the return value of strerror.
  */
-static int pusherror(lua_State *L, const char *info)
+static int pusherror(lua_State *luaVM, const char *info)
 {
-	lua_pushnil(L);
+	lua_pushnil(luaVM);
 	if (info==NULL)
-		lua_pushstring(L, strerror(errno));
+		lua_pushstring(luaVM, strerror(errno));
 	else
-		lua_pushfstring(L, "%s: %s", info, strerror(errno));
-	lua_pushnumber(L, errno);
+		lua_pushfstring(luaVM, "%s: %s", info, strerror(errno));
+	lua_pushnumber(luaVM, errno);
 	return 3;
 }
 
@@ -156,7 +156,7 @@ static void get_crc16(const unsigned char *data, size_t size)
  * \lreturn socket Lua UserData wrapped socket.
  * \return  The number of results to be passed back to the calling Lua script.
  *-------------------------------------------------------------------------*/
-static int create_udp_socket(lua_State *luaVM)
+static int l_create_udp_socket(lua_State *luaVM)
 {
 	struct udp_socket  *sock;
 	int                 on=1;
@@ -164,7 +164,7 @@ static int create_udp_socket(lua_State *luaVM)
 	sock = (struct udp_socket*) lua_newuserdata(luaVM, sizeof(struct udp_socket));
 
 	if ( (sock->socket  =  socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1 )
-		return( pusherror(L, "ERROR opening UDP socket") );
+		return( pusherror(luaVM, "ERROR opening UDP socket") );
 	/* Enable address reuse */
 	setsockopt( sock->socket, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on) );
 	return 1 ;
@@ -178,26 +178,26 @@ static int create_udp_socket(lua_State *luaVM)
  * \lreturn socket Lua UserData wrapped socket.
  * \return  The number of results to be passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
-static int create_ip_endpoint(lua_State *L)
+static int l_create_ip_endpoint(lua_State *luaVM)
 {
 	struct sockaddr_in  *ip;
 
-	ip = (struct sockaddr_in *) lua_newuserdata (L, sizeof(struct sockaddr_in) );
+	ip = (struct sockaddr_in *) lua_newuserdata (luaVM, sizeof(struct sockaddr_in) );
 	memset( (char *) &(*ip), 0, sizeof(ip) );
 	ip->sin_family = AF_INET;
-	if (lua_isstring(L, 1)) {
+	if (lua_isstring(luaVM, 1)) {
 #ifdef _WIN32
-		if ( InetPton(AF_INET, luaL_checkstring(L,1), &(ip->sin_addr))==0)
-			return ( pusherror(L, "InetPton() failed\n") );
+		if ( InetPton(AF_INET, luaL_checkstring(luaVM, 1), &(ip->sin_addr))==0)
+			return ( pusherror(luaVM, "InetPton() failed\n") );
 #else
-		if ( inet_pton(AF_INET, luaL_checkstring(L,1), &(ip->sin_addr))==0)
-			return ( pusherror(L, "inet_aton() failed\n") );
+		if ( inet_pton(AF_INET, luaL_checkstring(luaVM,1), &(ip->sin_addr))==0)
+			return ( pusherror(luaVM, "inet_aton() failed\n") );
 #endif
 	}
-	else if (lua_isnil(L, 1) )
+	else if (lua_isnil(luaVM, 1) )
 		ip->sin_addr.s_addr = htonl(INADDR_ANY);
 
-	ip->sin_port   = htons(luaL_checkint(L, 2));
+	ip->sin_port   = htons(luaL_checkint(luaVM, 2));
 
 	return 1;
 }
@@ -209,22 +209,22 @@ static int create_ip_endpoint(lua_State *L)
  * \lparam  ip     the IP endpoint.
  * \return  The number of results to be passed back to the calling Lua script.
  *-------------------------------------------------------------------------*/
-static int bind_socket(lua_State *L)
+static int l_bind_socket(lua_State *luaVM)
 {
 	struct udp_socket  *sock;
 	struct sockaddr_in *ip;
 
-	if (lua_isuserdata(L, 1))
-		sock = (struct udp_socket*) lua_touserdata(L, 1);
+	if (lua_isuserdata(luaVM, 1))
+		sock = (struct udp_socket*) lua_touserdata(luaVM, 1);
 	else
-		return( pusherror(L, "ERROR bindUdp(socket,ip) takes socket argument") );
-	if (lua_isuserdata(L, 2))
-		ip   = (struct sockaddr_in*) lua_touserdata(L, 2);
+		return( pusherror(luaVM, "ERROR bindUdp(socket,ip) takes socket argument") );
+	if (lua_isuserdata(luaVM, 2))
+		ip   = (struct sockaddr_in*) lua_touserdata(luaVM, 2);
 	else
-		return( pusherror(L, "ERROR bindUdp(socket,ip) takes IP argument") );
+		return( pusherror(luaVM, "ERROR bindUdp(socket,ip) takes IP argument") );
 
 	if( bind(sock->socket , (struct sockaddr*) &(*ip), sizeof(struct sockaddr) ) == -1)
-		return( pusherror(L, "ERROR binding socket") );
+		return( pusherror(luaVM, "ERROR binding socket") );
 
 	return( 0 );
 }
@@ -238,32 +238,32 @@ static int bind_socket(lua_State *L)
  * \lreturn sent   number of bytes sent.
  * \return  The number of results to be passed back to the calling Lua script.
  *-------------------------------------------------------------------------*/
-static int send_to(lua_State *L)
+static int l_send_to(lua_State *luaVM)
 {
 	struct udp_socket  *sock;
 	struct sockaddr_in *ip;
 	int                 sent;
 	const char         *msg;
 
-	if (lua_isuserdata(L, 1))
-		sock = (struct udp_socket*) lua_touserdata(L, 1);
+	if (lua_isuserdata(luaVM, 1))
+		sock = (struct udp_socket*) lua_touserdata(luaVM, 1);
 	else
-		return( pusherror(L, "ERROR sendTo(socket,ip,msg) takes socket argument") );
-	if (lua_isuserdata(L, 2))
-		ip   = (struct sockaddr_in*) lua_touserdata(L, 2);
+		return( pusherror(luaVM, "ERROR sendTo(socket,ip,msg) takes socket argument") );
+	if (lua_isuserdata(luaVM, 2))
+		ip   = (struct sockaddr_in*) lua_touserdata(luaVM, 2);
 	else
-		return( pusherror(L, "ERROR sendTo(socket,ip,msg) takes IP argument") );
-	if (lua_isstring(L, 3))
-		msg   = lua_tostring(L, 3);
+		return( pusherror(luaVM, "ERROR sendTo(socket,ip,msg) takes IP argument") );
+	if (lua_isstring(luaVM, 3))
+		msg   = lua_tostring(luaVM, 3);
 	else
-		return( pusherror(L, "ERROR sendTo(socket,ip,msg) takes msg argument") );
+		return( pusherror(luaVM, "ERROR sendTo(socket,ip,msg) takes msg argument") );
 
 	if ((sent = sendto(
 	  sock->socket,
 	  msg, strlen(msg), 0,
 	  (struct sockaddr *) &(*ip), sizeof(struct sockaddr))
 	  ) == -1)
-		return( pusherror(L, "Failed to send UDP packet") );
+		return( pusherror(luaVM, "Failed to send UDP packet") );
 
 		printf("-------------------------------------------------------\n");
 		printf("sent %d bytes to: %s:%d\n",
@@ -272,7 +272,7 @@ static int send_to(lua_State *L)
 		  ntohs(ip->sin_port));
 		printf("-------------------------------------------------------\n");
 
-	lua_pushinteger(L, sent);
+	lua_pushinteger(luaVM, sent);
 	return( 1 );
 }
 
@@ -284,7 +284,7 @@ static int send_to(lua_State *L)
  * \lreturn ip     ip endpoint.
  * \return  The number of results to be passed back to the calling Lua script.
  *-------------------------------------------------------------------------*/
-static int recv_from(lua_State *L)
+static int l_recv_from(lua_State *luaVM)
 {
 	struct udp_socket  *sock;
 	int                 rcvd;
@@ -294,24 +294,24 @@ static int recv_from(lua_State *L)
 	unsigned int        slen=sizeof(si_cli);
 
 
-	if (lua_isuserdata(L, 1))
-		sock = (struct udp_socket*) lua_touserdata(L, 1);
+	if (lua_isuserdata(luaVM, 1))
+		sock = (struct udp_socket*) lua_touserdata(luaVM, 1);
 	else
-		return( pusherror(L, "ERROR sendTo(socket,ip,msg) takes socket argument") );
+		return( pusherror(luaVM, "ERROR sendTo(socket,ip,msg) takes socket argument") );
 
 	if ((rcvd = recvfrom(
 	  sock->socket,
 	  buffer, sizeof(buffer)-1, 0,
 	  (struct sockaddr *) &si_cli, &slen)
 	  ) == -1)
-		return( pusherror(L, "Failed to recieve UDP packet") );
+		return( pusherror(luaVM, "Failed to recieve UDP packet") );
 
 	// return buffer, length, ip, port
-	lua_pushlstring(L, buffer, rcvd );
-	lua_pushinteger(L, rcvd);
-	lua_pushstring(L, inet_ntoa(si_cli.sin_addr) );
-	lua_pushinteger(L, ntohs(si_cli.sin_port) );
-	return( 4 );
+	lua_pushlstring(luaVM, buffer, rcvd );
+	lua_pushinteger(luaVM, rcvd);
+	lua_pushstring(luaVM, inet_ntoa(si_cli.sin_addr) );
+	lua_pushinteger(luaVM, ntohs(si_cli.sin_port) );
+	return 4;
 
 }
 
@@ -398,9 +398,10 @@ static const luaL_Reg socket_lib [] =
 	{NULL,        NULL}
 };
 
-int luaopen_socket (lua_State *L)
+LUAMOD_API
+int luaopen_net (lua_State *luaVM)
 {
-	luaL_newlib (L, socket_lib);
+	luaL_newlib (luaVM, socket_lib);
 	//lua_setglobal(L, "lsock");
 	return 1;
 }
