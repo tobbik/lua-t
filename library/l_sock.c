@@ -18,9 +18,9 @@
 #include <sys/socket.h>
 #include <sys/select.h>
 #endif
-#include "qtc_types.h"
+//#include "qtc_types.h"
 #include "l_sock.h"
-#include "l_byte_buffer.h"
+//#include "l_byte_buffer.h"
 
 
 /**
@@ -46,7 +46,7 @@ static int pusherror(lua_State *L, const char *info)
  * \param     value Unsigned 16 bit integer
  * \return    Integer with the opposite Endianness
  */
-u_int2 inline Reverse2Bytes(u_int2 value)
+inline u_int2 Reverse2Bytes(u_int2 value)
 {
 	return (
 		(value & 0xFFU) << 8 |
@@ -60,7 +60,7 @@ u_int2 inline Reverse2Bytes(u_int2 value)
  * \param     value Unsigned 32 bit integer
  * \return    integer with the opposite Endianness
  */
- u_int4 inline Reverse4Bytes(u_int4 value)
+ inline u_int4 Reverse4Bytes(u_int4 value)
 {
 	return (value & 0x000000FFU) << 24 |
 			 (value & 0x0000FF00U) << 8  |
@@ -74,7 +74,7 @@ u_int2 inline Reverse2Bytes(u_int2 value)
  * \param   value Unsigned 64 bit integer
  * \return  Integer with the opposite Endianness
  */
- u_int8 inline Reverse8Bytes(u_int8 value)
+ inline u_int8 Reverse8Bytes(u_int8 value)
 {
 	return (value & 0x00000000000000FFUL) << 56 |
 			 (value & 0x000000000000FF00UL) << 40 |

@@ -7,6 +7,12 @@
  * data definitions
  */
 
+#ifdef _WIN32
+#define QTC_TARGET_WIN32  1
+#define QTC_TARGET_FAMILY_WINDOWS  1
+#else
+#define QTC_TARGET_LINUX  1
+#endif
 
 #define CRC16             0xA001
 #define MAX_PKT_BYTES     1500
