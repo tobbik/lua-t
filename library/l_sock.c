@@ -391,13 +391,6 @@ static int l_send_to(lua_State *luaVM)
 	  ) == -1)
 		return( pusherror(luaVM, "Failed to send UDP packet") );
 
-		printf("-------------------------------------------------------\n");
-		printf("sent %d bytes to: %s:%d\n",
-		  sent,
-		  inet_ntoa(ip->sin_addr),
-		  ntohs(ip->sin_port));
-		printf("-------------------------------------------------------\n");
-
 	lua_pushinteger(luaVM, sent);
 	return( 1 );
 }
@@ -407,7 +400,7 @@ static int l_send_to(lua_State *luaVM)
  * \param   luaVM  The lua state.
  * \lparam  socket socket userdata.
  * \lreturn rcvd   number of bytes recieved.
- * \lreturn ip     ip endpoint.
+ * \lreturn ip     ip endpoint userdata.
  * \return  The number of results to be passed back to the calling Lua script.
  *-------------------------------------------------------------------------*/
 static int l_recv_from(lua_State *luaVM)
@@ -416,29 +409,27 @@ static int l_recv_from(lua_State *luaVM)
 	int                 rcvd;
 	char                buffer[4096];
 
-	struct sockaddr_in  si_cli;
+	struct sockaddr_in *si_cli;
 	unsigned int        slen=sizeof(si_cli);
-
 
 	if (lua_isuserdata(luaVM, 1))
 		sock = (struct udp_socket*) lua_touserdata(luaVM, 1);
 	else
 		return( pusherror(luaVM, "ERROR recvFrom(socket) takes socket argument") );
 
+	si_cli = (struct sockaddr_in *) lua_newuserdata (luaVM, sizeof(struct sockaddr_in) );
 	if ((rcvd = recvfrom(
 	  sock->socket,
 	  buffer, sizeof(buffer)-1, 0,
-	  (struct sockaddr *) &si_cli, &slen)
+	  (struct sockaddr *) &(*si_cli), &slen)
 	  ) == -1)
 		return( pusherror(luaVM, "Failed to recieve UDP packet") );
 
-	// return buffer, length, ip, port
+	// return buffer, length, IpEndpoint
 	lua_pushlstring(luaVM, buffer, rcvd );
 	lua_pushinteger(luaVM, rcvd);
-	lua_pushstring(luaVM, inet_ntoa(si_cli.sin_addr) );
-	lua_pushinteger(luaVM, ntohs(si_cli.sin_port) );
-	return 4;
-
+	lua_pushvalue(luaVM, -3);
+	return 3;
 }
 
 
