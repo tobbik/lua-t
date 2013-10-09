@@ -317,7 +317,6 @@ static int l_accept_socket(lua_State *luaVM)
 {
 	struct udp_socket  *lsock;   // listening socket
 	struct udp_socket  *asock;   // accepted connection socket
-	int                 their_sock;
 	struct sockaddr_in *si_cli;
 	socklen_t           their_addr_size = sizeof(struct sockaddr_in);
 
@@ -326,11 +325,9 @@ static int l_accept_socket(lua_State *luaVM)
 	else
 		return( pusherror(luaVM, "ERROR accept(socket) takes socket argument") );
 
-	si_cli = (struct sockaddr_in *) lua_newuserdata (luaVM, sizeof(struct sockaddr_in) );
-	their_sock = accept(lsock->socket, (struct sockaddr *)&si_cli, &their_addr_size);
-
 	asock  = (struct udp_socket*)   lua_newuserdata (luaVM, sizeof(struct udp_socket)  );
-	asock->socket = their_sock;
+	si_cli = (struct sockaddr_in *) lua_newuserdata (luaVM, sizeof(struct sockaddr_in) );
+	asock->socket = accept(lsock->socket, (struct sockaddr *) &(*si_cli), &their_addr_size);
 
 	return( 2 );
 }
