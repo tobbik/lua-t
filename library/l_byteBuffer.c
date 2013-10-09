@@ -9,38 +9,7 @@
 #include "l_byteBuffer.h"
 
 
-// TODO: this shall be moved into a helper/debug file
-void stackDump (lua_State *luaVM) {
-	int i;
-	int top = lua_gettop(luaVM);
-	printf("Items on stack(%d):\t", top);
-	for (i = 1; i <= top; i++) {     /* repeat for each level */
-		int t = lua_type(luaVM, i);
-		switch (t) {
-
-			case LUA_TSTRING:    /* strings */
-				printf("`%s'", lua_tostring(luaVM, i));
-				break;
-
-			case LUA_TBOOLEAN:   /* booleans */
-				printf(lua_toboolean(luaVM, i) ? "true" : "false");
-				break;
-
-			case LUA_TNUMBER:    /* numbers */
-				printf("%g", lua_tonumber(luaVM, i));
-				break;
-
-			default:	            /* other values */
-				printf("%s", lua_typename(luaVM, t));
-				break;
-		}
-		printf("\t");  /* put a separator */
-	}
-	printf("\n");  /* end the listing */
-}
-
-
-// inline helper helper functions
+// inline helper functions
 /**
   * \brief  convert lon long (64bit) from network to host and vice versa
   * \param  u_int8 value 64bit integer
@@ -251,6 +220,10 @@ int l_shortToBcd(lua_State *luaVM)
 	return 1;
 }
 
+/**
+ * \brief      the byteBuffer library definition
+ *             assigns Lua available names to C-functions
+ */
 static const luaL_Reg byteBuffer_lib [] =
 {
 	{"new",      l_new_buffer},
@@ -260,8 +233,12 @@ static const luaL_Reg byteBuffer_lib [] =
 	{NULL,        NULL}
 };
 
-LUAMOD_API
-int luaopen_byteBuffer (lua_State *luaVM)
+/**
+ * \brief     Export the byteBuffer library to Lua
+ *\param      The Lua state.
+ * \return     1 return value
+ */
+LUAMOD_API int luaopen_byteBuffer (lua_State *luaVM)
 {
 	luaL_newlib (luaVM, byteBuffer_lib);
 	return 1;

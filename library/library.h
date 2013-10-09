@@ -25,3 +25,8 @@
 #include "lauxlib.h"
 
 #define MAX_PKT_BYTES     1500
+
+
+void stackDump (lua_State *luaVM);
+
+int pusherror(lua_State *luaVM, const char *info);

@@ -17,30 +17,12 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <sys/select.h>
-#include <errno.h>
 #endif
 
 #include "library.h"
 #include "l_sock.h"
 //#include "l_byte_buffer.h"
 
-
-/**
- * \brief  Return an error string to the LUA script.
- *         Pass NULL to use the return value of strerror.
- * \param  luaVM The Lua intepretter object.
- * \param  info  An error string to return to the caller.
- */
-static int pusherror(lua_State *luaVM, const char *info)
-{
-	lua_pushnil(luaVM);
-	if (info==NULL)
-		lua_pushstring(luaVM, strerror(errno));
-	else
-		lua_pushfstring(luaVM, "%s: %s", info, strerror(errno));
-	lua_pushnumber(luaVM, errno);
-	return 3;
-}
 
 /**
  * \brief     Used to reverse the order of bytes for a 16 bit unsigned integer
@@ -56,6 +38,7 @@ inline u_int2 Reverse2Bytes(u_int2 value)
 	);
 }
 
+
 /**
  * \brief     Used to reverse the order of bytes for a 32 bit unsigned integer
  *
@@ -69,6 +52,7 @@ inline u_int2 Reverse2Bytes(u_int2 value)
 			 (value & 0x00FF0000U) >> 8  |
 			 (value & 0xFF000000U) >> 24;
 }
+
 
 /**
  * \brief   Used to reverse the order of bytes for a 64 bit unsigned integer
@@ -150,6 +134,7 @@ static void get_crc16(const unsigned char *data, size_t size)
 	*checksum = crc;
 }
 
+
 /** -------------------------------------------------------------------------
  * \brief   create a UDP socket and return it.
  * \param   luaVM  The lua state.
@@ -172,6 +157,7 @@ static int l_create_udp_socket(lua_State *luaVM)
 	return 1 ;
 }
 
+
 /** -------------------------------------------------------------------------
  * \brief   create a TCP socket and return it.
  * \param   luaVM   The lua state.
@@ -190,6 +176,7 @@ static int l_create_tcp_socket(lua_State *luaVM)
 	setsockopt( sock->socket, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on) );
 	return( 1 );
 }
+
 
 /**--------------------------------------------------------------------------
  * create an IP endpoint and return it.
@@ -394,6 +381,7 @@ static int l_send_to(lua_State *luaVM)
 	lua_pushinteger(luaVM, sent);
 	return( 1 );
 }
+
 
 /** -------------------------------------------------------------------------
  * \brief   recieve Datagram from a UDP socket.
@@ -660,7 +648,7 @@ static int l_select_socket(lua_State *luaVM)
  * \lparam     int  milliseconds to sleep
  * \return     0 return values
  */
-int l_sleep(lua_State *luaVM)
+static int l_sleep(lua_State *luaVM)
 {
 #ifdef _WIN32
 	fd_set dummy;
@@ -682,6 +670,10 @@ int l_sleep(lua_State *luaVM)
 }
 
 
+/**
+ * \brief      the net library definition
+ *             assigns Lua available names to C-functions
+ */
 static const luaL_Reg socket_lib [] =
 {
 	{"createUdp", l_create_udp_socket},
@@ -701,11 +693,15 @@ static const luaL_Reg socket_lib [] =
 	{NULL,        NULL}
 };
 
-LUAMOD_API
-int luaopen_net (lua_State *luaVM)
+
+/**
+ * \brief     Export the net library to Lua
+ *\param      The Lua state.
+ * \return     1 return value
+ */
+LUAMOD_API int luaopen_net (lua_State *luaVM)
 {
 	luaL_newlib (luaVM, socket_lib);
-	//lua_setglobal(luaVM, "lsock");
 	return 1;
 }
 
