@@ -151,7 +151,7 @@ static void get_crc16(const unsigned char *data, size_t size)
 }
 
 /** -------------------------------------------------------------------------
- * create a UDP socket and return it.
+ * \brief   create a UDP socket and return it.
  * \param   L    The lua state.
  * \lparam  port the port for the socket.
  * \lparam  ip   the IP address for the socket.
@@ -172,8 +172,27 @@ static int l_create_udp_socket(lua_State *luaVM)
 	return 1 ;
 }
 
+/** -------------------------------------------------------------------------
+ * \brief   create a TCP socket and return it.
+ * \param   luaVM    The lua state.
+ * \lreturn socket Lua UserData wrapped socket.
+ * \return  The number of results to be passed back to the calling Lua script.
+ *-------------------------------------------------------------------------*/
+static int l_create_tcp_socket(lua_State *luaVM)
+{
+	struct udp_socket  *sock;
+	int                 on=1;
+
+	sock = (struct udp_socket*) lua_newuserdata(luaVM, sizeof(struct udp_socket));
+	if ( (sock->socket  =  socket(AF_INET, SOCK_STREAM, 0)) == -1 )
+		return( pusherror(luaVM, "ERROR opening TCP socket") );
+	/* Enable address reuse */
+	setsockopt( sock->socket, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on) );
+	return( 1 );
+}
+
 /**--------------------------------------------------------------------------
- * create a TCP socket and return it.
+ * create an IP endpoint and return it.
  * \param   L    The lua state.
  * \lparam  port the port for the socket.
  * \lparam  ip   the IP address for the socket.
@@ -204,6 +223,32 @@ static int l_create_ip_endpoint(lua_State *luaVM)
 	return 1;
 }
 
+
+/** -------------------------------------------------------------------------
+ * \brief   listen on a socket.
+ * \param   luaVM  The lua state.
+ * \lparam  socket The socket.
+ * \lparam  int    Backlog connections.
+ * \return  The number of results to be passed back to the calling Lua script.
+ *-------------------------------------------------------------------------*/
+static int l_listen_socket(lua_State *luaVM)
+{
+	struct udp_socket  *sock;
+	int                 backlog;
+
+	if (lua_isuserdata(luaVM, 1))
+		sock = (struct udp_socket*) lua_touserdata(luaVM, 1);
+	else
+		return( pusherror(luaVM, "ERROR listen(socket, backlog) takes socket argument") );
+	backlog = luaL_checkint(luaVM, 2);
+
+	if( listen(sock->socket , backlog ) == -1)
+		return( pusherror(luaVM, "ERROR listen to socket") );
+
+	return( 0 );
+}
+
+
 /** -------------------------------------------------------------------------
  * \brief   bind a socket to an address.
  * \param   L      The lua state.
@@ -219,17 +264,99 @@ static int l_bind_socket(lua_State *luaVM)
 	if (lua_isuserdata(luaVM, 1))
 		sock = (struct udp_socket*) lua_touserdata(luaVM, 1);
 	else
-		return( pusherror(luaVM, "ERROR bindUdp(socket,ip) takes socket argument") );
+		return( pusherror(luaVM, "ERROR bind(socket,ip) takes socket argument") );
 	if (lua_isuserdata(luaVM, 2))
 		ip   = (struct sockaddr_in*) lua_touserdata(luaVM, 2);
 	else
-		return( pusherror(luaVM, "ERROR bindUdp(socket,ip) takes IP argument") );
+		return( pusherror(luaVM, "ERROR bind(socket,ip) takes IP argument") );
 
 	if( bind(sock->socket , (struct sockaddr*) &(*ip), sizeof(struct sockaddr) ) == -1)
 		return( pusherror(luaVM, "ERROR binding socket") );
 
 	return( 0 );
 }
+
+
+/** -------------------------------------------------------------------------
+ * \brief   connect a socket to an address.
+ * \param   luaVM  The lua state.
+ * \lparam  socket The socket.
+ * \lparam  ip     the IP endpoint.
+ * \return  The number of results to be passed back to the calling Lua script.
+ *-------------------------------------------------------------------------*/
+static int l_connect_socket(lua_State *luaVM)
+{
+	struct udp_socket  *sock;
+	struct sockaddr_in *ip;
+
+	if (lua_isuserdata(luaVM, 1))
+		sock = (struct udp_socket*) lua_touserdata(luaVM, 1);
+	else
+		return( pusherror(luaVM, "ERROR connect(socket,ip) takes socket argument") );
+	if (lua_isuserdata(luaVM, 2))
+		ip   = (struct sockaddr_in*) lua_touserdata(luaVM, 2);
+	else
+		return( pusherror(luaVM, "ERROR connect(socket,ip) takes IP argument") );
+
+	if( connect(sock->socket , (struct sockaddr*) &(*ip), sizeof(struct sockaddr) ) == -1)
+		return( pusherror(luaVM, "ERROR binding socket") );
+
+	return( 0 );
+}
+
+
+/** -------------------------------------------------------------------------
+ * \brief   accept a (TCP) socket connection.
+ * \param   luaVM   The lua state.
+ * \lparam  socket  The socket.
+ * \lreturn socket  New Socket for new connection.
+ * \lreturn ip      New Socket IP address and Port.
+ * \return  The number of results to be passed back to the calling Lua script.
+ *-------------------------------------------------------------------------*/
+static int l_accept_socket(lua_State *luaVM)
+{
+	struct udp_socket  *lsock;   // listening socket
+	struct udp_socket  *asock;   // accepted connection socket
+	int                 their_sock;
+	struct sockaddr_in *si_cli;
+	socklen_t           their_addr_size = sizeof(struct sockaddr_in);
+
+	if (lua_isuserdata(luaVM, 1))
+		lsock = (struct udp_socket*) lua_touserdata(luaVM, 1);
+	else
+		return( pusherror(luaVM, "ERROR accept(socket) takes socket argument") );
+
+	si_cli = (struct sockaddr_in *) lua_newuserdata (luaVM, sizeof(struct sockaddr_in) );
+	their_sock = accept(lsock->socket, (struct sockaddr *)&si_cli, &their_addr_size);
+
+	asock  = (struct udp_socket*)   lua_newuserdata (luaVM, sizeof(struct udp_socket)  );
+	asock->socket = their_sock;
+
+	return( 2 );
+}
+
+
+/** -------------------------------------------------------------------------
+ * \brief   close a socket.
+ * \param   luaVM  The lua state.
+ * \lparam  socket The socket.
+ * \return  The number of results to be passed back to the calling Lua script.
+ *-------------------------------------------------------------------------*/
+static int l_close_socket(lua_State *luaVM)
+{
+	struct udp_socket  *sock;
+
+	if (lua_isuserdata(luaVM, 1))
+		sock = (struct udp_socket*) lua_touserdata(luaVM, 1);
+	else
+		return( pusherror(luaVM, "ERROR close(socket,ip) takes socket argument") );
+
+	if( close(sock->socket)  == -1)
+		return( pusherror(luaVM, "ERROR closing socket") );
+
+	return( 0 );
+}
+
 
 /** -------------------------------------------------------------------------
  * \brief   send Datagram over a UDP socket to an IP endpoint.
@@ -299,7 +426,7 @@ static int l_recv_from(lua_State *luaVM)
 	if (lua_isuserdata(luaVM, 1))
 		sock = (struct udp_socket*) lua_touserdata(luaVM, 1);
 	else
-		return( pusherror(luaVM, "ERROR sendTo(socket,ip,msg) takes socket argument") );
+		return( pusherror(luaVM, "ERROR recvFrom(socket) takes socket argument") );
 
 	if ((rcvd = recvfrom(
 	  sock->socket,
@@ -360,6 +487,185 @@ static int l_recv_from(lua_State *luaVM)
 
 
 
+/** -------------------------------------------------------------------------
+ * \brief   send a message over a TCP socket.
+ * \param   luaVM      The lua state.
+ * \lparam  socket The socket.
+ * \lparam  msg    luastring.
+ * \lreturn sent   number of bytes sent.
+ * \return  The number of results to be passed back to the calling Lua script.
+ *-------------------------------------------------------------------------*/
+static int l_send_strm(lua_State *luaVM)
+{
+	struct udp_socket  *sock;
+	int                 sent;
+	const char         *msg;
+
+	if (lua_isuserdata(luaVM, 1))
+		sock = (struct udp_socket*) lua_touserdata(luaVM, 1);
+	else
+		return( pusherror(luaVM, "ERROR send(socket,msg) takes socket argument") );
+	if (lua_isstring(luaVM, 2))
+		msg   = lua_tostring(luaVM, 2);
+	else
+		return( pusherror(luaVM, "ERROR send(socket,msg) takes msg argument") );
+
+	if ((sent = send(
+	  sock->socket,
+	  msg, strlen(msg), 0)
+	  ) == -1)
+		return( pusherror(luaVM, "Failed to send UDP packet") );
+
+	lua_pushinteger(luaVM, sent);
+	return( 1 );
+}
+
+
+/** -------------------------------------------------------------------------
+ * \brief   recieve some data from a TCP socket.
+ * \param   luaVM  The lua state.
+ * \lparam  socket The socket.
+ * \lreturn string The recieved message.
+ * \lreturn rcvd   number of bytes recieved.
+ * \return  The number of results to be passed back to the calling Lua script.
+ * TODO:  Allow it to accept an existing LuaBuffer to ammend incoming packages
+ *-------------------------------------------------------------------------*/
+static int l_recv_strm(lua_State *luaVM)
+{
+	struct udp_socket  *sock;
+	int                 rcvd;
+	char                buffer[4096];
+
+	if (lua_isuserdata(luaVM, 1))
+		sock = (struct udp_socket*) lua_touserdata(luaVM, 1);
+	else
+		return( pusherror(luaVM, "ERROR recv(socket) takes socket argument") );
+
+	if ((rcvd = recv(
+	  sock->socket,
+	  buffer, sizeof(buffer)-1, 0)
+	  ) == -1)
+		return( pusherror(luaVM, "Failed to recieve TCP packet") );
+
+	// return buffer, length, ip, port
+	lua_pushlstring(luaVM, buffer, rcvd );
+	lua_pushinteger(luaVM, rcvd);
+
+	return( 2 );
+}
+
+
+/** -------------------------------------------------------------------------
+ * \brief   Helper to take sockets from Lua tables to FD_SET
+ *          Itertates over the table puls out the socket structs and adds the
+ *          actual sockets to the fd_set
+ * \param   luaVM  The lua state.
+ * \param   int    position on stack where table is located
+ * \param  *fd_set the set of sockets(fd) to be filled
+ * \param  *int    the maximum socket(fd) value
+ * \return  void.
+ *-------------------------------------------------------------------------*/
+static void make_fdset(lua_State *luaVM, int stack_pos, fd_set *collection, int *max_sock)
+{
+	int                 i;      // table iterator
+	struct udp_socket  *sock;
+
+	FD_ZERO(collection);
+	// empty table == nil
+	if (lua_isnil(luaVM, stack_pos)) return;
+	// only accept tables
+	luaL_checktype(luaVM, stack_pos, LUA_TTABLE);
+
+	// adding sockets to FD_SETs
+	for ( i=1 ; ; i++ )
+	{
+		lua_rawgeti(luaVM, stack_pos, i);
+		// in table this is when the last index is found
+		if ( lua_isnil(luaVM, -1) )
+		{
+			lua_pop(luaVM, 1);
+			break;
+		}
+
+		// get the values and clear the stack
+		sock = (struct udp_socket*) lua_touserdata(luaVM, -1);
+		FD_SET( sock->socket, collection );
+		*max_sock = (sock->socket > *max_sock) ? sock->socket : *max_sock;
+		lua_pop(luaVM, 1);   // remove the socket from the stack
+	}
+}
+
+
+/** -------------------------------------------------------------------------
+ * \brief   select from open sockets.
+ * \param   luaVM  The lua state.
+ * \lparam  socket_array   All sockets to read from.
+ * \lparam  socket_array   All sockets to write to.
+ * \lparam  socket_array   All sockets to check errors.
+ * \lreturn int            Number of affected sockets.
+ * \return  The number of results to be passed back to the calling Lua script.
+ * TODO:  Allow for a Time Out to be handed to it
+ *-------------------------------------------------------------------------*/
+static int l_select_socket(lua_State *luaVM)
+{
+	fd_set              rfds, wfds;
+	struct udp_socket  *sock;
+	int                 rnum, wnum, readsocks, i/*, rp*/;
+	int                 rset=1;//, wset=1;         // write the values back into the tables on the stack
+
+	wnum = -1;
+	rnum = -1;
+	make_fdset(luaVM, 1, &rfds, &rnum);
+	//make_fdset(luaVM, 2, &wfds, &wnum);
+	FD_ZERO(&wfds);
+
+	readsocks = select(
+		(wnum > rnum) ? wnum+1 : rnum+1,
+		(-1  != rnum) ? &rfds  : NULL,
+		(-1  != wnum) ? &wfds  : NULL,
+		(fd_set *) 0,
+		NULL
+	);
+
+	lua_createtable(luaVM, 0, 0);     // create result table
+	//TODO: check if readsocks hit 0 and break cuz we are done
+	//lua_createtable(luaVM, 0, 0);
+	for ( i=1 ; ; i++ )
+	{
+		lua_rawgeti(luaVM, 1, i);
+		// in table this is when the last index is found
+		if ( lua_isnil(luaVM, -1) )
+		{
+			lua_pop(luaVM, 1);
+			break;
+		}
+
+		// get the values and clear the stack
+		sock = (struct udp_socket*) lua_touserdata(luaVM, -1);
+		if FD_ISSET( sock->socket, &rfds)
+		{
+			// put into reads
+			lua_rawseti(luaVM, -2, rset++);
+			readsocks--;
+		}
+		
+		//if FD_ISSET( sock->socket, &wfds)
+		//{
+		//	// put into writes
+		//	lua_rawseti(luaVM, -2, wset++);
+		//	readsocks--;
+		//}
+		else {
+			lua_pop(luaVM, 1);   // remove the socket from the stack
+		}
+	}
+	//lua_pop(luaVM, -1);   // remove the table from the stack
+
+	return (1);
+
+}
+
+
 /**
  * \brief      a system call to sleep (Lua lacks that)
  * \detail     Lua has no build in sleep method.
@@ -392,10 +698,18 @@ int l_sleep(lua_State *luaVM)
 static const luaL_Reg socket_lib [] =
 {
 	{"createUdp", l_create_udp_socket},
-	{"createIP",  l_create_ip_endpoint},
-	{"bindUdp",   l_bind_socket},
+	{"createTcp", l_create_tcp_socket},
+	{"createIp",  l_create_ip_endpoint},
+	{"listen",    l_listen_socket},
+	{"bind",      l_bind_socket},
+	{"connect",   l_connect_socket},
+	{"accept",    l_accept_socket},
+	{"close",     l_close_socket},
 	{"sendTo",    l_send_to},
 	{"recvFrom",  l_recv_from},
+	{"send",      l_send_strm},
+	{"recv",      l_recv_strm},
+	{"select",    l_select_socket},
 	{"sleep",     l_sleep},
 	{NULL,        NULL}
 };
