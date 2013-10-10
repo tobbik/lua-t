@@ -20,7 +20,7 @@
 #endif
 
 #include "library.h"
-#include "l_sock.h"
+#include "l_net.h"
 //#include "l_byte_buffer.h"
 
 
