@@ -1,0 +1,6 @@
+/out/
+*.o
+*.obj
+*.swp
+*.sln
+*.suo
