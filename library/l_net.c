@@ -1,5 +1,5 @@
 /**
- * \file        within the pktgen, cretae network endpoints according to need
+ * \file        cretae network sockets
  */
 
 #ifdef _WIN32
@@ -178,39 +178,6 @@ static int l_create_tcp_socket(lua_State *luaVM)
 }
 
 
-/**--------------------------------------------------------------------------
- * create an IP endpoint and return it.
- * \param   luaVM  The lua state.
- * \lparam  port   the port for the socket.
- * \lparam  ip     the IP address for the socket.
- * \lreturn socket sockkaddr userdata.
- * \return  The number of results to be passed back to the calling Lua script.
- * --------------------------------------------------------------------------*/
-static int l_create_ip_endpoint(lua_State *luaVM)
-{
-	struct sockaddr_in  *ip;
-
-	ip = (struct sockaddr_in *) lua_newuserdata (luaVM, sizeof(struct sockaddr_in) );
-	memset( (char *) &(*ip), 0, sizeof(ip) );
-	ip->sin_family = AF_INET;
-	if (lua_isstring(luaVM, 1)) {
-#ifdef _WIN32
-		if ( InetPton(AF_INET, luaL_checkstring(luaVM, 1), &(ip->sin_addr))==0)
-			return ( pusherror(luaVM, "InetPton() failed\n") );
-#else
-		if ( inet_pton(AF_INET, luaL_checkstring(luaVM,1), &(ip->sin_addr))==0)
-			return ( pusherror(luaVM, "inet_aton() failed\n") );
-#endif
-	}
-	else if (lua_isnil(luaVM, 1) )
-		ip->sin_addr.s_addr = htonl(INADDR_ANY);
-
-	ip->sin_port   = htons(luaL_checkint(luaVM, 2));
-
-	return 1;
-}
-
-
 /** -------------------------------------------------------------------------
  * \brief   listen on a socket.
  * \param   luaVM  The lua state.
@@ -252,10 +219,7 @@ static int l_bind_socket(lua_State *luaVM)
 		sock = (struct udp_socket*) lua_touserdata(luaVM, 1);
 	else
 		return( pusherror(luaVM, "ERROR bind(socket,ip) takes socket argument") );
-	if (lua_isuserdata(luaVM, 2))
-		ip   = (struct sockaddr_in*) lua_touserdata(luaVM, 2);
-	else
-		return( pusherror(luaVM, "ERROR bind(socket,ip) takes IP argument") );
+	ip = check_ud_ipendpoint (luaVM, 2);
 
 	if( bind(sock->socket , (struct sockaddr*) &(*ip), sizeof(struct sockaddr) ) == -1)
 		return( pusherror(luaVM, "ERROR binding socket") );
@@ -280,10 +244,7 @@ static int l_connect_socket(lua_State *luaVM)
 		sock = (struct udp_socket*) lua_touserdata(luaVM, 1);
 	else
 		return( pusherror(luaVM, "ERROR connect(socket,ip) takes socket argument") );
-	if (lua_isuserdata(luaVM, 2))
-		ip   = (struct sockaddr_in*) lua_touserdata(luaVM, 2);
-	else
-		return( pusherror(luaVM, "ERROR connect(socket,ip) takes IP argument") );
+	ip = check_ud_ipendpoint (luaVM, 2);
 
 	if( connect(sock->socket , (struct sockaddr*) &(*ip), sizeof(struct sockaddr) ) == -1)
 		return( pusherror(luaVM, "ERROR binding socket") );
@@ -313,7 +274,7 @@ static int l_accept_socket(lua_State *luaVM)
 		return( pusherror(luaVM, "ERROR accept(socket) takes socket argument") );
 
 	asock  = (struct udp_socket*)   lua_newuserdata (luaVM, sizeof(struct udp_socket)  );
-	si_cli = (struct sockaddr_in *) lua_newuserdata (luaVM, sizeof(struct sockaddr_in) );
+	si_cli = create_ud_ipendpoint(luaVM);
 	asock->socket = accept(lsock->socket, (struct sockaddr *) &(*si_cli), &their_addr_size);
 
 	return( 2 );
@@ -405,7 +366,7 @@ static int l_recv_from(lua_State *luaVM)
 	else
 		return( pusherror(luaVM, "ERROR recvFrom(socket) takes socket argument") );
 
-	si_cli = (struct sockaddr_in *) lua_newuserdata (luaVM, sizeof(struct sockaddr_in) );
+	si_cli = create_ud_ipendpoint(luaVM);
 	if ((rcvd = recvfrom(
 	  sock->socket,
 	  buffer, sizeof(buffer)-1, 0,
@@ -678,7 +639,7 @@ static const luaL_Reg l_net_lib [] =
 {
 	{"createUdp", l_create_udp_socket},
 	{"createTcp", l_create_tcp_socket},
-	{"createIp",  l_create_ip_endpoint},
+	{"createIp",  c_new_ipendpoint},
 	{"listen",    l_listen_socket},
 	{"bind",      l_bind_socket},
 	{"connect",   l_connect_socket},
@@ -701,6 +662,7 @@ static const luaL_Reg l_net_lib [] =
  */
 LUAMOD_API int luaopen_net (lua_State *luaVM)
 {
+	luaopen_net_ipendpoint(luaVM);
 	luaL_newlib (luaVM, l_net_lib);
 	return 1;
 }

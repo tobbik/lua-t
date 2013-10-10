@@ -25,3 +25,13 @@ struct tdp {
 	//enum sock_type     type;      // UDP, TCP ...
 	//t_timeout tm;
 };
+
+
+// Constructors
+// l_net_ipendpoint.c
+int luaopen_net_ipendpoint (lua_State *luaVM);
+struct sockaddr_in *check_ud_ipendpoint (lua_State *luaVM, int pos);
+struct sockaddr_in *create_ud_ipendpoint (lua_State *luaVM);
+int c_new_ipendpoint(lua_State *luaVM);
+
+

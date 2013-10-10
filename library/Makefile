@@ -34,7 +34,7 @@ CORE_O=	lapi.o lcode.o lctype.o ldebug.o ldo.o ldump.o lfunc.o lgc.o llex.o \
 	ltm.o lundump.o lvm.o lzio.o
 LIB_O=	lauxlib.o lbaselib.o lbitlib.o lcorolib.o ldblib.o liolib.o \
 	lmathlib.o loslib.o lstrlib.o ltablib.o loadlib.o linit.o library.o \
-	l_net.o l_byteBuffer.o
+	l_net.o l_net_ipendpoint.o l_byteBuffer.o
 BASE_O= $(CORE_O) $(LIB_O) $(MYOBJS)
 
 LUA_T=	lua
@@ -187,5 +187,6 @@ lzio.o: lzio.c lua.h luaconf.h llimits.h lmem.h lstate.h lobject.h ltm.h \
  lzio.h
 library.o: library.c library.h lua.h luaconf.h lauxlib.h lualib.h
 l_net.o: l_net.c l_net.h lua.h luaconf.h lauxlib.h lualib.h
+l_net_ipendpoint.o: l_net_ipendpoint.c l_net.h lua.h luaconf.h lauxlib.h lualib.h
 l_byteBuffer.o: l_byteBuffer.c l_byteBuffer.h lua.h luaconf.h lauxlib.h lualib.h
 

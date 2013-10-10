@@ -1,5 +1,4 @@
-
-local s    = {}
+#!../out/lua
 
 local print_table = function(name, t)
 	print('ELEMS of ' .. name)
