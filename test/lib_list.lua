@@ -12,10 +12,7 @@ local iter    -- declare local
 iter = function (prefix, t) -- ...then define (for recursion)
 	local st    = {}
 	local vals  = {}
-	--local funcs = {}
 	for k,v in pairs( t ) do
-		--if 'function' == type(v) then
-		--	funcs[k] = v
 		if 'loaded' == k or '_G' ==k then -- exclude recursion
 			vals[k] = v
 		elseif 'table' == type (v) and '_G' ~= k then

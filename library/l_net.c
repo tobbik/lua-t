@@ -639,7 +639,6 @@ static const luaL_Reg l_net_lib [] =
 {
 	{"createUdp", l_create_udp_socket},
 	{"createTcp", l_create_tcp_socket},
-	{"createIp",  c_new_ipendpoint},
 	{"listen",    l_listen_socket},
 	{"bind",      l_bind_socket},
 	{"connect",   l_connect_socket},
@@ -662,8 +661,9 @@ static const luaL_Reg l_net_lib [] =
  */
 LUAMOD_API int luaopen_net (lua_State *luaVM)
 {
-	luaopen_net_ipendpoint(luaVM);
 	luaL_newlib (luaVM, l_net_lib);
+	luaopen_net_ipendpoint(luaVM);
+	lua_setfield(luaVM, -2, "IpEndpoint");
 	return 1;
 }
 
