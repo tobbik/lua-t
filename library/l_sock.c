@@ -30,7 +30,7 @@
  * \param     value Unsigned 16 bit integer
  * \return    Integer with the opposite Endianness
  */
-inline u_int2 Reverse2Bytes(u_int2 value)
+inline uint16_t Reverse2Bytes(uint16_t value)
 {
 	return (
 		(value & 0xFFU) << 8 |
@@ -45,7 +45,7 @@ inline u_int2 Reverse2Bytes(u_int2 value)
  * \param     value Unsigned 32 bit integer
  * \return    integer with the opposite Endianness
  */
- inline u_int4 Reverse4Bytes(u_int4 value)
+ inline uint32_t Reverse4Bytes(uint32_t value)
 {
 	return (value & 0x000000FFU) << 24 |
 			 (value & 0x0000FF00U) << 8  |
@@ -60,7 +60,7 @@ inline u_int2 Reverse2Bytes(u_int2 value)
  * \param   value Unsigned 64 bit integer
  * \return  Integer with the opposite Endianness
  */
- inline u_int8 Reverse8Bytes(u_int8 value)
+ inline uint64_t Reverse8Bytes(uint64_t value)
 {
 	return (value & 0x00000000000000FFUL) << 56 |
 			 (value & 0x000000000000FF00UL) << 40 |
@@ -81,12 +81,12 @@ inline u_int2 Reverse2Bytes(u_int2 value)
  */
 static void get_crc16(const unsigned char *data, size_t size)
 {
-	u_int2  *checksum      = (u_int2 *) (data + size -2);
+	uint16_t  *checksum      = (uint16_t *) (data + size -2);
 
-	u_int2 out = 0;
+	uint16_t out = 0;
 	int bits_read = 0, bit_flag;
 	int i;
-	u_int2 crc = 0;
+	uint16_t crc = 0;
 	int j = 0x0001;
 
 	/* Sanity check: */
@@ -654,7 +654,7 @@ static int l_sleep(lua_State *luaVM)
 	fd_set dummy;
 	int s;
 #endif
-	u_int4   msec_len = (u_int4) luaL_checkint(luaVM, 1);
+	uint32_t         msec_len = (uint32_t) luaL_checkint(luaVM, 1);
 	struct timeval to;
 	to.tv_sec  = msec_len/1000;
 	to.tv_usec = (msec_len % 1000) * 1000;

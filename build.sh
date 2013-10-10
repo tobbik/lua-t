@@ -15,7 +15,7 @@ cp -f library/{Makefile,linit.c,lualib.h} ./out/
 cd out
 # this accumulates the Lua provided upstream patches
 patch < ../patches.patch
-make linux
+make MYCFLAGS=' -g' CC='clang' linux
 
 cd ..
 

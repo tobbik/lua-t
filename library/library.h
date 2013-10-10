@@ -8,14 +8,6 @@
  */
 
 #ifdef _WIN32
-#define QTC_TARGET_WIN32  1
-#define QTC_TARGET_FAMILY_WINDOWS  1
-#else
-#define QTC_TARGET_LINUX  1
-#endif
-#include "qtc_types.h"
-
-#ifdef _WIN32
 #include <Windows.h>
 #endif
 

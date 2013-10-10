@@ -12,29 +12,29 @@
 // inline helper functions
 /**
   * \brief  convert lon long (64bit) from network to host and vice versa
-  * \param  u_int8 value 64bit integer
-  * \return u_int8 endianess corrected integer
+  * \param  uint64_t value 64bit integer
+  * \return uint64_t endianess corrected integer
   */
-static inline u_int8 htonll(u_int8 value)
+static inline uint64_t htonll(uint64_t value)
 {
-	u_int4 high_part = htonl( (u_int8)(value >> 32) );
-	u_int4 low_part  = htonl( (u_int8)(value & 0xFFFFFFFFLL) );
-	return (((u_int8)low_part) << 32) | high_part;
+	uint64_t high_part = htonl( (uint64_t)(value >> 32) );
+	uint64_t low_part  = htonl( (uint64_t)(value & 0xFFFFFFFFLL) );
+	return (((uint64_t)low_part) << 32) | high_part;
 }
 
 
 /**
   * \brief  gets a numeric value in a byteBuffer segment according to mask and
   *         shift
-  * \param  u_int8 the position in the byteStream (pointer)
-  * \param  u_int8 out_mask  in relation to a 8 byte integer
-  * \param  u_int8 out_shift to right end of 64 bit integer
-  * \return u_int8
+  * \param  uint64_t the position in the byteStream (pointer)
+  * \param  uint64_t out_mask  in relation to a 8 byte integer
+  * \param  uint64_t out_shift to right end of 64 bit integer
+  * \return uint64_t
   */
-static inline u_int8 get_segment_value_numeric (
-		u_int8  *valnum,
-		u_int8   out_mask,
-		u_int8   out_shift)
+static inline uint64_t get_segment_value_numeric (
+		uint64_t  *valnum,
+		uint64_t   out_mask,
+		uint64_t   out_shift)
 {
 	return ((htonll (*valnum) & out_mask) >> out_shift);
 }
@@ -45,18 +45,18 @@ static inline u_int8 get_segment_value_numeric (
   *         shift
   * \param  lua_State
   * \param  struct qtc_pfield  the field to operate on
-  * \param  u_int8 value the value to put into the pointer to the main buffer
+  * \param  uint64_t value the value to put into the pointer to the main buffer
   * \return int    that's what gets returned to Lua, meaning the one value on
   *                the stack
   */
 static inline void set_segment_value_numeric (
-		u_int8  *valnum,
-		u_int8   out_mask,
-		u_int8   out_shift,
-		u_int8   value)
+		uint64_t  *valnum,
+		uint64_t   out_mask,
+		uint64_t   out_shift,
+		uint64_t   value)
 {
-	//u_int8 cmpr;
-	//cmpr = (64 == a->bits) ?  (u_int8)0x1111111111111111 : ((u_int8) 0x0000000000000001) << a->bits; // 2^bits
+	//uint64_t cmpr;
+	//cmpr = (64 == a->bits) ?  (uint64_t)0x1111111111111111 : ((uint64_t) 0x0000000000000001) << a->bits; // 2^bits
 	//if ( value < cmpr ) {
 	*valnum = htonll( ( htonll(*valnum) & ~out_mask) | (value << out_shift) );
 	//}
@@ -122,9 +122,9 @@ static int l_read_number (lua_State *luaVM) {
 	int                length;
 	int                pos;
 	int                offset;
-	u_int8            *valnum;
-	u_int8             out_mask;
-	u_int8             out_shift;
+	uint64_t          *valnum;
+	uint64_t           out_mask;
+	uint64_t           out_shift;
 	struct byteBuffer *buffer   = byteBuffer_check(luaVM);
 
 	// position in byteStream
@@ -137,7 +137,7 @@ static int l_read_number (lua_State *luaVM) {
 	out_shift = 64 - (offset%8) - length;
 	out_mask = ( 0xFFFFFFFFFFFFFFFF >> (64-length)) << out_shift;
 
-	valnum = (u_int8 *) &(buffer->buffer[ pos ]);
+	valnum = (uint64_t *) &(buffer->buffer[ pos ]);
 	lua_pushinteger(luaVM, get_segment_value_numeric(valnum, out_mask, out_shift));
 	return 1;
 }
@@ -152,9 +152,9 @@ static int l_write_number (lua_State *luaVM) {
 	int                length;
 	int                pos;
 	int                offset;
-	u_int8            *valnum;
-	u_int8             out_mask;
-	u_int8             out_shift;
+	uint64_t          *valnum;
+	uint64_t           out_mask;
+	uint64_t           out_shift;
 	struct byteBuffer *buffer   = byteBuffer_check(luaVM);
 
 	// position in byteStream
@@ -167,11 +167,11 @@ static int l_write_number (lua_State *luaVM) {
 	out_shift = 64 - (offset%8) - length;
 	out_mask = ( 0xFFFFFFFFFFFFFFFF >> (64-length)) << out_shift;
 
-	valnum = (u_int8 *) &(buffer->buffer[ pos ]);
+	valnum = (uint64_t *) &(buffer->buffer[ pos ]);
 
 	set_segment_value_numeric(
 		valnum, out_mask, out_shift,
-		(u_int8) luaL_checknumber(luaVM, 3));
+		(uint64_t) luaL_checknumber(luaVM, 3));
 	return 0;
 }
 
@@ -198,7 +198,7 @@ static int l_get_length(lua_State *luaVM)
  */
 int l_byteToBcd(lua_State *luaVM)
 {
-	u_int1 val = luaL_checkint(luaVM, 1);
+	uint8_t val = luaL_checkint(luaVM, 1);
 	lua_pushinteger(luaVM, (val/10*16) + (val%10) );
 	return 1;
 }
@@ -210,7 +210,7 @@ int l_byteToBcd(lua_State *luaVM)
  */
 int l_shortToBcd(lua_State *luaVM)
 {
-	u_int2 val = luaL_checkint(luaVM, 1);
+	uint16_t val = luaL_checkint(luaVM, 1);
 	lua_pushinteger(luaVM,
 			(val/1000   *4096 ) +
 		 ( (val/100%10)* 256 ) +
