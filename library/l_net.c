@@ -674,7 +674,7 @@ static int l_sleep(lua_State *luaVM)
  * \brief      the net library definition
  *             assigns Lua available names to C-functions
  */
-static const luaL_Reg socket_lib [] =
+static const luaL_Reg l_net_lib [] =
 {
 	{"createUdp", l_create_udp_socket},
 	{"createTcp", l_create_tcp_socket},
@@ -701,7 +701,7 @@ static const luaL_Reg socket_lib [] =
  */
 LUAMOD_API int luaopen_net (lua_State *luaVM)
 {
-	luaL_newlib (luaVM, socket_lib);
+	luaL_newlib (luaVM, l_net_lib);
 	return 1;
 }
 
