@@ -10,7 +10,7 @@
 #define CRC16             0xA001
 #define MAX_PKT_BYTES     1500
 
-enum sock_type {
+enum socket_type {
 	UDP,
 	TCP
 };
@@ -32,4 +32,10 @@ struct tdp {
 int luaopen_net_ipendpoint (lua_State *luaVM);
 struct sockaddr_in *check_ud_ipendpoint (lua_State *luaVM, int pos);
 struct sockaddr_in *create_ud_ipendpoint (lua_State *luaVM);
+
+// l_net_socket.c
+int luaopen_net_socket (lua_State *luaVM);
+struct udp_socket *check_ud_socket (lua_State *luaVM, int pos);
+struct udp_socket *create_ud_socket (lua_State *luaVM, enum socket_type type);
+
 

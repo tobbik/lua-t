@@ -1,12 +1,11 @@
 #!../out/lua
 
-tcpsock = net.createTcp()
---ip      = net.createIP('192.168.0.123', 8888)
-ip      = net.createIp('127.0.0.1', 8888)
-net.bind(tcpsock,ip)
-net.listen(tcpsock,5)
-consock = net.accept(tcpsock)
-msg, len = net.recv(consock)
+tcpsock = net.Socket.createTcp()
+ip      = net.IpEndpoint('127.0.0.1', 8888)
+tcpsock:bind(ip)
+tcpsock:listen(5)
+consock = tcpsock:accept() -- blocking here
+msg, len = consock:recv()
 print(msg, len, "\n")
-net.close(consock)
-net.close(tcpsock)
+consock:close()
+tcpsock:close()
