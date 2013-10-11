@@ -15,6 +15,12 @@ enum socket_type {
 	TCP
 };
 
+static const char *const socket_types[] = {
+	"UDP",
+	"TCP",
+	NULL
+};
+
 struct udp_socket {
 	int                socket;    // socket
 	//t_timeout tm;
