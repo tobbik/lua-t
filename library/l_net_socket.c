@@ -410,8 +410,9 @@ static int l_recv_strm(lua_State *luaVM)
  * --------------------------------------------------------------------------*/
 static int l_socket_tostring (lua_State *luaVM) {
 	struct udp_socket *sock = check_ud_socket(luaVM, 1);
-	lua_pushfstring(luaVM, "Socket(%d)",
-			sock->socket
+	lua_pushfstring(luaVM, "Socket(%d): %p",
+			sock->socket,
+			sock
 	);
 	return 1;
 }

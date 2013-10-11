@@ -176,9 +176,10 @@ static int l_get_port (lua_State *luaVM) {
  * --------------------------------------------------------------------------*/
 static int l_ipendpoint_tostring (lua_State *luaVM) {
 	struct sockaddr_in *ip = check_ud_ipendpoint(luaVM, 1);
-	lua_pushfstring(luaVM, "IpEndpoint(%s:%d)",
+	lua_pushfstring(luaVM, "IpEndpoint{%s:%d}: %p",
 			inet_ntoa(ip->sin_addr),
-			ntohs(ip->sin_port)
+			ntohs(ip->sin_port),
+			ip
 	);
 	return 1;
 }
