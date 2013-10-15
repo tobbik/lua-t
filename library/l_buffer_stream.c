@@ -209,6 +209,20 @@ static int l_get_length(lua_State *luaVM)
 }
 
 
+/**--------------------------------------------------------------------------
+ * \brief   tostring representation of a buffer stream.
+ * \param   luaVM     The lua state.
+ * \lparam  sockaddr  the buffer-Stream in user_data.
+ * \lreturn string    formatted string representing buffer.
+ * \return  The number of results to be passed back to the calling Lua script.
+ * --------------------------------------------------------------------------*/
+static int l_stream_tostring (lua_State *luaVM) {
+	struct buffer_stream *bs = check_ud_buffer_stream(luaVM, 1);
+	lua_pushfstring(luaVM, "Stream{%d}: %p", bs->length, bs);
+	return 1;
+}
+
+
 /**
  * \brief    the metatble for the module
  */
@@ -246,8 +260,8 @@ int luaopen_buffer_stream (lua_State *luaVM)
 	lua_setfield(luaVM, -2, "__index");
 	lua_pushcfunction(luaVM, l_get_length);
 	lua_setfield(luaVM, -2, "__len");
-	//lua_pushcfunction(luaVM, l_ipendpoint_tostring);
-	//lua_setfield(luaVM, -2, "__tostring");
+	lua_pushcfunction(luaVM, l_stream_tostring);
+	lua_setfield(luaVM, -2, "__tostring");
 	lua_pop(luaVM, 1);        // remove metatable from stack
 	// empty IpEndpoint class = {}, this is the actual return of this function
 	lua_createtable(luaVM, 0, 0);

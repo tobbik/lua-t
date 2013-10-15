@@ -6,7 +6,6 @@ fi
 mkdir out
 
 cp src/* ./out/
-cp ../include/qtc_types.h ./out/
 cp library/library* library/l_net* library/l_buffer* ./out/
 
 
