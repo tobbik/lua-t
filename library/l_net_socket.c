@@ -42,7 +42,7 @@ static int c_new_socket(lua_State *luaVM)
 
 
 /**--------------------------------------------------------------------------
- * \brief   create a socketand push to LuaStack.
+ * \brief   create a socket and push to LuaStack.
  * \param   luaVM  The lua state.
  * \return  struct udp_socket*  pointer to the socket struct
  * --------------------------------------------------------------------------*/

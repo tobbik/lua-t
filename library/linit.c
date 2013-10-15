@@ -38,7 +38,7 @@ static const luaL_Reg loadedlibs[] = {
   {LUA_MATHLIBNAME, luaopen_math},
   {LUA_DBLIBNAME, luaopen_debug},
   {LUA_NETLIBNAME, luaopen_net},
-//  {LUA_BUFFERLIBNAME, luaopen_byteBuffer},
+  {LUA_BUFFERLIBNAME, luaopen_buffer},
   {NULL, NULL}
 };
 
