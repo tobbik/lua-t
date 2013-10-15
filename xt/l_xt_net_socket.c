@@ -18,8 +18,8 @@
 #include <sys/socket.h>
 #include <sys/select.h>
 #endif
-#include "library.h"
-#include "l_net.h"
+#include "l_xt.h"
+#include "l_xt_net.h"
 
 
 /** -------------------------------------------------------------------------

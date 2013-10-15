@@ -5,8 +5,8 @@
 #include <stdio.h>
 #include <arpa/inet.h>            // htonl
 
-#include "library.h"
-#include "l_buffer.h"
+#include "l_xt.h"
+#include "l_xt_buffer.h"
 
 
 // inline helper functions

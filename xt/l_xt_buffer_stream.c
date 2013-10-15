@@ -5,8 +5,8 @@
 #include <stdio.h>
 #include <arpa/inet.h>            // htonl
 
-#include "library.h"
-#include "l_buffer.h"
+#include "l_xt.h"
+#include "l_xt_buffer.h"
 
 
 // inline helper functions
@@ -160,8 +160,7 @@ static int l_read_number (lua_State *luaVM) {
 
 
 /**
- * \brief    sets a value  of the field
- * \detail   can set value, inc
+ * \brief    sets a value at a position in the stream
  *
  * \return integer 0 left on the stack
  */

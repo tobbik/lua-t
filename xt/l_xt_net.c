@@ -19,8 +19,8 @@
 #include <sys/select.h>
 #endif
 
-#include "library.h"
-#include "l_net.h"
+#include "l_xt.h"
+#include "l_xt_net.h"
 //#include "l_byte_buffer.h"
 
 

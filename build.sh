@@ -6,11 +6,11 @@ fi
 mkdir out
 
 cp src/* ./out/
-cp library/library* library/l_net* library/l_buffer* ./out/
+cp xt/l_xt* ./out/
 
 
 # 
-cp -f library/{Makefile,linit.c,lualib.h} ./out/
+cp -f xt/{Makefile,linit.c,lualib.h} ./out/
 cd out
 # this accumulates the Lua provided upstream patches
 patch < ../patches.patch
