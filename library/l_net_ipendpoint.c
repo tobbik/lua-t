@@ -37,9 +37,7 @@
 static int c_new_ipendpoint(lua_State *luaVM)
 {
 	struct sockaddr_in  *ip;
-	int                  port = luaL_checkint(luaVM, 3);
-	luaL_argcheck(luaVM, 1 <= port && port <= 65536, 3,
-	                 "port number out of range");
+	int                  port;
 
 	ip = create_ud_ipendpoint (luaVM );
 
@@ -57,7 +55,12 @@ static int c_new_ipendpoint(lua_State *luaVM)
 	else if (lua_isnil(luaVM, 1) )
 		ip->sin_addr.s_addr = htonl(INADDR_ANY);
 
-	ip->sin_port   = htons(port);
+	if ( lua_isnumber(luaVM, 3) ) {
+		port = luaL_checkint(luaVM, 3);
+		luaL_argcheck(luaVM, 1 <= port && port <= 65536, 3,
+		                 "port number out of range");
+		ip->sin_port   = htons(port);
+	}
 
 	return 1;
 }
