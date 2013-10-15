@@ -8,7 +8,7 @@
  */
 
 #define CRC16             0xA001
-#define MAX_PKT_BYTES     1500
+#define MAX_BUF_SIZE      4096
 
 enum socket_type {
 	UDP,

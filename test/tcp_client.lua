@@ -1,7 +1,15 @@
 #!../out/lua
 
 tcpsock = net.Socket('TCP')
-ip      = net.IpEndpoint('127.0.0.1', 8888)
-tcpsock:connect( ip )
-print("send:", tcpsock:send("This is my TCP message to you\n") )
+ip      = net.IpEndpoint('10.128.3.131', 8888)
+tcpsock:connect(ip)
+msg = string.rep('0123456789', 1000010)
+sent = 0
+while sent<#msg do
+	local snt = tcpsock:send(msg, sent)
+	print ("SNT:",snt)
+	sent = sent + snt
+	print(sent, #msg)
+end
+print("DONE", '\n', length, "\n")
 tcpsock:close()

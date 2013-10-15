@@ -18,7 +18,6 @@
 #include <sys/socket.h>
 #include <sys/select.h>
 #endif
-
 #include "library.h"
 #include "l_net.h"
 
@@ -276,7 +275,7 @@ static int l_recv_from(lua_State *luaVM)
 	struct udp_socket  *sock;
 	struct sockaddr_in *si_cli;
 	int                 rcvd;
-	char                buffer[4096];
+	char                buffer[MAX_BUF_SIZE];
 
 	unsigned int        slen=sizeof(si_cli);
 
@@ -350,20 +349,27 @@ static int l_recv_from(lua_State *luaVM)
 static int l_send_strm(lua_State *luaVM)
 {
 	struct udp_socket  *sock;
-	int                 sent;
+	size_t              sent;
+	size_t              to_send;
 	const char         *msg;
+	size_t              into_msg=0;   // where in the message to start sending from
 
 	sock = check_ud_socket (luaVM, 1);
 	if (lua_isstring(luaVM, 2))
 		msg   = lua_tostring(luaVM, 2);
 	else
 		return( pusherror(luaVM, "ERROR send(socket,msg) takes msg argument") );
+	if (lua_isnumber(luaVM, 3)) {
+		into_msg = lua_tointeger(luaVM, 3);
+	}
+	msg    = msg + into_msg;
+	to_send = strlen(msg) - into_msg;
 
 	if ((sent = send(
 	  sock->socket,
-	  msg, strlen(msg), 0)
+	  msg, to_send, 0)
 	  ) == -1)
-		return( pusherror(luaVM, "Failed to send UDP packet") );
+		return( pusherror(luaVM, "Failed to send TCP message") );
 
 	lua_pushinteger(luaVM, sent);
 	return( 1 );
@@ -383,7 +389,7 @@ static int l_recv_strm(lua_State *luaVM)
 {
 	struct udp_socket  *sock;
 	int                 rcvd;
-	char                buffer[4096];
+	char                buffer[MAX_BUF_SIZE];
 
 	sock = check_ud_socket (luaVM, 1);
 

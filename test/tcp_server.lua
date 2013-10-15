@@ -1,13 +1,17 @@
 #!../out/lua
 
-tcpsock = net.Socket.createTcp()
-ip      = net.IpEndpoint('127.0.0.1', 8888)
+tcpsock = net.Socket('TCP')
+ip      = net.IpEndpoint('10.128.3.131', 8888)
 tcpsock:bind(ip)
 tcpsock:listen(5)
-print (tcpsock, ip)
-consock = tcpsock:accept() -- blocking here
-msg, len = consock:recv()
-print(msg, len, "\n")
-print (consock)
+consock = tcpsock:accept()
+length = 0
+len    = 2
+while len>1 do
+	msg, len = consock:recv()
+	print (len, length)
+	length=length+len
+end
+print("DONE: ", length, "\n")
 consock:close()
 tcpsock:close()
