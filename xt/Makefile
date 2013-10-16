@@ -12,7 +12,8 @@ SRC=l_xt.c \
 	 l_xt_net_socket.c \
 	 l_xt_net_ipendpoint.c \
 	 l_xt_buffer.c \
-	 l_xt_buffer_stream.c
+	 l_xt_buffer_stream.c \
+	 l_xt_preload.c
 
 OBJ=$(SRC:.c=.o)
 LIB=xt.so

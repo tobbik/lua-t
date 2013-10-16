@@ -1,0 +1,41 @@
+diff -ru lua-5.2.1/src/luaconf.h lua-5.2.1.new/src/luaconf.h
+--- lua-5.2.1/src/luaconf.h	2012-05-11 16:14:42.000000000 +0200
++++ lua-5.2.1.new/src/luaconf.h	2012-09-12 22:40:27.986622772 +0200
+@@ -100,7 +100,7 @@
+ #else			/* }{ */
+ 
+ #define LUA_VDIR	LUA_VERSION_MAJOR "." LUA_VERSION_MINOR "/"
+-#define LUA_ROOT	"/usr/local/"
++#define LUA_ROOT	L_XT_ROOT
+ #define LUA_LDIR	LUA_ROOT "share/lua/" LUA_VDIR
+ #define LUA_CDIR	LUA_ROOT "lib/lua/" LUA_VDIR
+ #define LUA_PATH_DEFAULT  \
+diff -ru lua-5.2.1/src/Makefile lua-5.2.1.new/src/linit.c
+--- lua-5.2.1/src/linit.c	2012-03-09 17:32:16.000000000 +0100
++++ lua-5.2.1.new/src/linit.c	2012-09-12 22:38:08.591386896 +0200
+@@ -29,6 +29,8 @@
+ /*
+ ** these libs are preloaded and must be required before used
+ */
++LUAMOD_API int luaopen_xt (lua_State *luaVM);
+ static const luaL_Reg preloadedlibs[] = {
++  {"xt", luaopen_xt},
+   {NULL, NULL}
+ };
+ 
+diff -u lua-5.2.2/src/Makefile* 
+--- lua-5.2.2/src/Makefile	2012-12-27 02:51:43.000000000 -0800
++++ lua-5.2.2/src/Makefile.new	2013-10-16 16:09:11.289742015 -0700
+@@ -34,7 +34,10 @@
+ 	ltm.o lundump.o lvm.o lzio.o
+ LIB_O=	lauxlib.o lbaselib.o lbitlib.o lcorolib.o ldblib.o liolib.o \
+ 	lmathlib.o loslib.o lstrlib.o ltablib.o loadlib.o linit.o
+-BASE_O= $(CORE_O) $(LIB_O) $(MYOBJS)
++XT_SRC=l_xt.c l_xt_net.c l_xt_net_socket.c l_xt_net_ipendpoint.c l_xt_buffer.c \
++	 l_xt_buffer_stream.c
++XT_O=$(XT_SRC:.c=.o)
++BASE_O= $(CORE_O) $(LIB_O) $(XT_O) $(MYOBJS)
+ 
+ LUA_T=	lua
+ LUA_O=	lua.o
+

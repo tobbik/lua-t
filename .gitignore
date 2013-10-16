@@ -1,5 +1,6 @@
 /lua-5.2*/
 /out/
+/compile/
 *.o
 *.so
 *.obj
