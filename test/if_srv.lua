@@ -1,7 +1,8 @@
-#!../out/lua
+#!../out/bin/lua
+local xt=require('xt')
 
-tcpsock = net.Socket('TCP')
-ip      = net.IpEndpoint('10.128.3.131', 8888)
+tcpsock = xt.net.Socket('TCP')
+ip      = xt.net.IpEndpoint('10.128.3.131', 8888)
 
 tcpsock:bind(ip)
 tcpsock:listen(5)
@@ -9,7 +10,7 @@ tcpsock:listen(5)
 conns  = { tcpsock }
 
 while true do
-	res = net.select(conns, {})
+	res = xt.net.select(conns, {})
 	io.write('LOOP['..#res..']:')
 	for n,cli in ipairs(res) do
 		io.write('  '..tostring(cli)..'')

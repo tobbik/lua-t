@@ -1,6 +1,9 @@
+/lua-5.2*/
 /out/
 *.o
+*.so
 *.obj
 *.swp
+*.swo
 *.sln
 *.suo

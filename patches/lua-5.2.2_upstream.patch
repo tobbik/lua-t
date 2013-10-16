@@ -1,4 +1,5 @@
-ldo.c:
+--- src/ldo.c	2013/04/12 18:48:47	2.16.1.1
++++ src/ldo.c	2013/04/12 18:48:47
 @@ -324,7 +324,7 @@
      case LUA_TLCL: {  /* Lua function: prepare its call */
        StkId base;
@@ -8,7 +9,8 @@ ldo.c:
        func = restorestack(L, funcr);
        n = cast_int(L->top - func) - 1;  /* number of real arguments */
        for (; n < p->numparams; n++)
-lgc.c:
+--- src/lgc.c	2013/04/12 18:48:47	2.16.1.1
++++ src/lgc.c	2013/04/12 18:48:47
 @@ -495,2 +495,3 @@
  static lu_mem traversestack (global_State *g, lua_State *th) {
 +  int n = 0;
@@ -24,15 +26,8 @@ lgc.c:
 +  return sizeof(lua_State) + sizeof(TValue) * th->stacksize +
 +         sizeof(CallInfo) * n;
  }
-ldebug.c:
-@@ -519,5 +519,5 @@
- l_noret luaG_concaterror (lua_State *L, StkId p1, StkId p2) {
-   if (ttisstring(p1) || ttisnumber(p1)) p1 = p2;
--  lua_assert(!ttisstring(p1) && !ttisnumber(p2));
-+  lua_assert(!ttisstring(p1) && !ttisnumber(p1));
-   luaG_typeerror(L, p1, "concatenate");
- }
-ldebug.c:
+--- src/ldebug.c	2013/04/12 18:48:47	2.16.1.1
++++ src/ldebug.c	2013/04/12 18:48:47
 @@ -327,12 +327,20 @@
  }
  
@@ -100,7 +95,15 @@ ldebug.c:
          break;
      }
    }
-luac.c:
+@@ -519,5 +519,5 @@
+ l_noret luaG_concaterror (lua_State *L, StkId p1, StkId p2) {
+   if (ttisstring(p1) || ttisnumber(p1)) p1 = p2;
+-  lua_assert(!ttisstring(p1) && !ttisnumber(p2));
++  lua_assert(!ttisstring(p1) && !ttisnumber(p1));
+   luaG_typeerror(L, p1, "concatenate");
+ }
+--- src/luac.c	2013/04/12 18:48:47	2.16.1.1
++++ src/luac.c	2013/04/12 18:48:47
 @@ -251,7 +251,7 @@
  static void PrintConstant(const Proto* f, int i)
  {
@@ -110,8 +113,8 @@ luac.c:
   {
    case LUA_TNIL:
         printf("nil");
---- ltable.h	2013/04/12 18:48:47	2.16.1.1
-+++ ltable.h	2013/08/30 15:34:24
+--- src/ltable.h	2013/04/12 18:48:47	2.16.1.1
++++ src/ltable.h	2013/08/30 15:34:24
 @@ -18,4 +18,8 @@
  #define invalidateTMcache(t)	((t)->flags = 0)
  
@@ -122,8 +125,8 @@ luac.c:
  
  LUAI_FUNC const TValue *luaH_getint (Table *t, int key);
 
---- llex.c	2013/04/12 18:48:47	2.63.1.1
-+++ llex.c	2013/08/30 15:34:59
+--- src/llex.c	2013/04/12 18:48:47	2.63.1.1
++++ src/llex.c	2013/08/30 15:34:59
 @@ -134,4 +134,7 @@
      luaC_checkGC(L);
    }
@@ -132,3 +135,4 @@ luac.c:
 +  }
    L->top--;  /* remove string from stack */
    return ts;
+

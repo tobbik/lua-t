@@ -62,3 +62,28 @@ int pusherror(lua_State *luaVM, const char *info)
 }
 
 
+/**
+ * \brief      the (empty) xt library definition
+ *             assigns Lua available names to C-functions
+ */
+static const luaL_Reg l_xt_fm [] =
+{
+	{NULL,        NULL}
+};
+
+
+/**
+ * \brief     Export the net library to Lua
+ *\param      The Lua state.
+ * \return     1 return value
+ */
+LUAMOD_API int luaopen_xt (lua_State *luaVM)
+{
+	luaL_newlib (luaVM, l_xt_fm);
+	luaopen_net(luaVM);
+	lua_setfield(luaVM, -2, "net");
+	luaopen_buffer(luaVM);
+	lua_setfield(luaVM, -2, "buffer");
+	return 1;
+}
+

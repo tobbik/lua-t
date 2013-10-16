@@ -1,4 +1,5 @@
-#!../out/lua
+#!../out/bin/lua
+local xt=require('xt')
 
 tcpsock = net.Socket('TCP')
 ip      = net.IpEndpoint('10.128.3.131', 8888)

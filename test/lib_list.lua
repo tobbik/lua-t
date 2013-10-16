@@ -1,4 +1,5 @@
-#!../out/lua
+#!../out/bin/lua
+xt=require('xt')
 
 local print_table = function(name, t)
 	print('ELEMS of ' .. name)

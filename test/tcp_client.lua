@@ -1,7 +1,8 @@
-#!../out/lua
+#!../out/bin/lua
+local xt=require('xt')
 
-tcpsock = net.Socket('TCP')
-ip      = net.IpEndpoint('10.128.3.131', 8888)
+tcpsock = xt.net.Socket('TCP')
+ip      = xt.net.IpEndpoint('10.128.3.131', 8888)
 tcpsock:connect(ip)
 msg = string.rep('0123456789', 1000010)
 sent = 0

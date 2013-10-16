@@ -1,7 +1,8 @@
-#!../out/lua
+#!../out/bin/lua
+local xt=require('xt')
 
-local tcpsock = net.Socket() -- Socket constructor defaults to TCP
-local ip      = net.IpEndpoint('128.30.52.37', 80)
+local tcpsock = xt.net.Socket() -- Socket constructor defaults to TCP
+local ip      = xt.net.IpEndpoint('128.30.52.37', 80)
 tcpsock:connect(ip)
 local len     = tcpsock:send("GET /TR/REC-html32.html HTTP/1.0\r\n\r\n")
 local buffer = {}
