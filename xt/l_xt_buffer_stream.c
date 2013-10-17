@@ -102,9 +102,9 @@ struct buffer_stream *create_ud_buffer_stream(lua_State *luaVM, int size)
 	buffer = (struct buffer_stream*) lua_newuserdata(luaVM, sizeof(struct buffer_stream));
 	size_bytes     = sizeof(struct buffer_stream) + (size - 1) * sizeof(unsigned char);
 	buffer         = (struct buffer_stream *) lua_newuserdata(luaVM, size_bytes);
-	buffer->length = size_bytes;
 	memset(buffer->buffer, 0, size * sizeof(unsigned char));
 
+	buffer->length = size;
 	luaL_getmetatable(luaVM, "L.Buffer.Stream");
 	lua_setmetatable(luaVM, -2);
 	return buffer;
@@ -134,26 +134,21 @@ struct buffer_stream *check_ud_buffer_stream (lua_State *luaVM, int pos) {
  *
  * \return integer 0 left on the stack
  */
-static int l_read_number (lua_State *luaVM) {
-	int                   length;
-	int                   pos;
-	int                   offset;
+static int l_read_number_bits (lua_State *luaVM) {
+	int                   length;    // how many bits to write
+	int                   offset;    // starting with the x bit
 	uint64_t             *valnum;
 	uint64_t              out_mask;
 	uint64_t              out_shift;
 	struct buffer_stream *buffer   = check_ud_buffer_stream(luaVM, 1);
 
-	// position in buffer_stream
-	pos    = luaL_checkint(luaVM, 2);
-	// length in bit
+	offset = luaL_checkint(luaVM, 2);
 	length = luaL_checkint(luaVM, 3);
-	// offset in bit
-	offset = luaL_checkint(luaVM, 4);
 
 	out_shift = 64 - (offset%8) - length;
 	out_mask = ( 0xFFFFFFFFFFFFFFFF >> (64-length)) << out_shift;
 
-	valnum = (uint64_t *) &(buffer->buffer[ pos ]);
+	valnum = (uint64_t *) &(buffer->buffer[ offset/8 ]);
 	lua_pushinteger(luaVM, get_segment_value_numeric(valnum, out_mask, out_shift));
 	return 1;
 }
@@ -164,32 +159,51 @@ static int l_read_number (lua_State *luaVM) {
  *
  * \return integer 0 left on the stack
  */
-static int l_write_number (lua_State *luaVM) {
-	int                   length;
-	int                   pos;
-	int                   offset;
+static int l_write_number_bits(lua_State *luaVM) {
+	int                   length;    // how many bits to write
+	int                   offset;    // starting with the x bit
 	uint64_t             *valnum;
 	uint64_t              out_mask;
 	uint64_t              out_shift;
 	struct buffer_stream *buffer   = check_ud_buffer_stream(luaVM, 1);
 
-	// position in buffer_stream
-	pos    = luaL_checkint(luaVM, 2);
-	// length in bit
+	offset = luaL_checkint(luaVM, 2);
 	length = luaL_checkint(luaVM, 3);
-	// offset in bit
-	offset = luaL_checkint(luaVM, 4);
 
 	out_shift = 64 - (offset%8) - length;
 	out_mask = ( 0xFFFFFFFFFFFFFFFF >> (64-length)) << out_shift;
 
-	valnum = (uint64_t *) &(buffer->buffer[ pos ]);
+	valnum = (uint64_t *) &(buffer->buffer[ offset/8 ]);
 
 	set_segment_value_numeric(
 		valnum, out_mask, out_shift,
-		(uint64_t) luaL_checknumber(luaVM, 5));
+		(uint64_t) luaL_checknumber(luaVM, 4));
 	return 0;
 }
+
+/**
+ * \brief    gets the content of the Stream in Hex
+ * lreturn   string buffer representation in Hexadecimal
+ *
+ * \return integer 0 left on the stack
+ */
+static int l_get_hex_string(lua_State *luaVM) {
+	int                   l,c;
+	char                 *b;
+	struct buffer_stream *buffer   = check_ud_buffer_stream(luaVM, 1);
+
+	b=malloc(3 * buffer->length * sizeof( char ));
+	memset(b, 0, 3 * buffer->length * sizeof( char ) );
+
+	c = 0;
+	for (l=0; l<buffer->length; l++) {
+		c += snprintf(b+c, 4, "%02X ", buffer->buffer[l]);
+	}
+	lua_pushstring(luaVM, b);
+	return 1;
+}
+
+
 
 
 /**
@@ -237,9 +251,10 @@ static const struct luaL_Reg l_buffer_stream_fm [] = {
  */
 static const luaL_Reg l_buffer_stream_m [] =
 {
-	{"readAt",   l_read_number},
-	{"writeAt",  l_write_number},
-	{"length",   l_get_length},
+	{"readBits",     l_read_number_bits},
+	{"writeBits",    l_write_number_bits},
+	{"length",       l_get_length},
+	{"toHex",        l_get_hex_string},
 	{NULL,        NULL}
 };
 
