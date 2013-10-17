@@ -80,7 +80,7 @@ static inline void set_segment_value_numeric (
 static int c_new_buffer_stream(lua_State *luaVM)
 {
 	int                    size;
-	struct buffer_stream  *buffer;
+	struct buffer_stream  __attribute__ ((unused)) *buffer;
 
 	size           = luaL_checkint(luaVM, 2);
 	buffer         = create_ud_buffer_stream(luaVM, size);

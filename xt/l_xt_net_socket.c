@@ -32,7 +32,7 @@
  *-------------------------------------------------------------------------*/
 static int c_new_socket(lua_State *luaVM)
 {
-	struct udp_socket  *sock;
+	struct udp_socket  __attribute__ ((unused)) *sock;
 	enum socket_type    type;
 
 	type = (enum socket_type) luaL_checkoption (luaVM, 2, "TCP", socket_types);
@@ -94,7 +94,7 @@ struct udp_socket *check_ud_socket (lua_State *luaVM, int pos) {
  *-------------------------------------------------------------------------*/
 static int l_create_udp_socket(lua_State *luaVM)
 {
-	struct udp_socket  *sock;
+	struct udp_socket  __attribute__ ((unused)) *sock;
 
 	sock = create_ud_socket(luaVM, UDP);
 
@@ -110,7 +110,7 @@ static int l_create_udp_socket(lua_State *luaVM)
  *-------------------------------------------------------------------------*/
 static int l_create_tcp_socket(lua_State *luaVM)
 {
-	struct udp_socket  *sock;
+	struct udp_socket  __attribute__ ((unused)) *sock;
 
 	sock = create_ud_socket(luaVM, TCP);
 	return 1 ;

@@ -14,6 +14,7 @@ case "$1" in
 		patch < ../../../patches/lua-5.2.2_upstream.patch || return 1
 		cd ..
 		make \
+			CC="clang" \
 			MYCFLAGS=" -g -fPIC" \
 			linux
 		make \
@@ -31,7 +32,7 @@ case "$1" in
 		patch < ../../../patches/lua-5.2.2_upstream.patch || return 1
 		cd ..
 		make \
-			CC="gcc" \
+			CC="clang" \
 			LD="clang" \
 			MYCFLAGS=" -g -fPIC -DL_XT_ROOT=\"\\\"$BASEDIR/out/\\\"\"" \
 			linux
