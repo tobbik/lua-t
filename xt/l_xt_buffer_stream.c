@@ -31,7 +31,7 @@ static inline uint64_t htonll(uint64_t value)
   * \param  uint64_t out_shift to right end of 64 bit integer
   * \return uint64_t
   */
-static inline uint64_t get_segment_value_numeric (
+static inline uint64_t get_segment_value_bits (
 		uint64_t  *valnum,
 		uint64_t   out_mask,
 		uint64_t   out_shift)
@@ -132,7 +132,7 @@ struct buffer_stream *check_ud_buffer_stream (lua_State *luaVM, int pos) {
  * \param  offset   in bits
  * \param  length   in bits
  *
- * \return integer 0 left on the stack
+ * \return integer 1 left on the stack
  */
 static int l_read_number_bits (lua_State *luaVM) {
 	int                   length;    // how many bits to write
@@ -149,7 +149,74 @@ static int l_read_number_bits (lua_State *luaVM) {
 	out_mask = ( 0xFFFFFFFFFFFFFFFF >> (64-length)) << out_shift;
 
 	valnum = (uint64_t *) &(buffer->buffer[ offset/8 ]);
-	lua_pushinteger(luaVM, get_segment_value_numeric(valnum, out_mask, out_shift));
+	lua_pushinteger(luaVM, get_segment_value_bits(valnum, out_mask, out_shift));
+	return 1;
+}
+
+/**
+ * \brief  gets a byte wide the value from stream
+ * \lparam  position in bytes
+ *
+ * \return integer 1 left on the stack
+ */
+static int l_read_8 (lua_State *luaVM) {
+	uint8_t              *valnum;
+	int                   pos=luaL_checkint(luaVM,2);       // starting with byte pos in buffer[]
+	struct buffer_stream *buffer   = check_ud_buffer_stream(luaVM, 1);
+
+	valnum = (uint8_t *) &(buffer->buffer[ pos ]);
+	lua_pushinteger(luaVM, (int) *valnum);
+	return 1;
+}
+
+
+/**
+ * \brief  gets a short 2 byte wide value from stream
+ * \lparam  position in bytes
+ *
+ * \return integer 1 left on the stack
+ */
+static int l_read_16 (lua_State *luaVM) {
+	uint16_t             *valnum;
+	int                   pos=luaL_checkint(luaVM,2);       // starting with byte pos in buffer[]
+	struct buffer_stream *buffer   = check_ud_buffer_stream(luaVM, 1);
+
+	valnum = (uint16_t *) &(buffer->buffer[ pos ]);
+	lua_pushinteger(luaVM, (int) htons (*valnum));
+	return 1;
+}
+
+
+/**
+ * \brief  gets a long 4 byte wide value from stream
+ * \lparam  position in bytes
+ *
+ * \return integer 1 left on the stack
+ */
+static int l_read_32 (lua_State *luaVM) {
+	uint32_t             *valnum;
+	int                   pos=luaL_checkint(luaVM,2);       // starting with byte pos in buffer[]
+	struct buffer_stream *buffer   = check_ud_buffer_stream(luaVM, 1);
+
+	valnum = (uint32_t *) &(buffer->buffer[ pos ]);
+	lua_pushinteger(luaVM, (int) htonl (*valnum));
+	return 1;
+}
+
+
+/**
+ * \brief  gets a long long 8 byte wide value from stream
+ * \lparam  position in bytes
+ *
+ * \return integer 1 left on the stack
+ */
+static int l_read_64 (lua_State *luaVM) {
+	uint64_t             *valnum;
+	int                   pos=luaL_checkint(luaVM,2);       // starting with byte pos in buffer[]
+	struct buffer_stream *buffer   = check_ud_buffer_stream(luaVM, 1);
+
+	valnum = (uint64_t *) &(buffer->buffer[ pos ]);
+	lua_pushinteger(luaVM, (int) htonll (*valnum));
 	return 1;
 }
 
@@ -181,6 +248,83 @@ static int l_write_number_bits(lua_State *luaVM) {
 	return 0;
 }
 
+
+/**
+ * \brief  sets a char 2 byte wide value in stream
+ * \lparam  position in bytes
+ * \lparam  value
+ *
+ * \return integer 0 left on the stack
+ */
+static int l_write_8(lua_State *luaVM) {
+	uint8_t              *valnum;
+	int                   pos=luaL_checkint(luaVM, 2);       // starting with byte pos in buffer[]
+	struct buffer_stream *buffer   = check_ud_buffer_stream(luaVM, 1);
+
+	valnum  = (uint8_t *) &(buffer->buffer[ pos ]);
+	*valnum = (uint8_t) luaL_checknumber(luaVM, 3);
+
+	return 0;
+}
+
+
+/**
+ * \brief  sets a short 2 byte wide value in stream
+ * \lparam  position in bytes
+ * \lparam  value
+ *
+ * \return integer 0 left on the stack
+ */
+static int l_write_16(lua_State *luaVM) {
+	uint16_t             *valnum;
+	int                   pos=luaL_checkint(luaVM, 2);       // starting with byte pos in buffer[]
+	struct buffer_stream *buffer   = check_ud_buffer_stream(luaVM, 1);
+
+	valnum = (uint16_t *) &(buffer->buffer[ pos ]);
+	*valnum = htons( (uint16_t) luaL_checknumber(luaVM, 3) );
+
+	return 0;
+}
+
+
+/**
+ * \brief  sets a long 4 byte wide value in stream
+ * \lparam  position in bytes
+ * \lparam  value
+ *
+ * \return integer 0 left on the stack
+ */
+static int l_write_32(lua_State *luaVM) {
+	uint32_t             *valnum;
+	int                   pos=luaL_checkint(luaVM, 2);       // starting with byte pos in buffer[]
+	struct buffer_stream *buffer   = check_ud_buffer_stream(luaVM, 1);
+
+	valnum = (uint32_t *) &(buffer->buffer[ pos ]);
+	*valnum = htonl( (uint32_t) luaL_checknumber(luaVM, 3) );
+
+	return 0;
+}
+
+
+/**
+ * \brief  sets a long long 8 byte wide value in stream
+ * \lparam  position in bytes
+ * \lparam  value
+ *
+ * \return integer 0 left on the stack
+ */
+static int l_write_64(lua_State *luaVM) {
+	uint64_t             *valnum;
+	int                   pos=luaL_checkint(luaVM, 2);       // starting with byte pos in buffer[]
+	struct buffer_stream *buffer   = check_ud_buffer_stream(luaVM, 1);
+
+	valnum = (uint64_t *) &(buffer->buffer[ pos ]);
+	*valnum = htonll( (uint64_t) luaL_checknumber(luaVM, 3) );
+
+	return 0;
+}
+
+
 /**
  * \brief    gets the content of the Stream in Hex
  * lreturn   string buffer representation in Hexadecimal
@@ -202,8 +346,6 @@ static int l_get_hex_string(lua_State *luaVM) {
 	lua_pushstring(luaVM, b);
 	return 1;
 }
-
-
 
 
 /**
@@ -253,6 +395,14 @@ static const luaL_Reg l_buffer_stream_m [] =
 {
 	{"readBits",     l_read_number_bits},
 	{"writeBits",    l_write_number_bits},
+	{"read8",        l_read_8},
+	{"read16",       l_read_16},
+	{"read32",       l_read_32},
+	{"read64",       l_read_64},
+	{"write8",       l_write_8},
+	{"write16",      l_write_16},
+	{"write32",      l_write_32},
+	{"write64",      l_write_64},
 	{"length",       l_get_length},
 	{"toHex",        l_get_hex_string},
 	{NULL,        NULL}
