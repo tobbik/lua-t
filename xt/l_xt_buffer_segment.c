@@ -1,4 +1,4 @@
-//
+// vim: ts=4 sw=4 st=4 sta tw=80 list
 //
 #include <memory.h>               // memset
 #include <stdlib.h>
@@ -68,22 +68,66 @@ static inline void set_segment_value_numeric (
 
 
 /**
- * \brief     creates the buffer for the the network function
- * \detail    it creates the buffer used to stor all information and send them
+ * \brief     creates a buffer segment describing a single logical field in a Buffer.Stream
+ * \detail    it creates the buffer used to store all information and send them
  *            out to the network. In order to guarantee the binary operations
  *            for 64 bit integers it must be 8 bytes longer than what gets send
  *            out. By the same time the 8bytes padding in the ned provide space
  *            for two bytes used as placeholder for the CRC16 checksum if needed
  * \param     lua state
+ * \lparam    the Constructor instance
+ * \lparam    a Buffer.Stream instance
+ * \lparam    a Buffer.Segment.Type instance
+ * \lparam    position in the Buffer.Stream
  * \return    integer   how many elements are placed on the Lua stack
 */
-static int c_new_buffer_stream(lua_State *luaVM)
+static int c_new_buffer_segment(lua_State *luaVM)
 {
-	int                    size;
-	struct buffer_stream  __attribute__ ((unused)) *buffer;
+	enum buf_seg_type type   type;
+	int                      pos;
+	struct buffer_segment   *seg;
+	struct buffer_stream *buffer   = check_ud_buffer_stream(luaVM, 2);
 
-	size           = luaL_checkint(luaVM, 2);
-	buffer         = create_ud_buffer_stream(luaVM, size);
+	type   =  (enum buf_seg_type) luaL_checkint(luaVM, 3);
+	pos    =  luaL_checkint(luaVM, 4);
+
+	switch ( type ) {
+		case NUMX:
+			seg = create_ud_buffer_segment(luaVM, NUMX, pos, luaL_checkint(luaVM, 5));
+			break;
+		case STR:
+			seg = create_ud_buffer_segment(luaVM, NUMX, pos, luaL_checkint(luaVM, 5));
+			break;
+		default:
+
+	return 1;
+}
+
+
+/**
+ * \brief     creates a buffer segment describing a single logical field in a Buffer.Stream
+ * \param     lua state
+ * \lparam    the Constructor instance
+ * \lparam    a Buffer.Stream instance
+ * \lparam    a Buffer.Segment.Type
+ * \lparam    position in the Buffer.Stream
+ * \return    integer   how many elements are placed on the Lua stack
+*/
+static int l_create_buffer_segment_bits(lua_State *luaVM)
+{
+	enum buf_seg_type type   type;
+	int                      pos;
+	int                      value;
+	int                      length;
+	struct buffer_segment   *seg;
+	struct buffer_stream    *buffer   = check_ud_buffer_stream(luaVM, 2);
+
+	type   =  (enum buf_seg_type) luaL_checkint(luaVM, 3);
+	length =  luaL_checkint(luaVM, 4);
+	pos    =  luaL_checkint(luaVM, 5);
+	value  =  luaL_checkint(luaVM, 6);
+	seg    =  create_ud_buffer_segment(luaVM, buffer, NUMX, length, pos, value);
+	// TODO: set the value
 
 	return 1;
 }
@@ -94,20 +138,33 @@ static int c_new_buffer_stream(lua_State *luaVM)
  * \param   luaVM  The lua state.
  * \return  struct buffer_stream*  pointer to the socket buffer_stream
  * --------------------------------------------------------------------------*/
-struct buffer_stream *create_ud_buffer_stream(lua_State *luaVM, int size)
+struct buffer_segment *create_ud_buffer_segment(
+	lua_State            *luaVM,
+	struct buffer_stream *buffer,
+	enum buf_seg_type     type,
+	int                   size,
+	int                   pos,
+	int                   value)
 {
-	struct buffer_stream  *buffer;
-	size_t                 size_bytes;
+	struct buffer_segment  *seg;
 
-	buffer = (struct buffer_stream*) lua_newuserdata(luaVM, sizeof(struct buffer_stream));
-	size_bytes     = sizeof(struct buffer_stream) + (size - 1) * sizeof(unsigned char);
-	buffer         = (struct buffer_stream *) lua_newuserdata(luaVM, size_bytes);
-	memset(buffer->buffer, 0, size * sizeof(unsigned char));
+	seg = (struct buffer_segment*) lua_newuserdata(luaVM, sizeof(struct buffer_segment));
+	memset(seg, 0, sizeof(struct buffer_segment));
 
-	buffer->length = size;
-	luaL_getmetatable(luaVM, "L.Buffer.Stream");
+	seg->type   = type;
+	seg->buffer = buffer;
+
+	seg->out_shift = 64 - (pos%8) - size;
+	seg->out_mask  = ( 0xFFFFFFFFFFFFFFFF >> (64-size)) << seg->out_shift;
+
+	//valnum = (uint64_t *) &(buffer->buffer[ offset/8 ]);
+	//a->valstr = (char   *) &(buffer[ a->byte_offset ]);
+	seg->val64 = (u_int64 *) &(buffer[ seg->offset_byte ]);
+
+	// set instance information
+	luaL_getmetatable(luaVM, "L.Buffer.Segment");
 	lua_setmetatable(luaVM, -2);
-	return buffer;
+	return seg;
 }
 
 
@@ -152,7 +209,6 @@ static int l_read_number_bits (lua_State *luaVM) {
 	lua_pushinteger(luaVM, get_segment_value_bits(valnum, out_mask, out_shift));
 	return 1;
 }
-
 
 /**
  * \brief  gets a byte wide the value from stream
