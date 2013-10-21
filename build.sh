@@ -36,7 +36,7 @@ case "$1" in
 		make \
 			CC="clang" \
 			LD="clang" \
-			MYCFLAGS=" -g -fPIC -DL_XT_ROOT=\"\\\"$BASEDIR/out/\\\"\"" \
+			MYCFLAGS=" -g -fPIC -DL_XT_ROOT=\"\\\"$BASEDIR/out/\\\"\" -I$BASEDIR/xt" \
 			MYOBJS="$BASEDIR/xt/l_xt*.o" \
 			linux
 		make \

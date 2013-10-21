@@ -10,14 +10,20 @@ diff -ru lua-5.2.1/src/luaconf.h lua-5.2.1.new/src/luaconf.h
  #define LUA_LDIR	LUA_ROOT "share/lua/" LUA_VDIR
  #define LUA_CDIR	LUA_ROOT "lib/lua/" LUA_VDIR
  #define LUA_PATH_DEFAULT  \
-diff -ru lua-5.2.1/src/Makefile lua-5.2.1.new/src/linit.c
+diff -ru lua-5.2.1/src/linit.c lua-5.2.1.new/src/linit.c
 --- lua-5.2.1/src/linit.c	2012-03-09 17:32:16.000000000 +0100
 +++ lua-5.2.1.new/src/linit.c	2012-09-12 22:38:08.591386896 +0200
-@@ -29,6 +29,8 @@
+@@ -21,6 +21,7 @@
+ #include "lualib.h"
+ #include "lauxlib.h"
+ 
++#include "l_xt.h"
+ 
  /*
+ ** these libs are loaded by lua.c and are readily available to any Lua
+@@ -45,6 +45,7 @@
  ** these libs are preloaded and must be required before used
  */
-+LUAMOD_API int luaopen_xt (lua_State *luaVM);
  static const luaL_Reg preloadedlibs[] = {
 +  {"xt", luaopen_xt},
    {NULL, NULL}
