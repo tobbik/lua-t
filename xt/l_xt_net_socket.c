@@ -177,7 +177,7 @@ static int l_connect_socket(lua_State *luaVM)
 	ip = check_ud_ipendpoint (luaVM, 2);
 
 	if( connect(sock->socket , (struct sockaddr*) &(*ip), sizeof(struct sockaddr) ) == -1)
-		return( pusherror(luaVM, "ERROR binding socket") );
+		return( pusherror(luaVM, "ERROR connecting socket") );
 
 	return( 0 );
 }
