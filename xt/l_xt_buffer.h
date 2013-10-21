@@ -4,6 +4,18 @@ struct buffer_stream {
 	unsigned char  buffer[1];  // variable size buffer -> last in struct
 };
 
+
+enum buf_seg_type {
+	NUM8,           /*  8 Bit wide field*/
+	NUM16,          /* 16 Bit wide field*/
+	NUM32,          /* 32 Bit wide field*/
+	NUM64,          /* 64 Bit wide field*/
+	NUMX,           /* X  Bit wide field*/
+	STR             /* Incrementing numerical value */
+};
+
+
+
 struct buffer_segment {
 	enum  buf_seg_type     type;          /* type of field  */
 	// struct buffer_stream  *buffer;
@@ -30,11 +42,3 @@ struct buffer_stream   *check_ud_buffer_stream   (lua_State *luaVM, int pos);
 struct buffer_stream   *create_ud_buffer_stream  (lua_State *luaVM, int size);
 
 
-enum buf_seg_type {
-	NUM8,           /*  8 Bit wide field*/
-	NUM16,          /* 16 Bit wide field*/
-	NUM32,          /* 32 Bit wide field*/
-	NUM64,          /* 64 Bit wide field*/
-	NUMX,           /* X  Bit wide field*/
-	STR             /* Incrementing numerical value */
-};

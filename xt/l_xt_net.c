@@ -165,6 +165,117 @@ static int l_sleep(lua_State *luaVM)
 
 
 /** -------------------------------------------------------------------------
+ * \brief   helper to create and populate an IP endpoint
+ * \param   luaVM  The lua state.
+ * \lparam  socket The socket userdata.
+ * \lparam  ip     sockaddr userdata.
+ * \return  The number of results to be passed back to the calling Lua script.
+ *-------------------------------------------------------------------------*/
+static struct sockaddr_in *create_ud_tcp_ipendpoint(lua_State *luaVM)
+{
+	struct sockaddr_in  *ip;
+	int                  port;
+	ip   = create_ud_ipendpoint (luaVM);
+	memset( (char *) &(*ip), 0, sizeof(ip) );
+	ip->sin_family = AF_INET;
+
+	if (lua_isstring(luaVM, 1)) {
+#ifdef _WIN32
+		if ( InetPton (AF_INET, luaL_checkstring(luaVM, 1), &(ip->sin_addr))==0)
+			return ( pusherror(luaVM, "InetPton() failed\n") );
+#else
+		if ( inet_pton(AF_INET, luaL_checkstring(luaVM, 1), &(ip->sin_addr))==0)
+			return ( pusherror(luaVM, "inet_aton() failed\n") );
+#endif
+		if ( lua_isnumber(luaVM, 2) ) {
+			port = luaL_checkint(luaVM, 3);
+			luaL_argcheck(luaVM, 1 <= port && port <= 65536, 2,
+								  "port number out of range");
+			ip->sin_port   = htons(port);
+		}
+	}
+	else if ( lua_isnumber(luaVM, 1) ) {
+		ip->sin_addr.s_addr = htonl(INADDR_ANY);
+		port = luaL_checkint(luaVM, 1);
+		luaL_argcheck(luaVM, 1 <= port && port <= 65536, 1,
+							  "port number out of range");
+		ip->sin_port   = htons(port);
+	}
+	else if (lua_isnil(luaVM, 1) ) {
+		ip->sin_addr.s_addr = htonl(INADDR_ANY);
+	}
+
+	return ip;
+}
+
+
+/** -------------------------------------------------------------------------
+ * \brief   convienience connect to create the TCP socket and the endpoint
+ * \param   luaVM  The lua state.
+ * \lparam  socket The socket userdata.
+ * \lparam  ip     sockaddr userdata.
+ *    /// or
+ * \lparam  ip     string IP address.
+ * \lparam  port   int port.
+ * \return  The number of results to be passed back to the calling Lua script.
+ *-------------------------------------------------------------------------*/
+static int l_connect_net(lua_State *luaVM)
+{
+	struct udp_socket   *sock;
+	struct sockaddr_in  *ip;
+
+	sock = create_ud_socket (luaVM, TCP);
+
+	if ( lua_isuserdata(luaVM, 1) ) {
+		// it's assumed that IP/port et cetera are assigned
+		ip   = check_ud_ipendpoint (luaVM, 1);
+		lua_pushvalue(luaVM, 1);
+	}
+	else {
+		ip   = create_ud_tcp_ipendpoint (luaVM);
+	}
+
+	if( bind(sock->socket , (struct sockaddr*) &(*ip), sizeof(struct sockaddr) ) == -1)
+		return( pusherror(luaVM, "ERROR binding socket") );
+
+	return( 2 );
+}
+
+
+/** -------------------------------------------------------------------------
+ * \brief   convienience bind to create the TCP socket and the endpoint
+ * \param   luaVM  The lua state.
+ * \lparam  socket The socket userdata.
+ * \lparam  ip     sockaddr userdata.
+ *    /// or
+ * \lparam  ip     string IP address.
+ * \lparam  port   int port.
+ * \return  The number of results to be passed back to the calling Lua script.
+ *-------------------------------------------------------------------------*/
+static int l_bind_net(lua_State *luaVM)
+{
+	struct udp_socket  *sock;
+	struct sockaddr_in *ip;
+	
+	sock = create_ud_socket (luaVM, TCP);
+
+	if ( lua_isuserdata(luaVM, 1) ) {
+		// it's assumed that IP/port et cetera are assigned
+		ip   = check_ud_ipendpoint (luaVM, 1);
+		lua_pushvalue(luaVM, 1);
+	}
+	else {
+		ip   = create_ud_tcp_ipendpoint (luaVM);
+	}
+
+	if( bind(sock->socket , (struct sockaddr*) &(*ip), sizeof(struct sockaddr) ) == -1)
+		return( pusherror(luaVM, "ERROR binding socket") );
+
+	return( 2 );
+}
+
+
+/** -------------------------------------------------------------------------
  * \brief   Helper to take sockets from Lua tables to FD_SET
  *          Itertates over the table puls out the socket structs and adds the
  *          actual sockets to the fd_set
@@ -283,6 +394,8 @@ static const luaL_Reg l_net_lib [] =
 {
 	{"sleep",     l_sleep},
 	{"select",    l_select_socket},
+	{"bind",      l_bind_net},
+	{"connect",   l_connect_net},
 	{NULL,        NULL}
 };
 

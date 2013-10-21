@@ -39,10 +39,11 @@ static int c_new_ipendpoint(lua_State *luaVM)
 	struct sockaddr_in  *ip;
 	int                  port;
 
-	ip = create_ud_ipendpoint (luaVM );
+	ip = create_ud_ipendpoint ( luaVM );
 
 	memset( (char *) &(*ip), 0, sizeof(ip) );
 	ip->sin_family = AF_INET;
+
 	if (lua_isstring(luaVM, 2)) {
 #ifdef _WIN32
 		if ( InetPton (AF_INET, luaL_checkstring(luaVM, 2), &(ip->sin_addr))==0)
@@ -51,15 +52,22 @@ static int c_new_ipendpoint(lua_State *luaVM)
 		if ( inet_pton(AF_INET, luaL_checkstring(luaVM, 2), &(ip->sin_addr))==0)
 			return ( pusherror(luaVM, "inet_aton() failed\n") );
 #endif
+		if ( lua_isnumber(luaVM, 3) ) {
+			port = luaL_checkint(luaVM, 3);
+			luaL_argcheck(luaVM, 1 <= port && port <= 65536, 3,
+								  "port number out of range");
+			ip->sin_port   = htons(port);
+		}
 	}
-	else if (lua_isnil(luaVM, 1) )
+	else if ( lua_isnumber(luaVM, 2) ) {
 		ip->sin_addr.s_addr = htonl(INADDR_ANY);
-
-	if ( lua_isnumber(luaVM, 3) ) {
-		port = luaL_checkint(luaVM, 3);
-		luaL_argcheck(luaVM, 1 <= port && port <= 65536, 3,
+		port = luaL_checkint(luaVM, 2);
+		luaL_argcheck(luaVM, 1 <= port && port <= 65536, 2,
 		                 "port number out of range");
 		ip->sin_port   = htons(port);
+	}
+	else if (lua_isnil(luaVM, 2) ) {
+		ip->sin_addr.s_addr = htonl(INADDR_ANY);
 	}
 
 	return 1;
