@@ -26,15 +26,18 @@ case "$1" in
 		[ -d $BASEDIR/out ] && rm -rf $BASEDIR/out
 		[ ! -d $BASEDIR/compile ] && mkdir $BASEDIR/compile
 		tar xzf sources/lua-5.2.2.tar.gz -C $BASEDIR/compile/
+		cd $BASEDIR/xt
+		make clean
+		make CC='clang' MYCFLAGS=' -g' INCS="$BASEDIR/compile/lua-5.2.2/src" local
 		cd $BASEDIR/compile/lua-5.2.2/src
-		cp -v $BASEDIR/xt/*.c $BASEDIR/xt/*.h $BASEDIR/xt/*.patch ./
-		patch -p2 < ./build_static.patch || return 1
-		patch < ../../../patches/lua-5.2.2_upstream.patch || return 1
+		patch < $BASEDIR/sources/lua-5.2.2_upstream.patch || return 1
+		patch -p2 < $BASEDIR/xt/build_static.patch || return 1
 		cd ..
 		make \
 			CC="clang" \
 			LD="clang" \
 			MYCFLAGS=" -g -fPIC -DL_XT_ROOT=\"\\\"$BASEDIR/out/\\\"\"" \
+			MYOBJS="$BASEDIR/xt/l_xt*.o" \
 			linux
 		make \
 			INSTALL_TOP="$BASEDIR/out" \

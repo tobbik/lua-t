@@ -7,22 +7,21 @@ CFLAGS=-Wall -Wextra -g -O0 -std=c99 -fpic
 #INCS=$(shell pkg-config --cflags lua5.1)
 #LDFLAGS=$(shell pkg-config --libs lua5.1)
 
-SRC=l_xt.c \
+XT_SRC=l_xt.c \
 	 l_xt_net.c \
 	 l_xt_net_socket.c \
 	 l_xt_net_ipendpoint.c \
 	 l_xt_buffer.c \
-	 l_xt_buffer_stream.c \
-	 l_xt_preload.c
+	 l_xt_buffer_stream.c
 
-OBJ=$(SRC:.c=.o)
-LIB=xt.so
+XT_OBJ=$(XT_SRC:.c=.o)
 
-all: $(SRC) $(LIB)
+XT_LIB=xt.so
 
-$(LIB): $(OBJ)
-	#$(LD) $(LDFLAGS) $(OBJ) -o $@
-	$(LD) -O -shared $(OBJ) -o $@ $(LDFLAGS) $(LIBS)
+all: $(XT_SRC) $(XT_LIB)
+
+$(XT_LIB): $(XT_OBJ)
+	$(LD) -O -shared $(XT_OBJ) -o $@ $(LDFLAGS) $(LIBS)
 
 .c.o:
 	$(CC) $(CFLAGS) $< -o $@
@@ -56,7 +55,7 @@ arm:
 	"INCS=-I$(HOME)/BLD/arm/staging/usr/include" \
 	all
 
-all: $(OBJ) $(LIB)
+all: $(XT_OBJ) $(XT_LIB)
 
 #%: %.c
 #	$(CC) -I$(INCS) $(CFLAGS) -c $< -o $@.o

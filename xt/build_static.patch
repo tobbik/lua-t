@@ -23,19 +23,3 @@ diff -ru lua-5.2.1/src/Makefile lua-5.2.1.new/src/linit.c
    {NULL, NULL}
  };
  
-diff -u lua-5.2.2/src/Makefile* 
---- lua-5.2.2/src/Makefile	2012-12-27 02:51:43.000000000 -0800
-+++ lua-5.2.2/src/Makefile.new	2013-10-16 16:09:11.289742015 -0700
-@@ -34,7 +34,10 @@
- 	ltm.o lundump.o lvm.o lzio.o
- LIB_O=	lauxlib.o lbaselib.o lbitlib.o lcorolib.o ldblib.o liolib.o \
- 	lmathlib.o loslib.o lstrlib.o ltablib.o loadlib.o linit.o
--BASE_O= $(CORE_O) $(LIB_O) $(MYOBJS)
-+XT_SRC=l_xt.c l_xt_net.c l_xt_net_socket.c l_xt_net_ipendpoint.c l_xt_buffer.c \
-+	 l_xt_buffer_stream.c
-+XT_O=$(XT_SRC:.c=.o)
-+BASE_O= $(CORE_O) $(LIB_O) $(XT_O) $(MYOBJS)
- 
- LUA_T=	lua
- LUA_O=	lua.o
-
