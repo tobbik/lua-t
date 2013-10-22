@@ -332,15 +332,6 @@ static int l_buf_seg_tostring (lua_State *luaVM) {
 
 
 /**
- * \brief    the metatble for the module
- */
-static const struct luaL_Reg l_buf_seg_fm [] = {
-	{"__call",      c_new_buf_seg},
-	{NULL,   NULL}
-};
-
-
-/**
  * \brief      the buffer segment library definition
  *             assigns Lua available names to C-functions
  */
@@ -376,8 +367,6 @@ int luaopen_buf_seg (lua_State *luaVM)
 	lua_setfield(luaVM, -2, "BYTE");
 	lua_pushinteger(luaVM, BUF_SEG_STR);
 	lua_setfield(luaVM, -2, "STRING");
-	luaL_newlib(luaVM, l_buf_seg_fm);
-	lua_setmetatable(luaVM, -2);
 	return 1;
 }
 
