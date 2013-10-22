@@ -35,13 +35,14 @@ struct xt_buf_seg {
 
 // Constructors
 // l_xt_buf.c
-int              luaopen_buf   (lua_State *luaVM);
+int              luaopen_buf    (lua_State *luaVM);
 struct xt_buf   *check_ud_buf   (lua_State *luaVM, int pos);
 struct xt_buf   *create_ud_buf  (lua_State *luaVM, int size);
 
 
 // l_xt_buf_seg.c
-int                 luaopen_buf_seg   (lua_State *luaVM);
+int                 luaopen_buf_seg    (lua_State *luaVM);
+int                 c_new_buf_seg      (lua_State *luaVM);
 struct xt_buf_seg  *check_ud_buf_seg   (lua_State *luaVM, int pos);
 struct xt_buf_seg  *create_ud_buf_seg  (lua_State *luaVM);
 

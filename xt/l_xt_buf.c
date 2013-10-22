@@ -39,6 +39,35 @@ static inline uint64_t get_segment_value_bits (
 	return ((htonll (*v) & mask) >> shift);
 }
 
+/**
+ * \brief     convert 8bit integer to BCD
+ * \param     val  8bit integer
+ * \return    8bit integer encoding of a 2 digit BCD number
+ */
+int l_byteToBcd(lua_State *luaVM)
+{
+	uint8_t val = luaL_checkint(luaVM, 1);
+	lua_pushinteger(luaVM, (val/10*16) + (val%10) );
+	return 1;
+}
+
+/**
+ * \brief     convert 16bit integer to BCD
+ * \param     val  16bit integer
+ * \return    16bit integer encoding of a BCD coded number
+ */
+int l_shortToBcd(lua_State *luaVM)
+{
+	uint16_t val = luaL_checkint(luaVM, 1);
+	lua_pushinteger(luaVM,
+			(val/1000   *4096 ) +
+		 ( (val/100%10)* 256 ) +
+		 ( (val/10%10) * 16 ) +
+			(val%10)
+	);
+	return 1;
+}
+
 
 /**
   * \brief  sets a numeric value in a qtc_pfield struct according to mask and
@@ -400,7 +429,8 @@ static const luaL_Reg l_buf_m [] =
 	{"write64",      l_write_64},
 	{"length",       l_get_len},
 	{"toHex",        l_get_hex_string},
-	{NULL,        NULL}
+	{"Segment",      c_new_buf_seg},
+	{NULL,           NULL}
 };
 
 
@@ -412,7 +442,7 @@ static const luaL_Reg l_buf_m [] =
  * \lreturn string    the library
  * \return  The number of results to be passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
-int luaopen_buf (lua_State *luaVM)
+LUAMOD_API int luaopen_buf (lua_State *luaVM)
 {
 	luaL_newmetatable(luaVM, "L.Buffer");   // stack: functions meta
 	luaL_newlib(luaVM, l_buf_m);
@@ -422,8 +452,10 @@ int luaopen_buf (lua_State *luaVM)
 	lua_pushcfunction(luaVM, l_stream_tostring);
 	lua_setfield(luaVM, -2, "__tostring");
 	lua_pop(luaVM, 1);        // remove metatable from stack
-	// empty IpEndpoint class = {}, this is the actual return of this function
+	// empty Buffer class = {}, this is the actual return of this function
 	lua_createtable(luaVM, 0, 0);
+	luaopen_buf_seg(luaVM);
+	lua_setfield(luaVM, -2, "Segment");
 	luaL_newlib(luaVM, l_buf_fm);
 	lua_setmetatable(luaVM, -2);
 	return 1;

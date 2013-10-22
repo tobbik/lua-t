@@ -82,8 +82,8 @@ LUAMOD_API int luaopen_xt (lua_State *luaVM)
 	luaL_newlib (luaVM, l_xt_fm);
 	luaopen_net(luaVM);
 	lua_setfield(luaVM, -2, "net");
-	luaopen_buffer(luaVM);
-	lua_setfield(luaVM, -2, "buffer");
+	luaopen_buf(luaVM);
+	lua_setfield(luaVM, -2, "Buffer");
 	return 1;
 }
 

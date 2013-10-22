@@ -52,51 +52,50 @@ static inline uint64_t htonll(uint64_t value)
  * \lparam    position in the Buffer
  * \return    integer   how many elements are placed on the Lua stack
 */
-static int c_new_buf_seg(lua_State *luaVM)
+int c_new_buf_seg(lua_State *luaVM)
 {
 	enum xt_buf_seg_type  type;
 	int                   offset;
 	int                   size;
 	struct xt_buf_seg    *seg;
-	struct xt_buf        *buf = check_ud_buf(luaVM, 2);
+	struct xt_buf        *buf = check_ud_buf(luaVM, 1);
 
 	seg = create_ud_buf_seg(luaVM);
 
-	type   =  (enum xt_buf_seg_type) luaL_checkint(luaVM, 3);
-	size   =  luaL_checkint(luaVM, 4);
-	offset =  luaL_checkint(luaVM, 5);
+	type   =  (enum xt_buf_seg_type) luaL_checkint(luaVM, 2);
+	size   =  luaL_checkint(luaVM, 3);
+	offset =  luaL_checkint(luaVM, 4);
 
 	printf("%d[%d],S: %d, O:%d[%d]\n", type, BUF_SEG_BIT,size,offset,offset/8);
-	stackDump(luaVM);
 	seg->type     = type;
 	seg->ofs_bit  = offset;
 	seg->ofs_byte = offset/8;
 
-	if (lua_isnumber(luaVM, 6)) {
+	if (lua_isnumber(luaVM, 5)) {
 		switch ( size/8 ) {
 			case 1:
 				seg->write = write_8;
 				seg->read  = read_8;
 				seg->v8    = (uint8_t *) &(buf->b[seg->ofs_byte]);
-				//*(seg->val8) = luaL_checkint(luaVM, 6);
+				//*(seg->val8) = luaL_checkint(luaVM, 5);
 				break;
 			case 2:
 				seg->write = write_16;
 				seg->read  = read_16;
 				seg->v16 = (uint16_t *) &(buf->b[seg->ofs_byte]);
-				//*(seg->val16) = luaL_checkint(luaVM, 6);
+				//*(seg->val16) = luaL_checkint(luaVM, 5);
 				break;
 			case 4:
 				seg->write = write_32;
 				seg->read  = read_32;
 				seg->v32   = (uint32_t *) &(buf->b[seg->ofs_byte]);
-				//*(seg->val32) = luaL_checkint(luaVM, 6);
+				//*(seg->val32) = luaL_checkint(luaVM, 5);
 				break;
 			case 8:
 				seg->write = write_64;
 				seg->read  = read_64;
 				seg->v64   = (uint64_t *) &(buf->b[seg->ofs_byte]);
-				//*(seg->val64) = luaL_checkint(luaVM, 6);
+				//*(seg->val64) = luaL_checkint(luaVM, 5);
 				break;
 			default:
 				seg->shft  = 64 - (offset%8) - size;
@@ -106,13 +105,13 @@ static int c_new_buf_seg(lua_State *luaVM)
 				seg->read  = read_bits;
 		}
 	}
-	else if (lua_isstring(luaVM, 6)) {
+	else if (lua_isstring(luaVM, 5)) {
 		seg->vS  = (char *) &(buf->b[ seg->ofs_byte ]);
 #ifdef _WIN32
 			size_t bytes = size/8;
-			strncpy_s(seg->vS, bytes, luaL_checkstring(luaVM, 6), len);
+			strncpy_s(seg->vS, bytes, luaL_checkstring(luaVM, 5), len);
 #else
-			strncpy(seg->vS, luaL_checkstring(luaVM, 6), size/8);
+			strncpy(seg->vS, luaL_checkstring(luaVM, 5), size/8);
 #endif
 	}
 	return 1;
@@ -371,6 +370,12 @@ int luaopen_buf_seg (lua_State *luaVM)
 	lua_pop(luaVM, 1);        // remove metatable from stack
 	// empty IpEndpoint class = {}, this is the actual return of this function
 	lua_createtable(luaVM, 0, 0);
+	lua_pushinteger(luaVM, BUF_SEG_BIT);
+	lua_setfield(luaVM, -2, "BIT");
+	lua_pushinteger(luaVM, BUF_SEG_BYTE);
+	lua_setfield(luaVM, -2, "BYTE");
+	lua_pushinteger(luaVM, BUF_SEG_STR);
+	lua_setfield(luaVM, -2, "STRING");
 	luaL_newlib(luaVM, l_buf_seg_fm);
 	lua_setmetatable(luaVM, -2);
 	return 1;
