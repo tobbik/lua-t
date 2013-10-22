@@ -11,7 +11,7 @@ case "$1" in
 		rm -rf out
 		rm -rf compile/lua-5.2.2 && tar xzf sources/lua-5.2.2.tar.gz -C ./compile/
 		cd compile/lua-5.2.2/src
-		patch < ../../../patches/lua-5.2.2_upstream.patch || return 1
+		patch < ../../../patches/lua-5.2.2_upstream.patch || exit
 		cd ..
 		make \
 			CC="clang" \
@@ -28,10 +28,10 @@ case "$1" in
 		tar xzf sources/lua-5.2.2.tar.gz -C $BASEDIR/compile/
 		cd $BASEDIR/xt
 		make clean
-		make CC='clang' MYCFLAGS=' -g' INCS="$BASEDIR/compile/lua-5.2.2/src" local
+		make CC='clang' MYCFLAGS=' -g' INCS="$BASEDIR/compile/lua-5.2.2/src" local || exit
 		cd $BASEDIR/compile/lua-5.2.2/src
-		patch < $BASEDIR/sources/lua-5.2.2_upstream.patch || return 1
-		patch -p2 < $BASEDIR/xt/build_static.patch || return 1
+		patch < $BASEDIR/sources/lua-5.2.2_upstream.patch || exit
+		patch -p2 < $BASEDIR/xt/build_static.patch || exit
 		cd ..
 		make \
 			CC="clang" \

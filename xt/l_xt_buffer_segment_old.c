@@ -9,14 +9,18 @@
 #include "l_xt_buffer.h"
 
 
-struct buffer_segment_bits {
-	/* pointer to position in buffer according to type */
-	uint64_t              *val;           /* val64 is also used for arbitrary length bit fields */
-	/* size information */
-	uint16_t               size_bit = 64; /* size in bits   */
-	size_t                 off_bit;       /* how many bytes into the buffer[pos] byte does it start  */
-	size_t                 pos_byte;      /* how many bytes into the buffer does it start  */
-};
+// inline helper functions
+/**
+  * \brief  convert lon long (64bit) from network to host and vice versa
+  * \param  uint64_t value 64bit integer
+  * \return uint64_t endianess corrected integer
+  */
+static inline uint64_t htonll(uint64_t value)
+{
+	uint64_t high_part = htonl( (uint64_t)(value >> 32) );
+	uint64_t low_part  = htonl( (uint64_t)(value & 0xFFFFFFFFLL) );
+	return (((uint64_t)low_part) << 32) | high_part;
+}
 
 
 /**
@@ -45,8 +49,10 @@ static inline uint64_t get_segment_value_bits (
   * \return int    that's what gets returned to Lua, meaning the one value on
   *                the stack
   */
-static inline void set_segment_value_numeric (
-		struct buffer_segment_bits s,
+static inline void set_segment_value_bits (
+		uint64_t  *valnum,
+		uint64_t   out_mask,
+		uint64_t   out_shift,
 		uint64_t   value)
 {
 	//uint64_t cmpr;
@@ -203,6 +209,7 @@ static int l_read_number_bits (lua_State *luaVM) {
 	lua_pushinteger(luaVM, get_segment_value_bits(valnum, out_mask, out_shift));
 	return 1;
 }
+
 
 /**
  * \brief  gets a byte wide the value from stream
