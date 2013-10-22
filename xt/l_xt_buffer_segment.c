@@ -48,7 +48,7 @@ static int c_new_buffer_segment(lua_State *luaVM)
 	int                    offset;
 	int                    size;
 	struct buffer_segment *seg;
-	struct buffer_stream  *buffer   = check_ud_buffer_stream(luaVM, 2);
+	struct buffer_stream  *buffer = check_ud_buffer_stream(luaVM, 2);
 
 	seg = create_ud_buffer_segment(luaVM);
 
@@ -56,6 +56,8 @@ static int c_new_buffer_segment(lua_State *luaVM)
 	size   =  luaL_checkint(luaVM, 4);
 	offset =  luaL_checkint(luaVM, 5);
 
+	printf("%d[%d],S: %d, O:%d[%d]\n", type,NUM,size,offset,offset/8);
+	stackDump(luaVM);
 	seg->type     = type;
 	// seg->buffer   = buffer;
 	seg->off_bit  = offset;
@@ -66,33 +68,37 @@ static int c_new_buffer_segment(lua_State *luaVM)
 			case 1:
 				seg->write = write_8;
 				seg->read  = read_8;
-				seg->val8  = (uint8_t *) &(buffer[seg->off_byte]);
-				*(seg->val8) = luaL_checkint(luaVM, 6);
+				seg->val8  = (uint8_t *) &(buffer->buffer[seg->off_byte]);
+				//*(seg->val8) = luaL_checkint(luaVM, 6);
+				break;
 			case 2:
 				seg->write = write_16;
 				seg->read  = read_16;
-				seg->val16 = (uint16_t *) &(buffer[seg->off_byte]);
-				*(seg->val16) = luaL_checkint(luaVM, 6);
+				seg->val16 = (uint16_t *) &(buffer->buffer[seg->off_byte]);
+				//*(seg->val16) = luaL_checkint(luaVM, 6);
+				break;
 			case 4:
 				seg->write = write_32;
 				seg->read  = read_32;
-				seg->val32 = (uint32_t *) &(buffer[seg->off_byte]);
-				*(seg->val32) = luaL_checkint(luaVM, 6);
+				seg->val32 = (uint32_t *) &(buffer->buffer[seg->off_byte]);
+				//*(seg->val32) = luaL_checkint(luaVM, 6);
+				break;
 			case 8:
 				seg->write = write_64;
 				seg->read  = read_64;
-				seg->val64 = (uint64_t *) &(buffer[seg->off_byte]);
-				*(seg->val64) = luaL_checkint(luaVM, 6);
+				seg->val64 = (uint64_t *) &(buffer->buffer[seg->off_byte]);
+				//*(seg->val64) = luaL_checkint(luaVM, 6);
+				break;
 			default:
 				seg->out_shft  = 64 - (offset%8) - size;
 				seg->out_mask  = ( 0xFFFFFFFFFFFFFFFF >> (64-size)) << seg->out_shft;
-				seg->val64 = (uint64_t *) &(buffer[seg->off_byte]);
+				seg->val64 = (uint64_t *) &(buffer->buffer[seg->off_byte]);
 				seg->write = write_bits;
 				seg->read  = read_bits;
 		}
 	}
 	else if (lua_isstring(luaVM, 6)) {
-		seg->valS  = (char *) &(buffer[ seg->off_byte ]);
+		seg->valS  = (char *) &(buffer->buffer[ seg->off_byte ]);
 #ifdef _WIN32
 			size_t bytes = size/8;
 			strncpy_s(seg->valS, bytes, luaL_checkstring(luaVM, 6), len);
@@ -175,7 +181,7 @@ static int read_8 (lua_State *luaVM) {
 static int read_16 (lua_State *luaVM) {
 	struct buffer_segment *seg   = check_ud_buffer_segment(luaVM, 1);
 
-	lua_pushinteger(luaVM, *(seg->val16) );
+	lua_pushinteger(luaVM, htons( *(seg->val16) ) );
 	return 1;
 }
 
@@ -189,7 +195,7 @@ static int read_16 (lua_State *luaVM) {
 static int read_32 (lua_State *luaVM) {
 	struct buffer_segment *seg   = check_ud_buffer_segment(luaVM, 1);
 
-	lua_pushinteger(luaVM, *(seg->val32) );
+	lua_pushinteger(luaVM, htonl( *(seg->val32) ) );
 	return 1;
 }
 
@@ -203,7 +209,7 @@ static int read_32 (lua_State *luaVM) {
 static int read_64 (lua_State *luaVM) {
 	struct buffer_segment *seg   = check_ud_buffer_segment(luaVM, 1);
 
-	lua_pushinteger(luaVM, *(seg->val64) );
+	lua_pushinteger(luaVM, htonll( *(seg->val64) ) );
 	return 1;
 }
 
@@ -251,10 +257,9 @@ static int write_16(lua_State *luaVM) {
 	struct buffer_segment *seg   = check_ud_buffer_segment(luaVM, 1);
 	int                    val   = luaL_checkint(luaVM, 2);
 
-	*(seg->val16)  = val;
+	*(seg->val16)  = htons( val );
 	return 0;
 }
-
 
 /**
  * \brief    sets a 4 byte wide value
@@ -267,7 +272,7 @@ static int write_32(lua_State *luaVM) {
 	struct buffer_segment *seg   = check_ud_buffer_segment(luaVM, 1);
 	int                    val   = luaL_checkint(luaVM, 2);
 
-	*(seg->val32)  = val;
+	*(seg->val32)  = htonl( val );
 	return 0;
 }
 
@@ -283,7 +288,7 @@ static int write_64(lua_State *luaVM) {
 	struct buffer_segment *seg   = check_ud_buffer_segment(luaVM, 1);
 	int                    val   = luaL_checkint(luaVM, 2);
 
-	*(seg->val64)  = val;
+	*(seg->val64)  = htonll( val );
 	return 0;
 }
 

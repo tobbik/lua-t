@@ -12,24 +12,24 @@ enum buf_seg_type {
 
 
 struct buffer_segment {
-	enum  buf_seg_type     type;          /* type of field  */
+	enum  buf_seg_type type;    /* type of field  */
 	// struct buffer_stream  *buffer;
 	/* pointer to position in buffer according to type */
-	uint8_t               *val8;
-	uint16_t              *val16;
-	uint32_t              *val32;
-	uint64_t              *val64;         /* val64 is also used for arbitrary length bit fields */
-	char                  *valS;
+	uint8_t           *val8;
+	uint16_t          *val16;
+	uint32_t          *val32;
+	uint64_t          *val64;   /* val64 is also used for arbitrary length bit fields */
+	char              *valS;
 	// accessor function pointers
-	int                  (*write) (lua_State *luaVM);
-	int                  (*read)  (lua_State *luaVM);
+	int              (*write) (lua_State *luaVM);
+	int              (*read)  (lua_State *luaVM);
 	/* access helpers */
-	uint8_t                out_shft;
-	uint64_t               out_mask;      // (*valX & out_mask) >> out_shft == actual_value
+	uint8_t            out_shft;
+	uint64_t           out_mask;    // (*valX & out_mask) >> out_shft == actual_value
 	/* size information */
-	size_t                 size_bit;      /* size in bits   */
-	size_t                 off_bit;    /* how many bits into the byte does it start  */
-	size_t                 off_byte;   /* how many bytes into the buffer does it start  */
+	size_t             size_bit;      /* size in bits   */
+	size_t             off_bit;    /* how many bits into the byte does it start  */
+	size_t             off_byte;   /* how many bytes into the buffer does it start  */
 };
 
 
