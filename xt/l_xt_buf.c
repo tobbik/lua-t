@@ -6,7 +6,7 @@
 #include <arpa/inet.h>            // htonl
 
 #include "l_xt.h"
-#include "l_xt_buffer.h"
+#include "l_xt_buf.h"
 
 
 // inline helper functions
@@ -24,19 +24,19 @@ static inline uint64_t htonll(uint64_t value)
 
 
 /**
-  * \brief  gets a numeric value in a buffer_stream segment according to mask and
+  * \brief  gets a numeric value in a buf segment according to mask and
   *         shift
-  * \param  uint64_t the position in the buffer_stream (pointer)
+  * \param  uint64_t the position in the buffer (pointer)
   * \param  uint64_t out_mask  in relation to a 8 byte integer
   * \param  uint64_t out_shift to right end of 64 bit integer
   * \return uint64_t
   */
 static inline uint64_t get_segment_value_bits (
-		uint64_t  *valnum,
-		uint64_t   out_mask,
-		uint64_t   out_shift)
+		uint64_t  *v,
+		uint64_t   mask,
+		uint64_t   shift)
 {
-	return ((htonll (*valnum) & out_mask) >> out_shift);
+	return ((htonll (*v) & mask) >> shift);
 }
 
 
@@ -50,15 +50,15 @@ static inline uint64_t get_segment_value_bits (
   *                the stack
   */
 static inline void set_segment_value_numeric (
-		uint64_t  *valnum,
-		uint64_t   out_mask,
-		uint64_t   out_shift,
-		uint64_t   value)
+		uint64_t  *v,
+		uint64_t   mask,
+		uint64_t   shift,
+		uint64_t   nv)
 {
 	//uint64_t cmpr;
 	//cmpr = (64 == a->bits) ?  (uint64_t)0x1111111111111111 : ((uint64_t) 0x0000000000000001) << a->bits; // 2^bits
 	//if ( value < cmpr ) {
-	*valnum = htonll( ( htonll(*valnum) & ~out_mask) | (value << out_shift) );
+	*v = htonll( ( htonll(*v) & ~mask) | (nv << shift) );
 	//}
 	//else
 	//	return luaL_error(luaVM,
@@ -77,37 +77,36 @@ static inline void set_segment_value_numeric (
  * \param     lua state
  * \return    integer   how many elements are placed on the Lua stack
 */
-static int c_new_buffer_stream(lua_State *luaVM)
+static int c_new_buf(lua_State *luaVM)
 {
-	int                    size;
-	struct buffer_stream  __attribute__ ((unused)) *buffer;
+	int                    sz;
+	struct xt_buf  __attribute__ ((unused)) *b;
 
-	size           = luaL_checkint(luaVM, 2);
-	buffer         = create_ud_buffer_stream(luaVM, size);
+	sz  = luaL_checkint(luaVM, 2);
+	b   = create_ud_buf(luaVM, sz);
 
 	return 1;
 }
 
 
 /**--------------------------------------------------------------------------
- * \brief   create a buffer_stream and push to LuaStack.
+ * \brief   create a xt_buf and push to LuaStack.
  * \param   luaVM  The lua state.
- * \return  struct buffer_stream*  pointer to the socket buffer_stream
+ * \return  struct xt_buf*  pointer to the socket xt_buf
  * --------------------------------------------------------------------------*/
-struct buffer_stream *create_ud_buffer_stream(lua_State *luaVM, int size)
+struct xt_buf *create_ud_buf(lua_State *luaVM, int size)
 {
-	struct buffer_stream  *buffer;
-	size_t                 size_bytes;
+	struct xt_buf  *b;
+	size_t          sz;
 
-	buffer = (struct buffer_stream*) lua_newuserdata(luaVM, sizeof(struct buffer_stream));
-	size_bytes     = sizeof(struct buffer_stream) + (size - 1) * sizeof(unsigned char);
-	buffer         = (struct buffer_stream *) lua_newuserdata(luaVM, size_bytes);
-	memset(buffer->buffer, 0, size * sizeof(unsigned char));
+	sz = sizeof(struct xt_buf) + (size - 1) * sizeof(unsigned char);
+	b  = (struct xt_buf *) lua_newuserdata(luaVM, sz);
+	memset(b->b, 0, size * sizeof(unsigned char));
 
-	buffer->length = size;
-	luaL_getmetatable(luaVM, "L.Buffer.Stream");
+	b->len = size;
+	luaL_getmetatable(luaVM, "L.Buffer");
 	lua_setmetatable(luaVM, -2);
-	return buffer;
+	return b;
 }
 
 
@@ -115,14 +114,14 @@ struct buffer_stream *create_ud_buffer_stream(lua_State *luaVM, int size)
  * \brief  gets the value of the element
  * \param  position in bytes
  * \param  offset   in bits
- * \param  length   in bits
+ * \param  len   in bits
  *
- * \return pointer to struct bufferStream
+ * \return pointer to struct buf
  */
-struct buffer_stream *check_ud_buffer_stream (lua_State *luaVM, int pos) {
-	void *ud = luaL_checkudata(luaVM, pos, "L.Buffer.Stream");
-	luaL_argcheck(luaVM, ud != NULL, pos, "`buffer_stream` expected");
-	return (struct buffer_stream *) ud;
+struct xt_buf *check_ud_buf (lua_State *luaVM, int pos) {
+	void *ud = luaL_checkudata(luaVM, pos, "L.Buffer");
+	luaL_argcheck(luaVM, ud != NULL, pos, "`xt.Buffer` expected");
+	return (struct xt_buf *) ud;
 }
 
 
@@ -130,26 +129,26 @@ struct buffer_stream *check_ud_buffer_stream (lua_State *luaVM, int pos) {
  * \brief  gets the value of the element
  * \param  position in bytes
  * \param  offset   in bits
- * \param  length   in bits
+ * \param  len   in bits
  *
  * \return integer 1 left on the stack
  */
 static int l_read_number_bits (lua_State *luaVM) {
-	int                   length;    // how many bits to write
-	int                   offset;    // starting with the x bit
-	uint64_t             *valnum;
-	uint64_t              out_mask;
-	uint64_t              out_shift;
-	struct buffer_stream *buffer   = check_ud_buffer_stream(luaVM, 1);
+	int                   len;    // how many bits to write
+	int                   ofs;    // starting with the x bit
+	uint64_t             *v;
+	uint64_t              mask;
+	uint64_t              shft;
+	struct xt_buf *b   = check_ud_buf(luaVM, 1);
 
-	offset = luaL_checkint(luaVM, 2);
-	length = luaL_checkint(luaVM, 3);
+	ofs = luaL_checkint(luaVM, 2);
+	len = luaL_checkint(luaVM, 3);
 
-	out_shift = 64 - (offset%8) - length;
-	out_mask = ( 0xFFFFFFFFFFFFFFFF >> (64-length)) << out_shift;
+	shft = 64 - (ofs%8) - len;
+	mask = ( 0xFFFFFFFFFFFFFFFF >> (64-len)) << shft;
 
-	valnum = (uint64_t *) &(buffer->buffer[ offset/8 ]);
-	lua_pushinteger(luaVM, get_segment_value_bits(valnum, out_mask, out_shift));
+	v = (uint64_t *) &(b->b[ ofs/8 ]);
+	lua_pushinteger(luaVM, get_segment_value_bits(v, mask, shft));
 	return 1;
 }
 
@@ -161,12 +160,12 @@ static int l_read_number_bits (lua_State *luaVM) {
  * \return integer 1 left on the stack
  */
 static int l_read_8 (lua_State *luaVM) {
-	uint8_t              *valnum;
-	int                   pos=luaL_checkint(luaVM,2);       // starting with byte pos in buffer[]
-	struct buffer_stream *buffer   = check_ud_buffer_stream(luaVM, 1);
+	uint8_t       *v;
+	int            p = luaL_checkint(luaVM,2); // starting byte  b->b[pos]
+	struct xt_buf *b   = check_ud_buf(luaVM, 1);
 
-	valnum = (uint8_t *) &(buffer->buffer[ pos ]);
-	lua_pushinteger(luaVM, (int) *valnum);
+	v = (uint8_t *) &(b->b[ p ]);
+	lua_pushinteger(luaVM, (int) *v);
 	return 1;
 }
 
@@ -178,12 +177,12 @@ static int l_read_8 (lua_State *luaVM) {
  * \return integer 1 left on the stack
  */
 static int l_read_16 (lua_State *luaVM) {
-	uint16_t             *valnum;
-	int                   pos=luaL_checkint(luaVM,2);       // starting with byte pos in buffer[]
-	struct buffer_stream *buffer   = check_ud_buffer_stream(luaVM, 1);
+	uint16_t      *v;
+	int            p = luaL_checkint(luaVM,2); // starting byte  b->b[pos]
+	struct xt_buf *b = check_ud_buf(luaVM, 1);
 
-	valnum = (uint16_t *) &(buffer->buffer[ pos ]);
-	lua_pushinteger(luaVM, (int) htons (*valnum));
+	v = (uint16_t *) &(b->b[ p ]);
+	lua_pushinteger(luaVM, (int) htons (*v));
 	return 1;
 }
 
@@ -195,12 +194,12 @@ static int l_read_16 (lua_State *luaVM) {
  * \return integer 1 left on the stack
  */
 static int l_read_32 (lua_State *luaVM) {
-	uint32_t             *valnum;
-	int                   pos=luaL_checkint(luaVM,2);       // starting with byte pos in buffer[]
-	struct buffer_stream *buffer   = check_ud_buffer_stream(luaVM, 1);
+	uint32_t      *v;
+	int            p = luaL_checkint(luaVM,2); // starting byte  b->b[pos]
+	struct xt_buf *b = check_ud_buf(luaVM, 1);
 
-	valnum = (uint32_t *) &(buffer->buffer[ pos ]);
-	lua_pushinteger(luaVM, (int) htonl (*valnum));
+	v = (uint32_t *) &(b->b[ p ]);
+	lua_pushinteger(luaVM, (int) htonl (*v));
 	return 1;
 }
 
@@ -212,12 +211,12 @@ static int l_read_32 (lua_State *luaVM) {
  * \return integer 1 left on the stack
  */
 static int l_read_64 (lua_State *luaVM) {
-	uint64_t             *valnum;
-	int                   pos=luaL_checkint(luaVM,2);       // starting with byte pos in buffer[]
-	struct buffer_stream *buffer   = check_ud_buffer_stream(luaVM, 1);
+	uint64_t      *v;
+	int            p = luaL_checkint(luaVM,2); // starting byte  b->b[pos]
+	struct xt_buf *b = check_ud_buf(luaVM, 1);
 
-	valnum = (uint64_t *) &(buffer->buffer[ pos ]);
-	lua_pushinteger(luaVM, (int) htonll (*valnum));
+	v = (uint64_t *) &(b->b[ p ]);
+	lua_pushinteger(luaVM, (int) htonll (*v));
 	return 1;
 }
 
@@ -228,23 +227,23 @@ static int l_read_64 (lua_State *luaVM) {
  * \return integer 0 left on the stack
  */
 static int l_write_number_bits(lua_State *luaVM) {
-	int                   length;    // how many bits to write
-	int                   offset;    // starting with the x bit
-	uint64_t             *valnum;
-	uint64_t              out_mask;
-	uint64_t              out_shift;
-	struct buffer_stream *buffer   = check_ud_buffer_stream(luaVM, 1);
+	int            len;    // how many bits to write
+	int            ofs;    // starting with the x bit
+	uint64_t      *v;
+	uint64_t       mask;
+	uint64_t       shft;
+	struct xt_buf *b     = check_ud_buf(luaVM, 1);
 
-	offset = luaL_checkint(luaVM, 2);
-	length = luaL_checkint(luaVM, 3);
+	ofs = luaL_checkint(luaVM, 2);
+	len = luaL_checkint(luaVM, 3);
 
-	out_shift = 64 - (offset%8) - length;
-	out_mask = ( 0xFFFFFFFFFFFFFFFF >> (64-length)) << out_shift;
+	shft = 64 - (ofs%8) - len;
+	mask = ( 0xFFFFFFFFFFFFFFFF >> (64-len)) << shft;
 
-	valnum = (uint64_t *) &(buffer->buffer[ offset/8 ]);
+	v = (uint64_t *) &(b->b[ ofs/8 ]);
 
 	set_segment_value_numeric(
-		valnum, out_mask, out_shift,
+		v, mask, shft,
 		(uint64_t) luaL_checknumber(luaVM, 4));
 	return 0;
 }
@@ -258,13 +257,12 @@ static int l_write_number_bits(lua_State *luaVM) {
  * \return integer 0 left on the stack
  */
 static int l_write_8(lua_State *luaVM) {
-	uint8_t              *valnum;
-	int                   pos=luaL_checkint(luaVM, 2);       // starting with byte pos in buffer[]
-	struct buffer_stream *buffer   = check_ud_buffer_stream(luaVM, 1);
+	uint8_t       *v;
+	int            p = luaL_checkint(luaVM,2); // starting byte  b->b[pos]
+	struct xt_buf *b = check_ud_buf(luaVM, 1);
 
-	valnum  = (uint8_t *) &(buffer->buffer[ pos ]);
-	*valnum = (uint8_t) luaL_checknumber(luaVM, 3);
-
+	v  = (uint8_t *) &(b->b[ p ]);
+	*v = (uint8_t) luaL_checknumber(luaVM, 3);
 	return 0;
 }
 
@@ -277,13 +275,12 @@ static int l_write_8(lua_State *luaVM) {
  * \return integer 0 left on the stack
  */
 static int l_write_16(lua_State *luaVM) {
-	uint16_t             *valnum;
-	int                   pos=luaL_checkint(luaVM, 2);       // starting with byte pos in buffer[]
-	struct buffer_stream *buffer   = check_ud_buffer_stream(luaVM, 1);
+	uint16_t      *v;
+	int            p = luaL_checkint(luaVM,2); // starting byte  b->b[pos]
+	struct xt_buf *b = check_ud_buf(luaVM, 1);
 
-	valnum = (uint16_t *) &(buffer->buffer[ pos ]);
-	*valnum = htons( (uint16_t) luaL_checknumber(luaVM, 3) );
-
+	v  = (uint16_t *) &(b->b[ p ]);
+	*v = htons( (uint16_t) luaL_checknumber(luaVM, 3) );
 	return 0;
 }
 
@@ -296,13 +293,12 @@ static int l_write_16(lua_State *luaVM) {
  * \return integer 0 left on the stack
  */
 static int l_write_32(lua_State *luaVM) {
-	uint32_t             *valnum;
-	int                   pos=luaL_checkint(luaVM, 2);       // starting with byte pos in buffer[]
-	struct buffer_stream *buffer   = check_ud_buffer_stream(luaVM, 1);
+	uint32_t      *v;
+	int            p = luaL_checkint(luaVM,2); // starting byte  b->b[pos]
+	struct xt_buf *b = check_ud_buf(luaVM, 1);
 
-	valnum = (uint32_t *) &(buffer->buffer[ pos ]);
-	*valnum = htonl( (uint32_t) luaL_checknumber(luaVM, 3) );
-
+	v  = (uint32_t *) &(b->b[ p ]);
+	*v = htonl( (uint32_t) luaL_checknumber(luaVM, 3) );
 	return 0;
 }
 
@@ -315,13 +311,12 @@ static int l_write_32(lua_State *luaVM) {
  * \return integer 0 left on the stack
  */
 static int l_write_64(lua_State *luaVM) {
-	uint64_t             *valnum;
-	int                   pos=luaL_checkint(luaVM, 2);       // starting with byte pos in buffer[]
-	struct buffer_stream *buffer   = check_ud_buffer_stream(luaVM, 1);
+	uint64_t      *v;
+	int            p = luaL_checkint(luaVM,2); // starting byte  b->b[pos]
+	struct xt_buf *b = check_ud_buf(luaVM, 1);
 
-	valnum = (uint64_t *) &(buffer->buffer[ pos ]);
-	*valnum = htonll( (uint64_t) luaL_checknumber(luaVM, 3) );
-
+	v  = (uint64_t *) &(b->b[ p ]);
+	*v = htonll( (uint64_t) luaL_checknumber(luaVM, 3) );
 	return 0;
 }
 
@@ -333,34 +328,33 @@ static int l_write_64(lua_State *luaVM) {
  * \return integer 0 left on the stack
  */
 static int l_get_hex_string(lua_State *luaVM) {
-	int                   l,c;
-	char                 *b;
-	struct buffer_stream *buffer   = check_ud_buffer_stream(luaVM, 1);
+	int            l,c;
+	char          *sbuf;
+	struct xt_buf *b   = check_ud_buf(luaVM, 1);
 
-	b=malloc(3 * buffer->length * sizeof( char ));
-	memset(b, 0, 3 * buffer->length * sizeof( char ) );
+	sbuf = malloc(3 * b->len * sizeof( char ));
+	memset(sbuf, 0, 3 * b->len * sizeof( char ) );
 
 	c = 0;
-	for (l=0; l<buffer->length; l++) {
-		c += snprintf(b+c, 4, "%02X ", buffer->buffer[l]);
+	for (l=0; l < (int) b->len; l++) {
+		c += snprintf(sbuf+c, 4, "%02X ", b->b[l]);
 	}
-	lua_pushstring(luaVM, b);
+	lua_pushstring(luaVM, sbuf);
 	return 1;
 }
 
 
 /**
- * \brief     returns length of the buffer
+ * \brief     returns len of the buffer
  * \param     lua state
  * \return    integer   how many elements are placed on the Lua stack
 */
-static int l_get_length(lua_State *luaVM)
+static int l_get_len(lua_State *luaVM)
 {
-	struct buffer_stream *buffer;
+	struct xt_buf *b;
 
-	buffer   = check_ud_buffer_stream(luaVM, 1);
-	lua_pushinteger(luaVM, (int) buffer->length);
-
+	b   = check_ud_buf(luaVM, 1);
+	lua_pushinteger(luaVM, (int) b->len);
 	return 1;
 }
 
@@ -373,8 +367,8 @@ static int l_get_length(lua_State *luaVM)
  * \return  The number of results to be passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
 static int l_stream_tostring (lua_State *luaVM) {
-	struct buffer_stream *bs = check_ud_buffer_stream(luaVM, 1);
-	lua_pushfstring(luaVM, "Stream{%d}: %p", bs->length, bs);
+	struct xt_buf *bs = check_ud_buf(luaVM, 1);
+	lua_pushfstring(luaVM, "Stream{%d}: %p", bs->len, bs);
 	return 1;
 }
 
@@ -382,17 +376,17 @@ static int l_stream_tostring (lua_State *luaVM) {
 /**
  * \brief    the metatble for the module
  */
-static const struct luaL_Reg l_buffer_stream_fm [] = {
-	{"__call",      c_new_buffer_stream},
+static const struct luaL_Reg l_buf_fm [] = {
+	{"__call",      c_new_buf},
 	{NULL,   NULL}
 };
 
 
 /**
- * \brief      the buffer_stream library definition
+ * \brief      the buffer library definition
  *             assigns Lua available names to C-functions
  */
-static const luaL_Reg l_buffer_stream_m [] =
+static const luaL_Reg l_buf_m [] =
 {
 	{"readBits",     l_read_number_bits},
 	{"writeBits",    l_write_number_bits},
@@ -404,7 +398,7 @@ static const luaL_Reg l_buffer_stream_m [] =
 	{"write16",      l_write_16},
 	{"write32",      l_write_32},
 	{"write64",      l_write_64},
-	{"length",       l_get_length},
+	{"length",       l_get_len},
 	{"toHex",        l_get_hex_string},
 	{NULL,        NULL}
 };
@@ -418,19 +412,19 @@ static const luaL_Reg l_buffer_stream_m [] =
  * \lreturn string    the library
  * \return  The number of results to be passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
-int luaopen_buffer_stream (lua_State *luaVM)
+int luaopen_buf (lua_State *luaVM)
 {
-	luaL_newmetatable(luaVM, "L.Buffer.Stream");   // stack: functions meta
-	luaL_newlib(luaVM, l_buffer_stream_m);
+	luaL_newmetatable(luaVM, "L.Buffer");   // stack: functions meta
+	luaL_newlib(luaVM, l_buf_m);
 	lua_setfield(luaVM, -2, "__index");
-	lua_pushcfunction(luaVM, l_get_length);
+	lua_pushcfunction(luaVM, l_get_len);
 	lua_setfield(luaVM, -2, "__len");
 	lua_pushcfunction(luaVM, l_stream_tostring);
 	lua_setfield(luaVM, -2, "__tostring");
 	lua_pop(luaVM, 1);        // remove metatable from stack
 	// empty IpEndpoint class = {}, this is the actual return of this function
 	lua_createtable(luaVM, 0, 0);
-	luaL_newlib(luaVM, l_buffer_stream_fm);
+	luaL_newlib(luaVM, l_buf_fm);
 	lua_setmetatable(luaVM, -2);
 	return 1;
 }

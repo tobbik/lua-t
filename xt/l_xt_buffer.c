@@ -60,7 +60,7 @@ LUAMOD_API int luaopen_buffer (lua_State *luaVM)
 	luaL_newlib (luaVM, l_buffer_fm);
 	luaopen_buffer_stream(luaVM);
 	lua_setfield(luaVM, -2, "Stream");
-	luaopen_buffer_stream_segment(luaVM);
+	luaopen_buf_seg(luaVM);
 	lua_setfield(luaVM, -2, "Segment");
 	return 1;
 }
