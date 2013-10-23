@@ -24,22 +24,6 @@ static inline uint64_t htonll(uint64_t value)
 
 
 /**
-  * \brief  gets a numeric value in a buf segment according to mask and
-  *         shift
-  * \param  uint64_t the position in the buffer (pointer)
-  * \param  uint64_t out_mask  in relation to a 8 byte integer
-  * \param  uint64_t out_shift to right end of 64 bit integer
-  * \return uint64_t
-  */
-static inline uint64_t get_segment_value_bits (
-		uint64_t  *v,
-		uint64_t   mask,
-		uint64_t   shift)
-{
-	return ((htonll (*v) & mask) >> shift);
-}
-
-/**
  * \brief     convert 8bit integer to BCD
  * \param     val  8bit integer
  * \return    8bit integer encoding of a 2 digit BCD number
@@ -66,33 +50,6 @@ int l_shortToBcd(lua_State *luaVM)
 			(val%10)
 	);
 	return 1;
-}
-
-
-/**
-  * \brief  sets a numeric value in a qtc_pfield struct according to mask and
-  *         shift
-  * \param  lua_State
-  * \param  struct qtc_pfield  the field to operate on
-  * \param  uint64_t value the value to put into the pointer to the main buffer
-  * \return int    that's what gets returned to Lua, meaning the one value on
-  *                the stack
-  */
-static inline void set_segment_value_numeric (
-		uint64_t  *v,
-		uint64_t   mask,
-		uint64_t   shift,
-		uint64_t   nv)
-{
-	//uint64_t cmpr;
-	//cmpr = (64 == a->bits) ?  (uint64_t)0x1111111111111111 : ((uint64_t) 0x0000000000000001) << a->bits; // 2^bits
-	//if ( value < cmpr ) {
-	*v = htonll( ( htonll(*v) & ~mask) | (nv << shift) );
-	//}
-	//else
-	//	return luaL_error(luaVM,
-	//	         "The value %d is too big for a %d bits wide field",
-	//	         value, a->bits);
 }
 
 
@@ -163,21 +120,58 @@ struct xt_buf *check_ud_buf (lua_State *luaVM, int pos) {
  * \return integer 1 left on the stack
  */
 static int l_read_number_bits (lua_State *luaVM) {
-	int                   len;    // how many bits to write
-	int                   ofs;    // starting with the x bit
-	uint64_t             *v;
-	uint64_t              mask;
-	uint64_t              shft;
+	int                   sz;    // how many bits to write
+	int                   sz_nd; // how many bits to represent value
+	int                   ofs;   // starting with the x bit
+	uint8_t              *v8;
+	uint16_t             *v16;
+	uint32_t             *v32;
+	uint64_t             *v64;
+	uint8_t               m8;
+	uint16_t              m16;
+	uint32_t              m32;
+	uint64_t              m64;
 	struct xt_buf *b   = check_ud_buf(luaVM, 1);
 
 	ofs = luaL_checkint(luaVM, 2);
-	len = luaL_checkint(luaVM, 3);
+	sz  = luaL_checkint(luaVM, 3);
+	sz_nd = (ofs%8) + sz;
+	//printf("o:%d s:%d n:%d c:%d\n", ofs, sz, sz_nd, (sz_nd-1)/8);
 
-	shft = 64 - (ofs%8) - len;
-	mask = ( 0xFFFFFFFFFFFFFFFF >> (64-len)) << shft;
+	switch ( (sz_nd-1)/8 ) {
+		case 0:
+			m8  = ( 0xFF >> (8-sz)) << (8 - (ofs%8) - sz);
+			v8  = (uint8_t *) &(b->b[ ofs/8 ]);
+			lua_pushinteger( luaVM, (*v8 & m8) >> (8 -(ofs%8) -sz));
+			break;
+		case 1:
+			m16 = ( 0xFFFF >> (16-sz)) << (16 - (ofs%8) - sz);
+			v16 = (uint16_t *) &(b->b[ ofs/8 ]);
+			lua_pushinteger(luaVM, (htons(*v16) & m16) >> (16 -(ofs%8) -sz));
+			break;
+		case 2:
+		case 3:
+			m32 = ( 0xFFFFFFFF >> (32-sz)) << (32 - (ofs%8) - sz);
+			v32 = (uint32_t *) &(b->b[ ofs/8 ]);
+			lua_pushinteger(luaVM, (htonl(*v32) & m32) >> (32 -(ofs%8) -sz));
+			break;
+		case 4:
+		case 5:
+		case 6:
+		case 7:
+			m64 = ( 0xFFFFFFFF >> (64-sz)) << (64 - (ofs%8) - sz);
+			v64 = (uint64_t *) &(b->b[ ofs/8 ]);
+			lua_pushinteger(luaVM, (htonll(*v64) & m64) >> (64 -(ofs%8) -sz));
+			break;
+		default:
+			//TODO: handle error
+			pusherror(luaVM, "Can't handle size of bit field");
+	}
+	return 1;
 
-	v = (uint64_t *) &(b->b[ ofs/8 ]);
-	lua_pushinteger(luaVM, get_segment_value_bits(v, mask, shft));
+
+
+
 	return 1;
 }
 
@@ -256,24 +250,58 @@ static int l_read_64 (lua_State *luaVM) {
  * \return integer 0 left on the stack
  */
 static int l_write_number_bits(lua_State *luaVM) {
-	int            len;    // how many bits to write
-	int            ofs;    // starting with the x bit
-	uint64_t      *v;
-	uint64_t       mask;
-	uint64_t       shft;
-	struct xt_buf *b     = check_ud_buf(luaVM, 1);
+	int            sz;    // how many bits to write
+	int            sz_nd;    // how many bits needed to represent
+	int            ofs;   // starting with the x bit
+	int            nv;    // value to be set
+	uint8_t       *v8;
+	uint16_t      *v16;
+	uint32_t      *v32;
+	uint64_t      *v64;
+	uint8_t        m8;
+	uint16_t       m16;
+	uint32_t       m32;
+	uint64_t       m64;
+	struct xt_buf *b = check_ud_buf(luaVM, 1);
 
 	ofs = luaL_checkint(luaVM, 2);
-	len = luaL_checkint(luaVM, 3);
+	sz  = luaL_checkint(luaVM, 3);
+	nv  = luaL_checkint(luaVM, 4);
+	sz_nd = (ofs%8) + sz;
 
-	shft = 64 - (ofs%8) - len;
-	mask = ( 0xFFFFFFFFFFFFFFFF >> (64-len)) << shft;
+	//printf("o:%d s:%d n:%d c:%d\n", ofs, sz, sz_nd, (sz_nd-1)/8);
 
-	v = (uint64_t *) &(b->b[ ofs/8 ]);
-
-	set_segment_value_numeric(
-		v, mask, shft,
-		(uint64_t) luaL_checknumber(luaVM, 4));
+	switch ( (sz_nd-1)/8 ) {
+		case 0:
+			m8  = ( 0xFF >> (8-sz)) << (8 - (ofs%8) - sz);
+			v8  = (uint8_t *) &(b->b[ ofs/8 ]);
+			//printf ("ov:%02X ", *v8);
+			*v8 = ( *v8 & ~m8) | (nv << (8 -(ofs%8)- sz));
+			//printf ("nv:%d m:%02X s:%d\n", *v8, m8, (8 -(ofs%8)- sz) );
+			break;
+		case 1:
+			m16 = ( 0xFFFF >> (16-sz)) << (16 - (ofs%8) - sz);
+			v16 = (uint16_t *) &(b->b[ ofs/8 ]);
+			*v16 = htons( (htons(*v16) & ~m16) | (nv << (16 -(ofs%8)- sz)) );
+			break;
+		case 2:
+		case 3:
+			m32 = ( 0xFFFFFFFF >> (32-sz)) << (32 - (ofs%8) - sz);
+			v32 = (uint32_t *) &(b->b[ ofs/8 ]);
+			*v32 = htonl( (htonl(*v32) & ~m32) | (nv << (32 -(ofs%8)- sz)) );
+			break;
+		case 4:
+		case 5:
+		case 6:
+		case 7:
+			m64 = ( 0xFFFFFFFFFFFFFFFF >> (64-sz)) << (64 - (ofs%8) - sz);
+			v64 = (uint64_t *) &(b->b[ ofs/8 ]);
+			*v64 = htonll( (htonll(*v64) & ~m64) | (nv << (64 -(ofs%8)- sz)) );
+			break;
+		default:
+			//TODO: handle error
+			pusherror(luaVM, "Can't handle size of bit field");
+	}
 	return 0;
 }
 
@@ -417,20 +445,22 @@ static const struct luaL_Reg l_buf_fm [] = {
  */
 static const luaL_Reg l_buf_m [] =
 {
-	{"readBits",     l_read_number_bits},
-	{"writeBits",    l_write_number_bits},
-	{"read8",        l_read_8},
-	{"read16",       l_read_16},
-	{"read32",       l_read_32},
-	{"read64",       l_read_64},
-	{"write8",       l_write_8},
-	{"write16",      l_write_16},
-	{"write32",      l_write_32},
-	{"write64",      l_write_64},
-	{"length",       l_get_len},
-	{"toHex",        l_get_hex_string},
-	{"Segment",      c_new_buf_seg},
-	{NULL,           NULL}
+	{"readBits",      l_read_number_bits},
+	{"writeBits",     l_write_number_bits},
+	{"read8",         l_read_8},
+	{"read16",        l_read_16},
+	{"read32",        l_read_32},
+	{"read64",        l_read_64},
+	{"write8",        l_write_8},
+	{"write16",       l_write_16},
+	{"write32",       l_write_32},
+	{"write64",       l_write_64},
+	{"length",        l_get_len},
+	{"toHex",         l_get_hex_string},
+	{"ByteSegment",   c_new_buf_seg_byte},
+	{"BitSegment",    c_new_buf_seg_bits},
+	{"StringSegment", c_new_buf_seg_string},
+	{NULL,            NULL}
 };
 
 

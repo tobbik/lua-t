@@ -18,16 +18,24 @@
 #include "l_xt_buf.h"
 
 
-static int read_bits (lua_State *luaVM);
 static int read_8 (lua_State *luaVM);
 static int read_16 (lua_State *luaVM);
 static int read_32 (lua_State *luaVM);
 static int read_64 (lua_State *luaVM);
-static int write_bits (lua_State *luaVM);
+static int read_bits_8 (lua_State *luaVM);
+static int read_bits_16 (lua_State *luaVM);
+static int read_bits_32 (lua_State *luaVM);
+static int read_bits_64 (lua_State *luaVM);
+static int read_string (lua_State *luaVM);
 static int write_8 (lua_State *luaVM);
 static int write_16 (lua_State *luaVM);
 static int write_32 (lua_State *luaVM);
 static int write_64 (lua_State *luaVM);
+static int write_bits_8 (lua_State *luaVM);
+static int write_bits_16 (lua_State *luaVM);
+static int write_bits_32 (lua_State *luaVM);
+static int write_bits_64 (lua_State *luaVM);
+static int write_string (lua_State *luaVM);
 
 // inline helper functions
 /**
@@ -48,70 +56,158 @@ static inline uint64_t htonll(uint64_t value)
  * \param     lua state
  * \lparam    the Constructor instance
  * \lparam    a Buffer instance
- * \lparam    a Buffer.Segment.Type
  * \lparam    position in the Buffer
  * \return    integer   how many elements are placed on the Lua stack
 */
-int c_new_buf_seg(lua_State *luaVM)
+// TODO: ARGCHECK size>0 < buflength-offset
+int c_new_buf_seg_bits(lua_State *luaVM)
 {
-	enum xt_buf_seg_type  type;
-	int                   offset;
-	int                   size;
+	int                ofs;   ///< offset in bits from buffer start
+	int                sz;    ///< size of segment in bits
+	int                sz_nd; ///< size needed
+	struct xt_buf_seg *seg;
+	struct xt_buf     *buf = check_ud_buf(luaVM, 1);
+
+	sz    =  luaL_checkint(luaVM, 2);
+	ofs   =  luaL_checkint(luaVM, 3);
+	sz_nd = (ofs%8) + sz;
+	//printf("o:%d s:%d n:%d c:%d\n", ofs, sz, sz_nd, (sz_nd-1)/8);
+
+	seg = create_ud_buf_seg(luaVM);
+	seg->ofs_bit  = ofs;
+	seg->ofs_byte = ofs/8;
+	seg->sz_bit   = sz;
+
+	switch ( (sz_nd-1)/8 ) {
+		case 0:
+			seg->shft  = 8 - (ofs%8) - sz;
+			seg->m8    = ( 0xFF >> (8-sz)) << seg->shft;
+			seg->write = write_bits_8;
+			seg->read  = read_bits_8;
+			seg->v8    = (uint8_t *) &(buf->b[seg->ofs_byte]);
+			break;
+		case 1:
+			seg->shft  = 16 - (ofs%8) - sz;
+			seg->m16   = ( 0xFFFF >> (16-sz)) << seg->shft;
+			seg->write = write_bits_16;
+			seg->read  = read_bits_16;
+			seg->v16   = (uint16_t *) &(buf->b[seg->ofs_byte]);
+			break;
+		case 2:
+		case 3:
+			seg->shft  = 32 - (ofs%8) - sz;
+			seg->m32   = ( 0xFFFFFFFF >> (32-sz)) << seg->shft;
+			seg->write = write_bits_32;
+			seg->read  = read_bits_32;
+			seg->v32   = (uint32_t *) &(buf->b[seg->ofs_byte]);
+			break;
+		case 4:
+		case 5:
+		case 6:
+		case 7:
+			seg->shft  = 64 - (ofs%8) - sz;
+			seg->m64   = ( 0xFFFFFFFF >> (64-sz)) << seg->shft;
+			seg->write = write_bits_64;
+			seg->read  = read_bits_64;
+			seg->v64   = (uint64_t *) &(buf->b[seg->ofs_byte]);
+			break;
+		default:
+			//TODO: handle error
+			pusherror(luaVM, "Can't handle size of bit field");
+	}
+	return 1;
+}
+
+
+/**
+ * \brief     creates a buffer segment describing a single logical field in a Buffer
+ * \param     lua state
+ * \lparam    the Constructor instance
+ * \lparam    a Buffer instance
+ * \lparam    position in the Buffer
+ * \return    integer   how many elements are placed on the Lua stack
+*/
+int c_new_buf_seg_byte(lua_State *luaVM)
+{
+	int                ofs;
+	int                sz;
+	struct xt_buf_seg *seg;
+	struct xt_buf     *buf = check_ud_buf(luaVM, 1);
+
+	sz  =  luaL_checkint(luaVM, 2);
+	ofs =  luaL_checkint(luaVM, 3);
+
+	seg = create_ud_buf_seg(luaVM);
+	seg->type     = BUF_SEG_BYTE;
+	seg->ofs_bit  = ofs*8;
+	seg->ofs_byte = ofs;
+	seg->sz_bit   = sz*8;
+
+	switch ( sz ) {
+		case 1:
+			seg->write = write_8;
+			seg->read  = read_8;
+			seg->v8    = (uint8_t *) &(buf->b[seg->ofs_byte]);
+			break;
+		case 2:
+			seg->write = write_16;
+			seg->read  = read_16;
+			seg->v16   = (uint16_t *) &(buf->b[seg->ofs_byte]);
+			break;
+		case 4:
+			seg->write = write_32;
+			seg->read  = read_32;
+			seg->v32   = (uint32_t *) &(buf->b[seg->ofs_byte]);
+			break;
+		case 8:
+			seg->write = write_64;
+			seg->read  = read_64;
+			seg->v64   = (uint64_t *) &(buf->b[seg->ofs_byte]);
+			break;
+		default:
+			// TODO: can't handle others than 1,2,4,8 byte
+			pusherror(luaVM, "bytes must be 1,2,4 or 8");
+	}
+	if (lua_isnumber(luaVM, 4)) {
+	// TODO handle setting the value
+	}
+	return 1;
+}
+
+
+/**
+ * \brief     creates a buffer segment describing a single logical field in a Buffer
+ * \param     lua state
+ * \lparam    the Constructor instance
+ * \lparam    a Buffer instance
+ * \lparam    position in the Buffer
+ * \return    integer   how many elements are placed on the Lua stack
+*/
+int c_new_buf_seg_string(lua_State *luaVM)
+{
+	int                   ofs;
+	int                   sz;
 	struct xt_buf_seg    *seg;
 	struct xt_buf        *buf = check_ud_buf(luaVM, 1);
 
+	sz  =  luaL_checkint(luaVM, 2);
+	ofs =  luaL_checkint(luaVM, 3);
+
 	seg = create_ud_buf_seg(luaVM);
+	seg->type     = BUF_SEG_STR;
+	seg->ofs_bit  = ofs*8;
+	seg->ofs_byte = ofs;
+	seg->sz_bit   = sz*8;
+	seg->vS  = (char *) &(buf->b[ seg->ofs_byte ]);
+	seg->write = write_string;
+	seg->read  = read_string;
 
-	type   =  (enum xt_buf_seg_type) luaL_checkint(luaVM, 2);
-	size   =  luaL_checkint(luaVM, 3);
-	offset =  luaL_checkint(luaVM, 4);
-
-	printf("%d[%d],S: %d, O:%d[%d]\n", type, BUF_SEG_BIT,size,offset,offset/8);
-	seg->type     = type;
-	seg->ofs_bit  = offset;
-	seg->ofs_byte = offset/8;
-
-	if (lua_isnumber(luaVM, 5)) {
-		switch ( size/8 ) {
-			case 1:
-				seg->write = write_8;
-				seg->read  = read_8;
-				seg->v8    = (uint8_t *) &(buf->b[seg->ofs_byte]);
-				//*(seg->val8) = luaL_checkint(luaVM, 5);
-				break;
-			case 2:
-				seg->write = write_16;
-				seg->read  = read_16;
-				seg->v16 = (uint16_t *) &(buf->b[seg->ofs_byte]);
-				//*(seg->val16) = luaL_checkint(luaVM, 5);
-				break;
-			case 4:
-				seg->write = write_32;
-				seg->read  = read_32;
-				seg->v32   = (uint32_t *) &(buf->b[seg->ofs_byte]);
-				//*(seg->val32) = luaL_checkint(luaVM, 5);
-				break;
-			case 8:
-				seg->write = write_64;
-				seg->read  = read_64;
-				seg->v64   = (uint64_t *) &(buf->b[seg->ofs_byte]);
-				//*(seg->val64) = luaL_checkint(luaVM, 5);
-				break;
-			default:
-				seg->shft  = 64 - (offset%8) - size;
-				seg->mask  = ( 0xFFFFFFFFFFFFFFFF >> (64-size)) << seg->shft;
-				seg->v64   = (uint64_t *) &(buf->b[seg->ofs_byte]);
-				seg->write = write_bits;
-				seg->read  = read_bits;
-		}
-	}
-	else if (lua_isstring(luaVM, 5)) {
-		seg->vS  = (char *) &(buf->b[ seg->ofs_byte ]);
+	if (lua_isstring(luaVM, 4)) {
 #ifdef _WIN32
-			size_t bytes = size/8;
-			strncpy_s(seg->vS, bytes, luaL_checkstring(luaVM, 5), len);
+			size_t bytes = sz/8;
+			strncpy_s(seg->vS, bytes, luaL_checkstring(luaVM, 4), len);
 #else
-			strncpy(seg->vS, luaL_checkstring(luaVM, 5), size/8);
+			strncpy(seg->vS, luaL_checkstring(luaVM, 4), sz);
 #endif
 	}
 	return 1;
@@ -158,10 +254,52 @@ struct xt_buf_seg *check_ud_buf_seg (lua_State *luaVM, int pos) {
  * \lparam struct xt_buf_seg
  * \return integer 1 left on the stack
  */
-static int read_bits (lua_State *luaVM) {
+static int read_bits_8 (lua_State *luaVM) {
 	struct xt_buf_seg *seg   = check_ud_buf_seg(luaVM, 1);
 
-	lua_pushinteger(luaVM, ((htonll (*(seg->v64)) & seg->mask) >> seg->shft) );
+	lua_pushinteger(luaVM, ((*(seg->v8) & seg->m8) >> seg->shft) );
+	return 1;
+}
+
+
+/**
+ * \brief  gets the value of an X bit wide segment
+ * \param  lua Virtual Machine
+ * \lparam struct xt_buf_seg
+ * \return integer 1 left on the stack
+ */
+static int read_bits_16 (lua_State *luaVM) {
+	struct xt_buf_seg *seg   = check_ud_buf_seg(luaVM, 1);
+
+	lua_pushinteger(luaVM, ((htons (*(seg->v16)) & seg->m16) >> seg->shft) );
+	return 1;
+}
+
+
+/**
+ * \brief  gets the value of an X bit wide segment
+ * \param  lua Virtual Machine
+ * \lparam struct xt_buf_seg
+ * \return integer 1 left on the stack
+ */
+static int read_bits_32 (lua_State *luaVM) {
+	struct xt_buf_seg *seg   = check_ud_buf_seg(luaVM, 1);
+
+	lua_pushinteger(luaVM, ((htonl (*(seg->v32)) & seg->m32) >> seg->shft) );
+	return 1;
+}
+
+
+/**
+ * \brief  gets the value of an X bit wide segment
+ * \param  lua Virtual Machine
+ * \lparam struct xt_buf_seg
+ * \return integer 1 left on the stack
+ */
+static int read_bits_64 (lua_State *luaVM) {
+	struct xt_buf_seg *seg   = check_ud_buf_seg(luaVM, 1);
+
+	lua_pushinteger(luaVM, ((htonll (*(seg->v64)) & seg->m64) >> seg->shft) );
 	return 1;
 }
 
@@ -223,17 +361,85 @@ static int read_64 (lua_State *luaVM) {
 
 
 /**
- * \brief    sets an X bit wide value
+ * \brief  gets the value of a string segment
+ * \param  lua Virtual Machine
+ * \lparam struct xt_buf_seg
+ * \return integer 1 left on the stack
+ */
+static int read_string (lua_State *luaVM) {
+	struct xt_buf_seg *seg   = check_ud_buf_seg(luaVM, 1);
+
+	lua_pushlstring(luaVM, seg->vS, seg->sz_bit/8 );
+	return 1;
+}
+
+
+/**
+ * \brief  sets an max 8 bit wide value
  * \param  lua Virtual Machine
  * \lparam struct xt_buf_seg
  * \lparam int    val
  * \return integer 0 left on the stack
  */
-static int write_bits(lua_State *luaVM) {
+static int write_bits_8(lua_State *luaVM) {
 	struct xt_buf_seg *seg = check_ud_buf_seg(luaVM, 1);
+	int                v   = luaL_checkint(luaVM, 2);
+	luaL_argcheck(luaVM, 0 <= v && v <=255 , 2, "value out of range");
+	*(seg->v8) =  ( *(seg->v8) & ~seg->m8) | ( ((uint8_t)v) << seg->shft);
+	return 0;
+}
+
+
+/**
+ * \brief  sets an max 16 bit wide value
+ * \param  lua Virtual Machine
+ * \lparam struct xt_buf_seg
+ * \lparam int    val
+ * \return integer 0 left on the stack
+ */
+static int write_bits_16(lua_State *luaVM) {
+	struct xt_buf_seg *seg = check_ud_buf_seg(luaVM, 1);
+	int                v   = luaL_checkint(luaVM, 2);
+	luaL_argcheck(luaVM, 0 <= v && v <= 65536, 2, "value out of range");
+	*(seg->v16) = htons(
+		( htons(*(seg->v16)) & ~seg->m16) |
+		( v << seg->shft));
+	return 0;
+}
+
+
+/**
+ * \brief  sets an max 32 bit wide value
+ * \param  lua Virtual Machine
+ * \lparam struct xt_buf_seg
+ * \lparam int    val
+ * \return integer 0 left on the stack
+ */
+static int write_bits_32(lua_State *luaVM) {
+	struct xt_buf_seg *seg = check_ud_buf_seg(luaVM, 1);
+	int                v   = luaL_checkint(luaVM, 2);
+	luaL_argcheck(luaVM, 0 <= v && v <=2147483647 , 2, "value out of range");
+	*(seg->v32) = htonl(
+		( htonl(*(seg->v32)) & ~seg->m32) |
+		( v << seg->shft));
+	return 0;
+}
+
+
+/**
+ * \brief  sets an max 64 bit wide value
+ * \param  lua Virtual Machine
+ * \lparam struct xt_buf_seg
+ * \lparam int    val
+ * \return integer 0 left on the stack
+ */
+static int write_bits_64(lua_State *luaVM) {
+	struct xt_buf_seg *seg = check_ud_buf_seg(luaVM, 1);
+	int                v   = luaL_checkint(luaVM, 2);
+	luaL_argcheck(luaVM, 0 <= v && v <=2147483647 , 2, "value out of range");
 	*(seg->v64) = htonll(
-		( htonll(*(seg->v64)) & ~seg->mask) |
-		( luaL_checkint(luaVM,2) << seg->shft) );
+		( htonll(*(seg->v64)) & ~seg->m64) |
+		( v << seg->shft));
 	return 0;
 }
 
@@ -289,6 +495,25 @@ static int write_32(lua_State *luaVM) {
 static int write_64(lua_State *luaVM) {
 	struct xt_buf_seg *seg   = check_ud_buf_seg(luaVM, 1);
 	*(seg->v64)  = htonll( luaL_checkint(luaVM, 2) );
+	return 0;
+}
+
+
+/**
+ * \brief  sets the value of a string segment
+ * \param  lua Virtual Machine
+ * \lparam struct xt_buf_seg
+ * \return integer 1 left on the stack
+ */
+static int write_string (lua_State *luaVM) {
+	struct xt_buf_seg *seg   = check_ud_buf_seg(luaVM, 1);
+	size_t l;
+	//TODO make sure string is not longer than seg->sz_bit*8
+#ifdef _WIN32
+	strncpy_s(seg->vS, l, luaL_checklstring(luaVM, 2, &l), l);
+#else
+	strncpy(seg->vS, luaL_checklstring(luaVM, 2, &l), l);
+#endif
 	return 0;
 }
 

@@ -25,7 +25,10 @@ struct xt_buf_seg {
 	int              (*read)  (lua_State *luaVM);
 	/* helpers for bitwise access */
 	uint8_t            shft;
-	uint64_t           mask;     /* (*valX & mask) >> shft == actual_value */
+	uint8_t            m8;      /* (*v8  & m8)  >> shft == actual_value */
+	uint16_t           m16;     /* (*v16 & m16) >> shft == actual_value */
+	uint32_t           m32;     /* (*v32 & m32) >> shft == actual_value */
+	uint64_t           m64;     /* (*v64 & m64) >> shft == actual_value */
 	/* size information */
 	size_t             sz_bit;   /* size in bits   */
 	size_t             ofs_bit;  /* how many bits  into the byte does it start    */
@@ -41,8 +44,10 @@ struct xt_buf   *create_ud_buf  (lua_State *luaVM, int size);
 
 
 // l_xt_buf_seg.c
-int                 luaopen_buf_seg    (lua_State *luaVM);
-int                 c_new_buf_seg      (lua_State *luaVM);
-struct xt_buf_seg  *check_ud_buf_seg   (lua_State *luaVM, int pos);
-struct xt_buf_seg  *create_ud_buf_seg  (lua_State *luaVM);
+int                 luaopen_buf_seg      (lua_State *luaVM);
+int                 c_new_buf_seg_bits   (lua_State *luaVM);
+int                 c_new_buf_seg_byte   (lua_State *luaVM);
+int                 c_new_buf_seg_string (lua_State *luaVM);
+struct xt_buf_seg  *check_ud_buf_seg     (lua_State *luaVM, int pos);
+struct xt_buf_seg  *create_ud_buf_seg    (lua_State *luaVM);
 
