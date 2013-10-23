@@ -39,8 +39,8 @@ system:
 
 local:
 	$(MAKE) \
-	"CC=/usr/bin/clang" \
-	"LD=/usr/bin/clang" \
+	"CC=$(CC)" \
+	"LD=$(LD)" \
 	"INCS=$(INCS)" \
 	"LDFLAGS=$(LIBS)" \
 	all
