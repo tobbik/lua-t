@@ -276,6 +276,34 @@ static int l_bind_net(lua_State *luaVM)
 
 
 /** -------------------------------------------------------------------------
+ * \brief    Takes a lua file handle and wraps it in an xt handle
+ * \param    luaVM  The lua state.
+ * \lparam   Lua FileHandle
+ * \lreturn  xt_hndl
+ * \return   leave 1 item on stack
+ *-------------------------------------------------------------------------*/
+static int l_file2xt_hndl(lua_State *luaVM)
+{
+	struct xt_hndl     *hndl;
+	struct sockaddr_in *ip;
+	FILE               **fPtr = (FILE **) luaL_checkudata(luaVM, 1, LUA_FILEHANDLE);
+
+	hndl = (struct xt_hndl*) lua_newuserdata(luaVM, sizeof(struct xt_hndl));
+	hndl->hd_t = FILHND;
+#ifdef WIN32
+	hndl->fd   = _fileno(*fPtr);
+#else
+	hndl->fd   = fileno(*fPtr);
+#endif
+
+	luaL_getmetatable(luaVM, "L.net.Socket");
+	lua_setmetatable(luaVM, -2);
+
+	return( 1 );
+}
+
+
+/** -------------------------------------------------------------------------
  * \brief   Helper to take sockets from Lua tables to FD_SET
  *          Itertates over the table puls out the socket structs and adds the
  *          actual sockets to the fd_set
@@ -396,6 +424,7 @@ static const luaL_Reg l_net_lib [] =
 	{"select",    l_select_handle},
 	{"bind",      l_bind_net},
 	{"connect",   l_connect_net},
+	{"wrapFile",  l_file2xt_hndl},
 	{NULL,        NULL}
 };
 
