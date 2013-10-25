@@ -31,6 +31,11 @@ struct xt_hndl {
 
 
 // Constructors
+// l_net_timer.c
+int luaopen_net_timer (lua_State *luaVM);
+struct timeval *check_ud_timer (lua_State *luaVM, int pos);
+struct timeval *create_ud_timer (lua_State *luaVM, int ms);
+
 // l_net_ipendpoint.c
 int luaopen_net_ipendpoint (lua_State *luaVM);
 struct sockaddr_in *check_ud_ipendpoint (lua_State *luaVM, int pos);

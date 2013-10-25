@@ -148,17 +148,22 @@ static int l_sleep(lua_State *luaVM)
 	fd_set dummy;
 	int s;
 #endif
-	uint32_t         msec_len = (uint32_t) luaL_checkint(luaVM, 1);
-	struct timeval to;
-	to.tv_sec  = msec_len/1000;
-	to.tv_usec = (msec_len % 1000) * 1000;
+	struct timeval *tv;
+	uint32_t msec;
+	if (lua_isuserdata(luaVM, 1)) {
+		tv = check_ud_timer(luaVM, 1);
+	}
+	else {
+		msec = (uint32_t) luaL_checkint(luaVM, 1);
+		tv = create_ud_timer(luaVM, msec);
+	}
 #ifdef _WIN32
 	s = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
 	FD_ZERO(&dummy);
 	FD_SET(s, &dummy);
-	select(0, 0,0,&dummy, &to);
+	select(0, 0,0,&dummy, tv);
 #else
-	select(0, 0,0,0, &to);
+	select(0, 0,0,0, tv);
 #endif
 	return 0;
 }
@@ -437,6 +442,8 @@ static const luaL_Reg l_net_lib [] =
 LUAMOD_API int luaopen_net (lua_State *luaVM)
 {
 	luaL_newlib (luaVM, l_net_lib);
+	luaopen_net_timer(luaVM);
+	lua_setfield(luaVM, -2, "Timer");
 	luaopen_net_ipendpoint(luaVM);
 	lua_setfield(luaVM, -2, "IpEndpoint");
 	luaopen_net_socket(luaVM);
