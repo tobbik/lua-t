@@ -30,7 +30,7 @@
  * \param   luaVM  The lua state.
  * \lparam  port   the port for the socket.
  * \lparam  ip     the IP address for the socket.
- * \lreturn socket sockkaddr userdata.
+ * \lreturn sockkaddr userdata.
  * \return  The number of results to be passed back to the calling Lua script.
  * TODO:  allow for empty endpoints if it makes sense
  * --------------------------------------------------------------------------*/

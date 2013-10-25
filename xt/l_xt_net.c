@@ -211,20 +211,20 @@ static struct sockaddr_in *create_ud_tcp_ipendpoint(lua_State *luaVM)
 
 /** -------------------------------------------------------------------------
  * \brief   convienience connect to create the TCP socket and the endpoint
- * \param   luaVM  The lua state.
- * \lparam  socket The socket userdata.
- * \lparam  ip     sockaddr userdata.
+ * \param   luaVM   The lua state.
+ * \lparam  xt_hndl The socket userdata.
+ * \lparam  ip      sockaddr userdata.
  *    /// or
- * \lparam  ip     string IP address.
- * \lparam  port   int port.
+ * \lparam  ip      string IP address.
+ * \lparam  port    int port.
  * \return  The number of results to be passed back to the calling Lua script.
  *-------------------------------------------------------------------------*/
 static int l_connect_net(lua_State *luaVM)
 {
-	struct udp_socket   *sock;
+	struct xt_hndl      *hndl;
 	struct sockaddr_in  *ip;
 
-	sock = create_ud_socket (luaVM, TCP);
+	hndl = create_ud_socket (luaVM, TCP);
 
 	if ( lua_isuserdata(luaVM, 1) ) {
 		// it's assumed that IP/port et cetera are assigned
@@ -235,7 +235,7 @@ static int l_connect_net(lua_State *luaVM)
 		ip   = create_ud_tcp_ipendpoint (luaVM);
 	}
 
-	if( bind(sock->socket , (struct sockaddr*) &(*ip), sizeof(struct sockaddr) ) == -1)
+	if( bind(hndl->fd , (struct sockaddr*) &(*ip), sizeof(struct sockaddr) ) == -1)
 		return( pusherror(luaVM, "ERROR binding socket") );
 
 	return( 2 );
@@ -254,10 +254,10 @@ static int l_connect_net(lua_State *luaVM)
  *-------------------------------------------------------------------------*/
 static int l_bind_net(lua_State *luaVM)
 {
-	struct udp_socket  *sock;
+	struct xt_hndl     *hndl;
 	struct sockaddr_in *ip;
 	
-	sock = create_ud_socket (luaVM, TCP);
+	hndl = create_ud_socket (luaVM, TCP);
 
 	if ( lua_isuserdata(luaVM, 1) ) {
 		// it's assumed that IP/port et cetera are assigned
@@ -268,7 +268,7 @@ static int l_bind_net(lua_State *luaVM)
 		ip   = create_ud_tcp_ipendpoint (luaVM);
 	}
 
-	if( bind(sock->socket , (struct sockaddr*) &(*ip), sizeof(struct sockaddr) ) == -1)
+	if( bind(hndl->fd , (struct sockaddr*) &(*ip), sizeof(struct sockaddr) ) == -1)
 		return( pusherror(luaVM, "ERROR binding socket") );
 
 	return( 2 );
@@ -285,10 +285,10 @@ static int l_bind_net(lua_State *luaVM)
  * \param  *int    the maximum socket(fd) value
  * \return  void.
  *-------------------------------------------------------------------------*/
-static void make_fdset(lua_State *luaVM, int stack_pos, fd_set *collection, int *max_sock)
+static void make_fdset(lua_State *luaVM, int stack_pos, fd_set *collection, int *max_hndl)
 {
-	int                 i;      // table iterator
-	struct udp_socket  *sock;
+	int              i;      // table iterator
+	struct xt_hndl  *hndl;
 
 	FD_ZERO(collection);
 	// empty table == nil
@@ -296,7 +296,7 @@ static void make_fdset(lua_State *luaVM, int stack_pos, fd_set *collection, int 
 	// only accept tables
 	luaL_checktype(luaVM, stack_pos, LUA_TTABLE);
 
-	// adding sockets to FD_SETs
+	// adding fh to FD_SETs
 	for ( i=1 ; ; i++ )
 	{
 		lua_rawgeti(luaVM, stack_pos, i);
@@ -308,9 +308,9 @@ static void make_fdset(lua_State *luaVM, int stack_pos, fd_set *collection, int 
 		}
 
 		// get the values and clear the stack
-		sock = (struct udp_socket*) lua_touserdata(luaVM, -1);
-		FD_SET( sock->socket, collection );
-		*max_sock = (sock->socket > *max_sock) ? sock->socket : *max_sock;
+		hndl = (struct xt_hndl*) lua_touserdata(luaVM, -1);
+		FD_SET( hndl->fd, collection );
+		*max_hndl = (hndl->fd > *max_hndl) ? hndl->fd : *max_hndl;
 		lua_pop(luaVM, 1);   // remove the socket from the stack
 	}
 }
@@ -326,12 +326,12 @@ static void make_fdset(lua_State *luaVM, int stack_pos, fd_set *collection, int 
  * \return  The number of results to be passed back to the calling Lua script.
  * TODO:  Allow for a Time Out to be handed to it
  *-------------------------------------------------------------------------*/
-static int l_select_socket(lua_State *luaVM)
+static int l_select_handle(lua_State *luaVM)
 {
-	fd_set              rfds, wfds;
-	struct udp_socket  *sock;
-	int                 rnum, wnum, readsocks, i/*, rp*/;
-	int                 rset=1;//, wset=1;   // write the values back into the tables on the stack
+	fd_set           rfds, wfds;
+	struct xt_hndl  *hndl;
+	int              rnum, wnum, readsocks, i/*, rp*/;
+	int              rset=1;//, wset=1;
 
 	wnum = -1;
 	rnum = -1;
@@ -361,8 +361,8 @@ static int l_select_socket(lua_State *luaVM)
 		}
 
 		// get the values and clear the stack
-		sock = (struct udp_socket*) lua_touserdata(luaVM, -1);
-		if FD_ISSET( sock->socket, &rfds)
+		hndl = (struct xt_hndl*) lua_touserdata(luaVM, -1);
+		if FD_ISSET( hndl->fd, &rfds)
 		{
 			// put into reads
 			lua_rawseti(luaVM, -2, rset++);
@@ -393,7 +393,7 @@ static int l_select_socket(lua_State *luaVM)
 static const luaL_Reg l_net_lib [] =
 {
 	{"sleep",     l_sleep},
-	{"select",    l_select_socket},
+	{"select",    l_select_handle},
 	{"bind",      l_bind_net},
 	{"connect",   l_connect_net},
 	{NULL,        NULL}

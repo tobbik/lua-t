@@ -32,11 +32,11 @@
  *-------------------------------------------------------------------------*/
 static int c_new_socket(lua_State *luaVM)
 {
-	struct udp_socket  __attribute__ ((unused)) *sock;
-	enum socket_type    type;
+	struct xt_hndl   __attribute__ ((unused)) *hndl;
+	enum   xt_hndl_t                           type;
 
-	type = (enum socket_type) luaL_checkoption (luaVM, 2, "TCP", socket_types);
-	sock = create_ud_socket(luaVM, type);
+	type = (enum xt_hndl_t) luaL_checkoption (luaVM, 2, "TCP", xt_hndl_t_lst);
+	hndl = create_ud_socket(luaVM, type);
 	return 1 ;
 }
 
@@ -44,43 +44,43 @@ static int c_new_socket(lua_State *luaVM)
 /**--------------------------------------------------------------------------
  * \brief   create a socket and push to LuaStack.
  * \param   luaVM  The lua state.
- * \return  struct udp_socket*  pointer to the socket struct
+ * \return  struct xt_hndl*  pointer to the socket struct
  * --------------------------------------------------------------------------*/
-struct udp_socket *create_ud_socket(lua_State *luaVM, enum socket_type type)
+struct xt_hndl *create_ud_socket(lua_State *luaVM, enum xt_hndl_t type)
 {
-	struct udp_socket  *sock;
-	int                 on=1;
+	struct xt_hndl  *hndl;
+	int              on=1;
 
-	sock = (struct udp_socket*) lua_newuserdata(luaVM, sizeof(struct udp_socket));
+	hndl = (struct xt_hndl*) lua_newuserdata(luaVM, sizeof(struct xt_hndl));
 	if (UDP == type) {
-		if ( (sock->socket  =  socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1 ) {
+		if ( (hndl->fd  =  socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1 ) {
 			return( pusherror(luaVM, "ERROR opening UDP socket") );
 		}
 	}
 	else if (TCP == type) {
-		if ( (sock->socket  =  socket(AF_INET, SOCK_STREAM, 0)) == -1 ) {
+		if ( (hndl->fd  =  socket(AF_INET, SOCK_STREAM, 0)) == -1 ) {
 			return( pusherror(luaVM, "ERROR opening TCP socket") );
 		}
 		/* Enable address reuse */
-		setsockopt( sock->socket, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on) );
+		setsockopt( hndl->fd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on) );
 	}
 
 	luaL_getmetatable(luaVM, "L.net.Socket");
 	lua_setmetatable(luaVM, -2);
-	return sock;
+	return hndl;
 }
 
 
 /**--------------------------------------------------------------------------
- * \brief   check a value on the stack for being a struct udp_socket
+ * \brief   check a value on the stack for being a struct xt_hndl
  * \param   luaVM    The lua state.
  * \param   int      position on the stack
- * \return  struct udp_socket*  pointer to the struct udp_socket
+ * \return  struct xt_hndl*  pointer to the struct xt_hndl
  * --------------------------------------------------------------------------*/
-struct udp_socket *check_ud_socket (lua_State *luaVM, int pos) {
+struct xt_hndl *check_ud_socket (lua_State *luaVM, int pos) {
 	void *ud = luaL_checkudata(luaVM, pos, "L.net.Socket");
 	luaL_argcheck(luaVM, ud != NULL, pos, "`Socket` expected");
-	return (struct udp_socket *) ud;
+	return (struct xt_hndl *) ud;
 }
 
 
@@ -94,9 +94,9 @@ struct udp_socket *check_ud_socket (lua_State *luaVM, int pos) {
  *-------------------------------------------------------------------------*/
 static int l_create_udp_socket(lua_State *luaVM)
 {
-	struct udp_socket  __attribute__ ((unused)) *sock;
+	struct xt_hndl  __attribute__ ((unused)) *hndl;
 
-	sock = create_ud_socket(luaVM, UDP);
+	hndl = create_ud_socket(luaVM, UDP);
 
 	return 1 ;
 }
@@ -110,9 +110,9 @@ static int l_create_udp_socket(lua_State *luaVM)
  *-------------------------------------------------------------------------*/
 static int l_create_tcp_socket(lua_State *luaVM)
 {
-	struct udp_socket  __attribute__ ((unused)) *sock;
+	struct xt_hndl  __attribute__ ((unused)) *hndl;
 
-	sock = create_ud_socket(luaVM, TCP);
+	hndl = create_ud_socket(luaVM, TCP);
 	return 1 ;
 }
 
@@ -126,13 +126,13 @@ static int l_create_tcp_socket(lua_State *luaVM)
  *-------------------------------------------------------------------------*/
 static int l_listen_socket(lua_State *luaVM)
 {
-	struct udp_socket  *sock;
+	struct xt_hndl  *hndl;
 	int                 backlog;
 
-	sock = check_ud_socket (luaVM, 1);
+	hndl = check_ud_socket (luaVM, 1);
 	backlog = luaL_checkint(luaVM, 2);
 
-	if( listen(sock->socket , backlog ) == -1)
+	if( listen(hndl->fd , backlog ) == -1)
 		return( pusherror(luaVM, "ERROR listen to socket") );
 
 	return( 0 );
@@ -148,13 +148,13 @@ static int l_listen_socket(lua_State *luaVM)
  *-------------------------------------------------------------------------*/
 static int l_bind_socket(lua_State *luaVM)
 {
-	struct udp_socket  *sock;
+	struct xt_hndl  *hndl;
 	struct sockaddr_in *ip;
 
-	sock = check_ud_socket (luaVM, 1);
+	hndl = check_ud_socket (luaVM, 1);
 	ip = check_ud_ipendpoint (luaVM, 2);
 
-	if( bind(sock->socket , (struct sockaddr*) &(*ip), sizeof(struct sockaddr) ) == -1)
+	if( bind(hndl->fd , (struct sockaddr*) &(*ip), sizeof(struct sockaddr) ) == -1)
 		return( pusherror(luaVM, "ERROR binding socket") );
 
 	return( 0 );
@@ -170,13 +170,13 @@ static int l_bind_socket(lua_State *luaVM)
  *-------------------------------------------------------------------------*/
 static int l_connect_socket(lua_State *luaVM)
 {
-	struct udp_socket  *sock;
+	struct xt_hndl  *hndl;
 	struct sockaddr_in *ip;
 
-	sock = check_ud_socket (luaVM, 1);
+	hndl = check_ud_socket (luaVM, 1);
 	ip = check_ud_ipendpoint (luaVM, 2);
 
-	if( connect(sock->socket , (struct sockaddr*) &(*ip), sizeof(struct sockaddr) ) == -1)
+	if( connect(hndl->fd , (struct sockaddr*) &(*ip), sizeof(struct sockaddr) ) == -1)
 		return( pusherror(luaVM, "ERROR connecting socket") );
 
 	return( 0 );
@@ -193,16 +193,16 @@ static int l_connect_socket(lua_State *luaVM)
  *-------------------------------------------------------------------------*/
 static int l_accept_socket(lua_State *luaVM)
 {
-	struct udp_socket  *lsock;   // listening socket
-	struct udp_socket  *asock;   // accepted connection socket
+	struct xt_hndl  *lhndl;   // listening socket
+	struct xt_hndl  *ahndl;   // accepted connection socket
 	struct sockaddr_in *si_cli;
 	socklen_t           their_addr_size = sizeof(struct sockaddr_in);
 
-	lsock = check_ud_socket (luaVM, 1);
-	asock = create_ud_socket (luaVM, TCP);
+	lhndl = check_ud_socket (luaVM, 1);
+	ahndl = create_ud_socket (luaVM, TCP);
 
 	si_cli = create_ud_ipendpoint(luaVM);
-	asock->socket = accept(lsock->socket, (struct sockaddr *) &(*si_cli), &their_addr_size);
+	ahndl->fd = accept(lhndl->fd, (struct sockaddr *) &(*si_cli), &their_addr_size);
 
 	return( 2 );
 }
@@ -216,11 +216,11 @@ static int l_accept_socket(lua_State *luaVM)
  *-------------------------------------------------------------------------*/
 static int l_close_socket(lua_State *luaVM)
 {
-	struct udp_socket  *sock;
+	struct xt_hndl  *hndl;
 
-	sock = check_ud_socket (luaVM, 1);
+	hndl = check_ud_socket (luaVM, 1);
 
-	if( close(sock->socket)  == -1)
+	if( close(hndl->fd)  == -1)
 		return( pusherror(luaVM, "ERROR closing socket") );
 
 	return( 0 );
@@ -238,12 +238,12 @@ static int l_close_socket(lua_State *luaVM)
  *-------------------------------------------------------------------------*/
 static int l_send_to(lua_State *luaVM)
 {
-	struct udp_socket  *sock;
+	struct xt_hndl     *hndl;
 	struct sockaddr_in *ip;
 	int                 sent;
 	const char         *msg;
 
-	sock = check_ud_socket (luaVM, 1);
+	hndl = check_ud_socket (luaVM, 1);
 	ip = check_ud_ipendpoint (luaVM, 2);
 	if (lua_isstring(luaVM, 3))
 		msg   = lua_tostring(luaVM, 3);
@@ -251,7 +251,7 @@ static int l_send_to(lua_State *luaVM)
 		return( pusherror(luaVM, "ERROR sendTo(socket,ip,msg) takes msg argument") );
 
 	if ((sent = sendto(
-	  sock->socket,
+	  hndl->fd,
 	  msg, strlen(msg), 0,
 	  (struct sockaddr *) &(*ip), sizeof(struct sockaddr))
 	  ) == -1)
@@ -272,18 +272,18 @@ static int l_send_to(lua_State *luaVM)
  *-------------------------------------------------------------------------*/
 static int l_recv_from(lua_State *luaVM)
 {
-	struct udp_socket  *sock;
+	struct xt_hndl     *hndl;
 	struct sockaddr_in *si_cli;
 	int                 rcvd;
 	char                buffer[MAX_BUF_SIZE];
 
 	unsigned int        slen=sizeof(si_cli);
 
-	sock = check_ud_socket (luaVM, 1);
+	hndl = check_ud_socket (luaVM, 1);
 	si_cli = create_ud_ipendpoint(luaVM);
 
 	if ((rcvd = recvfrom(
-	  sock->socket,
+	  hndl->fd,
 	  buffer, sizeof(buffer)-1, 0,
 	  (struct sockaddr *) &(*si_cli), &slen)
 	  ) == -1)
@@ -308,7 +308,7 @@ static int l_recv_from(lua_State *luaVM)
  *-------------------------------------------------------------------------*/
 //static int recv_from_into_buffer(lua_State *luaVM)
 //{
-//	struct udp_socket  *sock;
+//	struct xt_hndl  *hndl;
 //	int                 rcvd;
 //	struct byteBuffer  *buffer;
 //
@@ -317,12 +317,12 @@ static int l_recv_from(lua_State *luaVM)
 //
 //
 //	if (lua_isuserdata(luaVM, 1))
-//		sock = (struct udp_socket*) lua_touserdata(luaVM, 1);
+//		hndl = (struct xt_hndl*) lua_touserdata(luaVM, 1);
 //	else
 //		return( pusherror(luaVM, "ERROR sendTo(socket,ip,msg) takes socket argument") );
 //
 //	if ((rcvd = recvfrom(
-//	  sock->socket,
+//	  hndl->fd,
 //	  buffer, sizeof(buffer)-1, 0,
 //	  (struct sockaddr *) &si_cli, &slen)
 //	  ) == -1)
@@ -348,13 +348,13 @@ static int l_recv_from(lua_State *luaVM)
  *-------------------------------------------------------------------------*/
 static int l_send_strm(lua_State *luaVM)
 {
-	struct udp_socket  *sock;
+	struct xt_hndl  *hndl;
 	size_t              sent;
 	size_t              to_send;
 	const char         *msg;
 	size_t              into_msg=0;   // where in the message to start sending from
 
-	sock = check_ud_socket (luaVM, 1);
+	hndl = check_ud_socket (luaVM, 1);
 	if (lua_isstring(luaVM, 2))
 		msg   = lua_tostring(luaVM, 2);
 	else
@@ -366,7 +366,7 @@ static int l_send_strm(lua_State *luaVM)
 	to_send = strlen(msg) - into_msg;
 
 	if ((sent = send(
-	  sock->socket,
+	  hndl->fd,
 	  msg, to_send, 0)
 	  ) == -1)
 		return( pusherror(luaVM, "Failed to send TCP message") );
@@ -387,14 +387,14 @@ static int l_send_strm(lua_State *luaVM)
  *-------------------------------------------------------------------------*/
 static int l_recv_strm(lua_State *luaVM)
 {
-	struct udp_socket  *sock;
+	struct xt_hndl  *hndl;
 	int                 rcvd;
 	char                buffer[MAX_BUF_SIZE];
 
-	sock = check_ud_socket (luaVM, 1);
+	hndl = check_ud_socket (luaVM, 1);
 
 	if ((rcvd = recv(
-	  sock->socket,
+	  hndl->fd,
 	  buffer, sizeof(buffer)-1, 0)
 	  ) == -1)
 		return( pusherror(luaVM, "Failed to recieve TCP packet") );
@@ -410,15 +410,15 @@ static int l_recv_strm(lua_State *luaVM)
 /**--------------------------------------------------------------------------
  * \brief   prints out the socket.
  * \param   luaVM     The lua state.
- * \lparam  struct udp_socket the socket userdata.
+ * \lparam  struct xt_hndl the socket userdata.
  * \lreturn string    formatted string representing sockkaddr (IP:Port).
  * \return  The number of results to be passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
 static int l_socket_tostring (lua_State *luaVM) {
-	struct udp_socket *sock = check_ud_socket(luaVM, 1);
+	struct xt_hndl *hndl = check_ud_socket(luaVM, 1);
 	lua_pushfstring(luaVM, "Socket(%d): %p",
-			sock->socket,
-			sock
+			hndl->fd,
+			hndl
 	);
 	return 1;
 }

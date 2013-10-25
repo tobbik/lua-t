@@ -10,25 +10,20 @@
 #define CRC16             0xA001
 #define MAX_BUF_SIZE      4096
 
-enum socket_type {
+enum xt_hndl_t {
 	UDP,
 	TCP
 };
 
-static const char *const socket_types[] = {
+static const char *const xt_hndl_t_lst[] = {
 	"UDP",
 	"TCP",
 	NULL
 };
 
-struct udp_socket {
-	int                socket;    // socket
-	//t_timeout tm;
-};
-
-struct tdp {
-	int                socket;    // socket
-	//enum sock_type     type;      // UDP, TCP ...
+struct xt_hndl {
+	enum xt_hndl_t     hd_t;
+	int                fd;    // socket, file handle, stream ...
 	//t_timeout tm;
 };
 
@@ -41,7 +36,7 @@ struct sockaddr_in *create_ud_ipendpoint (lua_State *luaVM);
 
 // l_net_socket.c
 int luaopen_net_socket (lua_State *luaVM);
-struct udp_socket *check_ud_socket (lua_State *luaVM, int pos);
-struct udp_socket *create_ud_socket (lua_State *luaVM, enum socket_type type);
+struct xt_hndl *check_ud_socket (lua_State *luaVM, int pos);
+struct xt_hndl *create_ud_socket (lua_State *luaVM, enum xt_hndl_t type);
 
 
