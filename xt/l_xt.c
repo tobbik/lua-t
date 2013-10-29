@@ -54,11 +54,9 @@ int pusherror(lua_State *luaVM, const char *info)
 {
 	lua_pushnil(luaVM);
 	if (info==NULL)
-		lua_pushstring(luaVM, strerror(errno));
+		return luaL_error(luaVM, strerror(errno));
 	else
-		lua_pushfstring(luaVM, "%s: %s", info, strerror(errno));
-	lua_pushnumber(luaVM, errno);
-	return 3;
+		return luaL_error(luaVM, "%s: %s", info, strerror(errno));
 }
 
 
