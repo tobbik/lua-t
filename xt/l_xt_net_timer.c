@@ -141,8 +141,8 @@ static const struct luaL_Reg l_net_timer_fm [] = {
  *             assigns Lua available names to C-functions
  */
 static const struct luaL_Reg l_net_timer_m [] = {
-	{"setTime",     l_set_time},
-	{"getTime",     l_get_time},
+	{"set",     l_set_time},
+	{"get",     l_get_time},
 	{NULL,   NULL}
 };
 

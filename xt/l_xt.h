@@ -26,4 +26,5 @@ int pusherror(lua_State *luaVM, const char *info);
 
 LUAMOD_API int luaopen_net    (lua_State *luaVM);
 LUAMOD_API int luaopen_buffer (lua_State *luaVM);
+LUAMOD_API int luaopen_debug  (lua_State *luaVM);
 LUAMOD_API int luaopen_xt     (lua_State *luaVM);

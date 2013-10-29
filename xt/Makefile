@@ -13,7 +13,8 @@ XT_SRC=l_xt.c \
 	 l_xt_net_ipendpoint.c \
 	 l_xt_net_timer.c \
 	 l_xt_buffer.c \
-	 l_xt_buffer_stream.c
+	 l_xt_buffer_stream.c \
+	 l_xt_debug.c
 
 XT_OBJ=$(XT_SRC:.c=.o)
 
