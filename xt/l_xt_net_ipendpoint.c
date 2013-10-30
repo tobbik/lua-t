@@ -74,9 +74,6 @@ int set_ipendpoint_values(lua_State *luaVM, int pos, struct sockaddr_in *ip)
 								  "port number out of range");
 			ip->sin_port   = htons(port);
 		}
-		else {
-			printf(":ANY\n");
-		}
 	}
 	else if ( lua_isnumber(luaVM, pos+0) ) {
 		ip->sin_addr.s_addr = htonl(INADDR_ANY);
