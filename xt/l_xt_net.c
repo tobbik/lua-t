@@ -171,51 +171,6 @@ static int l_sleep(lua_State *luaVM)
 
 
 /** -------------------------------------------------------------------------
- * \brief   helper to create and populate an IP endpoint
- * \param   luaVM  The lua state.
- * \lparam  socket The socket userdata.
- * \lparam  ip     sockaddr userdata.
- * \return  The number of results to be passed back to the calling Lua script.
- *-------------------------------------------------------------------------*/
-static struct sockaddr_in *create_ud_tcp_ipendpoint(lua_State *luaVM)
-{
-	struct sockaddr_in  *ip;
-	int                  port;
-	ip   = create_ud_ipendpoint (luaVM);
-	memset( (char *) &(*ip), 0, sizeof(ip) );
-	ip->sin_family = AF_INET;
-
-	if (lua_isstring(luaVM, 1)) {
-#ifdef _WIN32
-		if ( InetPton (AF_INET, luaL_checkstring(luaVM, 1), &(ip->sin_addr))==0)
-			return ( pusherror(luaVM, "InetPton() failed\n") );
-#else
-		if ( inet_pton(AF_INET, luaL_checkstring(luaVM, 1), &(ip->sin_addr))==0)
-			return ( pusherror(luaVM, "inet_aton() failed\n") );
-#endif
-		if ( lua_isnumber(luaVM, 2) ) {
-			port = luaL_checkint(luaVM, 3);
-			luaL_argcheck(luaVM, 1 <= port && port <= 65536, 2,
-								  "port number out of range");
-			ip->sin_port   = htons(port);
-		}
-	}
-	else if ( lua_isnumber(luaVM, 1) ) {
-		ip->sin_addr.s_addr = htonl(INADDR_ANY);
-		port = luaL_checkint(luaVM, 1);
-		luaL_argcheck(luaVM, 1 <= port && port <= 65536, 1,
-							  "port number out of range");
-		ip->sin_port   = htons(port);
-	}
-	else if (lua_isnil(luaVM, 1) ) {
-		ip->sin_addr.s_addr = htonl(INADDR_ANY);
-	}
-
-	return ip;
-}
-
-
-/** -------------------------------------------------------------------------
  * \brief   convienience connect to create the TCP socket and the endpoint
  * \param   luaVM   The lua state.
  * \lparam  xt_hndl The socket userdata.
@@ -238,11 +193,12 @@ static int l_connect_net(lua_State *luaVM)
 		lua_pushvalue(luaVM, 1);
 	}
 	else {
-		ip   = create_ud_tcp_ipendpoint (luaVM);
+		ip = create_ud_ipendpoint(luaVM);
+		set_ipendpoint_values(luaVM, 1, ip);
 	}
 
-	if( bind(hndl->fd , (struct sockaddr*) &(*ip), sizeof(struct sockaddr) ) == -1)
-		return( pusherror(luaVM, "ERROR binding socket") );
+	if( connect(hndl->fd , (struct sockaddr*) &(*ip), sizeof(struct sockaddr) ) == -1)
+		return( pusherror(luaVM, "ERROR connecting socket") );
 
 	return( 2 );
 }
@@ -271,7 +227,8 @@ static int l_bind_net(lua_State *luaVM)
 		lua_pushvalue(luaVM, 1);
 	}
 	else {
-		ip   = create_ud_tcp_ipendpoint (luaVM);
+		ip = create_ud_ipendpoint(luaVM);
+		set_ipendpoint_values(luaVM, 1, ip);
 	}
 
 	if( bind(hndl->fd , (struct sockaddr*) &(*ip), sizeof(struct sockaddr) ) == -1)

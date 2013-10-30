@@ -439,8 +439,6 @@ static const struct luaL_Reg l_net_socket_fm [] = {
  */
 static const luaL_Reg l_net_socket_m [] =
 {
-	{"createUdp", l_create_udp_socket},
-	{"createTcp", l_create_tcp_socket},
 	{"listen",    l_listen_socket},
 	{"bind",      l_bind_socket},
 	{"connect",   l_connect_socket},
@@ -453,6 +451,17 @@ static const luaL_Reg l_net_socket_m [] =
 	{NULL,        NULL}
 };
 
+
+/**
+ * \brief      the net library class functions definition
+ *             assigns Lua available names to C-functions
+ */
+static const luaL_Reg l_net_socket_cf [] =
+{
+	{"createUdp", l_create_udp_socket},
+	{"createTcp", l_create_tcp_socket},
+	{NULL,        NULL}
+};
 
 /**--------------------------------------------------------------------------
  * \brief   pushes the Socket library onto the stack
@@ -473,11 +482,12 @@ int luaopen_net_socket (lua_State *luaVM) {
 
 	// Push the class onto the stack
 	// this is avalable as net.Socket.localhost
-	lua_createtable(luaVM, 0, 0);
-	lua_pushcfunction(luaVM, l_create_tcp_socket);
-	lua_setfield(luaVM, -2, "createTcp");
-	lua_pushcfunction(luaVM, l_create_udp_socket);
-	lua_setfield(luaVM, -2, "createUdp");
+	luaL_newlib(luaVM, l_net_socket_cf);
+	//lua_createtable(luaVM, 0, 0);
+	//lua_pushcfunction(luaVM, l_create_tcp_socket);
+	//lua_setfield(luaVM, -2, "createTcp");
+	//lua_pushcfunction(luaVM, l_create_udp_socket);
+	//lua_setfield(luaVM, -2, "createUdp");
 	// set the methods as metatable
 	// this is only avalable a <instance>:func()
 	luaL_newlib(luaVM, l_net_socket_fm);

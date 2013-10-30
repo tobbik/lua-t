@@ -55,6 +55,7 @@ struct timeval *create_ud_timer (lua_State *luaVM, int ms);
 int luaopen_net_ipendpoint (lua_State *luaVM);
 struct sockaddr_in *check_ud_ipendpoint (lua_State *luaVM, int pos);
 struct sockaddr_in *create_ud_ipendpoint (lua_State *luaVM);
+int    set_ipendpoint_values (lua_State *luaVM, int pos, struct sockaddr_in *ip);
 
 // l_xt_net_socket.c
 int luaopen_net_socket (lua_State *luaVM);
