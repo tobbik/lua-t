@@ -26,15 +26,17 @@
 #define MAX_BUF_SIZE      4096
 
 enum xt_hndl_t {
-	UDPHND,
-	TCPHND,
-	FILHND
+	UDP,
+	TCP,
+	FIL,
+	PIPE
 };
 
 static const char *const xt_hndl_t_lst[] = {
-	"UDPHND",
-	"TCPHND",
-	"FILHND",
+	"UDP",
+	"TCP",
+	"FIL",
+	"PIPE",
 	NULL
 };
 

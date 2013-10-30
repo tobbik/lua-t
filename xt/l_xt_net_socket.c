@@ -35,7 +35,7 @@ static int c_new_socket(lua_State *luaVM)
 	struct xt_hndl   __attribute__ ((unused)) *hndl;
 	enum   xt_hndl_t                           type;
 
-	type = (enum xt_hndl_t) luaL_checkoption (luaVM, 2, "TCPHND", xt_hndl_t_lst);
+	type = (enum xt_hndl_t) luaL_checkoption (luaVM, 2, "TCP", xt_hndl_t_lst);
 	hndl = create_ud_socket(luaVM, type);
 	return 1 ;
 }
@@ -52,12 +52,12 @@ struct xt_hndl *create_ud_socket(lua_State *luaVM, enum xt_hndl_t type)
 	int              on=1;
 
 	hndl = (struct xt_hndl*) lua_newuserdata(luaVM, sizeof(struct xt_hndl));
-	if (UDPHND == type) {
+	if (UDP == type) {
 		if ( (hndl->fd  =  socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1 ) {
 			return( pusherror(luaVM, "ERROR opening UDP socket") );
 		}
 	}
-	else if (TCPHND == type) {
+	else if (TCP == type) {
 		if ( (hndl->fd  =  socket(AF_INET, SOCK_STREAM, 0)) == -1 ) {
 			return( pusherror(luaVM, "ERROR opening TCP socket") );
 		}
@@ -96,7 +96,7 @@ static int l_create_udp_socket(lua_State *luaVM)
 {
 	struct xt_hndl  __attribute__ ((unused)) *hndl;
 
-	hndl = create_ud_socket(luaVM, UDPHND);
+	hndl = create_ud_socket(luaVM, UDP);
 
 	return 1 ;
 }
@@ -112,7 +112,7 @@ static int l_create_tcp_socket(lua_State *luaVM)
 {
 	struct xt_hndl  __attribute__ ((unused)) *hndl;
 
-	hndl = create_ud_socket(luaVM, TCPHND);
+	hndl = create_ud_socket(luaVM, TCP);
 	return 1 ;
 }
 
@@ -199,7 +199,7 @@ static int l_accept_socket(lua_State *luaVM)
 	socklen_t           their_addr_size = sizeof(struct sockaddr_in);
 
 	lhndl = check_ud_socket (luaVM, 1);
-	ahndl = create_ud_socket (luaVM, TCPHND);
+	ahndl = create_ud_socket (luaVM, TCP);
 
 	si_cli = create_ud_ipendpoint(luaVM);
 	ahndl->fd = accept(lhndl->fd, (struct sockaddr *) &(*si_cli), &their_addr_size);

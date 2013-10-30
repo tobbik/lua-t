@@ -21,7 +21,7 @@ static int l_file2xt_hndl(lua_State *luaVM)
 	FILE           **fPtr = (FILE **) luaL_checkudata(luaVM, 1, LUA_FILEHANDLE);
 
 	hndl = (struct xt_hndl*) lua_newuserdata(luaVM, sizeof(struct xt_hndl));
-	hndl->hd_t = FILHND;
+	hndl->hd_t = FIL;
 #ifdef WIN32
 	hndl->fd   = _fileno(*fPtr);
 #else

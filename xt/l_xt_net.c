@@ -185,7 +185,7 @@ static int l_connect_net(lua_State *luaVM)
 	struct xt_hndl      *hndl;
 	struct sockaddr_in  *ip;
 
-	hndl = create_ud_socket (luaVM, TCPHND);
+	hndl = create_ud_socket (luaVM, TCP);
 
 	if ( lua_isuserdata(luaVM, 1) ) {
 		// it's assumed that IP/port et cetera are assigned
@@ -219,7 +219,7 @@ static int l_bind_net(lua_State *luaVM)
 	struct xt_hndl     *hndl;
 	struct sockaddr_in *ip;
 	
-	hndl = create_ud_socket (luaVM, TCPHND);
+	hndl = create_ud_socket (luaVM, TCP);
 
 	if ( lua_isuserdata(luaVM, 1) ) {
 		// it's assumed that IP/port et cetera are assigned
