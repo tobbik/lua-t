@@ -2,9 +2,7 @@
 local xt=require('xt')
 
 
-local tcpsock = xt.net.Socket.createTcp()
-local ip      = xt.net.IpEndpoint('128.30.52.37', 80)
-tcpsock:connect(ip)
+local tcpsock,ip = xt.net.connect('128.30.52.37', 80)
 local len     = tcpsock:send("GET /TR/REC-html32.html HTTP/1.0\r\n\r\n")
 local buffer = {}
 local length = 0

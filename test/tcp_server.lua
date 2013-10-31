@@ -1,9 +1,11 @@
 #!../out/bin/lua
 local xt=require('xt')
+local ipadd,port='192.168.0.200',8888
 
-tcpsock = net.Socket('TCP')
-ip      = net.IpEndpoint('10.128.3.131', 8888)
-tcpsock:bind(ip)
+--tcpsock = xt.net.Socket('TCP')
+--ip      = xt.net.IpEndpoint(ipadd, port)
+--tcpsock:bind(ip)
+tcpsock,ip = xt.net.bind(ipadd,port)
 tcpsock:listen(5)
 consock = tcpsock:accept()
 length = 0

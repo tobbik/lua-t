@@ -1,14 +1,13 @@
 #!../out/bin/lua
 local xt=require('xt')
+--local sip,sport='10.128.3.131',8888
+local sip,sport='192.168.0.200',8888
 
-tcpsock = xt.net.Socket('TCP')
-ip      = xt.net.IpEndpoint('10.128.3.131', 8888)
-
-tcpsock:bind(ip)
+tcpsock,ip = xt.net.bind(sip,sport)
 tcpsock:listen(5)
+print(tcpsock,ip)
 
 conns  = { tcpsock }
-
 while true do
 	res = xt.net.select(conns, {})
 	io.write('LOOP['..#res..']:')

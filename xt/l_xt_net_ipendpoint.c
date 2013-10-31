@@ -30,47 +30,62 @@
  * \param   luaVM  The lua state.
  * \lparam  port   the port for the socket.
  * \lparam  ip     the IP address for the socket.
- * \lreturn socket sockkaddr userdata.
+ * \lreturn sockkaddr userdata.
  * \return  The number of results to be passed back to the calling Lua script.
  * TODO:  allow for empty endpoints if it makes sense
  * --------------------------------------------------------------------------*/
 static int c_new_ipendpoint(lua_State *luaVM)
 {
 	struct sockaddr_in  *ip;
-	int                  port;
+	ip = create_ud_ipendpoint(luaVM);
+	set_ipendpoint_values(luaVM, 2, ip);
+	return 1;
+}
 
-	ip = create_ud_ipendpoint ( luaVM );
+
+/**--------------------------------------------------------------------------
+ * \brief   evaluate stack parameters to set endpoint criteria.
+ * \param   luaVM The lua state.
+ * \param   int   offset  on stack to start reading values
+ * \param   struct sockaddr_in*  pointer to ip where values will be set
+ * \lparam  port  the port for the socket.
+ * \lparam  ip    the IP address for the socket.
+ * \lreturn int error number .
+ * TODO:  allow for empty endpoints if it makes sense
+ * --------------------------------------------------------------------------*/
+int set_ipendpoint_values(lua_State *luaVM, int pos, struct sockaddr_in *ip)
+{
+	int                  port;
 
 	memset( (char *) &(*ip), 0, sizeof(ip) );
 	ip->sin_family = AF_INET;
 
-	if (lua_isstring(luaVM, 2)) {
+	if (lua_isstring(luaVM, pos+0)) {
 #ifdef _WIN32
-		if ( InetPton (AF_INET, luaL_checkstring(luaVM, 2), &(ip->sin_addr))==0)
+		if ( InetPton (AF_INET, luaL_checkstring(luaVM, pos+0), &(ip->sin_addr))==0)
 			return ( pusherror(luaVM, "InetPton() failed\n") );
 #else
-		if ( inet_pton(AF_INET, luaL_checkstring(luaVM, 2), &(ip->sin_addr))==0)
+		if ( inet_pton(AF_INET, luaL_checkstring(luaVM, pos+0), &(ip->sin_addr))==0)
 			return ( pusherror(luaVM, "inet_aton() failed\n") );
 #endif
-		if ( lua_isnumber(luaVM, 3) ) {
-			port = luaL_checkint(luaVM, 3);
+		if ( lua_isnumber(luaVM, pos+1) ) {
+			port = luaL_checkint(luaVM, pos+1);
 			luaL_argcheck(luaVM, 1 <= port && port <= 65536, 3,
 								  "port number out of range");
 			ip->sin_port   = htons(port);
 		}
 	}
-	else if ( lua_isnumber(luaVM, 2) ) {
+	else if ( lua_isnumber(luaVM, pos+0) ) {
 		ip->sin_addr.s_addr = htonl(INADDR_ANY);
-		port = luaL_checkint(luaVM, 2);
+		port = luaL_checkint(luaVM, pos+0);
 		luaL_argcheck(luaVM, 1 <= port && port <= 65536, 2,
 		                 "port number out of range");
 		ip->sin_port   = htons(port);
 	}
-	else if (lua_isnil(luaVM, 2) ) {
+	else if (lua_isnil(luaVM, pos+0) ) {
 		ip->sin_addr.s_addr = htonl(INADDR_ANY);
 	}
-
-	return 1;
+	return 0;
 }
 
 

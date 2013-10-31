@@ -1,15 +1,16 @@
 #!../out/bin/lua
 local xt=require('xt')
+--local ip1,ip2,dip,dport= '10.128.3.200','10.128.3.201','10.128.3.131',8888
+local ip1,ip2,dip,dport= '192.168.0.140','192.168.0.131','192.168.0.200',8888
 
 local i=10
-tcpsock1 = xt.net.Socket('TCP')
-tcpsock2 = xt.net.Socket('TCP')
-src_ip1  = xt.net.IpEndpoint('10.128.3.200')
-src_ip2  = xt.net.IpEndpoint('10.128.3.201')
-dst_ip   = xt.net.IpEndpoint('10.128.3.131', 8888)
+tcpsock1,src_ip1 = xt.net.bind(ip1)
+tcpsock2,src_ip2 = xt.net.bind(ip2)
+dst_ip   = xt.net.IpEndpoint(dip,dport)
+print(tcpsock1,src_ip1)
+print(tcpsock2,src_ip2)
+print(dst_ip)
 
-tcpsock1:bind(src_ip1)
-tcpsock2:bind(src_ip2)
 tcpsock1:connect(dst_ip)
 tcpsock2:connect(dst_ip)
 print(tcpsock1, tcpsock2, src_ip1, src_ip2, dst_ip)

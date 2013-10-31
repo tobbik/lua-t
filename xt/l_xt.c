@@ -54,11 +54,9 @@ int pusherror(lua_State *luaVM, const char *info)
 {
 	lua_pushnil(luaVM);
 	if (info==NULL)
-		lua_pushstring(luaVM, strerror(errno));
+		return luaL_error(luaVM, strerror(errno));
 	else
-		lua_pushfstring(luaVM, "%s: %s", info, strerror(errno));
-	lua_pushnumber(luaVM, errno);
-	return 3;
+		return luaL_error(luaVM, "%s: %s", info, strerror(errno));
 }
 
 
@@ -82,8 +80,10 @@ LUAMOD_API int luaopen_xt (lua_State *luaVM)
 	luaL_newlib (luaVM, l_xt_fm);
 	luaopen_net(luaVM);
 	lua_setfield(luaVM, -2, "net");
-	luaopen_buffer(luaVM);
+	luaopen_buf(luaVM);
 	lua_setfield(luaVM, -2, "buffer");
+	luaopen_debug(luaVM);
+	lua_setfield(luaVM, -2, "debug");
 	return 1;
 }
 

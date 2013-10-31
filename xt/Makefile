@@ -11,8 +11,10 @@ XT_SRC=l_xt.c \
 	 l_xt_net.c \
 	 l_xt_net_socket.c \
 	 l_xt_net_ipendpoint.c \
-	 l_xt_buffer.c \
-	 l_xt_buffer_stream.c
+	 l_xt_net_timer.c \
+	 l_xt_buf.c \
+	 l_xt_buf_seg.c \
+	 l_xt_debug.c
 
 XT_OBJ=$(XT_SRC:.c=.o)
 
@@ -39,8 +41,8 @@ system:
 
 local:
 	$(MAKE) \
-	"CC=/usr/bin/clang" \
-	"LD=/usr/bin/clang" \
+	"CC=$(CC)" \
+	"LD=$(LD)" \
 	"INCS=$(INCS)" \
 	"LDFLAGS=$(LIBS)" \
 	all

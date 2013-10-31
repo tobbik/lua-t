@@ -19,6 +19,7 @@
 #include <sys/select.h>
 #endif
 
+
 #include "l_xt.h"
 #include "l_xt_net.h"
 //#include "l_byte_buffer.h"
@@ -148,83 +149,43 @@ static int l_sleep(lua_State *luaVM)
 	fd_set dummy;
 	int s;
 #endif
-	uint32_t         msec_len = (uint32_t) luaL_checkint(luaVM, 1);
-	struct timeval to;
-	to.tv_sec  = msec_len/1000;
-	to.tv_usec = (msec_len % 1000) * 1000;
+	struct timeval *tv;
+	uint32_t msec;
+	if (lua_isuserdata(luaVM, 1)) {
+		tv = check_ud_timer(luaVM, 1);
+	}
+	else {
+		msec = (uint32_t) luaL_checkint(luaVM, 1);
+		tv = create_ud_timer(luaVM, msec);
+	}
 #ifdef _WIN32
 	s = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
 	FD_ZERO(&dummy);
 	FD_SET(s, &dummy);
-	select(0, 0,0,&dummy, &to);
+	select(0, 0,0,&dummy, tv);
 #else
-	select(0, 0,0,0, &to);
+	select(0, 0,0,0, tv);
 #endif
 	return 0;
 }
 
 
 /** -------------------------------------------------------------------------
- * \brief   helper to create and populate an IP endpoint
- * \param   luaVM  The lua state.
- * \lparam  socket The socket userdata.
- * \lparam  ip     sockaddr userdata.
- * \return  The number of results to be passed back to the calling Lua script.
- *-------------------------------------------------------------------------*/
-static struct sockaddr_in *create_ud_tcp_ipendpoint(lua_State *luaVM)
-{
-	struct sockaddr_in  *ip;
-	int                  port;
-	ip   = create_ud_ipendpoint (luaVM);
-	memset( (char *) &(*ip), 0, sizeof(ip) );
-	ip->sin_family = AF_INET;
-
-	if (lua_isstring(luaVM, 1)) {
-#ifdef _WIN32
-		if ( InetPton (AF_INET, luaL_checkstring(luaVM, 1), &(ip->sin_addr))==0)
-			return ( pusherror(luaVM, "InetPton() failed\n") );
-#else
-		if ( inet_pton(AF_INET, luaL_checkstring(luaVM, 1), &(ip->sin_addr))==0)
-			return ( pusherror(luaVM, "inet_aton() failed\n") );
-#endif
-		if ( lua_isnumber(luaVM, 2) ) {
-			port = luaL_checkint(luaVM, 3);
-			luaL_argcheck(luaVM, 1 <= port && port <= 65536, 2,
-								  "port number out of range");
-			ip->sin_port   = htons(port);
-		}
-	}
-	else if ( lua_isnumber(luaVM, 1) ) {
-		ip->sin_addr.s_addr = htonl(INADDR_ANY);
-		port = luaL_checkint(luaVM, 1);
-		luaL_argcheck(luaVM, 1 <= port && port <= 65536, 1,
-							  "port number out of range");
-		ip->sin_port   = htons(port);
-	}
-	else if (lua_isnil(luaVM, 1) ) {
-		ip->sin_addr.s_addr = htonl(INADDR_ANY);
-	}
-
-	return ip;
-}
-
-
-/** -------------------------------------------------------------------------
  * \brief   convienience connect to create the TCP socket and the endpoint
- * \param   luaVM  The lua state.
- * \lparam  socket The socket userdata.
- * \lparam  ip     sockaddr userdata.
+ * \param   luaVM   The lua state.
+ * \lparam  xt_hndl The socket userdata.
+ * \lparam  ip      sockaddr userdata.
  *    /// or
- * \lparam  ip     string IP address.
- * \lparam  port   int port.
+ * \lparam  ip      string IP address.
+ * \lparam  port    int port.
  * \return  The number of results to be passed back to the calling Lua script.
  *-------------------------------------------------------------------------*/
 static int l_connect_net(lua_State *luaVM)
 {
-	struct udp_socket   *sock;
+	struct xt_hndl      *hndl;
 	struct sockaddr_in  *ip;
 
-	sock = create_ud_socket (luaVM, TCP);
+	hndl = create_ud_socket (luaVM, TCP);
 
 	if ( lua_isuserdata(luaVM, 1) ) {
 		// it's assumed that IP/port et cetera are assigned
@@ -232,11 +193,12 @@ static int l_connect_net(lua_State *luaVM)
 		lua_pushvalue(luaVM, 1);
 	}
 	else {
-		ip   = create_ud_tcp_ipendpoint (luaVM);
+		ip = create_ud_ipendpoint(luaVM);
+		set_ipendpoint_values(luaVM, 1, ip);
 	}
 
-	if( bind(sock->socket , (struct sockaddr*) &(*ip), sizeof(struct sockaddr) ) == -1)
-		return( pusherror(luaVM, "ERROR binding socket") );
+	if( connect(hndl->fd , (struct sockaddr*) &(*ip), sizeof(struct sockaddr) ) == -1)
+		return( pusherror(luaVM, "ERROR connecting socket") );
 
 	return( 2 );
 }
@@ -254,10 +216,10 @@ static int l_connect_net(lua_State *luaVM)
  *-------------------------------------------------------------------------*/
 static int l_bind_net(lua_State *luaVM)
 {
-	struct udp_socket  *sock;
+	struct xt_hndl     *hndl;
 	struct sockaddr_in *ip;
 	
-	sock = create_ud_socket (luaVM, TCP);
+	hndl = create_ud_socket (luaVM, TCP);
 
 	if ( lua_isuserdata(luaVM, 1) ) {
 		// it's assumed that IP/port et cetera are assigned
@@ -265,10 +227,11 @@ static int l_bind_net(lua_State *luaVM)
 		lua_pushvalue(luaVM, 1);
 	}
 	else {
-		ip   = create_ud_tcp_ipendpoint (luaVM);
+		ip = create_ud_ipendpoint(luaVM);
+		set_ipendpoint_values(luaVM, 1, ip);
 	}
 
-	if( bind(sock->socket , (struct sockaddr*) &(*ip), sizeof(struct sockaddr) ) == -1)
+	if( bind(hndl->fd , (struct sockaddr*) &(*ip), sizeof(struct sockaddr) ) == -1)
 		return( pusherror(luaVM, "ERROR binding socket") );
 
 	return( 2 );
@@ -285,10 +248,10 @@ static int l_bind_net(lua_State *luaVM)
  * \param  *int    the maximum socket(fd) value
  * \return  void.
  *-------------------------------------------------------------------------*/
-static void make_fdset(lua_State *luaVM, int stack_pos, fd_set *collection, int *max_sock)
+void make_fdset(lua_State *luaVM, int stack_pos, fd_set *collection, int *max_hndl)
 {
-	int                 i;      // table iterator
-	struct udp_socket  *sock;
+	int              i;      // table iterator
+	struct xt_hndl  *hndl;
 
 	FD_ZERO(collection);
 	// empty table == nil
@@ -296,7 +259,7 @@ static void make_fdset(lua_State *luaVM, int stack_pos, fd_set *collection, int 
 	// only accept tables
 	luaL_checktype(luaVM, stack_pos, LUA_TTABLE);
 
-	// adding sockets to FD_SETs
+	// adding fh to FD_SETs
 	for ( i=1 ; ; i++ )
 	{
 		lua_rawgeti(luaVM, stack_pos, i);
@@ -308,9 +271,9 @@ static void make_fdset(lua_State *luaVM, int stack_pos, fd_set *collection, int 
 		}
 
 		// get the values and clear the stack
-		sock = (struct udp_socket*) lua_touserdata(luaVM, -1);
-		FD_SET( sock->socket, collection );
-		*max_sock = (sock->socket > *max_sock) ? sock->socket : *max_sock;
+		hndl = (struct xt_hndl*) lua_touserdata(luaVM, -1);
+		FD_SET( hndl->fd, collection );
+		*max_hndl = (hndl->fd > *max_hndl) ? hndl->fd : *max_hndl;
 		lua_pop(luaVM, 1);   // remove the socket from the stack
 	}
 }
@@ -326,12 +289,12 @@ static void make_fdset(lua_State *luaVM, int stack_pos, fd_set *collection, int 
  * \return  The number of results to be passed back to the calling Lua script.
  * TODO:  Allow for a Time Out to be handed to it
  *-------------------------------------------------------------------------*/
-static int l_select_socket(lua_State *luaVM)
+static int l_select_handle(lua_State *luaVM)
 {
-	fd_set              rfds, wfds;
-	struct udp_socket  *sock;
-	int                 rnum, wnum, readsocks, i/*, rp*/;
-	int                 rset=1;//, wset=1;   // write the values back into the tables on the stack
+	fd_set           rfds, wfds;
+	struct xt_hndl  *hndl;
+	int              rnum, wnum, readsocks, i/*, rp*/;
+	int              rset=1;//, wset=1;
 
 	wnum = -1;
 	rnum = -1;
@@ -361,8 +324,8 @@ static int l_select_socket(lua_State *luaVM)
 		}
 
 		// get the values and clear the stack
-		sock = (struct udp_socket*) lua_touserdata(luaVM, -1);
-		if FD_ISSET( sock->socket, &rfds)
+		hndl = (struct xt_hndl*) lua_touserdata(luaVM, -1);
+		if FD_ISSET( hndl->fd, &rfds)
 		{
 			// put into reads
 			lua_rawseti(luaVM, -2, rset++);
@@ -380,9 +343,7 @@ static int l_select_socket(lua_State *luaVM)
 		}
 	}
 	//lua_pop(luaVM, -1);   // remove the table from the stack
-
 	return (1);
-
 }
 
 
@@ -392,11 +353,11 @@ static int l_select_socket(lua_State *luaVM)
  */
 static const luaL_Reg l_net_lib [] =
 {
-	{"sleep",     l_sleep},
-	{"select",    l_select_socket},
-	{"bind",      l_bind_net},
-	{"connect",   l_connect_net},
-	{NULL,        NULL}
+	{"sleep",       l_sleep},
+	{"select",      l_select_handle},
+	{"bind",        l_bind_net},
+	{"connect",     l_connect_net},
+	{NULL,          NULL}
 };
 
 
@@ -408,6 +369,8 @@ static const luaL_Reg l_net_lib [] =
 LUAMOD_API int luaopen_net (lua_State *luaVM)
 {
 	luaL_newlib (luaVM, l_net_lib);
+	luaopen_net_timer(luaVM);
+	lua_setfield(luaVM, -2, "Timer");
 	luaopen_net_ipendpoint(luaVM);
 	lua_setfield(luaVM, -2, "IpEndpoint");
 	luaopen_net_socket(luaVM);
