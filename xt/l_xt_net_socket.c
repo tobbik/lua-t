@@ -283,24 +283,32 @@ static int l_send_to(lua_State *luaVM)
 static int l_recv_from(lua_State *luaVM)
 {
 	struct xt_hndl     *hndl;
+	struct xt_buf      *buf;
 	struct sockaddr_in *si_cli;
 	int                 rcvd;
 	char                buffer[MAX_BUF_SIZE];
+	char                *rcv = &(buffer[0]);
+	int                 len = sizeof(buffer)-1;
 
 	unsigned int        slen=sizeof(si_cli);
 
 	hndl = check_ud_socket (luaVM, 1);
+	if (lua_isuserdata(luaVM, 2)) {
+		buf  = check_ud_buf(luaVM, 2);
+		rcv  = (char *) &(buf->b[ 0 ]);
+		len  = buf->len;
+	}
 	si_cli = create_ud_ipendpoint(luaVM);
 
 	if ((rcvd = recvfrom(
 	  hndl->fd,
-	  buffer, sizeof(buffer)-1, 0,
+	  rcv, len, 0,
 	  (struct sockaddr *) &(*si_cli), &slen)
 	  ) == -1)
 		return( pusherror(luaVM, "Failed to recieve UDP packet") );
 
 	// return buffer, length, IpEndpoint
-	lua_pushlstring(luaVM, buffer, rcvd );
+	lua_pushlstring(luaVM, rcv, rcvd );
 	lua_pushinteger(luaVM, rcvd);
 	lua_pushvalue(luaVM, -3);
 	return 3;
