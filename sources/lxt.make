@@ -6,7 +6,7 @@ all: lxtcompile
 $(SRCDIR)/$(LUASRC):
 	wget http://www.lua.org/ftp/$(LUASRC) -O $(SRCDIR)/$(LUASRC)
 
-luasource: $(SRCDIR)/$(LUASRC)
+$(COMPDIR)/Lua/src: $(SRCDIR)/$(LUASRC)
 	mkdir -p $(COMPDIR)/Lua
 	tar -xvzf $(SRCDIR)/$(LUASRC) -C $(COMPDIR)/Lua --strip-components=1
 	patch -d $(COMPDIR)/Lua/src/ -i $(SRCDIR)/lua-5.2.2_upstream.patch || exit
@@ -14,10 +14,9 @@ luasource: $(SRCDIR)/$(LUASRC)
 
 xtsource:
 	mkdir -p $(COMPDIR)/xt
-	cp -avr $(XTDIR)/* $(COMPDIR)/xt/
+	cp -ar $(XTDIR)/* $(COMPDIR)/xt/
 
-xtcompile: luasource xtsource
-	#rm $(COMPDIR)/xt/*.o ; $(MAKE) clean
+xtcompile: $(COMPDIR)/Lua/src xtsource
 	cd $(COMPDIR)/xt ; $(MAKE) CC=$(CC) LD=$(LD) \
 		MYCFLAGS=' -g' \
 		INCS="$(COMPDIR)/Lua/src" all || exit
@@ -34,4 +33,4 @@ lxtinstall: lxtcompile
 		install
 
 clean:
-	rm -rf Lua
+	rm -rf $(COMPDIR)/Lua $(COMPDIR)/xt
