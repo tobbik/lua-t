@@ -416,6 +416,21 @@ static int l_get_len(lua_State *luaVM)
 }
 
 
+/**
+ * \brief     returns buffer content as String
+ * \param     lua state
+ * \return    integer   how many elements are placed on the Lua stack
+*/
+static int l_get_string(lua_State *luaVM)
+{
+	struct xt_buf *b;
+
+	b   = check_ud_buf(luaVM, 1);
+	lua_pushlstring(luaVM, b->b, (int) b->len);
+	return 1;
+}
+
+
 /**--------------------------------------------------------------------------
  * \brief   tostring representation of a buffer stream.
  * \param   luaVM     The lua state.
@@ -457,6 +472,7 @@ static const luaL_Reg l_buf_m [] =
 	{"write64",       l_write_64},
 	{"length",        l_get_len},
 	{"toHex",         l_get_hex_string},
+	{"getString",     l_get_string},
 	{"ByteSegment",   c_new_buf_seg_byte},
 	{"BitSegment",    c_new_buf_seg_bits},
 	{"StringSegment", c_new_buf_seg_string},

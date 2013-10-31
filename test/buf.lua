@@ -1,4 +1,5 @@
-xt = require"xt"
+#!../out/bin/lua
+local xt = require("xt")
 exbs=function(e)
 	local m = getmetatable(e)
 	print(e, m)

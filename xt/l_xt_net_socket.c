@@ -20,6 +20,7 @@
 #endif
 #include "l_xt.h"
 #include "l_xt_net.h"
+#include "l_xt_buf.h"
 
 
 /** -------------------------------------------------------------------------
@@ -240,19 +241,28 @@ static int l_send_to(lua_State *luaVM)
 {
 	struct xt_hndl     *hndl;
 	struct sockaddr_in *ip;
+	struct xt_buf      *buf;
 	int                 sent;
+	int                 len;
 	const char         *msg;
 
 	hndl = check_ud_socket (luaVM, 1);
-	ip = check_ud_ipendpoint (luaVM, 2);
-	if (lua_isstring(luaVM, 3))
+	ip   = check_ud_ipendpoint (luaVM, 2);
+	if (lua_isstring(luaVM, 3)) {
 		msg   = lua_tostring(luaVM, 3);
+		len   = strlen(msg);
+	}
+	else if (lua_isuserdata(luaVM, 3)) {
+		buf  = check_ud_buf(luaVM, 3);
+		msg  = (char *) &(buf->b[ 0 ]);
+		len  = buf->len;
+	}
 	else
 		return( pusherror(luaVM, "ERROR sendTo(socket,ip,msg) takes msg argument") );
 
 	if ((sent = sendto(
 	  hndl->fd,
-	  msg, strlen(msg), 0,
+	  msg, len, 0,
 	  (struct sockaddr *) &(*ip), sizeof(struct sockaddr))
 	  ) == -1)
 		return( pusherror(luaVM, "Failed to send UDP packet") );
