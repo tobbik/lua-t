@@ -5,15 +5,15 @@ struct xt_buf {
 };
 
 
-enum xt_buf_seg_type {
-	BUF_SEG_BIT,    /* X  Bit  wide field*/
-	BUF_SEG_BYTE,   /* X  Byte wide field*/
-	BUF_SEG_STR     /* string buffer field */
+enum xt_buf_fld_type {
+	BUF_FLD_BIT,    /* X  Bit  wide field*/
+	BUF_FLD_BYTE,   /* X  Byte wide field*/
+	BUF_FLD_STR     /* string buffer field */
 };
 
 
-struct xt_buf_seg {
-	enum  xt_buf_seg_type type;    /* type of field  */
+struct xt_buf_fld {
+	enum  xt_buf_fld_type type;    /* type of field  */
 	/* pointer to position in buffer according to type */
 	uint8_t           *v8;
 	uint16_t          *v16;
@@ -43,11 +43,11 @@ struct xt_buf   *check_ud_buf   (lua_State *luaVM, int pos);
 struct xt_buf   *create_ud_buf  (lua_State *luaVM, int size);
 
 
-// l_xt_buf_seg.c
-int                 luaopen_buf_seg      (lua_State *luaVM);
-int                 c_new_buf_seg_bits   (lua_State *luaVM);
-int                 c_new_buf_seg_byte   (lua_State *luaVM);
-int                 c_new_buf_seg_string (lua_State *luaVM);
-struct xt_buf_seg  *check_ud_buf_seg     (lua_State *luaVM, int pos);
-struct xt_buf_seg  *create_ud_buf_seg    (lua_State *luaVM);
+// l_xt_buf_fld.c
+int                 luaopen_buf_fld      (lua_State *luaVM);
+int                 c_new_buf_fld_bits   (lua_State *luaVM);
+int                 c_new_buf_fld_byte   (lua_State *luaVM);
+int                 c_new_buf_fld_string (lua_State *luaVM);
+struct xt_buf_fld  *check_ud_buf_fld     (lua_State *luaVM, int pos);
+struct xt_buf_fld  *create_ud_buf_fld    (lua_State *luaVM);
 

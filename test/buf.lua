@@ -12,6 +12,7 @@ exbs=function(e)
 end
 
 ext_bs=function(e)
+	print(e)
 	local m = getmetatable(e).__index
 	m.update = function(x)
 		local v=x:read()
@@ -31,7 +32,7 @@ print( b:toHex() )
 
 print("\t\t\tBITFIELD  ACCESS");
 bs={}
-bs[1]=b:BitSegment(6,7)
+bs[1]=b:BitField(6,7)
 ext_bs(bs[1])
 print(bs[1]:read())
 bs[1]:write(1)
@@ -39,14 +40,14 @@ print(bs[1]:read())
 print( b:toHex() )
 
 print("\t\t\tBYTEFIELD  ACCESS");
-bs[2]=b:ByteSegment(4,5)
+bs[2]=b:ByteField(4,5)
 print(bs[2]:read())
 bs[2]:write(0x99ABCDEF)
 print(bs[2]:read())
 print( b:toHex() )
 
-print("\t\t\tSTRINGSEGMENT ACCESS");
-bs[3]=b:StringSegment(6,9)
+print("\t\t\tSTRINGFIELD ACCESS");
+bs[3]=b:StringField(6,9)
 print(bs[3]:read())
 bs[3]:write("FOOBAR")
 print(bs[3]:read())

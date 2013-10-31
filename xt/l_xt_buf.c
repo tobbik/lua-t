@@ -534,9 +534,9 @@ static const luaL_Reg l_buf_m [] =
 	{"length",        l_get_len},
 	{"toHex",         l_get_hex_string},
 	{"getString",     l_get_string},
-	{"ByteSegment",   c_new_buf_seg_byte},
-	{"BitSegment",    c_new_buf_seg_bits},
-	{"StringSegment", c_new_buf_seg_string},
+	{"ByteField",     c_new_buf_fld_byte},
+	{"BitField",      c_new_buf_fld_bits},
+	{"StringField",   c_new_buf_fld_string},
 	{NULL,            NULL}
 };
 
@@ -561,8 +561,8 @@ LUAMOD_API int luaopen_buf (lua_State *luaVM)
 	lua_pop(luaVM, 1);        // remove metatable from stack
 	// empty Buffer class = {}, this is the actual return of this function
 	lua_createtable(luaVM, 0, 0);
-	luaopen_buf_seg(luaVM);
-	lua_setfield(luaVM, -2, "Segment");
+	luaopen_buf_fld(luaVM);
+	lua_setfield(luaVM, -2, "Field");
 	luaL_newlib(luaVM, l_buf_fm);
 	lua_setmetatable(luaVM, -2);
 	return 1;
