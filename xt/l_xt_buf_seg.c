@@ -471,6 +471,7 @@ static int write_16(lua_State *luaVM) {
 	return 0;
 }
 
+
 /**
  * \brief    sets a 4 byte wide value
  * \param  lua Virtual Machine
@@ -550,8 +551,15 @@ static int l_write(lua_State *luaVM) {
  * \return  The number of results to be passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
 static int l_buf_seg_tostring (lua_State *luaVM) {
-	struct xt_buf_seg *bs = check_ud_buf_seg(luaVM, 1);
-	lua_pushfstring(luaVM, "Buffer.Segment{}: %p", bs);
+	struct xt_buf_seg *seg = check_ud_buf_seg(luaVM, 1);
+
+	seg->read(luaVM);
+	if (lua_isstring(luaVM, 2))
+		lua_pushfstring(luaVM, "Buffer.Segment{%s}: %p", lua_tostring(luaVM, 2), seg);
+	else if (lua_isnumber(luaVM, 2))
+		lua_pushfstring(luaVM, "Buffer.Segment{%d}: %p", luaL_checkint(luaVM, 2), seg);
+	else
+		lua_pushfstring(luaVM, "Buffer.Segment{}: %p", seg);
 	return 1;
 }
 
@@ -581,8 +589,8 @@ int luaopen_buf_seg (lua_State *luaVM)
 	luaL_newmetatable(luaVM, "L.Buffer.Segment");   // stack: functions meta
 	luaL_newlib(luaVM, l_buf_seg_m);
 	lua_setfield(luaVM, -2, "__index");
-	//lua_pushcfunction(luaVM, l_buf_seg_tostring);
-	//lua_setfield(luaVM, -2, "__tostring");
+	lua_pushcfunction(luaVM, l_buf_seg_tostring);
+	lua_setfield(luaVM, -2, "__tostring");
 	lua_pop(luaVM, 1);        // remove metatable from stack
 	// empty IpEndpoint class = {}, this is the actual return of this function
 	lua_createtable(luaVM, 0, 0);

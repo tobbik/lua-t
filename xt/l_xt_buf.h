@@ -1,6 +1,6 @@
 
 struct xt_buf {
-	size_t         len;
+	size_t         len;   // length in bytes
 	unsigned char  b[1];  // variable size buffer -> last in struct
 };
 

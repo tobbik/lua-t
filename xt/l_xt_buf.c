@@ -65,12 +65,24 @@ int l_shortToBcd(lua_State *luaVM)
 */
 static int c_new_buf(lua_State *luaVM)
 {
-	int                    sz;
+	size_t                                   sz;
 	struct xt_buf  __attribute__ ((unused)) *b;
+	const char                              *buf;
 
-	sz  = luaL_checkint(luaVM, 2);
-	b   = create_ud_buf(luaVM, sz);
-
+	if (lua_isnumber(luaVM, 2)) {
+		sz  = luaL_checkint(luaVM, 2);
+		b   = create_ud_buf(luaVM, sz);
+	}
+	else{
+		buf = luaL_checklstring(luaVM, 2, &sz);
+		b   = create_ud_buf(luaVM, sz);
+#ifdef _WIN32
+		size_t l = sz;
+		strncpy_s( (char*) b->b, l, luaL_checklstring(luaVM, 2, &sz), sz);
+#else
+		strncpy  ( (char*) b->b,    luaL_checklstring(luaVM, 2, &sz), sz);
+#endif
+	}
 	return 1;
 }
 
@@ -245,6 +257,27 @@ static int l_read_64 (lua_State *luaVM) {
 
 
 /**
+ * \brief  gets the string from a buffer of len x for pos y
+ * \param  lua Virtual Machine
+ * \lparam struct xt_buf 
+ * \lparam int    length in bytes
+ * \lparam int    offset in bytes
+ * \return integer 1 left on the stack
+ */
+// TODO: boundary checks on buffer vs string length
+static int l_read_string (lua_State *luaVM) {
+	struct xt_buf *b   = check_ud_buf(luaVM, 1);
+	int            ofs = luaL_checkint(luaVM, 2);
+	int            sz  = luaL_checkint(luaVM, 3);
+
+	lua_pushlstring(luaVM,
+			(const char*) &(b->b[ ofs ]),
+			sz);
+	return 1;
+}
+
+
+/**
  * \brief    sets a value at a position in the stream
  *
  * \return integer 0 left on the stack
@@ -379,6 +412,32 @@ static int l_write_64(lua_State *luaVM) {
 
 
 /**
+ * \brief  set a string in a buffer at pos y
+ * \param  lua Virtual Machine
+ * \lparam struct xt_buf 
+ * \lparam string value to set
+ * \lparam int    offset in bytes
+ * \lparam length offset in bytes
+ * \return integer 1 left on the stack
+ */
+// TODO: handle length and zero over it first
+static int l_write_string (lua_State *luaVM) {
+	struct xt_buf *b   = check_ud_buf(luaVM, 1);
+	int            ofs;
+	int            sz;
+	size_t         l;
+	ofs = (lua_isnumber(luaVM, 3)) ? luaL_checkint(luaVM, 3) : 0;
+	sz  = (lua_isnumber(luaVM, 4)) ? luaL_checkint(luaVM, 4) : 0;
+#ifdef _WIN32
+	strncpy_s((char*) &(b->b[ ofs ]), l, luaL_checklstring(luaVM, 2, &l), l);
+#else
+	strncpy  ((char*) &(b->b[ ofs ]), luaL_checklstring(luaVM, 2, &l), l);
+#endif
+	return 0;
+}
+
+
+/**
  * \brief    gets the content of the Stream in Hex
  * lreturn   string buffer representation in Hexadecimal
  *
@@ -426,7 +485,7 @@ static int l_get_string(lua_State *luaVM)
 	struct xt_buf *b;
 
 	b   = check_ud_buf(luaVM, 1);
-	lua_pushlstring(luaVM, b->b, (int) b->len);
+	lua_pushlstring(luaVM, (char*) b->b, (int) b->len);
 	return 1;
 }
 
@@ -440,7 +499,7 @@ static int l_get_string(lua_State *luaVM)
  * --------------------------------------------------------------------------*/
 static int l_stream_tostring (lua_State *luaVM) {
 	struct xt_buf *bs = check_ud_buf(luaVM, 1);
-	lua_pushfstring(luaVM, "Stream{%d}: %p", bs->len, bs);
+	lua_pushfstring(luaVM, "Buffer{%d}: %p", bs->len, bs);
 	return 1;
 }
 
@@ -466,10 +525,12 @@ static const luaL_Reg l_buf_m [] =
 	{"read16",        l_read_16},
 	{"read32",        l_read_32},
 	{"read64",        l_read_64},
+	{"readString",    l_read_string},
 	{"write8",        l_write_8},
 	{"write16",       l_write_16},
 	{"write32",       l_write_32},
 	{"write64",       l_write_64},
+	{"writeString",   l_write_string},
 	{"length",        l_get_len},
 	{"toHex",         l_get_hex_string},
 	{"getString",     l_get_string},
