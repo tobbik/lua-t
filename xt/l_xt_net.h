@@ -67,5 +67,6 @@ struct xt_hndl *create_ud_socket (lua_State *luaVM, enum xt_hndl_t type);
 
 // HELPERS
 // l_xt_net.c
-void make_fdset(lua_State *luaVM, int stack_pos, fd_set *collection, int *max_hndl);
+void     make_fdset(lua_State *luaVM, int stack_pos, fd_set *collection, int *max_hndl);
+uint16_t get_crc16(const unsigned char *data, size_t size);
 

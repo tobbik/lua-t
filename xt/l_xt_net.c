@@ -80,10 +80,8 @@ inline uint16_t Reverse2Bytes(uint16_t value)
  * \param       char buffer *data  data including the needed extra (2) bytes
  * \param       size_t size  how much of data is the payload
  */
-static void get_crc16(const unsigned char *data, size_t size)
+uint16_t get_crc16(const unsigned char *data, size_t size)
 {
-	uint16_t  *checksum      = (uint16_t *) (data + size -2);
-
 	uint16_t out = 0;
 	int bits_read = 0, bit_flag;
 	int i;
@@ -92,10 +90,9 @@ static void get_crc16(const unsigned char *data, size_t size)
 
 	/* Sanity check: */
 	if(data == NULL)
-		return ;
+		return 0x00;
 
 	// the size reported here includes the padding for the chacksum -> remove for calculation
-	size-=2;
 	while(size > 0)
 	{
 		bit_flag = out >> 15;
@@ -132,7 +129,7 @@ static void get_crc16(const unsigned char *data, size_t size)
 		if (i & out) crc |= j;
 	}
 
-	*checksum = crc;
+	return crc;
 }
 
 

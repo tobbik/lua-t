@@ -7,6 +7,7 @@
 
 #include "l_xt.h"
 #include "l_xt_buf.h"
+#include "l_xt_net.h"             // for CRC16 helper
 
 
 // inline helper functions
@@ -55,11 +56,6 @@ int l_shortToBcd(lua_State *luaVM)
 
 /**
  * \brief     creates the buffer for the the network function
- * \detail    it creates the buffer used to stor all information and send them
- *            out to the network. In order to guarantee the binary operations
- *            for 64 bit integers it must be 8 bytes longer than what gets send
- *            out. By the same time the 8bytes padding in the ned provide space
- *            for two bytes used as placeholder for the CRC16 checksum if needed
  * \param     lua state
  * \return    integer   how many elements are placed on the Lua stack
 */
@@ -489,6 +485,22 @@ static int l_get_string(lua_State *luaVM)
 	return 1;
 }
 
+/**
+ * \brief   calculates the CRC16 checksum over the buffer up to len
+ * \lparam  length in bytes
+ * \lreturn int CRC16 checksum 
+ * \return integer 1 left on the stack
+ */
+static int l_get_crc16 (lua_State *luaVM) {
+	struct xt_buf *b = check_ud_buf(luaVM, 1);
+	int            len;
+	len = luaL_checkint(luaVM, 2);
+	lua_pushinteger(luaVM, (int) get_crc16( b->b, len));
+	return 1;
+}
+
+
+
 
 /**--------------------------------------------------------------------------
  * \brief   tostring representation of a buffer stream.
@@ -534,6 +546,7 @@ static const luaL_Reg l_buf_m [] =
 	{"length",        l_get_len},
 	{"toHex",         l_get_hex_string},
 	{"getString",     l_get_string},
+	{"getCRC16",      l_get_crc16},
 	{"ByteField",     c_new_buf_fld_byte},
 	{"BitField",      c_new_buf_fld_bits},
 	{"StringField",   c_new_buf_fld_string},

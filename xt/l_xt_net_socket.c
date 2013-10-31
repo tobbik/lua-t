@@ -20,7 +20,7 @@
 #endif
 #include "l_xt.h"
 #include "l_xt_net.h"
-#include "l_xt_buf.h"
+#include "l_xt_buf.h"         // the ability to send and recv buffers
 
 
 /** -------------------------------------------------------------------------
