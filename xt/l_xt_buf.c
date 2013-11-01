@@ -63,21 +63,11 @@ static int c_new_buf(lua_State *luaVM)
 {
 	size_t                                   sz;
 	struct xt_buf  __attribute__ ((unused)) *b;
-	const char                              *buf;
 
-	if (lua_isnumber(luaVM, 2)) {
-		sz  = luaL_checkint(luaVM, 2);
-		b   = create_ud_buf(luaVM, sz);
-	}
-	else{
-		buf = luaL_checklstring(luaVM, 2, &sz);
-		b   = create_ud_buf(luaVM, sz);
-#ifdef _WIN32
-		size_t l = sz;
-		strncpy_s( (char*) b->b, l, luaL_checklstring(luaVM, 2, &sz), sz);
-#else
-		strncpy  ( (char*) b->b,    luaL_checklstring(luaVM, 2, &sz), sz);
-#endif
+	sz  = luaL_checkint(luaVM, 2);
+	b   = create_ud_buf(luaVM, sz);
+	if (lua_isstring(luaVM, 3)) {
+		memcpy  ( (char*) &(b->b[0]), luaL_checklstring(luaVM, 3, &sz), sz);
 	}
 	return 1;
 }
