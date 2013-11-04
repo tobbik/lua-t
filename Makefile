@@ -31,3 +31,6 @@ compiledir:
 
 clean:
 	rm -rf $(COMPDIR) $(OUTDIR)
+
+pristine:
+	rm $(SRCDIR)/$(LUASRC)
