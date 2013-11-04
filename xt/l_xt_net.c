@@ -168,74 +168,6 @@ static int l_sleep(lua_State *luaVM)
 
 
 /** -------------------------------------------------------------------------
- * \brief   convienience connect to create the TCP socket and the endpoint
- * \param   luaVM   The lua state.
- * \lparam  xt_hndl The socket userdata.
- * \lparam  ip      sockaddr userdata.
- *    /// or
- * \lparam  ip      string IP address.
- * \lparam  port    int port.
- * \return  The number of results to be passed back to the calling Lua script.
- *-------------------------------------------------------------------------*/
-static int l_connect_net(lua_State *luaVM)
-{
-	struct xt_hndl      *hndl;
-	struct sockaddr_in  *ip;
-
-	hndl = create_ud_socket (luaVM, TCP);
-
-	if ( lua_isuserdata(luaVM, 1) ) {
-		// it's assumed that IP/port et cetera are assigned
-		ip   = check_ud_ipendpoint (luaVM, 1);
-		lua_pushvalue(luaVM, 1);
-	}
-	else {
-		ip = create_ud_ipendpoint(luaVM);
-		set_ipendpoint_values(luaVM, 1, ip);
-	}
-
-	if( connect(hndl->fd , (struct sockaddr*) &(*ip), sizeof(struct sockaddr) ) == -1)
-		return( pusherror(luaVM, "ERROR connecting socket") );
-
-	return( 2 );
-}
-
-
-/** -------------------------------------------------------------------------
- * \brief   convienience bind to create the TCP socket and the endpoint
- * \param   luaVM  The lua state.
- * \lparam  socket The socket userdata.
- * \lparam  ip     sockaddr userdata.
- *    /// or
- * \lparam  ip     string IP address.
- * \lparam  port   int port.
- * \return  The number of results to be passed back to the calling Lua script.
- *-------------------------------------------------------------------------*/
-static int l_bind_net(lua_State *luaVM)
-{
-	struct xt_hndl     *hndl;
-	struct sockaddr_in *ip;
-	
-	hndl = create_ud_socket (luaVM, TCP);
-
-	if ( lua_isuserdata(luaVM, 1) ) {
-		// it's assumed that IP/port et cetera are assigned
-		ip   = check_ud_ipendpoint (luaVM, 1);
-		lua_pushvalue(luaVM, 1);
-	}
-	else {
-		ip = create_ud_ipendpoint(luaVM);
-		set_ipendpoint_values(luaVM, 1, ip);
-	}
-
-	if( bind(hndl->fd , (struct sockaddr*) &(*ip), sizeof(struct sockaddr) ) == -1)
-		return( pusherror(luaVM, "ERROR binding socket") );
-
-	return( 2 );
-}
-
-
-/** -------------------------------------------------------------------------
  * \brief   Helper to take sockets from Lua tables to FD_SET
  *          Itertates over the table puls out the socket structs and adds the
  *          actual sockets to the fd_set
@@ -352,8 +284,6 @@ static const luaL_Reg l_net_lib [] =
 {
 	{"sleep",       l_sleep},
 	{"select",      l_select_handle},
-	{"bind",        l_bind_net},
-	{"connect",     l_connect_net},
 	{NULL,          NULL}
 };
 

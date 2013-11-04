@@ -4,8 +4,8 @@ local xt=require('xt')
 local ip1,ip2,dip,dport= '192.168.0.140','192.168.0.131','192.168.0.200',8888
 
 local i=10
-tcpsock1,src_ip1 = xt.net.bind(ip1)
-tcpsock2,src_ip2 = xt.net.bind(ip2)
+tcpsock1,src_ip1 = xt.net.Socket.bind('TCP', ip1)
+tcpsock2,src_ip2 = xt.net.Socket.bind('TCP', ip2)
 dst_ip   = xt.net.IpEndpoint(dip,dport)
 print(tcpsock1,src_ip1)
 print(tcpsock2,src_ip2)

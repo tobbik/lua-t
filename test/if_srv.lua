@@ -3,7 +3,7 @@ local xt=require('xt')
 --local sip,sport='10.128.3.131',8888
 local sip,sport='192.168.0.200',8888
 
-tcpsock,ip = xt.net.bind(sip,sport)
+tcpsock,ip = xt.net.Socket.bind('TCP', sip, sport)
 tcpsock:listen(5)
 print(tcpsock,ip)
 

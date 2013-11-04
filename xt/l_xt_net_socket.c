@@ -151,14 +151,29 @@ static int l_bind_socket(lua_State *luaVM)
 {
 	struct xt_hndl  *hndl;
 	struct sockaddr_in *ip;
+	enum   xt_hndl_t    type;
 
-	hndl = check_ud_socket (luaVM, 1);
-	ip = check_ud_ipendpoint (luaVM, 2);
+	if ( lua_isuserdata(luaVM, 1) ) { // handle sock:bind()
+		hndl = check_ud_socket (luaVM, 1);
+	}
+	else {                            // handle xt.net.Socket.bind()
+		type = (enum xt_hndl_t) luaL_checkoption (luaVM, 1, "TCP", xt_hndl_t_lst);
+		hndl = create_ud_socket(luaVM, type);
+	}
+	if ( lua_isuserdata(luaVM, 2) ) {
+		// it's assumed that IP/port et cetera are assigned
+		ip   = check_ud_ipendpoint (luaVM, 2);
+		lua_pushvalue(luaVM, 1);
+	}
+	else {
+		ip = create_ud_ipendpoint(luaVM);
+		set_ipendpoint_values(luaVM, 2, ip);
+	}
 
 	if( bind(hndl->fd , (struct sockaddr*) &(*ip), sizeof(struct sockaddr) ) == -1)
 		return( pusherror(luaVM, "ERROR binding socket") );
 
-	return( 0 );
+	return( 2 );  // socket, ip
 }
 
 
@@ -171,16 +186,31 @@ static int l_bind_socket(lua_State *luaVM)
  *-------------------------------------------------------------------------*/
 static int l_connect_socket(lua_State *luaVM)
 {
-	struct xt_hndl  *hndl;
+	struct xt_hndl     *hndl;
 	struct sockaddr_in *ip;
+	enum   xt_hndl_t    type;
 
-	hndl = check_ud_socket (luaVM, 1);
-	ip = check_ud_ipendpoint (luaVM, 2);
+	if ( lua_isuserdata(luaVM, 1) ) { // handle sock:connect()
+		hndl = check_ud_socket (luaVM, 1);
+	}
+	else {                            // handle xt.net.Socket.connect()
+		type = (enum xt_hndl_t) luaL_checkoption (luaVM, 1, "TCP", xt_hndl_t_lst);
+		hndl = create_ud_socket(luaVM, type);
+	}
+	if ( lua_isuserdata(luaVM, 2) ) {
+		// it's assumed that IP/port et cetera are assigned
+		ip   = check_ud_ipendpoint (luaVM, 2);
+		lua_pushvalue(luaVM, 1);
+	}
+	else {
+		ip = create_ud_ipendpoint(luaVM);
+		set_ipendpoint_values(luaVM, 2, ip);
+	}
 
 	if( connect(hndl->fd , (struct sockaddr*) &(*ip), sizeof(struct sockaddr) ) == -1)
 		return( pusherror(luaVM, "ERROR connecting socket") );
 
-	return( 0 );
+	return( 2 ); //socket,ip
 }
 
 
@@ -478,6 +508,8 @@ static const luaL_Reg l_net_socket_cf [] =
 {
 	{"createUdp", l_create_udp_socket},
 	{"createTcp", l_create_tcp_socket},
+	{"bind",      l_bind_socket},
+	{"connect",   l_connect_socket},
 	{NULL,        NULL}
 };
 
