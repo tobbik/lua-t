@@ -179,7 +179,6 @@ static int l_sleep(lua_State *luaVM)
  *-------------------------------------------------------------------------*/
 void make_fdset(lua_State *luaVM, int stack_pos, fd_set *collection, int *max_hndl)
 {
-	int              i;      // table iterator
 	struct xt_hndl  *hndl;
 
 	FD_ZERO(collection);
@@ -189,21 +188,13 @@ void make_fdset(lua_State *luaVM, int stack_pos, fd_set *collection, int *max_hn
 	luaL_checktype(luaVM, stack_pos, LUA_TTABLE);
 
 	// adding fh to FD_SETs
-	for ( i=1 ; ; i++ )
+	lua_pushnil(luaVM);
+	while (lua_next(luaVM, 1))
 	{
-		lua_rawgeti(luaVM, stack_pos, i);
-		// in table this is when the last index is found
-		if ( lua_isnil(luaVM, -1) )
-		{
-			lua_pop(luaVM, 1);
-			break;
-		}
-
-		// get the values and clear the stack
 		hndl = (struct xt_hndl*) lua_touserdata(luaVM, -1);
 		FD_SET( hndl->fd, collection );
 		*max_hndl = (hndl->fd > *max_hndl) ? hndl->fd : *max_hndl;
-		lua_pop(luaVM, 1);   // remove the socket from the stack
+		lua_pop(luaVM, 1);   // remove the socket, keep key for next()
 	}
 }
 
@@ -241,7 +232,6 @@ static int l_select_handle(lua_State *luaVM)
 
 	lua_createtable(luaVM, 0, 0);     // create result table
 	//TODO: check if readsocks hit 0 and break cuz we are done
-	//lua_createtable(luaVM, 0, 0);
 	for ( i=1 ; ; i++ )
 	{
 		lua_rawgeti(luaVM, 1, i);
@@ -251,29 +241,75 @@ static int l_select_handle(lua_State *luaVM)
 			lua_pop(luaVM, 1);
 			break;
 		}
-
-		// get the values and clear the stack
 		hndl = (struct xt_hndl*) lua_touserdata(luaVM, -1);
 		if FD_ISSET( hndl->fd, &rfds)
 		{
-			// put into reads
 			lua_rawseti(luaVM, -2, rset++);
 			readsocks--;
+			if (0 == readsocks) {
+				break;
+			}
 		}
-		
-		//if FD_ISSET( sock->socket, &wfds)
-		//{
-		//	// put into writes
-		//	lua_rawseti(luaVM, -2, wset++);
-		//	readsocks--;
-		//}
 		else {
-			lua_pop(luaVM, 1);   // remove the socket from the stack
+			lua_pop(luaVM, 1);
 		}
 	}
-	//lua_pop(luaVM, -1);   // remove the table from the stack
 	return (1);
 }
+
+
+/** -------------------------------------------------------------------------
+ * \brief   select from open sockets.
+ * \param   luaVM  The lua state.
+ * \lparam  socket_array   All sockets to read from.
+ * \lparam  socket_array   All sockets to write to.
+ * \lparam  socket_array   All sockets to check errors.
+ * \lreturn int            Number of affected sockets.
+ * \return  The number of results to be passed back to the calling Lua script.
+ * TODO:  Allow for a Time Out to be handed to it
+ *-------------------------------------------------------------------------*/
+static int l_select_handle_k(lua_State *luaVM)
+{
+	fd_set           rfds, wfds;
+	struct xt_hndl  *hndl;
+	int              rnum, wnum, readsocks /*, rp*/;
+
+	wnum = -1;
+	rnum = -1;
+	make_fdset(luaVM, 1, &rfds, &rnum);
+	//make_fdset(luaVM, 2, &wfds, &wnum);
+	FD_ZERO(&wfds);
+
+	readsocks = select(
+		(wnum > rnum) ? wnum+1 : rnum+1,
+		(-1  != rnum) ? &rfds  : NULL,
+		(-1  != wnum) ? &wfds  : NULL,
+		(fd_set *) 0,
+		NULL
+	);
+
+	lua_createtable(luaVM, 0, 0);     // create result table
+	//lua_createtable(luaVM, 0, 0);
+	lua_pushnil(luaVM);
+	while (lua_next(luaVM, 1))
+	{
+		hndl = (struct xt_hndl*) lua_touserdata(luaVM, -1);
+		if FD_ISSET( hndl->fd, &rfds)
+		{
+			//TODO: Find better way to preserve key for next iteration
+			lua_pushvalue(luaVM, -2);
+			lua_pushvalue(luaVM, -2);
+			lua_rawset(luaVM, -5);
+			if (0 == --readsocks) {
+				lua_pop(luaVM, 2);
+				break;
+			}
+		}
+		lua_pop(luaVM, 1);
+	}
+	return (1);
+}
+
 
 
 /**
@@ -284,6 +320,7 @@ static const luaL_Reg l_net_lib [] =
 {
 	{"sleep",       l_sleep},
 	{"select",      l_select_handle},
+	{"selectK",     l_select_handle_k},
 	{NULL,          NULL}
 };
 
