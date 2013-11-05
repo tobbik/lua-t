@@ -1,6 +1,6 @@
 #!../out/bin/lua
 local xt=require('xt')
-t = xt.net.Timer(2000)
+t = xt.Timer(2000)
 
 i=0
 while true do

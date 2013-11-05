@@ -1,5 +1,5 @@
 /*
- * \file    l_net_timer.c
+ * \file    l_timer.c
  * \detail  OOP wrapper for Time values. This is a thin wrapper around
  *          struct timeval
 */
@@ -22,17 +22,16 @@
 #endif
 
 #include "l_xt.h"
-#include "l_xt_net.h"
+#include "l_xt_hndl.h"
 
 
 /**--------------------------------------------------------------------------
- * create an IP endpoint and return it.
+ * create an Timer and return it.
  * \param   luaVM  The lua state.
  * \lparam  port   the port for the socket.
  * \lparam  ip     the IP address for the socket.
  * \lreturn sockkaddr userdata.
  * \return  The number of results to be passed back to the calling Lua script.
- * TODO:  allow for empty endpoints if it makes sense
  * --------------------------------------------------------------------------*/
 static int c_new_timer(lua_State *luaVM)
 {
@@ -46,7 +45,7 @@ static int c_new_timer(lua_State *luaVM)
 
 
 /**--------------------------------------------------------------------------
- * \brief   create an IP endpoint userdata and push to LuaStack.
+ * \brief   create an timer userdata and push to LuaStack.
  * \param   luaVM  The lua state.
  * \return  struct sockaddr_in*  pointer to the sockaddr
  * --------------------------------------------------------------------------*/
@@ -58,7 +57,7 @@ struct timeval *create_ud_timer(lua_State *luaVM, int msec)
 	tv->tv_sec  = msec/1000;
 	tv->tv_usec = (msec % 1000) * 1000;
 
-	luaL_getmetatable(luaVM, "L.net.Timer");
+	luaL_getmetatable(luaVM, "L.Timer");
 	lua_setmetatable(luaVM, -2);
 	return tv;
 }
@@ -71,14 +70,14 @@ struct timeval *create_ud_timer(lua_State *luaVM, int msec)
  * \return  struct sockaddr_in*  pointer to the sockaddr
  * --------------------------------------------------------------------------*/
 struct timeval *check_ud_timer (lua_State *luaVM, int pos) {
-	void *ud = luaL_checkudata(luaVM, pos, "L.net.Timer");
+	void *ud = luaL_checkudata(luaVM, pos, "L.Timer");
 	luaL_argcheck(luaVM, ud != NULL, pos, "`Timer` expected");
 	return (struct timeval *) ud;
 }
 
 
 /**--------------------------------------------------------------------------
- * \brief   set port the IP endpoint.
+ * \brief   set port the timer.
  * \param   luaVM    The lua state.
  * \lparam  sockaddr the sockaddr_in userdata.
  * \lparam  int      the port number.
@@ -96,7 +95,7 @@ static int l_set_time (lua_State *luaVM) {
 
 
 /**--------------------------------------------------------------------------
- * \brief   get port the IP endpoint.
+ * \brief   get port the timer.
  * \param   luaVM    The lua state.
  * \lparam  sockaddr the sockaddr_in userdata.
  * \lreturn string   xxx.xxx.xxx.xxx formatted string representing sockkaddr IP.
@@ -111,7 +110,7 @@ static int l_get_time (lua_State *luaVM) {
 
 
 /**--------------------------------------------------------------------------
- * \brief   prints out the ip endpoint.
+ * \brief   prints out the timer.
  * \param   luaVM     The lua state.
  * \lparam  sockaddr  the sockaddr_in userdata.
  * \lreturn string    formatted string representing sockkaddr (IP:Port).
@@ -130,17 +129,17 @@ static int l_timer_tostring (lua_State *luaVM) {
 /**
  * \brief    the metatble for the module
  */
-static const struct luaL_Reg l_net_timer_fm [] = {
+static const struct luaL_Reg l_timer_fm [] = {
 	{"__call",      c_new_timer},
 	{NULL,   NULL}
 };
 
 
 /**
- * \brief      the net IpEndpoint library definition
+ * \brief      the Timer library definition
  *             assigns Lua available names to C-functions
  */
-static const struct luaL_Reg l_net_timer_m [] = {
+static const struct luaL_Reg l_timer_m [] = {
 	{"set",     l_set_time},
 	{"get",     l_get_time},
 	{NULL,   NULL}
@@ -148,28 +147,28 @@ static const struct luaL_Reg l_net_timer_m [] = {
 
 
 /**--------------------------------------------------------------------------
- * \brief   pushes the IpEndpoint library onto the stack
+ * \brief   pushes the Timer library onto the stack
  *          - creates Metatable with functions
  *          - creates metatable with methods
  * \param   luaVM     The lua state.
  * \lreturn string    the library
  * \return  The number of results to be passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
-int luaopen_net_timer (lua_State *luaVM) {
+int luaopen_timer (lua_State *luaVM) {
 	// just make metatable known to be able to register and check userdata
-	luaL_newmetatable(luaVM, "L.net.Timer");   // stack: functions meta
-	luaL_newlib(luaVM, l_net_timer_m);
+	luaL_newmetatable(luaVM, "L.Timer");   // stack: functions meta
+	luaL_newlib(luaVM, l_timer_m);
 	lua_setfield(luaVM, -2, "__index");
 	lua_pushcfunction(luaVM, l_timer_tostring);
 	lua_setfield(luaVM, -2, "__tostring");
 	lua_pop(luaVM, 1);        // remove metatable from stack
 
 	// Push the class onto the stack
-	// this is avalable as net.IpEndpoint.localhost
+	// this is avalable as Timer.localhost
 	lua_createtable(luaVM, 0, 0);
 	// set the methods as metatable
 	// this is only avalable a <instance>:func()
-	luaL_newlib(luaVM, l_net_timer_fm);
+	luaL_newlib(luaVM, l_timer_fm);
 	lua_setmetatable(luaVM, -2);
 	return 1;
 }

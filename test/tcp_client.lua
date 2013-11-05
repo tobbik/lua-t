@@ -2,8 +2,8 @@
 local xt=require('xt')
 local ipadd,port='192.168.0.200',8888
 
-ip      = xt.net.IpEndpoint(ipadd, port)
-tcpsock = xt.net.Socket.connect('TCP', ip)
+ip      = xt.IpEndpoint(ipadd, port)
+tcpsock = xt.Socket.connect('TCP', ip)
 print(tcpsock, ip)
 msg = string.rep('0123456789', 1000010)
 sent = 0

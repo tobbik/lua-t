@@ -8,10 +8,9 @@ CFLAGS=-Wall -Wextra -g -O0 -std=c99 -fpic
 #LDFLAGS=$(shell pkg-config --libs lua5.1)
 
 XT_SRC=l_xt.c \
-	 l_xt_net.c \
-	 l_xt_net_socket.c \
-	 l_xt_net_ipendpoint.c \
-	 l_xt_net_timer.c \
+	 l_xt_socket.c \
+	 l_xt_ip.c \
+	 l_xt_timer.c \
 	 l_xt_buf.c \
 	 l_xt_buf_fld.c \
 	 l_xt_debug.c

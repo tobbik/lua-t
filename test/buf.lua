@@ -54,7 +54,9 @@ print(bs[3]:read())
 print( b:toHex() )
 exbs(bs[3])
 
-b1=xt.Buffer("ABCDEFGEHIJKF")
+
+local str = "ABCDEFGEHIJKF"
+b1=xt.Buffer(#str, str)
 exbs(b1)
 print( b1:toHex() )
 print( b1:getString() )

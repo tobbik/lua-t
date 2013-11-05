@@ -7,7 +7,6 @@
 
 #include "l_xt.h"
 #include "l_xt_buf.h"
-#include "l_xt_net.h"             // for CRC16 helper
 
 
 // inline helper functions

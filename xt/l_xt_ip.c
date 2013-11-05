@@ -1,5 +1,5 @@
 /*
- * \file    l_net_ip.c
+ * \file    l_ip.c
  * \detail  OOP wrapper for IP/Port addresses. These is a thin wrapper around
  *          struct sockaddr
 */
@@ -22,7 +22,7 @@
 #endif
 
 #include "l_xt.h"
-#include "l_xt_net.h"
+#include "l_xt_hndl.h"
 
 
 /**--------------------------------------------------------------------------
@@ -100,7 +100,7 @@ struct sockaddr_in *create_ud_ipendpoint(lua_State *luaVM)
 
 	ip = (struct sockaddr_in *) lua_newuserdata (luaVM, sizeof(struct sockaddr_in) );
 
-	luaL_getmetatable(luaVM, "L.net.IpEndpoint");
+	luaL_getmetatable(luaVM, "L.IpEndpoint");
 	lua_setmetatable(luaVM, -2);
 	return ip;
 }
@@ -113,7 +113,7 @@ struct sockaddr_in *create_ud_ipendpoint(lua_State *luaVM)
  * \return  struct sockaddr_in*  pointer to the sockaddr
  * --------------------------------------------------------------------------*/
 struct sockaddr_in *check_ud_ipendpoint (lua_State *luaVM, int pos) {
-	void *ud = luaL_checkudata(luaVM, pos, "L.net.IpEndpoint");
+	void *ud = luaL_checkudata(luaVM, pos, "L.IpEndpoint");
 	luaL_argcheck(luaVM, ud != NULL, pos, "`IpEndpoint` expected");
 	return (struct sockaddr_in *) ud;
 }
@@ -214,17 +214,17 @@ static int l_ipendpoint_tostring (lua_State *luaVM) {
 /**
  * \brief    the metatble for the module
  */
-static const struct luaL_Reg l_net_ipendpoint_fm [] = {
+static const struct luaL_Reg l_ipendpoint_fm [] = {
 	{"__call",      c_new_ipendpoint},
 	{NULL,   NULL}
 };
 
 
 /**
- * \brief      the net IpEndpoint library definition
+ * \brief      the IpEndpoint library definition
  *             assigns Lua available names to C-functions
  */
-static const struct luaL_Reg l_net_ipendpoint_m [] = {
+static const struct luaL_Reg l_ipendpoint_m [] = {
 	{"setIp",       l_set_ip},
 	{"getIp",       l_get_ip},
 	{"setPort",     l_set_port},
@@ -241,23 +241,23 @@ static const struct luaL_Reg l_net_ipendpoint_m [] = {
  * \lreturn string    the library
  * \return  The number of results to be passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
-int luaopen_net_ipendpoint (lua_State *luaVM) {
+int luaopen_ipendpoint (lua_State *luaVM) {
 	// just make metatable known to be able to register and check userdata
-	luaL_newmetatable(luaVM, "L.net.IpEndpoint");   // stack: functions meta
-	luaL_newlib(luaVM, l_net_ipendpoint_m);
+	luaL_newmetatable(luaVM, "L.IpEndpoint");   // stack: functions meta
+	luaL_newlib(luaVM, l_ipendpoint_m);
 	lua_setfield(luaVM, -2, "__index");
 	lua_pushcfunction(luaVM, l_ipendpoint_tostring);
 	lua_setfield(luaVM, -2, "__tostring");
 	lua_pop(luaVM, 1);        // remove metatable from stack
 
 	// Push the class onto the stack
-	// this is avalable as net.IpEndpoint.localhost
+	// this is avalable as IpEndpoint.localhost
 	lua_createtable(luaVM, 0, 0);
 	lua_pushstring(luaVM, "127.0.0.1");
 	lua_setfield(luaVM, -2, "localhost");
 	// set the methods as metatable
 	// this is only avalable a <instance>:func()
-	luaL_newlib(luaVM, l_net_ipendpoint_fm);
+	luaL_newlib(luaVM, l_ipendpoint_fm);
 	lua_setmetatable(luaVM, -2);
 	return 1;
 }

@@ -5,7 +5,8 @@
 #include <lualib.h>
 
 
-#include "l_xt_net.h"
+#include "l_xt.h"
+#include "l_xt_hndl.h"
 #define STDIN 0
 
 /** -------------------------------------------------------------------------
@@ -56,8 +57,6 @@ static int process_stdin ( lua_State *luaVM ) {
 
 	return 0;
 }
-
-
 
 
 /** -------------------------------------------------------------------------
@@ -133,7 +132,6 @@ static int l_select_handle(lua_State *luaVM)
 	//lua_pop(luaVM, -1);   // remove the table from the stack
 
 	return (1);
-
 }
 
 

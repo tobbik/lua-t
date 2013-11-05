@@ -19,7 +19,7 @@
 #include <sys/select.h>
 #endif
 #include "l_xt.h"
-#include "l_xt_net.h"
+#include "l_xt_hndl.h"
 #include "l_xt_buf.h"         // the ability to send and recv buffers
 
 
@@ -66,7 +66,7 @@ struct xt_hndl *create_ud_socket(lua_State *luaVM, enum xt_hndl_t type)
 		setsockopt( hndl->fd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on) );
 	}
 
-	luaL_getmetatable(luaVM, "L.net.Socket");
+	luaL_getmetatable(luaVM, "L.Socket");
 	lua_setmetatable(luaVM, -2);
 	return hndl;
 }
@@ -79,7 +79,7 @@ struct xt_hndl *create_ud_socket(lua_State *luaVM, enum xt_hndl_t type)
  * \return  struct xt_hndl*  pointer to the struct xt_hndl
  * --------------------------------------------------------------------------*/
 struct xt_hndl *check_ud_socket (lua_State *luaVM, int pos) {
-	void *ud = luaL_checkudata(luaVM, pos, "L.net.Socket");
+	void *ud = luaL_checkudata(luaVM, pos, "L.Socket");
 	luaL_argcheck(luaVM, ud != NULL, pos, "`Socket` expected");
 	return (struct xt_hndl *) ud;
 }
@@ -156,7 +156,7 @@ static int l_bind_socket(lua_State *luaVM)
 	if ( lua_isuserdata(luaVM, 1) ) { // handle sock:bind()
 		hndl = check_ud_socket (luaVM, 1);
 	}
-	else {                            // handle xt.net.Socket.bind()
+	else {                            // handle xt.Socket.bind()
 		type = (enum xt_hndl_t) luaL_checkoption (luaVM, 1, "TCP", xt_hndl_t_lst);
 		hndl = create_ud_socket(luaVM, type);
 	}
@@ -193,7 +193,7 @@ static int l_connect_socket(lua_State *luaVM)
 	if ( lua_isuserdata(luaVM, 1) ) { // handle sock:connect()
 		hndl = check_ud_socket (luaVM, 1);
 	}
-	else {                            // handle xt.net.Socket.connect()
+	else {                            // handle xt.Socket.connect()
 		type = (enum xt_hndl_t) luaL_checkoption (luaVM, 1, "TCP", xt_hndl_t_lst);
 		hndl = create_ud_socket(luaVM, type);
 	}
@@ -475,17 +475,17 @@ static int l_socket_tostring (lua_State *luaVM) {
 /**
  * \brief    the metatble for the module
  */
-static const struct luaL_Reg l_net_socket_fm [] = {
+static const struct luaL_Reg l_socket_fm [] = {
 	{"__call",      c_new_socket},
 	{NULL,   NULL}
 };
 
 
 /**
- * \brief      the net library definition
+ * \brief      the socketlibrary definition
  *             assigns Lua available names to C-functions
  */
-static const luaL_Reg l_net_socket_m [] =
+static const luaL_Reg l_socket_m [] =
 {
 	{"listen",    l_listen_socket},
 	{"bind",      l_bind_socket},
@@ -501,10 +501,10 @@ static const luaL_Reg l_net_socket_m [] =
 
 
 /**
- * \brief      the net library class functions definition
+ * \brief      the socket library class functions definition
  *             assigns Lua available names to C-functions
  */
-static const luaL_Reg l_net_socket_cf [] =
+static const luaL_Reg l_socket_cf [] =
 {
 	{"createUdp", l_create_udp_socket},
 	{"createTcp", l_create_tcp_socket},
@@ -521,26 +521,21 @@ static const luaL_Reg l_net_socket_cf [] =
  * \lreturn string    the library
  * \return  The number of results to be passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
-int luaopen_net_socket (lua_State *luaVM) {
+int luaopen_socket (lua_State *luaVM) {
 	// just make metatable known to be able to register and check userdata
-	luaL_newmetatable(luaVM, "L.net.Socket");   // stack: functions meta
-	luaL_newlib(luaVM, l_net_socket_m);
+	luaL_newmetatable(luaVM, "L.Socket");   // stack: functions meta
+	luaL_newlib(luaVM, l_socket_m);
 	lua_setfield(luaVM, -2, "__index");
 	lua_pushcfunction(luaVM, l_socket_tostring);
 	lua_setfield(luaVM, -2, "__tostring");
 	lua_pop(luaVM, 1);        // remove metatable from stack
 
 	// Push the class onto the stack
-	// this is avalable as net.Socket.localhost
-	luaL_newlib(luaVM, l_net_socket_cf);
-	//lua_createtable(luaVM, 0, 0);
-	//lua_pushcfunction(luaVM, l_create_tcp_socket);
-	//lua_setfield(luaVM, -2, "createTcp");
-	//lua_pushcfunction(luaVM, l_create_udp_socket);
-	//lua_setfield(luaVM, -2, "createUdp");
+	// this is avalable as Socket.<member>
+	luaL_newlib(luaVM, l_socket_cf);
 	// set the methods as metatable
-	// this is only avalable a <instance>:func()
-	luaL_newlib(luaVM, l_net_socket_fm);
+	// this is only avalable a <instance>.<member>
+	luaL_newlib(luaVM, l_socket_fm);
 	lua_setmetatable(luaVM, -2);
 	return 1;
 }

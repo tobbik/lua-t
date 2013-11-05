@@ -3,14 +3,14 @@ local xt=require('xt')
 --local sip,sport='10.128.3.131',8888
 local sip,sport='192.168.0.200',8888
 
-tcpsock,ip = xt.net.Socket.bind('TCP', sip, sport)
+tcpsock,ip = xt.Socket.bind('TCP', sip, sport)
 tcpsock:listen(5)
 print(tcpsock,ip)
 a=0
 
 conns  = { master=tcpsock }
 while a<100 do
-	res = xt.net.selectK(conns, {})
+	res = xt.selectK(conns, {})
 	io.write('LOOP['..#res..']:')
 	for n,cli in pairs(res) do
 		io.write('  '..tostring(cli)..'')
