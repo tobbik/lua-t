@@ -80,4 +80,4 @@ all: $(XT_OBJ) $(XT_LIB)
 	$(CC) -I$(INCS) $(CFLAGS) -c $< -o $@
 
 clean:
-	-rm *.so *.o $(LIB)
+	-rm $(XT_OBJ) $(XT_LIB) $(XT_LIB_A)
