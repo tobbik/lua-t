@@ -1,4 +1,4 @@
-/sources/lua-5.2.2.tar.gz
+/sources/lua-5*.tar.gz
 /out/
 /compile/
 *.o
