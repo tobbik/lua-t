@@ -66,7 +66,7 @@ static int c_new_buf(lua_State *luaVM)
 	sz  = luaL_checkint(luaVM, 2);
 	b   = create_ud_buf(luaVM, sz);
 	if (lua_isstring(luaVM, 3)) {
-		memcpy  ( (char*) &(b->b[0]), luaL_checklstring(luaVM, 3, &sz), sz);
+		memcpy  ( (char*) &(b->b[0]), luaL_checklstring(luaVM, 3, NULL), sz);
 	}
 	return 1;
 }
@@ -252,8 +252,10 @@ static int l_read_64 (lua_State *luaVM) {
 // TODO: boundary checks on buffer vs string length
 static int l_read_string (lua_State *luaVM) {
 	struct xt_buf *b   = check_ud_buf(luaVM, 1);
-	int            ofs = luaL_checkint(luaVM, 2);
-	int            sz  = luaL_checkint(luaVM, 3);
+	int            ofs;
+	int            sz;
+	ofs = (lua_isnumber(luaVM, 2)) ? luaL_checkint(luaVM, 2) : 0;
+	sz  = (lua_isnumber(luaVM, 3)) ? luaL_checkint(luaVM, 3) : b->len-ofs;
 
 	lua_pushlstring(luaVM,
 			(const char*) &(b->b[ ofs ]),
@@ -409,15 +411,15 @@ static int l_write_64(lua_State *luaVM) {
 static int l_write_string (lua_State *luaVM) {
 	struct xt_buf *b   = check_ud_buf(luaVM, 1);
 	int            ofs;
-	int            sz;
-	size_t         l;
+	size_t         sz;
 	ofs = (lua_isnumber(luaVM, 3)) ? luaL_checkint(luaVM, 3) : 0;
-	sz  = (lua_isnumber(luaVM, 4)) ? luaL_checkint(luaVM, 4) : 0;
-#ifdef _WIN32
-	strncpy_s((char*) &(b->b[ ofs ]), l, luaL_checklstring(luaVM, 2, &l), l);
-#else
-	strncpy  ((char*) &(b->b[ ofs ]), luaL_checklstring(luaVM, 2, &l), l);
-#endif
+	if (lua_isnumber(luaVM, 4)) {
+		sz  = luaL_checkint(luaVM, 4);
+		memcpy  ( (char*) &(b->b[ ofs ]), luaL_checklstring(luaVM, 2, NULL), sz);
+	}
+	else {
+		memcpy  ( (char*) &(b->b[ ofs ]), luaL_checklstring(luaVM, 2, &sz), sz);
+	}
 	return 0;
 }
 
@@ -459,20 +461,6 @@ static int l_get_len(lua_State *luaVM)
 	return 1;
 }
 
-
-/**
- * \brief     returns buffer content as String
- * \param     lua state
- * \return    integer   how many elements are placed on the Lua stack
-*/
-static int l_get_string(lua_State *luaVM)
-{
-	struct xt_buf *b;
-
-	b   = check_ud_buf(luaVM, 1);
-	lua_pushlstring(luaVM, (char*) b->b, (int) b->len);
-	return 1;
-}
 
 /**
  * \brief   calculates the CRC16 checksum over the buffer up to len
@@ -534,7 +522,6 @@ static const luaL_Reg l_buf_m [] =
 	{"writeString",   l_write_string},
 	{"length",        l_get_len},
 	{"toHex",         l_get_hex_string},
-	{"getString",     l_get_string},
 	{"getCRC16",      l_get_crc16},
 	{"ByteField",     c_new_buf_fld_byte},
 	{"BitField",      c_new_buf_fld_bits},

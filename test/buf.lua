@@ -1,24 +1,5 @@
 #!../out/bin/lua
 local xt = require("xt")
-exbs=function(e)
-	local m = getmetatable(e)
-	print(e, m)
-	for k,v in pairs(m) do
-		print(k,v)
-	end
-	for k,v in pairs(m.__index) do
-		print(k,v)
-	end
-end
-
-ext_bs=function(e)
-	print(e)
-	local m = getmetatable(e).__index
-	m.update = function(x)
-		local v=x:read()
-		x:write(v+4)
-	end
-end
 
 n=15
 b=xt.Buffer(n)
@@ -33,7 +14,6 @@ print( b:toHex() )
 print("\t\t\tBITFIELD  ACCESS");
 bs={}
 bs[1]=b:BitField(6,7)
-ext_bs(bs[1])
 print(bs[1]:read())
 bs[1]:write(1)
 print(bs[1]:read())
@@ -52,21 +32,21 @@ print(bs[3]:read())
 bs[3]:write("FOOBAR")
 print(bs[3]:read())
 print( b:toHex() )
-exbs(bs[3])
+bs[4]=b:ByteField(2, #b-2)
+bs[4]:write(0x4444)
+print( b:readString() )
+print( b:toHex() )
+bs[4]:write( b:getCRC16(#b-2) )
+print( b:toHex() )
 
 
-local str = "ABCDEFGEHIJKF"
+local str = string.char(0).."ABCDEFGEHIJKL"
 b1=xt.Buffer(#str, str)
-exbs(b1)
 print( b1:toHex() )
-print( b1:getString() )
+print( b1:readString() )
 b1:writeString("ZYX")
-print( b1:getString() )
+print( b1:readString() )
 b1:writeString("12345",5)
-print( b1:getString() )
-crcFld=b1:ByteField(2, #b1-2)
-crcFld:write(0x4444)
-print( b1:getString() )
-print( b1:toHex() )
-crcFld:write( b1:getCRC16(#b1-2) )
-print( b1:toHex() )
+print( b1:readString() )
+print( b1:readString(5) )
+print( b1:readString(5,4) )
