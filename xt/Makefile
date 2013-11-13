@@ -63,7 +63,8 @@ arm:
 	"INCS=-I$(HOME)/BLD/arm/staging/usr/include" \
 	all
 
-all: $(XT_OBJ) $(XT_LIB)
+install: $(XT_SRC) $(XT_LIB)
+	cp $(XT_LIB)   $(PREFIX)/lib/lua/5.2/$(XT_LIB)
 
 #%: %.c
 #	$(CC) -I$(INCS) $(CFLAGS) -c $< -o $@.o

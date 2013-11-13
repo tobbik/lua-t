@@ -112,7 +112,7 @@
 + switch (ttypenv(o))
   {
    case LUA_TNIL:
-        printf("nil");
+ 	printf("nil");
 --- src/ltable.h	2013/04/12 18:48:47	2.16.1.1
 +++ src/ltable.h	2013/08/30 15:34:24
 @@ -18,4 +18,8 @@
