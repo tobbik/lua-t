@@ -14,25 +14,30 @@ enum xt_buf_fld_type {
 
 struct xt_buf_fld {
 	enum  xt_buf_fld_type type;    /* type of field  */
-	/* pointer to position in buffer according to type */
-	uint8_t           *v8;
-	uint16_t          *v16;
-	uint32_t          *v32;
-	uint64_t          *v64; 
-	char              *vS;
-	// accessor function pointers
-	int              (*write) (lua_State *luaVM);
-	int              (*read)  (lua_State *luaVM);
-	/* helpers for bitwise access */
-	uint8_t            shft;
-	uint8_t            m8;      /* (*v8  & m8)  >> shft == actual_value */
-	uint16_t           m16;     /* (*v16 & m16) >> shft == actual_value */
-	uint32_t           m32;     /* (*v32 & m32) >> shft == actual_value */
-	uint64_t           m64;     /* (*v64 & m64) >> shft == actual_value */
 	/* size information */
 	size_t             sz_bit;   /* size in bits   */
 	size_t             ofs_bit;  /* how many bits  into the byte does it start    */
 	size_t             ofs_byte; /* how many bytes into the buffer does it start  */
+	/* accessor function pointers */
+	int              (*write) (lua_State *luaVM);
+	int              (*read)  (lua_State *luaVM);
+	/** pointer to position in buffer according to type */
+	union {
+		uint8_t    *v8;
+		uint16_t   *v16;
+		uint32_t   *v32;
+		uint64_t   *v64;
+		char       *vS;
+	} v;
+	/** mask to access the bits in the field */
+	union {
+		uint8_t     m8;      /* (*v8  & m8)  >> shft == actual_value */
+		uint16_t    m16;     /* (*v16 & m16) >> shft == actual_value */
+		uint32_t    m32;     /* (*v32 & m32) >> shft == actual_value */
+		uint64_t    m64;     /* (*v64 & m64) >> shft == actual_value */
+	} m;
+	/* right shift to next byte border for bitwise access */
+	uint8_t            shft;
 };
 
 

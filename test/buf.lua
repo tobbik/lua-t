@@ -21,6 +21,7 @@ print( b:toHex() )
 
 print("\t\t\tBYTEFIELD  ACCESS");
 bs[2]=b:ByteField(4,5)
+print(bs[2])
 print(bs[2]:read())
 bs[2]:write(0x99ABCDEF)
 print(bs[2]:read())
@@ -28,6 +29,7 @@ print( b:toHex() )
 
 print("\t\t\tSTRINGFIELD ACCESS");
 bs[3]=b:StringField(6,9)
+print(bs[3])
 print(bs[3]:read())
 bs[3]:write("FOOBAR")
 print(bs[3]:read())
@@ -40,6 +42,7 @@ bs[4]:write( b:getCRC16(#b-2) )
 print( b:toHex() )
 
 
+print("\t\t\tSTRING BUFFER Segmental ACCESS");
 local str = string.char(0).."ABCDEFGEHIJKL"
 b1=xt.Buffer(#str, str)
 print( b1:toHex() )
