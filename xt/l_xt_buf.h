@@ -13,11 +13,10 @@ enum xt_buf_fld_type {
 
 
 struct xt_buf_fld {
-	enum  xt_buf_fld_type type;    /* type of field  */
-	/* size information */
-	size_t             sz_bit;   /* size in bits   */
-	size_t             ofs_bit;  /* how many bits  into the byte does it start    */
-	size_t             ofs_byte; /* how many bytes into the buffer does it start  */
+	enum  xt_buf_fld_type type;  ///< type of field
+	/* size and position information */
+	size_t             sz;       ///< size in bits
+	size_t             ofs;      ///< how many bits from beginning of buffer
 	/* accessor function pointers */
 	int              (*write) (lua_State *luaVM);
 	int              (*read)  (lua_State *luaVM);

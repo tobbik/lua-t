@@ -64,20 +64,18 @@ int c_new_buf_fld_bits(lua_State *luaVM)
 {
 	int                ofs;   ///< offset in bits from buffer start
 	int                sz;    ///< size of field in bits
-	int                sz_nd; ///< size needed
+	int                sz_nd; ///< bytes needed to represent field
 	struct xt_buf_fld *f;
 	struct xt_buf     *buf = check_ud_buf(luaVM, 1);
 
 	sz    =  luaL_checkint(luaVM, 2);
 	ofs   =  luaL_checkint(luaVM, 3);
 	sz_nd = (ofs%8) + sz;
-	//printf("o:%d s:%d n:%d c:%d\n", ofs, sz, sz_nd, (sz_nd-1)/8);
 
 	f = create_ud_buf_fld(luaVM);
 	f->type     = BUF_FLD_BIT;
-	f->ofs_bit  = ofs;
-	f->ofs_byte = ofs/8;
-	f->sz_bit   = sz;
+	f->ofs      = ofs;
+	f->sz       = sz;
 
 	switch ( (sz_nd-1)/8 ) {
 		case 0:
@@ -85,14 +83,14 @@ int c_new_buf_fld_bits(lua_State *luaVM)
 			f->m.m8  = ( 0xFF >> (8-sz)) << f->shft;
 			f->write = write_bits_8;
 			f->read  = read_bits_8;
-			f->v.v8  = (uint8_t *) &(buf->b[f->ofs_byte]);
+			f->v.v8  = (uint8_t *) &(buf->b[f->ofs/8]);
 			break;
 		case 1:
 			f->shft  = 16 - (ofs%8) - sz;
 			f->m.m16 = ( 0xFFFF >> (16-sz)) << f->shft;
 			f->write = write_bits_16;
 			f->read  = read_bits_16;
-			f->v.v16 = (uint16_t *) &(buf->b[f->ofs_byte]);
+			f->v.v16 = (uint16_t *) &(buf->b[f->ofs/8]);
 			break;
 		case 2:
 		case 3:
@@ -100,7 +98,7 @@ int c_new_buf_fld_bits(lua_State *luaVM)
 			f->m.m32 = ( 0xFFFFFFFF >> (32-sz)) << f->shft;
 			f->write = write_bits_32;
 			f->read  = read_bits_32;
-			f->v.v32 = (uint32_t *) &(buf->b[f->ofs_byte]);
+			f->v.v32 = (uint32_t *) &(buf->b[f->ofs/8]);
 			break;
 		case 4:
 		case 5:
@@ -110,11 +108,14 @@ int c_new_buf_fld_bits(lua_State *luaVM)
 			f->m.m64 = ( 0xFFFFFFFF >> (64-sz)) << f->shft;
 			f->write = write_bits_64;
 			f->read  = read_bits_64;
-			f->v.v64 = (uint64_t *) &(buf->b[f->ofs_byte]);
+			f->v.v64 = (uint64_t *) &(buf->b[f->ofs/8]);
 			break;
 		default:
 			//TODO: handle error
 			pusherror(luaVM, "Can't handle size of bit field");
+	}
+	if (lua_isnumber(luaVM, 4)) {
+	// TODO handle setting the value
 	}
 	return 1;
 }
@@ -130,8 +131,8 @@ int c_new_buf_fld_bits(lua_State *luaVM)
 */
 int c_new_buf_fld_byte(lua_State *luaVM)
 {
-	int                ofs;
-	int                sz;
+	int                ofs; ///< offset to buffer start in byte
+	int                sz;  ///< size in byte
 	struct xt_buf_fld *f;
 	struct xt_buf     *buf = check_ud_buf(luaVM, 1);
 
@@ -140,30 +141,29 @@ int c_new_buf_fld_byte(lua_State *luaVM)
 
 	f = create_ud_buf_fld(luaVM);
 	f->type     = BUF_FLD_BYTE;
-	f->ofs_bit  = ofs*8;
-	f->ofs_byte = ofs;
-	f->sz_bit   = sz*8;
+	f->ofs      = ofs*8;
+	f->sz       = sz*8;
 
 	switch ( sz ) {
 		case 1:
 			f->write = write_8;
 			f->read  = read_8;
-			f->v.v8  = (uint8_t *) &(buf->b[f->ofs_byte]);
+			f->v.v8  = (uint8_t *) &(buf->b[f->ofs/8]);
 			break;
 		case 2:
 			f->write = write_16;
 			f->read  = read_16;
-			f->v.v16 = (uint16_t *) &(buf->b[f->ofs_byte]);
+			f->v.v16 = (uint16_t *) &(buf->b[f->ofs/8]);
 			break;
 		case 4:
 			f->write = write_32;
 			f->read  = read_32;
-			f->v.v32 = (uint32_t *) &(buf->b[f->ofs_byte]);
+			f->v.v32 = (uint32_t *) &(buf->b[f->ofs/8]);
 			break;
 		case 8:
 			f->write = write_64;
 			f->read  = read_64;
-			f->v.v64 = (uint64_t *) &(buf->b[f->ofs_byte]);
+			f->v.v64 = (uint64_t *) &(buf->b[f->ofs/8]);
 			break;
 		default:
 			// TODO: can't handle others than 1,2,4,8 byte
@@ -186,20 +186,19 @@ int c_new_buf_fld_byte(lua_State *luaVM)
 */
 int c_new_buf_fld_string(lua_State *luaVM)
 {
-	int                   ofs;
-	int                   sz;
-	struct xt_buf_fld    *f;
-	struct xt_buf        *buf = check_ud_buf(luaVM, 1);
+	int                ofs; ///< offset to buffer start in byte
+	int                sz;  ///< size in byte
+	struct xt_buf_fld *f;
+	struct xt_buf     *buf = check_ud_buf(luaVM, 1);
 
 	sz  =  luaL_checkint(luaVM, 2);
 	ofs =  luaL_checkint(luaVM, 3);
 
 	f = create_ud_buf_fld(luaVM);
 	f->type     = BUF_FLD_STR;
-	f->ofs_bit  = ofs*8;
-	f->ofs_byte = ofs;
-	f->sz_bit   = sz*8;
-	f->v.vS     = (char *) &(buf->b[ f->ofs_byte ]);
+	f->ofs      = ofs*8;
+	f->sz       = sz*8;
+	f->v.vS     = (char *) &(buf->b[ f->ofs/8 ]);
 	f->write = write_string;
 	f->read  = read_string;
 
@@ -370,7 +369,7 @@ static int read_64 (lua_State *luaVM) {
 static int read_string (lua_State *luaVM) {
 	struct xt_buf_fld *f   = check_ud_buf_fld(luaVM, 1);
 
-	lua_pushlstring(luaVM, f->v.vS, f->sz_bit/8 );
+	lua_pushlstring(luaVM, f->v.vS, f->sz/8 );
 	return 1;
 }
 
@@ -510,7 +509,7 @@ static int write_64(lua_State *luaVM) {
 static int write_string (lua_State *luaVM) {
 	struct xt_buf_fld *f   = check_ud_buf_fld(luaVM, 1);
 	size_t l;
-	//TODO make sure string is not longer than f->sz_bit*8
+	//TODO make sure string is not longer than f->sz*8
 #ifdef _WIN32
 	strncpy_s(f->v.vS, l, luaL_checklstring(luaVM, 2, &l), l);
 #else
