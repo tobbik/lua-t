@@ -47,17 +47,29 @@ void stackDump (lua_State *luaVM) {
 
 /**
  * \brief  Return an error string to the LUA script.
- *         Pass NULL to use the return value of strerror.
+ *         Basically luaL_error extended by errno support
  * \param  luaVM The Lua intepretter object.
- * \param  info  An error string to return to the caller.
+ * \param  info  Error string.
+ * \param  ...   variable arguments to fmt
  */
-int pusherror(lua_State *luaVM, const char *info)
+int xt_push_error(lua_State *luaVM, const char *fmt, ...)
 {
-	lua_pushnil(luaVM);
-	if (info==NULL)
-		return luaL_error(luaVM, strerror(errno));
-	else
-		return luaL_error(luaVM, "%s: %s", info, strerror(errno));
+	va_list argp;
+	//lua_pushnil (luaVM);
+	if (NULL==fmt) {
+		if (0==errno) return luaL_error (luaVM, strerror(errno));
+		else          return luaL_error (luaVM, "Unknown Error");
+	}
+	else {
+		va_start(argp, fmt);
+		luaL_where(luaVM, 1);
+		lua_pushvfstring(luaVM, fmt, argp);
+		va_end(argp);
+		if (0==errno) lua_pushstring (luaVM, "\n");
+		else          lua_pushfstring (luaVM, ": %s\n", strerror(errno) );
+		lua_concat(luaVM, 3);
+		return lua_error(luaVM);
+	}
 }
 
 

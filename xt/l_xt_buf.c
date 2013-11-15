@@ -162,7 +162,7 @@ static int l_read_number_bits (lua_State *luaVM) {
 			break;
 		default:
 			//TODO: handle error
-			pusherror(luaVM, "Can't handle size of bit field");
+			return xt_push_error(luaVM, "Can't handle a %d bits wide field", sz);
 	}
 	return 1;
 
@@ -320,7 +320,7 @@ static int l_write_number_bits(lua_State *luaVM) {
 			break;
 		default:
 			//TODO: handle error
-			pusherror(luaVM, "Can't handle size of bit field");
+			return xt_push_error(luaVM, "Can't handle a %d bits wide field", sz);
 	}
 	return 0;
 }

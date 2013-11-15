@@ -114,7 +114,7 @@ int c_new_buf_fld_bits(lua_State *luaVM)
 			break;
 		default:
 			//TODO: handle error
-			pusherror(luaVM, "Can't handle size of bit field");
+			return xt_push_error(luaVM, "Can't handle a %d bits wide field", sz);
 	}
 	return 1;
 }
@@ -167,7 +167,7 @@ int c_new_buf_fld_byte(lua_State *luaVM)
 			break;
 		default:
 			// TODO: can't handle others than 1,2,4,8 byte
-			pusherror(luaVM, "bytes must be 1,2,4 or 8");
+			return xt_push_error(luaVM, "Length must be 1,2,4,or 8 - got %d", sz);
 	}
 	if (lua_isnumber(luaVM, 4)) {
 	// TODO handle setting the value

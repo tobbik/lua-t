@@ -23,8 +23,8 @@
 #define CRC16             0xA001
 
 
-void stackDump (lua_State *luaVM);
-int pusherror(lua_State *luaVM, const char *info);
+void stackDump       (lua_State *luaVM);
+int  xt_push_error   (lua_State *luaVM, const char *fmt, ...);
 
 
 // global helper functions

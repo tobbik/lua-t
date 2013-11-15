@@ -55,18 +55,20 @@ static int c_new_ipendpoint(lua_State *luaVM)
  * --------------------------------------------------------------------------*/
 int set_ipendpoint_values(lua_State *luaVM, int pos, struct sockaddr_in *ip)
 {
-	int                  port;
+	int           port;
+	const char   *ips;
 
 	memset( (char *) &(*ip), 0, sizeof(ip) );
 	ip->sin_family = AF_INET;
 
 	if (lua_isstring(luaVM, pos+0)) {
+		ips = luaL_checkstring(luaVM, pos+0);
 #ifdef _WIN32
-		if ( InetPton (AF_INET, luaL_checkstring(luaVM, pos+0), &(ip->sin_addr))==0)
-			return ( pusherror(luaVM, "InetPton() failed\n") );
+		if ( InetPton (AF_INET, ips, &(ip->sin_addr))==0)
+			return ( xt_push_error(luaVM, "InetPton() of %s failed", ips ) );
 #else
-		if ( inet_pton(AF_INET, luaL_checkstring(luaVM, pos+0), &(ip->sin_addr))==0)
-			return ( pusherror(luaVM, "inet_aton() failed\n") );
+		if ( inet_pton(AF_INET, ips, &(ip->sin_addr))==0)
+			return ( xt_push_error(luaVM, "inet_aton() of %s failed", ips ) );
 #endif
 		if ( lua_isnumber(luaVM, pos+1) ) {
 			port = luaL_checkint(luaVM, pos+1);
@@ -128,14 +130,16 @@ struct sockaddr_in *check_ud_ipendpoint (lua_State *luaVM, int pos) {
  * --------------------------------------------------------------------------*/
 static int l_set_ip (lua_State *luaVM) {
 	struct sockaddr_in *ip = check_ud_ipendpoint(luaVM, 1);
+	const char         *ips;  ///< IP String representation
 
 	if (lua_isstring(luaVM, 2)) {
+		ips = luaL_checkstring(luaVM, 2);
 #ifdef _WIN32
-		if ( InetPton (AF_INET, luaL_checkstring(luaVM, 2), &(ip->sin_addr))==0)
-			return ( pusherror(luaVM, "InetPton() failed\n") );
+		if ( InetPton (AF_INET, ips, &(ip->sin_addr))==0)
+			return ( xt_push_error(luaVM, "InetPton() of %s failed", ips) );
 #else
-		if ( inet_pton(AF_INET, luaL_checkstring(luaVM, 2), &(ip->sin_addr))==0)
-			return ( pusherror(luaVM, "inet_aton() failed\n") );
+		if ( inet_pton(AF_INET, ips, &(ip->sin_addr))==0)
+			return ( xt_push_error(luaVM, "inet_aton() of %s failed", ips) );
 #endif
 	}
 	else if (lua_isnil(luaVM, 2) )

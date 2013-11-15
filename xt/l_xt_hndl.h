@@ -40,8 +40,8 @@ static const char *const xt_hndl_t_lst[] = {
 };
 
 struct xt_hndl {
-	enum xt_hndl_t     hd_t;
-	int                fd;    // socket, file handle, stream ...
+	enum xt_hndl_t      hd_t;
+	int                 fd;    // socket, file handle, stream ...
 	//t_timeout tm;
 };
 
