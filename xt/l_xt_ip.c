@@ -204,13 +204,47 @@ static int l_get_port (lua_State *luaVM) {
  * \lreturn string    formatted string representing sockkaddr (IP:Port).
  * \return  The number of results to be passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
-static int l_ipendpoint_tostring (lua_State *luaVM) {
+static int xt_ip___tostring (lua_State *luaVM) {
 	struct sockaddr_in *ip = check_ud_ipendpoint(luaVM, 1);
 	lua_pushfstring(luaVM, "IpEndpoint{%s:%d}: %p",
 			inet_ntoa(ip->sin_addr),
 			ntohs(ip->sin_port),
 			ip
 	);
+	return 1;
+}
+
+
+/**--------------------------------------------------------------------------
+ * \brief   compares values of two IP Endpoints.
+ * \param   luaVM     The lua state.
+ * \lparam  sockaddr  the sockaddr_in userdata.
+ * \lparam  sockaddr  the sockaddr_in userdata.
+ * \lreturn boolean   if IP:Port and .
+ * \return  The number of results to be passed back to the calling Lua script.
+ * --------------------------------------------------------------------------*/
+static int xt_ip___eq (lua_State *luaVM) {
+	struct sockaddr_in *ip    = check_ud_ipendpoint(luaVM, 1);
+	struct sockaddr_in *ipCmp = check_ud_ipendpoint(luaVM, 2);
+
+	if (ip->sin_family != ipCmp->sin_family) {
+		lua_pushboolean(luaVM, 0);
+		return 1;
+	}
+
+	if (ip->sin_family == AF_INET) {
+		if (ip->sin_addr.s_addr != ipCmp->sin_addr.s_addr ||
+		    ip->sin_port != ipCmp->sin_port)
+		{
+			lua_pushboolean(luaVM, 0);
+			return 1;
+		}
+	} else {
+		// TODO: Deal with IPv6 at some point!
+			lua_pushboolean(luaVM, 0);
+			return 1;
+	}
+	lua_pushboolean(luaVM, 1);
 	return 1;
 }
 
@@ -250,8 +284,10 @@ int luaopen_ipendpoint (lua_State *luaVM) {
 	luaL_newmetatable(luaVM, "L.IpEndpoint");   // stack: functions meta
 	luaL_newlib(luaVM, l_ipendpoint_m);
 	lua_setfield(luaVM, -2, "__index");
-	lua_pushcfunction(luaVM, l_ipendpoint_tostring);
+	lua_pushcfunction(luaVM, xt_ip___tostring);
 	lua_setfield(luaVM, -2, "__tostring");
+	lua_pushcfunction(luaVM, xt_ip___eq);
+	lua_setfield(luaVM, -2, "__eq");
 	lua_pop(luaVM, 1);        // remove metatable from stack
 
 	// Push the class onto the stack

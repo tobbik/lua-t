@@ -88,17 +88,13 @@ struct xt_hndl *check_ud_socket (lua_State *luaVM, int pos) {
 /** -------------------------------------------------------------------------
  * \brief   create a UDP socket and return it.
  * \param   luaVM  The lua state.
- * \lparam  port   the port for the socket.
- * \lparam  ip     the IP address for the socket.
  * \lreturn socket Lua UserData wrapped socket.
  * \return  The number of results to be passed back to the calling Lua script.
  *-------------------------------------------------------------------------*/
 static int l_create_udp_socket(lua_State *luaVM)
 {
 	struct xt_hndl  __attribute__ ((unused)) *hndl;
-
 	hndl = create_ud_socket(luaVM, UDP);
-
 	return 1 ;
 }
 
@@ -112,7 +108,6 @@ static int l_create_udp_socket(lua_State *luaVM)
 static int l_create_tcp_socket(lua_State *luaVM)
 {
 	struct xt_hndl  __attribute__ ((unused)) *hndl;
-
 	hndl = create_ud_socket(luaVM, TCP);
 	return 1 ;
 }
@@ -420,6 +415,30 @@ static int l_recv_strm(lua_State *luaVM)
 }
 
 
+/** -------------------------------------------------------------------------
+ * \brief   recieve IpEndpoint from a TCP socket.
+ * \param   luaVM  The lua state.
+ * \lparam  socket socket userdata.
+ * \lparam  IpEndpoint userdata.
+ * \lreturn IpEndpoint userdata.
+ * \return  The number of results to be passed back to the calling Lua script.
+ * TODO:  Allow it to accept an existing LuaBuffer to ammend incoming packages
+ *-------------------------------------------------------------------------*/
+static int xt_socket_getsockname(lua_State *luaVM)
+{
+	struct xt_hndl      *hndl;
+	struct sockaddr_in  *ip;
+	socklen_t            ip_len = sizeof(struct sockaddr_in);
+
+	hndl = check_ud_socket(luaVM, 1);
+
+	if (lua_isuserdata(luaVM, 2))  ip = check_ud_ipendpoint(luaVM, 2);
+	else                           ip = create_ud_ipendpoint(luaVM);
+
+	getsockname(hndl->fd, (struct sockaddr*) &(*ip), &ip_len);
+	return 1;
+}
+
 /**--------------------------------------------------------------------------
  * \brief   prints out the socket.
  * \param   luaVM     The lua state.
@@ -461,6 +480,7 @@ static const luaL_Reg l_socket_m [] =
 	{"recvFrom",  l_recv_from},
 	{"send",      l_send_strm},
 	{"recv",      l_recv_strm},
+	{"getIp",     xt_socket_getsockname},
 	{NULL,        NULL}
 };
 
