@@ -180,41 +180,6 @@ uint16_t get_crc16(const unsigned char *data, size_t size)
 	return crc;
 }
 
-
-/**
- * \brief      a system call to sleep (Lua lacks that)
- *             Lua has no build in sleep method.
- * \param      The Lua state.
- * \lparam     int  milliseconds to sleep
- * \return     0 return values
- */
-static int l_sleep(lua_State *luaVM)
-{
-#ifdef _WIN32
-	fd_set dummy;
-	int s;
-#endif
-	struct timeval *tv;
-	uint32_t msec;
-	if (lua_isuserdata(luaVM, 1)) {
-		tv = check_ud_timer(luaVM, 1);
-	}
-	else {
-		msec = (uint32_t) luaL_checkint(luaVM, 1);
-		tv = create_ud_timer(luaVM, msec);
-	}
-#ifdef _WIN32
-	s = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
-	FD_ZERO(&dummy);
-	FD_SET(s, &dummy);
-	select(0, 0,0,&dummy, tv);
-#else
-	select(0, 0,0,0, tv);
-#endif
-	return 0;
-}
-
-
 /** -------------------------------------------------------------------------
  * \brief   Helper to take sockets from Lua tables to FD_SET
  *          Itertates over the table puls out the socket structs and adds the
@@ -366,7 +331,6 @@ static int l_select_handle_k(lua_State *luaVM)
 static const luaL_Reg l_xt_lib [] =
 {
 	// xt-global methods
-	{"sleep",       l_sleep},
 	{"select",      l_select_handle},
 	{"selectK",     l_select_handle_k},
 	// xt-global Classes
