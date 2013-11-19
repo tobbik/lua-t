@@ -105,10 +105,16 @@ struct timeval *check_ud_timer (lua_State *luaVM, int pos) {
  * --------------------------------------------------------------------------*/
 static int l_set_time (lua_State *luaVM) {
 	struct timeval *tv = check_ud_timer(luaVM, 1);
-	int             ms = luaL_checkint(luaVM, 2);
+	int             ms;
 
-	tv->tv_sec  = ms/1000;
-	tv->tv_usec = (ms % 1000) * 1000;
+	if (lua_isnumber(luaVM, 2)) {
+		ms = luaL_checkint(luaVM, 2);
+		tv->tv_sec  = ms/1000;
+		tv->tv_usec = (ms % 1000) * 1000;
+	}
+	else {
+		gettimeofday(tv,0);
+	}
 
 	return 0;
 }
