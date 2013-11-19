@@ -146,6 +146,70 @@ static int xt_time__tostring (lua_State *luaVM) {
 }
 
 
+/**--------------------------------------------------------------------------
+ * \brief   compares two time values.
+ * \param   luaVM     The lua state.
+ * \lparam  timeval   the timval userdata.
+ * \lparam  timeval   timval userdata to compare to.
+ * \lreturn boolean   true if equal otherwise false.
+ * \return  The number of results to be passed back to the calling Lua script.
+ * --------------------------------------------------------------------------*/
+static int xt_time__eq (lua_State *luaVM) {
+	struct timeval *tA    = check_ud_timer(luaVM, 1);
+	struct timeval *tB = check_ud_timer(luaVM, 2);
+	if (tA->tv_sec == tB->tv_sec && tA->tv_usec == tB->tv_usec)
+		lua_pushboolean(luaVM, 1);
+	else
+		lua_pushboolean(luaVM, 0);
+	return 1;
+}
+
+
+/**--------------------------------------------------------------------------
+ * \brief   adds two time values.
+ * \param   luaVM     The lua state.
+ * \lparam  timeval   the timval userdata.
+ * \lparam  timeval   timval userdata to add to.
+ * \lreturn boolean   true if equal otherwise false.
+ * \return  The number of results to be passed back to the calling Lua script.
+ * --------------------------------------------------------------------------*/
+static int xt_time__add (lua_State *luaVM) {
+	struct timeval *tA    = check_ud_timer(luaVM, 1);
+	struct timeval *tB = check_ud_timer(luaVM, 2);
+	struct timeval *tC = create_ud_timer(luaVM);
+
+	tC->tv_sec   = tB->tv_sec  + tA->tv_sec ;  // add seconds
+	tC->tv_usec  = tB->tv_usec + tA->tv_usec ; // add microseconds
+	tC->tv_sec  += tC->tv_usec / 1000000 ;     // add microsecond overflow to seconds
+	tC->tv_usec %= 1000000 ;                   // subtract overflow from microseconds
+	return 1;
+}
+
+
+/**--------------------------------------------------------------------------
+ * \brief   adds two time values.
+ * \param   luaVM     The lua state.
+ * \lparam  timeval   the timval userdata.
+ * \lparam  timeval   timval userdata to add to.
+ * \lreturn boolean   true if equal otherwise false.
+ * \return  The number of results to be passed back to the calling Lua script.
+ * --------------------------------------------------------------------------*/
+static int xt_time__sub (lua_State *luaVM) {
+	struct timeval *tA    = check_ud_timer(luaVM, 1);
+	struct timeval *tB = check_ud_timer(luaVM, 2);
+	struct timeval *tC = create_ud_timer(luaVM);
+
+	tC->tv_sec = (tB->tv_usec > tA->tv_usec)
+		? tA->tv_sec - tB->tv_sec - 1
+		: tA->tv_sec - tB->tv_sec;
+		;  tC->tv_usec   = tA->tv_usec;
+	tC->tv_usec = (tB->tv_usec > tA->tv_usec)
+		? 1000000 - (tB->tv_usec - tA->tv_usec)
+		: tA->tv_usec - tB->tv_usec;
+	return 1;
+}
+
+
 /**
  * \brief      a system call to sleep (Lua lacks that)
  *             Lua has no build in sleep method.
@@ -160,9 +224,10 @@ static int xt_time_sleep(lua_State *luaVM)
 	int s;
 #endif
 	struct timeval *tv;
-	uint32_t msec;
+	long  sec, usec;
 	if (lua_isnumber(luaVM, -1))  xt_time_new(luaVM);
 	tv = check_ud_timer(luaVM, -1);
+	sec = tv->tv_sec; usec=tv->tv_usec;
 #ifdef _WIN32
 	s = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
 	FD_ZERO(&dummy);
@@ -171,6 +236,7 @@ static int xt_time_sleep(lua_State *luaVM)
 #else
 	select(0, 0,0,0, tv);
 #endif
+	tv->tv_sec=sec; tv->tv_usec=usec;
 	return 0;
 }
 
@@ -223,6 +289,12 @@ int luaopen_timer (lua_State *luaVM) {
 	lua_setfield(luaVM, -2, "__index");
 	lua_pushcfunction(luaVM, xt_time__tostring);
 	lua_setfield(luaVM, -2, "__tostring");
+	lua_pushcfunction(luaVM, xt_time__eq);
+	lua_setfield(luaVM, -2, "__eq");
+	lua_pushcfunction(luaVM, xt_time__add);
+	lua_setfield(luaVM, -2, "__add");
+	lua_pushcfunction(luaVM, xt_time__sub);
+	lua_setfield(luaVM, -2, "__sub");
 	lua_pop(luaVM, 1);        // remove metatable from stack
 
 	// Push the class onto the stack
