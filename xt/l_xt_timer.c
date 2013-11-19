@@ -258,8 +258,10 @@ static const struct luaL_Reg xt_time_m [] = {
 	{"new",     xt_time_new},
 	{"set",     l_set_time},
 	{"get",     l_get_time},
+	{"sleep",   xt_time_sleep},
 	{NULL,   NULL}
 };
+
 
 /**
  * \brief      the Time library class functions definition
@@ -271,7 +273,6 @@ static const luaL_Reg xt_time_cf [] =
 	{"sleep", xt_time_sleep},
 	{NULL,        NULL}
 };
-
 
 
 /**--------------------------------------------------------------------------
