@@ -27,15 +27,15 @@
 enum xt_hndl_t {
 	UDP,
 	TCP,
+	TIME,
 	FIL,
-	PIP
 };
 
 static const char *const xt_hndl_t_lst[] = {
 	"UDP",
 	"TCP",
+	"TIME",
 	"FIL",
-	"PIP",
 	NULL
 };
 
@@ -45,11 +45,10 @@ struct xt_hndl {
 	//t_timeout tm;
 };
 
-
 // Constructors
 // l_xt_timer.c
-struct timeval *check_ud_timer (lua_State *luaVM, int pos);
-struct timeval *create_ud_timer (lua_State *luaVM);
+struct timeval *xt_time_check_ud (lua_State *luaVM, int pos);
+struct timeval *xt_time_create_ud (lua_State *luaVM);
 int             xt_time_new(lua_State *luaVM);
 
 // l_xt_ipendpoint.c

@@ -33,7 +33,7 @@ uint16_t get_crc16(const unsigned char *data, size_t size);
 
 
 // global sub classes registration
-LUAMOD_API int luaopen_timer       (lua_State *luaVM);
+LUAMOD_API int luaopen_time        (lua_State *luaVM);
 LUAMOD_API int luaopen_ipendpoint  (lua_State *luaVM);
 LUAMOD_API int luaopen_socket      (lua_State *luaVM);
 LUAMOD_API int luaopen_buf         (lua_State *luaVM);

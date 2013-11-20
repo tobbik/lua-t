@@ -12,7 +12,7 @@ RANLIB= ranlib
 XT_SRC=l_xt.c \
 	 l_xt_socket.c \
 	 l_xt_ip.c \
-	 l_xt_timer.c \
+	 xt_time.c \
 	 l_xt_buf.c \
 	 l_xt_buf_fld.c \
 	 l_xt_debug.c

@@ -85,7 +85,7 @@ static int l_select_handle(lua_State *luaVM)
 	FD_ZERO(&wfds);
 
 	if (lua_isuserdata(luaVM, 3)) {
-		tv = check_ud_timer(luaVM, 3);
+		tv = xt_time_check_ud(luaVM, 3);
 	}
 
 	readsocks = select(

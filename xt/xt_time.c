@@ -53,7 +53,7 @@ int xt_time_new(lua_State *luaVM)
 	struct timeval  *tv;
 	int              ms;
 
-	tv = create_ud_timer (luaVM);
+	tv = xt_time_create_ud (luaVM);
 	if (lua_isnumber(luaVM, 1)) {
 		ms          = luaL_checkint(luaVM, 1);
 		tv->tv_sec  = ms/1000;
@@ -72,7 +72,7 @@ int xt_time_new(lua_State *luaVM)
  * \param   luaVM  The lua state.
  * \return  struct sockaddr_in*  pointer to the sockaddr
  * --------------------------------------------------------------------------*/
-struct timeval *create_ud_timer(lua_State *luaVM)
+struct timeval *xt_time_create_ud(lua_State *luaVM)
 {
 	struct timeval *tv;
 
@@ -89,7 +89,7 @@ struct timeval *create_ud_timer(lua_State *luaVM)
  * \param   int      position on the stack
  * \return  struct sockaddr_in*  pointer to the sockaddr
  * --------------------------------------------------------------------------*/
-struct timeval *check_ud_timer (lua_State *luaVM, int pos) {
+struct timeval *xt_time_check_ud (lua_State *luaVM, int pos) {
 	void *ud = luaL_checkudata(luaVM, pos, "xt.Time");
 	luaL_argcheck(luaVM, ud != NULL, pos, "`Timer` expected");
 	return (struct timeval *) ud;
@@ -103,8 +103,8 @@ struct timeval *check_ud_timer (lua_State *luaVM, int pos) {
  * \lparam  int      the port number.
  * \return  The number of results to be passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
-static int l_set_time (lua_State *luaVM) {
-	struct timeval *tv = check_ud_timer(luaVM, 1);
+static int xt_time_set (lua_State *luaVM) {
+	struct timeval *tv = xt_time_check_ud(luaVM, 1);
 	int             ms;
 
 	if (lua_isnumber(luaVM, 2)) {
@@ -127,9 +127,8 @@ static int l_set_time (lua_State *luaVM) {
  * \lreturn string   xxx.xxx.xxx.xxx formatted string representing sockkaddr IP.
  * \return  The number of results to be passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
-static int l_get_time (lua_State *luaVM) {
-	struct timeval *tv = check_ud_timer(luaVM, 1);
-
+static int xt_time_get (lua_State *luaVM) {
+	struct timeval *tv = xt_time_check_ud(luaVM, 1);
 	lua_pushinteger(luaVM, tv->tv_sec*1000 + tv->tv_usec/1000);
 	return 1;
 }
@@ -143,7 +142,7 @@ static int l_get_time (lua_State *luaVM) {
  * \return  The number of results to be passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
 static int xt_time__tostring (lua_State *luaVM) {
-	struct timeval *tv = check_ud_timer(luaVM, 1);
+	struct timeval *tv = xt_time_check_ud(luaVM, 1);
 	lua_pushfstring(luaVM, "xt.Time{%d}: %p",
 			tv->tv_sec*1000 + tv->tv_usec/1000,
 			tv
@@ -161,8 +160,8 @@ static int xt_time__tostring (lua_State *luaVM) {
  * \return  The number of results to be passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
 static int xt_time__eq (lua_State *luaVM) {
-	struct timeval *tA    = check_ud_timer(luaVM, 1);
-	struct timeval *tB = check_ud_timer(luaVM, 2);
+	struct timeval *tA = xt_time_check_ud(luaVM, 1);
+	struct timeval *tB = xt_time_check_ud(luaVM, 2);
 	if (tA->tv_sec == tB->tv_sec && tA->tv_usec == tB->tv_usec)
 		lua_pushboolean(luaVM, 1);
 	else
@@ -180,9 +179,9 @@ static int xt_time__eq (lua_State *luaVM) {
  * \return  The number of results to be passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
 static int xt_time__add (lua_State *luaVM) {
-	struct timeval *tA    = check_ud_timer(luaVM, 1);
-	struct timeval *tB = check_ud_timer(luaVM, 2);
-	struct timeval *tC = create_ud_timer(luaVM);
+	struct timeval *tA = xt_time_check_ud(luaVM, 1);
+	struct timeval *tB = xt_time_check_ud(luaVM, 2);
+	struct timeval *tC = xt_time_create_ud(luaVM);
 
 	tC->tv_sec   = tB->tv_sec  + tA->tv_sec ;  // add seconds
 	tC->tv_usec  = tB->tv_usec + tA->tv_usec ; // add microseconds
@@ -201,9 +200,9 @@ static int xt_time__add (lua_State *luaVM) {
  * \return  The number of results to be passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
 static int xt_time__sub (lua_State *luaVM) {
-	struct timeval *tA    = check_ud_timer(luaVM, 1);
-	struct timeval *tB = check_ud_timer(luaVM, 2);
-	struct timeval *tC = create_ud_timer(luaVM);
+	struct timeval *tA = xt_time_check_ud(luaVM, 1);
+	struct timeval *tB = xt_time_check_ud(luaVM, 2);
+	struct timeval *tC = xt_time_create_ud(luaVM);
 
 	tC->tv_sec = (tB->tv_usec > tA->tv_usec)
 		? tA->tv_sec - tB->tv_sec - 1
@@ -232,7 +231,7 @@ static int xt_time_sleep(lua_State *luaVM)
 	struct timeval *tv;
 	long  sec, usec;
 	if (lua_isnumber(luaVM, -1))  xt_time_new(luaVM);
-	tv = check_ud_timer(luaVM, -1);
+	tv  = xt_time_check_ud(luaVM, -1);
 	sec = tv->tv_sec; usec=tv->tv_usec;
 #ifdef _WIN32
 	s = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
@@ -262,8 +261,8 @@ static const struct luaL_Reg xt_time_fm [] = {
  */
 static const struct luaL_Reg xt_time_m [] = {
 	{"new",     xt_time_new},
-	{"set",     l_set_time},
-	{"get",     l_get_time},
+	{"set",     xt_time_set},
+	{"get",     xt_time_get},
 	{"sleep",   xt_time_sleep},
 	{NULL,   NULL}
 };
@@ -289,7 +288,7 @@ static const luaL_Reg xt_time_cf [] =
  * \lreturn string    the library
  * \return  The number of results to be passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
-int luaopen_timer (lua_State *luaVM) {
+int luaopen_time (lua_State *luaVM) {
 	// just make metatable known to be able to register and check userdata
 	luaL_newmetatable(luaVM, "xt.Time");   // stack: functions meta
 	luaL_newlib(luaVM, xt_time_m);

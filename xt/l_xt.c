@@ -333,12 +333,6 @@ static const luaL_Reg l_xt_lib [] =
 	// xt-global methods
 	{"select",      l_select_handle},
 	{"selectK",     l_select_handle_k},
-	// xt-global Classes
-	{"Timer",       luaopen_timer},
-	{"Socket",      luaopen_socket},
-	{"IpEndpoint",  luaopen_ipendpoint},
-	{"Buffer",      luaopen_buf},
-	{"debug",       luaopen_debug},
 	{NULL,        NULL}
 };
 
@@ -351,8 +345,8 @@ static const luaL_Reg l_xt_lib [] =
 LUAMOD_API int luaopen_xt (lua_State *luaVM)
 {
 	luaL_newlib (luaVM, l_xt_lib);
-	luaopen_timer(luaVM);
-	lua_setfield(luaVM, -2, "Timer");
+	luaopen_time(luaVM);
+	lua_setfield(luaVM, -2, "Time");
 	luaopen_socket(luaVM);
 	lua_setfield(luaVM, -2, "Socket");
 	luaopen_ipendpoint(luaVM);
