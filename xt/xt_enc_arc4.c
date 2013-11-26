@@ -217,7 +217,7 @@ static const luaL_Reg xt_enc_arc4_m [] =
  * \lreturn string    the library
  * \return  The number of results to be passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
-int luaopen_enc_arc4 (lua_State *luaVM) {
+int luaopen_xt_enc_arc4 (lua_State *luaVM) {
 	// just make metatable known to be able to register and check userdata
 	// this is only avalable a <instance>:func()
 	luaL_newmetatable(luaVM, "xt.Encode.Arc4");   // stack: functions meta

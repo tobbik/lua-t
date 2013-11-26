@@ -15,7 +15,7 @@
 #include <arpa/inet.h>            // htonl
 
 #include "l_xt.h"
-#include "l_xt_buf.h"
+#include "xt_buf.h"
 
 
 static int read_8 (lua_State *luaVM);
@@ -60,61 +60,62 @@ static inline uint64_t htonll(uint64_t value)
  * \return    integer   how many elements are placed on the Lua stack
 */
 // TODO: ARGCHECK size>0 < buflength-offset
-int c_new_buf_fld_bits(lua_State *luaVM)
+int xt_buf_fld_new_bits(lua_State *luaVM)
 {
 	int                ofs;   ///< offset in bits from buffer start
 	int                sz;    ///< size of field in bits
-	int                sz_nd; ///< size needed
+	int                sz_nd; ///< bytes needed to represent field
 	struct xt_buf_fld *f;
-	struct xt_buf     *buf = check_ud_buf(luaVM, 1);
+	struct xt_buf     *buf = xt_buf_check_ud (luaVM, 1);
 
 	sz    =  luaL_checkint(luaVM, 2);
 	ofs   =  luaL_checkint(luaVM, 3);
 	sz_nd = (ofs%8) + sz;
-	//printf("o:%d s:%d n:%d c:%d\n", ofs, sz, sz_nd, (sz_nd-1)/8);
 
-	f = create_ud_buf_fld(luaVM);
+	f = xt_buf_fld_create_ud(luaVM);
 	f->type     = BUF_FLD_BIT;
-	f->ofs_bit  = ofs;
-	f->ofs_byte = ofs/8;
-	f->sz_bit   = sz;
+	f->ofs      = ofs;
+	f->sz       = sz;
 
 	switch ( (sz_nd-1)/8 ) {
 		case 0:
 			f->shft  = 8 - (ofs%8) - sz;
-			f->m8    = ( 0xFF >> (8-sz)) << f->shft;
+			f->m.m8  = ( 0xFF >> (8-sz)) << f->shft;
 			f->write = write_bits_8;
 			f->read  = read_bits_8;
-			f->v8    = (uint8_t *) &(buf->b[f->ofs_byte]);
+			f->v.v8  = (uint8_t *) &(buf->b[f->ofs/8]);
 			break;
 		case 1:
 			f->shft  = 16 - (ofs%8) - sz;
-			f->m16   = ( 0xFFFF >> (16-sz)) << f->shft;
+			f->m.m16 = ( 0xFFFF >> (16-sz)) << f->shft;
 			f->write = write_bits_16;
 			f->read  = read_bits_16;
-			f->v16   = (uint16_t *) &(buf->b[f->ofs_byte]);
+			f->v.v16 = (uint16_t *) &(buf->b[f->ofs/8]);
 			break;
 		case 2:
 		case 3:
 			f->shft  = 32 - (ofs%8) - sz;
-			f->m32   = ( 0xFFFFFFFF >> (32-sz)) << f->shft;
+			f->m.m32 = ( 0xFFFFFFFF >> (32-sz)) << f->shft;
 			f->write = write_bits_32;
 			f->read  = read_bits_32;
-			f->v32   = (uint32_t *) &(buf->b[f->ofs_byte]);
+			f->v.v32 = (uint32_t *) &(buf->b[f->ofs/8]);
 			break;
 		case 4:
 		case 5:
 		case 6:
 		case 7:
 			f->shft  = 64 - (ofs%8) - sz;
-			f->m64   = ( 0xFFFFFFFF >> (64-sz)) << f->shft;
+			f->m.m64 = ( 0xFFFFFFFF >> (64-sz)) << f->shft;
 			f->write = write_bits_64;
 			f->read  = read_bits_64;
-			f->v64   = (uint64_t *) &(buf->b[f->ofs_byte]);
+			f->v.v64 = (uint64_t *) &(buf->b[f->ofs/8]);
 			break;
 		default:
 			//TODO: handle error
 			return xt_push_error(luaVM, "Can't handle a %d bits wide field", sz);
+	}
+	if (lua_isnumber(luaVM, 4)) {
+	// TODO handle setting the value
 	}
 	return 1;
 }
@@ -128,42 +129,41 @@ int c_new_buf_fld_bits(lua_State *luaVM)
  * \lparam    position in the Buffer
  * \return    integer   how many elements are placed on the Lua stack
 */
-int c_new_buf_fld_byte(lua_State *luaVM)
+int xt_buf_fld_new_byte(lua_State *luaVM)
 {
-	int                ofs;
-	int                sz;
+	int                ofs; ///< offset to buffer start in byte
+	int                sz;  ///< size in byte
 	struct xt_buf_fld *f;
-	struct xt_buf     *buf = check_ud_buf(luaVM, 1);
+	struct xt_buf     *buf = xt_buf_check_ud (luaVM, 1);
 
 	sz  =  luaL_checkint(luaVM, 2);
 	ofs =  luaL_checkint(luaVM, 3);
 
-	f = create_ud_buf_fld(luaVM);
+	f = xt_buf_fld_create_ud(luaVM);
 	f->type     = BUF_FLD_BYTE;
-	f->ofs_bit  = ofs*8;
-	f->ofs_byte = ofs;
-	f->sz_bit   = sz*8;
+	f->ofs      = ofs*8;
+	f->sz       = sz*8;
 
 	switch ( sz ) {
 		case 1:
 			f->write = write_8;
 			f->read  = read_8;
-			f->v8    = (uint8_t *) &(buf->b[f->ofs_byte]);
+			f->v.v8  = (uint8_t *) &(buf->b[f->ofs/8]);
 			break;
 		case 2:
 			f->write = write_16;
 			f->read  = read_16;
-			f->v16   = (uint16_t *) &(buf->b[f->ofs_byte]);
+			f->v.v16 = (uint16_t *) &(buf->b[f->ofs/8]);
 			break;
 		case 4:
 			f->write = write_32;
 			f->read  = read_32;
-			f->v32   = (uint32_t *) &(buf->b[f->ofs_byte]);
+			f->v.v32 = (uint32_t *) &(buf->b[f->ofs/8]);
 			break;
 		case 8:
 			f->write = write_64;
 			f->read  = read_64;
-			f->v64   = (uint64_t *) &(buf->b[f->ofs_byte]);
+			f->v.v64 = (uint64_t *) &(buf->b[f->ofs/8]);
 			break;
 		default:
 			// TODO: can't handle others than 1,2,4,8 byte
@@ -184,31 +184,30 @@ int c_new_buf_fld_byte(lua_State *luaVM)
  * \lparam    position in the Buffer
  * \return    integer   how many elements are placed on the Lua stack
 */
-int c_new_buf_fld_string(lua_State *luaVM)
+int xt_buf_fld_new_string(lua_State *luaVM)
 {
-	int                   ofs;
-	int                   sz;
-	struct xt_buf_fld    *f;
-	struct xt_buf        *buf = check_ud_buf(luaVM, 1);
+	int                ofs; ///< offset to buffer start in byte
+	int                sz;  ///< size in byte
+	struct xt_buf_fld *f;
+	struct xt_buf     *buf = xt_buf_check_ud (luaVM, 1);
 
 	sz  =  luaL_checkint(luaVM, 2);
 	ofs =  luaL_checkint(luaVM, 3);
 
-	f = create_ud_buf_fld(luaVM);
+	f = xt_buf_fld_create_ud(luaVM);
 	f->type     = BUF_FLD_STR;
-	f->ofs_bit  = ofs*8;
-	f->ofs_byte = ofs;
-	f->sz_bit   = sz*8;
-	f->vS  = (char *) &(buf->b[ f->ofs_byte ]);
+	f->ofs      = ofs*8;
+	f->sz       = sz*8;
+	f->v.vS     = (char *) &(buf->b[ f->ofs/8 ]);
 	f->write = write_string;
 	f->read  = read_string;
 
 	if (lua_isstring(luaVM, 4)) {
 #ifdef _WIN32
 			size_t bytes = sz/8;
-			strncpy_s(f->vS, bytes, luaL_checkstring(luaVM, 4), len);
+			strncpy_s(f->v.vS, bytes, luaL_checkstring(luaVM, 4), len);
 #else
-			strncpy(f->vS, luaL_checkstring(luaVM, 4), sz);
+			strncpy(f->v.vS, luaL_checkstring(luaVM, 4), sz);
 #endif
 	}
 	return 1;
@@ -220,7 +219,7 @@ int c_new_buf_fld_string(lua_State *luaVM)
  * \param   luaVM  The lua state.
  * \return  struct xt_buf_fld*  pointer to the buffer field
  * --------------------------------------------------------------------------*/
-struct xt_buf_fld *create_ud_buf_fld ( lua_State  *luaVM)
+struct xt_buf_fld *xt_buf_fld_create_ud ( lua_State  *luaVM)
 {
 	struct xt_buf_fld  *f;
 
@@ -242,7 +241,7 @@ struct xt_buf_fld *create_ud_buf_fld ( lua_State  *luaVM)
  *
  * \return pointer to struct xt_buf
  */
-struct xt_buf_fld *check_ud_buf_fld (lua_State *luaVM, int pos) {
+struct xt_buf_fld *xt_buf_fld_check_ud (lua_State *luaVM, int pos) {
 	void *ud = luaL_checkudata(luaVM, pos, "L.Buffer.Field");
 	luaL_argcheck(luaVM, ud != NULL, pos, "`Buffer.Field` expected");
 	return (struct xt_buf_fld *) ud;
@@ -256,9 +255,9 @@ struct xt_buf_fld *check_ud_buf_fld (lua_State *luaVM, int pos) {
  * \return integer 1 left on the stack
  */
 static int read_bits_8 (lua_State *luaVM) {
-	struct xt_buf_fld *f   = check_ud_buf_fld(luaVM, 1);
+	struct xt_buf_fld *f   = xt_buf_fld_check_ud(luaVM, 1);
 
-	lua_pushinteger(luaVM, ((*(f->v8) & f->m8) >> f->shft) );
+	lua_pushinteger(luaVM, ((*(f->v.v8) & f->m.m8) >> f->shft) );
 	return 1;
 }
 
@@ -270,9 +269,9 @@ static int read_bits_8 (lua_State *luaVM) {
  * \return integer 1 left on the stack
  */
 static int read_bits_16 (lua_State *luaVM) {
-	struct xt_buf_fld *f   = check_ud_buf_fld(luaVM, 1);
+	struct xt_buf_fld *f   = xt_buf_fld_check_ud(luaVM, 1);
 
-	lua_pushinteger(luaVM, ((htons (*(f->v16)) & f->m16) >> f->shft) );
+	lua_pushinteger(luaVM, ((htons (*(f->v.v16)) & f->m.m16) >> f->shft) );
 	return 1;
 }
 
@@ -284,9 +283,9 @@ static int read_bits_16 (lua_State *luaVM) {
  * \return integer 1 left on the stack
  */
 static int read_bits_32 (lua_State *luaVM) {
-	struct xt_buf_fld *f   = check_ud_buf_fld(luaVM, 1);
+	struct xt_buf_fld *f   = xt_buf_fld_check_ud(luaVM, 1);
 
-	lua_pushinteger(luaVM, ((htonl (*(f->v32)) & f->m32) >> f->shft) );
+	lua_pushinteger(luaVM, ((htonl (*(f->v.v32)) & f->m.m32) >> f->shft) );
 	return 1;
 }
 
@@ -298,9 +297,9 @@ static int read_bits_32 (lua_State *luaVM) {
  * \return integer 1 left on the stack
  */
 static int read_bits_64 (lua_State *luaVM) {
-	struct xt_buf_fld *f   = check_ud_buf_fld(luaVM, 1);
+	struct xt_buf_fld *f   = xt_buf_fld_check_ud(luaVM, 1);
 
-	lua_pushinteger(luaVM, ((htonll (*(f->v64)) & f->m64) >> f->shft) );
+	lua_pushinteger(luaVM, ((htonll (*(f->v.v64)) & f->m.m64) >> f->shft) );
 	return 1;
 }
 
@@ -312,9 +311,9 @@ static int read_bits_64 (lua_State *luaVM) {
  * \return integer 1 left on the stack
  */
 static int read_8 (lua_State *luaVM) {
-	struct xt_buf_fld *f   = check_ud_buf_fld(luaVM, 1);
+	struct xt_buf_fld *f   = xt_buf_fld_check_ud(luaVM, 1);
 
-	lua_pushinteger(luaVM, *(f->v8) );
+	lua_pushinteger(luaVM, *(f->v.v8) );
 	return 1;
 }
 
@@ -326,9 +325,9 @@ static int read_8 (lua_State *luaVM) {
  * \return integer 1 left on the stack
  */
 static int read_16 (lua_State *luaVM) {
-	struct xt_buf_fld *f   = check_ud_buf_fld(luaVM, 1);
+	struct xt_buf_fld *f   = xt_buf_fld_check_ud(luaVM, 1);
 
-	lua_pushinteger(luaVM, htons( *(f->v16) ) );
+	lua_pushinteger(luaVM, htons( *(f->v.v16) ) );
 	return 1;
 }
 
@@ -340,9 +339,9 @@ static int read_16 (lua_State *luaVM) {
  * \return integer 1 left on the stack
  */
 static int read_32 (lua_State *luaVM) {
-	struct xt_buf_fld *f   = check_ud_buf_fld(luaVM, 1);
+	struct xt_buf_fld *f   = xt_buf_fld_check_ud(luaVM, 1);
 
-	lua_pushinteger(luaVM, htonl( *(f->v32) ) );
+	lua_pushinteger(luaVM, htonl( *(f->v.v32) ) );
 	return 1;
 }
 
@@ -354,9 +353,9 @@ static int read_32 (lua_State *luaVM) {
  * \return integer 1 left on the stack
  */
 static int read_64 (lua_State *luaVM) {
-	struct xt_buf_fld *f   = check_ud_buf_fld(luaVM, 1);
+	struct xt_buf_fld *f   = xt_buf_fld_check_ud(luaVM, 1);
 
-	lua_pushinteger(luaVM, htonll( *(f->v64) ) );
+	lua_pushinteger(luaVM, htonll( *(f->v.v64) ) );
 	return 1;
 }
 
@@ -368,9 +367,9 @@ static int read_64 (lua_State *luaVM) {
  * \return integer 1 left on the stack
  */
 static int read_string (lua_State *luaVM) {
-	struct xt_buf_fld *f   = check_ud_buf_fld(luaVM, 1);
+	struct xt_buf_fld *f   = xt_buf_fld_check_ud(luaVM, 1);
 
-	lua_pushlstring(luaVM, f->vS, f->sz_bit/8 );
+	lua_pushlstring(luaVM, f->v.vS, f->sz/8 );
 	return 1;
 }
 
@@ -383,10 +382,10 @@ static int read_string (lua_State *luaVM) {
  * \return integer 0 left on the stack
  */
 static int write_bits_8(lua_State *luaVM) {
-	struct xt_buf_fld *f = check_ud_buf_fld(luaVM, 1);
+	struct xt_buf_fld *f = xt_buf_fld_check_ud(luaVM, 1);
 	int                v   = luaL_checkint(luaVM, 2);
 	luaL_argcheck(luaVM, 0 <= v && v <=255 , 2, "value out of range");
-	*(f->v8) =  ( *(f->v8) & ~f->m8) | ( ((uint8_t)v) << f->shft);
+	*(f->v.v8) =  ( *(f->v.v8) & ~f->m.m8) | ( ((uint8_t)v) << f->shft);
 	return 0;
 }
 
@@ -399,11 +398,11 @@ static int write_bits_8(lua_State *luaVM) {
  * \return integer 0 left on the stack
  */
 static int write_bits_16(lua_State *luaVM) {
-	struct xt_buf_fld *f = check_ud_buf_fld(luaVM, 1);
+	struct xt_buf_fld *f = xt_buf_fld_check_ud(luaVM, 1);
 	int                v   = luaL_checkint(luaVM, 2);
 	luaL_argcheck(luaVM, 0 <= v && v <= 65536, 2, "value out of range");
-	*(f->v16) = htons(
-		( htons(*(f->v16)) & ~f->m16) |
+	*(f->v.v16) = htons(
+		( htons(*(f->v.v16)) & ~f->m.m16) |
 		( v << f->shft));
 	return 0;
 }
@@ -417,11 +416,11 @@ static int write_bits_16(lua_State *luaVM) {
  * \return integer 0 left on the stack
  */
 static int write_bits_32(lua_State *luaVM) {
-	struct xt_buf_fld *f = check_ud_buf_fld(luaVM, 1);
+	struct xt_buf_fld *f = xt_buf_fld_check_ud(luaVM, 1);
 	int                v   = luaL_checkint(luaVM, 2);
 	luaL_argcheck(luaVM, 0 <= v && v <=2147483647 , 2, "value out of range");
-	*(f->v32) = htonl(
-		( htonl(*(f->v32)) & ~f->m32) |
+	*(f->v.v32) = htonl(
+		( htonl(*(f->v.v32)) & ~f->m.m32) |
 		( v << f->shft));
 	return 0;
 }
@@ -435,11 +434,11 @@ static int write_bits_32(lua_State *luaVM) {
  * \return integer 0 left on the stack
  */
 static int write_bits_64(lua_State *luaVM) {
-	struct xt_buf_fld *f = check_ud_buf_fld(luaVM, 1);
+	struct xt_buf_fld *f = xt_buf_fld_check_ud(luaVM, 1);
 	int                v   = luaL_checkint(luaVM, 2);
 	luaL_argcheck(luaVM, 0 <= v && v <=2147483647 , 2, "value out of range");
-	*(f->v64) = htonll(
-		( htonll(*(f->v64)) & ~f->m64) |
+	*(f->v.v64) = htonll(
+		( htonll(*(f->v.v64)) & ~f->m.m64) |
 		( v << f->shft));
 	return 0;
 }
@@ -453,8 +452,8 @@ static int write_bits_64(lua_State *luaVM) {
  * \return integer 0 left on the stack
  */
 static int write_8(lua_State *luaVM) {
-	struct xt_buf_fld *f = check_ud_buf_fld(luaVM, 1);
-	*(f->v8) = luaL_checkint(luaVM, 2);
+	struct xt_buf_fld *f = xt_buf_fld_check_ud(luaVM, 1);
+	*(f->v.v8) = luaL_checkint(luaVM, 2);
 	return 0;
 }
 
@@ -467,8 +466,8 @@ static int write_8(lua_State *luaVM) {
  * \return integer 0 left on the stack
  */
 static int write_16(lua_State *luaVM) {
-	struct xt_buf_fld *f   = check_ud_buf_fld(luaVM, 1);
-	*(f->v16)  = htons( luaL_checkint(luaVM, 2) );
+	struct xt_buf_fld *f   = xt_buf_fld_check_ud(luaVM, 1);
+	*(f->v.v16)  = htons( luaL_checkint(luaVM, 2) );
 	return 0;
 }
 
@@ -481,8 +480,8 @@ static int write_16(lua_State *luaVM) {
  * \return integer 0 left on the stack
  */
 static int write_32(lua_State *luaVM) {
-	struct xt_buf_fld *f   = check_ud_buf_fld(luaVM, 1);
-	*(f->v32)  = htonl( luaL_checkint(luaVM, 2) );
+	struct xt_buf_fld *f   = xt_buf_fld_check_ud(luaVM, 1);
+	*(f->v.v32)  = htonl( luaL_checkint(luaVM, 2) );
 	return 0;
 }
 
@@ -495,8 +494,8 @@ static int write_32(lua_State *luaVM) {
  * \return integer 0 left on the stack
  */
 static int write_64(lua_State *luaVM) {
-	struct xt_buf_fld *f   = check_ud_buf_fld(luaVM, 1);
-	*(f->v64)  = htonll( luaL_checkint(luaVM, 2) );
+	struct xt_buf_fld *f   = xt_buf_fld_check_ud(luaVM, 1);
+	*(f->v.v64)  = htonll( luaL_checkint(luaVM, 2) );
 	return 0;
 }
 
@@ -508,13 +507,13 @@ static int write_64(lua_State *luaVM) {
  * \return integer 1 left on the stack
  */
 static int write_string (lua_State *luaVM) {
-	struct xt_buf_fld *f   = check_ud_buf_fld(luaVM, 1);
+	struct xt_buf_fld *f   = xt_buf_fld_check_ud(luaVM, 1);
 	size_t l;
-	//TODO make sure string is not longer than f->sz_bit*8
+	//TODO make sure string is not longer than f->sz*8
 #ifdef _WIN32
-	strncpy_s(f->vS, l, luaL_checklstring(luaVM, 2, &l), l);
+	strncpy_s(f->v.vS, l, luaL_checklstring(luaVM, 2, &l), l);
 #else
-	strncpy(f->vS, luaL_checklstring(luaVM, 2, &l), l);
+	strncpy(f->v.vS, luaL_checklstring(luaVM, 2, &l), l);
 #endif
 	return 0;
 }
@@ -526,8 +525,8 @@ static int write_string (lua_State *luaVM) {
  * \lparam struct xt_buf_fld
  * \return integer 0 left on the stack
  */
-static int l_read(lua_State *luaVM) {
-	struct xt_buf_fld *f   = check_ud_buf_fld(luaVM, 1);
+static int xt_buf_fld_read (lua_State *luaVM) {
+	struct xt_buf_fld *f   = xt_buf_fld_check_ud(luaVM, 1);
 	return f->read(luaVM);
 }
 
@@ -538,8 +537,8 @@ static int l_read(lua_State *luaVM) {
  * \lparam struct xt_buf_fld
  * \return integer 0 left on the stack
  */
-static int l_write(lua_State *luaVM) {
-	struct xt_buf_fld *f   = check_ud_buf_fld(luaVM, 1);
+static int xt_buf_fld_write (lua_State *luaVM) {
+	struct xt_buf_fld *f   = xt_buf_fld_check_ud(luaVM, 1);
 	return f->write(luaVM);
 }
 
@@ -551,8 +550,8 @@ static int l_write(lua_State *luaVM) {
  * \lreturn string     formatted string representing buffer.
  * \return  The number of results to be passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
-static int l_buf_fld_tostring (lua_State *luaVM) {
-	struct xt_buf_fld *f = check_ud_buf_fld(luaVM, 1);
+static int xt_buf_fld___tostring (lua_State *luaVM) {
+	struct xt_buf_fld *f = xt_buf_fld_check_ud (luaVM, 1);
 
 	f->read(luaVM);
 	if (lua_isstring(luaVM, 2))
@@ -569,10 +568,10 @@ static int l_buf_fld_tostring (lua_State *luaVM) {
  * \brief      the buffer field library definition
  *             assigns Lua available names to C-functions
  */
-static const luaL_Reg l_buf_fld_m [] =
+static const luaL_Reg xt_buf_fld_m [] =
 {
-	{"read",     l_read},
-	{"write",    l_write},
+	{"read",     xt_buf_fld_read},
+	{"write",    xt_buf_fld_write},
 	{NULL,        NULL}
 };
 
@@ -585,12 +584,12 @@ static const luaL_Reg l_buf_fld_m [] =
  * \lreturn string    the library
  * \return  The number of results to be passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
-int luaopen_buf_fld (lua_State *luaVM)
+int luaopen_xt_buf_fld (lua_State *luaVM)
 {
 	luaL_newmetatable(luaVM, "L.Buffer.Field");   // stack: functions meta
-	luaL_newlib(luaVM, l_buf_fld_m);
+	luaL_newlib(luaVM, xt_buf_fld_m);
 	lua_setfield(luaVM, -2, "__index");
-	lua_pushcfunction(luaVM, l_buf_fld_tostring);
+	lua_pushcfunction(luaVM, xt_buf_fld___tostring);
 	lua_setfield(luaVM, -2, "__tostring");
 	lua_pop(luaVM, 1);        // remove metatable from stack
 	// empty IpEndpoint class = {}, this is the actual return of this function

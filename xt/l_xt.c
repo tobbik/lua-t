@@ -345,15 +345,15 @@ static const luaL_Reg l_xt_lib [] =
 LUAMOD_API int luaopen_xt (lua_State *luaVM)
 {
 	luaL_newlib (luaVM, l_xt_lib);
-	luaopen_time(luaVM);
+	luaopen_xt_time(luaVM);
 	lua_setfield(luaVM, -2, "Time");
 	luaopen_socket(luaVM);
 	lua_setfield(luaVM, -2, "Socket");
 	luaopen_ipendpoint(luaVM);
 	lua_setfield(luaVM, -2, "IpEndpoint");
-	luaopen_buf(luaVM);
+	luaopen_xt_buf(luaVM);
 	lua_setfield(luaVM, -2, "Buffer");
-	luaopen_enc(luaVM);
+	luaopen_xt_enc(luaVM);
 	lua_setfield(luaVM, -2, "Encode");
 	luaopen_debug(luaVM);
 	lua_setfield(luaVM, -2, "debug");

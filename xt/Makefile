@@ -15,8 +15,8 @@ XT_SRC=l_xt.c \
 	 xt_time.c \
 	 xt_enc.c \
 	 xt_enc_arc4.c \
-	 l_xt_buf.c \
-	 l_xt_buf_fld.c \
+	 xt_buf.c \
+	 xt_buf_fld.c \
 	 l_xt_debug.c
 
 XT_OBJ=$(XT_SRC:.c=.o)

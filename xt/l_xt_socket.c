@@ -20,7 +20,7 @@
 #endif
 #include "l_xt.h"
 #include "l_xt_hndl.h"
-#include "l_xt_buf.h"         // the ability to send and recv buffers
+#include "xt_buf.h"         // the ability to send and recv buffers
 
 
 /** -------------------------------------------------------------------------
@@ -282,7 +282,7 @@ static int l_send_to(lua_State *luaVM)
 		len   = strlen(msg);
 	}
 	else if (lua_isuserdata(luaVM, 3)) {
-		buf  = check_ud_buf(luaVM, 3);
+		buf  = xt_buf_check_ud (luaVM, 3);
 		msg  = (char *) &(buf->b[ 0 ]);
 		len  = buf->len;
 	}
@@ -325,7 +325,7 @@ static int l_recv_from(lua_State *luaVM)
 
 	hndl = check_ud_socket (luaVM, 1);
 	if (lua_isuserdata(luaVM, 2)) {
-		buf  = check_ud_buf(luaVM, 2);
+		buf  = xt_buf_check_ud (luaVM, 2);
 		rcv  = (char *) &(buf->b[ 0 ]);
 		len  = buf->len;
 	}

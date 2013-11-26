@@ -15,4 +15,4 @@ struct xt_enc_arc4 {
 struct xt_enc_arc4 *xt_enc_arc4_check_ud  (lua_State *luaVM, int pos);
 struct xt_enc_arc4 *xt_enc_arc4_create_ud (lua_State *luaVM);
 int                 xt_enc_arc4_new       (lua_State *luaVM);
-int                 luaopen_enc_arc4      (lua_State *luaVM);
+int                 luaopen_xt_enc_arc4   (lua_State *luaVM);

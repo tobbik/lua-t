@@ -25,10 +25,10 @@ static const luaL_Reg xt_enc_lib [] =
  *\param      The Lua state.
  * \return     1 return value
  */
-LUAMOD_API int luaopen_enc (lua_State *luaVM)
+LUAMOD_API int luaopen_xt_enc (lua_State *luaVM)
 {
 	luaL_newlib (luaVM, xt_enc_lib);
-	luaopen_enc_arc4(luaVM);
+	luaopen_xt_enc_arc4(luaVM);
 	lua_setfield(luaVM, -2, "Arc4");
 	return 1;
 }
