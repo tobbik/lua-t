@@ -41,17 +41,18 @@ struct xt_buf_fld {
 
 
 // Constructors
-// l_xt_buf.c
-int              luaopen_buf    (lua_State *luaVM);
-struct xt_buf   *check_ud_buf   (lua_State *luaVM, int pos);
-struct xt_buf   *create_ud_buf  (lua_State *luaVM, int size);
+// xt_buf.c
+int              luaopen_xt_buf    (lua_State *luaVM);
+int              xt_buf_new        (lua_State *luaVM);
+struct xt_buf   *xt_buf_check_ud   (lua_State *luaVM, int pos);
+struct xt_buf   *xt_buf_create_ud  (lua_State *luaVM, int size);
 
 
-// l_xt_buf_fld.c
-int                 luaopen_buf_fld      (lua_State *luaVM);
-int                 c_new_buf_fld_bits   (lua_State *luaVM);
-int                 c_new_buf_fld_byte   (lua_State *luaVM);
-int                 c_new_buf_fld_string (lua_State *luaVM);
-struct xt_buf_fld  *check_ud_buf_fld     (lua_State *luaVM, int pos);
-struct xt_buf_fld  *create_ud_buf_fld    (lua_State *luaVM);
+// xt_buf_fld.c
+int                 luaopen_xt_buf_fld    (lua_State *luaVM);
+int                 xt_buf_fld_new_bits   (lua_State *luaVM);
+int                 xt_buf_fld_new_byte   (lua_State *luaVM);
+int                 xt_buf_fld_new_string (lua_State *luaVM);
+struct xt_buf_fld  *xt_buf_fld_check_ud      (lua_State *luaVM, int pos);
+struct xt_buf_fld  *xt_buf_fld_create_ud     (lua_State *luaVM);
 

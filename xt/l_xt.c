@@ -361,7 +361,7 @@ static const luaL_Reg l_xt_lib [] =
 	{"Timer",       luaopen_timer},
 	{"Socket",      luaopen_socket},
 	{"IpEndpoint",  luaopen_ipendpoint},
-	{"Buffer",      luaopen_buf},
+	{"Buffer",      luaopen_xt_buf},
 	{"debug",       luaopen_debug},
 	{NULL,        NULL}
 };
@@ -381,7 +381,7 @@ LUAMOD_API int luaopen_xt (lua_State *luaVM)
 	lua_setfield(luaVM, -2, "Socket");
 	luaopen_ipendpoint(luaVM);
 	lua_setfield(luaVM, -2, "IpEndpoint");
-	luaopen_buf(luaVM);
+	luaopen_xt_buf(luaVM);
 	lua_setfield(luaVM, -2, "Buffer");
 	luaopen_debug(luaVM);
 	lua_setfield(luaVM, -2, "debug");
