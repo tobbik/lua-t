@@ -13,6 +13,8 @@ XT_SRC=l_xt.c \
 	 l_xt_socket.c \
 	 l_xt_ip.c \
 	 xt_time.c \
+	 xt_enc.c \
+	 xt_enc_arc4.c \
 	 l_xt_buf.c \
 	 l_xt_buf_fld.c \
 	 l_xt_debug.c

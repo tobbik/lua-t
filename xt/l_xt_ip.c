@@ -281,6 +281,7 @@ static const struct luaL_Reg l_ipendpoint_m [] = {
  * --------------------------------------------------------------------------*/
 int luaopen_ipendpoint (lua_State *luaVM) {
 	// just make metatable known to be able to register and check userdata
+	// this is only avalable a <instance>:func()
 	luaL_newmetatable(luaVM, "L.IpEndpoint");   // stack: functions meta
 	luaL_newlib(luaVM, l_ipendpoint_m);
 	lua_setfield(luaVM, -2, "__index");
@@ -296,7 +297,6 @@ int luaopen_ipendpoint (lua_State *luaVM) {
 	lua_pushstring(luaVM, "127.0.0.1");
 	lua_setfield(luaVM, -2, "localhost");
 	// set the methods as metatable
-	// this is only avalable a <instance>:func()
 	luaL_newlib(luaVM, l_ipendpoint_fm);
 	lua_setmetatable(luaVM, -2);
 	return 1;
