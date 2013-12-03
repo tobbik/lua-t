@@ -482,9 +482,19 @@ static int xt_buf___len (lua_State *luaVM)
  */
 static int xt_buf_get_crc16 (lua_State *luaVM) {
 	struct xt_buf *b = xt_buf_check_ud (luaVM, 1);
+	int            bge;   ///< big endiean=1; little endian=0
+	int            ofs;
 	int            len;
-	len = luaL_checkint(luaVM, 2);
-	lua_pushinteger(luaVM, (int) get_crc16( b->b, len));
+	bge = (lua_isboolean(luaVM, 2)) ? lua_toboolean(luaVM, 2) : 0;
+	ofs = (lua_isnumber(luaVM, 3))  ? luaL_checkint(luaVM, 3) : 0;
+	len = (lua_isnumber(luaVM, 4))  ? luaL_checkint(luaVM, 4) : b->len-ofs;
+
+	if (bge) {
+		lua_pushinteger(luaVM, (int) get_crc16( &(b->b [ofs]), len));
+	}
+	else {
+		lua_pushinteger(luaVM, (int) htons (get_crc16( &(b->b [ofs]), len)));
+	}
 	return 1;
 }
 
