@@ -30,12 +30,7 @@ struct xt_enc_crc {
 		uint16_t      init16;
 		uint32_t      init32;
 	};
-	/// function to calculate the crc value
-	//union {
-	//	uint8_t       (*calc8)  (lua_State luaVM);
-	//	uint16_t      (*calc16) (lua_State luaVM);
-	//	uint32_t      (*calc32) (lua_State luaVM);
-	//};
+	int              be;    ///< boolean BigEndian
 	void             (*calc) (struct xt_enc_crc *crc, const char *data, size_t len);
 	int              res;   ///< stores the checsum after each run
 };

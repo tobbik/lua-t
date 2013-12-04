@@ -8,6 +8,7 @@
  */
 #include <stdio.h>
 #include <stdint.h>
+#include <arpa/inet.h>    // hton*()
 
 #include "l_xt.h"
 #include "xt_enc.h"
@@ -41,7 +42,8 @@ void calc_16 (struct xt_enc_crc *crc, const char *data, size_t len)
 		idx        = (uint8_t)   ( crc->crc16       ^ data[i]);
 		crc->crc16 = (uint16_t)  ((crc->crc16 >> 8) ^ crc->t16[idx]);
 	}
-	crc->res = (int) crc->crc16;
+	if (crc->be) crc->res = (int) crc->crc16;
+	else         crc->res = (int) htons(crc->crc16);
 }
 
 
@@ -53,7 +55,8 @@ void calc_ccitt (struct xt_enc_crc *crc, const char *data, size_t len)
 		idx        = (uint8_t)  ((crc->crc16 >> 8) ^ (0xff & data[i]));
 		crc->crc16 = (uint16_t) ((crc->crc16 << 8) ^ crc->t16[idx]);
 	}
-	crc->res = (int) crc->crc16;
+	if (crc->be) crc->res = (int) crc->crc16;
+	else         crc->res = (int) htons(crc->crc16);
 }
 
 
@@ -64,7 +67,8 @@ void calc_32 (struct xt_enc_crc *crc, const char *data, size_t len) {
 			 idx        = (uint8_t)  ((crc->crc32 & 0xff) ^ data[i]);
 			 crc->crc32 = (uint32_t) ((crc->crc32 >> 8)   ^ crc->t32[idx]);
 	}
-	crc->res = (int) ~(crc->crc32);
+	if (crc->be) crc->res = (int)       ~crc->crc32;
+	else         crc->res = (int) htonl (~crc->crc32);
 }
 
 
@@ -140,6 +144,7 @@ static void init_32 (struct xt_enc_crc *crc, uint32_t poly)
 	crc->calc   = calc_32;
 }
 
+
 // ----------------------------- Lua CRC wrapper functions
 /**--------------------------------------------------------------------------
  * construct a CRC encoder and return it.
@@ -147,12 +152,28 @@ static void init_32 (struct xt_enc_crc *crc, uint32_t poly)
  * \lparam  CLASS table CRC
  * \return  The number of results to be passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
-static int 
+static int
 xt_enc_crc___call(lua_State *luaVM)
 {
 	lua_remove(luaVM, 1);
 	return xt_enc_crc_new(luaVM);
 }
+
+
+/**--------------------------------------------------------------------------
+ * \brief   resets the CRC encoder to it's initial value.
+ * \param   luaVM  The lua state.
+ * \return  The number of results to be passed back to the calling Lua script.
+ * --------------------------------------------------------------------------*/
+static int
+xt_enc_crc_reset (lua_State *luaVM)
+{
+	struct xt_enc_crc  *crc;
+	crc = xt_enc_crc_check_ud (luaVM, 1);
+	crc->crc32 = crc->init32;
+	return 0;
+}
+
 
 
 /**--------------------------------------------------------------------------
@@ -187,6 +208,7 @@ xt_enc_crc_new(lua_State *luaVM)
 		default:
 			xt_push_error(luaVM, "Unknown CRC algorithm");
 	}
+	crc->be = (lua_isboolean (luaVM, 2)) ? lua_toboolean(luaVM, 2) : 1;
 
 	return 1;
 }
@@ -228,6 +250,8 @@ struct xt_enc_crc
  * \param   luaVM  The lua state.
  * \lparam  xt_enc_crc userdata.
  * \lparam  data       luastring or xt.Buffer.
+ * \lparam  start      start index in data.
+ * \lparam  end        end index in data.
  * \lreturn crc        the CRC checksum.
  * \return  The number of results to be passed back to the calling Lua script.
  *-------------------------------------------------------------------------*/
@@ -237,20 +261,24 @@ static int xt_enc_crc_calc(lua_State *luaVM)
 	struct xt_buf      *buf;
 	const char         *msg;
 	size_t              len;
+	int                 sta;
 
 	crc = xt_enc_crc_check_ud (luaVM, 1);
+	sta = (lua_isnumber(luaVM, 3)) ? luaL_checkint(luaVM, 3)     : 0;
 	if (lua_isstring(luaVM, 2)) {
-		msg   = luaL_checklstring(luaVM, 2, &len);
+		msg   = luaL_checklstring(luaVM, 2, &len) + sta;
 	}
 	else if (lua_isuserdata(luaVM, 2)) {
 		buf  = xt_buf_check_ud (luaVM, 2);
-		msg  = (const char *) &(buf->b[ 0 ]);
+		msg  = (const char *) &(buf->b[ sta ]);
 		//msg  =  &(buf->b[ 0 ]);
 		len  = buf->len;
 	}
 	else
 		return( xt_push_error(luaVM,
 			"ERROR xt.Encoding.Crc:calc(msg) takes msg argument") );
+
+	len = (lua_isnumber(luaVM, 4)) ? luaL_checkint(luaVM, 4)-sta : len - sta;
 
 	crc->calc (crc, msg, len);
 	lua_pushinteger (luaVM, crc->res);
@@ -284,6 +312,7 @@ static const struct luaL_Reg xt_enc_crc_cf [] = {
 static const luaL_Reg xt_enc_crc_m [] =
 {
 	{"calc",    xt_enc_crc_calc},
+	{"reset",   xt_enc_crc_reset},
 	{NULL,      NULL}
 };
 
