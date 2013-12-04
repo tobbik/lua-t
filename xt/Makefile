@@ -15,6 +15,7 @@ XT_SRC=l_xt.c \
 	 xt_time.c \
 	 xt_enc.c \
 	 xt_enc_arc4.c \
+	 xt_enc_crc.c \
 	 xt_buf.c \
 	 xt_buf_fld.c \
 	 l_xt_debug.c
