@@ -3,11 +3,13 @@
 ---
 -- \file    bufConstruct.c
 -- \brief   basic tests of xt.Buffer Constructor
-local t = require("xt").Test('Test basic xt.Buffer functionality')
+local xt = require ('xt')
+--local t = xt.Test('Test basic xt.Buffer functionality')
+t = xt.Test('Test basic xt.Buffer functionality')
 
-t:setUp = function("Initiate 2 Buffers, one from string one filled manually")
+t.setUp = function(self)
 	-- assemble the test strings
-	self.n       = 255
+	self.n       = 10
 	local sH,sB  = {},{} --string Hex and string Binary
 	for i=0,self.n do
 		sH[i+1] = string.format('%02X ', i)
@@ -16,28 +18,49 @@ t:setUp = function("Initiate 2 Buffers, one from string one filled manually")
 	self.strBin = table.concat (sB, '')
 	self.strHex = table.concat (sH, '')
 	-- create buffer of 255 bytes len and fill with numeric byte sized values
-	self.buf8   = xt.Buffer(n)
-	for i=0,n do
-		b:write8(i, i)
+	self.buf8   = xt.Buffer(self.n)
+	for i=0,self.n do
+		self.buf8:write8(i, i)
 	end
 	-- create a buffer from a string
-	self.bufStr  = xt.Buffer(self.strBin)
+	self.bufStr  = xt.Buffer(self.n, self.strBin)
+	print ('setup finished');
 end
 
-t:test1_SameContent = function('Test the equality of the buffers')
-	self:_equal (self.buf8:toHex(), self.bufS:toHex())
-	self:_equal (self.buf8:toHex(), self.sH)
-	print ('buffer content Hexadecimal representation is not was expected')
+t.test_SameContent = function(self)
+	self._equal (self.buf8:toHex(), self.bufStr:toHex(), "Hex representation of buffers differs")
+	self._equal (self.buf8:toHex(), self.strHex, "Hex representation differs from expected")
 end
 
-t:test2_SameLength = function('Buffers have the same length and are equal to string length')
-	self:_equal (#self.buf8, self.buf8.length())
-	self:_equal (#self.buf8, #self.bufS)
-	self:_equal (#self:buf8, self.n)
-	print ('buffer conten Hexadecimal representtion is not was expected')
+t.test_SameLength = function(self)
+	local i = debug.getinfo(1,"LfluStn")
+	for k,v in pairs(is) do print(k,v) end
+	-- is this a line
+	--
+	--
+	--
+	--
+	for k,v in pairs(i.activelines) do print(k,v) end
+	self._equal (#self.buf8, self.buf8:length(), "alpha")
+	self._equal (#self.buf8, #self.bufStr, "beta")
+	self._equal (#self.buf8, self.n, "gamma")
 end
 
-t:tearDown = function("TearDown")
+t.test_SameFields = function(self)
+	self._equal (self.buf8:read16(12), self.bufStr:read16(12), "alpha")
+end
+
+t.test_dummyStupid = function(self)
+	self._equal (14, 12,"No Sir!")
+end
+
+
+t.test_errno = function(self)
+	self.sock = xt.Socket.bind('TCP', '10.20.30.40',55)
+	self._equal( self.sock, 'blah')
+end
+
+t.tearDown = function(self)
 	self.n       = nil
 	self.strBin  = nil
 	self.strHex  = nil
@@ -45,3 +68,5 @@ t:tearDown = function("TearDown")
 	self.buf8    = nil
 	self.bufStr  = nil
 end
+
+--t:run()
