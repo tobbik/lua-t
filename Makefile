@@ -3,7 +3,7 @@ ifeq ($(LUAVER), LUA53)
 	LUASRC=lua-5.3.0-work1.tar.gz
 	DLPATH=http://www.lua.org/work
 else
-	LUASRC=lua-5.2.2.tar.gz
+	LUASRC=lua-5.2.3.tar.gz
 	DLPATH=http://www.lua.org/ftp
 endif
 COMPDIR=$(CURDIR)/compile
@@ -22,14 +22,14 @@ $(SRCDIR)/$(LUASRC):
 $(COMPDIR)/$(LUAVER)/src: $(SRCDIR)/$(LUASRC)
 	mkdir -p $(COMPDIR)/$(LUAVER)
 	tar -xvzf $(SRCDIR)/$(LUASRC) -C $(COMPDIR)/$(LUAVER) --strip-components=1
-ifeq ($(LUAVER),LUA52)
-		patch -d $(COMPDIR)/$(LUAVER)/src/ -i $(SRCDIR)/lua-5.2.2_upstream.patch
-endif
+#ifeq ($(LUAVER),LUA52)
+#		patch -d $(COMPDIR)/$(LUAVER)/src/ -i $(SRCDIR)/lua-5.2.3_upstream.patch
+#endif
 ifeq ($(LUAVER), LUA52LD)
 		patch -d $(COMPDIR)/$(LUAVER)/src/ -i $(SRCDIR)/lua-5.2.2_ll.patch
 endif
 ifeq ($(relocate), true)
-		patch -d $(COMPDIR)/$(LUAVER)/src/ -i $(SRCDIR)/lua-5.2.2_relocate.patch
+		patch -d $(COMPDIR)/$(LUAVER)/src/ -i $(SRCDIR)/lua-5.2.3_relocate.patch
 endif
 
 $(COMPDIR)/$(LUAVER)/src/lua: $(COMPDIR)/$(LUAVER)/src
