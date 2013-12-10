@@ -22,10 +22,9 @@ int  xt_test_new(lua_State *luaVM);
  * \param   pos    integer.
  * \return  The number of results to be passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
-static void fmt_stack_item (lua_State *luaVM, int pos, const char *label)
+static void fmt_stack_item (lua_State *luaVM, int pos)
 {
 	int t;
-	lua_pushstring (luaVM, label);
 	if (!luaL_callmeta (luaVM, pos, "__tostring"))
 	{
 		t = lua_type(luaVM, pos);
@@ -45,8 +44,8 @@ static void fmt_stack_item (lua_State *luaVM, int pos, const char *label)
 				break;
 		}
 	}
-	lua_concat (luaVM, 2);
 }
+
 
 /**--------------------------------------------------------------------------
  * construct a Test and return it.
@@ -129,8 +128,20 @@ static int xt_test__tostring (lua_State *luaVM)
 		lua_getfield (luaVM, -1, "success");
 		if (! lua_toboolean (luaVM, -1))
 		{
+			luaL_addstring (&lB, "\t---\n\t");
 			lua_getfield (luaVM, -2, "diagnostic");
-			luaL_addvalue (&lB);
+			lua_pushnil (luaVM);
+			while (lua_next(luaVM, -2))
+			{
+				lua_pushvalue (luaVM, -2);
+				luaL_addvalue (&lB);
+				luaL_addstring (&lB, ": ");
+				luaL_gsub (luaVM, lua_tostring (luaVM, -1), "\n","\n\t");
+				luaL_addvalue (&lB);
+				luaL_addstring (&lB, "\n\t");
+				lua_pop (luaVM, 1);
+			}
+			luaL_addstring (&lB, "...\n");
 		}
 		lua_pop (luaVM, 1);
 	}
@@ -142,18 +153,31 @@ static int xt_test__tostring (lua_State *luaVM)
 /**--------------------------------------------------------------------------
  * \brief   creates a traceback from a function call
  * \param   luaVM    The lua state.
- * \param   test_pos Position of main test instance on stack.
- * \lparam  test_case table.
+ * \lparam  either assert result table or generig string
+ * \lreturn a xt_test result Failure description table
  * \return  The number of results to be passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
 static int traceback (lua_State *luaVM) {
 	const char *msg = lua_tostring (luaVM, 1);
-	luaL_traceback (luaVM, luaVM, msg, 1);
+	if (LUA_TSTRING == lua_type (luaVM, 1))
+	{
+		lua_newtable (luaVM);
+		lua_insert (luaVM, 1);
+		lua_setfield (luaVM, 1, "message");
+	}
+	if (LUA_TTABLE == lua_type (luaVM, 1))
+	{
+		luaL_where (luaVM, 2);
+		lua_setfield (luaVM, 1, "location");
+		luaL_traceback (luaVM, luaVM, NULL, 1);
+		lua_setfield (luaVM, 1, "traceback");
+	}
+
 	return 1;
 }
 
 
-/**
+/** ---------------------------------------------------------------------------
  * \brief  wrapper for a single test
  *         handles the exception handling and error recording
  *         it expcts the following items on the stack:
@@ -164,7 +188,7 @@ static int traceback (lua_State *luaVM) {
  * \param  luaVM the Lua state with
  * \param  i     currently running test
  * \param  vrb   verbose output
- */
+ * ---------------------------------------------------------------------------*/
 static int wrap_test_exec (lua_State *luaVM, int i)
 {
 	lua_getfield (luaVM, -1, "name");        // Stack: 5
@@ -176,18 +200,16 @@ static int wrap_test_exec (lua_State *luaVM, int i)
 		// Stack: 6  Error message
 		printf("fail\n");
 		lua_pushfstring (luaVM, "not ok %d - %s\n", i, "description");
-		lua_setfield (luaVM, 4, "tap");       // record error message
-		luaL_gsub (luaVM, lua_tostring (luaVM, -1), "\n","\n\t");
-		lua_pushfstring (luaVM, "\t---\n\t: %s\n\t...\n", lua_tostring (luaVM, -1));
-		lua_setfield (luaVM, 4, "diagnostic");       // record error message
-		lua_pop (luaVM, 3);     // pop error message and name
+		lua_setfield (luaVM, 4, "tap");            // record tap error message
+		lua_setfield (luaVM, 4, "diagnostic");     // cetake error result table
+		lua_pop (luaVM, 1);                        // pop error message and name
 		return 1;
 	}
 	else
 	{
 		printf("ok\n");
 		lua_pushfstring (luaVM, "ok %d - %s\n", i, "description");
-		lua_setfield (luaVM, 4, "tap");       // record error message
+		lua_setfield (luaVM, 4, "tap");       // record tap success message
 		lua_pop (luaVM, 1);     // pop name
 		return 0;
 	}
@@ -406,13 +428,15 @@ static int xt_test_equal (lua_State *luaVM)
 		}
 		else
 		{
-			fmt_stack_item (luaVM, 3, "message: ");
-			lua_pushliteral (luaVM, "\nlocation: ");
-			luaL_where (luaVM, 1);
-			fmt_stack_item (luaVM, 1,  "\nexpected: ");
-			fmt_stack_item (luaVM, 2,  "\ngot: ");
-			lua_pushliteral (luaVM, "\nerror: values not equal");
-			lua_concat (luaVM, 6);
+			lua_newtable (luaVM);
+			lua_pushvalue (luaVM, 3);
+			lua_setfield (luaVM, -2, "message");
+			fmt_stack_item (luaVM, 1);
+			lua_setfield (luaVM, -2, "expected");
+			fmt_stack_item (luaVM, 2);
+			lua_setfield (luaVM, -2, "got");
+			lua_pushliteral (luaVM, "values not equal");
+			lua_setfield (luaVM, -2, "error");
 			return lua_error (luaVM);
 		}
 	}
