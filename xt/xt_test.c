@@ -173,8 +173,7 @@ static int wrap_test_exec (lua_State *luaVM, int i)
 {
 	lua_getfield (luaVM, -1, "name");        // Stack: 5
 	printf("%2d:%s:%s: ... ", i, lua_tostring (luaVM, 2), lua_tostring (luaVM, -1));
-	lua_pop (luaVM, 1);
-	lua_getfield (luaVM, 4, "func");        // Stack: 6
+	lua_getfield (luaVM, 1, lua_tostring (luaVM, -1));        // Stack: 6
 	lua_pushvalue (luaVM, 1);                // push suite as argument for t:test()
 	if (lua_pcall (luaVM, 1, 0, 3))
 	{
@@ -184,7 +183,7 @@ static int wrap_test_exec (lua_State *luaVM, int i)
 		lua_setfield (luaVM, 4, "tap");       // record error message
 		lua_pushfstring (luaVM, "\t---\n%s\n\t...\n", lua_tostring (luaVM, -1));
 		lua_setfield (luaVM, 4, "yamlish");       // record error message
-		lua_pop (luaVM, 1);
+		lua_pop (luaVM, 2);     // pop error message and name
 		return 1;
 	}
 	else
@@ -192,6 +191,7 @@ static int wrap_test_exec (lua_State *luaVM, int i)
 		printf("ok\n");
 		lua_pushfstring (luaVM, "ok %d - %s\n", i, "description");
 		lua_setfield (luaVM, 4, "tap");       // record error message
+		lua_pop (luaVM, 1);     // pop name
 		return 0;
 	}
 }
@@ -313,9 +313,7 @@ static int xt_test__newindex (lua_State *luaVM)
 		// assigning a new test
 		if (lua_isfunction(luaVM, 3))
 		{
-			lua_newtable (luaVM);
-			lua_pushvalue(luaVM, 3);                   // copy f()  from 3 to 4
-			lua_setfield (luaVM, -2, "func");
+			lua_newtable (luaVM);                      // Stack 3: empty table
 			lua_pushvalue(luaVM, 2);                   // copy name from 2 to 4
 			lua_setfield (luaVM, -2, "name");
 

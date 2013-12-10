@@ -33,7 +33,6 @@ t.test_SameContent = function(self)
 end
 
 t.test_SameLength = function(self)
-	for k,v in pairs(i.activelines) do print(k,v) end
 	self._equal (#self.buf8, self.buf8:length(), "alpha")
 	self._equal (#self.buf8, #self.bufStr, "beta")
 	self._equal (#self.buf8, self.n, "gamma")
