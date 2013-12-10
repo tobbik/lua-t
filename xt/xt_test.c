@@ -22,28 +22,30 @@ int  xt_test_new(lua_State *luaVM);
  * \param   pos    integer.
  * \return  The number of results to be passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
-static void fmt_stack_item (lua_State *luaVM, int i)
+static void fmt_stack_item (lua_State *luaVM, int pos, const char *label)
 {
 	int t;
-	if (!luaL_callmeta (luaVM,i,"__tostring"))
+	lua_pushstring (luaVM, label);
+	if (!luaL_callmeta (luaVM, pos, "__tostring"))
 	{
-		t = lua_type(luaVM, i);
+		t = lua_type(luaVM, pos);
 		switch (t) {
 			case LUA_TSTRING:    /* strings */
-				lua_pushvalue (luaVM, i);
+				lua_pushvalue (luaVM, pos);
 				break;
 			case LUA_TBOOLEAN:   /* booleans */
-				if (lua_toboolean (luaVM, i)) lua_pushliteral (luaVM, "true");
+				if (lua_toboolean (luaVM, pos)) lua_pushliteral (luaVM, "true");
 				else lua_pushliteral (luaVM, "false");
 				break;
 			case LUA_TNUMBER:    /* numbers */
-				lua_pushfstring (luaVM, "%f", lua_tonumber(luaVM, i));
+				lua_pushfstring (luaVM, "%f", lua_tonumber(luaVM, pos));
 				break;
 			default:	            /* other values */
-				lua_pushfstring (luaVM, "%s", lua_typename(luaVM, t));
+				lua_pushfstring (luaVM, "%s", lua_typename(luaVM, pos));
 				break;
 		}
 	}
+	lua_concat (luaVM, 2);
 }
 
 /**--------------------------------------------------------------------------
@@ -127,7 +129,7 @@ static int xt_test__tostring (lua_State *luaVM)
 		lua_getfield (luaVM, -1, "success");
 		if (! lua_toboolean (luaVM, -1))
 		{
-			lua_getfield (luaVM, -2, "yamlish");
+			lua_getfield (luaVM, -2, "diagnostic");
 			luaL_addvalue (&lB);
 		}
 		lua_pop (luaVM, 1);
@@ -146,14 +148,8 @@ static int xt_test__tostring (lua_State *luaVM)
  * --------------------------------------------------------------------------*/
 static int traceback (lua_State *luaVM) {
 	const char *msg = lua_tostring (luaVM, 1);
-	if (msg) {
-		luaL_traceback(luaVM, luaVM, msg, 1);
-	}
-	else if (!lua_isnoneornil(luaVM, 1)) {  /* is there an error object? */
-    if (!luaL_callmeta(luaVM, 1, "__tostring"))  /* try its 'tostring' metamethod */
-      lua_pushliteral(luaVM, "(no error message)");
-  }
-  return 1;
+	luaL_traceback (luaVM, luaVM, msg, 1);
+	return 1;
 }
 
 
@@ -181,9 +177,10 @@ static int wrap_test_exec (lua_State *luaVM, int i)
 		printf("fail\n");
 		lua_pushfstring (luaVM, "not ok %d - %s\n", i, "description");
 		lua_setfield (luaVM, 4, "tap");       // record error message
-		lua_pushfstring (luaVM, "\t---\n%s\n\t...\n", lua_tostring (luaVM, -1));
-		lua_setfield (luaVM, 4, "yamlish");       // record error message
-		lua_pop (luaVM, 2);     // pop error message and name
+		luaL_gsub (luaVM, lua_tostring (luaVM, -1), "\n","\n\t");
+		lua_pushfstring (luaVM, "\t---\n\t: %s\n\t...\n", lua_tostring (luaVM, -1));
+		lua_setfield (luaVM, 4, "diagnostic");       // record error message
+		lua_pop (luaVM, 3);     // pop error message and name
 		return 1;
 	}
 	else
@@ -409,12 +406,14 @@ static int xt_test_equal (lua_State *luaVM)
 		}
 		else
 		{
-			fmt_stack_item (luaVM, 1);
-			lua_pushliteral (luaVM, " not equal to ");
-			fmt_stack_item (luaVM, 2);
-			lua_concat (luaVM, 3);
-			return xt_push_error (luaVM, "%s\n\t%s",
-				lua_tostring (luaVM, 3), lua_tostring (luaVM, 4));
+			fmt_stack_item (luaVM, 3, "message: ");
+			lua_pushliteral (luaVM, "\nlocation: ");
+			luaL_where (luaVM, 1);
+			fmt_stack_item (luaVM, 1,  "\nexpected: ");
+			fmt_stack_item (luaVM, 2,  "\ngot: ");
+			lua_pushliteral (luaVM, "\nerror: values not equal");
+			lua_concat (luaVM, 6);
+			return lua_error (luaVM);
 		}
 	}
 }
