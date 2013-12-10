@@ -107,6 +107,37 @@ void xt_test_check_ud (lua_State *luaVM, int pos)
 
 
 /**--------------------------------------------------------------------------
+ * \brief   genrates a TAP report.
+ * \param   luaVM    The lua state.
+ * \lparam  test instance table.
+ * \return  The number of results to be passed back to the calling Lua script.
+ * --------------------------------------------------------------------------*/
+static int xt_test__tostring (lua_State *luaVM)
+{
+	luaL_Buffer lB;
+	int         i=1, t_len;
+	xt_test_check_ud  (luaVM, 1);
+	t_len           = luaL_len (luaVM, 1);
+	luaL_buffinit (luaVM, &lB);
+	for (; i < t_len+1; i++)
+	{
+		lua_rawgeti (luaVM, 1, i);
+		lua_getfield (luaVM, -1, "tap");
+		luaL_addvalue (&lB);
+		lua_getfield (luaVM, -1, "success");
+		if (! lua_toboolean (luaVM, -1))
+		{
+			lua_getfield (luaVM, -2, "yamlish");
+			luaL_addvalue (&lB);
+		}
+		lua_pop (luaVM, 1);
+	}
+	luaL_pushresult(&lB);
+	return 1;
+}
+
+
+/**--------------------------------------------------------------------------
  * \brief   creates a traceback from a function call
  * \param   luaVM    The lua state.
  * \param   test_pos Position of main test instance on stack.
@@ -116,7 +147,7 @@ void xt_test_check_ud (lua_State *luaVM, int pos)
 static int traceback (lua_State *luaVM) {
 	const char *msg = lua_tostring (luaVM, 1);
 	if (msg) {
-		luaL_traceback(luaVM, luaVM,msg, 1);
+		luaL_traceback(luaVM, luaVM, msg, 1);
 	}
 	else if (!lua_isnoneornil(luaVM, 1)) {  /* is there an error object? */
     if (!luaL_callmeta(luaVM, 1, "__tostring"))  /* try its 'tostring' metamethod */
@@ -126,38 +157,43 @@ static int traceback (lua_State *luaVM) {
 }
 
 
-/**--------------------------------------------------------------------------
- * \brief   genrates a TAP report.
- * \param   luaVM    The lua state.
- * \lparam  test instance table.
- * \return  The number of results to be passed back to the calling Lua script.
- * --------------------------------------------------------------------------*/
-static int xt_test_totap (lua_State *luaVM)
+/**
+ * \brief  wrapper for a single test
+ *         handles the exception handling and error recording
+ *         it expcts the following items on the stack:
+ *         1 - table(suite),
+ *         2 - name,
+ *         3 - traceback function,
+ *         4 - table (test)
+ * \param  luaVM the Lua state with
+ * \param  i     currently running test
+ * \param  vrb   verbose output
+ */
+static int wrap_test_exec (lua_State *luaVM, int i)
 {
-	int         i;
-
-	xt_test_check_ud  (luaVM, 1);
-	lua_getfield (luaVM, 1, "_suitename");        // Stack: 2
-
-
-	lua_getfield (luaVM, 1, "setUp");
-	lua_pushvalue (luaVM, 1);
-	if (lua_pcall (luaVM, 1, 0, 0))
-		xt_push_error (luaVM, "Test setup failed %s", lua_tostring (luaVM, -1));
-	for ( i=1 ; ; i++ )
+	lua_getfield (luaVM, -1, "name");        // Stack: 5
+	printf("%2d:%s:%s: ... ", i, lua_tostring (luaVM, 2), lua_tostring (luaVM, -1));
+	lua_pop (luaVM, 1);
+	lua_getfield (luaVM, 4, "func");        // Stack: 6
+	lua_pushvalue (luaVM, 1);                // push suite as argument for t:test()
+	if (lua_pcall (luaVM, 1, 0, 3))
 	{
-		lua_rawgeti(luaVM, 1, i);
-		// in table this is when the last (numeric) index is found
-		if ( lua_isnil(luaVM, -1) )
-		{
-			lua_pop(luaVM, 1);
-			break;
-		}
-		else
-		{
-		}
+		// Stack: 6  Error message
+		printf("fail\n");
+		lua_pushfstring (luaVM, "not ok %d - %s\n", i, "description");
+		lua_setfield (luaVM, 4, "tap");       // record error message
+		lua_pushfstring (luaVM, "\t---\n%s\n\t...\n", lua_tostring (luaVM, -1));
+		lua_setfield (luaVM, 4, "yamlish");       // record error message
+		lua_pop (luaVM, 1);
+		return 1;
 	}
-	return 0;
+	else
+	{
+		printf("ok\n");
+		lua_pushfstring (luaVM, "ok %d - %s\n", i, "description");
+		lua_setfield (luaVM, 4, "tap");       // record error message
+		return 0;
+	}
 }
 
 
@@ -196,26 +232,11 @@ static int xt_test__call (lua_State *luaVM)
 		}
 		else
 		{
-			lua_getfield (luaVM, -1, "name");
-			printf("%s:%s: ... ", lua_tostring (luaVM, 2), lua_tostring (luaVM, -1));
-			lua_pop (luaVM, 1);
-			lua_getfield (luaVM, -1, "func");
-			lua_pushvalue (luaVM, 1);            // push suit as argument for t:test()
-			if (lua_pcall (luaVM, 1, 0, 3))
-			{
-				printf("not ok\n");
-				if(vrb) {
-					printf("--------------------\nerror: %s\n---------------------\n",
-						lua_tostring (luaVM, -1));
-				}
-				lua_setfield (luaVM, -2, "error");   // record error message
-			}
-			else
-			{
-				printf("ok\n");
-			}
+			if (wrap_test_exec ( luaVM, i)) lua_pushboolean (luaVM, 0);
+			else lua_pushboolean (luaVM, 1);
+			lua_setfield (luaVM, 4, "success"); // record error message
+			lua_pop (luaVM, 1);     // pop the test case table
 		}
-		lua_pop (luaVM, 1);     // pop the test case table
 	}
 	lua_getfield (luaVM, 1, "tearDown");
 	lua_pushvalue (luaVM, 1);
@@ -451,6 +472,8 @@ int luaopen_xt_test (lua_State *luaVM) {
 	lua_setfield(luaVM, -2, "__newindex");
 	lua_pushcfunction(luaVM, xt_test__call);
 	lua_setfield(luaVM, -2, "__call");
+	lua_pushcfunction(luaVM, xt_test__tostring);
+	lua_setfield(luaVM, -2, "__tostring");
 	lua_pop(luaVM, 1);        // remove metatable from stack
 
 	// Push the class onto the stack
