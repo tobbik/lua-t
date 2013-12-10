@@ -3,8 +3,8 @@
  * \brief   xt unit testing framework
  * \detail  OOP wrapper for Test cases. Unit
 */
-#include <string.h>            //strlen
-#include <strings.h>           //strncasecmp
+#include <string.h>            // strlen
+#include <strings.h>           // strncasecmp
 
 #include "l_xt.h"
 
@@ -13,7 +13,6 @@
 // l_xt_test.c
 void xt_test_check_ud (lua_State *luaVM, int pos);
 int  xt_test_new(lua_State *luaVM);
-
 
 
 /**--------------------------------------------------------------------------
@@ -108,49 +107,6 @@ void xt_test_check_ud (lua_State *luaVM, int pos)
 
 
 /**--------------------------------------------------------------------------
- * \brief   genrates a TAP report.
- * \param   luaVM    The lua state.
- * \lparam  test instance table.
- * \return  The number of results to be passed back to the calling Lua script.
- * --------------------------------------------------------------------------*/
-static int xt_test__tostring (lua_State *luaVM)
-{
-	luaL_Buffer lB;
-	int         i=1, t_len;
-	xt_test_check_ud  (luaVM, 1);
-	t_len           = luaL_len (luaVM, 1);
-	luaL_buffinit (luaVM, &lB);
-	for (; i < t_len+1; i++)
-	{
-		lua_rawgeti (luaVM, 1, i);
-		lua_getfield (luaVM, -1, "tap");
-		luaL_addvalue (&lB);
-		lua_getfield (luaVM, -1, "success");
-		if (! lua_toboolean (luaVM, -1))
-		{
-			luaL_addstring (&lB, "\t---\n\t");
-			lua_getfield (luaVM, -2, "diagnostic");
-			lua_pushnil (luaVM);
-			while (lua_next(luaVM, -2))
-			{
-				lua_pushvalue (luaVM, -2);
-				luaL_addvalue (&lB);
-				luaL_addstring (&lB, ": ");
-				luaL_gsub (luaVM, lua_tostring (luaVM, -1), "\n","\n\t");
-				luaL_addvalue (&lB);
-				luaL_addstring (&lB, "\n\t");
-				lua_pop (luaVM, 1);
-			}
-			luaL_addstring (&lB, "...\n");
-		}
-		lua_pop (luaVM, 1);
-	}
-	luaL_pushresult(&lB);
-	return 1;
-}
-
-
-/**--------------------------------------------------------------------------
  * \brief   creates a traceback from a function call
  * \param   luaVM    The lua state.
  * \lparam  either assert result table or generig string
@@ -188,8 +144,9 @@ static int traceback (lua_State *luaVM) {
  * \param  luaVM the Lua state with
  * \param  i     currently running test
  * \param  vrb   verbose output
+ * \return 0=success, 1=error
  * ---------------------------------------------------------------------------*/
-static int wrap_test_exec (lua_State *luaVM, int i)
+static int xt_test_call_wrapper (lua_State *luaVM, int i)
 {
 	lua_getfield (luaVM, -1, "name");        // Stack: 5
 	printf("%2d:%s:%s: ... ", i, lua_tostring (luaVM, 2), lua_tostring (luaVM, -1));
@@ -200,16 +157,16 @@ static int wrap_test_exec (lua_State *luaVM, int i)
 		// Stack: 6  Error message
 		printf("fail\n");
 		lua_pushfstring (luaVM, "not ok %d - %s\n", i, "description");
-		lua_setfield (luaVM, 4, "tap");            // record tap error message
-		lua_setfield (luaVM, 4, "diagnostic");     // cetake error result table
-		lua_pop (luaVM, 1);                        // pop error message and name
+		lua_setfield (luaVM, 4, "tap");            // record error message
+		lua_setfield (luaVM, 4, "diagnostic");     // take error result table
+		lua_pop (luaVM, 1);                        // pop name
 		return 1;
 	}
 	else
 	{
 		printf("ok\n");
 		lua_pushfstring (luaVM, "ok %d - %s\n", i, "description");
-		lua_setfield (luaVM, 4, "tap");       // record tap success message
+		lua_setfield (luaVM, 4, "tap");       // record success message
 		lua_pop (luaVM, 1);     // pop name
 		return 0;
 	}
@@ -251,7 +208,7 @@ static int xt_test__call (lua_State *luaVM)
 		}
 		else
 		{
-			if (wrap_test_exec ( luaVM, i)) lua_pushboolean (luaVM, 0);
+			if (xt_test_call_wrapper ( luaVM, i)) lua_pushboolean (luaVM, 0);
 			else lua_pushboolean (luaVM, 1);
 			lua_setfield (luaVM, 4, "success"); // record error message
 			lua_pop (luaVM, 1);     // pop the test case table
@@ -440,6 +397,49 @@ static int xt_test_equal (lua_State *luaVM)
 			return lua_error (luaVM);
 		}
 	}
+}
+
+
+/**--------------------------------------------------------------------------
+ * \brief   genrates a TAP report.
+ * \param   luaVM    The lua state.
+ * \lparam  test instance table.
+ * \return  The number of results to be passed back to the calling Lua script.
+ * --------------------------------------------------------------------------*/
+static int xt_test__tostring (lua_State *luaVM)
+{
+	luaL_Buffer lB;
+	int         i=1, t_len;
+	xt_test_check_ud  (luaVM, 1);
+	t_len           = luaL_len (luaVM, 1);
+	luaL_buffinit (luaVM, &lB);
+	for (; i < t_len+1; i++)
+	{
+		lua_rawgeti (luaVM, 1, i);
+		lua_getfield (luaVM, -1, "tap");
+		luaL_addvalue (&lB);
+		lua_getfield (luaVM, -1, "success");
+		if (! lua_toboolean (luaVM, -1))
+		{
+			luaL_addstring (&lB, "\t---\n\t");
+			lua_getfield (luaVM, -2, "diagnostic");
+			lua_pushnil (luaVM);
+			while (lua_next(luaVM, -2))
+			{
+				lua_pushvalue (luaVM, -2);
+				luaL_addvalue (&lB);
+				luaL_addstring (&lB, ": ");
+				luaL_gsub (luaVM, lua_tostring (luaVM, -1), "\n","\n\t");
+				luaL_addvalue (&lB);
+				luaL_addstring (&lB, "\n\t");
+				lua_pop (luaVM, 1);
+			}
+			luaL_addstring (&lB, "...\n");
+		}
+		lua_pop (luaVM, 1);
+	}
+	luaL_pushresult(&lB);
+	return 1;
 }
 
 
