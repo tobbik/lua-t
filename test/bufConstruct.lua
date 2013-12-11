@@ -52,7 +52,7 @@ end
 
 
 t.test_errno = function(self)
-	-- #TODO:
+	-- #TODO: That must be implemented
 	self.sock = xt.Socket.bind('TCP', '10.20.30.40',55)
 	self._equal( self.sock, 'blah')
 end
