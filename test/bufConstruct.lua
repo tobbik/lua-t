@@ -28,17 +28,20 @@ t.setUp = function(self)
 end
 
 t.test_SameContent = function(self)
+	-- DESC: Check that all buffers have the same content
 	self._equal (self.buf8:toHex(), self.bufStr:toHex(), "Hex representation of buffers differs")
 	self._equal (self.buf8:toHex(), self.strHex, "Hex representation differs from expected")
 end
 
 t.test_SameLength = function(self)
+	-- DESC: Check that all buffers have the same length
 	self._equal (#self.buf8, self.buf8:length(), "alpha")
 	self._equal (#self.buf8, #self.bufStr, "beta")
 	self._equal (#self.buf8, self.n, "gamma")
 end
 
 t.test_SameFields = function(self)
+	-- DESC: Check that all buffer fields have the same content
 	self._equal (self.buf8:read16(12), self.bufStr:read16(12), "alpha")
 end
 

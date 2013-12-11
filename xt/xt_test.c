@@ -5,6 +5,8 @@
 */
 #include <string.h>            // strlen
 #include <strings.h>           // strncasecmp
+#include <memory.h>            // memset
+#include <stdlib.h>            // malloc
 
 #include "l_xt.h"
 
@@ -114,7 +116,6 @@ void xt_test_check_ud (lua_State *luaVM, int pos)
  * \return  The number of results to be passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
 static int traceback (lua_State *luaVM) {
-	const char *msg = lua_tostring (luaVM, 1);
 	if (LUA_TSTRING == lua_type (luaVM, 1))
 	{
 		lua_newtable (luaVM);
@@ -148,18 +149,28 @@ static int traceback (lua_State *luaVM) {
  * ---------------------------------------------------------------------------*/
 static int xt_test_call_wrapper (lua_State *luaVM, int i)
 {
-	lua_getfield (luaVM, -1, "name");        // Stack: 5
-	printf("%2d:%s:%s: ... ", i, lua_tostring (luaVM, 2), lua_tostring (luaVM, -1));
-	lua_getfield (luaVM, 1, lua_tostring (luaVM, -1));        // Stack: 6
+	lua_getfield (luaVM, 4, "name");        // Stack: 5
+	lua_getfield (luaVM, 4, "line");        // Stack: 6
+	printf("%2d - %s.%s:%d  ... ", i, lua_tostring (luaVM, 2),
+	     lua_tostring (luaVM, -2), luaL_checkint (luaVM, -1) );
+	lua_getfield (luaVM, 1, lua_tostring (luaVM, -2));        // Stack: 7
+	lua_remove (luaVM, -2);
+	lua_remove (luaVM, -2);
 	lua_pushvalue (luaVM, 1);                // push suite as argument for t:test()
 	if (lua_pcall (luaVM, 1, 0, 3))
 	{
 		// Stack: 6  Error message
 		printf("fail\n");
-		lua_pushfstring (luaVM, "not ok %d - %s\n", i, "description");
+		lua_pushfstring (luaVM, "not ok %d - ", i);
+		lua_getfield (luaVM, 4, "desc");
+		lua_pushstring (luaVM, "\n");
+		lua_concat (luaVM, 3);
 		lua_setfield (luaVM, 4, "tap");            // record error message
+		lua_getfield (luaVM, 4, "name");
+		lua_setfield (luaVM, -2,"test name");
+		lua_getfield (luaVM, 4, "desc");
+		lua_setfield (luaVM, -2,"description");
 		lua_setfield (luaVM, 4, "diagnostic");     // take error result table
-		lua_pop (luaVM, 1);                        // pop name
 		return 1;
 	}
 	else
@@ -167,7 +178,6 @@ static int xt_test_call_wrapper (lua_State *luaVM, int i)
 		printf("ok\n");
 		lua_pushfstring (luaVM, "ok %d - %s\n", i, "description");
 		lua_setfield (luaVM, 4, "tap");       // record success message
-		lua_pop (luaVM, 1);     // pop name
 		return 0;
 	}
 }
@@ -186,7 +196,6 @@ static int xt_test__call (lua_State *luaVM)
 
 	xt_test_check_ud  (luaVM, 1);
 	if (2==lua_gettop (luaVM)) {
-		stackDump(luaVM);
 		vrb = lua_toboolean (luaVM, 2);
 		lua_pop(luaVM, 1);
 	}
@@ -223,37 +232,46 @@ static int xt_test__call (lua_State *luaVM)
 }
 
 
-/** This can be used to read in source code according to debug info
- * untested and unfinished!
+/**----------------------------------------------------------------------------
+ * \brief inspects source for special lines in the comments
+ *
  */
-void __attribute__ ((unused)) fetchDeco (lua_State *luaVM, const char* fn, int s, int e) {
-	size_t           l;
-	int              r=1;
-	char            *p;
-	luaL_Buffer      b;
-	FILE            *f = fopen (fn, "r");
-	luaL_buffinit (luaVM, &b);
-	printf("%s    %d   %d  %zu\n", fn, s, e, lua_rawlen(luaVM, -1));
-
-	while (r<s) {
-
-		if (fgetc (f) == '\n')
-			r++;
-	}
-	while (r<e) {
-		p = luaL_prepbuffer(&b);
-		if (fgets(p, LUAL_BUFFERSIZE, f) == NULL) {  /* eof? */
-			luaL_pushresult(&b);  /* close buffer */
+static void xt_get_fn_source (lua_State *luaVM)
+{
+	lua_Debug  ar;
+	FILE      *f;
+	int        r  = 1;
+	char      *p  = malloc(LUAL_BUFFERSIZE *  sizeof( char ));
+	memset (p, 0, LUAL_BUFFERSIZE* sizeof( char ) );
+	lua_State *L1 = luaVM;
+   lua_pushstring(luaVM, ">S");
+   lua_pushvalue(luaVM, 3);
+   lua_xmove(luaVM, L1, 1);
+	lua_getinfo (L1, ">S", &ar);
+	lua_pop (luaVM, 1); // pop the ">S"
+	f = fopen(ar.short_src, "r");
+	while (r < ar.lastlinedefined )
+	{
+		if (fgets(p, LUAL_BUFFERSIZE, f) == NULL) break;
+		//TODO: reasonable linened check
+		if (++r < ar.linedefined) continue;
+		if (strstr(p,"-- TODO:")) {
+			lua_pushstring (luaVM, p);
+			lua_setfield   (luaVM, -2, "todo");
 		}
-		l = strlen(p);
-		printf("%s\n", p);
-		if (l == 0 || p[l-1] != '\n')
-			luaL_addsize(&b, l);
-		else {
-			luaL_addsize(&b, l - 1);  /* chop 'eol' if needed */
-			luaL_pushresult(&b);  /* close buffer */
+		if (strstr(p,"-- SKIP:")) {
+			lua_pushboolean (luaVM, 1);
+			lua_setfield   (luaVM, -2, "skip");
+		}
+		if (strstr(p,"-- DESC:")) {
+			lua_pushstring (luaVM, p);
+			lua_setfield   (luaVM, -2, "desc");
 		}
 	}
+	lua_pushinteger (luaVM, ar.linedefined);
+	lua_setfield (luaVM, -2, "line");
+	free (p);
+	fclose (f);
 }
 
 
@@ -292,6 +310,9 @@ static int xt_test__newindex (lua_State *luaVM)
 			lua_newtable (luaVM);                      // Stack 3: empty table
 			lua_pushvalue(luaVM, 2);                   // copy name from 2 to 4
 			lua_setfield (luaVM, -2, "name");
+			lua_pushvalue(luaVM, 2);                   // copy name from 2 to 4
+			lua_setfield (luaVM, -2, "desc");
+			xt_get_fn_source(luaVM);
 
 			lua_rawseti (luaVM, 1, lua_rawlen(luaVM, 1) +1);
 		}
@@ -365,7 +386,6 @@ static int xt_test_equal (lua_State *luaVM)
 {
 	if (lua_gettop (luaVM)<2 || lua_gettop (luaVM)>3)
 	{
-		stackDump(luaVM);
 		return xt_push_error (luaVM, "xt.Test._equals expects two or three arguments");
 	}
 	// compare types, references, metatable.__eq and values
@@ -506,3 +526,5 @@ int luaopen_xt_test (lua_State *luaVM) {
 	lua_setmetatable(luaVM, -2);
 	return 1;
 }
+
+
