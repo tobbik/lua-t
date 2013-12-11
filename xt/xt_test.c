@@ -153,9 +153,22 @@ static int xt_test_call_wrapper (lua_State *luaVM, int i)
 	lua_getfield (luaVM, 4, "line");        // Stack: 6
 	printf("%2d - %s.%s:%d  ... ", i, lua_tostring (luaVM, 2),
 	     lua_tostring (luaVM, -2), luaL_checkint (luaVM, -1) );
-	lua_getfield (luaVM, 1, lua_tostring (luaVM, -2));        // Stack: 7
-	lua_remove (luaVM, -2);
-	lua_remove (luaVM, -2);
+	lua_pop (luaVM, 1);
+	lua_getfield (luaVM, 4, "skip");        // Stack: 6
+	if (! lua_isnoneornil (luaVM, -1)) {
+		printf("# SKIP:%s\n", lua_tostring (luaVM, -1));
+		lua_getfield (luaVM, 4, "desc");        // Stack: 6
+		lua_pushfstring (luaVM, "ok %d - %s # SKIP: %s\n", i, lua_tostring (luaVM,-1), lua_tostring (luaVM, -2) );
+		lua_setfield (luaVM, 4, "tap");       // record success message
+		lua_pop (luaVM, 3);
+		return 0;
+	}
+	else {
+		lua_pop (luaVM, 1);
+		lua_getfield (luaVM, 1, lua_tostring (luaVM, 5));        // Stack: 6
+		lua_remove (luaVM, 5);
+	}
+
 	lua_pushvalue (luaVM, 1);                // push suite as argument for t:test()
 	if (lua_pcall (luaVM, 1, 0, 3))
 	{
@@ -241,6 +254,7 @@ static void xt_get_fn_source (lua_State *luaVM)
 	lua_Debug  ar;
 	FILE      *f;
 	int        r  = 1;
+	char      *fnd;
 	char      *p  = malloc(LUAL_BUFFERSIZE *  sizeof( char ));
 	memset (p, 0, LUAL_BUFFERSIZE* sizeof( char ) );
 	lua_State *L1 = luaVM;
@@ -255,21 +269,22 @@ static void xt_get_fn_source (lua_State *luaVM)
 		if (fgets(p, LUAL_BUFFERSIZE, f) == NULL) break;
 		//TODO: reasonable linened check
 		if (++r < ar.linedefined) continue;
-		if (strstr(p,"-- TODO:")) {
-			lua_pushstring (luaVM, p);
+		if (NULL != (fnd=strstr(p,"-- #TODO:"))) {
+			lua_pushlstring (luaVM, fnd+9, strlen(fnd+9)-1);
 			lua_setfield   (luaVM, -2, "todo");
 		}
-		if (strstr(p,"-- SKIP:")) {
-			lua_pushboolean (luaVM, 1);
+		if (NULL != (fnd=strstr(p,"-- #SKIP:"))) {
+			lua_pushlstring (luaVM, fnd+9, strlen(fnd+9)-1);
 			lua_setfield   (luaVM, -2, "skip");
 		}
-		if (strstr(p,"-- DESC:")) {
-			lua_pushstring (luaVM, p);
+		if (NULL != (fnd=strstr(p,"-- #DESC:"))) {
+			lua_pushlstring (luaVM, fnd+9, strlen(fnd+9)-1);
 			lua_setfield   (luaVM, -2, "desc");
 		}
 	}
 	lua_pushinteger (luaVM, ar.linedefined);
 	lua_setfield (luaVM, -2, "line");
+
 	free (p);
 	fclose (f);
 }
@@ -413,7 +428,7 @@ static int xt_test_equal (lua_State *luaVM)
 			fmt_stack_item (luaVM, 2);
 			lua_setfield (luaVM, -2, "got");
 			lua_pushliteral (luaVM, "values not equal");
-			lua_setfield (luaVM, -2, "error");
+			lua_setfield (luaVM, -2, "assert");
 			return lua_error (luaVM);
 		}
 	}
@@ -437,6 +452,21 @@ static int xt_test__tostring (lua_State *luaVM)
 	{
 		lua_rawgeti (luaVM, 1, i);
 		lua_getfield (luaVM, -1, "tap");
+		//lua_getfield (luaVM, -1, "ord");
+	//	// was it skipped?
+	//	lua_getfield (luaVM,  4, "skip");
+	//	if (! lua_isnoneornil (luaVM, -1)) {
+	//		lua_concat (luaVM, 2);
+	//		luaL_addvalue (&lB);
+	//		luaL_addstring (&lB, "...\n");
+	//		lua_pop (luaVM, 1);
+	//		continue;
+	//	} else {	lua_pop (luaVM, 1);}
+	//	// marked as TODO?
+	//	lua_getfield (luaVM, 4, "todo");
+	//	if (! lua_isnoneornil (luaVM, -1)) {
+	//		lua_concat (luaVM, 2);
+	//	} else {	lua_pop (luaVM, 1);}
 		luaL_addvalue (&lB);
 		lua_getfield (luaVM, -1, "success");
 		if (! lua_toboolean (luaVM, -1))

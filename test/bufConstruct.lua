@@ -28,29 +28,31 @@ t.setUp = function(self)
 end
 
 t.test_SameContent = function(self)
-	-- DESC: Check that all buffers have the same content
+	-- #DESC: Check that all buffers have the same content
 	self._equal (self.buf8:toHex(), self.bufStr:toHex(), "Hex representation of buffers differs")
 	self._equal (self.buf8:toHex(), self.strHex, "Hex representation differs from expected")
 end
 
 t.test_SameLength = function(self)
-	-- DESC: Check that all buffers have the same length
+	-- #DESC: Check that all buffers have the same length
 	self._equal (#self.buf8, self.buf8:length(), "alpha")
 	self._equal (#self.buf8, #self.bufStr, "beta")
 	self._equal (#self.buf8, self.n, "gamma")
 end
 
 t.test_SameFields = function(self)
-	-- DESC: Check that all buffer fields have the same content
+	-- #DESC: Check that all buffer fields have the same content
 	self._equal (self.buf8:read16(12), self.bufStr:read16(12), "alpha")
 end
 
 t.test_dummyStupid = function(self)
+	-- #SKIP: Because it would fail anyways
 	self._equal (14, 12,"No Sir!")
 end
 
 
 t.test_errno = function(self)
+	-- #TODO:
 	self.sock = xt.Socket.bind('TCP', '10.20.30.40',55)
 	self._equal( self.sock, 'blah')
 end
