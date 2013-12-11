@@ -9,6 +9,7 @@
 #include <stdlib.h>            // malloc
 
 #include "l_xt.h"
+#include "xt_time.h"
 
 
 // forward declaration eliminates need for header file
@@ -147,7 +148,7 @@ static int traceback (lua_State *luaVM) {
  * \param  vrb   verbose output
  * \return 0=success, 1=error
  * ---------------------------------------------------------------------------*/
-static int xt_test_call_wrapper (lua_State *luaVM)
+static int xt_test_call_wrapper (lua_State *luaVM, int *skip)
 {
 	int n;     ///< the nth test
 	lua_getfield (luaVM, 4, "name");        // Stack: 5
@@ -156,10 +157,12 @@ static int xt_test_call_wrapper (lua_State *luaVM)
 	n = luaL_checkint (luaVM, -1);
 	printf("%2d - %s.%s:%d  ... ", n, lua_tostring (luaVM, 2),
 	     lua_tostring (luaVM, -3), luaL_checkint (luaVM, -2) );
+	fflush (stdout);
 	lua_pop (luaVM, 2);                     // pop ord and line
 	lua_getfield (luaVM, 4, "skip");        // Stack: 6
 	if (! lua_isnoneornil (luaVM, -1)) {
 		printf("# SKIP:%s\n", lua_tostring (luaVM, -1));
+		(*skip)++;
 		lua_pop (luaVM, 2);    // pop skip and name
 		return 0;
 	}
@@ -193,48 +196,61 @@ static int xt_test_call_wrapper (lua_State *luaVM)
  * \brief   executes the test suite.
  * \param   luaVM    The lua state.
  * \lparam  test instance table.
+ * \lreturn boolean true if all passed, otherwise false
  * \return  The number of results to be passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
 static int xt_test__call (lua_State *luaVM)
 {
-	int         i;
-	int         vrb = 1;
+	size_t          i;
+	int             all  = 0,
+	                pass = 0,
+	                skip = 0;
+	struct timeval *tm;
 
 	xt_test_check_ud  (luaVM, 1);
-	if (2==lua_gettop (luaVM)) {
-		vrb = lua_toboolean (luaVM, 2);
-		lua_pop(luaVM, 1);
-	}
-	lua_getfield (luaVM, 1, "_suitename");        // Stack: 2
-	lua_pushcfunction (luaVM, traceback);               // Stack: 3
+	lua_pushstring (luaVM, "_time");
+	tm =  xt_time_create_ud (luaVM);          // Stack: 2
+	lua_rawset (luaVM, 1);
+	lua_getfield (luaVM, 1, "_suitename");       // Stack: 2
+	lua_pushcfunction (luaVM, traceback);        // Stack: 3
 
 	lua_getfield (luaVM, 1, "setUp");
 	lua_pushvalue (luaVM, 1);
 	if (lua_pcall (luaVM, 1, 0, 0))
 		xt_push_error (luaVM, "Test setup failed %s", lua_tostring (luaVM, -1));
-	for ( i=1 ; ; i++ )
+	for ( i=1 ;i < lua_rawlen (luaVM, 1)+1 ; i++ )
 	{
 		lua_rawgeti(luaVM, 1, i);
-		// in table this is when the last (numeric) index is found
-		if ( lua_isnil(luaVM, -1) )
-		{
-			lua_pop(luaVM, 1);
-			break;
+		all++;
+		if (xt_test_call_wrapper (luaVM, &skip)) {
+			lua_pushboolean (luaVM, 0);
 		}
-		else
-		{
-			if (xt_test_call_wrapper (luaVM)) lua_pushboolean (luaVM, 0);
-			else lua_pushboolean (luaVM, 1);
-			lua_setfield (luaVM, 4, "pass"); // record error message
-			lua_pop (luaVM, 1);     // pop the test case table
-		}
+		else {
+			pass++;
+			lua_pushboolean (luaVM, 1);
+		};
+		lua_setfield (luaVM, 4, "pass"); // record success/fail status
+		lua_pop (luaVM, 1);     // pop the test case table
 	}
 	lua_getfield (luaVM, 1, "tearDown");
 	lua_pushvalue (luaVM, 1);
 	if (lua_pcall (luaVM, 1, 0, 0))
 		xt_push_error (luaVM, "Test tearDown failed %s", lua_tostring (luaVM, -1));
 
-	return 0;
+	xt_time_Since (tm);
+	printf ("---------------------------------------------------------\n"
+	        "Executed %d tests in %03f seconds\n\n"
+	        "Skipped : %d\n"
+	        "Failed  : %d\n"
+	        "status  : %s\n",
+	   all, xt_time_Get_ms(tm)/1000.0,
+		skip,
+		all-pass,
+		(all==pass)? "OK":"FAIL");
+
+	lua_pushboolean (luaVM, (all==pass) ? 1 : 0);
+
+	return 1;
 }
 
 
@@ -377,7 +393,6 @@ static int tablecmp (lua_State *luaVM)
 }
 
 
-
 /**--------------------------------------------------------------------------
  * \brief   compares items for equality
  * \detail  based on the following tests (in order, fails for first non equal)
@@ -422,7 +437,52 @@ static int xt_test_equal (lua_State *luaVM)
 			lua_setfield (luaVM, -2, "expected");
 			fmt_stack_item (luaVM, 2);
 			lua_setfield (luaVM, -2, "got");
-			lua_pushliteral (luaVM, "values not equal");
+			lua_pushliteral (luaVM, "value expected not equal to value got");
+			lua_setfield (luaVM, -2, "assert");
+			return lua_error (luaVM);
+		}
+	}
+}
+
+
+/**--------------------------------------------------------------------------
+ * \brief   compares lua values (lower than)
+ * \param   luaVM    The lua state.
+ * \lparam  element A
+ * \lparam  element B
+ * \lreturn boolean true-equal, false-not equal
+ * \return  The number of results to be passed back to the calling Lua script.
+ * --------------------------------------------------------------------------*/
+static int xt_test_lt (lua_State *luaVM)
+{
+	if (lua_gettop (luaVM)<2 || lua_gettop (luaVM)>3)
+	{
+		return xt_push_error (luaVM, "xt.Test._lt expects two or three arguments");
+	}
+	// compare types, references, metatable.__eq and values
+	if (lua_compare (luaVM, 1, 2, LUA_OPLT))
+	{
+		lua_pushboolean (luaVM, 1);
+		lua_insert (luaVM, 3);
+		return lua_gettop (luaVM) -2;
+	}
+	else
+	{
+		if (2==lua_gettop (luaVM))
+		{
+			lua_pushboolean (luaVM, 0);
+			return 1;
+		}
+		else
+		{
+			lua_newtable (luaVM);
+			lua_pushvalue (luaVM, 3);
+			lua_setfield (luaVM, -2, "message");
+			fmt_stack_item (luaVM, 1);
+			lua_setfield (luaVM, -2, "expected");
+			fmt_stack_item (luaVM, 2);
+			lua_setfield (luaVM, -2, "got");
+			lua_pushliteral (luaVM, "value expected not lower than value got");
 			lua_setfield (luaVM, -2, "assert");
 			return lua_error (luaVM);
 		}
@@ -550,6 +610,7 @@ static const struct luaL_Reg xt_test_fm [] = {
 static const struct luaL_Reg xt_test_m [] = {
 	{"run",                 xt_test__call},
 	{"_equal",              xt_test_equal},
+	{"_lt",                 xt_test_lt},
 	{"totap",               xt_test_totap},
 	{NULL,                  NULL}
 };
@@ -563,6 +624,7 @@ static const luaL_Reg xt_test_cf [] =
 {
 	{"new",                 xt_test_new},
 	{"_equal",              xt_test_equal},
+	{"_lt",                 xt_test_lt},
 	{NULL,                  NULL}
 };
 

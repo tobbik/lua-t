@@ -50,11 +50,20 @@ t.test_dummyStupid = function(self)
 	self._equal (14, 12,"No Sir!")
 end
 
-
 t.test_errno = function(self)
 	-- #TODO: That must be implemented
 	self.sock = xt.Socket.bind('TCP', '10.20.30.40',55)
 	self._equal( self.sock, 'blah')
+end
+
+t.test_busy = function(self)
+	-- #DESC: do a dummy loop to eat time
+	-- #TODO: That must be implemented
+	self.num = 12345678
+	for i=1,2*self.num do
+		self.num = math.ceil ((self.num+i)%256)
+	end
+	self._lt (self.num,10,"Modulo shall never exceed its operand ")
 end
 
 t.tearDown = function(self)
