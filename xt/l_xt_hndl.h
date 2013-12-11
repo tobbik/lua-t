@@ -46,11 +46,6 @@ struct xt_hndl {
 };
 
 // Constructors
-// l_xt_timer.c
-struct timeval *xt_time_check_ud (lua_State *luaVM, int pos);
-struct timeval *xt_time_create_ud (lua_State *luaVM);
-int             xt_time_new(lua_State *luaVM);
-
 // l_xt_ipendpoint.c
 struct sockaddr_in *check_ud_ipendpoint (lua_State *luaVM, int pos);
 struct sockaddr_in *create_ud_ipendpoint (lua_State *luaVM);

@@ -7,6 +7,7 @@
 
 #include "l_xt.h"
 #include "l_xt_hndl.h"
+#include "xt_time.h"
 #define STDIN 0
 
 /** -------------------------------------------------------------------------

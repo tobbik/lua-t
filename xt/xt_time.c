@@ -23,7 +23,71 @@
 #endif
 
 #include "l_xt.h"
-#include "l_xt_hndl.h"
+#include "xt_time.h"
+
+
+/**--------------------------------------------------------------------------
+ * \brief  adds timeval B to timeval A.
+ * \param  *tA struct timeval pointer
+ * \param  *tB struct timeval pointer
+ * --------------------------------------------------------------------------*/
+void xt_time_Add (struct timeval *tA, struct timeval *tB, struct timeval *tX)
+{
+	struct timeval tC;
+
+	tC.tv_sec    = tB->tv_sec  + tA->tv_sec ;  // add seconds
+	tC.tv_usec   = tB->tv_usec + tA->tv_usec ; // add microseconds
+	tC.tv_sec   += tC.tv_usec / 1000000 ;      // add microsecond overflow to seconds
+	tC.tv_usec  %= 1000000 ;                   // subtract overflow from microseconds
+	tX->tv_sec   = tC.tv_sec;
+	tX->tv_usec  = tC.tv_usec;
+}
+
+
+/**--------------------------------------------------------------------------
+ * \brief  substract timeval B to timeval A.
+ * \param  *tA struct timeval pointer
+ * \param  *tB struct timeval pointer
+ * --------------------------------------------------------------------------*/
+void xt_time_Sub (struct timeval *tA, struct timeval *tB, struct timeval *tX)
+{
+	struct timeval tC;
+
+	tC.tv_sec = (tB->tv_usec > tA->tv_usec)
+		? tA->tv_sec - tB->tv_sec - 1
+		: tA->tv_sec - tB->tv_sec;
+		;
+	tC.tv_usec   = tA->tv_usec;
+	tC.tv_usec = (tB->tv_usec > tA->tv_usec)
+		? 1000000 - (tB->tv_usec - tA->tv_usec)
+		: tA->tv_usec - tB->tv_usec;
+	tX->tv_sec   = tC.tv_sec;
+	tX->tv_usec  = tC.tv_usec;
+}
+
+
+/**--------------------------------------------------------------------------
+ * \brief  sets tm to time different between tm and now
+ * \param  *tv struct timeval pointer
+ * --------------------------------------------------------------------------*/
+void xt_time_Since (struct timeval *tA)
+{
+	struct timeval tC;
+
+	gettimeofday (&tC, 0);
+	xt_time_Sub (&tC, tA, tA);
+}
+
+
+/**--------------------------------------------------------------------------
+ * \brief  gets milliseconds worth of tm
+ * \param  *tv struct timeval pointer
+ * \return timeval value in milliseconds
+ * --------------------------------------------------------------------------*/
+long xt_time_Get_ms (struct timeval *tA)
+{
+	return tA->tv_sec*1000 + tA->tv_usec/1000;
+}
 
 
 /**--------------------------------------------------------------------------
@@ -59,9 +123,6 @@ int xt_time_new(lua_State *luaVM)
 		tv->tv_sec  = ms/1000;
 		tv->tv_usec = (ms % 1000) * 1000;
 	}
-	else {
-		gettimeofday(tv, 0);
-	}
 
 	return 1;
 }
@@ -77,6 +138,7 @@ struct timeval *xt_time_create_ud(lua_State *luaVM)
 	struct timeval *tv;
 
 	tv = (struct timeval *) lua_newuserdata (luaVM, sizeof(struct timeval) );
+	gettimeofday(tv, 0);
 	luaL_getmetatable(luaVM, "xt.Time");
 	lua_setmetatable(luaVM, -2);
 	return tv;
@@ -129,7 +191,7 @@ static int xt_time_set (lua_State *luaVM) {
  * --------------------------------------------------------------------------*/
 static int xt_time_get (lua_State *luaVM) {
 	struct timeval *tv = xt_time_check_ud(luaVM, 1);
-	lua_pushinteger(luaVM, tv->tv_sec*1000 + tv->tv_usec/1000);
+	lua_pushinteger(luaVM, xt_time_Get_ms (tv));
 	return 1;
 }
 
@@ -143,8 +205,9 @@ static int xt_time_get (lua_State *luaVM) {
  * --------------------------------------------------------------------------*/
 static int xt_time__tostring (lua_State *luaVM) {
 	struct timeval *tv = xt_time_check_ud(luaVM, 1);
-	lua_pushfstring(luaVM, "xt.Time{%d}: %p",
-			tv->tv_sec*1000 + tv->tv_usec/1000,
+	lua_pushfstring(luaVM, "xt.Time{%d:%d}: %p",
+			//tv->tv_sec*1000 + tv->tv_usec/1000,
+			tv->tv_sec, tv->tv_usec,
 			tv
 	);
 	return 1;
@@ -175,7 +238,7 @@ static int xt_time__eq (lua_State *luaVM) {
  * \param   luaVM     The lua state.
  * \lparam  timeval   the timval userdata.
  * \lparam  timeval   timval userdata to add to.
- * \lreturn boolean   true if equal otherwise false.
+ * \lreturn timeval   the difference in time.
  * \return  The number of results to be passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
 static int xt_time__add (lua_State *luaVM) {
@@ -183,34 +246,24 @@ static int xt_time__add (lua_State *luaVM) {
 	struct timeval *tB = xt_time_check_ud(luaVM, 2);
 	struct timeval *tC = xt_time_create_ud(luaVM);
 
-	tC->tv_sec   = tB->tv_sec  + tA->tv_sec ;  // add seconds
-	tC->tv_usec  = tB->tv_usec + tA->tv_usec ; // add microseconds
-	tC->tv_sec  += tC->tv_usec / 1000000 ;     // add microsecond overflow to seconds
-	tC->tv_usec %= 1000000 ;                   // subtract overflow from microseconds
+	xt_time_Add (tA,tB,tC);
 	return 1;
 }
 
 
 /**--------------------------------------------------------------------------
- * \brief   adds two time values.
+ * \brief   substract two time values.
  * \param   luaVM     The lua state.
  * \lparam  timeval   the timval userdata.
  * \lparam  timeval   timval userdata to add to.
- * \lreturn boolean   true if equal otherwise false.
+ * \lreturn timeval   true if equal otherwise false.
  * \return  The number of results to be passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
 static int xt_time__sub (lua_State *luaVM) {
 	struct timeval *tA = xt_time_check_ud(luaVM, 1);
 	struct timeval *tB = xt_time_check_ud(luaVM, 2);
 	struct timeval *tC = xt_time_create_ud(luaVM);
-
-	tC->tv_sec = (tB->tv_usec > tA->tv_usec)
-		? tA->tv_sec - tB->tv_sec - 1
-		: tA->tv_sec - tB->tv_sec;
-		;  tC->tv_usec   = tA->tv_usec;
-	tC->tv_usec = (tB->tv_usec > tA->tv_usec)
-		? 1000000 - (tB->tv_usec - tA->tv_usec)
-		: tA->tv_usec - tB->tv_usec;
+	xt_time_Sub (tA,tB,tC);
 	return 1;
 }
 
