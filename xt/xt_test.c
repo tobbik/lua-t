@@ -356,34 +356,31 @@ static int xt_test__newindex (lua_State *luaVM)
 
 
 /** ---------------------------------------------------------------------------
- * \brief internal table iterator that deep compares two tables
- * \deatil  work on negative inices ONLY for recursive use
+ * \brief   compares the last two values on the stack (table deep recursion)
+ * \detail  work on negative inices ONLY for recursive use
  * \param   luaVM lua_State
- * \lparam  table 1
- * \lparam  table 2
+ * \lparam  value 1
+ * \lparam  value 2
  * \return  boolean in 1 or 0
  *--------------------------------------------------------------------------- */
-static int tablecmp (lua_State *luaVM)
+static int is_really_equal (lua_State *luaVM)
 {
-	if (LUA_TTABLE != lua_type (luaVM, -1)  || LUA_TTABLE != lua_type (luaVM, -2) )
-	{
-		return 0;
-	}
+	// if lua considers them equal ---> true
+	// catches value, reference an meta.__eq
+	if (lua_compare (luaVM, -2, -1, LUA_OPEQ)) return 1;
+	// metamethod prevails
+	if (luaL_getmetafield (luaVM, -2, "__eq")) return lua_compare (luaVM, -2, -1, LUA_OPEQ);
+	if (LUA_TTABLE != lua_type (luaVM, -2))    return 0;
 	lua_pushnil (luaVM);           // Stack: tableA tableB  nil
 	while (lua_next(luaVM, -3))    // Stack: tableA tableB  keyA  valueA
 	{
 		lua_pushvalue (luaVM, -2);  // Stack: tableA tableB  keyA  valueA  keyA
 		lua_gettable( luaVM, -4);   // Stack: tableA tableB  keyA  valueA  valueB
-		stackDump (luaVM);
-		if (LUA_TTABLE == lua_type (luaVM, -2) && ! tablecmp (luaVM))
+		if (! is_really_equal (luaVM) )
 		{
 			lua_pop (luaVM, 3);      // Stack: tableA tableB 
 			return 0;
-		}
-		if (LUA_TTABLE != lua_type (luaVM, -2) && ! lua_compare (luaVM, -2, -1, LUA_OPEQ))
-		{
-			lua_pop (luaVM, 3);      // Stack: tableA tableB 
-			return 0;
+
 		}
 		lua_pop(luaVM, 2);       // pop valueA and valueB
 		// Stack tableA tableB  keyA
@@ -412,40 +409,94 @@ static int xt_test_equal (lua_State *luaVM)
 	{
 		return xt_push_error (luaVM, "xt.Test._equals expects two or three arguments");
 	}
-	// compare types, references, metatable.__eq and values
-	if (lua_compare (luaVM, 1, 2, LUA_OPEQ) ||
-	 (LUA_TTABLE == lua_type (luaVM,1) && tablecmp (luaVM)))
+	if (3==lua_gettop (luaVM))
+	{
+		lua_insert (luaVM, 1);
+	}
+	// Deep table comparison
+	if (is_really_equal (luaVM))
 	{
 		lua_pushboolean (luaVM, 1);
 		lua_insert (luaVM, 3);
 		return lua_gettop (luaVM) -2;
 	}
+	// this is the error case
+	if (2==lua_gettop (luaVM))
+	{
+		lua_pushboolean (luaVM, 0);
+		return 1;
+	}
 	else
 	{
-		if (2==lua_gettop (luaVM))
-		{
-			lua_pushboolean (luaVM, 0);
-			return 1;
-		}
-		else
-		{
-			lua_newtable (luaVM);
-			lua_pushvalue (luaVM, 3);
-			lua_setfield (luaVM, -2, "message");
-			fmt_stack_item (luaVM, 1);
-			lua_setfield (luaVM, -2, "expected");
-			fmt_stack_item (luaVM, 2);
-			lua_setfield (luaVM, -2, "got");
-			lua_pushliteral (luaVM, "value expected not equal to value got");
-			lua_setfield (luaVM, -2, "assert");
-			return lua_error (luaVM);
-		}
+		lua_newtable (luaVM);
+		lua_pushvalue (luaVM, 1);
+		lua_setfield (luaVM, -2, "message");
+		fmt_stack_item (luaVM, 2);
+		lua_setfield (luaVM, -2, "expected");
+		fmt_stack_item (luaVM, 3);
+		lua_setfield (luaVM, -2, "got");
+		lua_pushliteral (luaVM, "value expected not equal to value got");
+		lua_setfield (luaVM, -2, "assert");
+		return lua_error (luaVM);
 	}
 }
 
 
 /**--------------------------------------------------------------------------
- * \brief   compares lua values (lower than)
+ * \brief   compares items for non equality
+ * \detail  based on the following tests (in order, fails for first non equal)
+ *          - same type
+ *          - same reference (for tables, functions and userdata)
+ *          - same metatable (for tables and userdata)
+ *          - runs __eq in metatable if present
+ *          - same content   (table deep inspection)
+ * \param   luaVM    The lua state.
+ * \lparam  element A
+ * \lparam  element B
+ * \lreturn boolean true-equal, false-not equal
+ * \return  The number of results to be passed back to the calling Lua script.
+ * --------------------------------------------------------------------------*/
+static int xt_test_equal_not (lua_State *luaVM)
+{
+	if (lua_gettop (luaVM)<2 || lua_gettop (luaVM)>3)
+	{
+		return xt_push_error (luaVM, "xt.Test._equals expects two or three arguments");
+	}
+	if (3==lua_gettop (luaVM))
+	{
+		lua_insert (luaVM, 1);
+	}
+	// Deep table comparison
+	if (! is_really_equal (luaVM))
+	{
+		lua_pushboolean (luaVM, 1);
+		lua_insert (luaVM, 3);
+		return lua_gettop (luaVM) -2;
+	}
+	// this is the error case
+	if (2==lua_gettop (luaVM))
+	{
+		lua_pushboolean (luaVM, 0);
+		return 1;
+	}
+	else
+	{
+		lua_newtable (luaVM);
+		lua_pushvalue (luaVM, 1);
+		lua_setfield (luaVM, -2, "message");
+		fmt_stack_item (luaVM, 2);
+		lua_setfield (luaVM, -2, "expected");
+		fmt_stack_item (luaVM, 3);
+		lua_setfield (luaVM, -2, "got");
+		lua_pushliteral (luaVM, "value expected is equal to value got");
+		lua_setfield (luaVM, -2, "assert");
+		return lua_error (luaVM);
+	}
+}
+
+
+/**--------------------------------------------------------------------------
+ * \brief   compares lua values (lesser than)
  * \param   luaVM    The lua state.
  * \lparam  element A
  * \lparam  element B
@@ -481,7 +532,7 @@ static int xt_test_lt (lua_State *luaVM)
 			lua_setfield (luaVM, -2, "expected");
 			fmt_stack_item (luaVM, 2);
 			lua_setfield (luaVM, -2, "got");
-			lua_pushliteral (luaVM, "value expected not lower than value got");
+			lua_pushliteral (luaVM, "value expected not lesser than value got");
 			lua_setfield (luaVM, -2, "assert");
 			return lua_error (luaVM);
 		}
@@ -553,6 +604,7 @@ static void gen_tap_entry (lua_State *luaVM, luaL_Buffer *lB)
 	// Add diagnostics
 	if (! lua_toboolean (luaVM, 3)) {
 		luaL_addstring (lB, "\t---");
+		add_tap_diagnostics (luaVM, lB, 2, "name");
 		add_tap_diagnostics (luaVM, lB, 2, "message");
 		add_tap_diagnostics (luaVM, lB, 2, "assert");
 		add_tap_diagnostics (luaVM, lB, 2, "expected");
@@ -608,7 +660,8 @@ static const struct luaL_Reg xt_test_fm [] = {
  */
 static const struct luaL_Reg xt_test_m [] = {
 	{"run",                 xt_test__call},
-	{"_equal",              xt_test_equal},
+	{"_eq",                 xt_test_equal},
+	{"_eq_not",             xt_test_equal_not},
 	{"_lt",                 xt_test_lt},
 	{"totap",               xt_test_totap},
 	{NULL,                  NULL}
@@ -622,7 +675,8 @@ static const struct luaL_Reg xt_test_m [] = {
 static const luaL_Reg xt_test_cf [] =
 {
 	{"new",                 xt_test_new},
-	{"_equal",              xt_test_equal},
+	{"_eq",                 xt_test_equal},
+	{"_eq_not",             xt_test_equal_not},
 	{"_lt",                 xt_test_lt},
 	{NULL,                  NULL}
 };

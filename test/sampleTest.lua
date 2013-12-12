@@ -1,78 +1,114 @@
 #!../out/bin/lua
 
 ---
--- \file    bufConstruct.c
--- \brief   basic tests of xt.Buffer Constructor
-local xt = require ('xt')
---local t = xt.Test('Test basic xt.Buffer functionality')
-t = xt.Test('Test basic xt.Buffer functionality')
+-- \file    sampleTest
+-- \brief   basic tests to show xt.Test
+local   T = require ('xt').Test
+t=T('Test some simple stuff')
+
 
 t.setUp = function(self)
-	-- assemble the test strings
-	self.n       = 10
-	local sH,sB  = {},{} --string Hex and string Binary
-	for i=0,self.n do
-		sH[i+1] = string.format('%02X ', i)
-		sB[i+1] = string.char(i)
-	end
-	self.strBin = table.concat (sB, '')
-	self.strHex = table.concat (sH, '')
-	-- create buffer of 255 bytes len and fill with numeric byte sized values
-	self.buf8   = xt.Buffer(self.n)
-	for i=0,self.n do
-		self.buf8:write8(i, i)
-	end
-	-- create a buffer from a string
-	self.bufStr  = xt.Buffer(self.n, self.strBin)
-	print ('setup finished');
+	self.a       = 10
+	self.b       = 20
+	self.c       = 30
+	self.s1      = "This is a String"
+	self.s11     = "This is a String"
+	self.s2      = "This is anonther String"
 end
 
-t.test_SameContent = function(self)
-	-- #DESC: Check that all buffers have the same content
-	self._equal (self.buf8:toHex(), self.bufStr:toHex(), "Hex representation of buffers differs")
-	self._equal (self.buf8:toHex(), self.strHex, "Hex representation differs from expected")
+
+t.test_EqNumbers = function(self)
+	-- #DESC: Test for equality of numeric values
+	self._eq (self.b, self.a*2, "Simple Multiplication")
 end
 
-t.test_SameLength = function(self)
+
+t.test_EqNumbersNot = function(self)
+	-- #DESC: Test for non equality of numeric values
+	self._eq_not (self.b, self.a, "Simple Multiplication")
+end
+
+
+t.test_EqStrings = function(self)
+	-- #DESC: Test for equality of String values
+	self._eq (self.s1, self.s11, "Same String")
+end
+
+
+t.test_EqStringRef = function(self)
+	-- #DESC: Test for equality of String references
+	local s = self.s1
+	self._eq (self.s1, s, "Same String")
+end
+
+
+t.test_EqStringRefNot = function(self)
+	-- #DESC: Test for equality of String references
+	local s = self.s1
+	s = 'nonsense'
+	self._eq_not (self.s1, s, "Same String")
+end
+
+
+t.test_EqTableRef = function(self)
+	-- #DESC: Table reference equalty
+	local k = {x=1,y=2,z={a=1,b=true,c='string'}}
+	local h = k
+	self._eq (k,h, "Table reference comparison")
+end
+
+
+t.test_EqTable = function(self)
+	-- #DESC: Deep table comparison 
+	local k = {x=1,y=2,z={a=1,b=true,c='string'}}
+	local h = {x=1,y=2,z={a=1,b=true,c='string'}}
+	self._eq (k,h, "Deep table comparison")
+end
+
+
+t.test_EqTableNot = function(self)
+	-- #DESC: Deep table comparison (not)
+	local k = {x=1,y=2,z={a=1,b=true,c='stringy'}}
+	local h = {x=1,y=2,z={a=1,b=true,c='string'}}
+	self._eq_not (k,h, "Deep table comparison")
+end
+
+
+t.test_EqMeta = function(self)
+	-- #DESC: Test for equality of metatable.__eq
+	local mt= {__eq = function (l1,l2) return l1.y == l2.y end}
+	local k,h = setmetatable({x=1,y=2,z=3},mt),
+	            setmetatable({x=1,y=2,z=3},mt)
+	self._eq (k ,h, "Y values of table must be equal")
+end
+
+
+t.test_EqMetaNot = function(self)
+	-- #DESC: Test for equality of metatable.__eq
+	local mt= {__eq = function (l1,l2) return l1.y ~= l2.y end}
+	local k,h = setmetatable({x=1,y=2,z=3},mt),
+	            setmetatable({x=1,y=2,z=3},mt)
+	self._eq_not (k ,h, "Y values of table must be equal")
+end
+
+
+t.test_LesserThan = function(self)
 	-- #DESC: Check that all buffers have the same length
-	self._equal (#self.buf8, self.buf8:length(), "alpha")
-	self._equal (#self.buf8, #self.bufStr, "beta")
-	self._equal (#self.buf8, self.n, "gamma")
+	self._lt (self.b, self.a*2+1, "Simple Multiplication and addition")
 end
 
-t.test_SameFields = function(self)
-	-- #DESC: Check that all buffer fields have the same content
-	self._equal (self.buf8:read16(12), self.bufStr:read16(12), "alpha")
-end
-
-t.test_dummyStupid = function(self)
-	-- #SKIP: Because it would fail anyways
-	self._equal (14, 12,"No Sir!")
-end
-
-t.test_errno = function(self)
-	-- #TODO: That must be implemented
-	self.sock = xt.Socket.bind('TCP', '10.20.30.40',55)
-	self._equal( self.sock, 'blah')
-end
 
 t.test_busy = function(self)
 	-- #DESC: do a dummy loop to eat time
-	-- #TODO: That must be implemented
 	self.num = 12345678
 	for i=1,2*self.num do
 		self.num = math.ceil ((self.num+i)%256)
 	end
-	self._lt (self.num,10,"Modulo shall never exceed its operand ")
+	self._lt (self.num,256,"Modulo shall never exceed its operand ")
 end
 
+
 t.tearDown = function(self)
-	self.n       = nil
-	self.strBin  = nil
-	self.strHex  = nil
-	-- create buffer of 255 bytes len and fill with numeric byte sized values
-	self.buf8    = nil
-	self.bufStr  = nil
 end
 
 --t:run()
