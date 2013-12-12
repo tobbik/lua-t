@@ -59,8 +59,8 @@ end
 
 
 t.test_EqTable = function(self)
-	-- #DESC: Deep table comparison 
-	local k = {x=1,y=2,z={a=1,b=true,c='string'}}
+	-- #DESC: Deep table comparison
+	local k = {x=4,y=2,z={a=1,b=true,c='string'}}
 	local h = {x=1,y=2,z={a=1,b=true,c='string'}}
 	self._eq (k,h, "Deep table comparison")
 end

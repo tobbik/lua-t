@@ -262,39 +262,46 @@ static void xt_get_fn_source (lua_State *luaVM)
 {
 	lua_Debug  ar;
 	FILE      *f;
-	int        r  = 1;
+	int        r  = 0; ///< current line count
+	int        l;      ///< line length
 	char      *fnd;
-	char      *p  = malloc(LUAL_BUFFERSIZE *  sizeof( char ));
-	memset (p, 0, LUAL_BUFFERSIZE* sizeof( char ) );
+	char      *p;
+	luaL_Buffer lB;
+	luaL_buffinit (luaVM, &lB);
 	lua_State *L1 = luaVM;
-   lua_pushstring(luaVM, ">S");
-   lua_pushvalue(luaVM, 3);
-   lua_xmove(luaVM, L1, 1);
+	lua_pushstring(luaVM, ">S");
+	lua_pushvalue(luaVM, 3);
+	lua_xmove(luaVM, L1, 1);
 	lua_getinfo (L1, ">S", &ar);
 	lua_pop (luaVM, 1); // pop the ">S"
-	f = fopen(ar.short_src, "r");
-	while (r < ar.lastlinedefined )
-	{
-		if (fgets(p, LUAL_BUFFERSIZE, f) == NULL) break;
-		//TODO: reasonable linened check
-		if (++r < ar.linedefined) continue;
-		if (NULL != (fnd=strstr(p,"-- #TODO:"))) {
-			lua_pushlstring (luaVM, fnd+9, strlen(fnd+9)-1);
-			lua_setfield   (luaVM, -2, "todo");
-		}
-		if (NULL != (fnd=strstr(p,"-- #SKIP:"))) {
-			lua_pushlstring (luaVM, fnd+9, strlen(fnd+9)-1);
-			lua_setfield   (luaVM, -2, "skip");
-		}
-		if (NULL != (fnd=strstr(p,"-- #DESC:"))) {
-			lua_pushlstring (luaVM, fnd+9, strlen(fnd+9)-1);
-			lua_setfield   (luaVM, -2, "desc");
-		}
-	}
 	lua_pushinteger (luaVM, ar.linedefined);
 	lua_setfield (luaVM, -2, "line");
 
-	free (p);
+	f = fopen(ar.short_src, "r");
+	while (r < ar.lastlinedefined )
+	{
+		p = luaL_prepbuffer (&lB);
+		sprintf (p, "\n\t%4d: ", r+1);
+		if (fgets(p+8, LUAL_BUFFERSIZE, f) == NULL) break;
+		//TODO: reasonable linened check
+		if (++r < ar.linedefined) continue;
+		luaL_addsize (&lB, strlen (p)-1);
+		if (NULL != (fnd=strstr(p,"-- #TODO:"))) {
+			lua_pushlstring (luaVM, fnd+9, strlen(fnd+9)-1);
+			lua_setfield   (luaVM, -3, "todo");
+		}
+		if (NULL != (fnd=strstr(p,"-- #SKIP:"))) {
+			lua_pushlstring (luaVM, fnd+9, strlen(fnd+9)-1);
+			lua_setfield   (luaVM, -3, "skip");
+		}
+		if (NULL != (fnd=strstr(p,"-- #DESC:"))) {
+			lua_pushlstring (luaVM, fnd+9, strlen(fnd+9)-1);
+			lua_setfield   (luaVM, -3, "desc");
+		}
+	}
+	luaL_pushresult (&lB);
+	lua_setfield   (luaVM, -2, "src");
+
 	fclose (f);
 }
 
@@ -611,6 +618,7 @@ static void gen_tap_entry (lua_State *luaVM, luaL_Buffer *lB)
 		add_tap_diagnostics (luaVM, lB, 2, "got");
 		add_tap_diagnostics (luaVM, lB, 2, "location");
 		add_tap_diagnostics (luaVM, lB, 2, "traceback");
+		add_tap_diagnostics (luaVM, lB, 2, "src");
 		luaL_addstring (lB, "\n\t...\n");
 	}
 	lua_pop (luaVM, lua_gettop (luaVM)-2);
