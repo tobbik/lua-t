@@ -19,6 +19,7 @@
 /**
  * \brief      Polynom definitions for the algorithms
  */
+#define POLY_8          0xd5
 #define POLY_16         0xA001
 #define POLY_CCITT_KRM  0x8408
 #define POLY_CCIT       4129
@@ -26,11 +27,23 @@
 
 
 enum xt_CRC_ALG {
+	CRC_ALG_8,
 	CRC_ALG_16,
 	CRC_ALG_CCITT,
 	CRC_ALG_CCITT_KRM,
 	CRC_ALG_32
 };
+
+
+void calc_8 (struct xt_enc_crc *crc, const char *data, size_t len)
+{
+	size_t   i;
+	for ( i = 0; i < len; ++i) {
+		crc->crc8 = crc->t8 [crc->crc8 ^ data[i]];
+	}
+
+	crc->res = (int) (crc->crc8 ^ 0xFF);
+}
 
 
 // calculates CRC16,CCITT KERMIT
@@ -78,6 +91,22 @@ void calc_32 (struct xt_enc_crc *crc, const char *data, size_t len) {
 	 | || |\  || |  | |  
 	|___|_| \_|___| |_|*/
 
+static void init_8 (struct xt_enc_crc *crc, uint8_t poly)
+{
+	int     i,j;
+	uint8_t c;
+	for (i=0; i<256; i++) {
+		c = i;
+		for (j=0; j<8; j++)
+			c = (c << 1) ^ ((c & 0x80) ? poly : 0);
+		crc->t8 [i] = c & 0xFF;
+	}
+	crc->crc8  = 0;
+	crc->init8 = 0;
+	crc->calc  = calc_8;
+}
+
+
 static void init_16 (struct xt_enc_crc *crc, uint16_t poly)
 {
 	uint16_t c, run, i;
@@ -94,10 +123,10 @@ static void init_16 (struct xt_enc_crc *crc, uint16_t poly)
 			run >>= 1;
 		}
 		crc->t16 [i] = c;
+	}
 	crc->crc16  = 0;
 	crc->init16 = 0;
 	crc->calc   = calc_16;
-	}
 }
 
 
@@ -193,6 +222,9 @@ xt_enc_crc_new(lua_State *luaVM)
 	crc = xt_enc_crc_create_ud (luaVM);
 	alg = luaL_checkint(luaVM, 1);
 	switch (alg) {
+		case CRC_ALG_8:
+			init_8 (crc, POLY_8);
+			break;
 		case CRC_ALG_16:
 			init_16 (crc, POLY_16);
 			break;
@@ -250,7 +282,7 @@ struct xt_enc_crc
  * \param   luaVM  The lua state.
  * \lparam  xt_enc_crc userdata.
  * \lparam  data       luastring or xt.Buffer.
- * \lparam  start      start index in data.
+ * \lparam  sta        start index in data.
  * \lparam  end        end index in data.
  * \lreturn crc        the CRC checksum.
  * \return  The number of results to be passed back to the calling Lua script.
@@ -342,3 +374,4 @@ int luaopen_xt_enc_crc (lua_State *luaVM) {
 	lua_setmetatable(luaVM, -2);
 	return 1;
 }
+
