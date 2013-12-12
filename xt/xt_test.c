@@ -374,19 +374,18 @@ static int tablecmp (lua_State *luaVM)
 	{
 		lua_pushvalue (luaVM, -2);  // Stack: tableA tableB  keyA  valueA  keyA
 		lua_gettable( luaVM, -4);   // Stack: tableA tableB  keyA  valueA  valueB
-		if (LUA_TTABLE == lua_type (luaVM, -2) && !tablecmp (luaVM))
+		stackDump (luaVM);
+		if (LUA_TTABLE == lua_type (luaVM, -2) && ! tablecmp (luaVM))
 		{
 			lua_pop (luaVM, 3);      // Stack: tableA tableB 
 			return 0;
 		}
-		if (!lua_compare (luaVM, -2, -1, LUA_OPEQ))
+		if (LUA_TTABLE != lua_type (luaVM, -2) && ! lua_compare (luaVM, -2, -1, LUA_OPEQ))
 		{
 			lua_pop (luaVM, 3);      // Stack: tableA tableB 
 			return 0;
 		}
-		else {
-			lua_pop(luaVM, 2);       // pop valueA and valueB
-		}
+		lua_pop(luaVM, 2);       // pop valueA and valueB
 		// Stack tableA tableB  keyA
 	}
 	return 1;
