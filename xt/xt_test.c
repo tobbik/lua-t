@@ -263,7 +263,6 @@ static void xt_get_fn_source (lua_State *luaVM)
 	lua_Debug  ar;
 	FILE      *f;
 	int        r  = 0; ///< current line count
-	int        l;      ///< line length
 	char      *fnd;
 	char      *p;
 	luaL_Buffer lB;
@@ -338,11 +337,10 @@ static int xt_test__newindex (lua_State *luaVM)
 		// assigning a new test
 		if (lua_isfunction(luaVM, 3))
 		{
+			stackDump( luaVM );
 			lua_newtable (luaVM);                      // Stack 3: empty table
 			lua_pushvalue(luaVM, 2);                   // copy name from 2 to 4
 			lua_setfield (luaVM, -2, "name");
-			lua_pushvalue(luaVM, 2);                   // copy name from 2 to 4
-			lua_setfield (luaVM, -2, "desc");
 			lua_pushinteger (luaVM, lua_rawlen(luaVM, 1) +1);
 			lua_setfield (luaVM, -2, "ord");
 			xt_get_fn_source(luaVM);

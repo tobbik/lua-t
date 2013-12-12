@@ -51,7 +51,7 @@ end
 
 
 t.test_EqTableRef = function(self)
-	-- #DESC: Table reference equalty
+	-- Purposefully no description so it uses the function name instead
 	local k = {x=1,y=2,z={a=1,b=true,c='string'}}
 	local h = k
 	self._eq (k,h, "Table reference comparison")
