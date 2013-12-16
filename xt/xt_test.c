@@ -144,8 +144,7 @@ static int traceback (lua_State *luaVM) {
  * --------------------------------------------------------------------------*/
 static int xt_test__call (lua_State *luaVM)
 {
-	size_t          i;
-	int             all  = 1,
+	size_t          all  = 1,
 	                pass = 0,
 	                skip = 0;
 	struct timeval *tm;
@@ -159,16 +158,16 @@ static int xt_test__call (lua_State *luaVM)
 	lua_pushvalue (luaVM, 1);
 	if (lua_pcall (luaVM, 1, 0, 0))
 		xt_push_error (luaVM, "Test setup failed %s", lua_tostring (luaVM, -1));
-	for ( i=1 ;i < lua_rawlen (luaVM, 1)+1 ; i++ )
+	for ( all=1 ;all < lua_rawlen (luaVM, 1)+1 ; all++ )
 	{
-		lua_rawgeti(luaVM, 1, i);
+		lua_rawgeti(luaVM, 1, all);
 		lua_getfield (luaVM, 2, "skip");
 		skip = (lua_isnoneornil (luaVM, -1)) ? skip : skip+1;
 		lua_pop (luaVM, 1);
 		luaL_getmetafield (luaVM, -1, "__call");
-		lua_pushvalue (luaVM, -2);
-		lua_pushvalue (luaVM, 1);
-		lua_pushinteger (luaVM, all++);
+		lua_pushvalue (luaVM, -2);         // push table with test function (has __call method)
+		lua_pushvalue (luaVM, 1);          // push test suite table (aka. 'self' in test functions
+		lua_pushinteger (luaVM, all);
 		lua_call (luaVM, 3, 1);
 		pass = (lua_toboolean (luaVM, -1)) ? pass+1 : pass;
 		lua_pop (luaVM, 2);     // pop the test case table and return result
@@ -181,9 +180,9 @@ static int xt_test__call (lua_State *luaVM)
 	xt_time_Since (tm);
 	--all;
 	printf ("---------------------------------------------------------\n"
-	        "Executed %d tests in %03f seconds\n\n"
-	        "Skipped : %d\n"
-	        "Failed  : %d\n"
+	        "Executed %lu tests in %03f seconds\n\n"
+	        "Skipped : %lu\n"
+	        "Failed  : %lu\n"
 	        "status  : %s\n",
 	   all, xt_time_Get_ms(tm)/1000.0,
 		skip,
@@ -513,86 +512,95 @@ static void add_tap_diagnostics (lua_State *luaVM, luaL_Buffer *lB, int p, const
 
 
 /**
- * \brief adds information for one test into a TAP line
+ * \brief formats one test case into a TAP line.
  * \param   luaVM the Lua state.
- * \param  *lB    an already initialized Lua Buffer.
- * \param   ord   order execution number
+ * \lparam  xt_test_case  table with the on test_* function.
+ * \lparam  xt_test       test suite table.
  */
-static void gen_tap_entry (lua_State *luaVM, luaL_Buffer *lB, int ord)
+static int xt_test_case__tostring (lua_State *luaVM)
 {
-	lua_getfield (luaVM, 2, "pass");   // Stack: 3
-	if (lua_toboolean (luaVM, -1)) luaL_addstring (lB, "ok ");
-	else luaL_addstring (lB, "not ok ");
-	lua_pushinteger (luaVM, ord);     // Stack: 4
-	luaL_addvalue (lB);
-	luaL_addstring (lB, " - ");
+	luaL_Buffer lB;
+	luaL_buffinit (luaVM, &lB);
+	lua_getfield (luaVM, 1, "pass");   // Stack: 2
+	if (lua_isnil (luaVM, -1) )
+		luaL_addstring (&lB, "not run");
+	else 
+		luaL_addstring (&lB, (lua_toboolean (luaVM, -1)) ? "ok":"not ok");
+	lua_getfield (luaVM, 1, "ord");   // Stack: 3
+	luaL_addvalue (&lB);
+	luaL_addstring (&lB, " - ");
 	// print desc or name
-	lua_getfield (luaVM, 2, "desc");    // Stack: 4
+	lua_getfield (luaVM, 1, "desc");    // Stack: 3
 	if (lua_isnoneornil (luaVM, -1)) {
 		lua_pop (luaVM, 1);              // pop nil desc
-		lua_getfield (luaVM, 2, "name"); // Stack: 4
-		luaL_addvalue (lB);              // add name and pop it
+		lua_getfield (luaVM, 1, "name"); // Stack: 4
+		luaL_addvalue (&lB);              // add name and pop it
 	}
 	else {
-		luaL_addvalue (lB);              // add desc and pop it
+		luaL_addvalue (&lB);              // add desc and pop it
 	}
 	// Add skip info
-	lua_getfield (luaVM, 2, "skip");    // Stack: 4
+	lua_getfield (luaVM, 1, "skip");    // Stack: 3
 	if (! lua_isnoneornil (luaVM, -1)) {
-		luaL_addstring (lB, " #SKIP: ");
-		luaL_addvalue (lB);
+		luaL_addstring (&lB, " #SKIP: ");
+		luaL_addvalue (&lB);
 	}
 	else {    // Add todo information?
 		lua_pop (luaVM, 1);    // pop skip
-		lua_getfield (luaVM, 2, "todo");    // Stack: 7
+		lua_getfield (luaVM, 1, "todo");    // Stack: 3
 		if (! lua_isnoneornil (luaVM, -1)) {
-			luaL_addstring (lB, " #TODO: ");
-			luaL_addvalue (lB);
+			luaL_addstring (&lB, " #TODO: ");
+			luaL_addvalue (&lB);
 		}
 		else {
 			lua_pop (luaVM, 1);   // pop todo nil
 		}
 	}
-	luaL_addchar (lB, '\n');
+	luaL_addchar (&lB, '\n');
 	// Add diagnostics
-	if (! lua_toboolean (luaVM, 3)) {
-		luaL_addstring (lB, "\t---");
-		add_tap_diagnostics (luaVM, lB, 2, "name");
-		add_tap_diagnostics (luaVM, lB, 2, "message");
-		add_tap_diagnostics (luaVM, lB, 2, "assert");
-		add_tap_diagnostics (luaVM, lB, 2, "expected");
-		add_tap_diagnostics (luaVM, lB, 2, "got");
-		add_tap_diagnostics (luaVM, lB, 2, "location");
-		add_tap_diagnostics (luaVM, lB, 2, "traceback");
-		add_tap_diagnostics (luaVM, lB, 2, "src");
-		luaL_addstring (lB, "\n\t...\n");
+	if (! lua_toboolean (luaVM, 2)) {
+		luaL_addstring (&lB, "\t---");
+		add_tap_diagnostics (luaVM, &lB, 1, "name");
+		add_tap_diagnostics (luaVM, &lB, 1, "message");
+		add_tap_diagnostics (luaVM, &lB, 1, "assert");
+		add_tap_diagnostics (luaVM, &lB, 1, "expected");
+		add_tap_diagnostics (luaVM, &lB, 1, "got");
+		add_tap_diagnostics (luaVM, &lB, 1, "location");
+		add_tap_diagnostics (luaVM, &lB, 1, "traceback");
+		add_tap_diagnostics (luaVM, &lB, 1, "src");
+		luaL_addstring (&lB, "\n\t...\n");
 	}
-	lua_pop (luaVM, lua_gettop (luaVM)-2);
+	lua_pop (luaVM, lua_gettop (luaVM)-1);
+	luaL_pushresult(&lB);
+	return 1;
 }
 
 
 /**--------------------------------------------------------------------------
- * \brief   genrates a TAP report.
+ * \brief   generates a TAP report.
  * \param   luaVM    The lua state.
  * \lparam  test instance table.
  * \return  The number of results to be passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
-static int xt_test_totap (lua_State *luaVM)
+static int xt_test__tostring (lua_State *luaVM)
 {
 	luaL_Buffer lB;
 	int         i=1, t_len;
 	xt_test_check_ud  (luaVM, 1);
 	t_len           = luaL_len (luaVM, 1);
 	luaL_buffinit (luaVM, &lB);
-	lua_pushinteger (luaVM, t_len);
 	luaL_addstring(&lB, "1..");
+	lua_pushinteger (luaVM, t_len);
 	luaL_addvalue(&lB);
 	luaL_addchar(&lB, '\n');
 	for (; i < t_len+1; i++)
 	{
-		lua_rawgeti (luaVM, 1, i);
-		gen_tap_entry (luaVM, &lB, i);
-		lua_pop (luaVM, 1);
+		lua_rawgeti(luaVM, 1, i);
+		luaL_getmetafield (luaVM, -1, "__tostring");
+		lua_pushvalue (luaVM, 2);         // push table with test function (has __tostring method)
+		lua_call (luaVM, 1, 1);
+		luaL_addvalue (&lB);               // adds return value to buffer and pops it
+		lua_pop (luaVM, 1);                // pop the test case table
 	}
 	luaL_pushresult(&lB);
 	return 1;
@@ -609,39 +617,42 @@ static int xt_test_totap (lua_State *luaVM)
  * \lparam  test instance table.
  * \return  The number of results to be passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
-static int xt_test_case_call (lua_State *luaVM)
+static int xt_test_case__call (lua_State *luaVM)
 {
-	int n;     ///< the nth test
-	n = luaL_checkint (luaVM, 3);
+	int n;           ///< execution order number
+	n = luaL_optint (luaVM, 3, 0);
 	lua_pushcfunction (luaVM, traceback); // Stack: 4
 	lua_getfield (luaVM, 2, "_suitename");// Stack: 5
 	lua_getfield (luaVM, 1, "name");      // Stack: 6
 	lua_getfield (luaVM, 1, "line");      // Stack: 7
-	printf("%2d - %s.%s:%d  ... ", n, lua_tostring (luaVM, 5),
-	     lua_tostring (luaVM, 6), luaL_checkint (luaVM, 7) );
+	printf ("%2d - %s.%s:%d  ... ",
+	   n                      , lua_tostring (luaVM, 5),
+	   lua_tostring (luaVM, 6), luaL_checkint (luaVM, 7));
+	lua_pushinteger (luaVM, n);
+	lua_setfield (luaVM, 1, "ord");
 	fflush (stdout);
 	lua_pop (luaVM, 3);                   // pop _suitname,name,line
 	lua_getfield (luaVM, 1, "skip");      // Stack: 5
 	if (! lua_isnoneornil (luaVM, -1)) {
-		printf("# SKIP:%s\n", lua_tostring (luaVM, -1));
+		printf ("# SKIP:%s\n", lua_tostring (luaVM, -1));
 		return 0;
 	}
 	else {
-		lua_pop (luaVM, 1);    // pop skip
-		lua_getfield (luaVM, 1, "f");      // Stack: 6
+		lua_pop (luaVM, 1);                // pop skip
+		lua_getfield (luaVM, 1, "f");      // Stack: 5
 	}
 
 	lua_pushvalue (luaVM, 2);             // push suite as argument for t:test()
 	if (lua_pcall (luaVM, 1, 0, 4))
 	{
 		// Stack: 5  Error table
-		printf("fail\n");
+		printf ("fail\n");
 		lua_pushnil (luaVM);
 		while (lua_next (luaVM, -2))   // copy error elements to test table 
 		{
 			lua_setfield (luaVM, 1, lua_tostring (luaVM, -2) );
 		}
-		lua_pop(luaVM, 2);        // pop the error table and traceback
+		lua_pop (luaVM, 2);        // pop the error table and traceback
 		lua_pushboolean (luaVM, 0);
 		lua_setfield (luaVM, 1, "pass");
 		lua_pushboolean (luaVM, 0);
@@ -649,8 +660,8 @@ static int xt_test_case_call (lua_State *luaVM)
 	}
 	else
 	{
-		printf("ok\n");
-		lua_pop(luaVM, 1);        // pop the traceback function
+		printf ("ok\n");
+		lua_pop (luaVM, 1);        // pop the traceback function
 		lua_pushboolean (luaVM, 1);
 		lua_setfield (luaVM, 1, "pass");
 		lua_pushboolean (luaVM, 1);
@@ -677,7 +688,6 @@ static const struct luaL_Reg xt_test_m [] = {
 	{"_eq",                 xt_test_equal},
 	{"_eq_not",             xt_test_equal_not},
 	{"_lt",                 xt_test_lt},
-	{"totap",               xt_test_totap},
 	{NULL,                  NULL}
 };
 
@@ -707,9 +717,12 @@ static const luaL_Reg xt_test_cf [] =
 int luaopen_xt_test (lua_State *luaVM) {
 	// internal metatable that allows the it to be called
 	luaL_newmetatable(luaVM, "xt.Test.Case");   // stack: functions meta
-	lua_pushcfunction(luaVM, xt_test_case_call);
+	lua_pushcfunction(luaVM, xt_test_case__call);
 	lua_setfield(luaVM, -2, "__call");
+	lua_pushcfunction(luaVM, xt_test_case__tostring);
+	lua_setfield(luaVM, -2, "__tostring");
 	lua_pop(luaVM, 1);        // remove metatable from stack
+
 	// just make metatable known to be able to register and check type
 	// this is only avalable a <instance>:func()
 	luaL_newmetatable(luaVM, "xt.Test");   // stack: functions meta
@@ -719,7 +732,7 @@ int luaopen_xt_test (lua_State *luaVM) {
 	lua_setfield(luaVM, -2, "__newindex");
 	lua_pushcfunction(luaVM, xt_test__call);
 	lua_setfield(luaVM, -2, "__call");
-	lua_pushcfunction(luaVM, xt_test_totap);
+	lua_pushcfunction(luaVM, xt_test__tostring);
 	lua_setfield(luaVM, -2, "__tostring");
 	lua_pop(luaVM, 1);        // remove metatable from stack
 
