@@ -60,7 +60,7 @@ end
 
 t.test_EqTable = function(self)
 	-- #DESC: Deep table comparison
-	local k = {x=4,y=2,z={a=1,b=true,c='string'}}
+	local k = {x=1,y=2,z={a=1,b=true,c='string'}}
 	local h = {x=1,y=2,z={a=1,b=true,c='string'}}
 	self._eq (k,h, "Deep table comparison")
 end
@@ -74,12 +74,28 @@ t.test_EqTableNot = function(self)
 end
 
 
+t.test_EqTableNum = function(self)
+	-- #DESC: Deep table comparison with first table shorter than second
+	local h = {6,7,8,9,'str',{'A','B','C','D',{'z','y','x'}    },3,4,5,6}
+	local k = {6,7,8,9,'str',{'A','B','C','D',{'z','y','x','w'}},3,4,5}
+	self._eq (h,k, "Deep table comparison with different table sizes")
+end
+
+
+t.test_EqTableRevK = function(self)
+	-- #DESC: Deep table comparison with first table different from second
+	local k = {x=1,y=2,z={a=1,b=true,c='string'},d='not in second'}
+	local h = {x=1,y=2,z={a=1,b=true,c='string'}                  }
+	self._eq (h,k, "Deep table comparison with different table sizes")
+end
+
+
 t.test_EqMeta = function(self)
 	-- #DESC: Test for equality of metatable.__eq
 	local mt= {__eq = function (l1,l2) return l1.y == l2.y end}
 	local k,h = setmetatable({x=1,y=2,z=3},mt),
 	            setmetatable({x=1,y=2,z=3},mt)
-	self._eq (k ,h, "Y values of table must be equal")
+	self._eq (k,h, "Y values of table must be equal")
 end
 
 

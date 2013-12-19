@@ -313,6 +313,7 @@ static int xt_test__newindex (lua_State *luaVM)
  * \lparam  value 1
  * \lparam  value 2
  * \return  boolean in 1 or 0
+ * TODO: push an expressive error message onto the stack
  *--------------------------------------------------------------------------- */
 static int is_really_equal (lua_State *luaVM)
 {
@@ -322,6 +323,7 @@ static int is_really_equal (lua_State *luaVM)
 	// metamethod prevails
 	if (luaL_getmetafield (luaVM, -2, "__eq")) return lua_compare (luaVM, -2, -1, LUA_OPEQ);
 	if (LUA_TTABLE != lua_type (luaVM, -2))    return 0;
+	if (lua_rawlen (luaVM, -1) != lua_rawlen (luaVM, -2)) return 0;
 	lua_pushnil (luaVM);           // Stack: tableA tableB  nil
 	while (lua_next(luaVM, -3))    // Stack: tableA tableB  keyA  valueA
 	{
@@ -329,9 +331,8 @@ static int is_really_equal (lua_State *luaVM)
 		lua_gettable( luaVM, -4);   // Stack: tableA tableB  keyA  valueA  valueB
 		if (! is_really_equal (luaVM) )
 		{
-			lua_pop (luaVM, 3);      // Stack: tableA tableB 
+			lua_pop (luaVM, 3);      // Stack: tableA tableB
 			return 0;
-
 		}
 		lua_pop(luaVM, 2);       // pop valueA and valueB
 		// Stack tableA tableB  keyA
@@ -525,7 +526,7 @@ static int xt_test_case__tostring (lua_State *luaVM)
 	if (lua_isnil (luaVM, -1) )
 		luaL_addstring (&lB, "not run");
 	else 
-		luaL_addstring (&lB, (lua_toboolean (luaVM, -1)) ? "ok":"not ok");
+		luaL_addstring (&lB, (lua_toboolean (luaVM, -1)) ? "ok ":"not ok ");
 	lua_getfield (luaVM, 1, "ord");   // Stack: 3
 	luaL_addvalue (&lB);
 	luaL_addstring (&lB, " - ");
