@@ -122,64 +122,6 @@ inline uint16_t Reverse2Bytes(uint16_t value)
 }
 
 
-/**
- * \brief       calculate the CRC16 checksum
- * \detail      calculate over the payload and sticks it to the end of the buffer
- * \param       char buffer *data  data including the needed extra (2) bytes
- * \param       size_t size  how much of data is the payload
- */
-uint16_t get_crc16(const unsigned char *data, size_t size)
-{
-	uint16_t out = 0;
-	int bits_read = 0, bit_flag;
-	int i;
-	uint16_t crc = 0;
-	int j = 0x0001;
-
-	/* Sanity check: */
-	if(data == NULL)
-		return 0x00;
-
-	// the size reported here includes the padding for the chacksum -> remove for calculation
-	while(size > 0)
-	{
-		bit_flag = out >> 15;
-
-		/* Get next bit: */
-		out <<= 1;
-		out |= (*data >> bits_read) & 1; // item a) work from the least significant bits
-
-		/* Increment bit counter: */
-		bits_read++;
-		if(bits_read > 7)
-		{
-			bits_read = 0;
-			data++;
-			size--;
-		}
-
-		/* Cycle check: */
-		if(bit_flag)
-			out ^= CRC16;
-	}
-
-	// item b) "push out" the last 16 bits
-	for (i = 0; i < 16; ++i) {
-		bit_flag = out >> 15;
-		out <<= 1;
-		if(bit_flag)
-			out ^= CRC16;
-	}
-	
-	//item c) reverse the bits
-	i = 0x8000;
-	for (; i != 0; i >>=1, j <<= 1) {
-		if (i & out) crc |= j;
-	}
-
-	return crc;
-}
-
 /** -------------------------------------------------------------------------
  * \brief   Helper to take sockets from Lua tables to FD_SET
  *          Itertates over the table puls out the socket structs and adds the

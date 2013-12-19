@@ -20,7 +20,6 @@
 #include "lauxlib.h"
 
 #define MAX_PKT_BYTES     1500
-#define CRC16             0xA001
 
 #define XTSWAP(type,a,b) do{type SWAP_tmp= b; b= a; a= SWAP_tmp;}while(0)
 

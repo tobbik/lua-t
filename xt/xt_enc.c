@@ -28,8 +28,10 @@ static const luaL_Reg xt_enc_lib [] =
 LUAMOD_API int luaopen_xt_enc (lua_State *luaVM)
 {
 	luaL_newlib (luaVM, xt_enc_lib);
-	luaopen_xt_enc_arc4(luaVM);
+	luaopen_xt_enc_arc4 (luaVM);
 	lua_setfield(luaVM, -2, "Arc4");
+	luaopen_xt_enc_crc (luaVM);
+	lua_setfield(luaVM, -2, "Crc");
 	return 1;
 }
 

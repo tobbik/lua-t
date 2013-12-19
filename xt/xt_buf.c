@@ -474,21 +474,6 @@ static int xt_buf___len (lua_State *luaVM)
 }
 
 
-/**
- * \brief   calculates the CRC16 checksum over the buffer up to len
- * \lparam  length in bytes
- * \lreturn int CRC16 checksum 
- * \return integer 1 left on the stack
- */
-static int xt_buf_get_crc16 (lua_State *luaVM) {
-	struct xt_buf *b = xt_buf_check_ud (luaVM, 1);
-	int            len;
-	len = luaL_checkint(luaVM, 2);
-	lua_pushinteger(luaVM, (int) get_crc16( b->b, len));
-	return 1;
-}
-
-
 /**--------------------------------------------------------------------------
  * \brief   tostring representation of a buffer stream.
  * \param   luaVM     The lua state.
@@ -542,7 +527,6 @@ static const luaL_Reg xt_buf_m [] =
 	{"length",        xt_buf___len},
 	{"toString",      xt_buf___tostring},
 	{"toHex",         xt_buf_to_hex_string},
-	{"getCrc16",      xt_buf_get_crc16},
 	{"ByteField",     xt_buf_fld_new_byte},
 	{"BitField",      xt_buf_fld_new_bits},
 	{"StringField",   xt_buf_fld_new_string},
