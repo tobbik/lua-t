@@ -196,7 +196,10 @@ static int xt_test__call (lua_State *luaVM)
 
 
 /**----------------------------------------------------------------------------
- * \brief inspects source for special lines in the comments
+ * \brief   inspects source for special lines in the comments
+ * \detail  use lua debug facilities to determine lines of code and read the
+ *          code from the source files
+ *          - extracts TODO, SKIP and DESC from the comments
  *
  */
 static void xt_get_fn_source (lua_State *luaVM)
@@ -218,12 +221,12 @@ static void xt_get_fn_source (lua_State *luaVM)
 	lua_setfield (luaVM, -2, "line");
 
 	f = fopen(ar.short_src, "r");
-	while (r < ar.lastlinedefined )
+	while (r < ar.lastlinedefined)
 	{
 		p = luaL_prepbuffer (&lB);
-		sprintf (p, "\n\t%4d: ", r+1);
-		if (fgets(p+8, LUAL_BUFFERSIZE, f) == NULL) break;
-		//TODO: reasonable linened check
+		sprintf (p, "\n    %4d: ", r+1);
+		if (fgets(p+11, LUAL_BUFFERSIZE, f) == NULL) break;  // eof?
+		//TODO: reasonable line end check
 		if (++r < ar.linedefined) continue;
 		luaL_addsize (&lB, strlen (p)-1);
 		if (NULL != (fnd=strstr(p,"-- #TODO:"))) {
@@ -494,19 +497,31 @@ static int xt_test_lt (lua_State *luaVM)
 
 /**
  * \brief adds diagnostic output information for one test into a TAP line
+ *        luaL_prepbuffer can create userdata on the stack - this function
+ *        accounts for that by calling luaL_prepbuffer before everything else
+ *        Expects on stack:
+ *        1. test case
+ *        2. boolean(false) for failed test
+ *        3. (userdata) possible by-product of luaL_Buffer
  * \param   luaVM the Lua state.
  * \param  *lB    an already initialized Lua Buffer.
  * \param   p     the position of the test on the stack
  * \param   m     the name of the diagnostic field
  */
-static void add_tap_diagnostics (lua_State *luaVM, luaL_Buffer *lB, int p, const char *m) {
-	lua_getfield (luaVM, p, m);
-	if (! lua_isnoneornil (luaVM, -1)) {
-		luaL_addstring (lB, "\n\t");
-		luaL_addstring (lB, m);
-		luaL_addstring (lB, ": ");
-		luaL_gsub (luaVM, lua_tostring (luaVM, -1), "\n","\n\t");
+static void add_tap_diagnostics (lua_State *luaVM, luaL_Buffer *lB, const char *m)
+{
+	char *a = luaL_prepbuffer (lB);
+	lua_getfield (luaVM, 1, m);
+	if (! lua_isnoneornil (luaVM, -1))
+	{
+		sprintf (a, "\n%-10s : %s", m, lua_tostring (luaVM, -1));
+		luaL_gsub (luaVM, a, "\n","\n    ");
+		luaL_addsize (lB, 0);
 		luaL_addvalue (lB);
+	}
+	else
+	{
+		luaL_addsize (lB, 0);
 	}
 	lua_pop (luaVM, 1);
 }
@@ -560,16 +575,16 @@ static int xt_test_case__tostring (lua_State *luaVM)
 	luaL_addchar (&lB, '\n');
 	// Add diagnostics
 	if (! lua_toboolean (luaVM, 2)) {
-		luaL_addstring (&lB, "\t---");
-		add_tap_diagnostics (luaVM, &lB, 1, "name");
-		add_tap_diagnostics (luaVM, &lB, 1, "message");
-		add_tap_diagnostics (luaVM, &lB, 1, "assert");
-		add_tap_diagnostics (luaVM, &lB, 1, "expected");
-		add_tap_diagnostics (luaVM, &lB, 1, "got");
-		add_tap_diagnostics (luaVM, &lB, 1, "location");
-		add_tap_diagnostics (luaVM, &lB, 1, "traceback");
-		add_tap_diagnostics (luaVM, &lB, 1, "src");
-		luaL_addstring (&lB, "\n\t...\n");
+		luaL_addstring (&lB, "    ---");
+		add_tap_diagnostics (luaVM, &lB, "name");
+		add_tap_diagnostics (luaVM, &lB, "message");
+		add_tap_diagnostics (luaVM, &lB, "assert");
+		add_tap_diagnostics (luaVM, &lB, "expected");
+		add_tap_diagnostics (luaVM, &lB, "got");
+		add_tap_diagnostics (luaVM, &lB, "location");
+		add_tap_diagnostics (luaVM, &lB, "traceback");
+		add_tap_diagnostics (luaVM, &lB, "src");
+		luaL_addstring (&lB, "\n    ...\n");
 	}
 	lua_pop (luaVM, lua_gettop (luaVM)-1);
 	luaL_pushresult(&lB);

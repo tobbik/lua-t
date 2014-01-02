@@ -116,7 +116,7 @@ end
 
 t.test_busy = function(self)
 	-- #DESC: do a dummy loop to eat time
-	self.num = 12345678
+	self.num = 6543210
 	for i=1,2*self.num do
 		self.num = math.ceil ((self.num+i)%256)
 	end
@@ -127,4 +127,4 @@ end
 t.tearDown = function(self)
 end
 
---t:run()
+t:run()
