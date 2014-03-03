@@ -54,9 +54,9 @@ static inline uint64_t htonll(uint64_t value)
 /**
  * \brief     creates a buffer field describing a single logical field in a Buffer
  * \param     lua state
- * \lparam    the Constructor instance
  * \lparam    a Buffer instance
- * \lparam    position in the Buffer
+ * \lparam    the size of the Field in Bits
+ * \lparam    offset in bits
  * \return    integer   how many elements are placed on the Lua stack
 */
 // TODO: ARGCHECK size>0 < buflength-offset

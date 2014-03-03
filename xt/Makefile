@@ -29,7 +29,7 @@ XT_LIB_A=xt.a
 all: $(XT_SRC) $(XT_LIB) $(XT_LIB_A)
 
 $(XT_LIB): $(XT_OBJ)
-	$(LD) -O -shared $(XT_OBJ) -o $@ $(LDFLAGS) $(LIBS)
+	$(LD) -O -shared $(XT_OBJ) -o $@ $(LDFLAGS) $(LIBS) -lcrypt
 
 $(XT_LIB_A): $(XT_OBJ)
 	$(AR) $@ $(XT_OBJ)

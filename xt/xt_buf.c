@@ -15,7 +15,7 @@
   * \param  uint64_t value 64bit integer
   * \return uint64_t endianess corrected integer
   */
-static inline uint64_t htonll(uint64_t value)
+static inline uint64_t htonll (uint64_t value)
 {
 	uint64_t high_part = htonl( (uint64_t)(value >> 32) );
 	uint64_t low_part  = htonl( (uint64_t)(value & 0xFFFFFFFFLL) );

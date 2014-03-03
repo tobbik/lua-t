@@ -393,7 +393,7 @@ static int l_send_strm(lua_State *luaVM)
  * \return  The number of results to be passed back to the calling Lua script.
  * TODO:  Allow it to accept an existing LuaBuffer to ammend incoming packages
  *-------------------------------------------------------------------------*/
-static int l_recv_strm(lua_State *luaVM)
+static int l_recv_strm (lua_State *luaVM)
 {
 	struct xt_hndl  *hndl;
 	int                 rcvd;
@@ -424,7 +424,7 @@ static int l_recv_strm(lua_State *luaVM)
  * \return  The number of results to be passed back to the calling Lua script.
  * TODO:  Allow it to accept an existing LuaBuffer to ammend incoming packages
  *-------------------------------------------------------------------------*/
-static int xt_socket_getsockname(lua_State *luaVM)
+static int xt_socket_getsockname (lua_State *luaVM)
 {
 	struct xt_hndl      *hndl;
 	struct sockaddr_in  *ip;
@@ -438,6 +438,7 @@ static int xt_socket_getsockname(lua_State *luaVM)
 	getsockname(hndl->fd, (struct sockaddr*) &(*ip), &ip_len);
 	return 1;
 }
+
 
 /**--------------------------------------------------------------------------
  * \brief   prints out the socket.
@@ -454,6 +455,23 @@ static int l_socket_tostring (lua_State *luaVM) {
 	);
 	return 1;
 }
+
+/** -------------------------------------------------------------------------
+ * \brief   return the FD int representation of the socket
+ * \param   luaVM  The lua state.
+ * \lparam  socket socket userdata.
+ * \lreturn socketFD int.
+ * \return  The number of results to be passed back to the calling Lua script.
+ *-------------------------------------------------------------------------*/
+static int xt_socket_getfdid (lua_State *luaVM)
+{
+	struct xt_hndl      *hndl;
+
+	hndl = check_ud_socket (luaVM, 1);
+	lua_pushinteger (luaVM, hndl->fd);
+	return 1;
+}
+
 
 
 /**
@@ -480,6 +498,7 @@ static const luaL_Reg l_socket_m [] =
 	{"recvFrom",  l_recv_from},
 	{"send",      l_send_strm},
 	{"recv",      l_recv_strm},
+	{"getId",     xt_socket_getfdid},
 	{"getIp",     xt_socket_getsockname},
 	{NULL,        NULL}
 };
