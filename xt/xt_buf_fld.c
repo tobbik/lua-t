@@ -203,12 +203,7 @@ int xt_buf_fld_new_string(lua_State *luaVM)
 	f->read  = read_string;
 
 	if (lua_isstring(luaVM, 4)) {
-#ifdef _WIN32
-			size_t bytes = sz/8;
-			strncpy_s(f->v.vS, bytes, luaL_checkstring(luaVM, 4), len);
-#else
-			strncpy(f->v.vS, luaL_checkstring(luaVM, 4), sz);
-#endif
+		memcpy ( f->v.vS, luaL_checkstring (luaVM, 4), sz);
 	}
 	return 1;
 }
@@ -510,11 +505,7 @@ static int write_string (lua_State *luaVM) {
 	struct xt_buf_fld *f   = xt_buf_fld_check_ud(luaVM, 1);
 	size_t l;
 	//TODO make sure string is not longer than f->sz*8
-#ifdef _WIN32
-	strncpy_s(f->v.vS, l, luaL_checklstring(luaVM, 2, &l), l);
-#else
-	strncpy(f->v.vS, luaL_checklstring(luaVM, 2, &l), l);
-#endif
+	memcpy ( f->v.vS, luaL_checklstring (luaVM, 2, &l), l);
 	return 0;
 }
 

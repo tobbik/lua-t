@@ -381,7 +381,7 @@ static int xt_buf_write_16(lua_State *luaVM) {
  *
  * \return integer 0 left on the stack
  */
-static int xt_buf_write_32(lua_State *luaVM) {
+static int xt_buf_write_32 (lua_State *luaVM) {
 	uint32_t      *v;
 	int            p = luaL_checkint (luaVM,2); // starting byte  b->b[pos]
 	struct xt_buf *b = xt_buf_check_ud (luaVM, 1);
@@ -399,7 +399,7 @@ static int xt_buf_write_32(lua_State *luaVM) {
  *
  * \return integer 0 left on the stack
  */
-static int xt_buf_write_64(lua_State *luaVM) {
+static int xt_buf_write_64 (lua_State *luaVM) {
 	uint64_t      *v;
 	int            p = luaL_checkint (luaVM,2); // starting byte  b->b[pos]
 	struct xt_buf *b = xt_buf_check_ud (luaVM, 1);
