@@ -357,21 +357,21 @@ static int l_recv_from(lua_State *luaVM)
 static int l_send_strm(lua_State *luaVM)
 {
 	struct xt_hndl  *hndl;
-	size_t           sent;
-	size_t           to_send;
+	size_t           sent;         // How much did get sent out
+	size_t           to_send;      // How much should get send out maximally
 	const char      *msg;
 	size_t           into_msg=0;   // where in the message to start sending from
 
 	hndl = check_ud_socket (luaVM, 1);
 	if (lua_isstring(luaVM, 2))
-		msg   = lua_tostring(luaVM, 2);
+		msg   = lua_tolstring (luaVM, 2, &to_send);
 	else
 		return( xt_push_error(luaVM, "ERROR send(socket,msg) takes msg argument") );
 	if (lua_isnumber(luaVM, 3)) {
 		into_msg = lua_tointeger(luaVM, 3);
 	}
-	msg    = msg + into_msg;
-	to_send = strlen(msg) - into_msg;
+	msg      = msg + into_msg;
+	to_send -= into_msg;
 
 	if ((sent = send(
 	  hndl->fd,
