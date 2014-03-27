@@ -132,15 +132,18 @@ inline uint16_t Reverse2Bytes(uint16_t value)
  * \param  *int    the maximum socket(fd) value
  * \return  void.
  *-------------------------------------------------------------------------*/
-void make_fdset(lua_State *luaVM, int stack_pos, fd_set *collection, int *max_hndl)
+void make_fdset (lua_State *luaVM, int stack_pos, fd_set *collection, int *max_hndl)
 {
 	struct xt_hndl  *hndl;
 
-	FD_ZERO(collection);
+	FD_ZERO (collection);
 	// empty table == nil
-	if (lua_isnil(luaVM, stack_pos)) return;
+	if (lua_isnil (luaVM, stack_pos)) {
+		return;
+	}
 	// only accept tables
-	luaL_checktype(luaVM, stack_pos, LUA_TTABLE);
+	luaL_checktype (luaVM, stack_pos, LUA_TTABLE);
+	// TODO: check table for len==0 and return
 
 	// adding fh to FD_SETs
 	lua_pushnil(luaVM);
@@ -173,9 +176,8 @@ static int l_select_handle(lua_State *luaVM)
 
 	wnum = -1;
 	rnum = -1;
-	make_fdset(luaVM, 1, &rfds, &rnum);
-	//make_fdset(luaVM, 2, &wfds, &wnum);
-	FD_ZERO(&wfds);
+	make_fdset (luaVM, 1, &rfds, &rnum);
+	make_fdset (luaVM, 2, &wfds, &wnum);
 
 	readsocks = select(
 		(wnum > rnum) ? wnum+1 : rnum+1,
@@ -231,9 +233,8 @@ static int l_select_handle_k(lua_State *luaVM)
 
 	wnum = -1;
 	rnum = -1;
-	make_fdset(luaVM, 1, &rfds, &rnum);
-	//make_fdset(luaVM, 2, &wfds, &wnum);
-	FD_ZERO(&wfds);
+	make_fdset (luaVM, 1, &rfds, &rnum);
+	make_fdset (luaVM, 2, &wfds, &wnum);
 
 	readsocks = select(
 		(wnum > rnum) ? wnum+1 : rnum+1,

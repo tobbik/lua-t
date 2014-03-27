@@ -391,19 +391,27 @@ static int l_send_strm(lua_State *luaVM)
  * \lreturn string The recieved message.
  * \lreturn rcvd   number of bytes recieved.
  * \return  The number of results to be passed back to the calling Lua script.
- * TODO:  Allow it to accept an existing LuaBuffer to ammend incoming packages
+ * TODO:  If no Buffer is passed for receiving, use a LuaL_Buffer instead
  *-------------------------------------------------------------------------*/
 static int l_recv_strm (lua_State *luaVM)
 {
 	struct xt_hndl  *hndl;
-	int                 rcvd;
-	char                buffer[MAX_BUF_SIZE];
+	struct xt_buf   *buf;
+	int              rcvd;
+	char             buffer[MAX_BUF_SIZE];
+	char            *rcv = &(buffer[0]);
+	int              len = sizeof (buffer)-1;
 
 	hndl = check_ud_socket (luaVM, 1);
+	if (lua_isuserdata (luaVM, 2)) {
+		buf  = xt_buf_check_ud (luaVM, 2);
+		rcv  = (char *) &(buf->b[ 0 ]);
+		len  = buf->len;
+	}
 
 	if ((rcvd = recv(
 	  hndl->fd,
-	  buffer, sizeof(buffer)-1, 0)
+	  rcv, len, 0)
 	  ) == -1)
 		return xt_push_error(luaVM, "Failed to recieve TCP packet");
 
