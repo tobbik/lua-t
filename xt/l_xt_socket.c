@@ -354,7 +354,7 @@ static int l_recv_from(lua_State *luaVM)
  * \lreturn sent   number of bytes sent.
  * \return  The number of results to be passed back to the calling Lua script.
  *-------------------------------------------------------------------------*/
-static int l_send_strm(lua_State *luaVM)
+static int l_send_strm (lua_State *luaVM)
 {
 	struct xt_hndl  *hndl;
 	size_t           sent;         // How much did get sent out
@@ -416,8 +416,8 @@ static int l_recv_strm (lua_State *luaVM)
 		return xt_push_error(luaVM, "Failed to recieve TCP packet");
 
 	// return buffer, length, ip, port
-	lua_pushlstring(luaVM, buffer, rcvd );
-	lua_pushinteger(luaVM, rcvd);
+	lua_pushlstring (luaVM, buffer, rcvd );
+	lua_pushinteger (luaVM, rcvd);
 
 	return( 2 );
 }
