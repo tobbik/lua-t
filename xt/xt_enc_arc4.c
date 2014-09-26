@@ -157,7 +157,8 @@ struct xt_enc_arc4
  * \lparam oB64  Shall the output be treaded as Base64
  */
 static int
-xt_enc_arc4_crypt (lua_State *luaVM) {
+xt_enc_arc4_crypt (lua_State *luaVM)
+{
 	struct xt_enc_arc4 *arc4;
 	size_t              kLen,bLen;    ///< length of key, length of body
 	const char         *key;
@@ -210,27 +211,28 @@ static const luaL_Reg xt_enc_arc4_m [] =
 
 
 /**--------------------------------------------------------------------------
- * \brief   pushes the Timer library onto the stack
+ * \brief   pushes the xt.Encode.Arc4 library onto the stack
  *          - creates Metatable with functions
  *          - creates metatable with methods
  * \param   luaVM     The lua state.
  * \lreturn string    the library
  * \return  The number of results to be passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
-int luaopen_xt_enc_arc4 (lua_State *luaVM) {
+int luaopen_xt_enc_arc4( lua_State *luaVM )
+{
 	// just make metatable known to be able to register and check userdata
 	// this is only avalable a <instance>:func()
-	luaL_newmetatable(luaVM, "xt.Encode.Arc4");   // stack: functions meta
-	luaL_newlib(luaVM, xt_enc_arc4_m);
-	lua_setfield(luaVM, -2, "__index");
-	lua_pop(luaVM, 1);        // remove metatable from stack
+	luaL_newmetatable( luaVM, "xt.Encode.Arc4" );   // stack: functions meta
+	luaL_newlib( luaVM, xt_enc_arc4_m );
+	lua_setfield( luaVM, -2, "__index" );
+	lua_pop( luaVM, 1 );        // remove metatable from stack
 
 	// Push the class onto the stack
 	// this is avalable as Arc4.new
-	luaL_newlib(luaVM, xt_enc_arc4_cf);
+	luaL_newlib( luaVM, xt_enc_arc4_cf );
 	// set the constructor metatable Arc4()
 	luaL_newlib(luaVM, xt_enc_arc4_fm);
-	lua_setmetatable(luaVM, -2);
+	lua_setmetatable( luaVM, -2 );
 	return 1;
 }
 

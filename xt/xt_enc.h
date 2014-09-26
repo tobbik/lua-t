@@ -7,14 +7,6 @@ struct xt_enc_arc4 {
 	uint8_t        i2;        ///< current index 2
 };
 
-/**
- * \brief struct for a base64 encoder
- */
-struct xt_enc_b64 {
-	unsigned char enc_table[64];
-	unsigned char dec_table[256];
-};
-
 
 /**
  * \brief  struct to keep track of a CRC8 encoding
@@ -58,8 +50,5 @@ int                 xt_enc_crc_new       (lua_State *luaVM);
 int                 luaopen_xt_enc_crc   (lua_State *luaVM);
 
 // xt_enc_b64.c
-struct xt_enc_b64 *xt_enc_b64_check_ud   (lua_State *luaVM, int pos);
-struct xt_enc_b64 *xt_enc_b64_create_ud  (lua_State *luaVM);
-int                 xt_enc_b64_new       (lua_State *luaVM);
 int                 luaopen_xt_enc_b64   (lua_State *luaVM);
 
