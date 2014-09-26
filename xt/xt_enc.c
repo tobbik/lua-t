@@ -75,6 +75,8 @@ LUAMOD_API int luaopen_xt_enc (lua_State *luaVM)
 	lua_setfield(luaVM, -2, "Arc4");
 	luaopen_xt_enc_crc (luaVM);
 	lua_setfield(luaVM, -2, "Crc");
+	luaopen_xt_enc_b64 (luaVM);
+	lua_setfield(luaVM, -2, "Base64");
 	lua_pushcfunction (luaVM, xt_enc_crypt);
 	lua_setfield(luaVM, -2, "crypt");
 	return 1;

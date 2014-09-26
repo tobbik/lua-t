@@ -1,8 +1,8 @@
 # vim: ts=4 sw=4 st=4 sta tw=80 list
 #
 # clang can be substituted with gcc (command line args compatible)
-CC= gcc
-LD= gcc
+CC= clang
+LD= clang
 CFLAGS= -Wall -Wextra -g -O0 -std=c99 -fpic
 #INCS=$(shell pkg-config --cflags lua5.1)
 #LDFLAGS=$(shell pkg-config --libs lua5.1)
@@ -16,6 +16,7 @@ XT_SRC=l_xt.c \
 	 xt_enc.c \
 	 xt_enc_arc4.c \
 	 xt_enc_crc.c \
+	 xt_enc_b64.c \
 	 xt_buf.c \
 	 xt_buf_fld.c \
 	 xt_test.c \
