@@ -35,19 +35,21 @@ enum xt_CRC_ALG {
 };
 
 
-void calc_8 (struct xt_enc_crc *crc, const char *data, size_t len)
+int
+calc_8 (struct xt_enc_crc *crc, const char *data, size_t len)
 {
 	size_t   i;
 	for ( i = 0; i < len; ++i) {
 		crc->crc8 = crc->t8 [crc->crc8 ^ data[i]];
 	}
 
-	crc->res = (int) (crc->crc8 ^ 0xFF);
+	return (int) (crc->crc8 ^ 0xFF);
 }
 
 
 // calculates CRC16,CCITT KERMIT
-void calc_16 (struct xt_enc_crc *crc, const char *data, size_t len)
+int
+calc_16 (struct xt_enc_crc *crc, const char *data, size_t len)
 {
 	uint8_t  idx;
 	size_t   i;
@@ -55,12 +57,13 @@ void calc_16 (struct xt_enc_crc *crc, const char *data, size_t len)
 		idx        = (uint8_t)   ( crc->crc16       ^ data[i]);
 		crc->crc16 = (uint16_t)  ((crc->crc16 >> 8) ^ crc->t16[idx]);
 	}
-	if (crc->be) crc->res = (int) crc->crc16;
-	else         crc->res = (int) htons(crc->crc16);
+	if (crc->be) return (int) crc->crc16;
+	else         return (int) htons(crc->crc16);
 }
 
 
-void calc_ccitt (struct xt_enc_crc *crc, const char *data, size_t len)
+int
+calc_ccitt (struct xt_enc_crc *crc, const char *data, size_t len)
 {
 	uint8_t  idx;
 	size_t   i;
@@ -68,20 +71,21 @@ void calc_ccitt (struct xt_enc_crc *crc, const char *data, size_t len)
 		idx        = (uint8_t)  ((crc->crc16 >> 8) ^ (0xff & data[i]));
 		crc->crc16 = (uint16_t) ((crc->crc16 << 8) ^ crc->t16[idx]);
 	}
-	if (crc->be) crc->res = (int) crc->crc16;
-	else         crc->res = (int) htons(crc->crc16);
+	if (crc->be) return (int) crc->crc16;
+	else         return (int) htons(crc->crc16);
 }
 
 
-void calc_32 (struct xt_enc_crc *crc, const char *data, size_t len) {
+int
+calc_32 (struct xt_enc_crc *crc, const char *data, size_t len) {
 	uint8_t  idx;
 	size_t   i;
 	for(i = 0; i < len; ++i) {
 			 idx        = (uint8_t)  ((crc->crc32 & 0xff) ^ data[i]);
 			 crc->crc32 = (uint32_t) ((crc->crc32 >> 8)   ^ crc->t32[idx]);
 	}
-	if (crc->be) crc->res = (int)       ~crc->crc32;
-	else         crc->res = (int) htonl (~crc->crc32);
+	if (crc->be) return (int)       ~crc->crc32;
+	else         return (int) htonl (~crc->crc32);
 }
 
 
@@ -214,13 +218,13 @@ xt_enc_crc_reset (lua_State *luaVM)
  * \return  The number of results to be passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
 int
-xt_enc_crc_new(lua_State *luaVM)
+xt_enc_crc_new( lua_State *luaVM )
 {
 	struct xt_enc_crc    *crc;
 	int                   alg;
 
 	crc = xt_enc_crc_create_ud (luaVM);
-	alg = luaL_checkint(luaVM, 1);
+	alg = luaL_checkint( luaVM, 1 );
 	switch (alg) {
 		case CRC_ALG_8:
 			init_8 (crc, POLY_8);
@@ -287,20 +291,25 @@ struct xt_enc_crc
  * \lreturn crc        the CRC checksum.
  * \return  The number of results to be passed back to the calling Lua script.
  *-------------------------------------------------------------------------*/
-static int xt_enc_crc_calc(lua_State *luaVM)
+static int xt_enc_crc_calc( lua_State *luaVM )
 {
 	struct xt_enc_crc  *crc;
 	struct xt_buf      *buf;
 	const char         *msg;
 	size_t              len;
 	int                 sta;
+	int                 res;
 
 	crc = xt_enc_crc_check_ud (luaVM, 1);
 	sta = (lua_isnumber(luaVM, 3)) ? luaL_checkint(luaVM, 3)     : 0;
-	if (lua_isstring(luaVM, 2)) {
+	// if string
+	if (lua_isstring(luaVM, 2))
+	{
 		msg   = luaL_checklstring(luaVM, 2, &len) + sta;
 	}
-	else if (lua_isuserdata(luaVM, 2)) {
+	// if xt_buffer
+	else if (lua_isuserdata(luaVM, 2))
+	{
 		buf  = xt_buf_check_ud (luaVM, 2);
 		msg  = (const char *) &(buf->b[ sta ]);
 		//msg  =  &(buf->b[ 0 ]);
@@ -308,12 +317,12 @@ static int xt_enc_crc_calc(lua_State *luaVM)
 	}
 	else
 		return( xt_push_error(luaVM,
-			"ERROR xt.Encoding.Crc:calc(msg) takes msg argument") );
+			"ERROR xt.Encode.Crc:calc(msg) takes msg argument") );
 
 	len = (lua_isnumber(luaVM, 4)) ? luaL_checkint(luaVM, 4)-sta : len - sta;
 
-	crc->calc (crc, msg, len);
-	lua_pushinteger (luaVM, crc->res);
+	res = crc->calc (crc, msg, len);
+	lua_pushinteger (luaVM, res);
 	return 1;
 }
 
@@ -351,7 +360,7 @@ static const luaL_Reg xt_enc_crc_m [] =
 
 
 /**--------------------------------------------------------------------------
- * \brief   pushes the xt.Encoding.CRC library onto the stack
+ * \brief   pushes the xt.Encode.CRC library onto the stack
  *          - creates Metatable with functions
  *          - creates metatable with methods
  * \param   luaVM     The lua state.

@@ -15,6 +15,7 @@ struct xt_enc_b64 {
 	unsigned char dec_table[256];
 };
 
+
 /**
  * \brief  struct to keep track of a CRC8 encoding
  */
@@ -38,8 +39,7 @@ struct xt_enc_crc {
 		uint32_t      init32;
 	};
 	int              be;    ///< boolean BigEndian
-	void             (*calc) (struct xt_enc_crc *crc, const char *data, size_t len);
-	int              res;   ///< stores the checsum after each run
+	int             (*calc) (struct xt_enc_crc *crc, const char *data, size_t len);
 };
 
 
