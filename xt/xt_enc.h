@@ -7,9 +7,12 @@ struct xt_enc_arc4 {
 	uint8_t        i2;        ///< current index 2
 };
 
+/**
+ * \brief struct for a base64 encoder
+ */
 struct xt_enc_b64 {
-	const char *enc_table;
-	const char *dec_table;
+	unsigned char enc_table[64];
+	unsigned char dec_table[256];
 };
 
 /**
