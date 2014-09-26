@@ -94,13 +94,23 @@ xt_enc_b64_encode (lua_State *luaVM)
 	const char         *body;
 	char               *res;
 	
-	if ( lua_isstring( luaVM, 1 ) ) body = luaL_checklstring( luaVM, 1, &bLen );
-	else return xt_push_error( luaVM, "xt.Base64.encode takes at least one string parameter" );
+	if ( lua_isstring( luaVM, 1 ) )
+	{
+		body = luaL_checklstring( luaVM, 1, &bLen );
+	}
+	else
+	{
+		return xt_push_error( luaVM,
+			    "xt.Encode.Base64.encode takes at least one string parameter" );
+	}
 
 	rLen = b64_res_size( bLen, 1 );
 	res = malloc( rLen );
 	if (res == NULL)
-		return xt_push_error( luaVM, "xt.Base64.encode failed due to internal memory allocation problem" );
+	{
+		return xt_push_error( luaVM,
+		        "xt.Encode.Base64.encode failed due to internal memory allocation problem" );
+	}
 
 	b64_encode( body, res, bLen);
 	lua_pushlstring( luaVM, res, rLen );
@@ -123,13 +133,23 @@ xt_enc_b64_decode (lua_State *luaVM)
 	const char         *body;
 	char               *res;
 	
-	if ( lua_isstring( luaVM, 1 ) ) body = luaL_checklstring( luaVM, 1, &bLen );
-	else return xt_push_error( luaVM, "xt.Base64.decode takes at least one string parameter" );
+	if ( lua_isstring( luaVM, 1 ) )
+	{
+		body = luaL_checklstring( luaVM, 1, &bLen );
+	}
+	else
+	{
+		return xt_push_error( luaVM,
+			    "xt.Encode.Base64.decode takes at least one string parameter" );
+	}
 
 	rLen = b64_res_size( bLen, 0 );
 	res = malloc( rLen );
 	if (res == NULL)
-		return xt_push_error( luaVM, "xt.Base64.decode failed due to internal memory allocation problem" );
+	{
+		return xt_push_error( luaVM,
+		        "xt.Encode.Base64.decode failed due to internal memory allocation problem" );
+	}
 
 	b64_decode(  body, res, bLen);
 	lua_pushlstring( luaVM, res, rLen );
