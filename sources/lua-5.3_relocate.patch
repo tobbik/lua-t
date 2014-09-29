@@ -1,7 +1,7 @@
-diff -ru lua-5.2.2/src/loadlib.c lua-5.2.2.rel/src/loadlib.c
---- lua-5.2.2/src/loadlib.c	2012-05-30 05:33:44.000000000 -0700
-+++ lua-5.2.2.rel/src/loadlib.c	2013-11-13 15:41:08.775577347 -0800
-@@ -640,13 +640,27 @@
+diff -ru LUA53_org/src/loadlib.c LUA53/src/loadlib.c
+--- LUA53_org/src/loadlib.c	2014-07-29 09:01:00.000000000 -0700
++++ LUA53/src/loadlib.c	2014-09-29 10:07:55.138880823 -0700
+@@ -680,13 +680,27 @@
    if (path == NULL)  /* no environment variable? */
      path = getenv(envname2);  /* try alternative name */
    if (path == NULL || noenv(L))  /* no environment variable? */
@@ -31,9 +31,9 @@ diff -ru lua-5.2.2/src/loadlib.c lua-5.2.2.rel/src/loadlib.c
    }
    setprogdir(L);
    lua_setfield(L, -2, fieldname);
-diff -ru lua-5.2.2/src/lua.c lua-5.2.2.rel/src/lua.c
---- lua-5.2.2/src/lua.c	2012-09-29 13:07:06.000000000 -0700
-+++ lua-5.2.2.rel/src/lua.c	2013-11-13 15:41:38.215577195 -0800
+diff -ru LUA53_org/src/lua.c LUA53/src/lua.c
+--- LUA53_org/src/lua.c	2014-06-30 12:48:08.000000000 -0700
++++ LUA53/src/lua.c	2014-09-29 10:12:40.479960849 -0700
 @@ -9,6 +9,7 @@
  #include <stdio.h>
  #include <stdlib.h>
@@ -42,7 +42,7 @@ diff -ru lua-5.2.2/src/lua.c lua-5.2.2.rel/src/lua.c
  
  #define lua_c
  
-@@ -452,6 +453,10 @@
+@@ -567,6 +568,10 @@
      lua_pushboolean(L, 1);  /* signal for libraries to ignore env. vars. */
      lua_setfield(L, LUA_REGISTRYINDEX, "LUA_NOENV");
    }
@@ -50,18 +50,18 @@ diff -ru lua-5.2.2/src/lua.c lua-5.2.2.rel/src/lua.c
 +  lua_pushfstring(L, "%s/", dirname(dirname(argv[0])));
 +  lua_setglobal(L, "_LUA_ROOT");
 +#endif
-   /* open standard libraries */
-   luaL_checkversion(L);
-   lua_gc(L, LUA_GCSTOP, 0);  /* stop collector during initialization */
-diff -ru lua-5.2.2/src/luaconf.h lua-5.2.2.rel/src/luaconf.h
---- lua-5.2.2/src/luaconf.h	2013-03-16 14:10:18.000000000 -0700
-+++ lua-5.2.2.rel/src/luaconf.h	2013-11-13 14:10:01.595995788 -0800
-@@ -100,7 +100,7 @@
+   luaL_openlibs(L);  /* open standard libraries */
+   createargtable(L, argv, argc, script);  /* create table 'arg' */
+   if (!(args & has_E)) {  /* no option '-E'? */
+diff -ru LUA53_org/src/luaconf.h LUA53/src/luaconf.h
+--- LUA53_org/src/luaconf.h	2014-07-24 12:33:29.000000000 -0700
++++ LUA53/src/luaconf.h	2014-09-29 10:15:00.715459099 -0700
+@@ -121,7 +121,7 @@
+ 
  #else			/* }{ */
  
- #define LUA_VDIR	LUA_VERSION_MAJOR "." LUA_VERSION_MINOR "/"
 -#define LUA_ROOT	"/usr/local/"
 +#define LUA_ROOT	".../"
- #define LUA_LDIR	LUA_ROOT "share/lua/" LUA_VDIR
- #define LUA_CDIR	LUA_ROOT "lib/lua/" LUA_VDIR
+ #define LUA_LDIR	LUA_ROOT "share/lua/" LUA_VDIR "/"
+ #define LUA_CDIR	LUA_ROOT "lib/lua/" LUA_VDIR "/"
  #define LUA_PATH_DEFAULT  \

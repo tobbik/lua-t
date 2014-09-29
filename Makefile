@@ -1,8 +1,10 @@
 LUAVER=LUA52
 ifeq ($(LUAVER), LUA53)
-	LUASRC=lua-5.3.0-work1.tar.gz
+	LUAVDIR=5.3
+	LUASRC=lua-5.3.0-alpha.tar.gz
 	DLPATH=http://www.lua.org/work
 else
+	LUAVDIR=5.2
 	LUASRC=lua-5.2.3.tar.gz
 	DLPATH=http://www.lua.org/ftp
 endif
@@ -29,7 +31,12 @@ ifeq ($(LUAVER), LUA52LD)
 		patch -d $(COMPDIR)/$(LUAVER)/src/ -i $(SRCDIR)/lua-5.2.2_ll.patch
 endif
 ifeq ($(relocate), true)
+ifeq ($(LUAVER), LUA52)
 		patch -d $(COMPDIR)/$(LUAVER)/src/ -i $(SRCDIR)/lua-5.2.3_relocate.patch
+endif
+ifeq ($(LUAVER), LUA53)
+		patch -d $(COMPDIR)/$(LUAVER)/src/ -i $(SRCDIR)/lua-5.3_relocate.patch
+endif
 endif
 
 $(COMPDIR)/$(LUAVER)/src/lua: $(COMPDIR)/$(LUAVER)/src
@@ -40,14 +47,17 @@ $(COMPDIR)/$(LUAVER)/src/lua: $(COMPDIR)/$(LUAVER)/src
 
 $(XTDIR)/xt.so: $(COMPDIR)/$(LUAVER)/src
 	cd $(XTDIR) ; $(MAKE) CC=$(CC) LD=$(LD) \
+		LUAVDIR=$(LUAVDIR) \
 		MYCFLAGS=' -g' \
 		INCS="$(COMPDIR)/$(LUAVER)/src" xt.so
 
 install: $(COMPDIR)/$(LUAVER)/src/lua $(XTDIR)/xt.so
 	cd $(COMPDIR)/$(LUAVER) ; $(MAKE) CC=$(CC) LD=$(LD) \
+		LUAVDIR=$(LUAVDIR) \
 		INSTALL_TOP="$(OUTDIR)" \
 		install
 	cd $(XTDIR) ; $(MAKE) CC=$(CC) LD=$(LD) \
+		LUAVDIR=$(LUAVDIR) \
 		PREFIX="$(OUTDIR)" install
 
 clean:

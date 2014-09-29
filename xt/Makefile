@@ -8,6 +8,7 @@ CFLAGS= -Wall -Wextra -g -O0 -std=c99 -fpic
 #LDFLAGS=$(shell pkg-config --libs lua5.1)
 AR= ar rcu
 RANLIB= ranlib
+LUAVDIR= 5.2
 
 XT_SRC=l_xt.c \
 	 l_xt_socket.c \
@@ -69,7 +70,7 @@ arm:
 	all
 
 install: $(XT_SRC) $(XT_LIB)
-	cp $(XT_LIB)   $(PREFIX)/lib/lua/5.2/$(XT_LIB)
+	cp $(XT_LIB)   $(PREFIX)/lib/lua/$(LUAVDIR)/$(XT_LIB)
 
 #%: %.c
 #	$(CC) -I$(INCS) $(CFLAGS) -c $< -o $@.o
