@@ -1,10 +1,8 @@
-LUAVER=LUA52
-ifeq ($(LUAVER), LUA53)
-	LUAVDIR=5.3
+VER=5.2
+ifeq ($(VER), 5.3)
 	LUASRC=lua-5.3.0-alpha.tar.gz
 	DLPATH=http://www.lua.org/work
 else
-	LUAVDIR=5.2
 	LUASRC=lua-5.2.3.tar.gz
 	DLPATH=http://www.lua.org/ftp
 endif
@@ -21,43 +19,40 @@ all: install
 $(SRCDIR)/$(LUASRC):
 	wget $(DLPATH)/$(LUASRC) -O $(SRCDIR)/$(LUASRC)
 
-$(COMPDIR)/$(LUAVER)/src: $(SRCDIR)/$(LUASRC)
-	mkdir -p $(COMPDIR)/$(LUAVER)
-	tar -xvzf $(SRCDIR)/$(LUASRC) -C $(COMPDIR)/$(LUAVER) --strip-components=1
-#ifeq ($(LUAVER),LUA52)
-#		patch -d $(COMPDIR)/$(LUAVER)/src/ -i $(SRCDIR)/lua-5.2.3_upstream.patch
+$(COMPDIR)/$(VER)/src: $(SRCDIR)/$(LUASRC)
+	mkdir -p $(COMPDIR)/$(VER)
+	tar -xvzf $(SRCDIR)/$(LUASRC) -C $(COMPDIR)/$(VER) --strip-components=1
+#ifeq ($(VER),5.2)
+#		patch -d $(COMPDIR)/$(VER)/src/ -i $(SRCDIR)/lua-5.2.3_upstream.patch
 #endif
-ifeq ($(LUAVER), LUA52LD)
-		patch -d $(COMPDIR)/$(LUAVER)/src/ -i $(SRCDIR)/lua-5.2.2_ll.patch
-endif
 ifeq ($(relocate), true)
-ifeq ($(LUAVER), LUA52)
-		patch -d $(COMPDIR)/$(LUAVER)/src/ -i $(SRCDIR)/lua-5.2.3_relocate.patch
+ifeq ($(VER), 5.2)
+		patch -d $(COMPDIR)/$(VER)/src/ -i $(SRCDIR)/lua-5.2.3_relocate.patch
 endif
-ifeq ($(LUAVER), LUA53)
-		patch -d $(COMPDIR)/$(LUAVER)/src/ -i $(SRCDIR)/lua-5.3_relocate.patch
+ifeq ($(VER), 5.3)
+		patch -d $(COMPDIR)/$(VER)/src/ -i $(SRCDIR)/lua-5.3_relocate.patch
 endif
 endif
 
-$(COMPDIR)/$(LUAVER)/src/lua: $(COMPDIR)/$(LUAVER)/src
-	cd $(COMPDIR)/$(LUAVER) ; \
+$(COMPDIR)/$(VER)/src/lua: $(COMPDIR)/$(VER)/src
+	cd $(COMPDIR)/$(VER) ; \
 		$(MAKE) CC=$(CC) LD=$(LD) \
 		MYCFLAGS=" -g -fPIC "\
 		linux
 
-$(XTDIR)/xt.so: $(COMPDIR)/$(LUAVER)/src
+$(XTDIR)/xt.so: $(COMPDIR)/$(VER)/src
 	cd $(XTDIR) ; $(MAKE) CC=$(CC) LD=$(LD) \
-		LUAVDIR=$(LUAVDIR) \
+		VER=$(VER) \
 		MYCFLAGS=' -g' \
-		INCS="$(COMPDIR)/$(LUAVER)/src" xt.so
+		INCS="$(COMPDIR)/$(VER)/src" xt.so
 
-install: $(COMPDIR)/$(LUAVER)/src/lua $(XTDIR)/xt.so
-	cd $(COMPDIR)/$(LUAVER) ; $(MAKE) CC=$(CC) LD=$(LD) \
-		LUAVDIR=$(LUAVDIR) \
+install: $(COMPDIR)/$(VER)/src/lua $(XTDIR)/xt.so
+	cd $(COMPDIR)/$(VER) ; $(MAKE) CC=$(CC) LD=$(LD) \
+		VER=$(VER) \
 		INSTALL_TOP="$(OUTDIR)" \
 		install
 	cd $(XTDIR) ; $(MAKE) CC=$(CC) LD=$(LD) \
-		LUAVDIR=$(LUAVDIR) \
+		VER=$(VER) \
 		PREFIX="$(OUTDIR)" install
 
 clean:
