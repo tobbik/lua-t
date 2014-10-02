@@ -249,6 +249,45 @@ static int xt_ip___eq (lua_State *luaVM) {
 }
 
 
+/**--------------------------------------------------------------------------
+ * \brief   converts an integer into an IP address xxx.xxx.xxx.xxx representation
+ * \param   luaVM     The lua state.
+ * \lparam  int       the IPv4 Address as 32 bit integer.
+ * \lreturn string    IP address in xxx.xxx.xxx.xxx
+ * \return  The number of results to be passed back to the calling Lua script.
+ * TODO: check compile time endianess and reorder the uint8_t array
+ * --------------------------------------------------------------------------*/
+static int xt_ip_int2ip (lua_State *luaVM)
+{
+	uint32_t  ip_int  = luaL_checkint (luaVM, 1);
+	uint8_t  *ip      = (uint8_t *) &ip_int;
+
+	lua_pushfstring (luaVM, "%d.%d.%d.%d",
+		ip[3], ip[2], ip[1], ip[0]);
+	return 1;
+}
+
+
+/**--------------------------------------------------------------------------
+ * \brief   converts an IPv4 Address into an unisgned integer
+ * \param   luaVM     The lua state.
+ * \lparam  string    the IPv4 Address as xxx.xxx.xxx.xxx string
+ * \lreturn integer representing the IpAddress
+ * \return  The number of results to be passed back to the calling Lua script.
+ * TODO: check compile time endianess and reorder the uint8_t array
+ * --------------------------------------------------------------------------*/
+static int xt_ip_ip2int (lua_State *luaVM)
+{
+	uint32_t       ip[4];
+	const char   *ip_str  = luaL_checkstring (luaVM, 1);
+	sscanf (ip_str, "%d.%d.%d.%d", &ip[3], &ip[2], &ip[1], &ip[0]);
+
+	//printf ("strined IP[%d.%d.%d.%d]\n", ip[3], ip[2], ip[1], ip[0]);
+	lua_pushinteger (luaVM, ip[0] | ip[1] << 8 | ip[2] << 16 | ip[3] << 24);
+	return 1;
+}
+
+
 /**
  * \brief    the metatble for the module
  */
@@ -296,6 +335,10 @@ int luaopen_ipendpoint (lua_State *luaVM) {
 	lua_createtable(luaVM, 0, 0);
 	lua_pushstring(luaVM, "127.0.0.1");
 	lua_setfield(luaVM, -2, "localhost");
+	lua_pushcfunction (luaVM, xt_ip_int2ip);
+	lua_setfield (luaVM, -2, "int2ip");
+	lua_pushcfunction (luaVM, xt_ip_ip2int);
+	lua_setfield (luaVM, -2, "ip2int");
 	// set the methods as metatable
 	luaL_newlib(luaVM, l_ipendpoint_fm);
 	lua_setmetatable(luaVM, -2);
