@@ -37,7 +37,8 @@ static int c_new_socket(lua_State *luaVM)
 	enum   xt_hndl_t                           type;
 
 	type = (enum xt_hndl_t) luaL_checkoption (luaVM, 2, "TCP", xt_hndl_t_lst);
-	hndl = create_ud_socket(luaVM, type);
+	hndl = xt_socket_create_ud( luaVM );
+	xt_socket_set_type( luaVM, hndl, type );
 	return 1 ;
 }
 
@@ -47,12 +48,27 @@ static int c_new_socket(lua_State *luaVM)
  * \param   luaVM  The lua state.
  * \return  struct xt_hndl*  pointer to the socket struct
  * --------------------------------------------------------------------------*/
-struct xt_hndl *create_ud_socket(lua_State *luaVM, enum xt_hndl_t type)
+struct xt_hndl *xt_socket_create_ud( lua_State *luaVM )
 {
 	struct xt_hndl  *hndl;
-	int              on=1;
 
 	hndl = (struct xt_hndl*) lua_newuserdata(luaVM, sizeof(struct xt_hndl));
+
+	luaL_getmetatable( luaVM, "L.Socket" );
+	lua_setmetatable( luaVM, -2 );
+	return hndl;
+}
+
+
+/**--------------------------------------------------------------------------
+ * \brief   sets the socket type and creates the socket handle
+ * \param   luaVM  The lua state.
+ * \return  struct xt_hndl*  pointer to the socket struct
+ * --------------------------------------------------------------------------*/
+int xt_socket_set_type( lua_State *luaVM, struct xt_hndl * hndl, enum xt_hndl_t type )
+{
+	int              on = 1;
+
 	if (UDP == type) {
 		if ( (hndl->fd  =  socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1 ) {
 			return xt_push_error(luaVM, "ERROR opening UDP socket") ;
@@ -65,11 +81,9 @@ struct xt_hndl *create_ud_socket(lua_State *luaVM, enum xt_hndl_t type)
 		/* Enable address reuse */
 		setsockopt( hndl->fd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on) );
 	}
-
-	luaL_getmetatable(luaVM, "L.Socket");
-	lua_setmetatable(luaVM, -2);
-	return hndl;
+	return 0;
 }
+
 
 
 /**--------------------------------------------------------------------------
@@ -94,7 +108,8 @@ struct xt_hndl *check_ud_socket (lua_State *luaVM, int pos) {
 static int l_create_udp_socket(lua_State *luaVM)
 {
 	struct xt_hndl  __attribute__ ((unused)) *hndl;
-	hndl = create_ud_socket(luaVM, UDP);
+	hndl = xt_socket_create_ud( luaVM );
+	xt_socket_set_type( luaVM, hndl, UDP );
 	return 1 ;
 }
 
@@ -108,7 +123,8 @@ static int l_create_udp_socket(lua_State *luaVM)
 static int l_create_tcp_socket(lua_State *luaVM)
 {
 	struct xt_hndl  __attribute__ ((unused)) *hndl;
-	hndl = create_ud_socket(luaVM, TCP);
+	hndl = xt_socket_create_ud( luaVM );
+	xt_socket_set_type( luaVM, hndl, TCP );
 	return 1 ;
 }
 
@@ -153,7 +169,8 @@ static int l_bind_socket(lua_State *luaVM)
 	}
 	else {                            // handle xt.Socket.bind()
 		type = (enum xt_hndl_t) luaL_checkoption (luaVM, 1, "TCP", xt_hndl_t_lst);
-		hndl = create_ud_socket(luaVM, type);
+		hndl = xt_socket_create_ud( luaVM );
+		xt_socket_set_type( luaVM, hndl, type);
 	}
 	if ( lua_isuserdata(luaVM, 2) ) {
 		// it's assumed that IP/port et cetera are assigned
@@ -192,7 +209,8 @@ static int l_connect_socket(lua_State *luaVM)
 	}
 	else {                            // handle xt.Socket.connect()
 		type = (enum xt_hndl_t) luaL_checkoption (luaVM, 1, "TCP", xt_hndl_t_lst);
-		hndl = create_ud_socket(luaVM, type);
+		hndl = xt_socket_create_ud( luaVM );
+		xt_socket_set_type( luaVM, hndl, type);
 	}
 	if ( lua_isuserdata(luaVM, 2) ) {
 		// it's assumed that IP/port et cetera are assigned
@@ -229,7 +247,8 @@ static int l_accept_socket(lua_State *luaVM)
 	socklen_t           their_addr_size = sizeof(struct sockaddr_in);
 
 	lhndl = check_ud_socket (luaVM, 1);
-	ahndl = create_ud_socket (luaVM, TCP);
+	ahndl = xt_socket_create_ud( luaVM );
+	xt_socket_set_type( luaVM, ahndl,TCP);
 
 	si_cli = create_ud_ipendpoint(luaVM);
 	ahndl->fd = accept(lhndl->fd, (struct sockaddr *) &(*si_cli), &their_addr_size);
@@ -357,7 +376,7 @@ static int l_recv_from(lua_State *luaVM)
 static int l_send_strm (lua_State *luaVM)
 {
 	struct xt_hndl  *hndl;
-	size_t           sent;         // How much did get sent out
+	ssize_t          sent;         // How much did get sent out
 	size_t           to_send;      // How much should get send out maximally
 	const char      *msg;
 	size_t           into_msg=0;   // where in the message to start sending from

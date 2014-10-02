@@ -1,6 +1,6 @@
 #!../out/bin/lua
 local xt,fmt=require('xt'),string.format
-local ipadd,port='10.129.1.32',8888
+local ipadd,port='192.168.0.219',8888
 
 --tcpsock = xt.Socket('TCP')
 --ip      = xt.IpEndpoint(ipadd, port)

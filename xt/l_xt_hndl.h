@@ -53,5 +53,7 @@ int    set_ipendpoint_values (lua_State *luaVM, int pos, struct sockaddr_in *ip)
 
 // l_xt_socket.c
 struct xt_hndl *check_ud_socket (lua_State *luaVM, int pos);
-struct xt_hndl *create_ud_socket (lua_State *luaVM, enum xt_hndl_t type);
+struct xt_hndl *xt_socket_create_ud( lua_State *luaVM );
+int             xt_socket_set_type( lua_State *luaVM, struct xt_hndl *hndl, enum xt_hndl_t );
+
 

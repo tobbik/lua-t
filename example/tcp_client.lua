@@ -1,9 +1,9 @@
 #!../out/bin/lua
 local xt=require('xt')
-local ipadd,port='192.168.0.200',8888
+local ipadd,port='192.168.0.219',8888
 
 ip      = xt.IpEndpoint(ipadd, port)
-mip     = xt.IpEndpoint('172.16.1.208',54321)
+mip     = xt.IpEndpoint('192.168.0.219',54321)
 tcpsock = xt.Socket('TCP')
 tcpsock:bind(mip)
 tcpsock:connect(ip)
