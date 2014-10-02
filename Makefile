@@ -17,7 +17,7 @@ relocate=true
 all: install
 
 $(SRCDIR)/$(LUASRC):
-	wget $(DLPATH)/$(LUASRC) -O $(SRCDIR)/$(LUASRC)
+	curl -o $(SRCDIR)/$(LUASRC)   $(DLPATH)/$(LUASRC) 
 
 $(COMPDIR)/$(VER)/src: $(SRCDIR)/$(LUASRC)
 	mkdir -p $(COMPDIR)/$(VER)
@@ -36,12 +36,12 @@ endif
 
 $(COMPDIR)/$(VER)/src/lua: $(COMPDIR)/$(VER)/src
 	cd $(COMPDIR)/$(VER) ; \
-		$(MAKE) CC=$(CC) LD=$(LD) \
+		$(MAKE) -j 4 CC=$(CC) LD=$(LD) \
 		MYCFLAGS=" -g -fPIC "\
 		linux
 
 $(XTDIR)/xt.so: $(COMPDIR)/$(VER)/src
-	cd $(XTDIR) ; $(MAKE) CC=$(CC) LD=$(LD) \
+	cd $(XTDIR) ; $(MAKE) -j 4 CC=$(CC) LD=$(LD) \
 		VER=$(VER) \
 		MYCFLAGS=' -g' \
 		INCS="$(COMPDIR)/$(VER)/src" xt.so

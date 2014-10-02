@@ -69,10 +69,10 @@ b64_decode( const char *inbuf, char *outbuf, size_t inbuf_len)
 			i++;
 			continue;
 		}
-		enc1 = (uint8_t) dec_table[ inbuf[ i++ ] ];
-		enc2 = (uint8_t) dec_table[ inbuf[ i++ ] ];
-		enc3 = (uint8_t) dec_table[ inbuf[ i++ ] ];
-		enc4 = (uint8_t) dec_table[ inbuf[ i++ ] ];
+		enc1 = (uint8_t) dec_table[ (int) inbuf[ i++ ] ];
+		enc2 = (uint8_t) dec_table[ (int) inbuf[ i++ ] ];
+		enc3 = (uint8_t) dec_table[ (int) inbuf[ i++ ] ];
+		enc4 = (uint8_t) dec_table[ (int) inbuf[ i++ ] ];
 
 		outbuf[ j++ ] = (unsigned char) (enc1        << 2) | (enc2 >> 4);
 		outbuf[ j++ ] = (unsigned char) ((enc2 & 15) << 4) | (enc3 >> 2);

@@ -1,3 +1,6 @@
+#define STDIN 0
+#define _POSIX_C_SOURCE 1
+
 #include <stdio.h>
 #include <string.h>
 #include <lua.h>
@@ -8,7 +11,6 @@
 #include "l_xt.h"
 #include "l_xt_hndl.h"
 #include "xt_time.h"
-#define STDIN 0
 
 /** -------------------------------------------------------------------------
  * \brief    Takes a lua file handle and wraps it in an xt handle
