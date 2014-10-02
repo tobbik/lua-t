@@ -69,17 +69,23 @@ int xt_socket_set_type( lua_State *luaVM, struct xt_hndl * hndl, enum xt_hndl_t 
 {
 	int              on = 1;
 
-	if (UDP == type) {
-		if ( (hndl->fd  =  socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1 ) {
-			return xt_push_error(luaVM, "ERROR opening UDP socket") ;
-		}
-	}
-	else if (TCP == type) {
-		if ( (hndl->fd  =  socket(AF_INET, SOCK_STREAM, 0)) == -1 ) {
-			return xt_push_error(luaVM, "ERROR opening TCP socket") ;
-		}
-		/* Enable address reuse */
-		setsockopt( hndl->fd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on) );
+	switch (type)
+	{
+		case UDP:
+			if ( (hndl->fd  =  socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1 ) {
+				return xt_push_error(luaVM, "ERROR opening UDP socket") ;
+			}
+			break;
+
+		case TCP:
+			if ( (hndl->fd  =  socket(AF_INET, SOCK_STREAM, 0)) == -1 ) {
+				return xt_push_error(luaVM, "ERROR opening TCP socket") ;
+			}
+			/* Enable address reuse */
+			setsockopt( hndl->fd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on) );
+			break;
+		default:
+			return xt_push_error( luaVM, "Must provide a proper type of socket to create" );
 	}
 	return 0;
 }
