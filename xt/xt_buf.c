@@ -58,19 +58,19 @@ int l_shortToBcd(lua_State *luaVM)
  * \param     luaVM  lua state
  * \return    integer   how many elements are placed on the Lua stack
 */
-static int xt_buf___call (lua_State *luaVM)
+static int lxt_buf__Call (lua_State *luaVM)
 {
 	lua_remove (luaVM, 1);
-	return xt_buf_new (luaVM);
+	return xt_buf_New (luaVM);
 }
 
 
-/**
+/**--------------------------------------------------------------------------
  * \brief     creates the buffer from the .new() function
  * \param     luaVM  lua state
  * \return    integer   how many elements are placed on the Lua stack
-*/
-int xt_buf_new (lua_State *luaVM)
+ * --------------------------------------------------------------------------*/
+int lxt_buf_New (lua_State *luaVM)
 {
 	size_t                                   sz;
 	struct xt_buf  __attribute__ ((unused)) *b;
@@ -87,6 +87,7 @@ int xt_buf_new (lua_State *luaVM)
 /**--------------------------------------------------------------------------
  * \brief   create a xt_buf and push to LuaStack.
  * \param   luaVM  The lua state.
+ *
  * \return  struct xt_buf*  pointer to the socket xt_buf
  * --------------------------------------------------------------------------*/
 struct xt_buf *xt_buf_create_ud (lua_State *luaVM, int size)
@@ -94,6 +95,7 @@ struct xt_buf *xt_buf_create_ud (lua_State *luaVM, int size)
 	struct xt_buf  *b;
 	size_t          sz;
 
+	// size = sizof(...) -1 because the array has already one member
 	sz = sizeof(struct xt_buf) + (size - 1) * sizeof(unsigned char);
 	b  = (struct xt_buf *) lua_newuserdata(luaVM, sz);
 	memset(b->b, 0, size * sizeof(unsigned char));
@@ -105,14 +107,14 @@ struct xt_buf *xt_buf_create_ud (lua_State *luaVM, int size)
 }
 
 
-/**
+/**--------------------------------------------------------------------------
  * \brief  gets the value of the element
  * \param  position in bytes
  * \param  offset   in bits
  * \param  len   in bits
  *
  * \return pointer to struct buf
- */
+ * --------------------------------------------------------------------------*/
 struct xt_buf *xt_buf_check_ud (lua_State *luaVM, int pos) {
 	void *ud = luaL_checkudata (luaVM, pos, "xt.Buffer");
 	luaL_argcheck(luaVM, ud != NULL, pos, "`xt.Buffer` expected");
@@ -128,7 +130,7 @@ struct xt_buf *xt_buf_check_ud (lua_State *luaVM, int pos) {
  *
  * \return integer 1 left on the stack
  */
-static int xt_buf_read_bits (lua_State *luaVM) {
+static int lxt_buf_readbits (lua_State *luaVM) {
 	int                   sz;    // how many bits to write
 	int                   sz_nd; // how many bits to represent value
 	int                   ofs;   // starting with the x bit
@@ -177,11 +179,6 @@ static int xt_buf_read_bits (lua_State *luaVM) {
 			return xt_push_error(luaVM, "Can't handle a %d bits wide field", sz);
 	}
 	return 1;
-
-
-
-
-	return 1;
 }
 
 
@@ -191,7 +188,8 @@ static int xt_buf_read_bits (lua_State *luaVM) {
  *
  * \return integer 1 left on the stack
  */
-static int xt_buf_read_8 (lua_State *luaVM) {
+static int lxt_buf_read8 (lua_State *luaVM)
+{
 	uint8_t       *v;
 	int            p = luaL_checkint (luaVM,2); // starting byte  b->b[pos]
 	struct xt_buf *b   = xt_buf_check_ud (luaVM, 1);
@@ -208,7 +206,8 @@ static int xt_buf_read_8 (lua_State *luaVM) {
  *
  * \return integer 1 left on the stack
  */
-static int xt_buf_read_16 (lua_State *luaVM) {
+static int lxt_buf_read16 (lua_State *luaVM)
+{
 	uint16_t      *v;
 	int            p = luaL_checkint (luaVM,2); // starting byte  b->b[pos]
 	struct xt_buf *b = xt_buf_check_ud (luaVM, 1);
@@ -225,7 +224,8 @@ static int xt_buf_read_16 (lua_State *luaVM) {
  *
  * \return integer 1 left on the stack
  */
-static int xt_buf_read_32 (lua_State *luaVM) {
+static int lxt_buf_read32 (lua_State *luaVM)
+{
 	uint32_t      *v;
 	int            p = luaL_checkint (luaVM,2); // starting byte  b->b[pos]
 	struct xt_buf *b = xt_buf_check_ud (luaVM, 1);
@@ -242,7 +242,8 @@ static int xt_buf_read_32 (lua_State *luaVM) {
  *
  * \return integer 1 left on the stack
  */
-static int xt_buf_read_64 (lua_State *luaVM) {
+static int lxt_buf_read64 (lua_State *luaVM)
+{
 	uint64_t      *v;
 	int            p = luaL_checkint (luaVM,2); // starting byte  b->b[pos]
 	struct xt_buf *b = xt_buf_check_ud (luaVM, 1);
@@ -262,7 +263,8 @@ static int xt_buf_read_64 (lua_State *luaVM) {
  * \return integer 1 left on the stack
  */
 // TODO: boundary checks on buffer vs string length
-static int xt_buf_read_string (lua_State *luaVM) {
+static int lxt_buf_readstring (lua_State *luaVM)
+{
 	struct xt_buf *b   = xt_buf_check_ud (luaVM, 1);
 	int            ofs;
 	int            sz;
@@ -281,7 +283,8 @@ static int xt_buf_read_string (lua_State *luaVM) {
  *
  * \return integer 0 left on the stack
  */
-static int xt_buf_write_bits(lua_State *luaVM) {
+static int lxt_buf_writebits(lua_State *luaVM) 
+{
 	int            sz;    ///> how many bits to write
 	int            sz_nd; ///> how many bits needed to represent
 	int            ofs;   ///> starting with the x bit
@@ -345,7 +348,8 @@ static int xt_buf_write_bits(lua_State *luaVM) {
  *
  * \return integer 0 left on the stack
  */
-static int xt_buf_write_8(lua_State *luaVM) {
+static int lxt_buf_write8(lua_State *luaVM)
+{
 	uint8_t       *v;
 	int            p = luaL_checkint (luaVM,2); // starting byte  b->b[pos]
 	struct xt_buf *b = xt_buf_check_ud (luaVM, 1);
@@ -363,7 +367,8 @@ static int xt_buf_write_8(lua_State *luaVM) {
  *
  * \return integer 0 left on the stack
  */
-static int xt_buf_write_16(lua_State *luaVM) {
+static int lxt_buf_write16(lua_State *luaVM)
+{
 	uint16_t      *v;
 	int            p = luaL_checkint (luaVM,2); // starting byte  b->b[pos]
 	struct xt_buf *b = xt_buf_check_ud (luaVM, 1);
@@ -381,7 +386,8 @@ static int xt_buf_write_16(lua_State *luaVM) {
  *
  * \return integer 0 left on the stack
  */
-static int xt_buf_write_32 (lua_State *luaVM) {
+static int lxt_buf_write32 (lua_State *luaVM)
+{
 	uint32_t      *v;
 	int            p = luaL_checkint (luaVM,2); // starting byte  b->b[pos]
 	struct xt_buf *b = xt_buf_check_ud (luaVM, 1);
@@ -399,7 +405,8 @@ static int xt_buf_write_32 (lua_State *luaVM) {
  *
  * \return integer 0 left on the stack
  */
-static int xt_buf_write_64 (lua_State *luaVM) {
+static int lxt_buf_write64 (lua_State *luaVM)
+{
 	uint64_t      *v;
 	int            p = luaL_checkint (luaVM,2); // starting byte  b->b[pos]
 	struct xt_buf *b = xt_buf_check_ud (luaVM, 1);
@@ -420,7 +427,8 @@ static int xt_buf_write_64 (lua_State *luaVM) {
  * \return integer 1 left on the stack
  */
 // TODO: handle length and zero over it first
-static int xt_buf_write_string (lua_State *luaVM) {
+static int lxt_buf_writestring (lua_State *luaVM)
+{
 	struct xt_buf *b   = xt_buf_check_ud (luaVM, 1);
 	int            ofs;
 	size_t         sz;
@@ -442,7 +450,8 @@ static int xt_buf_write_string (lua_State *luaVM) {
  *
  * \return integer 0 left on the stack
  */
-static int xt_buf_to_hex_string (lua_State *luaVM) {
+static int lxt_buf_tohexstring (lua_State *luaVM)
+{
 	int            l,c;
 	char          *sbuf;
 	struct xt_buf *b   = xt_buf_check_ud (luaVM, 1);
@@ -464,7 +473,7 @@ static int xt_buf_to_hex_string (lua_State *luaVM) {
  * \param     lua state
  * \return    integer   how many elements are placed on the Lua stack
 */
-static int xt_buf___len (lua_State *luaVM)
+static int lxt_buf__len (lua_State *luaVM)
 {
 	struct xt_buf *b;
 
@@ -481,7 +490,8 @@ static int xt_buf___len (lua_State *luaVM)
  * \lreturn string    formatted string representing buffer.
  * \return  The number of results to be passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
-static int xt_buf___tostring (lua_State *luaVM) {
+static int lxt_buf__tostring (lua_State *luaVM)
+{
 	struct xt_buf *bs = xt_buf_check_ud (luaVM, 1);
 	lua_pushfstring(luaVM, "Buffer{%d}: %p", bs->len, bs);
 	return 1;
@@ -492,7 +502,7 @@ static int xt_buf___tostring (lua_State *luaVM) {
  * \brief    the metatble for the module
  */
 static const struct luaL_Reg xt_buf_fm [] = {
-	{"__call",      xt_buf___call},
+	{"__call",      lxt_buf__Call},
 	{NULL,   NULL}
 };
 
@@ -501,7 +511,7 @@ static const struct luaL_Reg xt_buf_fm [] = {
  * \brief    the metatble for the module
  */
 static const struct luaL_Reg xt_buf_cf [] = {
-	{"new",           xt_buf_new},
+	{"new",           lxt_buf_New},
 	{NULL,            NULL}
 };
 
@@ -512,21 +522,21 @@ static const struct luaL_Reg xt_buf_cf [] = {
  */
 static const luaL_Reg xt_buf_m [] =
 {
-	{"readBits",      xt_buf_read_bits},
-	{"writeBits",     xt_buf_write_bits},
-	{"read8",         xt_buf_read_8},
-	{"read16",        xt_buf_read_16},
-	{"read32",        xt_buf_read_32},
-	{"read64",        xt_buf_read_64},
-	{"readString",    xt_buf_read_string},
-	{"write8",        xt_buf_write_8},
-	{"write16",       xt_buf_write_16},
-	{"write32",       xt_buf_write_32},
-	{"write64",       xt_buf_write_64},
-	{"writeString",   xt_buf_write_string},
-	{"length",        xt_buf___len},
-	{"toString",      xt_buf___tostring},
-	{"toHex",         xt_buf_to_hex_string},
+	{"readBits",      lxt_buf_readbits},
+	{"writeBits",     lxt_buf_writebits},
+	{"read8",         lxt_buf_read8},
+	{"read16",        lxt_buf_read16},
+	{"read32",        lxt_buf_read32},
+	{"read64",        lxt_buf_read64},
+	{"readString",    lxt_buf_readstring},
+	{"write8",        lxt_buf_write8},
+	{"write16",       lxt_buf_write16},
+	{"write32",       lxt_buf_write32},
+	{"write64",       lxt_buf_write64},
+	{"writeString",   lxt_buf_writestring},
+	{"toHex",         lxt_buf_tohexstring},
+	{"length",        lxt_buf__len},
+	{"toString",      lxt_buf__tostring},
 	{"ByteField",     xt_buf_fld_new_byte},
 	{"BitField",      xt_buf_fld_new_bits},
 	{"StringField",   xt_buf_fld_new_string},
@@ -548,9 +558,9 @@ LUAMOD_API int luaopen_xt_buf (lua_State *luaVM)
 	luaL_newmetatable(luaVM, "xt.Buffer");
 	luaL_newlib(luaVM, xt_buf_m);
 	lua_setfield(luaVM, -2, "__index");
-	lua_pushcfunction(luaVM, xt_buf___len);
+	lua_pushcfunction(luaVM, lxt_buf__len);
 	lua_setfield(luaVM, -2, "__len");
-	lua_pushcfunction(luaVM, xt_buf___tostring);
+	lua_pushcfunction(luaVM, lxt_buf__tostring);
 	lua_setfield(luaVM, -2, "__tostring");
 	lua_pop(luaVM, 1);        // remove metatable from stack
 	// xt.Buffer class

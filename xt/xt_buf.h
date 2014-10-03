@@ -43,7 +43,7 @@ struct xt_buf_fld {
 // Constructors
 // xt_buf.c
 int              luaopen_xt_buf    (lua_State *luaVM);
-int              xt_buf_new        (lua_State *luaVM);
+int              xt_buf_New        (lua_State *luaVM);
 struct xt_buf   *xt_buf_check_ud   (lua_State *luaVM, int pos);
 struct xt_buf   *xt_buf_create_ud  (lua_State *luaVM, int size);
 
