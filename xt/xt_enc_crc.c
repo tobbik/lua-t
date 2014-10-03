@@ -36,7 +36,7 @@ enum xt_CRC_ALG {
 
 
 int
-calc_8 (struct xt_enc_crc *crc, const char *data, size_t len)
+calc_8( struct xt_enc_crc *crc, const char *data, size_t len )
 {
 	size_t   i;
 	for ( i = 0; i < len; ++i) {
@@ -49,7 +49,7 @@ calc_8 (struct xt_enc_crc *crc, const char *data, size_t len)
 
 // calculates CRC16,CCITT KERMIT
 int
-calc_16 (struct xt_enc_crc *crc, const char *data, size_t len)
+calc_16( struct xt_enc_crc *crc, const char *data, size_t len )
 {
 	uint8_t  idx;
 	size_t   i;
@@ -63,7 +63,7 @@ calc_16 (struct xt_enc_crc *crc, const char *data, size_t len)
 
 
 int
-calc_ccitt (struct xt_enc_crc *crc, const char *data, size_t len)
+calc_ccitt( struct xt_enc_crc *crc, const char *data, size_t len )
 {
 	uint8_t  idx;
 	size_t   i;
@@ -77,7 +77,8 @@ calc_ccitt (struct xt_enc_crc *crc, const char *data, size_t len)
 
 
 int
-calc_32 (struct xt_enc_crc *crc, const char *data, size_t len) {
+calc_32( struct xt_enc_crc *crc, const char *data, size_t len )
+{
 	uint8_t  idx;
 	size_t   i;
 	for(i = 0; i < len; ++i) {
@@ -95,7 +96,7 @@ calc_32 (struct xt_enc_crc *crc, const char *data, size_t len) {
 	 | || |\  || |  | |  
 	|___|_| \_|___| |_|*/
 
-static void init_8 (struct xt_enc_crc *crc, uint8_t poly)
+static void init_8( struct xt_enc_crc *crc, uint8_t poly )
 {
 	int     i,j;
 	uint8_t c;
@@ -111,7 +112,7 @@ static void init_8 (struct xt_enc_crc *crc, uint8_t poly)
 }
 
 
-static void init_16 (struct xt_enc_crc *crc, uint16_t poly)
+static void init_16( struct xt_enc_crc *crc, uint16_t poly )
 {
 	uint16_t c, run, i;
 	uint8_t  j;
@@ -134,7 +135,7 @@ static void init_16 (struct xt_enc_crc *crc, uint16_t poly)
 }
 
 
-static void init_ccitt (struct xt_enc_crc *crc, uint16_t poly)
+static void init_ccitt ( struct xt_enc_crc *crc, uint16_t poly )
 {
 	uint16_t c,run,i;
 	uint8_t  j;
@@ -157,7 +158,7 @@ static void init_ccitt (struct xt_enc_crc *crc, uint16_t poly)
 }
 
 
-static void init_32 (struct xt_enc_crc *crc, uint32_t poly)
+static void init_32( struct xt_enc_crc *crc, uint32_t poly )
 {
 	uint32_t temp,i;
 	uint8_t  j;
@@ -186,10 +187,10 @@ static void init_32 (struct xt_enc_crc *crc, uint32_t poly)
  * \return  The number of results to be passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
 static int
-xt_enc_crc___call(lua_State *luaVM)
+lxt_enc_crc__Call( lua_State *luaVM )
 {
-	lua_remove(luaVM, 1);
-	return xt_enc_crc_new(luaVM);
+	lua_remove( luaVM, 1 );
+	return lxt_enc_crc_New( luaVM );
 }
 
 
@@ -199,10 +200,10 @@ xt_enc_crc___call(lua_State *luaVM)
  * \return  The number of results to be passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
 static int
-xt_enc_crc_reset (lua_State *luaVM)
+lxt_enc_crc_reset( lua_State *luaVM )
 {
 	struct xt_enc_crc  *crc;
-	crc = xt_enc_crc_check_ud (luaVM, 1);
+	crc = xt_enc_crc_check_ud( luaVM, 1 );
 	crc->crc32 = crc->init32;
 	return 0;
 }
@@ -218,33 +219,33 @@ xt_enc_crc_reset (lua_State *luaVM)
  * \return  The number of results to be passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
 int
-xt_enc_crc_new( lua_State *luaVM )
+lxt_enc_crc_New( lua_State *luaVM )
 {
 	struct xt_enc_crc    *crc;
 	int                   alg;
 
-	crc = xt_enc_crc_create_ud (luaVM);
+	crc = xt_enc_crc_create_ud( luaVM );
 	alg = luaL_checkint( luaVM, 1 );
 	switch (alg) {
 		case CRC_ALG_8:
-			init_8 (crc, POLY_8);
+			init_8( crc, POLY_8 );
 			break;
 		case CRC_ALG_16:
-			init_16 (crc, POLY_16);
+			init_16( crc, POLY_16 );
 			break;
 		case CRC_ALG_CCITT:
-			init_ccitt (crc, POLY_CCIT);
+			init_ccitt( crc, POLY_CCIT );
 			break;
 		case CRC_ALG_CCITT_KRM:
-			init_16 (crc, POLY_CCITT_KRM);
+			init_16( crc, POLY_CCITT_KRM );
 			break;
 		case CRC_ALG_32:
-			init_32 (crc, POLY_32);
+			init_32( crc, POLY_32 );
 			break;
 		default:
-			xt_push_error(luaVM, "Unknown CRC algorithm");
+			xt_push_error( luaVM, "Unknown CRC algorithm" );
 	}
-	crc->be = (lua_isboolean (luaVM, 2)) ? lua_toboolean(luaVM, 2) : 1;
+	crc->be = (lua_isboolean( luaVM, 2 )) ? lua_toboolean( luaVM, 2 ) : 1;
 
 	return 1;
 }
@@ -256,13 +257,13 @@ xt_enc_crc_new( lua_State *luaVM )
  * \return  struct xt_enc_crc*  pointer
  * --------------------------------------------------------------------------*/
 struct xt_enc_crc
-*xt_enc_crc_create_ud(lua_State *luaVM)
+*xt_enc_crc_create_ud( lua_State *luaVM )
 {
 	struct xt_enc_crc *crc;
 
-	crc = (struct xt_enc_crc *) lua_newuserdata (luaVM, sizeof(struct xt_enc_crc) );
-	luaL_getmetatable(luaVM, "xt.Encode.Crc");
-	lua_setmetatable(luaVM, -2);
+	crc = (struct xt_enc_crc *) lua_newuserdata( luaVM, sizeof( struct xt_enc_crc ) );
+	luaL_getmetatable( luaVM, "xt.Encode.Crc" );
+	lua_setmetatable( luaVM, -2 );
 	return crc;
 }
 
@@ -274,9 +275,10 @@ struct xt_enc_crc
  * \return  struct xt_enc_crc*
  * --------------------------------------------------------------------------*/
 struct xt_enc_crc
-*xt_enc_crc_check_ud (lua_State *luaVM, int pos) {
-	void *ud = luaL_checkudata(luaVM, pos, "xt.Encode.Crc");
-	luaL_argcheck(luaVM, ud != NULL, pos, "`xt.Encode.Crc` expected");
+*xt_enc_crc_check_ud( lua_State *luaVM, int pos )
+{
+	void *ud = luaL_checkudata( luaVM, pos, "xt.Encode.Crc" );
+	luaL_argcheck( luaVM, ud != NULL, pos, "`xt.Encode.Crc` expected" );
 	return (struct xt_enc_crc *) ud;
 }
 
@@ -291,7 +293,7 @@ struct xt_enc_crc
  * \lreturn crc        the CRC checksum.
  * \return  The number of results to be passed back to the calling Lua script.
  *-------------------------------------------------------------------------*/
-static int xt_enc_crc_calc( lua_State *luaVM )
+static int lxt_enc_crc_calc( lua_State *luaVM )
 {
 	struct xt_enc_crc  *crc;
 	struct xt_buf      *buf;
@@ -300,29 +302,29 @@ static int xt_enc_crc_calc( lua_State *luaVM )
 	int                 sta;
 	int                 res;
 
-	crc = xt_enc_crc_check_ud (luaVM, 1);
-	sta = (lua_isnumber(luaVM, 3)) ? luaL_checkint(luaVM, 3)     : 0;
+	crc = xt_enc_crc_check_ud( luaVM, 1 );
+	sta = (lua_isnumber( luaVM, 3 )) ? luaL_checkint( luaVM, 3 )     : 0;
 	// if string
-	if (lua_isstring(luaVM, 2))
+	if (lua_isstring( luaVM, 2 ))
 	{
-		msg   = luaL_checklstring(luaVM, 2, &len) + sta;
+		msg   = luaL_checklstring( luaVM, 2, &len ) + sta;
 	}
 	// if xt_buffer
-	else if (lua_isuserdata(luaVM, 2))
+	else if (lua_isuserdata( luaVM, 2 ))
 	{
-		buf  = xt_buf_check_ud (luaVM, 2);
+		buf  = xt_buf_check_ud( luaVM, 2 );
 		msg  = (const char *) &(buf->b[ sta ]);
 		//msg  =  &(buf->b[ 0 ]);
 		len  = buf->len;
 	}
 	else
-		return( xt_push_error(luaVM,
-			"ERROR xt.Encode.Crc:calc(msg) takes msg argument") );
+		return xt_push_error( luaVM,
+			"ERROR xt.Encode.Crc:calc(msg) takes msg argument" );
 
-	len = (lua_isnumber(luaVM, 4)) ? luaL_checkint(luaVM, 4)-sta : len - sta;
+	len = (lua_isnumber( luaVM, 4 )) ? (size_t) luaL_checkint( luaVM, 4 )-sta : len - sta;
 
-	res = crc->calc (crc, msg, len);
-	lua_pushinteger (luaVM, res);
+	res = crc->calc( crc, msg, len );
+	lua_pushinteger( luaVM, res );
 	return 1;
 }
 
@@ -331,7 +333,7 @@ static int xt_enc_crc_calc( lua_State *luaVM )
  * \brief    the metatble for the module
  */
 static const struct luaL_Reg xt_enc_crc_fm [] = {
-	{"__call",      xt_enc_crc___call},
+	{"__call",      lxt_enc_crc__Call},
 	{NULL,          NULL}
 };
 
@@ -341,7 +343,7 @@ static const struct luaL_Reg xt_enc_crc_fm [] = {
  *             assigns Lua available names to C-functions
  */
 static const struct luaL_Reg xt_enc_crc_cf [] = {
-	{"new",     xt_enc_crc_new},
+	{"new",     lxt_enc_crc_New},
 	{NULL,      NULL}
 };
 
@@ -352,8 +354,8 @@ static const struct luaL_Reg xt_enc_crc_cf [] = {
  */
 static const luaL_Reg xt_enc_crc_m [] =
 {
-	{"calc",    xt_enc_crc_calc},
-	{"reset",   xt_enc_crc_reset},
+	{"calc",    lxt_enc_crc_calc},
+	{"reset",   lxt_enc_crc_reset},
 	{NULL,      NULL}
 };
 
@@ -367,20 +369,21 @@ static const luaL_Reg xt_enc_crc_m [] =
  * \lreturn string    the library
  * \return  The number of results to be passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
-int luaopen_xt_enc_crc (lua_State *luaVM) {
+int luaopen_xt_enc_crc( lua_State *luaVM )
+{
 	// just make metatable known to be able to register and check userdata
 	// this is only avalable a <instance>:func()
-	luaL_newmetatable(luaVM, "xt.Encode.Crc");   // stack: functions meta
-	luaL_newlib(luaVM, xt_enc_crc_m);
-	lua_setfield(luaVM, -2, "__index");
-	lua_pop(luaVM, 1);        // remove metatable from stack
+	luaL_newmetatable( luaVM, "xt.Encode.Crc" );   // stack: functions meta
+	luaL_newlib( luaVM, xt_enc_crc_m );
+	lua_setfield( luaVM, -2, "__index" );
+	lua_pop( luaVM, 1 );        // remove metatable from stack
 
 	// Push the class onto the stack
 	// this is avalable as Crc.new
-	luaL_newlib(luaVM, xt_enc_crc_cf);
+	luaL_newlib( luaVM, xt_enc_crc_cf );
 	// set the constructor metatable Crc()
-	luaL_newlib(luaVM, xt_enc_crc_fm);
-	lua_setmetatable(luaVM, -2);
+	luaL_newlib( luaVM, xt_enc_crc_fm );
+	lua_setmetatable( luaVM, -2 );
 	return 1;
 }
 

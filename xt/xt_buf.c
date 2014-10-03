@@ -40,10 +40,10 @@ int l_byteToBcd(lua_State *luaVM)
  * \param     val  16bit integer
  * \return    16bit integer encoding of a BCD coded number
  */
-int l_shortToBcd(lua_State *luaVM)
+int l_shortToBcd( lua_State *luaVM )
 {
-	uint16_t val = luaL_checkint(luaVM, 1);
-	lua_pushinteger(luaVM,
+	uint16_t val = luaL_checkint( luaVM, 1 );
+	lua_pushinteger( luaVM,
 			(val/1000   *4096 ) +
 		 ( (val/100%10)* 256 ) +
 		 ( (val/10%10) * 16 ) +
@@ -60,8 +60,8 @@ int l_shortToBcd(lua_State *luaVM)
 */
 static int lxt_buf__Call (lua_State *luaVM)
 {
-	lua_remove (luaVM, 1);
-	return xt_buf_New (luaVM);
+	lua_remove( luaVM, 1 );
+	return lxt_buf_New( luaVM );
 }
 
 
@@ -70,15 +70,16 @@ static int lxt_buf__Call (lua_State *luaVM)
  * \param     luaVM  lua state
  * \return    integer   how many elements are placed on the Lua stack
  * --------------------------------------------------------------------------*/
-int lxt_buf_New (lua_State *luaVM)
+int lxt_buf_New( lua_State *luaVM )
 {
 	size_t                                   sz;
 	struct xt_buf  __attribute__ ((unused)) *b;
 
-	sz  = luaL_checkint(luaVM, 1);
-	b   = xt_buf_create_ud (luaVM, sz);
-	if (lua_isstring(luaVM, 2)) {
-		memcpy  ( (char*) &(b->b[0]), luaL_checklstring(luaVM, 2, NULL), sz);
+	sz  = luaL_checkint( luaVM, 1 );
+	b   = xt_buf_create_ud( luaVM, sz );
+	if (lua_isstring( luaVM, 2 ))
+	{
+		memcpy( (char*) &(b->b[0]), luaL_checklstring( luaVM, 2, NULL ), sz );
 	}
 	return 1;
 }
@@ -90,7 +91,7 @@ int lxt_buf_New (lua_State *luaVM)
  *
  * \return  struct xt_buf*  pointer to the socket xt_buf
  * --------------------------------------------------------------------------*/
-struct xt_buf *xt_buf_create_ud (lua_State *luaVM, int size)
+struct xt_buf *xt_buf_create_ud( lua_State *luaVM, int size )
 {
 	struct xt_buf  *b;
 	size_t          sz;
@@ -268,8 +269,8 @@ static int lxt_buf_readstring (lua_State *luaVM)
 	struct xt_buf *b   = xt_buf_check_ud (luaVM, 1);
 	int            ofs;
 	int            sz;
-	ofs = (lua_isnumber(luaVM, 2)) ? luaL_checkint(luaVM, 2) : 0;
-	sz  = (lua_isnumber(luaVM, 3)) ? luaL_checkint(luaVM, 3) : b->len-ofs;
+	ofs = (lua_isnumber(luaVM, 2)) ? (size_t) luaL_checkint( luaVM, 2 ) : 0;
+	sz  = (lua_isnumber(luaVM, 3)) ? (size_t) luaL_checkint( luaVM, 3 ) : b->len-ofs;
 
 	lua_pushlstring(luaVM,
 			(const char*) &(b->b[ ofs ]),
@@ -493,7 +494,7 @@ static int lxt_buf__len (lua_State *luaVM)
 static int lxt_buf__tostring (lua_State *luaVM)
 {
 	struct xt_buf *bs = xt_buf_check_ud (luaVM, 1);
-	lua_pushfstring(luaVM, "Buffer{%d}: %p", bs->len, bs);
+	lua_pushfstring( luaVM, "Buffer{%d}: %p", bs->len, bs );
 	return 1;
 }
 
@@ -502,8 +503,8 @@ static int lxt_buf__tostring (lua_State *luaVM)
  * \brief    the metatble for the module
  */
 static const struct luaL_Reg xt_buf_fm [] = {
-	{"__call",      lxt_buf__Call},
-	{NULL,   NULL}
+	{"__call",        lxt_buf__Call},
+	{NULL,            NULL}
 };
 
 
@@ -520,8 +521,7 @@ static const struct luaL_Reg xt_buf_cf [] = {
  * \brief      the buffer library definition
  *             assigns Lua available names to C-functions
  */
-static const luaL_Reg xt_buf_m [] =
-{
+static const luaL_Reg xt_buf_m [] = {
 	{"readBits",      lxt_buf_readbits},
 	{"writeBits",     lxt_buf_writebits},
 	{"read8",         lxt_buf_read8},

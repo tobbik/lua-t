@@ -177,14 +177,14 @@ static int xt_test__call (lua_State *luaVM)
 	if (lua_pcall (luaVM, 1, 0, 0))
 		xt_push_error (luaVM, "Test tearDown failed %s", lua_tostring (luaVM, -1));
 
-	xt_time_Since (tm);
+	xt_time_since (tm);
 	--all;
 	printf ("---------------------------------------------------------\n"
 	        "Executed %lu tests in %03f seconds\n\n"
 	        "Skipped : %lu\n"
 	        "Failed  : %lu\n"
 	        "status  : %s\n",
-	   all, xt_time_Get_ms(tm)/1000.0,
+	   all, xt_time_getms(tm)/1000.0,
 		skip,
 		all-pass,
 		(all==pass)? "OK":"FAIL");

@@ -31,24 +31,24 @@ struct xt_enc_crc {
 		uint32_t      init32;
 	};
 	int              be;    ///< boolean BigEndian
-	int             (*calc) (struct xt_enc_crc *crc, const char *data, size_t len);
+	int             (*calc)( struct xt_enc_crc *crc, const char *data, size_t len );
 };
 
 
 
 // Constructors
 // xt_enc_arc4.c
-struct xt_enc_arc4 *xt_enc_arc4_check_ud  (lua_State *luaVM, int pos);
-struct xt_enc_arc4 *xt_enc_arc4_create_ud (lua_State *luaVM);
-int                 xt_enc_arc4_new       (lua_State *luaVM);
-int                 luaopen_xt_enc_arc4   (lua_State *luaVM);
+struct xt_enc_arc4 *xt_enc_arc4_check_ud ( lua_State *luaVM, int pos );
+struct xt_enc_arc4 *xt_enc_arc4_create_ud( lua_State *luaVM );
+int                 lxt_enc_arc4_New     ( lua_State *luaVM );
+int                 luaopen_xt_enc_arc4  ( lua_State *luaVM );
 
 // xt_enc_crc.c
-struct xt_enc_crc *xt_enc_crc_check_ud   (lua_State *luaVM, int pos);
-struct xt_enc_crc *xt_enc_crc_create_ud  (lua_State *luaVM);
-int                 xt_enc_crc_new       (lua_State *luaVM);
-int                 luaopen_xt_enc_crc   (lua_State *luaVM);
+struct xt_enc_crc  *xt_enc_crc_check_ud  ( lua_State *luaVM, int pos );
+struct xt_enc_crc  *xt_enc_crc_create_ud ( lua_State *luaVM );
+int                 lxt_enc_crc_New      ( lua_State *luaVM );
+int                 luaopen_xt_enc_crc   ( lua_State *luaVM );
 
 // xt_enc_b64.c
-int                 luaopen_xt_enc_b64   (lua_State *luaVM);
+int                 luaopen_xt_enc_b64   ( lua_State *luaVM );
 
