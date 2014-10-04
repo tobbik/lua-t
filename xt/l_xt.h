@@ -21,6 +21,15 @@
 
 #define MAX_PKT_BYTES     1500
 
+
+// http://stackoverflow.com/questions/2100331/c-macro-definition-to-determine-big-endian-or-little-endian-machine
+#define IS_BIG_ENDIAN (*(uint16_t *)"\0\xff" < 0x100)
+#define IS_LITTLE_ENDIAN (1 == *(unsigned char *)&(const int){1})
+//#define IS_LITTLE_ENDIAN (*(uint16_t*)"\0\1">>8)
+//#define IS_BIG_ENDIAN (*(uint16_t*)"\1\0">>8)
+
+
+
 #define XTSWAP(type,a,b) do{type SWAP_tmp= b; b= a; a= SWAP_tmp;}while(0)
 
 

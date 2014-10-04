@@ -22,6 +22,19 @@ static inline uint64_t htonll (uint64_t value)
 	return (((uint64_t)low_part) << 32) | high_part;
 }
 
+// --------------------------------- HELPERS from Lua 5.3 code
+static int getendian( lua_State *luaVM, int pos )
+{
+	const char *endian = luaL_optstring( luaVM, pos,
+	                           (IS_LITTLE_ENDIAN ? "l" : "b"));
+	if (*endian == 'n')  /* native? */
+		return (IS_LITTLE_ENDIAN ? 1 : 0);
+	luaL_argcheck( luaVM, *endian == 'l' || *endian == 'b', pos,
+	                 "endianness must be 'l'/'b'/'n'" );
+	return (*endian == 'l');
+}
+
+
 
 /**
  * \brief     convert 8bit integer to BCD
@@ -53,40 +66,65 @@ int l_shortToBcd( lua_State *luaVM )
 }
 
 
-/**
+/////////////////////////////////////////////////////////////////////////////
+//  _                        _    ____ ___ 
+// | |   _   _  __ _        / \  |  _ \_ _|
+// | |  | | | |/ _` |_____ / _ \ | |_) | | 
+// | |__| |_| | (_| |_____/ ___ \|  __/| | 
+// |_____\__,_|\__,_|    /_/   \_\_|  |___|
+/////////////////////////////////////////////////////////////////////////////
+/** -------------------------------------------------------------------------
  * \brief     creates the buffer from the Constructor
  * \param     luaVM  lua state
+ * \lparam    CLASS table Time
+ * \lparam    length of buffer
+ * \lparam    string buffer content initialized            OPTIONAL
  * \return    integer   how many elements are placed on the Lua stack
-*/
+ *  -------------------------------------------------------------------------*/
 static int lxt_buf__Call (lua_State *luaVM)
 {
-	lua_remove( luaVM, 1 );
+	lua_remove( luaVM, 1 );    // remove the xt.Buffer Class table
 	return lxt_buf_New( luaVM );
 }
 
 
-/**--------------------------------------------------------------------------
- * \brief     creates the buffer from the .new() function
+/** -------------------------------------------------------------------------
+ * \brief     creates the buffer from the function call
  * \param     luaVM  lua state
+ * \lparam    length of buffer
+ *        ALTERNATIVE
+ * \lparam    string buffer content initialized
  * \return    integer   how many elements are placed on the Lua stack
- * --------------------------------------------------------------------------*/
+ *  -------------------------------------------------------------------------*/
 int lxt_buf_New( lua_State *luaVM )
 {
 	size_t                                   sz;
-	struct xt_buf  __attribute__ ((unused)) *b;
+	struct xt_buf  __attribute__ ((unused)) *buf;
 
-	sz  = luaL_checkint( luaVM, 1 );
-	b   = xt_buf_create_ud( luaVM, sz );
-	if (lua_isstring( luaVM, 2 ))
+	if (lua_isnumber( luaVM, 1))
 	{
-		memcpy( (char*) &(b->b[0]), luaL_checklstring( luaVM, 2, NULL ), sz );
+		sz  = luaL_checkint( luaVM, 1 );
+		buf = xt_buf_create_ud( luaVM, sz );
+	}
+	else
+	{
+		if (lua_isstring( luaVM, 1 ))
+		{
+			luaL_checklstring( luaVM, 1, &sz);
+			buf = xt_buf_create_ud( luaVM, sz );
+			memcpy( (char*) &(buf->b[0]), luaL_checklstring( luaVM, 1, NULL ), sz );
+		}
+		else
+		{
+			xt_push_error( luaVM, "can't creat xt.Buffer because of wrong argument type" );
+		}
 	}
 	return 1;
 }
 
 
 /**--------------------------------------------------------------------------
- * \brief   create a xt_buf and push to LuaStack.
+ * create a xt_buf and push to LuaStack.
  * \param   luaVM  The lua state.
  *
  * \return  struct xt_buf*  pointer to the socket xt_buf
@@ -97,7 +135,7 @@ struct xt_buf *xt_buf_create_ud( lua_State *luaVM, int size )
 	size_t          sz;
 
 	// size = sizof(...) -1 because the array has already one member
-	sz = sizeof(struct xt_buf) + (size - 1) * sizeof(unsigned char);
+	sz = sizeof( struct xt_buf ) + (size - 1) * sizeof(unsigned char);
 	b  = (struct xt_buf *) lua_newuserdata(luaVM, sz);
 	memset(b->b, 0, size * sizeof(unsigned char));
 
@@ -109,18 +147,77 @@ struct xt_buf *xt_buf_create_ud( lua_State *luaVM, int size )
 
 
 /**--------------------------------------------------------------------------
- * \brief  gets the value of the element
- * \param  position in bytes
- * \param  offset   in bits
- * \param  len   in bits
+ * Check if the item on stack position pos is an xt_buf struct and return it
+ * \param  luaVM    the Lua State
+ * \param  pos      position on the stack
  *
  * \return pointer to struct buf
  * --------------------------------------------------------------------------*/
-struct xt_buf *xt_buf_check_ud (lua_State *luaVM, int pos) {
-	void *ud = luaL_checkudata (luaVM, pos, "xt.Buffer");
-	luaL_argcheck(luaVM, ud != NULL, pos, "`xt.Buffer` expected");
+struct xt_buf *xt_buf_check_ud( lua_State *luaVM, int pos )
+{
+	void *ud = luaL_checkudata( luaVM, pos, "xt.Buffer" );
+	luaL_argcheck( luaVM, ud != NULL, pos, "`xt.Buffer` expected" );
 	return (struct xt_buf *) ud;
 }
+
+
+//////////////////////////////////////////////////////////////////////////////////////
+/////////////// NEW IMPLEMENTATION
+
+/**--------------------------------------------------------------------------
+ * Read an integer from the buffer
+ * \lparam  pos  position in bytes
+ * \lparam  sz   size in bytes (1-8)
+ * \lparam  end  endianess (l-little, b-big, n-native)
+ * lreturn  val  lua_Integer
+ *
+ * \return integer 1 left on the stack
+ * --------------------------------------------------------------------------*/
+static int lxt_buf_readint( lua_State *luaVM )
+{
+	lua_Unsigned   val = 0;                           ///< value for the read access
+	unsigned char *set = (unsigned char*) &val;       ///< char arry to write bytewise into val
+#ifndef IS_LITTLE_ENDIAN
+	size_t        sz_l = sizeof( val );               ///< size of the value in bytes
+#endif
+	int              i;
+	struct xt_buf *buf = xt_buf_check_ud( luaVM, 1 );
+	int            pos = luaL_checkint ( luaVM, 2 );      ///< starting byte  b->b[pos]
+	int             sz = luaL_checkint ( luaVM, 3 );  ///< how many bytes to read
+	int       islittle = getendian( luaVM, 4 );           ///< treat as little endian?
+
+	luaL_argcheck( luaVM, -1 <= pos && pos <= (int) buf->len, 2,
+		                 "xt.Buffer position must be > 0 or < #buffer");
+	luaL_argcheck( luaVM,  1<= pos && pos <= 8,       3,
+		                 "integer bytes must be >=1 and <=8");
+
+#ifdef IS_LITTLE_ENDIAN
+	for (i=0 ; i<sz; i++)
+#else
+	for (i=sz_l; i<sz_l - sz -2; i--)
+#endif
+	{
+		if (islittle)      set[ i ] = buf->b[ pos+sz-1-i ];
+		else               set[ i ] = buf->b[ pos+i ];
+	}
+
+	printf("%016llX    %lu     %d     %d\n", val, sizeof(lua_Unsigned), IS_LITTLE_ENDIAN, IS_BIG_ENDIAN);
+	lua_pushinteger( luaVM, (lua_Integer) val );
+	return 1;
+}
+
+
+
+
+
+
+
+
+
+
+
+///////////////////////////////////////// OLD IMPLEMENTATION /////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////
 
 
 /**
@@ -522,6 +619,7 @@ static const struct luaL_Reg xt_buf_cf [] = {
  *             assigns Lua available names to C-functions
  */
 static const luaL_Reg xt_buf_m [] = {
+	{"readInt",       lxt_buf_readint},
 	{"readBits",      lxt_buf_readbits},
 	{"writeBits",     lxt_buf_writebits},
 	{"read8",         lxt_buf_read8},
