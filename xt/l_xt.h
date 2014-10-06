@@ -21,8 +21,11 @@
 
 #define MAX_PKT_BYTES     1500
 
+#define PRINT_DEBUGS      1
+
 
 // http://stackoverflow.com/questions/2100331/c-macro-definition-to-determine-big-endian-or-little-endian-machine
+// http://esr.ibiblio.org/?p=5095
 #define IS_BIG_ENDIAN (*(uint16_t *)"\0\xff" < 0x100)
 #define IS_LITTLE_ENDIAN (1 == *(unsigned char *)&(const int){1})
 //#define IS_LITTLE_ENDIAN (*(uint16_t*)"\0\1">>8)
