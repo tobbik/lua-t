@@ -162,7 +162,64 @@ struct xt_buf *xt_buf_check_ud( lua_State *luaVM, int pos )
 /////////////// NEW IMPLEMENTATION
 
 /**--------------------------------------------------------------------------
+ * Read an integer of y bytes from a char buffer pointer
+ * General helper function to read the value of an 64 bit integer from a char array
+ * \param  *val        pointer to value.
+ * \param   sz         how many bytes to read.
+ * \param   islittle   treat input as little endian?
+ * \param   buff       pointer to char array to read from.
+ * --------------------------------------------------------------------------*/
+static inline void xt_buf_readbytes( uint64_t *val, size_t sz, int islittle, unsigned char * buf )
+{
+	size_t         i;
+	unsigned char *set = (unsigned char*) val;  ///< char array to read bytewise into val
+#ifndef IS_LITTLE_ENDIAN
+	size_t        sz_l = sizeof( *val );        ///< size of the value in bytes
+#endif
+
+#ifdef IS_LITTLE_ENDIAN
+	for (i=0 ; i<sz; i++)
+#else
+	for (i=sz_l; i<sz_l - sz -2; i--)
+#endif
+	{
+		if (islittle)      set[ i ] = buf[ sz-1-i ];
+		else               set[ i ] = buf[ i ];
+	}
+}
+
+
+/**--------------------------------------------------------------------------
+ * Write an integer of y bytes to a char buffer pointer
+ * General helper function to write the value of an 64 bit integer to a char array
+ * \param  *val        pointer to value.
+ * \param   sz         how many bytes to read.
+ * \param   islittle   treat input as little endian?
+ * \param   buff       pointer to char array to write to.
+ * --------------------------------------------------------------------------*/
+static inline void xt_buf_writebytes( uint64_t *val, size_t sz, int islittle, unsigned char * buf )
+{
+	size_t         i;
+	unsigned char *set  = (unsigned char*) val;  ///< char array to read bytewise into val
+#ifndef IS_LITTLE_ENDIAN
+	size_t         sz_l = sizeof( *val );        ///< size of the value in bytes
+#endif
+
+#ifdef IS_LITTLE_ENDIAN
+	for (i=0 ; i<sz; i++)
+#else
+	for (i=sz_l; i<sz_l - sz -2; i--)
+#endif
+	{
+		if (islittle)      buf[ sz-1-i ] = set[ i ];
+		else               buf[ i ]      = set[ i ];
+	}
+}
+
+
+/**--------------------------------------------------------------------------
  * Read an integer of y bytes from the buffer at position x
+ * \lparam  buf  userdata of type xt.Buffer (struct xt_buf)
  * \lparam  pos  position in bytes
  * \lparam  sz   size in bytes (1-8)
  * \lparam  end  endianess (l-little, b-big, n-native)
@@ -172,32 +229,18 @@ struct xt_buf *xt_buf_check_ud( lua_State *luaVM, int pos )
  * --------------------------------------------------------------------------*/
 static int lxt_buf_readint( lua_State *luaVM )
 {
-	int              i;
 	struct xt_buf *buf = xt_buf_check_ud( luaVM, 1 );
 	int            pos = luaL_checkint( luaVM, 2 );   ///< starting byte  b->b[pos]
 	int             sz = luaL_checkint( luaVM, 3 );   ///< how many bytes to read
-	int       islittle = getendian( luaVM, 4 );       ///< treat as little endian?
 	lua_Unsigned   val = 0;                           ///< value for the read access
-	unsigned char *set = (unsigned char*) &val;       ///< char arry to write bytewise into val
-#ifndef IS_LITTLE_ENDIAN
-	size_t        sz_l = sizeof( val );               ///< size of the value in bytes
-#endif
 
-	// TODO: preperly calculate boundaries according #buf->b - sz etc.
+	// TODO: properly calculate boundaries according #buf->b - sz etc.
 	luaL_argcheck( luaVM, -1 <= pos && pos <= (int) buf->len, 2,
 		                 "xt.Buffer position must be > 0 or < #buffer");
 	luaL_argcheck( luaVM,  1<= sz && sz <= 8,       3,
 		                 "size must be >=1 and <=8");
 
-#ifdef IS_LITTLE_ENDIAN
-	for (i=0 ; i<sz; i++)
-#else
-	for (i=sz_l; i<sz_l - sz -2; i--)
-#endif
-	{
-		if (islittle)      set[ i ] = buf->b[ pos+sz-1-i ];
-		else               set[ i ] = buf->b[ pos+i ];
-	}
+	xt_buf_readbytes( &val, sz, getendian( luaVM, 4 ), &(buf->b[pos]));
 
 #ifdef PRINT_DEBUGS
 	printf("%016llX    %lu     %d     %d\n", val, sizeof(lua_Unsigned), IS_LITTLE_ENDIAN, IS_BIG_ENDIAN);
@@ -210,6 +253,7 @@ static int lxt_buf_readint( lua_State *luaVM )
 /**--------------------------------------------------------------------------
  * Write an integer of y bytes into the buffer at position x.
  *       Any bits/bytes not used by value but covered in sz will be set to 0
+ * \lparam  buf  userdata of type xt.Buffer (struct xt_buf)
  * \lparam  val  Integer value to be written into the buffer.
  * \lparam  pos  position in bytes.
  * \lparam  sz   size in bytes (1-8).
@@ -219,13 +263,10 @@ static int lxt_buf_readint( lua_State *luaVM )
  * --------------------------------------------------------------------------*/
 static int lxt_buf_writeint( lua_State *luaVM )
 {
-	int              i;
 	struct xt_buf *buf = xt_buf_check_ud( luaVM, 1 );
-	lua_Integer    val = luaL_checkinteger( luaVM, 2 );   ///< value to be written
+	lua_Unsigned   val = (lua_Unsigned) luaL_checkinteger( luaVM, 2 );   ///< value to be written
 	int            pos = luaL_checkint( luaVM, 3 );   ///< starting byte  b->b[pos]
 	int             sz = luaL_checkint( luaVM, 4 );   ///< how many bytes to read
-	int       islittle = getendian( luaVM, 5 );       ///< treat as little endian?
-	unsigned char *set = (unsigned char*) &val;       ///< char arry to write bytewise into val
 #ifndef IS_LITTLE_ENDIAN
 	size_t        sz_l = sizeof( val );               ///< size of the value in bytes
 #endif
@@ -236,15 +277,7 @@ static int lxt_buf_writeint( lua_State *luaVM )
 	luaL_argcheck( luaVM,  1<= sz && sz <= 8,       4,
 		                 "size must be >=1 and <=8");
 
-#ifdef IS_LITTLE_ENDIAN
-	for (i=0 ; i<sz; i++)
-#else
-	for (i=sz_l; i<sz_l - sz -2; i--)
-#endif
-	{
-		if (islittle)      buf->b[ pos+sz-1-i ] = set[ i ];
-		else               buf->b[ pos+i ]      = set[ i ];
-	}
+	xt_buf_writebytes( &val, sz, getendian( luaVM, 5 ), &(buf->b[pos]));
 
 #ifdef PRINT_DEBUGS
 	printf("%016llX    %lu     %d     %d\n", val, sizeof(lua_Unsigned), IS_LITTLE_ENDIAN, IS_BIG_ENDIAN);
@@ -252,9 +285,6 @@ static int lxt_buf_writeint( lua_State *luaVM )
 	lua_pushinteger( luaVM, (lua_Integer) val );
 	return 1;
 }
-
-
-
 
 
 
