@@ -240,9 +240,9 @@ static int lxt_buf_readint( lua_State *luaVM )
 	luaL_argcheck( luaVM,  1<= sz && sz <= 8,       3,
 		                 "size must be >=1 and <=8");
 
-	xt_buf_readbytes( &val, sz, getendian( luaVM, 4 ), &(buf->b[pos]));
+	xt_buf_readbytes( (uint64_t *) &val, sz, getendian( luaVM, 4 ), &(buf->b[pos]));
 
-#ifdef PRINT_DEBUGS
+#if PRINT_DEBUGS == 1
 	printf("%016llX    %lu     %d     %d\n", val, sizeof(lua_Unsigned), IS_LITTLE_ENDIAN, IS_BIG_ENDIAN);
 #endif
 	lua_pushinteger( luaVM, (lua_Integer) val );
@@ -274,9 +274,9 @@ static int lxt_buf_writeint( lua_State *luaVM )
 	luaL_argcheck( luaVM,  1<= sz && sz <= 8,       4,
 		                 "size must be >=1 and <=8");
 
-	xt_buf_writebytes( &val, sz, getendian( luaVM, 5 ), &(buf->b[pos]));
+	xt_buf_writebytes( (uint64_t *) &val, sz, getendian( luaVM, 5 ), &(buf->b[pos]));
 
-#ifdef PRINT_DEBUGS
+#if PRINT_DEBUGS == 1
 	printf("%016llX    %lu     %d     %d\n", val, sizeof(lua_Unsigned), IS_LITTLE_ENDIAN, IS_BIG_ENDIAN);
 #endif
 	return 0;
@@ -308,10 +308,10 @@ static int lxt_buf_readbit( lua_State *luaVM )
 	luaL_argcheck( luaVM,  1<= sz  &&  sz <= 64,      4,
 		                 "size must be >=1 and <=64");
 
-	xt_buf_readbytes( &val, (sz+ofs)/8 +1, getendian( luaVM, 5 ), &(buf->b[pos]));
+	xt_buf_readbytes( (uint64_t *) &val, (sz+ofs)/8 +1, getendian( luaVM, 5 ), &(buf->b[pos]));
 	lua_pushinteger( luaVM, (lua_Integer) ((val << (64- ((sz/8+1)*8) + ofs ) ) >> (64 - sz)) );
 
-#ifdef PRINT_DEBUGS
+#if PRINT_DEBUGS == 1
 	printf("Read Val:    %016llX\nShift Left:  %016llX\nShift right: %016llX\n%d      %d\n",
 			val,
 			(val << (64- ((sz/8+1)*8) + ofs ) ),
@@ -353,11 +353,11 @@ static int lxt_buf_writebit( lua_State *luaVM )
 	abit = (((sz+ofs-1)/8)+1) * 8;
 
 	msk = (0xFFFFFFFFFFFFFFFF  << (64-sz)) >> (64-abit+ofs);
-	xt_buf_readbytes( &read, abit/8, 1, &(buf->b[pos]));
+	xt_buf_readbytes(  (uint64_t *) &read, abit/8, 1, &(buf->b[pos]));
 	read= (val << (abit-ofs-sz)) | (read & ~msk);
-	xt_buf_writebytes( &read, abit/8, 1, &(buf->b[pos]));
+	xt_buf_writebytes( (uint64_t *) &read, abit/8, 1, &(buf->b[pos]));
 
-#ifdef PRINT_DEBUGS
+#if PRINT_DEBUGS == 1
 	printf("Read: %016llX       \nLft:  %016lX       %d \nMsk:  %016lX       %ld\n"
 	       "Nmsk: %016llX       \nval:  %016llX         \n"
 	       "Sval: %016llX    %ld\nRslt: %016llX         \n",
