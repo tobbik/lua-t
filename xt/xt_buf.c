@@ -287,7 +287,44 @@ static int lxt_buf_writeint( lua_State *luaVM )
 }
 
 
+/**--------------------------------------------------------------------------
+ * Read an integer of y bits from the buffer at position x
+ * \lparam  pos  position in bytes
+ * \lparam  ofs  offset   in bits
+ * \lparam  sz   size in bytes (1-8)
+ * \lreturn val  lua_Integer
+ *
+ * \return integer 1 left on the stack
+ * --------------------------------------------------------------------------*/
+static int lxt_buf_readbit( lua_State *luaVM )
+{
+	struct xt_buf *buf = xt_buf_check_ud( luaVM, 1 );
+	int            pos = luaL_checkint( luaVM, 2 );   ///< starting byte  b->b[pos]
+	int            ofs = luaL_checkint( luaVM, 3 );   ///< starting byte  b->b[pos] + ofs bits
+	int             sz = luaL_checkint( luaVM, 4 );   ///< how many bits  to read
+	lua_Unsigned   val = 0;                           ///< value for the read access
 
+	// TODO: properly calculate boundaries according #buf->b - sz etc.
+	luaL_argcheck( luaVM,  0<= pos && pos <= (int) buf->len, 2,
+		                 "xt.Buffer position must be > 0 or < #buffer");
+	luaL_argcheck( luaVM,  0<= ofs && ofs <= 7,       3,
+		                 "offset must be >=0 and <=7");
+	luaL_argcheck( luaVM,  1<= sz  &&  sz <= 64,      4,
+		                 "size must be >=1 and <=64");
+
+	xt_buf_readbytes( &val, (sz+ofs)/8 +1, getendian( luaVM, 5 ), &(buf->b[pos]));
+	lua_pushinteger( luaVM, (lua_Integer) ((val << (64- ((sz/8+1)*8) + ofs ) ) >> (64 - sz)) );
+
+#ifdef PRINT_DEBUGS
+	printf("Read Val:    %016llX\nShift Left:  %016llX\nShift right: %016llX\n%d      %d\n",
+			val,
+			(val << (64- ((sz/8+1)*8) + ofs ) ),
+			(val << (64- ((sz/8+1)*8) + ofs ) ) >> (64 - sz),
+			(64- ((sz/8+1)*8) + ofs ), (64-sz));
+#endif
+	//lua_pushinteger( luaVM, (lua_Integer) val );
+	return 1;
+}
 
 
 
@@ -698,6 +735,7 @@ static const luaL_Reg xt_buf_m [] = {
 	// new implementation
 	{"readInt",       lxt_buf_readint},
 	{"writeInt",      lxt_buf_writeint},
+	{"readBit",       lxt_buf_readbit},
 	// old implementation
 	{"readBits",      lxt_buf_readbits},
 	{"writeBits",     lxt_buf_writebits},
