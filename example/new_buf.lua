@@ -29,3 +29,18 @@ print( b:toHex() )
 print( b:readBit( 3, 0, 10 ) )
 print( b:readBit( 3, 3, 9 ) )
 print( b:readBit( 3, 4, 8 ) )
+
+
+print( "WRITING ACCESS by BITS" )
+b = xt.Buffer( string.char( 0xAB, 0x80, 0x0F, 0xCD, 0xEF, 0x12 ) )
+print( b:toHex() )
+-- write 5 at 1(5) with sz 3
+print( b:writeBit( 5, 1, 5, 3 ) )
+print( b:toHex() )
+b = xt.Buffer( string.char( 0xAB, 0x80, 0x0F, 0xCD, 0xEF, 0x12 ) )
+print( b:writeBit( 5, 1, 5, 2 ) )
+print( b:toHex() )
+b = xt.Buffer( string.char( 0xAB, 0x80, 0x0F, 0xCD, 0xEF, 0x12 ) )
+-- write 5 at 1(6) with sz 3
+print( b:writeBit( 5, 1, 6, 3 ) )
+print( b:toHex() )

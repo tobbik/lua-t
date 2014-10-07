@@ -67,10 +67,10 @@ int l_shortToBcd( lua_State *luaVM )
 
 
 /////////////////////////////////////////////////////////////////////////////
-//  _                        _    ____ ___ 
+//  _                        _    ____ ___
 // | |   _   _  __ _        / \  |  _ \_ _|
-// | |  | | | |/ _` |_____ / _ \ | |_) | | 
-// | |__| |_| | (_| |_____/ ___ \|  __/| | 
+// | |  | | | |/ _` |_____ / _ \ | |_) | |
+// | |__| |_| | (_| |_____/ ___ \|  __/| |
 // |_____\__,_|\__,_|    /_/   \_\_|  |___|
 /////////////////////////////////////////////////////////////////////////////
 /** -------------------------------------------------------------------------
@@ -285,13 +285,13 @@ static int lxt_buf_writeint( lua_State *luaVM )
 
 
 /**--------------------------------------------------------------------------
- * Read an integer of y bits from the buffer at position x
- * \lparam  pos  position in bytes
- * \lparam  ofs  offset   in bits
- * \lparam  sz   size in bytes (1-8)
- * \lreturn val  lua_Integer
+ * Read an integer of y bits from the buffer at position x.
+ * \lparam  pos  position in bytes.
+ * \lparam  ofs  offset   in bits (0-7).
+ * \lparam  sz   size in bits (1-64).
+ * \lreturn val  lua_Integer.
  *
- * \return integer 1 left on the stack
+ * \return integer 1 left on the stack.
  * --------------------------------------------------------------------------*/
 static int lxt_buf_readbit( lua_State *luaVM )
 {
@@ -322,6 +322,59 @@ static int lxt_buf_readbit( lua_State *luaVM )
 	//lua_pushinteger( luaVM, (lua_Integer) val );
 	return 1;
 }
+
+
+/**--------------------------------------------------------------------------
+ * Write an integer of y bits to the buffer at position x
+ * \lparam  pos  position in bytes
+ * \lparam  ofs  offset   in bits (0-7)
+ * \lparam  sz   size in bits (1-64)
+ * \lreturn val  lua_Integer
+ *
+ * \return integer 1 left on the stack
+ * --------------------------------------------------------------------------*/
+static int lxt_buf_writebit( lua_State *luaVM )
+{
+	struct xt_buf *buf = xt_buf_check_ud( luaVM, 1 );
+	lua_Unsigned   val = (lua_Unsigned) luaL_checkinteger( luaVM, 2 );   ///< value to be written
+	int            pos = luaL_checkint( luaVM, 3 );   ///< starting byte  b->b[pos]
+	int            ofs = luaL_checkint( luaVM, 4 );   ///< starting byte  b->b[pos] + ofs bits
+	int             sz = luaL_checkint( luaVM, 5 );   ///< how many bits  to write
+	/// how many bit are in all the bytes needed for the conversion
+	size_t        abit;
+	lua_Unsigned  read = 0;                           ///< value for the read access
+	lua_Unsigned  msk  = 0;                           ///< mask
+
+	// TODO: properly calculate boundaries according #buf->b - sz etc.
+	luaL_argcheck( luaVM,  0<= pos && pos <= (int) buf->len, 2,
+		                 "xt.Buffer position must be > 0 or < #buffer");
+	luaL_argcheck( luaVM,  0<= ofs && ofs <= 7,       3,
+		                 "offset must be >=0 and <=7");
+	luaL_argcheck( luaVM,  1<= sz  &&  sz <= 64,      4,
+		                 "size must be >=1 and <=64");
+	abit = (((sz+ofs-1)/8)+1) * 8;
+
+	msk = (0xFFFFFFFFFFFFFFFF  << (64-sz)) >> (64-abit+ofs);
+	xt_buf_readbytes( &read, abit/8, 1, &(buf->b[pos]));
+	read= (val << (abit-ofs-sz)) | (read & ~msk);
+	xt_buf_writebytes( &read, abit/8, 1, &(buf->b[pos]));
+
+#ifdef PRINT_DEBUGS
+	printf("Read: %016llX       \nLft:  %016lX       %d \nMsk:  %016lX       %ld\n"
+	       "Nmsk: %016llX       \nval:  %016llX         \n"
+	       "Sval: %016llX    %ld\nRslt: %016llX         \n",
+			read,
+			0xFFFFFFFFFFFFFFFF  <<   (64-sz), (64-sz),  /// Mask after left shift
+			(0xFFFFFFFFFFFFFFFF <<	 (64-sz)) >> (64-abit+ofs), (64-abit+ofs),
+			read & ~msk,
+			val,
+			 val << (abit-ofs-sz),  abit-ofs-sz,
+			(val << (abit-ofs-sz)) | (read & ~msk)
+			);
+#endif
+	return 1;
+}
+
 
 
 
@@ -733,6 +786,7 @@ static const luaL_Reg xt_buf_m [] = {
 	{"readInt",       lxt_buf_readint},
 	{"writeInt",      lxt_buf_writeint},
 	{"readBit",       lxt_buf_readbit},
+	{"writeBit",      lxt_buf_writebit},
 	// old implementation
 	{"readBits",      lxt_buf_readbits},
 	{"writeBits",     lxt_buf_writebits},
