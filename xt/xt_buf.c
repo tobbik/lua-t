@@ -267,9 +267,6 @@ static int lxt_buf_writeint( lua_State *luaVM )
 	lua_Unsigned   val = (lua_Unsigned) luaL_checkinteger( luaVM, 2 );   ///< value to be written
 	int            pos = luaL_checkint( luaVM, 3 );   ///< starting byte  b->b[pos]
 	int             sz = luaL_checkint( luaVM, 4 );   ///< how many bytes to read
-#ifndef IS_LITTLE_ENDIAN
-	size_t        sz_l = sizeof( val );               ///< size of the value in bytes
-#endif
 
 	// TODO: preperly calculate boundaries according #buf->b - sz etc.
 	luaL_argcheck( luaVM, -1 <= pos && pos <= (int) buf->len, 3,
