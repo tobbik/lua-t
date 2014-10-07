@@ -218,14 +218,14 @@ static inline void xt_buf_writebytes( uint64_t *val, size_t sz, int islittle, un
 
 
 /**--------------------------------------------------------------------------
- * Read an integer of y bytes from the buffer at position x
- * \lparam  buf  userdata of type xt.Buffer (struct xt_buf)
- * \lparam  pos  position in bytes
- * \lparam  sz   size in bytes (1-8)
- * \lparam  end  endianess (l-little, b-big, n-native)
- * \lreturn val  lua_Integer
+ * Read an integer of y bytes from the buffer at position x.
+ * \lparam  buf  userdata of type xt.Buffer (struct xt_buf).
+ * \lparam  pos  position in bytes.
+ * \lparam  sz   size in bytes (1-8).
+ * \lparam  end  endianess (l-little, b-big, n-native).
+ * \lreturn val  lua_Integer.
  *
- * \return integer 1 left on the stack
+ * \return integer 1 left on the stack.
  * --------------------------------------------------------------------------*/
 static int lxt_buf_readint( lua_State *luaVM )
 {
@@ -252,14 +252,14 @@ static int lxt_buf_readint( lua_State *luaVM )
 
 /**--------------------------------------------------------------------------
  * Write an integer of y bytes into the buffer at position x.
- *       Any bits/bytes not used by value but covered in sz will be set to 0
- * \lparam  buf  userdata of type xt.Buffer (struct xt_buf)
+ *       Any bits/bytes not used by value but covered in sz will be set to 0.
+ * \lparam  buf  userdata of type xt.Buffer (struct xt_buf).
  * \lparam  val  Integer value to be written into the buffer.
  * \lparam  pos  position in bytes.
  * \lparam  sz   size in bytes (1-8).
  * \lparam  end  endianess (l-little, b-big, n-native).
  *
- * \return integer 1 left on the stack
+ * \return integer 1 left on the stack.
  * --------------------------------------------------------------------------*/
 static int lxt_buf_writeint( lua_State *luaVM )
 {
@@ -279,8 +279,7 @@ static int lxt_buf_writeint( lua_State *luaVM )
 #ifdef PRINT_DEBUGS
 	printf("%016llX    %lu     %d     %d\n", val, sizeof(lua_Unsigned), IS_LITTLE_ENDIAN, IS_BIG_ENDIAN);
 #endif
-	lua_pushinteger( luaVM, (lua_Integer) val );
-	return 1;
+	return 0;
 }
 
 
@@ -319,19 +318,18 @@ static int lxt_buf_readbit( lua_State *luaVM )
 			(val << (64- ((sz/8+1)*8) + ofs ) ) >> (64 - sz),
 			(64- ((sz/8+1)*8) + ofs ), (64-sz));
 #endif
-	//lua_pushinteger( luaVM, (lua_Integer) val );
 	return 1;
 }
 
 
 /**--------------------------------------------------------------------------
- * Write an integer of y bits to the buffer at position x
- * \lparam  pos  position in bytes
- * \lparam  ofs  offset   in bits (0-7)
- * \lparam  sz   size in bits (1-64)
- * \lreturn val  lua_Integer
+ * Write an integer of y bits to the buffer at position x.
+ * \lparam  pos  position in bytes.
+ * \lparam  ofs  offset   in bits (0-7).
+ * \lparam  sz   size in bits (1-64).
+ * \lreturn val  lua_Integer.
  *
- * \return integer 1 left on the stack
+ * \return integer 1 left on the stack.
  * --------------------------------------------------------------------------*/
 static int lxt_buf_writebit( lua_State *luaVM )
 {
@@ -372,7 +370,7 @@ static int lxt_buf_writebit( lua_State *luaVM )
 			(val << (abit-ofs-sz)) | (read & ~msk)
 			);
 #endif
-	return 1;
+	return 0;
 }
 
 
