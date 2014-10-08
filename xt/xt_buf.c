@@ -202,10 +202,10 @@ uint64_t xt_buf_readbytes( size_t sz, int islittle, unsigned char * buf )
  * \param   islittle   treat input as little endian?
  * \param   buff       pointer to char array to write to.
  * --------------------------------------------------------------------------*/
-void xt_buf_writebytes( uint64_t *val, size_t sz, int islittle, unsigned char * buf )
+void xt_buf_writebytes( uint64_t val, size_t sz, int islittle, unsigned char * buf )
 {
 	size_t         i;
-	unsigned char *set  = (unsigned char*) val;  ///< char array to read bytewise into val
+	unsigned char *set  = (unsigned char*) &val;  ///< char array to read bytewise into val
 #ifndef IS_LITTLE_ENDIAN
 	size_t         sz_l = sizeof( *val );        ///< size of the value in bytes
 #endif
@@ -261,7 +261,7 @@ void xt_buf_writebits( uint64_t val, size_t sz, size_t ofs, unsigned char * buf 
 	msk  = (0xFFFFFFFFFFFFFFFF  << (64-sz)) >> (64-abit+ofs);
 	read = xt_buf_readbytes( abit/8, 1, buf );
 	read = (val << (abit-ofs-sz)) | (read & ~msk);
-	xt_buf_writebytes( (uint64_t *) &read, abit/8, 1, buf);
+	xt_buf_writebytes( read, abit/8, 1, buf);
 
 #if PRINT_DEBUGS == 1
 	printf("Read: %016llX       \nLft:  %016lX       %d \nMsk:  %016lX       %ld\n"
@@ -340,7 +340,7 @@ static int lxt_buf_writeint( lua_State *luaVM )
 	luaL_argcheck( luaVM,  1<= sz && sz <= 8,       4,
 		                 "size must be >=1 and <=8");
 
-	xt_buf_writebytes( (uint64_t *) &val, sz, getendian( luaVM, 5 ), &(buf->b[pos]));
+	xt_buf_writebytes( (uint64_t) val, sz, getendian( luaVM, 5 ), &(buf->b[pos]));
 
 #if PRINT_DEBUGS == 1
 	printf("%016llX    %lu     %d     %d\n", val, sizeof(lua_Unsigned), IS_LITTLE_ENDIAN, IS_BIG_ENDIAN);
@@ -738,7 +738,8 @@ static int lxt_buf_writestring (lua_State *luaVM)
 
 /**
  * \brief    gets the content of the Stream in Hex
- * lreturn   string buffer representation in Hexadecimal
+ * \lreturn  string buffer representation in Hexadecimal
+ * \TODO     use luaL_Buffer
  *
  * \return integer 0 left on the stack
  */
@@ -753,7 +754,7 @@ static int lxt_buf_tohexstring (lua_State *luaVM)
 
 	c = 0;
 	for (l=0; l < (int) b->len; l++) {
-		c += snprintf(sbuf+c, 4, "%02X ", b->b[l]);
+		c += snprintf( sbuf+c, 4, "%02X ", b->b[l] );
 	}
 	lua_pushstring(luaVM, sbuf);
 	return 1;
