@@ -124,7 +124,7 @@ int lxt_buf_New( lua_State *luaVM )
  * create a xt_buf and push to LuaStack.
  * \param   luaVM  The lua state.
  *
- * \return  struct xt_buf*  pointer to the socket xt_buf
+ * \return  struct xt_buf*  pointer to the  xt_buf struct
  * --------------------------------------------------------------------------*/
 struct xt_buf *xt_buf_create_ud( lua_State *luaVM, int size )
 {
@@ -148,7 +148,7 @@ struct xt_buf *xt_buf_create_ud( lua_State *luaVM, int size )
  * \param  luaVM    the Lua State
  * \param  pos      position on the stack
  *
- * \return pointer to struct buf
+ * \return struct xt_buf* pointer to xt_buf struct
  * --------------------------------------------------------------------------*/
 struct xt_buf *xt_buf_check_ud( lua_State *luaVM, int pos )
 {
@@ -167,10 +167,10 @@ struct xt_buf *xt_buf_check_ud( lua_State *luaVM, int pos )
 /**--------------------------------------------------------------------------
  * Read an integer of y bytes from a char buffer pointer
  * General helper function to read the value of an 64 bit integer from a char array
- * \param  *val        pointer to value.
  * \param   sz         how many bytes to read.
  * \param   islittle   treat input as little endian?
- * \param   buff       pointer to char array to read from.
+ * \param   buf        pointer to char array to read from.
+ * \return  val        integer value.
  * --------------------------------------------------------------------------*/
 uint64_t xt_buf_readbytes( size_t sz, int islittle, unsigned char * buf )
 {
@@ -197,10 +197,10 @@ uint64_t xt_buf_readbytes( size_t sz, int islittle, unsigned char * buf )
 /**--------------------------------------------------------------------------
  * Write an integer of y bytes to a char buffer pointer
  * General helper function to write the value of an 64 bit integer to a char array
- * \param  *val        pointer to value.
- * \param   sz         how many bytes to read.
+ * \param  val         value to be written.
+ * \param   sz         how many bytes to write.
  * \param   islittle   treat input as little endian?
- * \param   buff       pointer to char array to write to.
+ * \param   buf        pointer to char array to write to.
  * --------------------------------------------------------------------------*/
 void xt_buf_writebytes( uint64_t val, size_t sz, int islittle, unsigned char * buf )
 {
@@ -224,10 +224,10 @@ void xt_buf_writebytes( uint64_t val, size_t sz, int islittle, unsigned char * b
 
 /**--------------------------------------------------------------------------
  * Read an integer of y bits from ta char buffer with offset ofs.
- * \param  *val  pointer to the val the read value gets written to.
  * \param   sz   size in bits (1-64).
  * \param   ofs  offset   in bits (0-7).
  * \param  *buf  char buffer already on proper position
+ * \return  val        integer value.
  * --------------------------------------------------------------------------*/
 uint64_t xt_buf_readbits( size_t sz, size_t ofs, unsigned char * buf )
 {
@@ -277,8 +277,6 @@ void xt_buf_writebits( uint64_t val, size_t sz, size_t ofs, unsigned char * buf 
 			);
 #endif
 }
-
-
 
 //
 // ================================= GENERIC LUA API========================
@@ -351,6 +349,7 @@ static int lxt_buf_writeint( lua_State *luaVM )
 
 /**--------------------------------------------------------------------------
  * Read an integer of y bits from the buffer at position x.
+ * \lparam  buf  userdata of type xt.Buffer (struct xt_buf).
  * \lparam  pos  position in bytes.
  * \lparam  ofs  offset   in bits (0-7).
  * \lparam  sz   size in bits (1-64).
@@ -382,10 +381,11 @@ static int lxt_buf_readbit( lua_State *luaVM )
 
 /**--------------------------------------------------------------------------
  * Write an integer of y bits to the buffer at position x.
+ * \lparam  buf  userdata of type xt.Buffer (struct xt_buf).
+ * \loaram  val  lua_Integer.
  * \lparam  pos  position in bytes.
  * \lparam  ofs  offset   in bits (0-7).
  * \lparam  sz   size in bits (1-64).
- * \lreturn val  lua_Integer.
  *
  * \return integer 1 left on the stack.
  * --------------------------------------------------------------------------*/
@@ -407,6 +407,64 @@ static int lxt_buf_writebit( lua_State *luaVM )
 	xt_buf_writebits( (uint64_t) val, sz, ofs, &(buf->b[pos]));
 	return 0;
 }
+
+
+/**--------------------------------------------------------------------------
+ * Read a set of chars to the buffer at position x.
+ * \lparam  buf  userdata of type xt.Buffer (struct xt_buf).
+ * \lparam  pos  position in bytes.
+ * \lparam  ofs  offset   in bits (0-7).
+ * \lparam  sz   size in bits (1-64).
+ * \lreturn val  lua_String.
+ * TODO: check buffer length vs requested size and offset
+ *
+ * \return integer 1 left on the stack.
+ * --------------------------------------------------------------------------*/
+static int lxt_buf_readstring (lua_State *luaVM)
+{
+	struct xt_buf *b   = xt_buf_check_ud (luaVM, 1);
+	int            ofs;
+	int            sz;
+	ofs = (lua_isnumber(luaVM, 2)) ? (size_t) luaL_checkint( luaVM, 2 ) : 0;
+	sz  = (lua_isnumber(luaVM, 3)) ? (size_t) luaL_checkint( luaVM, 3 ) : b->len-ofs;
+
+	lua_pushlstring(luaVM, (const char*) &(b->b[ ofs ]), sz);
+	return 1;
+}
+
+
+/**--------------------------------------------------------------------------
+ * Write an set of chars to the buffer at position x.
+ * \lparam  buf  userdata of type xt.Buffer (struct xt_buf).
+ * \lparam  val  lua_String.
+ * \lparam  pos  position in bytes.
+ * \lparam  ofs  offset   in bits (0-7).
+ * \lparam  sz   size in bits (1-64).
+ * TODO: check string vs buffer length
+ *
+ * \return integer 1 left on the stack.
+ * --------------------------------------------------------------------------*/
+static int lxt_buf_writestring (lua_State *luaVM)
+{
+	struct xt_buf *b   = xt_buf_check_ud (luaVM, 1);
+	int            ofs = (lua_isnumber(luaVM, 3)) ? luaL_checkint(luaVM, 3) : 0;
+	size_t         sz;
+	// if a third parameter is given write only x bytes of the input string to the buffer
+	if (lua_isnumber(luaVM, 4))
+	{
+		sz  = luaL_checkint(luaVM, 4);
+		memcpy  ( (char*) &(b->b[ ofs ]), luaL_checklstring( luaVM, 2, NULL ), sz);
+	}
+	// otherwise write the whole thing
+	else
+	{
+		memcpy  ( (char*) &(b->b[ ofs ]), luaL_checklstring( luaVM, 2, &sz ), sz);
+	}
+	return 0;
+}
+
+
+
 
 
 
@@ -542,30 +600,6 @@ static int lxt_buf_read64 (lua_State *luaVM)
 
 	v = (uint64_t *) &(b->b[ p ]);
 	lua_pushinteger(luaVM, (int) htonll (*v));
-	return 1;
-}
-
-
-/**
- * \brief  gets the string from a buffer of len x for pos y
- * \param  lua Virtual Machine
- * \lparam struct xt_buf 
- * \lparam int    length in bytes
- * \lparam int    offset in bytes
- * \return integer 1 left on the stack
- */
-// TODO: boundary checks on buffer vs string length
-static int lxt_buf_readstring (lua_State *luaVM)
-{
-	struct xt_buf *b   = xt_buf_check_ud (luaVM, 1);
-	int            ofs;
-	int            sz;
-	ofs = (lua_isnumber(luaVM, 2)) ? (size_t) luaL_checkint( luaVM, 2 ) : 0;
-	sz  = (lua_isnumber(luaVM, 3)) ? (size_t) luaL_checkint( luaVM, 3 ) : b->len-ofs;
-
-	lua_pushlstring(luaVM,
-			(const char*) &(b->b[ ofs ]),
-			sz);
 	return 1;
 }
 
@@ -710,33 +744,6 @@ static int lxt_buf_write64 (lua_State *luaVM)
 
 
 /**
- * \brief  set a string in a buffer at pos y
- * \param  lua Virtual Machine
- * \lparam struct xt_buf 
- * \lparam string value to set
- * \lparam int    offset in bytes
- * \lparam length offset in bytes
- * \return integer 1 left on the stack
- */
-// TODO: handle length and zero over it first
-static int lxt_buf_writestring (lua_State *luaVM)
-{
-	struct xt_buf *b   = xt_buf_check_ud (luaVM, 1);
-	int            ofs;
-	size_t         sz;
-	ofs = (lua_isnumber(luaVM, 3)) ? luaL_checkint(luaVM, 3) : 0;
-	if (lua_isnumber(luaVM, 4)) {
-		sz  = luaL_checkint(luaVM, 4);
-		memcpy  ( (char*) &(b->b[ ofs ]), luaL_checklstring(luaVM, 2, NULL), sz);
-	}
-	else {
-		memcpy  ( (char*) &(b->b[ ofs ]), luaL_checklstring(luaVM, 2, &sz), sz);
-	}
-	return 0;
-}
-
-
-/**
  * \brief    gets the content of the Stream in Hex
  * \lreturn  string buffer representation in Hexadecimal
  * \TODO     use luaL_Buffer
@@ -819,6 +826,8 @@ static const luaL_Reg xt_buf_m [] = {
 	{"writeInt",      lxt_buf_writeint},
 	{"readBit",       lxt_buf_readbit},
 	{"writeBit",      lxt_buf_writebit},
+	{"readStr",       lxt_buf_readstring},
+	{"writeStr",      lxt_buf_writestring},
 	// old implementation
 	{"readBits",      lxt_buf_readbits},
 	{"writeBits",     lxt_buf_writebits},
@@ -836,6 +845,7 @@ static const luaL_Reg xt_buf_m [] = {
 	{"toHex",         lxt_buf_tohexstring},
 	{"length",        lxt_buf__len},
 	{"toString",      lxt_buf__tostring},
+	// get subtypes
 	{"ByteField",     xt_buf_fld_new_byte},
 	{"BitField",      xt_buf_fld_new_bits},
 	{"StringField",   xt_buf_fld_new_string},
