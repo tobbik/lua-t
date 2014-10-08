@@ -56,6 +56,11 @@ int              lxt_buf_New     ( lua_State *luaVM );
 struct xt_buf   *xt_buf_check_ud ( lua_State *luaVM, int pos );
 struct xt_buf   *xt_buf_create_ud( lua_State *luaVM, int size );
 
+// accessor helpers for the buffer
+uint64_t  xt_buf_readbytes( size_t sz, int islittle, unsigned char * buf );
+void      xt_buf_writebytes( uint64_t *val, size_t sz, int islittle, unsigned char * buf );
+uint64_t  xt_buf_readbits( size_t sz, size_t ofs, unsigned char * buf );
+void      xt_buf_writebits( uint64_t val, size_t sz, size_t ofs, unsigned char * buf );
 
 
 

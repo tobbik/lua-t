@@ -162,8 +162,6 @@ struct xt_buf *xt_buf_check_ud( lua_State *luaVM, int pos )
 /////////////// NEW IMPLEMENTATION
 
 
-
-
 // =========+Buffer accessor Helpers
 //
 /**--------------------------------------------------------------------------
@@ -174,7 +172,7 @@ struct xt_buf *xt_buf_check_ud( lua_State *luaVM, int pos )
  * \param   islittle   treat input as little endian?
  * \param   buff       pointer to char array to read from.
  * --------------------------------------------------------------------------*/
-static inline uint64_t xt_buf_readbytes( size_t sz, int islittle, unsigned char * buf )
+uint64_t xt_buf_readbytes( size_t sz, int islittle, unsigned char * buf )
 {
 	size_t         i;
 	uint64_t       val = 0;                     ///< value for the read access
@@ -204,7 +202,7 @@ static inline uint64_t xt_buf_readbytes( size_t sz, int islittle, unsigned char 
  * \param   islittle   treat input as little endian?
  * \param   buff       pointer to char array to write to.
  * --------------------------------------------------------------------------*/
-static inline void xt_buf_writebytes( uint64_t *val, size_t sz, int islittle, unsigned char * buf )
+void xt_buf_writebytes( uint64_t *val, size_t sz, int islittle, unsigned char * buf )
 {
 	size_t         i;
 	unsigned char *set  = (unsigned char*) val;  ///< char array to read bytewise into val
@@ -231,7 +229,7 @@ static inline void xt_buf_writebytes( uint64_t *val, size_t sz, int islittle, un
  * \param   ofs  offset   in bits (0-7).
  * \param  *buf  char buffer already on proper position
  * --------------------------------------------------------------------------*/
-static inline uint64_t xt_buf_readbits( size_t sz, size_t ofs, unsigned char * buf )
+uint64_t xt_buf_readbits( size_t sz, size_t ofs, unsigned char * buf )
 {
 	uint64_t val = xt_buf_readbytes( (sz+ofs)/8 +1, 0, buf );
 
@@ -253,7 +251,7 @@ static inline uint64_t xt_buf_readbits( size_t sz, size_t ofs, unsigned char * b
  * \param   ofs  offset   in bits (0-7).
  * \param  *buf  char buffer already on proper position
  * --------------------------------------------------------------------------*/
-static inline void xt_buf_writebits( uint64_t val, size_t sz, size_t ofs, unsigned char * buf )
+void xt_buf_writebits( uint64_t val, size_t sz, size_t ofs, unsigned char * buf )
 {
 	uint64_t   read = 0;                           ///< value for the read access
 	uint64_t   msk  = 0;                           ///< mask
@@ -279,6 +277,7 @@ static inline void xt_buf_writebits( uint64_t val, size_t sz, size_t ofs, unsign
 			);
 #endif
 }
+
 
 
 //
