@@ -161,6 +161,11 @@ struct xt_buf *xt_buf_check_ud( lua_State *luaVM, int pos )
 //////////////////////////////////////////////////////////////////////////////////////
 /////////////// NEW IMPLEMENTATION
 
+
+
+
+// =========+Buffer accessor Helpers
+//
 /**--------------------------------------------------------------------------
  * Read an integer of y bytes from a char buffer pointer
  * General helper function to read the value of an 64 bit integer from a char array
@@ -169,10 +174,11 @@ struct xt_buf *xt_buf_check_ud( lua_State *luaVM, int pos )
  * \param   islittle   treat input as little endian?
  * \param   buff       pointer to char array to read from.
  * --------------------------------------------------------------------------*/
-static inline void xt_buf_readbytes( uint64_t *val, size_t sz, int islittle, unsigned char * buf )
+static inline uint64_t xt_buf_readbytes( size_t sz, int islittle, unsigned char * buf )
 {
 	size_t         i;
-	unsigned char *set = (unsigned char*) val;  ///< char array to read bytewise into val
+	uint64_t       val = 0;                     ///< value for the read access
+	unsigned char *set = (unsigned char*) &val; ///< char array to read bytewise into val
 #ifndef IS_LITTLE_ENDIAN
 	size_t        sz_l = sizeof( *val );        ///< size of the value in bytes
 #endif
@@ -186,6 +192,7 @@ static inline void xt_buf_readbytes( uint64_t *val, size_t sz, int islittle, uns
 		if (islittle)      set[ i ] = buf[ sz-1-i ];
 		else               set[ i ] = buf[ i ];
 	}
+	return val;
 }
 
 
@@ -218,6 +225,66 @@ static inline void xt_buf_writebytes( uint64_t *val, size_t sz, int islittle, un
 
 
 /**--------------------------------------------------------------------------
+ * Read an integer of y bits from ta char buffer with offset ofs.
+ * \param  *val  pointer to the val the read value gets written to.
+ * \param   sz   size in bits (1-64).
+ * \param   ofs  offset   in bits (0-7).
+ * \param  *buf  char buffer already on proper position
+ * --------------------------------------------------------------------------*/
+static inline uint64_t xt_buf_readbits( size_t sz, size_t ofs, unsigned char * buf )
+{
+	uint64_t val = xt_buf_readbytes( (sz+ofs)/8 +1, 0, buf );
+
+#if PRINT_DEBUGS == 1
+	printf("Read Val:    %016llX\nShift Left:  %016llX\nShift right: %016llX\n%d      %d\n",
+			val,
+			(val << (64- ((sz/8+1)*8) + ofs ) ),
+			(val << (64- ((sz/8+1)*8) + ofs ) ) >> (64 - sz),
+			(64- ((sz/8+1)*8) + ofs ), (64-sz));
+#endif
+	return  (val << (64- ((sz/8+1)*8) + ofs ) ) >> (64 - sz);
+}
+
+
+/**--------------------------------------------------------------------------
+ * Write an integer of y bits from ta char buffer with offset ofs.
+ * \param  val   the val gets written to.
+ * \param   sz   size in bits (1-64).
+ * \param   ofs  offset   in bits (0-7).
+ * \param  *buf  char buffer already on proper position
+ * --------------------------------------------------------------------------*/
+static inline void xt_buf_writebits( uint64_t val, size_t sz, size_t ofs, unsigned char * buf )
+{
+	uint64_t   read = 0;                           ///< value for the read access
+	uint64_t   msk  = 0;                           ///< mask
+	/// how many bit are in all the bytes needed for the conversion
+	size_t     abit = (((sz+ofs-1)/8)+1) * 8;
+
+	msk  = (0xFFFFFFFFFFFFFFFF  << (64-sz)) >> (64-abit+ofs);
+	read = xt_buf_readbytes( abit/8, 1, buf );
+	read = (val << (abit-ofs-sz)) | (read & ~msk);
+	xt_buf_writebytes( (uint64_t *) &read, abit/8, 1, buf);
+
+#if PRINT_DEBUGS == 1
+	printf("Read: %016llX       \nLft:  %016lX       %d \nMsk:  %016lX       %ld\n"
+	       "Nmsk: %016llX       \nval:  %016llX         \n"
+	       "Sval: %016llX    %ld\nRslt: %016llX         \n",
+			read,
+			0xFFFFFFFFFFFFFFFF  <<   (64-sz), (64-sz),  /// Mask after left shift
+			(0xFFFFFFFFFFFFFFFF <<	 (64-sz)) >> (64-abit+ofs), (64-abit+ofs),
+			read & ~msk,
+			val,
+			 val << (abit-ofs-sz),  abit-ofs-sz,
+			(val << (abit-ofs-sz)) | (read & ~msk)
+			);
+#endif
+}
+
+
+//
+// ================================= GENERIC LUA API========================
+
+/**--------------------------------------------------------------------------
  * Read an integer of y bytes from the buffer at position x.
  * \lparam  buf  userdata of type xt.Buffer (struct xt_buf).
  * \lparam  pos  position in bytes.
@@ -240,7 +307,7 @@ static int lxt_buf_readint( lua_State *luaVM )
 	luaL_argcheck( luaVM,  1<= sz && sz <= 8,       3,
 		                 "size must be >=1 and <=8");
 
-	xt_buf_readbytes( (uint64_t *) &val, sz, getendian( luaVM, 4 ), &(buf->b[pos]));
+	val = (lua_Unsigned) xt_buf_readbytes( sz, getendian( luaVM, 4 ), &(buf->b[pos]));
 
 #if PRINT_DEBUGS == 1
 	printf("%016llX    %lu     %d     %d\n", val, sizeof(lua_Unsigned), IS_LITTLE_ENDIAN, IS_BIG_ENDIAN);
@@ -298,7 +365,6 @@ static int lxt_buf_readbit( lua_State *luaVM )
 	int            pos = luaL_checkint( luaVM, 2 );   ///< starting byte  b->b[pos]
 	int            ofs = luaL_checkint( luaVM, 3 );   ///< starting byte  b->b[pos] + ofs bits
 	int             sz = luaL_checkint( luaVM, 4 );   ///< how many bits  to read
-	lua_Unsigned   val = 0;                           ///< value for the read access
 
 	// TODO: properly calculate boundaries according #buf->b - sz etc.
 	luaL_argcheck( luaVM,  0<= pos && pos <= (int) buf->len, 2,
@@ -307,17 +373,10 @@ static int lxt_buf_readbit( lua_State *luaVM )
 		                 "offset must be >=0 and <=7");
 	luaL_argcheck( luaVM,  1<= sz  &&  sz <= 64,      4,
 		                 "size must be >=1 and <=64");
+	
+	lua_pushinteger( luaVM,
+		(lua_Integer) xt_buf_readbits( (size_t) sz, (size_t) ofs, &(buf->b[pos]) ) );
 
-	xt_buf_readbytes( (uint64_t *) &val, (sz+ofs)/8 +1, getendian( luaVM, 5 ), &(buf->b[pos]));
-	lua_pushinteger( luaVM, (lua_Integer) ((val << (64- ((sz/8+1)*8) + ofs ) ) >> (64 - sz)) );
-
-#if PRINT_DEBUGS == 1
-	printf("Read Val:    %016llX\nShift Left:  %016llX\nShift right: %016llX\n%d      %d\n",
-			val,
-			(val << (64- ((sz/8+1)*8) + ofs ) ),
-			(val << (64- ((sz/8+1)*8) + ofs ) ) >> (64 - sz),
-			(64- ((sz/8+1)*8) + ofs ), (64-sz));
-#endif
 	return 1;
 }
 
@@ -338,10 +397,6 @@ static int lxt_buf_writebit( lua_State *luaVM )
 	int            pos = luaL_checkint( luaVM, 3 );   ///< starting byte  b->b[pos]
 	int            ofs = luaL_checkint( luaVM, 4 );   ///< starting byte  b->b[pos] + ofs bits
 	int             sz = luaL_checkint( luaVM, 5 );   ///< how many bits  to write
-	/// how many bit are in all the bytes needed for the conversion
-	size_t        abit;
-	lua_Unsigned  read = 0;                           ///< value for the read access
-	lua_Unsigned  msk  = 0;                           ///< mask
 
 	// TODO: properly calculate boundaries according #buf->b - sz etc.
 	luaL_argcheck( luaVM,  0<= pos && pos <= (int) buf->len, 2,
@@ -350,30 +405,9 @@ static int lxt_buf_writebit( lua_State *luaVM )
 		                 "offset must be >=0 and <=7");
 	luaL_argcheck( luaVM,  1<= sz  &&  sz <= 64,      4,
 		                 "size must be >=1 and <=64");
-	abit = (((sz+ofs-1)/8)+1) * 8;
-
-	msk = (0xFFFFFFFFFFFFFFFF  << (64-sz)) >> (64-abit+ofs);
-	xt_buf_readbytes(  (uint64_t *) &read, abit/8, 1, &(buf->b[pos]));
-	read= (val << (abit-ofs-sz)) | (read & ~msk);
-	xt_buf_writebytes( (uint64_t *) &read, abit/8, 1, &(buf->b[pos]));
-
-#if PRINT_DEBUGS == 1
-	printf("Read: %016llX       \nLft:  %016lX       %d \nMsk:  %016lX       %ld\n"
-	       "Nmsk: %016llX       \nval:  %016llX         \n"
-	       "Sval: %016llX    %ld\nRslt: %016llX         \n",
-			read,
-			0xFFFFFFFFFFFFFFFF  <<   (64-sz), (64-sz),  /// Mask after left shift
-			(0xFFFFFFFFFFFFFFFF <<	 (64-sz)) >> (64-abit+ofs), (64-abit+ofs),
-			read & ~msk,
-			val,
-			 val << (abit-ofs-sz),  abit-ofs-sz,
-			(val << (abit-ofs-sz)) | (read & ~msk)
-			);
-#endif
+	xt_buf_writebits( (uint64_t) val, sz, ofs, &(buf->b[pos]));
 	return 0;
 }
-
-
 
 
 

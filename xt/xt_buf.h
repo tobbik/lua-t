@@ -1,9 +1,18 @@
 
+/// The userdata struct for xt.Buffer
 struct xt_buf {
-	size_t         len;   // length in bytes
-	unsigned char  b[1];  // variable size buffer -> last in struct
+	size_t         len;   ///<  length of the entire buffer in bytes
+	unsigned char  b[1];  ///<  pointer to the variable size buffer -> must be last in struct
 };
 
+
+/// The userdata struct for xt.Buffer.Segment
+struct xt_buf_seg {
+	size_t         len;   ///< how many bytes are covered in this struct
+	size_t         ofs;   ///< offset in bytes where *b starts compared to buf->b
+	unsigned char *b;     ///< pointer to the associate buffer
+	struct xt_buf *buf;   ///< associated buffer
+};
 
 enum xt_buf_fld_type {
 	BUF_FLD_BIT,    /* X  Bit  wide field*/
@@ -46,6 +55,8 @@ int              luaopen_xt_buf  ( lua_State *luaVM );
 int              lxt_buf_New     ( lua_State *luaVM );
 struct xt_buf   *xt_buf_check_ud ( lua_State *luaVM, int pos );
 struct xt_buf   *xt_buf_create_ud( lua_State *luaVM, int size );
+
+
 
 
 // xt_buf_fld.c
