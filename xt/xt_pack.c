@@ -218,21 +218,22 @@ static int xt_pack_write( lua_State *luaVM, struct xt_pack *p, unsigned char *bu
 	switch( p->type )
 	{
 		case XT_PACK_INT:
-			intVal = luaL_checkint( luaVM, 2);
-			luaL_argcheck( luaVM,  intVal  <  0x01 << (p->sz*8), 2,
-		                 "value to pack must be smaller than the maximum value for the packer size");
+			intVal = luaL_checkint( luaVM, -1);
+			luaL_argcheck( luaVM,  intVal  <  0x01 << (p->sz*8), -1,
+			              "value to pack must be smaller than the maximum value for the packer size");
 			xt_buf_writebytes( (uint64_t) intVal, p->sz, p->islittle, buffer );
 			break;
 		case XT_PACK_BIT:
-			intVal = luaL_checkint( luaVM, 2);
-			luaL_argcheck( luaVM,  intVal  <  0x01 << p->blen, 2,
-		                 "value to pack must be smaller than the maximum value for the packer size");
+			intVal = luaL_checkint( luaVM, -1);
+			luaL_argcheck( luaVM,  intVal  <  0x01 << p->blen, -1,
+			              "value to pack must be smaller than the maximum value for the packer size");
 			xt_buf_writebits( (uint64_t) intVal, p->blen, p->bofs, buffer );
 			break;
 		case XT_PACK_STR:
-			strVal = luaL_checklstring (luaVM, 2, &sL );
+			strVal = luaL_checklstring (luaVM, -1, &sL );
 			if (p->sz < sL)
-				return xt_push_error( luaVM, "String is to big for the field" );
+			luaL_argcheck( luaVM,  p->sz < sL, -1,
+			              "String is to big for the field" );
 			memcpy  (  buffer, strVal, sL);
 			break;
 		default:
