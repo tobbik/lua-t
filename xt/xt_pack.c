@@ -18,11 +18,11 @@
  *  -------------------------------------------------------------------------*/
 int lxt_pack_Int( lua_State *luaVM )
 {
+	struct xt_pack  *p;
 	int             sz = luaL_checkint( luaVM, 1 );   ///< how many bytes to read
-
-	struct xt_pack  *p = xt_pack_create_ud( luaVM, XT_PACK_INT );
-	luaL_argcheck( luaVM,  1<= sz && sz <= 8,       3,
+	luaL_argcheck( luaVM,  1<= sz && sz <= 8,       1,
 		                 "size must be >=1 and <=8" );
+	p = xt_pack_create_ud( luaVM, XT_PACK_INT );
 
 	p->sz    = sz;
 	return 1;
@@ -38,14 +38,14 @@ int lxt_pack_Int( lua_State *luaVM )
  *  -------------------------------------------------------------------------*/
 int lxt_pack_Bit( lua_State *luaVM )
 {
+	struct xt_pack  *p;
 	int             sz = luaL_checkint( luaVM, 1 );   ///< how many bits  to read
 	int            ofs = luaL_checkint( luaVM, 2 );   ///< how many its from starting byte to read
-
-	struct xt_pack  *p = xt_pack_create_ud( luaVM, XT_PACK_BIT );
 	luaL_argcheck( luaVM,  1<= sz && sz <= 8*8,       1,
 		                 "size must be >=1 and <=8" );
 	luaL_argcheck( luaVM,  0<= ofs && ofs <= 8,       2,
 		                 "offset must be >=0 and <=8" );
+	p = xt_pack_create_ud( luaVM, XT_PACK_BIT );
 
 	p->sz    = ((sz+ofs-1)/8)+1;
 	p->blen  = sz;
@@ -61,11 +61,12 @@ int lxt_pack_Bit( lua_State *luaVM )
  *  -------------------------------------------------------------------------*/
 int lxt_pack_String( lua_State *luaVM )
 {
+	struct xt_pack  *p;
 	int             sz = luaL_checkint( luaVM, 1 );   ///< how many chars in this packer
-	struct xt_pack  *p = xt_pack_create_ud( luaVM, XT_PACK_STR );
-
 	luaL_argcheck( luaVM,  1<= sz , 1,
 		                 "size must be >=1" ); 
+	p = xt_pack_create_ud( luaVM, XT_PACK_STR );
+
 	p->sz    = sz;
 	return 1;
 }
@@ -126,48 +127,8 @@ static int lxt_pack_attach( lua_State *luaVM )
 }
 
 
-/**--------------------------------------------------------------------------
- * reads in a Lua value and packs it according to packer format.
- * \param  luaVM lua Virtual Machine.
- * \lparam struct xt_pack.
- * \lparam Lua value.
- * \lreturn value from the buffer a packers position according to packer format.
- *
- * \return integer number of values left on the stack.
- *  -------------------------------------------------------------------------*/
-static int lxt_pack_pack( lua_State *luaVM )
-{
-	struct xt_pack *p   = xt_pack_check_ud( luaVM, 1 );
-	lua_Integer     intVal;
-	lua_Number      fltVal;
-	const char     *strVal;
-	size_t          sL;
-	luaL_Buffer     lB;
-	luaL_buffinit( luaVM, &lB );
-	char           *buffer = luaL_prepbuffsize( &lB, p->sz );
 
-	// TODO: size check values if they fit the packer size
-	switch( p->type )
-	{
-		case XT_PACK_INT:
-			xt_buf_writebytes( (uint64_t) luaL_checkint( luaVM, 2), p->sz, p->islittle, (unsigned char *) buffer );
-			break;
-		case XT_PACK_BIT:
-			xt_buf_writebits( (uint64_t) luaL_checkint( luaVM, 2), p->blen, p->bofs, (unsigned char *) buffer );
-			break;
-		case XT_PACK_STR:
-			strVal = luaL_checklstring (luaVM, 2, &sL );
-			if (p->sz < sL)
-				return xt_push_error( luaVM, "String is to big for the field" );
-			memcpy  (  buffer, strVal, sL);
-			break;
-		default:
-			xt_push_error( luaVM, "Can't pack a value in unknown packer type" );
-	}
-	luaL_pushresultsize( &lB, p->sz);
-	return 1;
-}
-
+////////////////////////////////////////////////////---------------ACCESSORS
 
 
 
@@ -202,43 +163,107 @@ static int lxt_pack_read( lua_State *luaVM )
 }
 
 
+
+
+/**--------------------------------------------------------------------------
+ * Sets a value from stack to a char buffer according to paccker format.
+ * Helper to access the char buffer of any kind and check the values on the Lua stack
+ * \param  luaVM lua Virtual Machine.
+ * \param  struct xt_pack.
+ * \param  unsigned char* char buffer.
+ * \lparam Lua value.
+ *
+ * return integer return code -0==success; !=0 means errors pushed to Lua stack
+ *  -------------------------------------------------------------------------*/
+static int xt_pack_write( lua_State *luaVM, struct xt_pack *p, unsigned char *buffer)
+{
+	lua_Integer     intVal;
+	//lua_Number      fltVal;
+	const char     *strVal;
+	size_t          sL;
+
+	// TODO: size check values if they fit the packer size
+	switch( p->type )
+	{
+		case XT_PACK_INT:
+			intVal = luaL_checkint( luaVM, 2);
+			luaL_argcheck( luaVM,  intVal  <  0x01 << (p->sz*8), 2,
+		                 "value to pack must be smaller than the maximum value for the packer size");
+			xt_buf_writebytes( (uint64_t) intVal, p->sz, p->islittle, buffer );
+			break;
+		case XT_PACK_BIT:
+			intVal = luaL_checkint( luaVM, 2);
+			luaL_argcheck( luaVM,  intVal  <  0x01 << p->blen, 2,
+		                 "value to pack must be smaller than the maximum value for the packer size");
+			xt_buf_writebits( (uint64_t) intVal, p->blen, p->bofs, buffer );
+			break;
+		case XT_PACK_STR:
+			strVal = luaL_checklstring (luaVM, 2, &sL );
+			if (p->sz < sL)
+				return xt_push_error( luaVM, "String is to big for the field" );
+			memcpy  (  buffer, strVal, sL);
+			break;
+		default:
+			return xt_push_error( luaVM, "Can't pack a value in unknown packer type" );
+	}
+	return 0;
+}
+
+
+
+/**--------------------------------------------------------------------------
+ * reads in a Lua value and packs it according to packer format. Return str to Lua Stack
+ * \param  luaVM lua Virtual Machine.
+ * \lparam struct xt_pack.
+ * \lparam Lua value.
+ * \lreturn value from the buffer a packers position according to packer format.
+ *
+ * \return integer number of values left on the stack.
+ *  -------------------------------------------------------------------------*/
+static int lxt_pack_pack( lua_State *luaVM )
+{
+	struct xt_pack *p   = xt_pack_check_ud( luaVM, 1 );
+	luaL_Buffer     lB;
+	luaL_buffinit( luaVM, &lB );
+	char           *buffer = luaL_prepbuffsize( &lB, p->sz );
+	int             retVal; ///< return value to evaluate the succes off write operation
+
+
+	if ((retVal = xt_pack_write( luaVM, p, (unsigned char *) buffer )) != 0)
+	{
+		return retVal;
+	}
+	else
+	{
+		luaL_pushresultsize( &lB, p->sz);
+		return 1;
+	}
+}
+
+
 /** ---------------------------------------------------------------------------
- * set a value from the data field and push to Lua stack
+ * Read value from Lua stack and write to the packers associated buffer
  * \param  luaVM   lua Virtual Machine
- * \lparam struct  xt_dt
+ * \lparam struct  xt_pack
  * \lparam val luaValue to be written to packer buffer
  * \return integer number of values left on the stack
  *  -------------------------------------------------------------------------*/
 static int lxt_pack_write( lua_State *luaVM )
 {
 	struct xt_pack *p   = xt_pack_check_ud( luaVM, 1 );
-	//TODO: check that value is not too big for packer->sz
-	//lua_Integer     intVal;
-	//lua_Number      fltVal;
-	const char     *strVal;
-	size_t          sL;
+	int             retVal;                  ///< return value to evaluate the succes off write operation
 	if (NULL == p->b)
 		return xt_push_error( luaVM, "Can only write data to initialized data structures" );
 
-	// TODO: size check values if they fit the packer size
-	switch( p->type )
+
+	if ((retVal = xt_pack_write( luaVM, p,  p->b )) != 0)
 	{
-		case XT_PACK_INT:
-			xt_buf_writebytes( (uint64_t) luaL_checkint( luaVM, 2), p->sz, p->islittle, p->b );
-			break;
-		case XT_PACK_BIT:
-			xt_buf_writebits( (uint64_t) luaL_checkint( luaVM, 2), p->blen, p->bofs, p->b );
-			break;
-		case XT_PACK_STR:
-			strVal = luaL_checklstring (luaVM, 2, &sL );
-			if (p->sz < sL)
-				return xt_push_error( luaVM, "String is to big for the field" );
-			memcpy  ( (char*) p->b, strVal, sL);
-			break;
-		default:
-			xt_push_error( luaVM, "Can't write value to unknown packer type" );
+		return retVal;
 	}
-	return 0;
+	else
+	{
+		return 0;
+	}
 }
 
 
