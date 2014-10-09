@@ -296,6 +296,8 @@ LUAMOD_API int luaopen_xt (lua_State *luaVM)
 	lua_setfield(luaVM, -2, "IpEndpoint");
 	luaopen_xt_buf(luaVM);
 	lua_setfield(luaVM, -2, "Buffer");
+	luaopen_xt_pack( luaVM );
+	lua_setfield( luaVM, -2, "Packer" );
 	luaopen_xt_enc(luaVM);
 	lua_setfield(luaVM, -2, "Encode");
 	luaopen_xt_test(luaVM);

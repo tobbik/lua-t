@@ -6,13 +6,26 @@ struct xt_buf {
 };
 
 
-/// The userdata struct for xt.Buffer.Segment
-struct xt_buf_seg {
-	size_t         len;   ///< how many bytes are covered in this struct
-	size_t         ofs;   ///< offset in bytes where *b starts compared to buf->b
-	unsigned char *b;     ///< pointer to the associate buffer
-	struct xt_buf *buf;   ///< associated buffer
+enum xt_pack_type {
+	XT_PACK_BIT,          ///< X  Bit  wide field
+	XT_PACK_INT,          ///< X  Byte wide field as Integer
+	XT_PACK_FLT,          ///< X  Byte wide field as Float
+	XT_PACK_STR,          ///< string buffer field
+	XT_PACK_STRUCT,       ///< struct type combinator
+	XT_PACK_SEQ,          ///< sequence type combinator
+	XT_PACK_ARRAY,        ///< array type combinator
 };
+
+struct xt_pack {
+	enum  xt_pack_type type;    ///< type of value in the packer
+	unsigned char     *b;       ///< pointer to the associate buffer
+	size_t             sz;      ///< how many bytes are covered in this struct
+	size_t             ofs;     ///< offset in bytes where *b starts compared to buf->b
+	size_t             blen;    ///< how many bytes are covered in this struct
+	size_t             bofs;    ///< offset in bytes where *b starts compared to buf->b
+	int                islittle;///< is this little endian?
+};
+
 
 enum xt_buf_fld_type {
 	BUF_FLD_BIT,    /* X  Bit  wide field*/
@@ -62,6 +75,14 @@ void      xt_buf_writebytes( uint64_t val, size_t sz, int islittle, unsigned cha
 uint64_t  xt_buf_readbits  (               size_t sz, size_t ofs,   unsigned char * buf );
 void      xt_buf_writebits ( uint64_t val, size_t sz, size_t ofs,   unsigned char * buf );
 
+// Constructors
+// xt_pack.c
+int              luaopen_xt_pack  ( lua_State *luaVM );
+int              lxt_pack_Int     ( lua_State *luaVM );
+int              lxt_pack_Bit     ( lua_State *luaVM );
+int              lxt_pack_String  ( lua_State *luaVM );
+struct xt_pack  *xt_pack_check_ud ( lua_State *luaVM, int pos );
+struct xt_pack  *xt_pack_create_ud( lua_State *luaVM, enum xt_pack_type );
 
 
 // xt_buf_fld.c

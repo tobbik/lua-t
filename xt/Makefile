@@ -20,6 +20,7 @@ XT_SRC=l_xt.c \
 	 xt_enc_b64.c \
 	 xt_buf.c \
 	 xt_buf_fld.c \
+	 xt_pack.c \
 	 xt_test.c \
 	 l_xt_debug.c
 
