@@ -2,7 +2,7 @@
 xt = require("xt")
 
 
-p = xt.Packer.Int(2)
+p = xt.Packer.Int(1)
 print( p )
 
 b = xt.Buffer(14)

@@ -172,7 +172,7 @@ struct xt_buf *xt_buf_check_ud( lua_State *luaVM, int pos )
  * \param   buf        pointer to char array to read from.
  * \return  val        integer value.
  * --------------------------------------------------------------------------*/
-uint64_t xt_buf_readbytes( size_t sz, int islittle, unsigned char * buf )
+uint64_t xt_buf_readbytes( size_t sz, int islittle, const unsigned char * buf )
 {
 	size_t         i;
 	uint64_t       val = 0;                     ///< value for the read access
@@ -229,7 +229,7 @@ void xt_buf_writebytes( uint64_t val, size_t sz, int islittle, unsigned char * b
  * \param  *buf  char buffer already on proper position
  * \return  val        integer value.
  * --------------------------------------------------------------------------*/
-uint64_t xt_buf_readbits( size_t sz, size_t ofs, unsigned char * buf )
+uint64_t xt_buf_readbits( size_t sz, size_t ofs, const unsigned char * buf )
 {
 	uint64_t val = xt_buf_readbytes( (sz+ofs)/8 +1, 0, buf );
 
