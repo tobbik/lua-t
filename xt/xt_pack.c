@@ -207,7 +207,7 @@ static int lxt_pack_unpack( lua_State *luaVM )
  *
  * return integer return code -0==success; !=0 means errors pushed to Lua stack
  *  -------------------------------------------------------------------------*/
-static int xt_pack_write( lua_State *luaVM, struct xt_pack *p, unsigned char *buffer)
+static int xt_pack_write( lua_State *luaVM, struct xt_pack *p, unsigned char *buffer )
 {
 	lua_Integer     intVal;
 	//lua_Number      fltVal;
@@ -218,23 +218,23 @@ static int xt_pack_write( lua_State *luaVM, struct xt_pack *p, unsigned char *bu
 	switch( p->type )
 	{
 		case XT_PACK_INT:
-			intVal = luaL_checkint( luaVM, -1);
+			intVal = luaL_checkint( luaVM, -1 );
 			luaL_argcheck( luaVM,  intVal  <  0x01 << (p->sz*8), -1,
 			              "value to pack must be smaller than the maximum value for the packer size");
 			xt_buf_writebytes( (uint64_t) intVal, p->sz, p->islittle, buffer );
 			break;
 		case XT_PACK_BIT:
-			intVal = luaL_checkint( luaVM, -1);
+			intVal = luaL_checkint( luaVM, -1 );
 			luaL_argcheck( luaVM,  intVal  <  0x01 << p->blen, -1,
 			              "value to pack must be smaller than the maximum value for the packer size");
 			xt_buf_writebits( (uint64_t) intVal, p->blen, p->bofs, buffer );
 			break;
 		case XT_PACK_STR:
-			strVal = luaL_checklstring (luaVM, -1, &sL );
+			strVal = luaL_checklstring( luaVM, -1, &sL );
 			if (p->sz < sL)
 			luaL_argcheck( luaVM,  p->sz < sL, -1,
 			              "String is to big for the field" );
-			memcpy  (  buffer, strVal, sL);
+			memcpy( buffer, strVal, sL );
 			break;
 		default:
 			return xt_push_error( luaVM, "Can't pack a value in unknown packer type" );
@@ -307,7 +307,7 @@ static int lxt_pack_write( lua_State *luaVM )
  * \lreturn string     formatted string representing packer.
  * \return  The number of results to be passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
-static int xt_pack__tostring( lua_State *luaVM )
+static int lxt_pack__tostring( lua_State *luaVM )
 {
 	struct xt_pack *p = xt_pack_check_ud( luaVM, 1 );
 
@@ -339,7 +339,7 @@ static int xt_pack__tostring( lua_State *luaVM )
  * \lreturn string     formatted string representing packer.
  * \return  The number of results to be passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
-static int xt_pack__len( lua_State *luaVM )
+static int lxt_pack__len( lua_State *luaVM )
 {
 	struct xt_pack *p = xt_pack_check_ud( luaVM, 1 );
 	lua_pushinteger( luaVM, p->sz );
@@ -387,9 +387,9 @@ LUAMOD_API int luaopen_xt_pack( lua_State *luaVM )
 	luaL_newmetatable( luaVM, "xt.Packer" );   // stack: functions meta
 	luaL_newlib( luaVM, xt_pack_m );
 	lua_setfield( luaVM, -2, "__index" );
-	lua_pushcfunction( luaVM, xt_pack__tostring );
+	lua_pushcfunction( luaVM, lxt_pack__tostring );
 	lua_setfield( luaVM, -2, "__tostring" );
-	lua_pushcfunction( luaVM, xt_pack__len );
+	lua_pushcfunction( luaVM, lxt_pack__len );
 	lua_setfield( luaVM, -2, "__len" );
 	lua_pop( luaVM, 1 );        // remove metatable from stack
 
