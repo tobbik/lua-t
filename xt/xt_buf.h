@@ -27,6 +27,22 @@ struct xt_pack {
 };
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 enum xt_buf_fld_type {
 	BUF_FLD_BIT,    /* X  Bit  wide field*/
 	BUF_FLD_BYTE,   /* X  Byte wide field*/
@@ -83,7 +99,13 @@ int              lxt_pack_Bit     ( lua_State *luaVM );
 int              lxt_pack_String  ( lua_State *luaVM );
 struct xt_pack  *xt_pack_check_ud ( lua_State *luaVM, int pos );
 struct xt_pack  *xt_pack_create_ud( lua_State *luaVM, enum xt_pack_type );
+int xt_pack_read( lua_State *luaVM, struct xt_pack *p, const unsigned char *buffer);
+int xt_pack_write( lua_State *luaVM, struct xt_pack *p, unsigned char *buffer );
 
+// Constructors
+// xt_comb.c
+int              luaopen_xt_comb  ( lua_State *luaVM );
+int lxt_comb_Struct( lua_State *luaVM );
 
 // xt_buf_fld.c
 int                 luaopen_xt_buf_fld   ( lua_State *luaVM );

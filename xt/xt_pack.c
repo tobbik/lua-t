@@ -85,6 +85,7 @@ struct xt_pack *xt_pack_create_ud( lua_State *luaVM, enum xt_pack_type type)
 	p = (struct xt_pack *) lua_newuserdata( luaVM, sizeof( struct xt_pack ));
 
 	p->type = type;
+	p->b    = NULL;
 	luaL_getmetatable(luaVM, "xt.Packer");
 	lua_setmetatable(luaVM, -2);
 	return p;
@@ -127,10 +128,7 @@ static int lxt_pack_attach( lua_State *luaVM )
 }
 
 
-
 ////////////////////////////////////////////////////---------------ACCESSORS
-
-
 
 /**--------------------------------------------------------------------------
  * reads a value from the packer and pushes it onto the Lua stack.
@@ -139,7 +137,7 @@ static int lxt_pack_attach( lua_State *luaVM )
  * \lreturn value from the buffer a packers position according to packer format.
  * \return  integer number of values left on the stack.
  *  -------------------------------------------------------------------------*/
-static int xt_pack_read( lua_State *luaVM, struct xt_pack *p, const unsigned char *buffer)
+int xt_pack_read( lua_State *luaVM, struct xt_pack *p, const unsigned char *buffer)
 {
 	switch( p->type )
 	{
@@ -173,7 +171,6 @@ static int lxt_pack_read( lua_State *luaVM )
 		return xt_push_error( luaVM, "Can only read data from initialized data structures" );
 
 	return xt_pack_read( luaVM, p, p->b );
-
 }
 
 
@@ -207,7 +204,7 @@ static int lxt_pack_unpack( lua_State *luaVM )
  *
  * return integer return code -0==success; !=0 means errors pushed to Lua stack
  *  -------------------------------------------------------------------------*/
-static int xt_pack_write( lua_State *luaVM, struct xt_pack *p, unsigned char *buffer )
+int xt_pack_write( lua_State *luaVM, struct xt_pack *p, unsigned char *buffer )
 {
 	lua_Integer     intVal;
 	//lua_Number      fltVal;
@@ -354,6 +351,7 @@ static const struct luaL_Reg xt_pack_cf [] = {
 	{"Bit",       lxt_pack_Bit},
 	{"Int",       lxt_pack_Int},
 	{"String",    lxt_pack_String},
+	{"Struct",    lxt_comb_Struct},
 	{NULL,    NULL}
 };
 
@@ -397,5 +395,6 @@ LUAMOD_API int luaopen_xt_pack( lua_State *luaVM )
 	// Push the class onto the stack
 	// this is avalable as xt.Packer.<member>
 	luaL_newlib( luaVM, xt_pack_cf );
+	luaopen_xt_comb( luaVM );
 	return 1;
 }
