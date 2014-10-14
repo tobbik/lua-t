@@ -27,7 +27,10 @@ t = xt.Packer.Struct (
 	{['@status']    = xt.Packer.Int(1)},
 	{ConsistCount   = xt.Packer.Int(1)}
 )
+b=xt.Buffer( 'ABCDEFGH')
+t( b, 0 )
 
+--[[
 m=getmetatable(t)
 
 s= {_blah=4,
@@ -43,4 +46,4 @@ table.insert(s._packer, s._packer['@status'])
 table.insert(s._packer, s._packer.ConsistCount)
 
 s=setmetatable(s,m)
-
+--]]

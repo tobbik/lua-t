@@ -18,7 +18,10 @@
  * --------------------------------------------------------------------------*/
 int lxt_comb_Struct( lua_State *luaVM )
 {
-	int i;
+	int             i;      ///< iterator for going through the arguments
+	size_t          sz=0;   ///< tally up the size of all elements in the Struct
+	struct xt_pack *p;
+
 	lua_newtable( luaVM );
 	lua_pushstring( luaVM, "_packer" );  // Stack: ...,Struct,_packer, "_packer"
 	lua_newtable( luaVM ); // Stack: ..., Struct, _packer
@@ -27,6 +30,9 @@ int lxt_comb_Struct( lua_State *luaVM )
 		lua_pushnil( luaVM );
 		while (lua_next( luaVM, i ))   // Stack: ...,Struct,'_packer',_packer,name,Pack
 		{
+			p = xt_pack_check_ud( luaVM, -1 );
+			sz += p->sz;
+			// make copies on stack to push to _packer table by numeric and hash index
 			lua_pushvalue( luaVM, -2 ); // Stack: ...,Struct,'_packer',_packer,name,Pack,name
 			lua_pushvalue( luaVM, -2 ); // Stack: ...,Struct,'_packer',_packer,name,Pack,name,Pack
 			// make the copied Packer available as Struct[ 'name' ]
@@ -41,7 +47,10 @@ int lxt_comb_Struct( lua_State *luaVM )
 	lua_setmetatable( luaVM, i ) ;
 
 	// Stack: ...,Struct,'_packer',_packer
-	lua_rawset (luaVM, i );              // Stack: ...,Struct
+	lua_rawset( luaVM, i );              // Stack: ...,Struct
+	lua_pushstring( luaVM, "_size" );    // Stack: ...,Struct,"_size"
+	lua_pushinteger( luaVM, sz );        // Stack: ...,Struct,"_size",sz
+	lua_rawset( luaVM, i );              // Stack: ...,Struct
 
 	return 1;
 }
@@ -84,7 +93,6 @@ static int lxt_comb__index( lua_State *luaVM )
 	// Stack: Struct, name, value
 	xt_comb_check_ud( luaVM, -2 );
 	name = luaL_checkstring( luaVM, -1 );
-	stackDump(luaVM);
 	// get the value from the _packer table
 	lua_pushstring( luaVM, "_packer" );
 	lua_rawget( luaVM, -3);    // Stack: Struct, name, _packer
@@ -119,7 +127,6 @@ static int lxt_comb__newindex( lua_State *luaVM )
 	// Stack: Struct, name, value
 	xt_comb_check_ud( luaVM, -3 );
 	name = luaL_checkstring( luaVM, -2 );
-	stackDump(luaVM);
 	// Don't overwrite _internal fields
 	if ('_' == *name)
 		return xt_push_error( luaVM,
@@ -138,6 +145,7 @@ static int lxt_comb__newindex( lua_State *luaVM )
 	p = xt_pack_check_ud( luaVM, -1 );
 	if (NULL == p->b)
 		return xt_push_error( luaVM, "Can only read data from initialized data structures" );
+	lua_pushvalue( luaVM, -3 );    // push value to end of stack where xt_pack_write expects it
 
 	xt_pack_write( luaVM, p,  p->b );
 	
@@ -151,18 +159,36 @@ static int lxt_comb__newindex( lua_State *luaVM )
  * \lparam table xt.Combinator.
  * \lparam struct xt_buf.
  * \lparam pos    position in xt_buf.
- * \return integer number of values left on the stack.
+ * \return integer number of values left on te stack.
  *  -------------------------------------------------------------------------*/
-static int lxt_comb_attach( lua_State *luaVM )
+static int lxt_comb__call( lua_State *luaVM )
 {
 	xt_comb_check_ud( luaVM, 1 );
 	struct xt_buf  *b   = xt_buf_check_ud( luaVM, 2 );
+	struct xt_pack *p;
 	int             pos = luaL_checkint( luaVM, 3 );
+	size_t          i;       ///< the iterator for all fields
+	size_t          sz = 0;  ///< iterate over the size to assign proper buffer position 
 
 	luaL_argcheck( luaVM, 0 <= pos && pos <= (int) b->len, 3,
 	                    "xt.Buffer position must be > 0 or < #buffer" );
-	lua_setfield( luaVM, 1, "_pos" );
-	lua_setfield( luaVM, 1, "_buffer" );
+	// TODO: Buffer size must equal Struct size?
+	// TODO: use rawset
+	lua_pushstring( luaVM, "_pos" );
+	lua_rawset( luaVM, 1 );
+	lua_pushstring( luaVM, "_buffer" );
+	lua_rawset( luaVM, 1 );
+	// get the _packer subtable
+	lua_pushstring( luaVM, "_packer" );   // Stack: Struct, name, value, '_packer'
+	lua_rawget( luaVM, 1 );               // Stack: Struct, name, value,_packer
+	for (i=1; i < lua_rawlen( luaVM, 2 )+1 ; i++)
+	{
+		lua_rawgeti( luaVM, -1, i );
+		p = xt_pack_check_ud( luaVM, -1 );
+		p->b = &(b->b[ sz ]);
+		sz += p->sz;
+		lua_pop( luaVM, 1 );
+	}
 	return 0;
 }
 
@@ -184,6 +210,8 @@ LUAMOD_API int luaopen_xt_comb( lua_State *luaVM )
 	lua_setfield( luaVM, -2, "__index" );
 	lua_pushcfunction( luaVM, lxt_comb__newindex );
 	lua_setfield( luaVM, -2, "__newindex" );
+	lua_pushcfunction( luaVM, lxt_comb__call );
+	lua_setfield( luaVM, -2, "__call" );
 	lua_pop( luaVM, 1 );        // remove metatable from stack
 	return 0;
 }
