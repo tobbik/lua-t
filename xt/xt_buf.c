@@ -10,17 +10,6 @@
 
 
 // inline helper functions
-/**
-  * \brief  convert lon long (64bit) from network to host and vice versa
-  * \param  uint64_t value 64bit integer
-  * \return uint64_t endianess corrected integer
-  */
-static inline uint64_t htonll (uint64_t value)
-{
-	uint64_t high_part = htonl( (uint64_t)(value >> 32) );
-	uint64_t low_part  = htonl( (uint64_t)(value & 0xFFFFFFFFLL) );
-	return (((uint64_t)low_part) << 32) | high_part;
-}
 
 // --------------------------------- HELPERS from Lua 5.3 code
 static int getendian( lua_State *luaVM, int pos )
@@ -33,7 +22,6 @@ static int getendian( lua_State *luaVM, int pos )
 	                 "endianness must be 'l'/'b'/'n'" );
 	return (*endian == 'l');
 }
-
 
 
 /**
@@ -464,289 +452,10 @@ static int lxt_buf_writestring (lua_State *luaVM)
 }
 
 
-
-
-
-
-///////////////////////////////////////// OLD IMPLEMENTATION /////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////
-
-
-/**
- * \brief  gets the value of the element
- * \param  position in bytes
- * \param  offset   in bits
- * \param  len   in bits
- *
- * \return integer 1 left on the stack
- */
-static int lxt_buf_readbits (lua_State *luaVM) {
-	int                   sz;    // how many bits to write
-	int                   sz_nd; // how many bits to represent value
-	int                   ofs;   // starting with the x bit
-	uint8_t              *v8;
-	uint16_t             *v16;
-	uint32_t             *v32;
-	uint64_t             *v64;
-	uint8_t               m8;
-	uint16_t              m16;
-	uint32_t              m32;
-	uint64_t              m64;
-	struct xt_buf        *b = xt_buf_check_ud (luaVM, 1);
-
-	ofs = luaL_checkint(luaVM, 2);
-	sz  = luaL_checkint(luaVM, 3);
-	sz_nd = (ofs%8) + sz;
-	//printf("o:%d s:%d n:%d c:%d\n", ofs, sz, sz_nd, (sz_nd-1)/8);
-
-	switch ( (sz_nd-1)/8 ) {
-		case 0:
-			m8  = ( 0xFF >> (8-sz)) << (8 - (ofs%8) - sz);
-			v8  = (uint8_t *) &(b->b[ ofs/8 ]);
-			lua_pushinteger( luaVM, (*v8 & m8) >> (8 -(ofs%8) -sz));
-			break;
-		case 1:
-			m16 = ( 0xFFFF >> (16-sz)) << (16 - (ofs%8) - sz);
-			v16 = (uint16_t *) &(b->b[ ofs/8 ]);
-			lua_pushinteger(luaVM, (htons(*v16) & m16) >> (16 -(ofs%8) -sz));
-			break;
-		case 2:
-		case 3:
-			m32 = ( 0xFFFFFFFF >> (32-sz)) << (32 - (ofs%8) - sz);
-			v32 = (uint32_t *) &(b->b[ ofs/8 ]);
-			lua_pushinteger(luaVM, (htonl(*v32) & m32) >> (32 -(ofs%8) -sz));
-			break;
-		case 4:
-		case 5:
-		case 6:
-		case 7:
-			m64 = ( 0xFFFFFFFF >> (64-sz)) << (64 - (ofs%8) - sz);
-			v64 = (uint64_t *) &(b->b[ ofs/8 ]);
-			lua_pushinteger(luaVM, (htonll(*v64) & m64) >> (64 -(ofs%8) -sz));
-			break;
-		default:
-			//TODO: handle error
-			return xt_push_error(luaVM, "Can't handle a %d bits wide field", sz);
-	}
-	return 1;
-}
-
-
-/**
- * \brief  gets a byte wide the value from stream
- * \lparam  position in bytes
- *
- * \return integer 1 left on the stack
- */
-static int lxt_buf_read8 (lua_State *luaVM)
-{
-	uint8_t       *v;
-	int            p = luaL_checkint (luaVM,2); // starting byte  b->b[pos]
-	struct xt_buf *b   = xt_buf_check_ud (luaVM, 1);
-
-	v = (uint8_t *) &(b->b[ p ]);
-	lua_pushinteger(luaVM, (int) *v);
-	return 1;
-}
-
-
-/**
- * \brief  gets a short 2 byte wide value from stream
- * \lparam  position in bytes
- *
- * \return integer 1 left on the stack
- */
-static int lxt_buf_read16 (lua_State *luaVM)
-{
-	uint16_t      *v;
-	int            p = luaL_checkint (luaVM,2); // starting byte  b->b[pos]
-	struct xt_buf *b = xt_buf_check_ud (luaVM, 1);
-
-	v = (uint16_t *) &(b->b[ p ]);
-	lua_pushinteger(luaVM, (int) htons (*v));
-	return 1;
-}
-
-
-/**
- * \brief  gets a long 4 byte wide value from stream
- * \lparam  position in bytes
- *
- * \return integer 1 left on the stack
- */
-static int lxt_buf_read32 (lua_State *luaVM)
-{
-	uint32_t      *v;
-	int            p = luaL_checkint (luaVM,2); // starting byte  b->b[pos]
-	struct xt_buf *b = xt_buf_check_ud (luaVM, 1);
-
-	v = (uint32_t *) &(b->b[ p ]);
-	lua_pushinteger(luaVM, (int) htonl (*v));
-	return 1;
-}
-
-
-/**
- * \brief  gets a long long 8 byte wide value from stream
- * \lparam  position in bytes
- *
- * \return integer 1 left on the stack
- */
-static int lxt_buf_read64 (lua_State *luaVM)
-{
-	uint64_t      *v;
-	int            p = luaL_checkint (luaVM,2); // starting byte  b->b[pos]
-	struct xt_buf *b = xt_buf_check_ud (luaVM, 1);
-
-	v = (uint64_t *) &(b->b[ p ]);
-	lua_pushinteger(luaVM, (int) htonll (*v));
-	return 1;
-}
-
-
-/**
- * \brief    sets a value at a position in the stream
- *
- * \return integer 0 left on the stack
- */
-static int lxt_buf_writebits(lua_State *luaVM) 
-{
-	int            sz;    ///> how many bits to write
-	int            sz_nd; ///> how many bits needed to represent
-	int            ofs;   ///> starting with the x bit
-	int            nv;    ///> value to be set
-	union {
-		uint8_t       *v8;
-		uint16_t      *v16;
-		uint32_t      *v32;
-		uint64_t      *v64;
-	} v;
-	union {
-		uint8_t        m8;
-		uint16_t       m16;
-		uint32_t       m32;
-		uint64_t       m64;
-	} m;
-	struct xt_buf *b = xt_buf_check_ud (luaVM, 1);
-
-	ofs = luaL_checkint(luaVM, 2);
-	sz  = luaL_checkint(luaVM, 3);
-	nv  = luaL_checkint(luaVM, 4);
-	sz_nd = (ofs%8) + sz;
-
-	switch ( (sz_nd-1)/8 ) {
-		case 0:
-			m.m8     = ( 0xFF >> (8-sz)) << (8 - (ofs%8) - sz);
-			v.v8     = (uint8_t *) &(b->b[ ofs/8 ]);
-			*(v.v8)  = ( *(v.v8) & ~m.m8) | (nv << (8 -(ofs%8)- sz));
-			break;
-		case 1:
-			m.m16    = ( 0xFFFF >> (16-sz)) << (16 - (ofs%8) - sz);
-			v.v16    = (uint16_t *) &(b->b[ ofs/8 ]);
-			*(v.v16) = htons( (htons(*(v.v16)) & ~m.m16) | (nv << (16 -(ofs%8)- sz)) );
-			break;
-		case 2:
-		case 3:
-			m.m32    = ( 0xFFFFFFFF >> (32-sz)) << (32 - (ofs%8) - sz);
-			v.v32    = (uint32_t *) &(b->b[ ofs/8 ]);
-			*(v.v32) = htonl( (htonl(*(v.v32)) & ~m.m32) | (nv << (32 -(ofs%8)- sz)) );
-			break;
-		case 4:
-		case 5:
-		case 6:
-		case 7:
-			m.m64    = ( 0xFFFFFFFFFFFFFFFF >> (64-sz)) << (64 - (ofs%8) - sz);
-			v.v64    = (uint64_t *) &(b->b[ ofs/8 ]);
-			*(v.v64) = htonll( (htonll(*(v.v64)) & ~m.m64) | (nv << (64 -(ofs%8)- sz)) );
-			break;
-		default:
-			//TODO: handle error
-			return xt_push_error(luaVM, "Can't handle a %d bits wide field", sz);
-	}
-	return 0;
-}
-
-
-/**
- * \brief  sets a char 2 byte wide value in stream
- * \lparam  position in bytes
- * \lparam  value
- *
- * \return integer 0 left on the stack
- */
-static int lxt_buf_write8(lua_State *luaVM)
-{
-	uint8_t       *v;
-	int            p = luaL_checkint (luaVM,2); // starting byte  b->b[pos]
-	struct xt_buf *b = xt_buf_check_ud (luaVM, 1);
-
-	v  = (uint8_t *) &(b->b[ p ]);
-	*v = (uint8_t) luaL_checknumber(luaVM, 3);
-	return 0;
-}
-
-
-/**
- * \brief  sets a short 2 byte wide value in stream
- * \lparam  position in bytes
- * \lparam  value
- *
- * \return integer 0 left on the stack
- */
-static int lxt_buf_write16(lua_State *luaVM)
-{
-	uint16_t      *v;
-	int            p = luaL_checkint (luaVM,2); // starting byte  b->b[pos]
-	struct xt_buf *b = xt_buf_check_ud (luaVM, 1);
-
-	v  = (uint16_t *) &(b->b[ p ]);
-	*v = htons( (uint16_t) luaL_checknumber(luaVM, 3) );
-	return 0;
-}
-
-
-/**
- * \brief  sets a long 4 byte wide value in stream
- * \lparam  position in bytes
- * \lparam  value
- *
- * \return integer 0 left on the stack
- */
-static int lxt_buf_write32 (lua_State *luaVM)
-{
-	uint32_t      *v;
-	int            p = luaL_checkint (luaVM,2); // starting byte  b->b[pos]
-	struct xt_buf *b = xt_buf_check_ud (luaVM, 1);
-
-	v  = (uint32_t *) &(b->b[ p ]);
-	*v = htonl( (uint32_t) luaL_checknumber(luaVM, 3) );
-	return 0;
-}
-
-
-/**
- * \brief  sets a long long 8 byte wide value in stream
- * \lparam  position in bytes
- * \lparam  value
- *
- * \return integer 0 left on the stack
- */
-static int lxt_buf_write64 (lua_State *luaVM)
-{
-	uint64_t      *v;
-	int            p = luaL_checkint (luaVM,2); // starting byte  b->b[pos]
-	struct xt_buf *b = xt_buf_check_ud (luaVM, 1);
-
-	v  = (uint64_t *) &(b->b[ p ]);
-	*v = htonll( (uint64_t) luaL_checknumber(luaVM, 3) );
-	return 0;
-}
-
-
 /**
  * \brief    gets the content of the Stream in Hex
  * \lreturn  string buffer representation in Hexadecimal
- * \TODO     use luaL_Buffer
+ * \TODO     use luaL_Buffer?
  *
  * \return integer 0 left on the stack
  */
@@ -793,7 +502,7 @@ static int lxt_buf__len (lua_State *luaVM)
 static int lxt_buf__tostring (lua_State *luaVM)
 {
 	struct xt_buf *bs = xt_buf_check_ud (luaVM, 1);
-	lua_pushfstring( luaVM, "Buffer{%d}: %p", bs->len, bs );
+	lua_pushfstring( luaVM, "xt.Buffer{%d}: %p", bs->len, bs );
 	return 1;
 }
 
@@ -828,27 +537,10 @@ static const luaL_Reg xt_buf_m [] = {
 	{"writeBit",      lxt_buf_writebit},
 	{"readStr",       lxt_buf_readstring},
 	{"writeStr",      lxt_buf_writestring},
-	// old implementation
-	{"readBits",      lxt_buf_readbits},
-	{"writeBits",     lxt_buf_writebits},
-	{"read8",         lxt_buf_read8},
-	{"read16",        lxt_buf_read16},
-	{"read32",        lxt_buf_read32},
-	{"read64",        lxt_buf_read64},
-	{"readString",    lxt_buf_readstring},
-	{"write8",        lxt_buf_write8},
-	{"write16",       lxt_buf_write16},
-	{"write32",       lxt_buf_write32},
-	{"write64",       lxt_buf_write64},
-	{"writeString",   lxt_buf_writestring},
 	// univeral stuff
 	{"toHex",         lxt_buf_tohexstring},
 	{"length",        lxt_buf__len},
 	{"toString",      lxt_buf__tostring},
-	// get subtypes
-	{"ByteField",     xt_buf_fld_new_byte},
-	{"BitField",      xt_buf_fld_new_bits},
-	{"StringField",   xt_buf_fld_new_string},
 	{NULL,            NULL}
 };
 
@@ -874,8 +566,6 @@ LUAMOD_API int luaopen_xt_buf (lua_State *luaVM)
 	lua_pop(luaVM, 1);        // remove metatable from stack
 	// xt.Buffer class
 	luaL_newlib(luaVM, xt_buf_cf);
-	luaopen_xt_buf_fld(luaVM);
-	lua_setfield(luaVM, -2, "Field");
 	luaL_newlib(luaVM, xt_buf_fm);
 	lua_setmetatable(luaVM, -2);
 	return 1;
