@@ -53,6 +53,7 @@ int lxt_pack_Bit( lua_State *luaVM )
 	return 1;
 }
 
+
 /** ---------------------------------------------------------------------------
  * creates a string type packer field.
  * \param    luaVM    lua state.
@@ -70,7 +71,6 @@ int lxt_pack_String( lua_State *luaVM )
 	p->sz    = sz;
 	return 1;
 }
-
 
 
 /**--------------------------------------------------------------------------
@@ -107,33 +107,13 @@ struct xt_pack *xt_pack_check_ud( lua_State *luaVM, int pos )
 }
 
 
-/**--------------------------------------------------------------------------
- * Attach a buffer to a Packer field.
- * \param  luaVM lua Virtual Machine.
- * \lparam struct xt_pack.
- * \lparam struct xt_buf.
- * \lparam pos    position in xt_buf.
- * \return integer number of values left on the stack.
- *  -------------------------------------------------------------------------*/
-static int lxt_pack_attach( lua_State *luaVM )
-{
-	struct xt_pack *p   = xt_pack_check_ud( luaVM, 1 );
-	struct xt_buf  *b   = xt_buf_check_ud( luaVM, 2 );
-	int             pos = luaL_checkint( luaVM, 3 );   ///< starting byte  b->b[pos]
-
-	luaL_argcheck( luaVM, 0 <= pos && pos <= (int) b->len, 3,
-	                    "xt.Buffer position must be > 0 or < #buffer" );
-	p->b = &(b->b[pos]);
-	return 0;
-}
-
-
 ////////////////////////////////////////////////////---------------ACCESSORS
 
 /**--------------------------------------------------------------------------
  * reads a value from the packer and pushes it onto the Lua stack.
  * \param   luaVM lua Virtual Machine.
- * \lparam  struct xt_pack.
+ * \param   struct xt_pack.
+ * \param   pointer to the buffer to read from(already positioned).
  * \lreturn value from the buffer a packers position according to packer format.
  * \return  integer number of values left on the stack.
  *  -------------------------------------------------------------------------*/
@@ -158,48 +138,10 @@ int xt_pack_read( lua_State *luaVM, struct xt_pack *p, const unsigned char *buff
 
 
 /**--------------------------------------------------------------------------
- * reads a value from the packer and pushes it onto the Lua stack.
- * \param   luaVM lua Virtual Machine.
- * \lparam  struct xt_pack.
- * \lreturn value from the buffer a packers position according to packer format.
- * \return  integer number of values left on the stack.
- *  -------------------------------------------------------------------------*/
-static int lxt_pack_read( lua_State *luaVM )
-{
-	struct xt_pack *p   = xt_pack_check_ud( luaVM, 1 );
-	if (NULL == p->b)
-		return xt_push_error( luaVM, "Can only read data from initialized data structures" );
-
-	return xt_pack_read( luaVM, p, p->b );
-}
-
-
-/**--------------------------------------------------------------------------
- * reads a value from the packer and pushes it onto the Lua stack.
- * \param   luaVM lua Virtual Machine.
- * \lparam  struct xt_pack.
- * \lreturn value from the buffer a packers position according to packer format.
- * \return  integer number of values left on the stack.
- *  -------------------------------------------------------------------------*/
-static int lxt_pack_unpack( lua_State *luaVM )
-{
-	struct xt_pack *p   = xt_pack_check_ud( luaVM, 1 );
-	size_t          sL;
-	const char     *buf = luaL_checklstring( luaVM, 2, &sL );
-	if (sL != p->sz)
-		return xt_push_error( luaVM, "Can only unpack data of the size suitable for this packers size" );
-
-	return xt_pack_read( luaVM, p, (const unsigned char *) buf );
-}
-
-
-
-/**--------------------------------------------------------------------------
  * Sets a value from stack to a char buffer according to paccker format.
- * Helper to access the char buffer of any kind and check the values on the Lua stack
  * \param  luaVM lua Virtual Machine.
  * \param  struct xt_pack.
- * \param  unsigned char* char buffer.
+ * \param  unsigned char* char buffer to write to.
  * \lparam Lua value.
  *
  * return integer return code -0==success; !=0 means errors pushed to Lua stack
@@ -240,6 +182,24 @@ int xt_pack_write( lua_State *luaVM, struct xt_pack *p, unsigned char *buffer )
 }
 
 
+/**--------------------------------------------------------------------------
+ * reads a value from the packer and pushes it onto the Lua stack.
+ * \param   luaVM lua Virtual Machine.
+ * \lparam  struct xt_pack.
+ * \lreturn value from the buffer a packers position according to packer format.
+ * \return  integer number of values left on the stack.
+ *  -------------------------------------------------------------------------*/
+static int lxt_pack_unpack( lua_State *luaVM )
+{
+	struct xt_pack *p   = xt_pack_check_ud( luaVM, 1 );
+	size_t          sL;
+	const char     *buf = luaL_checklstring( luaVM, 2, &sL );
+	if (sL != p->sz)
+		return xt_push_error( luaVM, "Can only unpack data of the size suitable for this packers size" );
+
+	return xt_pack_read( luaVM, p, (const unsigned char *) buf );
+}
+
 
 /**--------------------------------------------------------------------------
  * reads in a Lua value and packs it according to packer format. Return str to Lua Stack
@@ -267,32 +227,6 @@ static int lxt_pack_pack( lua_State *luaVM )
 	{
 		luaL_pushresultsize( &lB, p->sz);
 		return 1;
-	}
-}
-
-
-/** ---------------------------------------------------------------------------
- * Read value from Lua stack and write to the packers associated buffer
- * \param  luaVM   lua Virtual Machine
- * \lparam struct  xt_pack
- * \lparam val luaValue to be written to packer buffer
- * \return integer number of values left on the stack
- *  -------------------------------------------------------------------------*/
-static int lxt_pack_write( lua_State *luaVM )
-{
-	struct xt_pack *p   = xt_pack_check_ud( luaVM, 1 );
-	int             retVal;                  ///< return value to evaluate the succes off write operation
-	if (NULL == p->b)
-		return xt_push_error( luaVM, "Can only write data to initialized data structures" );
-
-
-	if ((retVal = xt_pack_write( luaVM, p,  p->b )) != 0)
-	{
-		return retVal;
-	}
-	else
-	{
-		return 0;
 	}
 }
 
@@ -362,11 +296,8 @@ static const struct luaL_Reg xt_pack_cf [] = {
  */
 static const luaL_Reg xt_pack_m [] = {
 	// new implementation
-	{"read",      lxt_pack_read},
-	{"write",     lxt_pack_write},
 	{"pack",      lxt_pack_pack},
 	{"unpack",    lxt_pack_unpack},
-	{"attach",    lxt_pack_attach},
 	{NULL,    NULL}
 };
 

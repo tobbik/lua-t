@@ -43,7 +43,7 @@ int lxt_comb_Struct( lua_State *luaVM )
 			lua_rawseti( luaVM,  -3, lua_rawlen( luaVM, -3 ) +1 ); // Stack: ...,Struct,'_packer',_packer,name
 		}
 	}
-	luaL_getmetatable( luaVM, "xt.Packer.Combinator" );  // Stack: ...,Struct,xt.Packer.Combinator
+	luaL_getmetatable( luaVM, "xt.Packer.Combinator" );          // Stack: ...,Struct,xt.Packer.Combinator
 	lua_setmetatable( luaVM, i ) ;
 
 	// Stack: ...,Struct,'_packer',_packer
@@ -87,18 +87,26 @@ void xt_comb_check_ud( lua_State *luaVM, int pos )
  * --------------------------------------------------------------------------*/
 static int lxt_comb__index( lua_State *luaVM )
 {
-	const char        *name;
 	struct xt_pack    *p;
 
 	// Stack: Struct, name, value
 	xt_comb_check_ud( luaVM, -2 );
-	name = luaL_checkstring( luaVM, -1 );
+	luaL_checkstring( luaVM, -1 );
 	// get the value from the _packer table
 	lua_pushstring( luaVM, "_packer" );
 	lua_rawget( luaVM, -3);    // Stack: Struct, name, _packer
 
-	lua_pushvalue( luaVM, -2 );    // push the name again
-	lua_rawget( luaVM, -2 );    // Stack: Struct, name, _packer, (Packer or internal)
+	// Access the _packer table by key/value or numeric index
+	if (0 == lua_tonumber( luaVM, -2 ))
+	{
+		lua_pushvalue( luaVM, -2 );    // push the name again
+		lua_rawget( luaVM, -2 );       // Stack: Struct, name, _packer, (Packer or internal)
+	}
+	else
+	{
+		lua_rawgeti( luaVM, -1, lua_tonumber( luaVM, -2 )); // Stack: Struct, name, _packer, (Packer or internal)
+	}
+
 	if (lua_isnoneornil( luaVM, -1 ))
 		return 1;
 
@@ -121,14 +129,12 @@ static int lxt_comb__index( lua_State *luaVM )
  * --------------------------------------------------------------------------*/
 static int lxt_comb__newindex( lua_State *luaVM )
 {
-	const char        *name;
 	struct xt_pack    *p;
 
 	// Stack: Struct, name, value
 	xt_comb_check_ud( luaVM, -3 );
-	name = luaL_checkstring( luaVM, -2 );
 	// Don't overwrite _internal fields
-	if ('_' == *name)
+	if ('_' == *(luaL_checkstring( luaVM, -2 )))
 		return xt_push_error( luaVM,
 			"Can't overwrite or create internal Combinator fields" );
 
@@ -136,12 +142,20 @@ static int lxt_comb__newindex( lua_State *luaVM )
 	lua_pushstring( luaVM, "_packer" );   // Stack: Struct, name, value, '_packer'
 	lua_rawget( luaVM, -4 );              // Stack: Struct, name, value,_packer
 
-	lua_pushvalue( luaVM, -3 );    // push the name again
-	lua_rawget( luaVM, -2 );       // Stack: Struct, name, value, _packer, (Packer or internal)
+	// Access the _packer table by key/value or numeric index
+	if (0 == lua_tonumber( luaVM, -2 ))
+	{
+		lua_pushvalue( luaVM, -3 );    // push the name again
+		lua_rawget( luaVM, -2 );       // Stack: Struct, name, value, _packer, (Packer or internal)
+	}
+	else
+	{
+		lua_rawgeti( luaVM, -1, lua_tonumber( luaVM, -3 )); // Stack: Struct,name,value,_packer,(Packer or internal)
+	}
+
 	if (lua_isnoneornil( luaVM, -1 ))
 		return xt_push_error( luaVM, "Combinator Fields can only be created on construction" );
 		
-	// grab the packer (if name is numeric or alpha doesn't matter)
 	p = xt_pack_check_ud( luaVM, -1 );
 	if (NULL == p->b)
 		return xt_push_error( luaVM, "Can only read data from initialized data structures" );
@@ -173,10 +187,11 @@ static int lxt_comb__call( lua_State *luaVM )
 	luaL_argcheck( luaVM, 0 <= pos && pos <= (int) b->len, 3,
 	                    "xt.Buffer position must be > 0 or < #buffer" );
 	// TODO: Buffer size must equal Struct size?
-	// TODO: use rawset
 	lua_pushstring( luaVM, "_pos" );
+	lua_insert( luaVM, -2);
 	lua_rawset( luaVM, 1 );
 	lua_pushstring( luaVM, "_buffer" );
+	lua_insert( luaVM, -2);
 	lua_rawset( luaVM, 1 );
 	// get the _packer subtable
 	lua_pushstring( luaVM, "_packer" );   // Stack: Struct, name, value, '_packer'
@@ -191,6 +206,34 @@ static int lxt_comb__call( lua_State *luaVM )
 	}
 	return 0;
 }
+
+
+/**--------------------------------------------------------------------------
+ * Garbage Collector. Dissassociates buffers from Packers.
+ * \param  luaVM lua Virtual Machine.
+ * \lparam table xt.Combinator.
+ * \return integer number of values left on te stack.
+ * -------------------------------------------------------------------------*/
+static int lxt_comb__gc( lua_State *luaVM )
+{
+	xt_comb_check_ud( luaVM, 1 );
+	struct xt_pack *p;
+	size_t          i;       ///< the iterator for all fields
+
+	// get the _packer subtable
+	lua_pushstring( luaVM, "_packer" );   // Stack: Struct,'_packer'
+	lua_rawget( luaVM, 1 );               // Stack: Struct,_packer
+	for (i=1; i < lua_rawlen( luaVM, -1 )+1 ; i++)
+	{
+		lua_rawgeti( luaVM, -1, i );
+		p = xt_pack_check_ud( luaVM, -1 );
+		p->b = NULL;
+		lua_pop( luaVM, 1 );
+	}
+	return 0;
+}
+
+
 
 
 
@@ -212,6 +255,8 @@ LUAMOD_API int luaopen_xt_comb( lua_State *luaVM )
 	lua_setfield( luaVM, -2, "__newindex" );
 	lua_pushcfunction( luaVM, lxt_comb__call );
 	lua_setfield( luaVM, -2, "__call" );
+	lua_pushcfunction( luaVM, lxt_comb__gc );
+	lua_setfield( luaVM, -2, "__gc" );
 	lua_pop( luaVM, 1 );        // remove metatable from stack
 	return 0;
 }

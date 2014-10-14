@@ -1,15 +1,10 @@
 #!../out/bin/lua
 xt = require("xt")
 
-
-p = xt.Packer.Int(1)
+p = xt.Packer.Int(2)
 print( p )
 
-b = xt.Buffer(14)
-print( b:toHex() )
+print( p:pack( 16706 ) )
 
-p:attach( b, 4 )
+print( p:unpack( 'ab' ) )
 
-p:write( 144 )
-
-print( b:toHex() )

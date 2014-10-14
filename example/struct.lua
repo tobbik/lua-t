@@ -9,11 +9,11 @@ t = xt.Packer.Struct (
 	-- boolean flags -> status
 	--7     is_healthy          -- is the train set healthy?
 	--6     is_zero_speed       -- is the train set stationary?
-	--5     is_maint            -- is the train set in maint mode? 
+	--5     is_maint            -- is the train set in maint mode?
 	--4     is_pcs              -- is a passenger request active?
 	--3     is_file             -- is a file waiting for download (RTDM ready)
 	--2     vmds_not_connected  -- is the connection to the vmds lost?
-	--1     is_shop_mode        -- is the train set in shop mode? 
+	--1     is_shop_mode        -- is the train set in shop mode?
 	--0     is_pad0             -- padding
 	-- {'isHealthy'   = xt.Packer.Bit (1)},
 	-- {'isZeroSpeed' = xt.Packer.Bit (1)},
