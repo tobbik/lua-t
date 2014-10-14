@@ -1,4 +1,3 @@
-
 /// The userdata struct for xt.Buffer
 struct xt_buf {
 	size_t         len;   ///<  length of the entire buffer in bytes
@@ -16,13 +15,15 @@ enum xt_pack_type {
 	XT_PACK_ARRAY,        ///< array type combinator
 };
 
+
+/// The userdata struct for xt.Buffer
 struct xt_pack {
 	enum  xt_pack_type type;    ///< type of value in the packer
 	unsigned char     *b;       ///< pointer to the associate buffer
-	size_t             sz;      ///< how many bytes are covered in this struct
-	size_t             ofs;     ///< offset in bytes where *b starts compared to buf->b
-	size_t             blen;    ///< how many bytes are covered in this struct
-	size_t             bofs;    ///< offset in bytes where *b starts compared to buf->b
+	size_t             sz;      ///< how many bytes are covered in this packer
+	//size_t             ofs;     ///< offset in bytes where *b starts compared to buf->b
+	size_t             blen;    ///< how many bits are covered in this packer
+	size_t             bofs;    ///< offset in bits in the first byte
 	int                islittle;///< is this little endian?
 };
 

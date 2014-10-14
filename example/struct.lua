@@ -27,7 +27,7 @@ t = xt.Packer.Struct (
 	{['@status']    = xt.Packer.Int(1)},
 	{ConsistCount   = xt.Packer.Int(1)}
 )
-b=xt.Buffer( 'ABCDEFGH')
+b=xt.Buffer( 'ABCDEFGH' )
 t( b, 0 )
 
 --[[
