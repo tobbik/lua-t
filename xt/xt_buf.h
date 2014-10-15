@@ -9,10 +9,7 @@ enum xt_pack_type {
 	XT_PACK_BIT,          ///< X  Bit  wide field
 	XT_PACK_INT,          ///< X  Byte wide field as Integer
 	XT_PACK_FLT,          ///< X  Byte wide field as Float
-	XT_PACK_STR,          ///< string buffer field
-	XT_PACK_STRUCT,       ///< struct type combinator
-	XT_PACK_SEQ,          ///< sequence type combinator
-	XT_PACK_ARRAY,        ///< array type combinator
+	XT_PACK_STR,          ///< X  Byte wide field of char bytes
 };
 
 

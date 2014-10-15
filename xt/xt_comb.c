@@ -9,7 +9,7 @@
 
 
 /**--------------------------------------------------------------------------
- * create an Combinator Struct Object and put it onto the stack.
+ * create an Combinator Struct/Sequence Object and put it onto the stack.
  * \param   luaVM  The lua state.
  * \lparam
  *			... multiple of same type { name = xt.Pack.Int(2) }
@@ -23,24 +23,42 @@ int lxt_comb_Struct( lua_State *luaVM )
 	struct xt_pack *p;
 
 	lua_newtable( luaVM );
-	lua_pushstring( luaVM, "_packer" );  // Stack: ...,Struct,_packer, "_packer"
-	lua_newtable( luaVM ); // Stack: ..., Struct, _packer
+	lua_pushstring( luaVM, "_packer" );  // Stack: ...,Struct,"_packer", _packer
+	lua_newtable( luaVM ); // Stack: ..., Struct,"_packer",_packer
 	for (i=1; i<lua_gettop( luaVM )-2; i++)
 	{
-		lua_pushnil( luaVM );
-		while (lua_next( luaVM, i ))   // Stack: ...,Struct,'_packer',_packer,name,Pack
+		// if element is table with no length -> assume key/value pair
+		if (lua_istable( luaVM, i))
 		{
-			p = xt_pack_check_ud( luaVM, -1 );
-			sz += p->sz;
-			// make copies on stack to push to _packer table by numeric and hash index
-			lua_pushvalue( luaVM, -2 ); // Stack: ...,Struct,'_packer',_packer,name,Pack,name
-			lua_pushvalue( luaVM, -2 ); // Stack: ...,Struct,'_packer',_packer,name,Pack,name,Pack
-			// make the copied Packer available as Struct[ 'name' ]
-			// pops the copies of Packer and name  off the stack
-			lua_rawset( luaVM, -5 );    // Stack: ...,Struct,'_packer',_packer,name,Pack
+			lua_pushnil( luaVM );
+			if (lua_next( luaVM, i ))   // Stack: ...,Struct,"_packer",_packer,name,Pack
+			{
+				p = xt_pack_check_ud( luaVM, -1 );
+				// make copies on stack to push to _packer table by numeric and hash index
+				lua_pushvalue( luaVM, -1 ); // Stack: ...,Struct,'_packer',_packer,name,Pack,Pack
+				lua_insert( luaVM, -3 );    // Stack: ...,Struct,'_packer',_packer,Pack,name,Pack
+				// make the copied Packer available as Struct[ 'name' ]
+				// pops the copies of Packer and name  off the stack
+				lua_rawset( luaVM, -4 );    // Stack: ...,Struct,'_packer',_packer,name,Pack
+			}
+			else
+			{
+				return xt_push_error( luaVM, "the table argument must contain one key/value pair.");
+			}
+
 			// make Packer available in numbered sequence of Struct[ #Struct ]
 			// pops the original of the Packer off the Stack
-			lua_rawseti( luaVM,  -3, lua_rawlen( luaVM, -3 ) +1 ); // Stack: ...,Struct,'_packer',_packer,name
+			lua_rawseti( luaVM,  -2, lua_rawlen( luaVM, -2 ) +1 ); // Stack: ...,Struct,'_packer',_packer
+			sz += p->sz;
+		}
+		else
+		{
+			p = xt_pack_check_ud( luaVM, i );
+			lua_pushvalue( luaVM, i );
+			// make Packer available in numbered sequence of Struct[ #Struct ]
+			// pops the original of the Packer off the Stack
+			lua_rawseti( luaVM,  -2, lua_rawlen( luaVM, -2 ) +1 ); // Stack: ...,Struct,'_packer',_packer
+			sz += p->sz;
 		}
 	}
 	luaL_getmetatable( luaVM, "xt.Packer.Combinator" );          // Stack: ...,Struct,xt.Packer.Combinator

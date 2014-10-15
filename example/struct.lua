@@ -4,28 +4,26 @@ xt=require'xt'
 t = xt.Packer.Struct (
 	{ length   = xt.Packer.Int(2) },
 	{ ['type'] = xt.Packer.Int(2) },
-	--{ 'status' = xt.Combinator.Struct (
-	-- payload  // Train
+	-- BitField is a special type as the constructor resets the actual offset for each single bit
+	--{ 'status' = xt.Combinator.BitField (
 	-- boolean flags -> status
-	--7     is_healthy          -- is the train set healthy?
-	--6     is_zero_speed       -- is the train set stationary?
-	--5     is_maint            -- is the train set in maint mode?
-	--4     is_pcs              -- is a passenger request active?
-	--3     is_file             -- is a file waiting for download (RTDM ready)
-	--2     vmds_not_connected  -- is the connection to the vmds lost?
-	--1     is_shop_mode        -- is the train set in shop mode?
-	--0     is_pad0             -- padding
-	-- {'isHealthy'   = xt.Packer.Bit (1)},
-	-- {'isZeroSpeed' = xt.Packer.Bit (1)},
-	-- {'isMaintMode' = xt.Packer.Bit (1)},
-	-- {'isPassReq'   = xt.Packer.Bit (1)},
-	-- {'isFileForDl' = xt.Packer.Bit (1)},
-	-- {'isVmdsConnd' = xt.Packer.Bit (1)},
-	-- {'isShopMode'  = xt.Packer.Bit (1)},
-	-- {'padding'     = xt.Packer.Bit (1)}
+	-- {'isHealthy'   = xt.Packer.Bit (1)},  -- is the train set healthy?
+	-- {'isZeroSpeed' = xt.Packer.Bit (1)},  -- is the train set stationary?
+	-- {'isMaintMode' = xt.Packer.Bit (1)},  -- is the train set in maint mode?
+	-- {'isPassReq'   = xt.Packer.Bit (1)},  -- is a passenger request active?
+	-- {'isFileForDl' = xt.Packer.Bit (1)},  -- is a file waiting for download (RTDM ready)
+	-- {'isVmdsConnd' = xt.Packer.Bit (1)},  -- is the connection to the vmds lost?
+	-- {'isShopMode'  = xt.Packer.Bit (1)},  -- is the train set in shop mode?
+	-- {'padding'     = xt.Packer.Bit (1)}   -- padding
 	--)},
 	{['@status']    = xt.Packer.Int(1)},
 	{ConsistCount   = xt.Packer.Int(1)}
+)
+q = xt.Packer.Struct (
+	xt.Packer.Int(2),
+	xt.Packer.Int(2),
+	xt.Packer.Int(1),
+	xt.Packer.Int(1)
 )
 b=xt.Buffer( 'ABCDEFGH' )
 t( b, 0 )
