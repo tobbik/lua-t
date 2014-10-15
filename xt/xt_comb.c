@@ -20,6 +20,7 @@ int lxt_comb_Struct( lua_State *luaVM )
 {
 	int             i;      ///< iterator for going through the arguments
 	size_t          sz=0;   ///< tally up the size of all elements in the Struct
+	size_t          bc=0;   ///< count bitSize for bitSize fields
 	struct xt_pack *p;
 
 	lua_newtable( luaVM );
@@ -49,7 +50,6 @@ int lxt_comb_Struct( lua_State *luaVM )
 			// make Packer available in numbered sequence of Struct[ #Struct ]
 			// pops the original of the Packer off the Stack
 			lua_rawseti( luaVM,  -2, lua_rawlen( luaVM, -2 ) +1 ); // Stack: ...,Struct,'_packer',_packer
-			sz += p->sz;
 		}
 		else
 		{
@@ -58,10 +58,23 @@ int lxt_comb_Struct( lua_State *luaVM )
 			// make Packer available in numbered sequence of Struct[ #Struct ]
 			// pops the original of the Packer off the Stack
 			lua_rawseti( luaVM,  -2, lua_rawlen( luaVM, -2 ) +1 ); // Stack: ...,Struct,'_packer',_packer
-			sz += p->sz;
 		}
+		// handle Bit type packers
+		if (XT_PACK_BIT == p->type)
+		{
+			p->bofs = bc%8;
+			bc = bc + p->blen;
+		}
+		else
+		{
+			if (bc%8)
+				xt_push_error( luaVM, "bitsized fields must always be grouped by byte size " );
+			else
+				bc = 0;
+		}
+		sz += p->sz;
 	}
-	luaL_getmetatable( luaVM, "xt.Packer.Combinator" );          // Stack: ...,Struct,xt.Packer.Combinator
+	luaL_getmetatable( luaVM, "xt.Packer.Combinator" ); // Stack: ...,Struct,xt.Packer.Combinator
 	lua_setmetatable( luaVM, i ) ;
 
 	// Stack: ...,Struct,'_packer',_packer

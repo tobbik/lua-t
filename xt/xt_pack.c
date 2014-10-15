@@ -39,12 +39,18 @@ int lxt_pack_Int( lua_State *luaVM )
 int lxt_pack_Bit( lua_State *luaVM )
 {
 	struct xt_pack  *p;
-	int             sz = luaL_checkint( luaVM, 1 );   ///< how many bits  to read
-	int            ofs = luaL_checkint( luaVM, 2 );   ///< how many its from starting byte to read
+	int             sz = luaL_checkint( luaVM, 1 ); ///< how many bits  to read
+	int            ofs = 0;                         ///< how many its from starting byte to read
+
 	luaL_argcheck( luaVM,  1<= sz && sz <= 8*8,       1,
 		                 "size must be >=1 and <=8" );
-	luaL_argcheck( luaVM,  0<= ofs && ofs <= 8,       2,
+	if (lua_isnumber( luaVM, 2 ))
+	{
+		ofs = luaL_checkint( luaVM, 2 );
+		luaL_argcheck( luaVM,  0<= ofs && ofs <= 8,       2,
 		                 "offset must be >=0 and <=8" );
+	}
+
 	p = xt_pack_create_ud( luaVM, XT_PACK_BIT );
 
 	p->sz    = ((sz+ofs-1)/8)+1;
