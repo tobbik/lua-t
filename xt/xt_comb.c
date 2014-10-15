@@ -63,16 +63,18 @@ int lxt_comb_Struct( lua_State *luaVM )
 		if (XT_PACK_BIT == p->type)
 		{
 			p->bofs = bc%8;
+			if ((bc+p->blen)/8 > bc/8)
+				sz += 1;
 			bc = bc + p->blen;
 		}
 		else
 		{
+			sz = sz + p->sz;
 			if (bc%8)
 				xt_push_error( luaVM, "bitsized fields must always be grouped by byte size " );
 			else
 				bc = 0;
 		}
-		sz += p->sz;
 	}
 	luaL_getmetatable( luaVM, "xt.Packer.Combinator" ); // Stack: ...,Struct,xt.Packer.Combinator
 	lua_setmetatable( luaVM, i ) ;
@@ -265,6 +267,21 @@ static int lxt_comb__gc( lua_State *luaVM )
 }
 
 
+/**--------------------------------------------------------------------------
+ * Length of Struct in bytes
+ * \param  luaVM lua Virtual Machine.
+ * \lparam table xt.Combinator.
+ * \return integer number of values left on te stack.
+ * -------------------------------------------------------------------------*/
+static int lxt_comb__len( lua_State *luaVM )
+{
+	xt_comb_check_ud( luaVM, 1 );
+
+	// get the _packer subtable
+	lua_pushstring( luaVM, "_size" );   // Stack: Struct,'_packer'
+	lua_rawget( luaVM, 1 );               // Stack: Struct,_packer
+	return 1;
+}
 
 
 
@@ -286,6 +303,8 @@ LUAMOD_API int luaopen_xt_comb( lua_State *luaVM )
 	lua_setfield( luaVM, -2, "__newindex" );
 	lua_pushcfunction( luaVM, lxt_comb__call );
 	lua_setfield( luaVM, -2, "__call" );
+	lua_pushcfunction( luaVM, lxt_comb__len );
+	lua_setfield( luaVM, -2, "__len" );
 	lua_pushcfunction( luaVM, lxt_comb__gc );
 	lua_setfield( luaVM, -2, "__gc" );
 	lua_pop( luaVM, 1 );        // remove metatable from stack

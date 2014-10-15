@@ -33,7 +33,8 @@ int lxt_pack_Int( lua_State *luaVM )
  * creates a bit type packer field.
  * \param    luaVM    lua state.
  * \lparam   sz       size of packer in bits.
- * \lparam   bofs     bit offset from beginning of byte at xt pack->b.
+ *         OPTIONAL
+ * \lparam   bofs     bit offset from beginning of byte at xt pack->b. Default 0.
  * \return integer number of values left on the stack.
  *  -------------------------------------------------------------------------*/
 int lxt_pack_Bit( lua_State *luaVM )
