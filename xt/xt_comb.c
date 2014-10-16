@@ -112,6 +112,44 @@ void xt_comb_check_ud( lua_State *luaVM, int pos )
 
 
 /**--------------------------------------------------------------------------
+ * \brief   test a value on the stack for being a Cobinator or Packer
+ * \param   luaVM    The lua state.
+ * \param   int      Boolean 0:success, 1:error
+ * \lparam  the Test table on the stack
+ * \lreturn leaves the tested element on the the stack
+ * --------------------------------------------------------------------------*/
+static int xt_comb_test_ud( lua_State *luaVM, int pos )
+{
+	if (lua_isuserdata( luaVM, pos ) && luaL_checkudata( luaVM, pos, "xt.Packer" ))
+	{
+		lua_pushvalue( luaVM, pos );
+		return 1;
+	}
+	
+	if (lua_istable( luaVM, pos ) && lua_getmetatable( luaVM, pos ))                     // does it have a metatable
+	{
+		luaL_getmetatable( luaVM, "xt.Packer.Combinator" );  // get correct metatable 
+		if (lua_rawequal( luaVM, -1, -2 ))                   // are metatables the same?
+		{
+			lua_pop( luaVM, 2 );                              // pop the 2 metatables
+			lua_pushvalue( luaVM, pos );
+			return 1;
+		}
+		lua_pop( luaVM, 1 );                                 // pop the xt.Packer.Combinator metatables
+		luaL_getmetatable( luaVM, "xt.Packer.Array" );       // get correct metatable 
+		if (lua_rawequal( luaVM, -1, -2 ))                   // are metatables the same?
+		{
+			lua_pop( luaVM, 2 );                              // pop the 2 metatables
+			lua_pushvalue( luaVM, pos );
+			return 1;
+		}
+	}
+	lua_pop( luaVM, 2 );                                   // pop the 2 metatables
+	return xt_push_error( luaVM, "`xt.Packer, xt.Packer.Combinator or xt.Packer.Array` expected" );
+}
+
+
+/**--------------------------------------------------------------------------
  * read a packer value
  * \param   luaVM    The lua state.
  * \lparam  Combinator instance
