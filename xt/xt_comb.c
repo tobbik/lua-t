@@ -12,7 +12,8 @@
  * create an Combinator Struct/Sequence Object and put it onto the stack.
  * \param   luaVM  The lua state.
  * \lparam
- *			... multiple of same type { name = xt.Pack.Int(2) }
+ *			... multiple of type table { name = xt.Packer }
+ *			             or type       xt.Packer
  * \lreturn luatable representing a xt.pack.Struct
  * \return  The number of results to be passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
@@ -22,21 +23,28 @@ int lxt_comb_Struct( lua_State *luaVM )
 	size_t          sz=0;   ///< tally up the size of all elements in the Struct
 	size_t          bc=0;   ///< count bitSize for bitSize fields
 	struct xt_pack *p;
+	int             retVal;
 
 	lua_newtable( luaVM );
-	lua_pushstring( luaVM, "_packer" );  // Stack: ...,Struct,"_packer", _packer
+	lua_pushstring( luaVM, "_packer" );  // Stack: ...,Struct,"_packer"
 	lua_newtable( luaVM ); // Stack: ..., Struct,"_packer",_packer
 	for (i=1; i<lua_gettop( luaVM )-2; i++)
 	{
-		// if element is table with no length -> assume key/value pair
+		// if element is table -> assume key/value pair
 		if (lua_istable( luaVM, i))
 		{
 			lua_pushnil( luaVM );
 			if (lua_next( luaVM, i ))   // Stack: ...,Struct,"_packer",_packer,name,Pack
 			{
-				p = xt_pack_check_ud( luaVM, -1 );
-				// make copies on stack to push to _packer table by numeric and hash index
-				lua_pushvalue( luaVM, -1 ); // Stack: ...,Struct,'_packer',_packer,name,Pack,Pack
+				// check if Packer or Struct and pushes copy on stack
+				if ((retVal = xt_comb_test_ud( luaVM, -1 )) != 0)
+				{
+					lua_pop( luaVM, 1 );
+					return retVal;
+				}
+				p = lua_touserdata( luaVM, -1 );
+
+				// Stack: ...,Struct,'_packer',_packer,name,Pack,Pack
 				lua_insert( luaVM, -3 );    // Stack: ...,Struct,'_packer',_packer,Pack,name,Pack
 				// make the copied Packer available as Struct[ 'name' ]
 				// pops the copies of Packer and name  off the stack
@@ -53,21 +61,27 @@ int lxt_comb_Struct( lua_State *luaVM )
 		}
 		else
 		{
-			p = xt_pack_check_ud( luaVM, i );
-			lua_pushvalue( luaVM, i );
+			// check if Packer or Struct and pushes copy on stack
+			if ((retVal = xt_comb_test_ud( luaVM, i )) != 0)
+			{
+				lua_pop( luaVM, 1 );
+				return retVal;
+			}
+			p = lua_touserdata( luaVM, -1 );
+			// Stack: ...,Struct,'_packer',_packer, Pack
 			// make Packer available in numbered sequence of Struct[ #Struct ]
-			// pops the original of the Packer off the Stack
+			// pops the copy of the Packer off the Stack
 			lua_rawseti( luaVM,  -2, lua_rawlen( luaVM, -2 ) +1 ); // Stack: ...,Struct,'_packer',_packer
 		}
 		// handle Bit type packers
-		if (XT_PACK_BIT == p->type)
+		if (NULL != p && XT_PACK_BIT == p->type)
 		{
 			p->bofs = bc%8;
 			if ((bc+p->blen)/8 > bc/8)
 				sz += 1;
 			bc = bc + p->blen;
 		}
-		else
+		if (NULL != p && XT_PACK_BIT != p->type)
 		{
 			sz = sz + p->sz;
 			if (bc%8)
@@ -118,22 +132,24 @@ void xt_comb_check_ud( lua_State *luaVM, int pos )
  * \lparam  the Test table on the stack
  * \lreturn leaves the tested element on the the stack
  * --------------------------------------------------------------------------*/
-static int xt_comb_test_ud( lua_State *luaVM, int pos )
+int xt_comb_test_ud( lua_State *luaVM, int pos )
 {
-	if (lua_isuserdata( luaVM, pos ) && luaL_checkudata( luaVM, pos, "xt.Packer" ))
+	void *ud = lua_touserdata( luaVM, pos );
+	if (lua_isuserdata( luaVM, pos ) && NULL != ud)
 	{
+		ud = luaL_checkudata( luaVM, pos, "xt.Packer" );
 		lua_pushvalue( luaVM, pos );
-		return 1;
+		return 0;
 	}
 	
-	if (lua_istable( luaVM, pos ) && lua_getmetatable( luaVM, pos ))                     // does it have a metatable
+	if (lua_istable( luaVM, pos ) && lua_getmetatable( luaVM, pos )) // does it have a metatable
 	{
 		luaL_getmetatable( luaVM, "xt.Packer.Combinator" );  // get correct metatable 
 		if (lua_rawequal( luaVM, -1, -2 ))                   // are metatables the same?
 		{
 			lua_pop( luaVM, 2 );                              // pop the 2 metatables
 			lua_pushvalue( luaVM, pos );
-			return 1;
+			return 0;
 		}
 		lua_pop( luaVM, 1 );                                 // pop the xt.Packer.Combinator metatables
 		luaL_getmetatable( luaVM, "xt.Packer.Array" );       // get correct metatable 
@@ -141,7 +157,7 @@ static int xt_comb_test_ud( lua_State *luaVM, int pos )
 		{
 			lua_pop( luaVM, 2 );                              // pop the 2 metatables
 			lua_pushvalue( luaVM, pos );
-			return 1;
+			return 0;
 		}
 	}
 	lua_pop( luaVM, 2 );                                   // pop the 2 metatables
