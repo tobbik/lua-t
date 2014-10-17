@@ -197,12 +197,18 @@ static int lxt_comb__index( lua_State *luaVM )
 	if (lua_isnoneornil( luaVM, -1 ))
 		return 1;
 
-	p = xt_pack_check_ud( luaVM, -1 );
+	p = luaL_testudata( luaVM, -1, "xt.Packer" );
+	if (NULL != p)
+	{
+		if (NULL == p->b)
+			return xt_push_error( luaVM, "Can only read data from initialized data structures" );
 
-	if (NULL == p->b)
-		return xt_push_error( luaVM, "Can only read data from initialized data structures" );
-
-	return xt_pack_read( luaVM, p, p->b );
+		return xt_pack_read( luaVM, p, p->b );
+	}
+	else
+	{
+		return 1;
+	}
 }
 
 
