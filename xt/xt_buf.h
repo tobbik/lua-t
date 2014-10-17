@@ -13,7 +13,7 @@ enum xt_pack_type {
 };
 
 
-/// The userdata struct for xt.Buffer
+/// The userdata struct for xt.Packer
 struct xt_pack {
 	enum  xt_pack_type type;    ///< type of value in the packer
 	unsigned char     *b;       ///< pointer to the associate buffer
@@ -22,6 +22,25 @@ struct xt_pack {
 	size_t             blen;    ///< how many bits are covered in this packer
 	size_t             bofs;    ///< offset in bits in the first byte
 	int                islittle;///< is this little endian?
+};
+
+
+/// The userdata struct for xt.Packer.Struct
+struct xt_pack_seq {
+	unsigned char     *b;       ///< pointer to the associate buffer
+	size_t             sz;      ///< how many bytes are covered in this packer
+	size_t             n;       ///< how many packers are in this sequence
+	int                buf_ref; ///< Lua registry reference to buffer
+	struct xt_pack     p[1];    ///< array of packers in proper order -> must be last in struct
+};
+
+
+/// The userdata struct for xt.Packer.Array
+struct xt_pack_array {
+	struct xt_pack     p;       ///< packer type
+	unsigned char     *b;       ///< pointer to the associate buffer
+	size_t             sz;      ///< how many bytes are covered in this packer
+	int                buf_ref; ///< Lua registry reference to buffer
 };
 
 
@@ -45,8 +64,9 @@ int              lxt_pack_Int     ( lua_State *luaVM );
 int              lxt_pack_Bit     ( lua_State *luaVM );
 int              lxt_pack_String  ( lua_State *luaVM );
 struct xt_pack  *xt_pack_check_ud ( lua_State *luaVM, int pos );
-int               xt_pack_test_ud ( lua_State *luaVM, int pos );
 struct xt_pack  *xt_pack_create_ud( lua_State *luaVM, enum xt_pack_type );
+
+// accessor helpers for the buffer
 int xt_pack_read( lua_State *luaVM, struct xt_pack *p, const unsigned char *buffer);
 int xt_pack_write( lua_State *luaVM, struct xt_pack *p, unsigned char *buffer );
 
@@ -55,3 +75,9 @@ int xt_pack_write( lua_State *luaVM, struct xt_pack *p, unsigned char *buffer );
 int              luaopen_xt_comb ( lua_State *luaVM );
 int              xt_comb_test_ud ( lua_State *luaVM, int pos );
 int lxt_comb_Struct( lua_State *luaVM );
+
+
+// xt_pack_seq.c
+int                 luaopen_xt_pack_seq  ( lua_State *luaVM );
+struct xt_pack_seq *xt_pack_seq_check_ud ( lua_State *luaVM, int pos );
+int                 lxt_pack_Sequence    ( lua_State *luaVM );

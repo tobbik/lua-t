@@ -2,7 +2,6 @@
  * \file     create a packer Combinator
  * \brief    combinators for packers to create structures etc
 */
-#include <memory.h>               // memset
 
 #include "l_xt.h"
 #include "xt_buf.h"

@@ -293,6 +293,7 @@ static const struct luaL_Reg xt_pack_cf [] = {
 	{"Int",       lxt_pack_Int},
 	{"String",    lxt_pack_String},
 	{"Struct",    lxt_comb_Struct},
+	{"Sequence",  lxt_pack_Sequence},
 	{NULL,    NULL}
 };
 
@@ -334,5 +335,6 @@ LUAMOD_API int luaopen_xt_pack( lua_State *luaVM )
 	// this is avalable as xt.Packer.<member>
 	luaL_newlib( luaVM, xt_pack_cf );
 	luaopen_xt_comb( luaVM );
+	luaopen_xt_pack_seq( luaVM );
 	return 1;
 }

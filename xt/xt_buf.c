@@ -120,13 +120,13 @@ struct xt_buf *xt_buf_create_ud( lua_State *luaVM, int size )
 	size_t          sz;
 
 	// size = sizof(...) -1 because the array has already one member
-	sz = sizeof( struct xt_buf ) + (size - 1) * sizeof(unsigned char);
-	b  = (struct xt_buf *) lua_newuserdata(luaVM, sz);
-	memset(b->b, 0, size * sizeof(unsigned char));
+	sz = sizeof( struct xt_buf ) + (size - 1) * sizeof( unsigned char );
+	b  = (struct xt_buf *) lua_newuserdata( luaVM, sz );
+	memset( b->b, 0, size * sizeof( unsigned char ) );
 
 	b->len = size;
-	luaL_getmetatable(luaVM, "xt.Buffer");
-	lua_setmetatable(luaVM, -2);
+	luaL_getmetatable( luaVM, "xt.Buffer" );
+	lua_setmetatable( luaVM, -2 );
 	return b;
 }
 
@@ -211,7 +211,7 @@ void xt_buf_writebytes( uint64_t val, size_t sz, int islittle, unsigned char * b
 
 
 /**--------------------------------------------------------------------------
- * Read an integer of y bits from ta char buffer with offset ofs.
+ * Read an integer of y bits from a char buffer with offset ofs.
  * \param   sz   size in bits (1-64).
  * \param   ofs  offset   in bits (0-7).
  * \param  *buf  char buffer already on proper position
@@ -256,7 +256,7 @@ void xt_buf_writebits( uint64_t val, size_t sz, size_t ofs, unsigned char * buf 
 	       "Nmsk: %016llX       \nval:  %016llX         \n"
 	       "Sval: %016llX    %ld\nRslt: %016llX         \n",
 			read,
-			0xFFFFFFFFFFFFFFFF  <<   (64-sz), (64-sz),  /// Mask after left shift
+			 0xFFFFFFFFFFFFFFFF <<   (64-sz), (64-sz),  /// Mask after left shift
 			(0xFFFFFFFFFFFFFFFF <<	 (64-sz)) >> (64-abit+ofs), (64-abit+ofs),
 			read & ~msk,
 			val,
