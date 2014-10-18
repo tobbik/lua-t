@@ -11,20 +11,17 @@ enum xt_pck_t {
 	XT_PCK_FLT,          ///< X  Byte wide field as Float
 	XT_PCK_STR,          ///< X  Byte wide field of char bytes
 	XT_PCK_SEQ,          ///< Sequence of packers
-	XT_PCK_SEQ,          ///< Array of packers
+	XT_PCK_ARR,          ///< Array of packers
 };
 
 
 /// The userdata struct for xt.Packer
 struct xt_pck {
-	size_t         sz;   ///< how many bytes are covered in this packer
-	size_t         blen; ///< how many bits are covered in this packer
-	size_t         bofs; ///< offset in bits in the first byte
-	enum  xt_pck_t t;    ///< type of value in the packer
-	union {
-		unsigned char   *b;    ///< pointer to the associate buffer
-		struct xt_pck_s *p;    ///< pointer to the Struct/Seq/Array Combinator
-	} p;
+	size_t          sz;   ///< how many bytes are covered in this packer
+	size_t          blen; ///< how many bits are covered in this packer
+	size_t          bofs; ///< offset in bits in the first byte
+	enum  xt_pck_t  t;    ///< type of value in the packer
+	unsigned char  *b;    ///< pointer to the associate buffer
 };
 
 
@@ -35,11 +32,11 @@ struct xt_pck_s {
 	size_t             n;       ///< how many packers are in this sequence
 	int                buf_ref; ///< Lua registry reference to buffer
 	int                idx_ref; ///< Lua registry reference to buffer
-	struct xt_pck      p[1];    ///< array of packers in proper order -> must be last in struct
+	int                p[1];    ///< array of ref to packersin proper order -> must be last in struct
 };
 
 
-
+/*
 enum xt_pack_type {
 	XT_PACK_BIT,          ///< X  Bit  wide field
 	XT_PACK_INT,         ///< X  Byte wide field as Integer -> Little Endian
@@ -77,7 +74,7 @@ struct xt_pack_array {
 	size_t             sz;      ///< how many bytes are covered in this packer
 	int                buf_ref; ///< Lua registry reference to buffer
 };
-
+*/
 
 // Constructors
 // xt_buf.c
@@ -93,6 +90,18 @@ uint64_t  xt_buf_readbits  (               size_t sz, size_t ofs,   const unsign
 void      xt_buf_writebits ( uint64_t val, size_t sz, size_t ofs,         unsigned char * buf );
 
 // Constructors
+// xt_pck.c
+int             lxt_pck_Int     ( lua_State *luaVM );
+int             lxt_pck_Bit     ( lua_State *luaVM );
+int             lxt_pck_String  ( lua_State *luaVM );
+struct xt_pck  *xt_pck_check_ud ( lua_State *luaVM, int pos );
+struct xt_pck  *xt_pck_create_ud( lua_State *luaVM, enum xt_pck_t );
+
+// accessor helpers for the buffer
+int xt_pck_read ( lua_State *luaVM, struct xt_pck *p, const unsigned char *buffer);
+int xt_pck_write( lua_State *luaVM, struct xt_pck *p, unsigned char *buffer );
+
+/*
 // xt_pack.c
 int              luaopen_xt_pack  ( lua_State *luaVM );
 int              lxt_pack_Int     ( lua_State *luaVM );
@@ -116,3 +125,4 @@ int lxt_comb_Struct( lua_State *luaVM );
 int                 luaopen_xt_pack_seq  ( lua_State *luaVM );
 struct xt_pack_seq *xt_pack_seq_check_ud ( lua_State *luaVM, int pos );
 int                 lxt_pack_Sequence    ( lua_State *luaVM );
+*/

@@ -1,6 +1,5 @@
-
 /*
- * \file    xt_pack.c
+ * \file    xt_pck.c
  * \brief   Packers for serialization of values
  * \detail  can work stand alone or as helper for Combinators
 */
@@ -107,12 +106,12 @@ int lxt_pck_String( lua_State *luaVM )
  *
  * \return  struct xt_pack*  pointer to the  xt_pack struct
  * --------------------------------------------------------------------------*/
-struct xt_pck *xt_pck_create_ud( lua_State *luaVM, enum xt_pck_t type)
+struct xt_pck *xt_pck_create_ud( lua_State *luaVM, enum xt_pck_t t)
 {
 	struct xt_pck  *p;
 	p = (struct xt_pck *) lua_newuserdata( luaVM, sizeof( struct xt_pck ));
 
-	p->t = type;
+	p->t = t;
 	p->b = NULL;
 	luaL_getmetatable( luaVM, "xt.Packer" );
 	lua_setmetatable( luaVM, -2 );
@@ -145,9 +144,9 @@ struct xt_pck *xt_pck_check_ud( lua_State *luaVM, int pos )
  * \lreturn value from the buffer a packers position according to packer format.
  * \return  integer number of values left on the stack.
  *  -------------------------------------------------------------------------*/
-int xt_pack_read( lua_State *luaVM, struct xt_pck *p, const unsigned char *buffer)
+int xt_pck_read( lua_State *luaVM, struct xt_pck *p, const unsigned char *buffer)
 {
-	switch( p->type )
+	switch( p->t )
 	{
 		case XT_PCK_INTL:
 			lua_pushinteger( luaVM, (lua_Integer) xt_buf_readbytes( p->sz, 1, buffer ) );
@@ -185,7 +184,7 @@ int xt_pck_write( lua_State *luaVM, struct xt_pck *p, unsigned char *buffer )
 	size_t          sL;
 
 	// TODO: size check values if they fit the packer size
-	switch( p->type )
+	switch( p->t )
 	{
 		case XT_PCK_INTL:
 			intVal = luaL_checkint( luaVM, -1 );
@@ -228,7 +227,7 @@ int xt_pck_write( lua_State *luaVM, struct xt_pck *p, unsigned char *buffer )
  *  -------------------------------------------------------------------------*/
 static int lxt_pck_unpack( lua_State *luaVM )
 {
-	struct xt_pck *p   = xt_pack_check_ud( luaVM, 1 );
+	struct xt_pck *p   = xt_pck_check_ud( luaVM, 1 );
 	size_t         sL;
 	const char    *buf = luaL_checklstring( luaVM, 2, &sL );
 	if (sL != p->sz)
@@ -277,24 +276,24 @@ static int lxt_pck_pack( lua_State *luaVM )
  * --------------------------------------------------------------------------*/
 static int lxt_pck__tostring( lua_State *luaVM )
 {
-	struct xt_pack *p = xt_pack_check_ud( luaVM, 1 );
+	struct xt_pck *p = xt_pck_check_ud( luaVM, 1 );
 
-	switch( p->type )
+	switch( p->t )
 	{
-		case XT_PCK_INT:
-			lua_pushfstring( luaVM, "xt.Pack{INTL}: %p", p );
+		case XT_PCK_INTL:
+			lua_pushfstring( luaVM, "xt.Packer{INTL}: %p", p );
 			break;
-		case XT_PCK_INT:
-			lua_pushfstring( luaVM, "xt.Pack{INTB}: %p", p );
+		case XT_PCK_INTB:
+			lua_pushfstring( luaVM, "xt.Packer{INTB}: %p", p );
 			break;
 		case XT_PCK_BIT:
-			lua_pushfstring( luaVM, "xt.Pack{BIT}: %p", p );
+			lua_pushfstring( luaVM, "xt.Packer{BIT}: %p", p );
 			break;
 		case XT_PCK_STR:
-			lua_pushfstring( luaVM, "xt.Pack{STRING}: %p", p );
+			lua_pushfstring( luaVM, "xt.Packer{STRING}: %p", p );
 			break;
 		case XT_PCK_FLT:
-			lua_pushfstring( luaVM, "xt.Pack{FLOAT}: %p", p );
+			lua_pushfstring( luaVM, "xt.Packer{FLOAT}: %p", p );
 			break;
 		default:
 			xt_push_error( luaVM, "Can't read value from unknown packer type" );
@@ -312,7 +311,7 @@ static int lxt_pck__tostring( lua_State *luaVM )
  * --------------------------------------------------------------------------*/
 static int lxt_pck__len( lua_State *luaVM )
 {
-	struct xt_pck *p = xt_pack_check_ud( luaVM, 1 );
+	struct xt_pck *p = xt_pck_check_ud( luaVM, 1 );
 	lua_pushinteger( luaVM, p->sz );
 	return 1;
 }
@@ -323,10 +322,12 @@ static int lxt_pck__len( lua_State *luaVM )
  */
 static const struct luaL_Reg xt_pck_cf [] = {
 	{"Bit",       lxt_pck_Bit},
-	{"Int",       lxt_pck_Int},
+	{"Int",       lxt_pck_IntL},
+	{"IntL",      lxt_pck_IntL},
+	{"IntB",      lxt_pck_IntB},
 	{"String",    lxt_pck_String},
-	{"Struct",    lxt_comb_Struct},
-	{"Sequence",  lxt_pack_Sequence},
+	//{"Struct",    lxt_comb_Struct},
+	//{"Struct",    lxt_pck_Sequence},
 	{NULL,    NULL}
 };
 
@@ -335,10 +336,10 @@ static const struct luaL_Reg xt_pck_cf [] = {
  * \brief   the packer library definition
  *          assigns Lua available names to C-functions
  */
-static const luaL_Reg xt_pack_m [] = {
+static const luaL_Reg xt_pck_m [] = {
 	// new implementation
-	{"pack",      lxt_pack_pack},
-	{"unpack",    lxt_pack_unpack},
+	{"pack",      lxt_pck_pack},
+	{"unpack",    lxt_pck_unpack},
 	{NULL,    NULL}
 };
 
@@ -351,23 +352,23 @@ static const luaL_Reg xt_pack_m [] = {
  * \lreturn string    the library
  * \return  The number of results to be passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
-LUAMOD_API int luaopen_xt_pack( lua_State *luaVM )
+LUAMOD_API int luaopen_xt_pck( lua_State *luaVM )
 {
 	// xt.Pack instance metatable
 	luaL_newmetatable( luaVM, "xt.Packer" );   // stack: functions meta
-	luaL_newlib( luaVM, xt_pack_m );
+	luaL_newlib( luaVM, xt_pck_m );
 	lua_setfield( luaVM, -2, "__index" );
-	lua_pushcfunction( luaVM, lxt_pack__tostring );
+	lua_pushcfunction( luaVM, lxt_pck__tostring );
 	lua_setfield( luaVM, -2, "__tostring" );
-	lua_pushcfunction( luaVM, lxt_pack__len );
+	lua_pushcfunction( luaVM, lxt_pck__len );
 	lua_setfield( luaVM, -2, "__len" );
 	lua_pop( luaVM, 1 );        // remove metatable from stack
 
 
 	// Push the class onto the stack
 	// this is avalable as xt.Packer.<member>
-	luaL_newlib( luaVM, xt_pack_cf );
-	luaopen_xt_comb( luaVM );
-	luaopen_xt_pack_seq( luaVM );
+	luaL_newlib( luaVM, xt_pck_cf );
+	//luaopen_xt_comb( luaVM );
+	//luaopen_xt_pck_s( luaVM );
 	return 1;
 }
