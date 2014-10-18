@@ -4,10 +4,45 @@ struct xt_buf {
 	unsigned char  b[1];  ///<  pointer to the variable size buffer -> must be last in struct
 };
 
+enum xt_pck_t {
+	XT_PCK_BIT,          ///< X  Bit  wide field
+	XT_PCK_INTL,         ///< X  Byte wide field as Integer -> Little Endian
+	XT_PCK_INTB,         ///< X  Byte wide field as Integer -> Big Endian
+	XT_PCK_FLT,          ///< X  Byte wide field as Float
+	XT_PCK_STR,          ///< X  Byte wide field of char bytes
+	XT_PCK_SEQ,          ///< Sequence of packers
+	XT_PCK_SEQ,          ///< Array of packers
+};
+
+
+/// The userdata struct for xt.Packer
+struct xt_pck {
+	size_t         sz;   ///< how many bytes are covered in this packer
+	size_t         blen; ///< how many bits are covered in this packer
+	size_t         bofs; ///< offset in bits in the first byte
+	enum  xt_pck_t t;    ///< type of value in the packer
+	union {
+		unsigned char   *b;    ///< pointer to the associate buffer
+		struct xt_pck_s *p;    ///< pointer to the Struct/Seq/Array Combinator
+	} p;
+};
+
+
+/// The userdata struct for xt.Packer.Struct
+struct xt_pck_s {
+	unsigned char     *b;       ///< pointer to the associate buffer
+	size_t             sz;      ///< how many bytes are covered in this packer
+	size_t             n;       ///< how many packers are in this sequence
+	int                buf_ref; ///< Lua registry reference to buffer
+	int                idx_ref; ///< Lua registry reference to buffer
+	struct xt_pck      p[1];    ///< array of packers in proper order -> must be last in struct
+};
+
+
 
 enum xt_pack_type {
 	XT_PACK_BIT,          ///< X  Bit  wide field
-	XT_PACK_INT,          ///< X  Byte wide field as Integer
+	XT_PACK_INT,         ///< X  Byte wide field as Integer -> Little Endian
 	XT_PACK_FLT,          ///< X  Byte wide field as Float
 	XT_PACK_STR,          ///< X  Byte wide field of char bytes
 };
