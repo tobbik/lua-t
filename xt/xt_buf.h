@@ -32,7 +32,7 @@ struct xt_pck_s {
 	size_t             n;       ///< how many packers are in this sequence
 	int                buf_ref; ///< Lua registry reference to buffer
 	int                idx_ref; ///< Lua registry reference to buffer
-	int                p[1];    ///< array of ref to packersin proper order -> must be last in struct
+	int                p[1];    ///< array of ref to packers in proper order -> must be last in struct
 };
 
 
