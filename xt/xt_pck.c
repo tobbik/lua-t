@@ -219,10 +219,10 @@ int xt_pck_write( lua_State *luaVM, struct xt_pck *p, unsigned char *buffer )
 
 
 /**--------------------------------------------------------------------------
- * reads a value from the packer and pushes it onto the Lua stack.
+ * reads a value,unpacks it and pushes it onto the Lua stack.
  * \param   luaVM lua Virtual Machine.
  * \lparam  struct xt_pack.
- * \lreturn value from the buffer a packers position according to packer format.
+ * \lreturn value  unpacked value according to packer format.
  * \return  integer number of values left on the stack.
  *  -------------------------------------------------------------------------*/
 static int lxt_pck_unpack( lua_State *luaVM )
@@ -239,21 +239,21 @@ static int lxt_pck_unpack( lua_State *luaVM )
 
 /**--------------------------------------------------------------------------
  * reads in a Lua value and packs it according to packer format. Return str to Lua Stack
- * \param  luaVM lua Virtual Machine.
- * \lparam struct xt_pack.
- * \lparam Lua value.
- * \lreturn value from the buffer a packers position according to packer format.
- *
+ * \param   luaVM lua Virtual Machine.
+ * \lparam  struct xt_pack.
+ * \lparam  Lua value.
+ * \lreturn string packed value according to packer format.
  * \return integer number of values left on the stack.
  *  -------------------------------------------------------------------------*/
 static int lxt_pck_pack( lua_State *luaVM )
 {
 	struct xt_pck *p      = xt_pck_check_ud( luaVM, 1 );
 	luaL_Buffer    lB;
-	char          *buffer = luaL_prepbuffsize( &lB, p->sz );
-	int            retVal; ///< return value to evaluate the succes off write operation
+	char          *buffer;
+	int            retVal; ///< return value to evaluate the succes of write operation
 
 	luaL_buffinit( luaVM, &lB );
+	buffer = luaL_prepbuffsize( &lB, p->sz );
 
 	if ((retVal = xt_pck_write( luaVM, p, (unsigned char *) buffer )) != 0)
 	{

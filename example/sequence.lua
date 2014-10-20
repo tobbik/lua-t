@@ -2,10 +2,11 @@
 xt=require'xt'
 
 
-
+p = xt.Packer.IntB(2)
+c = xt.Packer.Int(2)
 
 t = xt.Packer.Struct (
-	xt.Packer.Int(2),
+	p,
 	xt.Packer.Int(2),
 	xt.Packer.Int(1),
 	xt.Packer.Int(1)
@@ -23,6 +24,6 @@ t = xt.Packer.Struct (
 -- 	xt.Packer.Bit( 1 )   -- padding
 -- )
 b=xt.Buffer( 'ABCDEFGH' )
---t( b, 0 )
+t( b, 0 )
 
 m=getmetatable(s)

@@ -263,9 +263,7 @@ int lxt_pck_s__call( lua_State *luaVM )
 		// TODO: Buffer size must equal Struct size?
 		for (i=0; i < sp->n; i++)
 		{
-			printf("%d\n",sp->p[i]);
 			lua_rawgeti( luaVM, LUA_REGISTRYINDEX, sp->p[ i ] );
-			stackDump( luaVM );
 			ps = luaL_testudata( luaVM, -1, "xt.Packer.Struct" );
 			if (NULL != ps)
 			{
