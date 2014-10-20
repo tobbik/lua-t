@@ -204,7 +204,6 @@ static int lxt_pck_s__newindex( lua_State *luaVM )
 	else
 		lua_pushvalue( luaVM, -2); // repush new value; xt_pck_write expects it as last elem on stack
 
-	stackDump(luaVM);
 	if ((retVal = xt_pck_write( luaVM, p, p->b )) != 0)
 		return retVal;
 	else
@@ -222,18 +221,23 @@ static int lxt_pck_s__newindex( lua_State *luaVM )
  *  -------------------------------------------------------------------------*/
 int lxt_pck_s__call( lua_State *luaVM )
 {
-	struct xt_pck_s *sp  = xt_pck_s_check_ud( luaVM, 1 );
+	struct xt_pck_s *sp;
 	struct xt_pck   *p;
 	struct xt_pck   *ps;
 	struct xt_buf   *b;
 	int              pos = 0;  ///< moving position in the puffer
 	size_t           i;        ///< the iterator for all fields
 
+	if (lua_isnumber( luaVM, -1 ))
+		pos = luaL_checkint( luaVM, -1 );
+	else
+		lua_pushinteger( luaVM, 0 );
+
+	sp  = xt_pck_s_check_ud( luaVM, -3 );
+
 	// Delete all references -> this struct the is not associated;
-	if (lua_isnoneornil( luaVM, 2 ))
+	if (lua_isnoneornil( luaVM, -2 ))
 	{
-		if (LUA_NOREF != sp->buf_ref)
-			luaL_unref( luaVM, LUA_REGISTRYINDEX, sp->buf_ref );  // remove buffer at buf_ref from registry
 		for (i=0; i < sp->n; i++)
 		{
 			lua_rawgeti( luaVM, LUA_REGISTRYINDEX, sp->p[ i ] );
@@ -249,15 +253,15 @@ int lxt_pck_s__call( lua_State *luaVM )
 			p->b = NULL;
 			lua_pop( luaVM, 1 );
 		}
+		if (LUA_NOREF != sp->buf_ref)
+			luaL_unref( luaVM, LUA_REGISTRYINDEX, sp->buf_ref );  // remove buffer at buf_ref from registry
 	}
 	else
 	{
-		if (lua_isnumber( luaVM, 3 ))
-			pos = luaL_checkint( luaVM, 3 );
-		b  = xt_buf_check_ud( luaVM, 2 );
-		luaL_argcheck( luaVM, 0 <= pos && pos <= (int) b->len, 3,
+		b  = xt_buf_check_ud( luaVM, -2 );
+		luaL_argcheck( luaVM, 0 <= pos && pos <= (int) b->len, -3,
 								  "xt.Buffer position must be > 0 or < #buffer" );
-		lua_pushvalue( luaVM, 2 );
+		lua_pushvalue( luaVM, -2 );
 		sp->buf_ref = luaL_ref( luaVM, LUA_REGISTRYINDEX ); // recieve registry index, and pop b from stack
 
 		// TODO: Buffer size must equal Struct size?
@@ -272,6 +276,7 @@ int lxt_pck_s__call( lua_State *luaVM )
 				lua_rawgeti( luaVM, LUA_REGISTRYINDEX, sp->buf_ref );
 				lua_pushinteger( luaVM, pos );
 				lua_call( luaVM, 3, 0 );
+				continue;
 			}
 			p = xt_pck_check_ud( luaVM, -1 );
 			p->b = &(b->b[ pos ]);
