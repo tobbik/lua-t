@@ -452,13 +452,13 @@ static int lxt_buf_writestring (lua_State *luaVM)
 }
 
 
-/**
+/**--------------------------------------------------------------------------
  * \brief    gets the content of the Stream in Hex
  * \lreturn  string buffer representation in Hexadecimal
  * \TODO     use luaL_Buffer?
  *
  * \return integer 0 left on the stack
- */
+ * --------------------------------------------------------------------------*/
 static int lxt_buf_tohexstring (lua_State *luaVM)
 {
 	int            l,c;
@@ -477,11 +477,11 @@ static int lxt_buf_tohexstring (lua_State *luaVM)
 }
 
 
-/**
+/**--------------------------------------------------------------------------
  * \brief     returns len of the buffer
  * \param     lua state
  * \return    integer   how many elements are placed on the Lua stack
-*/
+ * --------------------------------------------------------------------------*/
 static int lxt_buf__len (lua_State *luaVM)
 {
 	struct xt_buf *b;
@@ -507,36 +507,36 @@ static int lxt_buf__tostring (lua_State *luaVM)
 }
 
 
-/**
+/**--------------------------------------------------------------------------
  * \brief    the metatble for the module
- */
+ * --------------------------------------------------------------------------*/
 static const struct luaL_Reg xt_buf_fm [] = {
 	{"__call",        lxt_buf__Call},
 	{NULL,            NULL}
 };
 
 
-/**
+/**--------------------------------------------------------------------------
  * \brief    the metatble for the module
- */
+ * --------------------------------------------------------------------------*/
 static const struct luaL_Reg xt_buf_cf [] = {
 	{"new",           lxt_buf_New},
 	{NULL,            NULL}
 };
 
 
-/**
+/**--------------------------------------------------------------------------
  * \brief      the buffer library definition
  *             assigns Lua available names to C-functions
- */
+ * --------------------------------------------------------------------------*/
 static const luaL_Reg xt_buf_m [] = {
 	// new implementation
 	{"readInt",       lxt_buf_readint},
 	{"writeInt",      lxt_buf_writeint},
 	{"readBit",       lxt_buf_readbit},
 	{"writeBit",      lxt_buf_writebit},
-	{"readStr",       lxt_buf_readstring},
-	{"writeStr",      lxt_buf_writestring},
+	{"readString",    lxt_buf_readstring},
+	{"writeString",   lxt_buf_writestring},
 	// univeral stuff
 	{"toHex",         lxt_buf_tohexstring},
 	{"length",        lxt_buf__len},

@@ -10,8 +10,6 @@ enum xt_pck_t {
 	XT_PCK_INTB,         ///< X  Byte wide field as Integer -> Big Endian
 	XT_PCK_FLT,          ///< X  Byte wide field as Float
 	XT_PCK_STR,          ///< X  Byte wide field of char bytes
-	XT_PCK_SEQ,          ///< Sequence of packers
-	XT_PCK_ARR,          ///< Array of packers
 };
 
 
@@ -100,6 +98,12 @@ struct xt_pck  *xt_pck_create_ud( lua_State *luaVM, enum xt_pck_t );
 // accessor helpers for the buffer
 int xt_pck_read ( lua_State *luaVM, struct xt_pck *p, const unsigned char *buffer);
 int xt_pck_write( lua_State *luaVM, struct xt_pck *p, unsigned char *buffer );
+
+// xt_pck_s.c
+int              luaopen_xt_pck_s  ( lua_State *luaVM );
+struct xt_pck_s *xt_pck_s_check_ud ( lua_State *luaVM, int pos );
+int              lxt_pck_s__call   ( lua_State *luaVM );
+int              lxt_pck_Struct    ( lua_State *luaVM );
 
 /*
 // xt_pack.c

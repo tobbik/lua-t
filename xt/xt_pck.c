@@ -248,7 +248,7 @@ static int lxt_pck_unpack( lua_State *luaVM )
  *  -------------------------------------------------------------------------*/
 static int lxt_pck_pack( lua_State *luaVM )
 {
-	struct xt_pck *p   = xt_pck_check_ud( luaVM, 1 );
+	struct xt_pck *p      = xt_pck_check_ud( luaVM, 1 );
 	luaL_Buffer    lB;
 	char          *buffer = luaL_prepbuffsize( &lB, p->sz );
 	int            retVal; ///< return value to evaluate the succes off write operation
@@ -326,6 +326,7 @@ static const struct luaL_Reg xt_pck_cf [] = {
 	{"IntL",      lxt_pck_IntL},
 	{"IntB",      lxt_pck_IntB},
 	{"String",    lxt_pck_String},
+	{"Struct",    lxt_pck_Struct},
 	//{"Struct",    lxt_comb_Struct},
 	//{"Struct",    lxt_pck_Sequence},
 	{NULL,    NULL}
@@ -369,6 +370,6 @@ LUAMOD_API int luaopen_xt_pck( lua_State *luaVM )
 	// this is avalable as xt.Packer.<member>
 	luaL_newlib( luaVM, xt_pck_cf );
 	//luaopen_xt_comb( luaVM );
-	//luaopen_xt_pck_s( luaVM );
+	luaopen_xt_pck_s( luaVM );
 	return 1;
 }
