@@ -47,7 +47,7 @@ int lxt_pck_Struct( lua_State *luaVM )
 				lua_insert( luaVM, -2 );      // Stack: ...,Struct,idx,Pack,name
 				lua_pushinteger( luaVM, i );  // Stack: ...,Struct,idx,Pack,name,i
 				// push name and order to idx table idx[name] = i
-				lua_rawset( luaVM, -3 );      // Stack: ...,Struct,idx,Pack
+				lua_rawset( luaVM, -4 );      // Stack: ...,Struct,idx,Pack
 				lua_replace( luaVM, i );      // move packer into position on stack
 				isNamed = 1;   // that means we have at least one named member
 			}
