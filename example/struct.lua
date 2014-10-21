@@ -58,3 +58,6 @@ t = xt.Packer.Struct (
 )
 b=xt.Buffer( 'ABCDEFGH' )
 t( b, 0 )
+
+s(b)
+for k,v in pairs(s) do print( k,v) end
