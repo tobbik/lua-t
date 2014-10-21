@@ -53,6 +53,8 @@ install: $(COMPDIR)/$(VER)/src/lua $(XTDIR)/xt.so
 		install
 	cd $(XTDIR) ; $(MAKE) CC=$(CC) LD=$(LD) \
 		VER=$(VER) \
+		MYCFLAGS=' -g' \
+		INCS="$(COMPDIR)/$(VER)/src" \
 		PREFIX="$(OUTDIR)" install
 
 clean:
