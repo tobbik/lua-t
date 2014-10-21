@@ -1,6 +1,6 @@
 /**
- * \file     create a packer Struct or Array
- * \brief    combinators for packers to create structures etc
+ * \file     create a packer Struct
+ * \brief    combinators for packers to create structures
 */
 #include <memory.h>               // memset
 
@@ -113,9 +113,9 @@ int lxt_pck_Struct( lua_State *luaVM )
 /**--------------------------------------------------------------------------
  * \brief   check a value on the stack for being a Test
  * \param   luaVM    The lua state.
- * \param   int      position on the stack
- * \lparam  the Test table on the stack
- * \lreturn leaves the test table on the stack
+ * \param   int      position on the stack.
+ * \lparam  userdata xt.Packer.Struct on the stack.
+ * \return  xt_pck_s pointer.
  * --------------------------------------------------------------------------*/
 struct xt_pck_s *xt_pck_s_check_ud( lua_State *luaVM, int pos )
 {
@@ -219,10 +219,10 @@ static int lxt_pck_s__newindex( lua_State *luaVM )
 
 /**--------------------------------------------------------------------------
  * Attach a buffer to an xt.Packer.Struct.
- * \param  luaVM lua Virtual Machine.
- * \lparam table xt.Packer.Struct.
- * \lparam struct xt_buf.
- * \lparam pos    position in xt_buf.
+ * \param  luaVM    lua Virtual Machine.
+ * \lparam userdata xt.Packer.Struct.
+ * \lparam userdata xt.Buffer.
+ * \lparam pos      position in xt_buf.
  * \return integer number of values left on te stack.
  *  -------------------------------------------------------------------------*/
 int lxt_pck_s__call( lua_State *luaVM )
@@ -394,7 +394,7 @@ static int xt_pck_s_iter( lua_State *luaVM )
 	lua_pushinteger( luaVM, crs );
 	lua_rawget( luaVM, -2 );          // Stack: _idx,name
 	if (lua_isnil( luaVM, -1))        // didn't find a named entry ...
-		lua_pushstring( luaVM, "" );
+		lua_pushinteger( luaVM, crs ); // ... push index instead
 	lua_remove( luaVM, -2 );          // remove idx table
 
 	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, sp->p[ crs-1 ] ); // Stack: name,object
@@ -420,7 +420,7 @@ static int xt_pck_s_iter( lua_State *luaVM )
  *  -------------------------------------------------------------------------*/
 int lxt_pck_s__pairs( lua_State *luaVM )
 {
-	struct xt_pck_s *sp = xt_pck_s_check_ud( luaVM, -1 );
+	xt_pck_s_check_ud( luaVM, -1 );
 	lua_pushnumber( luaVM, 0 );
 	lua_pushcclosure( luaVM, &xt_pck_s_iter, 2 );
 	lua_pushvalue( luaVM, -1 );

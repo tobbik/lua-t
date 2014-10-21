@@ -21,6 +21,7 @@ XT_SRC=l_xt.c \
 	 xt_buf.c \
 	 xt_pck.c \
 	 xt_pck_s.c \
+	 xt_pck_a.c \
 	 xt_test.c \
 	 l_xt_debug.c
 

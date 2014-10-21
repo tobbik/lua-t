@@ -320,8 +320,7 @@ static const struct luaL_Reg xt_pck_cf [] = {
 	{"IntB",      lxt_pck_IntB},
 	{"String",    lxt_pck_String},
 	{"Struct",    lxt_pck_Struct},
-	//{"Struct",    lxt_comb_Struct},
-	//{"Struct",    lxt_pck_Sequence},
+	{"Array",     lxt_pck_Array},
 	{NULL,    NULL}
 };
 
@@ -362,7 +361,7 @@ LUAMOD_API int luaopen_xt_pck( lua_State *luaVM )
 	// Push the class onto the stack
 	// this is avalable as xt.Packer.<member>
 	luaL_newlib( luaVM, xt_pck_cf );
-	//luaopen_xt_comb( luaVM );
 	luaopen_xt_pck_s( luaVM );
+	luaopen_xt_pck_a( luaVM );
 	return 1;
 }

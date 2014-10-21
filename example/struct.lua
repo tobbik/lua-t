@@ -64,3 +64,8 @@ t( b )
 s( b )
 
 for k,v in pairs(s) do print( k,v) end
+
+
+
+
+a = xt.Packer.Array( xt.Packer.IntB(2), 4)
