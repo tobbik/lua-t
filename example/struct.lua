@@ -4,14 +4,14 @@ xt=require'xt'
 p = xt.Packer.IntB( 2 )
 c = xt.Packer.Int( 2 )
 
-tsq = xt.Packer.Struct (
+ts = xt.Packer.Struct (
 	p,
 	xt.Packer.Int( 2 ),
 	xt.Packer.Int( 1 ),
 	xt.Packer.Int( 1 )
 )
 
-ssq = xt.Packer.Struct (
+ss = xt.Packer.Struct (
 	p,
 	xt.Packer.Int( 2 ),
 	xt.Packer.Struct (
@@ -56,8 +56,11 @@ t = xt.Packer.Struct (
 	xt.Packer.Int( 2 ),
  	{ConsistCount   = xt.Packer.Int( 1 )}
 )
-b=xt.Buffer( 'ABCDEFGH' )
-t( b, 0 )
 
-s(b)
+b=xt.Buffer( 'ABCDEFGH' )
+ts( b )
+ss( b )
+t( b )
+s( b )
+
 for k,v in pairs(s) do print( k,v) end

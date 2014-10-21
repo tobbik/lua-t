@@ -5,9 +5,9 @@ struct xt_buf {
 };
 
 enum xt_pck_t {
-	XT_PCK_BIT,          ///< X  Bit  wide field
+	XT_PCK_INTB,         ///< X  Byte wide field as Integer -> Big    Endian
 	XT_PCK_INTL,         ///< X  Byte wide field as Integer -> Little Endian
-	XT_PCK_INTB,         ///< X  Byte wide field as Integer -> Big Endian
+	XT_PCK_BIT,          ///< X  Bit  wide field
 	XT_PCK_FLT,          ///< X  Byte wide field as Float
 	XT_PCK_STR,          ///< X  Byte wide field of char bytes
 };

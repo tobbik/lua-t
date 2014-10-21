@@ -1,5 +1,5 @@
 /**
- * \file     create a packer Sequence or Array
+ * \file     create a packer Struct or Array
  * \brief    combinators for packers to create structures etc
 */
 #include <memory.h>               // memset
@@ -9,16 +9,16 @@
 
 
 /**--------------------------------------------------------------------------
- * Create a  xt.Packer.Sequence Object and put it onto the stack.
+ * Create a  xt.Packer.Struct Object and put it onto the stack.
  * \param   luaVM  The lua state.
  * \lparam  ... multiple of type  xt.Packer 
- * \lreturn userdata of xt.Packer.Sequence.
+ * \lreturn userdata of xt.Packer.Struct.
  * \return  # of results  passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
 int lxt_pck_Struct( lua_State *luaVM )
 {
 	int                i;      ///< iterator for going through the arguments
-	int                isNamed;///< set true if element goes into idx table
+	int                isIdx=0;///< set true if element goes into idx table
 	size_t             sz=0;   ///< tally up the size of all elements in the Struct
 	size_t             bc=0;   ///< count bitSize for bit type packers
 	struct xt_pck     *p;      ///< temporary packer for iteration
@@ -28,7 +28,7 @@ int lxt_pck_Struct( lua_State *luaVM )
 	// size = sizof(...) -1 because the array has already one member
 	sz = sizeof( struct xt_pck_s ) + (lua_gettop( luaVM ) - 1) * sizeof( int );
 	sp = (struct xt_pck_s *) lua_newuserdata( luaVM, sz );
-	sp->n       = lua_gettop( luaVM )-1;  // number of elements on stack -1 (the seq userdata)
+	sp->n       = lua_gettop( luaVM )-1;  // number of elements on stack -1 (the Struct userdata)
 	sp->buf_ref = LUA_NOREF;
 	sp->sz      = 0;
 	memset( sp->p, 0, sp->n * sizeof( int ));
@@ -54,7 +54,7 @@ int lxt_pck_Struct( lua_State *luaVM )
 				lua_rawset( luaVM, -6 );      // Stack: ...,Struct,idx,Pack,name,i
 				lua_rawset( luaVM, -4 );      // Stack: ...,Struct,idx,Pack
 				lua_replace( luaVM, i );      // move packer into position on stack
-				isNamed = 1;   // that means we have at least one named member
+				isIdx = 1;   // that means we have at least one named member
 			}
 			else
 			{
@@ -96,14 +96,14 @@ int lxt_pck_Struct( lua_State *luaVM )
 		// Stack: ...,Struct,idx,Pack
 		sp->p[ i-1 ] = luaL_ref( luaVM, LUA_REGISTRYINDEX );
 	}
-	if (isNamed) 
+	if (isIdx)
 		sp->idx_ref = luaL_ref( luaVM, LUA_REGISTRYINDEX);
 	else
 	{
 		sp->idx_ref = LUA_NOREF;
 		lua_pop( luaVM, 1 );
 	}
-	luaL_getmetatable( luaVM, "xt.Packer.Struct" ); // Stack: ...,xt.Packer.Sequence
+	luaL_getmetatable( luaVM, "xt.Packer.Struct" ); // Stack: ...,xt.Packer.Struct
 	lua_setmetatable( luaVM, -2 ) ;
 
 	return 1;
@@ -126,10 +126,11 @@ struct xt_pck_s *xt_pck_s_check_ud( lua_State *luaVM, int pos )
 
 
 /**--------------------------------------------------------------------------
- * read a sequence packer value
- * \param   luaVM    The lua state.
- * \lparam  xt.Packer.Sequence instance
- * \lparam  key   integer
+ * Read a Struct packer value.
+ * \param   luaVM   The lua state.
+ * \lparam  xt.Packer.Struct instance
+ * \lparam  key     string/integer
+ * \lreturn value   value from buffer according to packer definition
  * \return  The # of items pushed to the stack.
  * --------------------------------------------------------------------------*/
 static int lxt_pck_s__index( lua_State *luaVM )
@@ -153,7 +154,7 @@ static int lxt_pck_s__index( lua_State *luaVM )
 
 	// Stack: Struct, index
 	luaL_argcheck( luaVM, (size_t) luaL_checkint( luaVM, -1 ) <= sp->n, -1,
-		"Index for xt.Packer.Struct access must be smaller than number of Packers in sequence" );
+		"Index for xt.Packer.Struct access must be smaller than number of Packers in Struct" );
 	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, sp->p[ luaL_checkint( luaVM, -1 ) -1 ] );
 
 	if (NULL != luaL_testudata( luaVM, -1, "xt.Packer.Struct" ))
@@ -186,18 +187,18 @@ static int lxt_pck_s__newindex( lua_State *luaVM )
 	{
 		if (LUA_NOREF == sp->idx_ref)
 		{
-			lua_pushnil( luaVM );
-			return 1;
+			return xt_push_error( luaVM, "can't write value to Struct whith unknown key" );
 		}
 		lua_rawgeti( luaVM, LUA_REGISTRYINDEX, sp->idx_ref );
-		lua_pushvalue( luaVM, -2 );    // push the name again
-		lua_rawget( luaVM, -2 );       // Stack: Struct, name, id
-		lua_replace( luaVM, -2 );      // Stack: Struct, id
+		lua_pushvalue( luaVM, -3 );    // Stack: Struct,name,value,idx,name
+		lua_rawget( luaVM, -2 );       // Stack: Struct,name,value,idx,id
+		lua_replace( luaVM, -4 );      // Stack: Struct,id,value,idx
+		lua_pop( luaVM, 1 );           // Stack: Struct,id,value
 	}
 
-	// Stack: Sequence, index, value
+	// Stack: Struct, index, value
 	luaL_argcheck( luaVM, (size_t) luaL_checkint( luaVM, -2 ) <= sp->n, -2,
-		"Index for xt.Packer.Sequence access must be smaller than number of Packers in sequence" );
+		"Index for xt.Packer.Struct access must be smaller than number of Packers in Struct" );
 	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, sp->p[ luaL_checkint( luaVM, -2 ) - 1 ] );
 
 	if (NULL != luaL_testudata( luaVM, -1, "xt.Packer.Struct" ))
@@ -296,7 +297,7 @@ int lxt_pck_s__call( lua_State *luaVM )
 /**--------------------------------------------------------------------------
  * Garbage Collector. Dissassociates buffers from Packers.
  * \param  luaVM lua Virtual Machine.
- * \lparam table xt.Packer.Sequence.
+ * \lparam table xt.Packer.Struct.
  * \return integer number of values left on te stack.
  * -------------------------------------------------------------------------*/
 static int lxt_pck_s__gc( lua_State *luaVM )
@@ -343,10 +344,10 @@ static int lxt_pck_s__len( lua_State *luaVM )
 
 
 /**--------------------------------------------------------------------------
- * ToString representation of a packer sequence.
- * \param   luaVM         The lua state.
- * \lparam  xt_pack_seq   user_data.
- * \lreturn string        formatted string representing Sequence.
+ * ToString representation of a packer Struct.
+ * \param   luaVM      The lua state.
+ * \lparam  xt_pck_s   user_data.
+ * \lreturn string     formatted string representing Struct.
  * \return  The number of results to be passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
 static int lxt_pck_s__tostring (lua_State *luaVM)
@@ -357,9 +358,9 @@ static int lxt_pck_s__tostring (lua_State *luaVM)
 }
 
 
-
 /**--------------------------------------------------------------------------
- * the actual method to iterate(next) over the xt.Packer.Struct.
+ * the actual iterate(next) over the xt.Packer.Struct.
+ * It will return key,value pairs in proper order as defined in the constructor.
  * \param   luaVM lua Virtual Machine.
  * \lparam  cfunction.
  * \lparam  previous key.
@@ -392,7 +393,7 @@ static int xt_pck_s_iter( lua_State *luaVM )
 	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, sp->idx_ref );
 	lua_pushinteger( luaVM, crs );
 	lua_rawget( luaVM, -2 );          // Stack: _idx,name
-	if (lua_isnil( luaVM, -1))
+	if (lua_isnil( luaVM, -1))        // didn't find a named entry ...
 		lua_pushstring( luaVM, "" );
 	lua_remove( luaVM, -2 );          // remove idx table
 
@@ -420,8 +421,6 @@ static int xt_pck_s_iter( lua_State *luaVM )
 int lxt_pck_s__pairs( lua_State *luaVM )
 {
 	struct xt_pck_s *sp = xt_pck_s_check_ud( luaVM, -1 );
-	if (LUA_NOREF == sp->idx_ref)
-		return 0;
 	lua_pushnumber( luaVM, 0 );
 	lua_pushcclosure( luaVM, &xt_pck_s_iter, 2 );
 	lua_pushvalue( luaVM, -1 );
@@ -431,7 +430,7 @@ int lxt_pck_s__pairs( lua_State *luaVM )
 
 
 /**--------------------------------------------------------------------------
- * \brief   pushes the xt.Packer.Sequence library onto the stack
+ * \brief   pushes the xt.Packer.Struct library onto the stack
  *          - creates Metatable with functions
  *          - creates metatable with methods
  * \param   luaVM     The lua state.
@@ -440,7 +439,7 @@ int lxt_pck_s__pairs( lua_State *luaVM )
  * --------------------------------------------------------------------------*/
 LUAMOD_API int luaopen_xt_pck_s( lua_State *luaVM )
 {
-	// xt.Packer.Sequence instance metatable
+	// xt.Packer.Struct instance metatable
 	luaL_newmetatable( luaVM, "xt.Packer.Struct" );   // stack: functions meta
 	lua_pushcfunction( luaVM, lxt_pck_s__index );
 	lua_setfield( luaVM, -2, "__index" );

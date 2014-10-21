@@ -149,10 +149,8 @@ int xt_pck_read( lua_State *luaVM, struct xt_pck *p, const unsigned char *buffer
 	switch( p->t )
 	{
 		case XT_PCK_INTL:
-			lua_pushinteger( luaVM, (lua_Integer) xt_buf_readbytes( p->sz, 1, buffer ) );
-			break;
 		case XT_PCK_INTB:
-			lua_pushinteger( luaVM, (lua_Integer) xt_buf_readbytes( p->sz, 0, buffer ) );
+			lua_pushinteger( luaVM, (lua_Integer) xt_buf_readbytes( p->sz, p->t, buffer ) );
 			break;
 		case XT_PCK_BIT:
 			lua_pushinteger( luaVM, (lua_Integer) xt_buf_readbits( p->sz, p->bofs, buffer ) );
@@ -187,16 +185,11 @@ int xt_pck_write( lua_State *luaVM, struct xt_pck *p, unsigned char *buffer )
 	switch( p->t )
 	{
 		case XT_PCK_INTL:
-			intVal = luaL_checkint( luaVM, -1 );
-			luaL_argcheck( luaVM,  intVal  <  0x01 << (p->sz*8), -1,
-			              "value to pack must be smaller than the maximum value for the packer size");
-			xt_buf_writebytes( (uint64_t) intVal, p->sz, 0, buffer );
-			break;
 		case XT_PCK_INTB:
 			intVal = luaL_checkint( luaVM, -1 );
 			luaL_argcheck( luaVM,  intVal  <  0x01 << (p->sz*8), -1,
 			              "value to pack must be smaller than the maximum value for the packer size");
-			xt_buf_writebytes( (uint64_t) intVal, p->sz, 1, buffer );
+			xt_buf_writebytes( (uint64_t) intVal, p->sz, p->t, buffer );
 			break;
 		case XT_PCK_BIT:
 			intVal = luaL_checkint( luaVM, -1 );
