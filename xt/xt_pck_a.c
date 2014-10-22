@@ -42,11 +42,12 @@ int lxt_pck_Array( lua_State *luaVM )
 	luaL_argcheck(luaVM, (0 != sz), -2, "First argument must be a xt.Packer, xt.Packer.Struct or xt.Packer.Array" );
 	ref = luaL_ref( luaVM, LUA_REGISTRYINDEX ); // pop the type and keep reference
 
-	ap  = (struct xt_pck_a *) lua_newuserdata( luaVM, sizeof( struct xt_pck_a ) );
-	ap->n       = n;
-	ap->sz      = sz;
-	ap->typ_ref = ref;
-	ap->buf_ref = LUA_NOREF;
+	ap     = (struct xt_pck_a *) lua_newuserdata( luaVM, sizeof( struct xt_pck_a ) );
+	ap->n  = n;
+	ap->sz = sz;
+	ap->tR = ref;
+	ap->bR = LUA_NOREF;
+	ap->bP = 0;
 	luaL_getmetatable( luaVM, "xt.Packer.Array" );
 	lua_setmetatable( luaVM, -2 ) ;
 
@@ -80,6 +81,7 @@ struct xt_pck_a *xt_pck_a_check_ud( lua_State *luaVM, int pos )
 static int lxt_pck_a__index( lua_State *luaVM )
 {
 	struct xt_pck_a *ap = xt_pck_a_check_ud( luaVM, -2 );
+	struct xt_buf   *b;
 	struct xt_pck   *p;
 	struct xt_pck_s *ps;
 	struct xt_pck_s *psc;
@@ -89,15 +91,18 @@ static int lxt_pck_a__index( lua_State *luaVM )
 	// Stack: Struct, index
 	luaL_argcheck( luaVM, (size_t) luaL_checkint( luaVM, -1 ) <= ap->n, -1,
 		"Index for xt.Packer.Array access must be smaller than number of Packers in Array" );
-	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, ap->typ_ref );
+	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, ap->tR );
 
 	if (NULL != luaL_testudata( luaVM, -1, "xt.Packer" ))
 	{
 		p = xt_pck_check_ud( luaVM, -1 );
-		if (NULL == p->b)
-			return xt_push_error( luaVM, "Can only read data from initialized xt.Packer.Array" );
+		if (LUA_NOREF == ap->bR)
+			return xt_push_error( luaVM, "Can't read from an uninitialized array" );
+		lua_rawgeti( luaVM, LUA_REGISTRYINDEX, ap->bR );
+		b = xt_buf_check_ud( luaVM, -1);
+		lua_pop( luaVM, 2);    // pop type and buffer
 
-		return xt_pck_read( luaVM, p, &(p->b[ p->sz*(luaL_checkint( luaVM, -1 ) -1) ]) );
+		return xt_pck_read( luaVM, p, &(b->b[ p->sz*(luaL_checkint( luaVM, -1 ) -1) ]) );
 	}
 	// if it's not give me a copy of the type with an adjusted buffer attached
 	if (NULL != luaL_testudata( luaVM, -1, "xt.Packer.Struct" ))
@@ -105,7 +110,7 @@ static int lxt_pck_a__index( lua_State *luaVM )
 		ps  = xt_pck_s_check_ud( luaVM, -1 );
 		psc = (struct xt_pck_s *) lua_newuserdata( luaVM, sizeof( ps ) );
 		psc = ps;
-		psc->b = &(ps->b[ ps->sz * (luaL_checkint( luaVM, -2 ) -1) ]);
+		psc->bP = (LUA_NOREF == psc->bR) ? 0 : psc->bP + psc->sz * (luaL_checkint( luaVM, -2 ) -1);
 		return 1;
 	}
 	if (NULL != luaL_testudata( luaVM, -1, "xt.Packer.Array" ))
@@ -113,7 +118,7 @@ static int lxt_pck_a__index( lua_State *luaVM )
 		pa  = xt_pck_a_check_ud( luaVM, -1 );
 		pac = (struct xt_pck_a *) lua_newuserdata( luaVM, sizeof( pa ) );
 		pac = pa;
-		pac->b = &(pa->b[ pa->sz * (luaL_checkint( luaVM, -2 ) -1) ]);
+		pac->bP = (LUA_NOREF == pac->bR) ? 0 : pac->bP + pac->sz * (luaL_checkint( luaVM, -2 ) -1);
 		return 1;
 	}
 	return xt_push_error( luaVM, "Wrong Datatype in xt.Packer.Array" );
@@ -132,20 +137,21 @@ static int lxt_pck_a__newindex( lua_State *luaVM )
 {
 	struct xt_pck_a *ap  = xt_pck_a_check_ud( luaVM, -3 );
 	struct xt_pck   *p;
+	struct xt_buf   *b;
 	int              retVal;
 
 	// Stack: Struct, index, value
 	luaL_argcheck( luaVM, (size_t) luaL_checkint( luaVM, -2 ) <= ap->n, -2,
 		"Index for xt.Packer.Array access must be smaller than number of Packers in Array" );
-	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, ap->typ_ref );
-
-	p = xt_pck_check_ud( luaVM, -1 );
-	if (NULL == p->b)
+	if (LUA_NOREF == ap->bR)
 		return xt_push_error( luaVM, "Can only write data to an initialized data Array" );
-	else
-		lua_pushvalue( luaVM, -2); // Stack: Array,id,value,Pack,value
+	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, ap->bR );
+	b = xt_buf_check_ud( luaVM, -1);
+	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, ap->tR );
+	p = xt_pck_check_ud( luaVM, -1 );
+	lua_pop( luaVM, 2);    // buffer and type
 
-	if ((retVal = xt_pck_write( luaVM, p, &(p->b[ p->sz*(luaL_checkint( luaVM, -4 ) -1) ]) )) != 0 )
+	if ((retVal = xt_pck_write( luaVM, p, &(b->b[ p->sz*(luaL_checkint( luaVM, -2 ) -1) ]) )) != 0 )
 		return retVal;
 	else
 		return 0;
@@ -174,20 +180,19 @@ int lxt_pck_a__call( lua_State *luaVM )
 	ap = xt_pck_a_check_ud( luaVM, -3 );
 
 	// Delete all references -> this struct the is not associated;
-	if (lua_isnoneornil( luaVM, -3 ))
+	if (lua_isnoneornil( luaVM, -2 ))
 	{
-		if (LUA_NOREF != ap->buf_ref)
-			luaL_unref( luaVM, LUA_REGISTRYINDEX, ap->buf_ref );  // remove buffer at buf_ref from registry
-		ap->buf_ref = LUA_NOREF;
-		ap->b = NULL;
+		if (LUA_NOREF != ap->bR)
+			luaL_unref( luaVM, LUA_REGISTRYINDEX, ap->bR );  // remove buffer at buf_ref from registry
+		ap->bR = LUA_NOREF;
+		ap->bP = 0;
 	}
 	else
 	{
-		stackDump(luaVM);
 		b  = xt_buf_check_ud( luaVM, -2 );
-		ap->b = &(b->b[ pos ]);
 		lua_pop( luaVM, 1);
-		ap->buf_ref = luaL_ref( luaVM, LUA_REGISTRYINDEX );
+		ap->bR = luaL_ref( luaVM, LUA_REGISTRYINDEX );
+		ap->bP = pos;
 	}
 	return 0;
 }
@@ -203,9 +208,9 @@ static int lxt_pck_a__gc( lua_State *luaVM )
 {
 	struct xt_pck_a *ap = xt_pck_a_check_ud( luaVM, 1 );
 
-	if (LUA_NOREF != ap->buf_ref)
-		luaL_unref( luaVM, LUA_REGISTRYINDEX, ap->buf_ref ); // remove buffer at buf_ref from registry
-	ap->b = NULL;
+	if (LUA_NOREF != ap->bR)
+		luaL_unref( luaVM, LUA_REGISTRYINDEX, ap->bR ); // remove buffer at buf_ref from registry
+	ap->bP = 0;
 	return 0;
 }
 
@@ -253,8 +258,8 @@ static int lxt_pck_a__tostring (lua_State *luaVM)
 static int xt_pck_a_iter( lua_State *luaVM )
 {
 	struct xt_pck_a *ap = xt_pck_a_check_ud( luaVM, lua_upvalueindex( 1 ) );
-	struct xt_pc_a  *pa;
-	struct xt_pck   *p;
+	//struct xt_pc_a  *pa;
+	//struct xt_pck   *p;
 	int crs;
 
 	crs = lua_tointeger( luaVM, lua_upvalueindex( 2 ) );

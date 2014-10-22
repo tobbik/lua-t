@@ -10,7 +10,10 @@ lua-xt is a library which extends lua by some universal functionality
 including the following topics:
 
  - Networking (xt.Socket) --> TCP,UDP etc
- - Buffers (xt.Buffer) --> this kind of allows for mutable strings
+ - Buffers (xt.Buffer)    --> a defined buffer of length x withmutable values
+ - Packers (xt.Packer)    --> a Packer of type and size
+ - Struct (xt.Packer.Struct) --> a Combination of Packers or Structs
+ - Array (xt.Packer.Struct)  --> a Sequence of Packers or Structs of same type
  - Encoding/Decoding/Encryption (xt.Encoding) --> CRC,Base64,RC4...
  - Unit Tests (xt.Test) --> comprehensive tests with unified output
  - Asynchronous (xt.Loop) --> event/select based asynchronous workings
@@ -51,3 +54,28 @@ Prefixes:
 Examples:
 
 xt_xxx_new() 
+
+
+
+
+
+Documentation:
+++++++++++++++
+
+xt.Packer
+---------
+
+A Packer is a simple Data Format definition containing size and type. The following types are available:
+
+ - xt.Packer.Bit(x,y)  = creates a packer of type Bit with big Endianess and length x and offset y
+ - xt.Packer.Int(x)    = creates a packer of type Int with native Endianess and length x
+ - xt.Packer.IntL(x)   = creates a packer of type Int with little Endianess and length x
+ - xt.Packer.IntB(x)   = creates a packer of type Int with Big Endianess and length x
+ - xt.Packer.Float(x)  = creates a packer of type Float with length x
+ - xt.Packer.String(x) = creates a packer of type String with length x
+
+
+
+
+
+

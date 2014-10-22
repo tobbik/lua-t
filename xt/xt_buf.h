@@ -1,3 +1,4 @@
+
 /// The userdata struct for xt.Buffer
 struct xt_buf {
 	size_t         len;   ///<  length of the entire buffer in bytes
@@ -25,21 +26,21 @@ struct xt_pck {
 
 /// The userdata struct for xt.Packer.Struct
 struct xt_pck_s {
-	unsigned char     *b;       ///< pointer to the associate buffer
-	size_t             sz;      ///< how many bytes are covered in this packer
-	size_t             n;       ///< how many packers are in this sequence
-	int                buf_ref; ///< Lua registry reference to buffer
-	int                idx_ref; ///< Lua registry reference to buffer
-	int                p[1];    ///< array of ref to packers in proper order -> must be last in struct
+	size_t             sz;   ///< how many bytes are covered in this packer
+	size_t             n;    ///< how many packers are in this sequence
+	size_t             bP;   ///< position in buffer bR
+	int                bR;   ///< Lua registry reference to buffer
+	int                iR;   ///< Lua registry reference to index table
+	int                p[1]; ///< array of ref to packers in proper order -> must be last in struct
 };
 
 /// The userdata struct for xt.Packer.Array
 struct xt_pck_a {
-	unsigned char     *b;       ///< pointer to the associate buffer
-	size_t             sz;      ///< how many bytes are covered in this packer
-	size_t             n;       ///< how many packers are in this sequence
-	int                buf_ref; ///< Lua registry reference to buffer
-	int                typ_ref; ///< Lua registry reference to type (Packer,Struct,Array)
+	size_t             sz;   ///< how many bytes are covered in this packer
+	size_t             n;    ///< how many packers are in this sequence
+	size_t             bP;   ///< position in buffer bR
+	int                bR;   ///< Lua registry reference to buffer
+	int                tR;   ///< Lua registry reference to type
 };
 
 // Constructors

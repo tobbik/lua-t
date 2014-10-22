@@ -54,7 +54,7 @@ int lxt_pck_IntB( lua_State *luaVM )
  * \param    luaVM    lua state.
  * \lparam   sz       size of packer in bits.
  *         OPTIONAL
- * \lparam   bofs     bit offset from beginning of byte at xt pack->b. Default 0.
+ * \lparam   bofs     bit offset from beginning of byte. Default 0.
  * \return integer number of values left on the stack.
  *  -------------------------------------------------------------------------*/
 int lxt_pck_Bit( lua_State *luaVM )

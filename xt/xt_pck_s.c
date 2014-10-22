@@ -26,11 +26,11 @@ int lxt_pck_Struct( lua_State *luaVM )
 	struct xt_pck_s   *sp;     ///< the userdata this constructor creates
 
 	// size = sizof(...) -1 because the array has already one member
-	sz = sizeof( struct xt_pck_s ) + (lua_gettop( luaVM ) - 1) * sizeof( int );
-	sp = (struct xt_pck_s *) lua_newuserdata( luaVM, sz );
-	sp->n       = lua_gettop( luaVM )-1;  // number of elements on stack -1 (the Struct userdata)
-	sp->buf_ref = LUA_NOREF;
-	sp->sz      = 0;
+	sz     = sizeof( struct xt_pck_s ) + (lua_gettop( luaVM ) - 1) * sizeof( int );
+	sp     = (struct xt_pck_s *) lua_newuserdata( luaVM, sz );
+	sp->n  = lua_gettop( luaVM )-1;  // number of elements on stack -1 (the Struct userdata)
+	sp->bR = LUA_NOREF;
+	sp->sz = 0;
 	memset( sp->p, 0, sp->n * sizeof( int ));
 
 	lua_newtable( luaVM ); // Stack: ..., Struct,idx
@@ -97,10 +97,10 @@ int lxt_pck_Struct( lua_State *luaVM )
 		sp->p[ i-1 ] = luaL_ref( luaVM, LUA_REGISTRYINDEX );
 	}
 	if (isIdx)
-		sp->idx_ref = luaL_ref( luaVM, LUA_REGISTRYINDEX);
+		sp->iR = luaL_ref( luaVM, LUA_REGISTRYINDEX);
 	else
 	{
-		sp->idx_ref = LUA_NOREF;
+		sp->iR = LUA_NOREF;
 		lua_pop( luaVM, 1 );
 	}
 	luaL_getmetatable( luaVM, "xt.Packer.Struct" ); // Stack: ...,xt.Packer.Struct
@@ -141,12 +141,12 @@ static int lxt_pck_s__index( lua_State *luaVM )
 	// Access the idx table by key to get numeric index onto stack
 	if (0 == lua_tonumber( luaVM, -1 ))
 	{
-		if (LUA_NOREF == sp->idx_ref)
+		if (LUA_NOREF == sp->iR)
 		{
 			lua_pushnil( luaVM );
 			return 1;
 		}
-		lua_rawgeti( luaVM, LUA_REGISTRYINDEX, sp->idx_ref );
+		lua_rawgeti( luaVM, LUA_REGISTRYINDEX, sp->iR );
 		lua_pushvalue( luaVM, -2 );    // push the name again
 		lua_rawget( luaVM, -2 );       // Stack: Struct, name, id
 		lua_replace( luaVM, -2 );      // Stack: Struct, id
@@ -185,11 +185,11 @@ static int lxt_pck_s__newindex( lua_State *luaVM )
 	// Access the idx table by key to get numeric index onto stack
 	if (0 == lua_tonumber( luaVM, -2 ))
 	{
-		if (LUA_NOREF == sp->idx_ref)
+		if (LUA_NOREF == sp->iR)
 		{
 			return xt_push_error( luaVM, "can't write value to Struct whith unknown key" );
 		}
-		lua_rawgeti( luaVM, LUA_REGISTRYINDEX, sp->idx_ref );
+		lua_rawgeti( luaVM, LUA_REGISTRYINDEX, sp->iR );
 		lua_pushvalue( luaVM, -3 );    // Stack: Struct,name,value,idx,name
 		lua_rawget( luaVM, -2 );       // Stack: Struct,name,value,idx,id
 		lua_replace( luaVM, -4 );      // Stack: Struct,id,value,idx
@@ -259,8 +259,8 @@ int lxt_pck_s__call( lua_State *luaVM )
 			p->b = NULL;
 			lua_pop( luaVM, 1 );
 		}
-		if (LUA_NOREF != sp->buf_ref)
-			luaL_unref( luaVM, LUA_REGISTRYINDEX, sp->buf_ref );  // remove buffer at buf_ref from registry
+		if (LUA_NOREF != sp->bR)
+			luaL_unref( luaVM, LUA_REGISTRYINDEX, sp->bR );  // remove buffer at buf_ref from registry
 	}
 	else
 	{
@@ -268,7 +268,8 @@ int lxt_pck_s__call( lua_State *luaVM )
 		luaL_argcheck( luaVM, 0 <= pos && pos <= (int) b->len, -3,
 								  "xt.Buffer position must be > 0 or < #buffer" );
 		lua_pushvalue( luaVM, -2 );
-		sp->buf_ref = luaL_ref( luaVM, LUA_REGISTRYINDEX ); // recieve registry index, and pop b from stack
+		sp->bR = luaL_ref( luaVM, LUA_REGISTRYINDEX ); // recieve registry index, and pop b from stack
+		sp->bP = pos;
 
 		// TODO: Buffer size must equal Struct size?
 		for (i=0; i < sp->n; i++)
@@ -279,7 +280,7 @@ int lxt_pck_s__call( lua_State *luaVM )
 			{
 				lua_pushcfunction( luaVM, lxt_pck_s__call );
 				lua_insert( luaVM, -2 );  // move function before struct
-				lua_rawgeti( luaVM, LUA_REGISTRYINDEX, sp->buf_ref );
+				lua_rawgeti( luaVM, LUA_REGISTRYINDEX, sp->bR );
 				lua_pushinteger( luaVM, pos );
 				lua_call( luaVM, 3, 0 );
 				continue;
@@ -307,8 +308,8 @@ static int lxt_pck_s__gc( lua_State *luaVM )
 	struct xt_pck_s *ps;
 	size_t           i;       ///< the iterator for all fields
 
-	if (LUA_NOREF != sp->buf_ref)
-		luaL_unref( luaVM, LUA_REGISTRYINDEX, sp->buf_ref ); // remove buffer at buf_ref from registry
+	if (LUA_NOREF != sp->bR)
+		luaL_unref( luaVM, LUA_REGISTRYINDEX, sp->bR ); // remove buffer at buf_ref from registry
 	for (i=0; i < sp->n; i++)
 	{
 		lua_rawgeti( luaVM, LUA_REGISTRYINDEX, sp->p[ i ] );
@@ -375,22 +376,18 @@ static int xt_pck_s_iter( lua_State *luaVM )
 	struct xt_pck   *p;
 	int crs;
 
-	if (LUA_NOREF == sp->idx_ref)
-	{
+	if (LUA_NOREF == sp->iR)
 		return 0;
-	}
 	crs = lua_tointeger( luaVM, lua_upvalueindex( 2 ) );
 	crs++;
 	if (crs > (int) sp->n)
-	{
 		return 0;
-	}
 	else
 	{
 		lua_pushinteger( luaVM, crs );
 		lua_replace( luaVM, lua_upvalueindex( 2 ) );
 	}
-	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, sp->idx_ref );
+	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, sp->iR );
 	lua_pushinteger( luaVM, crs );
 	lua_rawget( luaVM, -2 );          // Stack: _idx,name
 	if (lua_isnil( luaVM, -1))        // didn't find a named entry ...
