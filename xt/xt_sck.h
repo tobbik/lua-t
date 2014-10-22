@@ -24,25 +24,20 @@
 #endif
 #define MAX_BUF_SIZE      4096
 
-enum xt_hndl_t {
-	UDP,
-	TCP,
-	TIME,
-	FIL,
+enum xt_sck_t {
+	XT_SCK_UDP,
+	XT_SCK_TCP,
 };
 
-static const char *const xt_hndl_t_lst[] = {
+static const char *const xt_sck_t_lst[] = {
 	"UDP",
 	"TCP",
-	"TIME",
-	"FIL",
 	NULL
 };
 
-struct xt_hndl {
-	enum xt_hndl_t      hd_t;
-	int                 fd;    // socket, file handle, stream ...
-	//t_timeout tm;
+struct xt_sck {
+	enum xt_sck_t    t;
+	int              fd;    ///< socket handle
 };
 
 // Constructors
@@ -52,8 +47,8 @@ struct sockaddr_in *create_ud_ipendpoint (lua_State *luaVM);
 int    set_ipendpoint_values (lua_State *luaVM, int pos, struct sockaddr_in *ip);
 
 // l_xt_socket.c
-struct xt_hndl *check_ud_socket (lua_State *luaVM, int pos);
-struct xt_hndl *xt_socket_create_ud( lua_State *luaVM );
-int             xt_socket_set_type( lua_State *luaVM, struct xt_hndl *hndl, enum xt_hndl_t );
-
+int            luaopen_xt_sck    ( lua_State *luaVM );
+int            lxt_sck_New       ( lua_State *luaVM );
+struct xt_sck *xt_sck_check_ud   ( lua_State *luaVM, int pos );
+struct xt_sck *xt_sck_create_ud  ( lua_State *luaVM, enum xt_sck_t type);
 

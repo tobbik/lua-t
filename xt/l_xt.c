@@ -7,7 +7,7 @@
 #include <errno.h>      // errno
 
 #include "l_xt.h"
-#include "l_xt_hndl.h"
+#include "xt_sck.h"
 
 
 
@@ -134,7 +134,7 @@ inline uint16_t Reverse2Bytes(uint16_t value)
  *-------------------------------------------------------------------------*/
 void make_fdset (lua_State *luaVM, int stack_pos, fd_set *collection, int *max_hndl)
 {
-	struct xt_hndl  *hndl;
+	struct xt_sck  *hndl;
 
 	FD_ZERO (collection);
 	// empty table == nil
@@ -149,7 +149,7 @@ void make_fdset (lua_State *luaVM, int stack_pos, fd_set *collection, int *max_h
 	lua_pushnil(luaVM);
 	while (lua_next(luaVM, 1))
 	{
-		hndl = (struct xt_hndl*) lua_touserdata(luaVM, -1);
+		hndl = (struct xt_sck *) lua_touserdata(luaVM, -1);
 		FD_SET( hndl->fd, collection );
 		*max_hndl = (hndl->fd > *max_hndl) ? hndl->fd : *max_hndl;
 		lua_pop(luaVM, 1);   // remove the socket, keep key for next()
@@ -170,7 +170,7 @@ void make_fdset (lua_State *luaVM, int stack_pos, fd_set *collection, int *max_h
 static int l_select_handle(lua_State *luaVM)
 {
 	fd_set           rfds, wfds;
-	struct xt_hndl  *hndl;
+	struct xt_sck   *hndl;
 	int              rnum, wnum, readsocks, i/*, rp*/;
 	int              rset=1;//, wset=1;
 
@@ -198,7 +198,7 @@ static int l_select_handle(lua_State *luaVM)
 			lua_pop(luaVM, 1);
 			break;
 		}
-		hndl = (struct xt_hndl*) lua_touserdata(luaVM, -1);
+		hndl = (struct xt_sck *) lua_touserdata(luaVM, -1);
 		if FD_ISSET( hndl->fd, &rfds)
 		{
 			lua_rawseti(luaVM, -2, rset++);
@@ -228,7 +228,7 @@ static int l_select_handle(lua_State *luaVM)
 static int l_select_handle_k(lua_State *luaVM)
 {
 	fd_set           rfds, wfds;
-	struct xt_hndl  *hndl;
+	struct xt_sck   *hndl;
 	int              rnum, wnum, readsocks /*, rp*/;
 
 	wnum = -1;
@@ -249,7 +249,7 @@ static int l_select_handle_k(lua_State *luaVM)
 	lua_pushnil(luaVM);
 	while (lua_next(luaVM, 1))
 	{
-		hndl = (struct xt_hndl*) lua_touserdata(luaVM, -1);
+		hndl = (struct xt_sck *) lua_touserdata(luaVM, -1);
 		if FD_ISSET( hndl->fd, &rfds)
 		{
 			//TODO: Find better way to preserve key for next iteration
@@ -285,25 +285,23 @@ static const luaL_Reg l_xt_lib [] =
  *\param      The Lua state.
  * \return     1 return value
  */
-LUAMOD_API int luaopen_xt (lua_State *luaVM)
+LUAMOD_API int luaopen_xt( lua_State *luaVM )
 {
-	luaL_newlib (luaVM, l_xt_lib);
-	luaopen_xt_time(luaVM);
-	lua_setfield(luaVM, -2, "Time");
-	luaopen_socket(luaVM);
-	lua_setfield(luaVM, -2, "Socket");
-	luaopen_ipendpoint(luaVM);
-	lua_setfield(luaVM, -2, "IpEndpoint");
-	luaopen_xt_buf(luaVM);
-	lua_setfield(luaVM, -2, "Buffer");
+	luaL_newlib( luaVM, l_xt_lib );
+	luaopen_xt_time( luaVM );
+	lua_setfield( luaVM, -2, "Time" );
+	luaopen_xt_sck( luaVM );
+	lua_setfield( luaVM, -2, "Socket" );
+	luaopen_ipendpoint( luaVM );
+	lua_setfield( luaVM, -2, "IpEndpoint" );
+	luaopen_xt_buf( luaVM );
+	lua_setfield( luaVM, -2, "Buffer" );
 	luaopen_xt_pck( luaVM );
 	lua_setfield( luaVM, -2, "Packer" );
-	luaopen_xt_enc(luaVM);
-	lua_setfield(luaVM, -2, "Encode");
-	luaopen_xt_test(luaVM);
-	lua_setfield(luaVM, -2, "Test");
-	luaopen_debug(luaVM);
-	lua_setfield(luaVM, -2, "debug");
+	luaopen_xt_enc( luaVM );
+	lua_setfield( luaVM, -2, "Encode" );
+	luaopen_xt_test( luaVM );
+	lua_setfield( luaVM, -2, "Test" );
 	return 1;
 }
 

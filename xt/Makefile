@@ -11,7 +11,7 @@ RANLIB= ranlib
 VER= 5.2
 
 XT_SRC=l_xt.c \
-	 l_xt_socket.c \
+	 xt_sck.c \
 	 l_xt_ip.c \
 	 xt_time.c \
 	 xt_enc.c \
@@ -22,8 +22,7 @@ XT_SRC=l_xt.c \
 	 xt_pck.c \
 	 xt_pck_s.c \
 	 xt_pck_a.c \
-	 xt_test.c \
-	 l_xt_debug.c
+	 xt_test.c
 
 XT_OBJ=$(XT_SRC:.c=.o)
 

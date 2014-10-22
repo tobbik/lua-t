@@ -104,7 +104,7 @@ long xt_time_getms (struct timeval *tA)
  * \lreturn struct timeval userdata.
  * \return  The number of results to be passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
-static int lxt_time__Call(lua_State *luaVM)
+static int lxt_time__Call( lua_State *luaVM )
 {
 	lua_remove( luaVM, 1 );
 	return lxt_time_New( luaVM );
@@ -137,13 +137,13 @@ int lxt_time_New( lua_State *luaVM )
 /**--------------------------------------------------------------------------
  * \brief   create an timer userdata and push to LuaStack.
  * \param   luaVM  The lua state.
- * \return  struct sockaddr_in*  pointer to the sockaddr
+ * \return  struct timeval*  pointer to userdata at Stack position.
  * --------------------------------------------------------------------------*/
 struct timeval *xt_time_create_ud( lua_State *luaVM )
 {
 	struct timeval *tv;
 
-	tv = (struct timeval *) lua_newuserdata (luaVM, sizeof(struct timeval) );
+	tv = (struct timeval *) lua_newuserdata( luaVM, sizeof( struct timeval ) );
 	gettimeofday( tv, 0 );
 	luaL_getmetatable( luaVM, "xt.Time" );
 	lua_setmetatable( luaVM, -2 );
@@ -155,12 +155,12 @@ struct timeval *xt_time_create_ud( lua_State *luaVM )
  * \brief   check a value on the stack for being a struct sockaddr_in
  * \param   luaVM    The lua state.
  * \param   int      position on the stack
- * \return  struct sockaddr_in*  pointer to the sockaddr
+ * \return  struct timeval*  pointer to userdata at Stack position.
  * --------------------------------------------------------------------------*/
 struct timeval *xt_time_check_ud( lua_State *luaVM, int pos )
 {
 	void *ud = luaL_checkudata( luaVM, pos, "xt.Time" );
-	luaL_argcheck( luaVM, ud != NULL, pos, "`Timer` expected" );
+	luaL_argcheck( luaVM, ud != NULL, pos, "`xt.Time` expected" );
 	return (struct timeval *) ud;
 }
 
