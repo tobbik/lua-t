@@ -273,8 +273,8 @@ static int xt_pck_a_iter( lua_State *luaVM )
 
 	lua_pushinteger( luaVM, crs );
 	lua_replace( luaVM, lua_upvalueindex( 2 ) );
-	stackDump(luaVM);
-	lua_remove( luaVM, -2 );
+	lua_pushinteger( luaVM, crs );
+	lua_replace( luaVM, -3);
 
 	return 2;
 }
