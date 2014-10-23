@@ -288,6 +288,8 @@ static const luaL_Reg l_xt_lib [] =
 LUAMOD_API int luaopen_xt( lua_State *luaVM )
 {
 	luaL_newlib( luaVM, l_xt_lib );
+	luaopen_xt_lp( luaVM );
+	lua_setfield( luaVM, -2, "Loop" );
 	luaopen_xt_time( luaVM );
 	lua_setfield( luaVM, -2, "Time" );
 	luaopen_xt_sck( luaVM );

@@ -1,5 +1,4 @@
-#include "l_xt_hndl.h"
-#include "xt_lp.h"
+#include "xt_sck.h"
 
 
 enum xt_lp_t {
@@ -7,15 +6,6 @@ enum xt_lp_t {
 	XT_LP_WRIT,
 	XT_LP_ONCE,
 	XT_LP_MULT,
-}
-
-
-/// xt_lp implementation for select based loops
-struct xt_lp {
-	fd_set           rfds;
-	fd_set           wfds;
-	int              mxfd;
-	struct xt_lp_tm *tm_head;
 };
 
 
@@ -34,7 +24,24 @@ struct xt_lp_tm {
 	struct timeval      it;    ///< time interval between fire
 	int               (*t_proc) (lua_State *luaVM);
 	int                 aR;    ///< argument reference in LUA_REGISTRYINDEX
-	struct xt_lp_tmev  *nxt;   ///< next pointer for linked list
+	struct xt_lp_tm    *nxt;   ///< next pointer for linked list
 };
+
+/// xt_lp implementation for select based loops
+struct xt_lp {
+	fd_set           rfds;
+	fd_set           wfds;
+	int              mxfd;
+	size_t           mx_sz;
+	struct xt_lp_fd *fd_head;
+	struct xt_lp_tm *tm_head;
+};
+
+
+// xt_lp.c
+struct xt_lp *xt_lp_check_ud ( lua_State *luaVM, int pos );
+struct xt_lp *xt_lp_create_ud( lua_State *luaVM );
+int           lxt_lp_New     ( lua_State *luaVM );
+
 
 

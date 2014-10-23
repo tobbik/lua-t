@@ -210,7 +210,7 @@ static int lxt_time_get( lua_State *luaVM )
 /**--------------------------------------------------------------------------
  * \brief   prints out the timer.
  * \param   luaVM     The lua state.
- * \lparam  sockaddr  the sockaddr_in userdata.
+ * \lparam  userdata  xt.Timer.
  * \lreturn string    formatted string representing sockkaddr (IP:Port).
  * \return  The number of results to be passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
