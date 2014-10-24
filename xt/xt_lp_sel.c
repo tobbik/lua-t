@@ -7,7 +7,6 @@
 #include "xt_time.h"
 
 
-
 /**--------------------------------------------------------------------------
  * construct a xt.Loop and return it.
  * \param   luaVM  The lua state.
@@ -25,12 +24,14 @@ static int lxt_lp__Call( lua_State *luaVM )
 /**--------------------------------------------------------------------------
  * create a new xt.Loop and return it.
  * \param   luaVM  The lua state.
+ * \lparam  int    initial size of fd_event slots in the Loop.
  * \lreturn struct xt_lp userdata.
  * \return  #stack items returned by function call.
  * --------------------------------------------------------------------------*/
 int lxt_lp_New( lua_State *luaVM )
 {
-	struct xt_lp  __attribute__ ((unused))  *lp = xt_lp_create_ud( luaVM );
+	size_t                                   sz = luaL_checkint( luaVM, 1 );
+	struct xt_lp  __attribute__ ((unused))  *lp = xt_lp_create_ud( luaVM, sz );
 	return 1;
 }
 
@@ -40,17 +41,19 @@ int lxt_lp_New( lua_State *luaVM )
  * \param   luaVM  The lua state.
  * \return  struct xt_lp * pointer to new userdata on Lua Stack
  * --------------------------------------------------------------------------*/
-struct xt_lp *xt_lp_create_ud( lua_State *luaVM )
+struct xt_lp *xt_lp_create_ud( lua_State *luaVM, size_t sz )
 {
 	struct xt_lp    *lp;
 
 	lp = (struct xt_lp *) lua_newuserdata( luaVM, sizeof( struct xt_lp ) );
-	lp->mx_sz   = 1024;
+	lp->fd_sz   = sz;
 	lp->mxfd    = 0;
 	lp->tm_head = NULL;
-	lp->fd_head = NULL;
+	lp->fd_set  = malloc( lp->fd_sz * sizeof( struct xt_lp_f * ) );
 	FD_ZERO( &lp->rfds );
 	FD_ZERO( &lp->wfds );
+	FD_ZERO( &lp->rfds_w );
+	FD_ZERO( &lp->wfds_w );
 	luaL_getmetatable( luaVM, "xt.Loop" );
 	lua_setmetatable( luaVM, -2 );
 	return lp;
@@ -85,18 +88,33 @@ static int lxt_lp_addhandle( lua_State *luaVM )
 {
 	luaL_Stream    *lS;
 	struct xt_sck  *sc;
-//	struct xt_lp   *lp = xt_lp_check_ud( luaVM, 1);
+	int             fd = 0;
+	int              n = lua_gettop( luaVM ) + 1;    ///< iterator for arguments
+	struct xt_lp   *lp = xt_lp_check_ud( luaVM, 1);
 
-
+	luaL_checktype( luaVM, 4, LUA_TFUNCTION );
 	lS = (luaL_Stream *) luaL_testudata( luaVM, 2, LUA_FILEHANDLE );
-// if (NULL != lS)
-// {
-
-
+	if (NULL != lS)
+		fd = fileno( lS->f );
 
 	sc = (struct xt_sck *) luaL_testudata( luaVM, 2, "xt.Socket" );
-// if (NULL != sc)
-	return 0;
+	if (NULL != sc)
+		fd = sc->fd;
+
+	if (0 == fd)
+		return xt_push_error( luaVM, "Argument to addHandle must be file or socket" );
+
+	lp->fd_set[ fd ] = (struct xt_lp_fd *) malloc( sizeof( struct xt_lp_tm ) );
+
+	lua_createtable( luaVM, n-4, 0 );  // create function/parameter table
+	lua_insert( luaVM, 4 );
+	//Stack: lp,tv,rp,TABLE,func,...
+	while (n > 4)
+		lua_rawseti( luaVM, 4, (n--)-4 );   // add arguments and function
+	lp->fd_set[ fd ]->fR = luaL_ref( luaVM, LUA_REGISTRYINDEX );      // pop the function/parameter table
+
+	return  0;
+
 }
 
 
@@ -163,7 +181,7 @@ static int lxt_lp_run( lua_State *luaVM )
 	int              i,n,r;
 	struct xt_lp    *lp = xt_lp_check_ud( luaVM, 1 );
 	struct xt_lp_tm *te;
-	struct xt_lp_tm *tr;  ///< Time event runner for Linked List iteration
+	//struct xt_lp_tm *tr;  ///< Time event runner for Linked List iteration
 
 	while(1)
 	{
@@ -188,6 +206,7 @@ static int lxt_lp_run( lua_State *luaVM )
 	return 0;
 }
 
+
 /**--------------------------------------------------------------------------
  * Prints out the Loop.
  * \param   luaVM     The lua state.
@@ -200,6 +219,37 @@ static int lxt_lp__tostring( lua_State *luaVM )
 	struct xt_lp *lp = xt_lp_check_ud( luaVM, 1 );
 	lua_pushfstring( luaVM, "xt.Loop(select){%d}: %p", lp->mxfd, lp );
 	return 1;
+}
+
+
+/**--------------------------------------------------------------------------
+ * Garbage Collector. Free events in allocated spots.
+ * \param  luaVM   lua Virtual Machine.
+ * \lparam table   xt.Loop.
+ * \return integer number of values left on te stack.
+ * -------------------------------------------------------------------------*/
+static int lxt_lp__gc( lua_State *luaVM )
+{
+	struct xt_lp    *lp = xt_lp_check_ud( luaVM, 1 );
+	//struct xt_lp_fd *f;
+	struct xt_lp_tm *t;
+	size_t           i;       ///< the iterator for all fields
+
+	while (NULL != lp->tm_head)
+	{
+		t = lp->tm_head;
+		luaL_unref( luaVM, LUA_REGISTRYINDEX, t->fR ); // remove func/arg table from registry
+		lp->tm_head = t->nxt;
+		free( t );
+	}
+	for (i=0; i < lp->fd_sz; i++)
+	{
+		if (NULL != lp->fd_set[ i ])
+		{
+			free( lp->fd_set[ i ] );
+		}
+	}
+	return 0;
 }
 
 
@@ -252,6 +302,8 @@ int luaopen_xt_lp( lua_State *luaVM )
 	lua_setfield( luaVM, -2, "__index" );
 	lua_pushcfunction( luaVM, lxt_lp__tostring );
 	lua_setfield( luaVM, -2, "__tostring" );
+	lua_pushcfunction( luaVM, lxt_lp__gc );
+	lua_setfield( luaVM, -2, "__gc" );
 	lua_pop( luaVM, 1 );        // remove metatable from stack
 
 	// Push the class onto the stack

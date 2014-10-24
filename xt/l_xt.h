@@ -9,6 +9,8 @@
 
 #ifdef _WIN32
 #include <Windows.h>
+#else
+#define _POSIX_C_SOURCE 1
 #endif
 
 #include <sys/select.h>
