@@ -105,6 +105,17 @@ static int lxt_lp_addhandle( lua_State *luaVM )
 		return xt_push_error( luaVM, "Argument to addHandle must be file or socket" );
 
 	lp->fd_set[ fd ] = (struct xt_lp_fd *) malloc( sizeof( struct xt_lp_tm ) );
+	if (lua_toboolean( luaVM, 3 ))
+	{
+		lp->fd_set[ fd ]->t = XT_LP_READ;
+		FD_SET( fd, &lp->rfds );
+	}
+	else
+	{
+		lp->fd_set[ fd ]->t = XT_LP_WRIT;
+		FD_SET( fd, &lp->wfds );
+	}
+	lp->mxfd = (fd > lp->mxfd) ? fd : lp->mxfd;
 
 	lua_createtable( luaVM, n-4, 0 );  // create function/parameter table
 	lua_insert( luaVM, 4 );
@@ -181,9 +192,9 @@ static int lxt_lp_run( lua_State *luaVM )
 	int              i,n,r;
 	struct xt_lp    *lp = xt_lp_check_ud( luaVM, 1 );
 	struct xt_lp_tm *te;
-	//struct xt_lp_tm *tr;  ///< Time event runner for Linked List iteration
+	lp->run=1;
 
-	while(1)
+	while (lp->run)
 	{
 		if (NULL != lp->tm_head)
 		{
@@ -192,15 +203,41 @@ static int lxt_lp_run( lua_State *luaVM )
 			lp->tm_head = lp->tm_head->nxt;
 		}
 
-		r = select( 0, 0, 0, 0, &te->tv );
+		memcpy( &lp->rfds_w, &lp->rfds, sizeof( fd_set ) );
+		memcpy( &lp->wfds_w, &lp->wfds, sizeof( fd_set ) );
 
-		lua_rawgeti( luaVM, LUA_REGISTRYINDEX, te->fR );
-		n = lua_rawlen( luaVM, 2 );
-		for (i=0; i<n; i++)
-			lua_rawgeti( luaVM, 2, i+1 );
-		lua_remove( luaVM, 2 );             // remove the table
-		lua_call( luaVM, n-1, LUA_MULTRET );
-		// clean up
+		r = select( lp->mxfd, &lp->rfds_w, &lp->wfds_w, NULL, &te->tv );
+		printf("%d\n", r);
+
+		if (0==r) // deal with timer
+		{
+			// unpack and execute func/parm table
+			lua_rawgeti( luaVM, LUA_REGISTRYINDEX, te->fR );
+			n = lua_rawlen( luaVM, 2 );
+			for (i=0; i<n; i++)
+				lua_rawgeti( luaVM, 2, i+1 );
+			lua_remove( luaVM, 2 );             // remove the table
+			lua_call( luaVM, n-1, LUA_MULTRET );
+		}
+		else
+		{
+			for( i=0; r>0 && i < lp->mxfd; i++ )
+			{
+				if (NULL==lp->fd_set[ i ])
+					continue;
+				else
+				{
+					r--;
+					lua_rawgeti( luaVM, LUA_REGISTRYINDEX, lp->fd_set[ i ]->fR );
+					n = lua_rawlen( luaVM, 2 );
+					for (i=0; i<n; i++)
+						lua_rawgeti( luaVM, 2, i+1 );
+					lua_remove( luaVM, 2 );             // remove the table
+					lua_call( luaVM, n-1, LUA_MULTRET );
+				}
+			}
+		}
+
 	}
 
 	return 0;

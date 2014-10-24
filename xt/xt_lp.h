@@ -31,8 +31,9 @@ struct xt_lp {
 	fd_set            rfds;
 	fd_set            wfds;
 	fd_set            rfds_w;   ///< 
-	fd_set            wfds_w;   ///< 
-	int               mxfd;     ///< max fd 
+	fd_set            wfds_w;   ///<
+	int               run;      ///< boolean indicator to start/stop the loop
+	int               mxfd;     ///< max fd
 	size_t            fd_sz;    ///< how many fd to handle
 	struct xt_lp_fd **fd_set;   ///< array with pointers to fd_events indexed by fd
 	struct xt_lp_tm  *tm_head;
