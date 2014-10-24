@@ -124,14 +124,13 @@ static int lxt_lp_addtimer( lua_State *luaVM )
 	te = (struct xt_lp_tm *) malloc( sizeof( struct xt_lp_tm ) );
 	te->tv = *tv;
 	te->it = (r) ? tv : NULL;
+	te->t  = (r) ? XT_LP_MULT : XT_LP_ONCE;
 	te->id = ++lp->mxfd;
-	//Stack: lp,tv,rp,func,...,table
 	lua_createtable( luaVM, n-4, 0 );  // create function/parameter table
 	lua_insert( luaVM, 4 );
+	//Stack: lp,tv,rp,TABLE,func,...
 	while (n > 4)
-	{
 		lua_rawseti( luaVM, 4, (n--)-4 );   // add arguments and function
-	}
 	te->fR = luaL_ref( luaVM, LUA_REGISTRYINDEX );      // pop the function/parameter table
 	// insert into ordered linked list of time events
 	if (NULL == lp->tm_head)
@@ -161,7 +160,7 @@ static int lxt_lp_addtimer( lua_State *luaVM )
  * --------------------------------------------------------------------------*/
 static int lxt_lp_run( lua_State *luaVM )
 {
-	int              i,n;
+	int              i,n,r;
 	struct xt_lp    *lp = xt_lp_check_ud( luaVM, 1 );
 	struct xt_lp_tm *te;
 	struct xt_lp_tm *tr;  ///< Time event runner for Linked List iteration
@@ -174,22 +173,16 @@ static int lxt_lp_run( lua_State *luaVM )
 			//printf("%d   %d  \n", te->id, te->fR);
 			lp->tm_head = lp->tm_head->nxt;
 		}
-		select( 0, 0, 0, 0, &te->tv );
-		lua_rawgeti( luaVM, LUA_REGISTRYINDEX, te->fR);
-		n = lua_rawlen( luaVM, 2 );
-		stackDump(luaVM);
-		printf("%d\n", n);
-		for (i=0; i<n; i++)
-		{
-			printf("%d  %d\n", n, i);
-			lua_rawgeti( luaVM, 2, i+1 );
-		}
-		stackDump(luaVM);
-		lua_remove( luaVM, 2);
-		lua_call( luaVM, n-1, LUA_MULTRET );
-		stackDump(luaVM);
-		lua_pop( luaVM, 1 );  // pop the table
 
+		r = select( 0, 0, 0, 0, &te->tv );
+
+		lua_rawgeti( luaVM, LUA_REGISTRYINDEX, te->fR );
+		n = lua_rawlen( luaVM, 2 );
+		for (i=0; i<n; i++)
+			lua_rawgeti( luaVM, 2, i+1 );
+		lua_remove( luaVM, 2 );             // remove the table
+		lua_call( luaVM, n-1, LUA_MULTRET );
+		// clean up
 	}
 
 	return 0;
