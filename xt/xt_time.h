@@ -9,3 +9,4 @@ void     xt_time_add  ( struct timeval *tA, struct timeval *tB, struct timeval *
 void     xt_time_sub  ( struct timeval *tA, struct timeval *tB, struct timeval *tX );
 void     xt_time_since( struct timeval *tA );
 long     xt_time_getms( struct timeval *tA );
+int      xt_time_cmp (struct timeval *tA, struct timeval *tB);

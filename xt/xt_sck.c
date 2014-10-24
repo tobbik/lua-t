@@ -38,6 +38,7 @@ static int lxt_sck__Call( lua_State *luaVM )
 	return lxt_sck_New( luaVM );
 }
 
+
 /** -------------------------------------------------------------------------
  * \brief   create a socket and return it.
  * \param   luaVM  The lua state.
@@ -46,7 +47,7 @@ static int lxt_sck__Call( lua_State *luaVM )
  * \lreturn socket Lua UserData wrapped socket.
  * \return  The number of results to be passed back to the calling Lua script.
  *-------------------------------------------------------------------------*/
-static int lxt_sck__New( lua_State *luaVM )
+int lxt_sck_New( lua_State *luaVM )
 {
 	struct xt_sck   __attribute__ ((unused)) *sck;
 
@@ -519,7 +520,7 @@ static const luaL_Reg xt_sck_m [] =
  */
 static const luaL_Reg xt_sck_cf [] =
 {
-	{"new",       lxt_sck__New},
+	{"new",       lxt_sck_New},
 	{"bind",      lxt_sck_bind},
 	{"connect",   lxt_sck_connect},
 	{NULL,        NULL}

@@ -12,18 +12,16 @@ enum xt_lp_t {
 struct xt_lp_fd {
 	enum xt_lp_t    t;
 	int             fd;    ///< descriptor
-	int           (*r_proc) (lua_State *luaVM);
-	int           (*w_proc) (lua_State *luaVM);
-	int             aR;    ///< argument reference in LUA_REGISTRYINDEX
+	int             fR;    ///< function reference in LUA_REGISTRYINDEX
 };
 
 
 struct xt_lp_tm {
 	enum xt_lp_t        t;
+	int                 id;
 	struct timeval      tv;    ///< time to elapse until fire
-	struct timeval      it;    ///< time interval between fire
-	int               (*t_proc) (lua_State *luaVM);
-	int                 aR;    ///< argument reference in LUA_REGISTRYINDEX
+	struct timeval     *it;    ///< time interval between fire
+	int                 fR;    ///< function reference in LUA_REGISTRYINDEX
 	struct xt_lp_tm    *nxt;   ///< next pointer for linked list
 };
 

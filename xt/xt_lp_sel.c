@@ -30,8 +30,7 @@ static int lxt_lp__Call( lua_State *luaVM )
  * --------------------------------------------------------------------------*/
 int lxt_lp_New( lua_State *luaVM )
 {
-	struct xt_lp    *lp;
-	lp = xt_lp_create_ud( luaVM );
+	struct xt_lp  __attribute__ ((unused))  *lp = xt_lp_create_ud( luaVM );
 	return 1;
 }
 
@@ -46,8 +45,10 @@ struct xt_lp *xt_lp_create_ud( lua_State *luaVM )
 	struct xt_lp    *lp;
 
 	lp = (struct xt_lp *) lua_newuserdata( luaVM, sizeof( struct xt_lp ) );
-	lp->mx_sz = 1024;
-	lp->mxfd  = -1;
+	lp->mx_sz   = 1024;
+	lp->mxfd    = 0;
+	lp->tm_head = NULL;
+	lp->fd_head = NULL;
 	FD_ZERO( &lp->rfds );
 	FD_ZERO( &lp->wfds );
 	luaL_getmetatable( luaVM, "xt.Loop" );
@@ -70,22 +71,21 @@ struct xt_lp *xt_lp_check_ud( lua_State *luaVM, int pos )
 }
 
 
-
 /**--------------------------------------------------------------------------
- * Add an event handler to the xt.Loop.
+ * Add an File/Socket event handler to the xt.Loop.
  * \param   luaVM  The lua state.
  * \lparam  userdata xt.Loop.
- * \lparam  userdata timeval or xt_hndl.
+ * \lparam  userdata handle.
+ * \lparam  bool     shall this be treated as a reader?
  * \lparam  function to be executed when event handler fires.
- * \lparam  int    time spam in milliseconds, if omitted time since epoch
- * \lreturn struct timeval userdata.
- * \return  The number of results to be passed back to the calling Lua script.
+ * \lparam  ...    parameters to function when executed.
+ * \return  #stack items returned by function call.
  * --------------------------------------------------------------------------*/
-int lxt_lp_addhandle( lua_State *luaVM )
+static int lxt_lp_addhandle( lua_State *luaVM )
 {
 	luaL_Stream    *lS;
 	struct xt_sck  *sc;
-	struct xt_lp   *lp = xt_lp_check_ud( luaVM, 1);
+//	struct xt_lp   *lp = xt_lp_check_ud( luaVM, 1);
 
 
 	lS = (luaL_Stream *) luaL_testudata( luaVM, 2, LUA_FILEHANDLE );
@@ -95,32 +95,105 @@ int lxt_lp_addhandle( lua_State *luaVM )
 
 
 	sc = (struct xt_sck *) luaL_testudata( luaVM, 2, "xt.Socket" );
-	// if (NULL != sc)
+// if (NULL != sc)
 	return 0;
 }
 
 
 /**--------------------------------------------------------------------------
- * Add an event handler to the xt.Loop.
+ * Add an Timer event handler to the xt.Loop.
  * \param   luaVM  The lua state.
- * \lparam  userdata xt.Loop.
- * \lparam  userdata timeval or xt_hndl.
- * \lparam  function to be executed when event handler fires.
- * \lparam  int    time spam in milliseconds, if omitted time since epoch
- * \lreturn struct timeval userdata.
- * \return  The number of results to be passed back to the calling Lua script.
+ * \lparam  userdata xt.Loop.                                    // 1
+ * \lparam  userdata timeval.                                    // 2
+ * \lparam  bool     shall this be treated as an interval?       // 3
+ * \lparam  function to be executed when event handler fires.    // 4
+ * \lparam  ...    parameters to function when executed.
+ * \return  #stack items returned by function call.
  * --------------------------------------------------------------------------*/
-int lxt_lp_addtimer( lua_State *luaVM )
+static int lxt_lp_addtimer( lua_State *luaVM )
 {
-	
-	struct xt_lp   *lp = xt_lp_check_ud( luaVM, 1 );
-	struct timeval *tv = xt_time_check_ud( luaVM, 2 );
-	int    repeat      = lua_toboolean( luaVM, 3 );
+	struct xt_lp    *lp = xt_lp_check_ud( luaVM, 1 );
+	struct timeval  *tv = xt_time_check_ud( luaVM, 2 );
+	int              r  = lua_toboolean( luaVM, 3 );
+	int              n  = lua_gettop( luaVM ) + 1;    ///< iterator for arguments
+	struct xt_lp_tm *te;
+	struct xt_lp_tm *tr;  ///< Time event runner for Linked List iteration
 
+	luaL_checktype( luaVM, 4, LUA_TFUNCTION );
+	// Build up the timer element
+	te = (struct xt_lp_tm *) malloc( sizeof( struct xt_lp_tm ) );
+	te->tv = *tv;
+	te->it = (r) ? tv : NULL;
+	te->id = ++lp->mxfd;
+	//Stack: lp,tv,rp,func,...,table
+	lua_createtable( luaVM, n-4, 0 );  // create function/parameter table
+	lua_insert( luaVM, 4 );
+	while (n > 4)
+	{
+		lua_rawseti( luaVM, 4, (n--)-4 );   // add arguments and function
+	}
+	te->fR = luaL_ref( luaVM, LUA_REGISTRYINDEX );      // pop the function/parameter table
+	// insert into ordered linked list of time events
+	if (NULL == lp->tm_head)
+		lp->tm_head = te;
+	else
+	{
+		tr = lp->tm_head;
+		while (NULL != tr->nxt && xt_time_cmp( &tr->tv, &te->tv ))
+			tr = tr->nxt;
+		te->nxt = tr->nxt;
+		tr->nxt = te;
+	}
+
+	return 1;
+}
+
+
+/**--------------------------------------------------------------------------
+ * Set up a select call for all events in the xt.Loop
+ * \param   luaVM  The lua state.
+ * \lparam  userdata xt.Loop.                                    // 1
+ * \lparam  userdata timeval.                                    // 2
+ * \lparam  bool     shall this be treated as an interval?       // 3
+ * \lparam  function to be executed when event handler fires.    // 4
+ * \lparam  ...    parameters to function when executed.
+ * \return  #stack items returned by function call.
+ * --------------------------------------------------------------------------*/
+static int lxt_lp_run( lua_State *luaVM )
+{
+	int              i,n;
+	struct xt_lp    *lp = xt_lp_check_ud( luaVM, 1 );
+	struct xt_lp_tm *te;
+	struct xt_lp_tm *tr;  ///< Time event runner for Linked List iteration
+
+	while(1)
+	{
+		if (NULL != lp->tm_head)
+		{
+			te = lp->tm_head;
+			//printf("%d   %d  \n", te->id, te->fR);
+			lp->tm_head = lp->tm_head->nxt;
+		}
+		select( 0, 0, 0, 0, &te->tv );
+		lua_rawgeti( luaVM, LUA_REGISTRYINDEX, te->fR);
+		n = lua_rawlen( luaVM, 2 );
+		stackDump(luaVM);
+		printf("%d\n", n);
+		for (i=0; i<n; i++)
+		{
+			printf("%d  %d\n", n, i);
+			lua_rawgeti( luaVM, 2, i+1 );
+		}
+		stackDump(luaVM);
+		lua_remove( luaVM, 2);
+		lua_call( luaVM, n-1, LUA_MULTRET );
+		stackDump(luaVM);
+		lua_pop( luaVM, 1 );  // pop the table
+
+	}
 
 	return 0;
 }
-
 
 /**--------------------------------------------------------------------------
  * Prints out the Loop.
@@ -165,6 +238,7 @@ static const struct luaL_Reg xt_lp_m [] =
 {
 	{"addTimer",       lxt_lp_addtimer},
 	{"addHandle",      lxt_lp_addhandle},
+	{"run",            lxt_lp_run},
 	{NULL,   NULL}
 };
 
