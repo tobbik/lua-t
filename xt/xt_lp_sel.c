@@ -107,6 +107,7 @@ static int lxt_lp_addhandle( lua_State *luaVM )
 	lp->fd_set[ fd ] = (struct xt_lp_fd *) malloc( sizeof( struct xt_lp_tm ) );
 	if (lua_toboolean( luaVM, 3 ))
 	{
+		printf("%d added to readers\n", fd);
 		lp->fd_set[ fd ]->t = XT_LP_READ;
 		FD_SET( fd, &lp->rfds );
 	}
@@ -192,6 +193,7 @@ static int lxt_lp_run( lua_State *luaVM )
 	int              i,n,r;
 	struct xt_lp    *lp = xt_lp_check_ud( luaVM, 1 );
 	struct xt_lp_tm *te;
+	struct timeval  *tv = NULL;
 	lp->run=1;
 
 	while (lp->run)
@@ -201,12 +203,14 @@ static int lxt_lp_run( lua_State *luaVM )
 			te = lp->tm_head;
 			//printf("%d   %d  \n", te->id, te->fR);
 			lp->tm_head = lp->tm_head->nxt;
+			tv = &te->tv;
 		}
+
 
 		memcpy( &lp->rfds_w, &lp->rfds, sizeof( fd_set ) );
 		memcpy( &lp->wfds_w, &lp->wfds, sizeof( fd_set ) );
 
-		r = select( lp->mxfd, &lp->rfds_w, &lp->wfds_w, NULL, &te->tv );
+		r = select( lp->mxfd, &lp->rfds_w, &lp->wfds_w, NULL, tv );
 		printf("%d\n", r);
 
 		if (0==r) // deal with timer
