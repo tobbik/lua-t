@@ -49,7 +49,7 @@ struct xt_lp *xt_lp_create_ud( lua_State *luaVM, size_t sz )
 	lp->fd_sz   = sz;
 	lp->mxfd    = 0;
 	lp->tm_head = NULL;
-	lp->fd_set  = malloc( lp->fd_sz * sizeof( struct xt_lp_f * ) );
+	lp->fd_set  = (struct xt_lp_fd **) malloc( lp->fd_sz * sizeof( struct xt_lp_fd * ) );
 	FD_ZERO( &lp->rfds );
 	FD_ZERO( &lp->wfds );
 	FD_ZERO( &lp->rfds_w );
@@ -126,7 +126,6 @@ static int lxt_lp_addhandle( lua_State *luaVM )
 	lp->fd_set[ fd ]->fR = luaL_ref( luaVM, LUA_REGISTRYINDEX );      // pop the function/parameter table
 
 	return  0;
-
 }
 
 
@@ -206,11 +205,11 @@ static int lxt_lp_run( lua_State *luaVM )
 			tv = &te->tv;
 		}
 
-
 		memcpy( &lp->rfds_w, &lp->rfds, sizeof( fd_set ) );
 		memcpy( &lp->wfds_w, &lp->wfds, sizeof( fd_set ) );
 
-		r = select( lp->mxfd, &lp->rfds_w, &lp->wfds_w, NULL, tv );
+		printf("max  %d\n", lp->mxfd);
+		r = select( lp->mxfd+1, &lp->rfds_w, &lp->wfds_w, NULL, tv );
 		printf("%d\n", r);
 
 		if (0==r) // deal with timer
