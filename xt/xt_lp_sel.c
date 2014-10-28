@@ -107,7 +107,6 @@ static int lxt_lp_addhandle( lua_State *luaVM )
 	lp->fd_set[ fd ] = (struct xt_lp_fd *) malloc( sizeof( struct xt_lp_tm ) );
 	if (lua_toboolean( luaVM, 3 ))
 	{
-		printf("%d added to readers\n", fd);
 		lp->fd_set[ fd ]->t = XT_LP_READ;
 		FD_SET( fd, &lp->rfds );
 	}
@@ -189,7 +188,7 @@ static int lxt_lp_addtimer( lua_State *luaVM )
  * --------------------------------------------------------------------------*/
 static int lxt_lp_run( lua_State *luaVM )
 {
-	int              i,n,r;
+	int              i,j,n,r;
 	struct xt_lp    *lp = xt_lp_check_ud( luaVM, 1 );
 	struct xt_lp_tm *te;
 	struct timeval  *tv = NULL;
@@ -208,33 +207,34 @@ static int lxt_lp_run( lua_State *luaVM )
 		memcpy( &lp->rfds_w, &lp->rfds, sizeof( fd_set ) );
 		memcpy( &lp->wfds_w, &lp->wfds, sizeof( fd_set ) );
 
-		printf("max  %d\n", lp->mxfd);
 		r = select( lp->mxfd+1, &lp->rfds_w, &lp->wfds_w, NULL, tv );
-		printf("%d\n", r);
 
 		if (0==r) // deal with timer
 		{
-			// unpack and execute func/parm table
+			// get, unpack and execute func/parm table
 			lua_rawgeti( luaVM, LUA_REGISTRYINDEX, te->fR );
-			n = lua_rawlen( luaVM, 2 );
-			for (i=0; i<n; i++)
-				lua_rawgeti( luaVM, 2, i+1 );
+			n = lua_rawlen( luaVM, -1 );
+			for (j=0; j<n; j++)
+				lua_rawgeti( luaVM, 2, j+1 );
 			lua_remove( luaVM, 2 );             // remove the table
 			lua_call( luaVM, n-1, LUA_MULTRET );
 		}
 		else
 		{
-			for( i=0; r>0 && i < lp->mxfd; i++ )
+			for( i=0; r>0 && i <= lp->mxfd; i++ )
 			{
 				if (NULL==lp->fd_set[ i ])
+				{
 					continue;
-				else
+				}
+				if (FD_ISSET( i, &lp->rfds_w ) || FD_ISSET( i, &lp->wfds_w ))
 				{
 					r--;
+					// get, unpack and execute func/parm table
 					lua_rawgeti( luaVM, LUA_REGISTRYINDEX, lp->fd_set[ i ]->fR );
-					n = lua_rawlen( luaVM, 2 );
-					for (i=0; i<n; i++)
-						lua_rawgeti( luaVM, 2, i+1 );
+					n = lua_rawlen( luaVM, -1 );
+					for (j=0; j<n; j++)
+						lua_rawgeti( luaVM, 2, j+1 );
 					lua_remove( luaVM, 2 );             // remove the table
 					lua_call( luaVM, n-1, LUA_MULTRET );
 				}
