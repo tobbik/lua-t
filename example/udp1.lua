@@ -7,7 +7,6 @@ print(s,ip)
 
 -- this select loop makes no sense, but prooves that select is in fact working
 -- as expected
---[[
 while true do
 	res = xt.select({s},{})
 	print(#res, s)
@@ -16,11 +15,12 @@ while true do
 		break
 	else
 		print(msg, len, ip)
+		if msg:sub(1,4)=='exit' then
+			break
+		end
 	end
 	--msg, len = tcpsock:recv()
 	--io.write(msg)
 end
---]]
-msg, len, ip = s:recvFrom()
 s:close()
 

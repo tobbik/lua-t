@@ -44,11 +44,11 @@ int main(int argc, char** argv)
         printf("\nEnter data to send(Type exit and press enter to exit) : ");
         scanf("%[^\n]",buf);
         getchar();
+        if (sendto(sockfd, buf, BUFLEN, 0, (struct sockaddr*)&serv_addr, slen)==-1)
+            err("sendto()");
         if(strcmp(buf,"exit") == 0)
           exit(0);
  
-        if (sendto(sockfd, buf, BUFLEN, 0, (struct sockaddr*)&serv_addr, slen)==-1)
-            err("sendto()");
     }
  
     close(sockfd);

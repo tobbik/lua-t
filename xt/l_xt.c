@@ -147,7 +147,7 @@ void make_fdset (lua_State *luaVM, int stack_pos, fd_set *collection, int *max_h
 
 	// adding fh to FD_SETs
 	lua_pushnil(luaVM);
-	while (lua_next(luaVM, 1))
+	while (lua_next(luaVM, stack_pos))
 	{
 		hndl = (struct xt_sck *) lua_touserdata(luaVM, -1);
 		FD_SET( hndl->fd, collection );
