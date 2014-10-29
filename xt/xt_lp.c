@@ -37,6 +37,7 @@ static inline void xt_lp_slottimer( struct xt_lp *lp, struct xt_lp_tm *te )
 	}
 }
 
+#if PRINT_DEBUGS == 1
 /**--------------------------------------------------------------------------
  * DebuG printfor loops timer event list.
  * \param   xt_lp    Loop Struct.
@@ -50,13 +51,14 @@ static inline void xt_lp_printTimers( struct xt_lp *lp )
 	printf( "LOOP TIMER LIST:\n" );
 	while (NULL != tr)
 	{
-		printf("\t%d\t{%ld:%ld}\t{%ld:%ld}\t%p\n", ++i, 
+		printf("\t%d\t{%2ld:%6ld}\t{%2ld:%6ld}\t%p\n", ++i,
 			tr->tw.tv_sec,  tr->tw.tv_usec,
 			tr->to->tv_sec, tr->to->tv_usec,
 			tr->to);
 		tr = tr->nxt;
 	}
 }
+#endif
 
 
 
@@ -100,7 +102,7 @@ static inline int xt_lp_getfunc( lua_State *luaVM, int refPos )
 
 
 /**--------------------------------------------------------------------------
- * Executes a timer function and reorgenizes the timer linked list
+ * Executes a timer function and reorganizes the timer linked list
  * \param   luaVM         The lua state.
  * \param   struct xp_lp  Loop struct.
  * \lparam  userdata      xt.Loop.
@@ -113,13 +115,29 @@ void xt_lp_executetimer( lua_State *luaVM, struct xt_lp *lp )
 	struct xt_lp_tm *te = lp->tm_head;
 	lp->tm_head = lp->tm_head->nxt;
 	lua_call( luaVM, xt_lp_getfunc( luaVM, te->fR ), 1 );
-	tv = (struct timeval *) luaL_testudata( luaVM, -1, "xt.Timer" );
+	tv = (struct timeval *) luaL_testudata( luaVM, -1, "xt.Time" );
 	// reorganize linked timer list
 	if (NULL == tv)
 		free (te);
 	else
 	{
+
+#if PRINT_DEBUGS == 1
+	printf( "tv{%2ld:%6ld}%p       tw{%2ld:%6ld}      to{%2ld:%6ld}%p\n",
+			tv->tv_sec,     tv->tv_usec, tv,
+			te->tw.tv_sec,  te->tw.tv_usec,
+			te->to->tv_sec, te->to->tv_usec, te->to
+	);
+#endif
+		te->to =  tv;
 		te->tw = *tv;
+#if PRINT_DEBUGS == 1
+	printf( "tv{%2ld:%6ld}%p       tw{%2ld:%6ld}      to{%2ld:%6ld}%p\n\n",
+			tv->tv_sec,     tv->tv_usec, tv,
+			te->tw.tv_sec,  te->tw.tv_usec,
+			te->to->tv_sec, te->to->tv_usec, te->to
+	);
+#endif
 		xt_lp_slottimer( lp, te );
 	}
 	lua_pop( luaVM, 2 );   // pop the one value that lua_call allows to be
@@ -283,8 +301,6 @@ static int lxt_lp_addtimer( lua_State *luaVM )
 	// insert into ordered linked list of time events
 	xt_lp_slottimer( lp, te );
 
-	xt_lp_printTimers( lp );
-
 	return 1;
 }
 
@@ -306,7 +322,9 @@ static int lxt_lp_run( lua_State *luaVM )
 
 	while (lp->run)
 	{
+#if PRINT_DEBUGS == 1
 		xt_lp_printTimers( lp );
+#endif
 		xt_lp_poll_impl( luaVM, lp );
 		// if there are no events left in the loop stop processing
 		lp->run =  (NULL==lp->tm_head && lp->mxfd<1) ? 0 : lp->run;
