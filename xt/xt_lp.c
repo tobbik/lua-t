@@ -24,7 +24,7 @@
  * --------------------------------------------------------------------------*/
 static inline void xt_lp_slottimer( struct xt_lp *lp, struct xt_lp_tm *te )
 {
-	struct xt_lp_tm *tr = lp->tm_head;
+	struct xt_lp_tm *tr;
 	if (NULL == lp->tm_head)
 		lp->tm_head = te;
 	else
@@ -36,6 +36,28 @@ static inline void xt_lp_slottimer( struct xt_lp *lp, struct xt_lp_tm *te )
 		tr->nxt = te;
 	}
 }
+
+/**--------------------------------------------------------------------------
+ * DebuG printfor loops timer event list.
+ * \param   xt_lp    Loop Struct.
+ * \lreturn xt_lp_tm Timer event struct.
+ * \return  void.
+ * --------------------------------------------------------------------------*/
+static inline void xt_lp_printTimers( struct xt_lp *lp )
+{
+	struct xt_lp_tm *tr = lp->tm_head;
+	int              i=0;
+	printf( "LOOP TIMER LIST:\n" );
+	while (NULL != tr)
+	{
+		printf("\t%d\t{%ld:%ld}\t{%ld:%ld}\t%p\n", ++i, 
+			tr->tw.tv_sec,  tr->tw.tv_usec,
+			tr->to->tv_sec, tr->to->tv_usec,
+			tr->to);
+		tr = tr->nxt;
+	}
+}
+
 
 
 /**--------------------------------------------------------------------------
@@ -261,6 +283,8 @@ static int lxt_lp_addtimer( lua_State *luaVM )
 	// insert into ordered linked list of time events
 	xt_lp_slottimer( lp, te );
 
+	xt_lp_printTimers( lp );
+
 	return 1;
 }
 
@@ -282,6 +306,7 @@ static int lxt_lp_run( lua_State *luaVM )
 
 	while (lp->run)
 	{
+		xt_lp_printTimers( lp );
 		xt_lp_poll_impl( luaVM, lp );
 		// if there are no events left in the loop stop processing
 		lp->run =  (NULL==lp->tm_head && lp->mxfd<1) ? 0 : lp->run;

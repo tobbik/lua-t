@@ -21,8 +21,8 @@ function r(s)
 end
 
 l   = xt.Loop( 40 )
-tm1 = xt.Time( 2000 )
-tm2 = xt.Time( 2000 )
+tm1 = xt.Time( 1500 )
+tm2 = xt.Time( 2700 )
 -- s  = xt.Socket.bind( 'UDP', '192.168.0.219', 8888 )
 -- l:addHandle( s, true, r, s )
 print( tm1, tm2 )
