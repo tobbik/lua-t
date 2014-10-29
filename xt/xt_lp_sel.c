@@ -221,6 +221,7 @@ static int lxt_lp_run( lua_State *luaVM )
 	struct timeval  *tv;
 	lp->run = 1;
 
+	stackDump(luaVM);
 	while (lp->run)
 	{
 		tv  = (NULL != lp->tm_head) ? &lp->tm_head->tw : NULL;
@@ -233,6 +234,10 @@ static int lxt_lp_run( lua_State *luaVM )
 		if (0==r) // deal with timer
 		{
 			// get, unpack and execute func/parm table
+			stackDump(luaVM);
+			te = lp->tm_head;
+			lp->tm_head = lp->tm_head->nxt;
+			printf("Reference: %d \n", te->fR);
 			lua_rawgeti( luaVM, LUA_REGISTRYINDEX, te->fR );
 			n = lua_rawlen( luaVM, -1 );
 			for (j=0; j<n; j++)
@@ -241,8 +246,6 @@ static int lxt_lp_run( lua_State *luaVM )
 			lua_call( luaVM, n-1, 1 );
 			tv = (struct timeval *) luaL_testudata( luaVM, -1, "xt.Timer" );         
 			// reorganize linked timer list
-			te = lp->tm_head;
-			lp->tm_head = lp->tm_head->nxt;
 			if (NULL == tv)
 				free (te);
 			else
