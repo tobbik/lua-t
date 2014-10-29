@@ -1,7 +1,13 @@
+/* vim: ts=3 sw=3 sts=3 tw=80 sta noet list
+*/
 /**
- * \file   xt_enc.c
- *         an umbrella for en/decoding routines
+ * \file      xt_enc.c
+ * \brief     Umbrella for various En/Decoding routines
+ *            This covers encoding/Encryption
+ * \author    tkieslich
+ * \copyright See Copyright notice at the end of xt.h
  */
+
 #include <stdio.h>
 #include <string.h>     // strerror
 #include <errno.h>      // errno
@@ -9,7 +15,7 @@
 #include <crypt.h>      // crypt()
 #include <time.h>       // time()
 
-#include "l_xt.h"
+#include "xt.h"
 #include "xt_enc.h"
 
 

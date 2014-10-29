@@ -1,12 +1,18 @@
+/* vim: ts=3 sw=3 sts=3 tw=80 sta noet list
+*/
 /**
- * \file   library.c
- *         a couple of helper files used throughout all library files
+ * \file      xt.c
+ * \brief     Global wrapper and packer for xt library.
+ *            Exports sub libraries. Defines global helper functions.
+ * \author    tkieslich
+ * \copyright See Copyright notice at the end of xt.h
  */
+
 #include <stdio.h>
 #include <string.h>     // strerror
 #include <errno.h>      // errno
 
-#include "l_xt.h"
+#include "xt.h"
 #include "xt_sck.h"
 
 

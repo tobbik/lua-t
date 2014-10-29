@@ -1,16 +1,21 @@
+/* vim: ts=3 sw=3 sts=3 tw=80 sta noet list
+*/
 /**
- * \file   xt_enc_crc.c
- *         crc checksum for algorithms
- *         CRC-16
- *         CRC-CCIT kermit
- *         CRC-CCIT
- *         CRC-32
+ * \file      xt_enc_crc.c
+ * \brief     CRC checksum methods for the following types
+ *            CRC-16
+ *            CRC-CCIT kermit
+ *            CRC-CCIT
+ *            CRC-32
+ * \author    tkieslich
+ * \copyright See Copyright notice at the end of xt.h
  */
+
 #include <stdio.h>
 #include <stdint.h>
 #include <arpa/inet.h>    // hton*()
 
-#include "l_xt.h"
+#include "xt.h"
 #include "xt_enc.h"
 #include "xt_buf.h"
 

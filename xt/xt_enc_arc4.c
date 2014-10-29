@@ -1,11 +1,16 @@
+/* vim: ts=3 sw=3 sts=3 tw=80 sta noet list
+*/
 /**
- * \file   xt_enc_arc4.c
- *         a couple of helper files used throughout all library files
+ * \file      xt_enc_arc4.c
+ * \brief     Arc4 Encryption Decryption algorithm
+ * \author    tkieslich
+ * \copyright See Copyright notice at the end of xt.h
  */
+
 #include <stdio.h>
 #include <stdlib.h>      // calloc
 
-#include "l_xt.h"
+#include "xt.h"
 #include "xt_enc.h"
 
 

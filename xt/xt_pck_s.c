@@ -1,10 +1,16 @@
-/**
- * \file     create a packer Struct
- * \brief    combinators for packers to create structures
+/* vim: ts=3 sw=3 sts=3 tw=80 sta noet list
 */
+/**
+ * \file      xt_pck_s.c
+ * \brief     create a packer Struct
+ *            combinators for packers to create structures
+ * \author    tkieslich
+ * \copyright See Copyright notice at the end of xt.h
+ */
+
 #include <memory.h>               // memset
 
-#include "l_xt.h"
+#include "xt.h"
 #include "xt_buf.h"
 
 

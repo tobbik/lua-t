@@ -1,3 +1,13 @@
+/* vim: ts=3 sw=3 sts=3 tw=80 sta noet list
+*/
+/**
+ * \file      xt_lp.h
+ * \brief     OOP wrapper for an asyncronous eventloop (xt.Loop)
+ *            data types and global functions
+ * \author    tkieslich
+ * \copyright See Copyright notice at the end of xt.h
+ */
+
 #include "xt_sck.h"
 
 

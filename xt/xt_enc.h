@@ -1,6 +1,13 @@
+/* vim: ts=3 sw=3 sts=3 tw=80 sta noet list
+*/
 /**
- * \brief  struct to keep track of a Arc4 encoding
+ * \file      xt_enc.h
+ * \brief     Data Types and global functions for various En?decoders
+ * \author    tkieslich
+ * \copyright See Copyright notice at the end of xt.h
  */
+
+/// struct to keep track of a Arc4 encoding
 struct xt_enc_arc4 {
 	unsigned char  prng[256]; ///< Pseudo RNG, aka. the state
 	uint8_t        i1;        ///< current index 1
@@ -8,9 +15,7 @@ struct xt_enc_arc4 {
 };
 
 
-/**
- * \brief  struct to keep track of a CRC8 encoding
- */
+///  struct to keep track of a CRC encoding
 struct xt_enc_crc {
 	/// Encoded polynom table
 	union {
@@ -33,7 +38,6 @@ struct xt_enc_crc {
 	int              be;    ///< boolean BigEndian
 	int             (*calc)( struct xt_enc_crc *crc, const char *data, size_t len );
 };
-
 
 
 // Constructors

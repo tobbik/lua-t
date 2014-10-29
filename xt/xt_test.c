@@ -1,14 +1,20 @@
-/*
- * \file    xt_test.c
- * \brief   xt unit testing framework
- * \detail  OOP wrapper for Test cases. Unit
+/* vim: ts=3 sw=3 sts=3 tw=80 sta noet list
 */
+/**
+ * \file      xt_test.c
+ * \brief     xt unit testing framework (xt.Test)
+ *            provides xt.Text and xt.Test.Case
+ *            implemented as Lua Table
+ * \author    tkieslich
+ * \copyright See Copyright notice at the end of xt.h
+ */
+
 #include <string.h>            // strlen
 #include <strings.h>           // strncasecmp
 #include <memory.h>            // memset
 #include <stdlib.h>            // malloc
 
-#include "l_xt.h"
+#include "xt.h"
 #include "xt_time.h"
 
 

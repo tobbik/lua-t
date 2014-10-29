@@ -1,11 +1,17 @@
-/*
- * \file    xt_pck.c
- * \brief   Packers for serialization of values
- * \detail  can work stand alone or as helper for Combinators
+/* vim: ts=3 sw=3 sts=3 tw=80 sta noet list
 */
+/**
+ * \file      xt_pck.c
+ * \brief     OOP wrapper for Packer definitions
+ *            Allows for packing/unpacking numeric values to binary streams
+ *            can work stand alone or as helper for Combinators
+ * \author    tkieslich
+ * \copyright See Copyright notice at the end of xt.h
+ */
+
 #include <memory.h>               // memset
 
-#include "l_xt.h"
+#include "xt.h"
 #include "xt_buf.h"
 
 // Constructors for packer types

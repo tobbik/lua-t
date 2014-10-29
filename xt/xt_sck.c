@@ -1,6 +1,13 @@
+/* vim: ts=3 sw=3 sts=3 tw=80 sta noet list
+*/
 /**
- * \file        create network sockets
+ * \file      xt_sck.c
+ * \brief     OOP wrapper around network sockets.
+ *            TCP/UDP, read write connect bind etc
+ * \author    tkieslich
+ * \copyright See Copyright notice at the end of xt.h
  */
+
 
 #ifdef _WIN32
 #include <WinSock2.h>
@@ -18,7 +25,7 @@
 #include <sys/socket.h>
 #include <sys/select.h>
 #endif
-#include "l_xt.h"
+#include "xt.h"
 #include "xt_sck.h"
 #include "xt_buf.h"         // the ability to send and recv buffers
 

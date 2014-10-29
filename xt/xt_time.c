@@ -1,8 +1,13 @@
-/*
- * \file    xt_time.c
- * \detail  OOP wrapper for Time values. This is a thin wrapper around
- *          struct timeval
+/* vim: ts=3 sw=3 sts=3 tw=80 sta noet list
 */
+/**
+ * \file      xt_time.c
+ * \brief     OOP wrapper for time values(xt.Time)
+ *            This is a thin wrapper around struct timeval
+ * \author    tkieslich
+ * \copyright See Copyright notice at the end of xt.h
+ */
+
 
 #ifdef _WIN32
 #include <WinSock2.h>
@@ -22,7 +27,7 @@
 #include <sys/time.h>    // gettimeofday()
 #endif
 
-#include "l_xt.h"
+#include "xt.h"
 #include "xt_time.h"
 
 

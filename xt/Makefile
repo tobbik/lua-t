@@ -1,4 +1,10 @@
-# vim: ts=4 sw=4 st=4 sta tw=80 list
+# vim: ts=3 sw=3 st=3 sts=3 sta noet tw=80 list
+#
+# \file      Makefile
+# \brief     Makefile for the lua-xt library
+# \author    tkieslich
+# \copyright See Copyright notice at the end of xt.h
+
 #
 # clang can be substituted with gcc (command line args compatible)
 CC= clang
@@ -10,7 +16,7 @@ AR= ar rcu
 RANLIB= ranlib
 VER= 5.2
 
-XT_SRC=l_xt.c \
+XT_SRC=xt.c \
 	 xt_sck.c \
 	 l_xt_ip.c \
 	 xt_lp_sel.c \

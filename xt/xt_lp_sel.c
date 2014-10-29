@@ -1,8 +1,16 @@
-// Select specific implementation of Loop features
-//
-//
-//
-#include "l_xt.h"
+/* vim: ts=3 sw=3 sts=3 tw=80 sta noet list
+*/
+/**
+ * \file      xt_lp_sel.h
+ * \brief     OOP wrapper for an asyncronous eventloop (xt.Loop)
+ *            This is an implementation on top of select() system call and
+ *            shall work on a wide variety of platforms. It is supposed to be
+ *            the backup if better versions don't work
+ * \author    tkieslich
+ * \copyright See Copyright notice at the end of xt.h
+ */
+
+#include "xt.h"
 #include "xt_lp.h"
 #include "xt_time.h"
 
@@ -27,6 +35,7 @@ static void inline xt_lp_slottimer( struct xt_lp *lp, struct xt_lp_tm *te )
 		tr->nxt = te;
 	}
 }
+
 
 /**--------------------------------------------------------------------------
  * Adjust amount of time in the loops timer event list.

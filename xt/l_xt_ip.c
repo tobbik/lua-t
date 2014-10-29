@@ -1,8 +1,13 @@
-/*
- * \file    l_ip.c
- * \detail  OOP wrapper for IP/Port addresses. These is a thin wrapper around
- *          struct sockaddr
+/* vim: ts=3 sw=3 sts=3 tw=80 sta noet list
 */
+/**
+ * \file      xt_ip.c
+ * \brief     OOP wrapper for network addresses
+ *            This is a thin wrapper around struct sockaddr_in
+ * \author    tkieslich
+ * \copyright See Copyright notice at the end of xt.h
+ */
+
 
 #ifdef _WIN32
 #include <WinSock2.h>
@@ -21,7 +26,7 @@
 #include <sys/select.h>
 #endif
 
-#include "l_xt.h"
+#include "xt.h"
 #include "xt_sck.h"
 
 

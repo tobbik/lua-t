@@ -1,11 +1,20 @@
-//
-//
+/* vim: ts=3 sw=3 sts=3 tw=80 sta noet list
+*/
+/**
+ * \file      xt_buf.c
+ * \brief     OOP wrapper for a universal buffer implementation
+ *            Allows for reading writing as mutable string
+ *            can be used for socket communication
+ * \author    tkieslich
+ * \copyright See Copyright notice at the end of xt.h
+ */
+
+
 #include <memory.h>               // memset
 #include <stdlib.h>
 #include <stdio.h>
-#include <arpa/inet.h>            // htonl
 
-#include "l_xt.h"
+#include "xt.h"
 #include "xt_buf.h"
 
 

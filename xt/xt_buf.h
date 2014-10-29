@@ -1,3 +1,12 @@
+/* vim: ts=3 sw=3 sts=3 tw=80 sta noet list
+*/
+/**
+ * \file      xt_buf.h
+ * \brief     data types for buffer and packers
+ * \author    tkieslich
+ * \copyright See Copyright notice at the end of xt.h
+ */
+
 
 /// The userdata struct for xt.Buffer
 struct xt_buf {
