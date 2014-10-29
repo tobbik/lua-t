@@ -8,6 +8,44 @@
 
 
 /**--------------------------------------------------------------------------
+ * Slot in a timer event into the loops timer event list.
+ * \param   xt_lp    Loop Struct.
+ * \lreturn xt_lp_tm Timer event struct.
+ * \return  void.
+ * --------------------------------------------------------------------------*/
+static void inline xt_lp_slottimer( struct xt_lp *lp, struct xt_lp_tm *te )
+{
+	struct xt_lp_tm *tr = lp->tm_head;
+	if (NULL == lp->tm_head)
+		lp->tm_head = te;
+	else
+	{
+		tr = lp->tm_head;
+		while (NULL != tr->nxt && xt_time_cmp( &tr->tw, &te->tw ))
+			tr = tr->nxt;
+		te->nxt = tr->nxt;
+		tr->nxt = te;
+	}
+}
+
+/**--------------------------------------------------------------------------
+ * Adjust amount of time in the loops timer event list.
+ * \param   xt_lp    Loop Struct.
+ * \lreturn xt_lp_tm Timer event struct.
+ * \return  void.
+ * --------------------------------------------------------------------------*/
+static void inline xt_lp_adjusttimer( struct xt_lp *lp, struct timeval *ta )
+{
+	struct xt_lp_tm *tr = lp->tm_head;
+	while (NULL != tr)
+	{
+		xt_time_sub( &tr->tw, ta, &tr->tw );
+		tr = tr->nxt;
+	}
+}
+
+
+/**--------------------------------------------------------------------------
  * construct a xt.Loop and return it.
  * \param   luaVM  The lua state.
  * \lparam  CLASS table xt.Loop.
@@ -121,7 +159,7 @@ static int lxt_lp_addhandle( lua_State *luaVM )
 	lua_insert( luaVM, 4 );
 	//Stack: lp,tv,rp,TABLE,func,...
 	while (n > 4)
-		lua_rawseti( luaVM, 4, (n--)-4 );   // add arguments and function
+		lua_rawseti( luaVM, 4, (n--)-4 );   // add arguments and function (pops each item)
 	lp->fd_set[ fd ]->fR = luaL_ref( luaVM, LUA_REGISTRYINDEX );      // pop the function/parameter table
 
 	return  0;
@@ -142,35 +180,24 @@ static int lxt_lp_addtimer( lua_State *luaVM )
 {
 	struct xt_lp    *lp = xt_lp_check_ud( luaVM, 1 );
 	struct timeval  *tv = xt_time_check_ud( luaVM, 2 );
-	int              r  = lua_toboolean( luaVM, 3 );
 	int              n  = lua_gettop( luaVM ) + 1;    ///< iterator for arguments
 	struct xt_lp_tm *te;
-	struct xt_lp_tm *tr;  ///< Time event runner for Linked List iteration
 
-	luaL_checktype( luaVM, 4, LUA_TFUNCTION );
+	luaL_checktype( luaVM, 3, LUA_TFUNCTION );
 	// Build up the timer element
 	te = (struct xt_lp_tm *) malloc( sizeof( struct xt_lp_tm ) );
-	te->tv = *tv;
-	te->it = (r) ? tv : NULL;
-	te->t  = (r) ? XT_LP_MULT : XT_LP_ONCE;
-	te->id = ++lp->mxfd;
-	lua_createtable( luaVM, n-4, 0 );  // create function/parameter table
-	lua_insert( luaVM, 4 );
+	te->tw = *tv;
+	te->to =  tv;
+	te->t  = XT_LP_TIME;
+	//te->id = ++lp->mxfd;
+	lua_createtable( luaVM, n-3, 0 );  // create function/parameter table
+	lua_insert( luaVM, 3 );
 	//Stack: lp,tv,rp,TABLE,func,...
-	while (n > 4)
-		lua_rawseti( luaVM, 4, (n--)-4 );   // add arguments and function
-	te->fR = luaL_ref( luaVM, LUA_REGISTRYINDEX );      // pop the function/parameter table
+	while (n > 3)
+		lua_rawseti( luaVM, 3, (n--)-3 );            // add arguments and function (pops each item)
+	te->fR = luaL_ref( luaVM, LUA_REGISTRYINDEX );  // pop the function/parameter table
 	// insert into ordered linked list of time events
-	if (NULL == lp->tm_head)
-		lp->tm_head = te;
-	else
-	{
-		tr = lp->tm_head;
-		while (NULL != tr->nxt && xt_time_cmp( &tr->tv, &te->tv ))
-			tr = tr->nxt;
-		te->nxt = tr->nxt;
-		tr->nxt = te;
-	}
+	xt_lp_slottimer( lp, te );
 
 	return 1;
 }
@@ -191,19 +218,13 @@ static int lxt_lp_run( lua_State *luaVM )
 	int              i,j,n,r;
 	struct xt_lp    *lp = xt_lp_check_ud( luaVM, 1 );
 	struct xt_lp_tm *te;
-	struct timeval  *tv = NULL;
-	lp->run=1;
+	struct timeval  *tv;
+	lp->run = 1;
 
 	while (lp->run)
 	{
-		if (NULL != lp->tm_head)
-		{
-			te = lp->tm_head;
-			//printf("%d   %d  \n", te->id, te->fR);
-			lp->tm_head = lp->tm_head->nxt;
-			tv = &te->tv;
-		}
-
+		tv  = (NULL != lp->tm_head) ? &lp->tm_head->tw : NULL;
+		
 		memcpy( &lp->rfds_w, &lp->rfds, sizeof( fd_set ) );
 		memcpy( &lp->wfds_w, &lp->wfds, sizeof( fd_set ) );
 
@@ -217,16 +238,25 @@ static int lxt_lp_run( lua_State *luaVM )
 			for (j=0; j<n; j++)
 				lua_rawgeti( luaVM, 2, j+1 );
 			lua_remove( luaVM, 2 );             // remove the table
-			lua_call( luaVM, n-1, LUA_MULTRET );
+			lua_call( luaVM, n-1, 1 );
+			tv = (struct timeval *) luaL_testudata( luaVM, -1, "xt.Timer" );         
+			// reorganize linked timer list
+			te = lp->tm_head;
+			lp->tm_head = lp->tm_head->nxt;
+			if (NULL == tv)
+				free (te);
+			else
+			{
+				te->tw = *tv;
+				xt_lp_slottimer( lp, te );
+			}
 		}
 		else
 		{
 			for( i=0; r>0 && i <= lp->mxfd; i++ )
 			{
 				if (NULL==lp->fd_set[ i ])
-				{
 					continue;
-				}
 				if (FD_ISSET( i, &lp->rfds_w ) || FD_ISSET( i, &lp->wfds_w ))
 				{
 					r--;
@@ -246,6 +276,19 @@ static int lxt_lp_run( lua_State *luaVM )
 	return 0;
 }
 
+
+/**--------------------------------------------------------------------------
+ * Stop an xt.Loop.
+ * \param   luaVM  The lua state.
+ * \lparam  userdata xt.Loop.                                    // 1
+ * \return  #stack items returned by function call.
+ * --------------------------------------------------------------------------*/
+static int lxt_lp_stop( lua_State *luaVM )
+{
+	struct xt_lp    *lp = xt_lp_check_ud( luaVM, 1 );
+	lp->run = 0;
+	return 0;
+}
 
 /**--------------------------------------------------------------------------
  * Prints out the Loop.
@@ -322,6 +365,7 @@ static const struct luaL_Reg xt_lp_m [] =
 	{"addTimer",       lxt_lp_addtimer},
 	{"addHandle",      lxt_lp_addhandle},
 	{"run",            lxt_lp_run},
+	{"stop",           lxt_lp_stop},
 	{NULL,   NULL}
 };
 

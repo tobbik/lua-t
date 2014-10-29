@@ -1,5 +1,6 @@
 #!../out/bin/lua
 xt=require'xt'
+l = nil
 
 
 f = function(func, ...)
@@ -12,6 +13,7 @@ end
 function r(s)
 	local msg, len, ip_cli = s:recvFrom()
 	print(msg, len, ip_cli, "\n")
+	if msg:sub( 1, 4 ) == 'exit' then print( "go exit" ) ;l:stop() end
 end
 
 l   = xt.Loop( 40 )

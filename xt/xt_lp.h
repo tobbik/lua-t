@@ -2,10 +2,9 @@
 
 
 enum xt_lp_t {
-	XT_LP_READ,
-	XT_LP_WRIT,
-	XT_LP_ONCE,
-	XT_LP_MULT,
+	XT_LP_READ,               ///< Reader event on socket
+	XT_LP_WRIT,               ///< Reader event on socket
+	XT_LP_TIME,
 };
 
 
@@ -18,14 +17,14 @@ struct xt_lp_fd {
 
 struct xt_lp_tm {
 	enum xt_lp_t        t;
-	int                 id;
-	struct timeval      tv;    ///< time to elapse until fire
-	struct timeval     *it;    ///< time interval between fire
+	//int                 id;
+	struct timeval      tw;    ///< time to elapse until fire (timval to work with)
+	struct timeval     *to;    ///< keep reference to the original timeval
 	int                 fR;    ///< function reference in LUA_REGISTRYINDEX
 	struct xt_lp_tm    *nxt;   ///< next pointer for linked list
 };
 
-
+//#ifdef XT_LOOP_SELECT
 /// xt_lp implementation for select based loops
 struct xt_lp {
 	fd_set            rfds;
@@ -38,6 +37,7 @@ struct xt_lp {
 	struct xt_lp_tm  *tm_head;
 	struct xt_lp_fd **fd_set;   ///< array with pointers to fd_events indexed by fd
 };
+//#endif
 
 
 // xt_lp.c

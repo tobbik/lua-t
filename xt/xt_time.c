@@ -65,7 +65,7 @@ void xt_time_add (struct timeval *tA, struct timeval *tB, struct timeval *tX)
 
 
 /**--------------------------------------------------------------------------
- * \brief  substract timeval B to timeval A.
+ * \brief  substract timeval B from timeval A.
  * \param  *tA struct timeval pointer
  * \param  *tB struct timeval pointer
  * --------------------------------------------------------------------------*/
