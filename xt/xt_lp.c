@@ -121,7 +121,6 @@ void xt_lp_executetimer( lua_State *luaVM, struct xt_lp *lp )
 		free (te);
 	else
 	{
-
 #if PRINT_DEBUGS == 1
 	printf( "tv{%2ld:%6ld}%p       tw{%2ld:%6ld}      to{%2ld:%6ld}%p\n",
 			tv->tv_sec,     tv->tv_usec, tv,
@@ -129,7 +128,7 @@ void xt_lp_executetimer( lua_State *luaVM, struct xt_lp *lp )
 			te->to->tv_sec, te->to->tv_usec, te->to
 	);
 #endif
-		te->to =  tv;
+		*te->to= *tv;
 		te->tw = *tv;
 #if PRINT_DEBUGS == 1
 	printf( "tv{%2ld:%6ld}%p       tw{%2ld:%6ld}      to{%2ld:%6ld}%p\n\n",
