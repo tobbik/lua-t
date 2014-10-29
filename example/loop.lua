@@ -2,6 +2,10 @@
 xt=require'xt'
 l = nil
 
+p = function( ... )
+	print( table.unpack( {...} ) )
+	return xt.Time( 2500 )
+end
 
 f = function(func, ...)
 	local args = {...}
@@ -19,9 +23,10 @@ end
 l   = xt.Loop( 40 )
 tm1 = xt.Time( 2000 )
 tm2 = xt.Time( 2000 )
-s  = xt.Socket.bind( 'UDP', '192.168.0.219', 8888 )
+-- s  = xt.Socket.bind( 'UDP', '192.168.0.219', 8888 )
 -- l:addHandle( s, true, r, s )
-l:addTimer( tm1, print, 1,2,3,4,5,6,7 )
+print( tm1, tm2 )
+l:addTimer( tm1, p, 1,2,3,4,5,6,7 )
 l:addTimer( tm2, f(print,8,7,6,5,4,3,2,1) )
 
 l:run()

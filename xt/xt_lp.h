@@ -10,11 +10,9 @@
 
 #include "xt_sck.h"
 
-
 enum xt_lp_t {
 	XT_LP_READ,               ///< Reader event on socket
 	XT_LP_WRIT,               ///< Reader event on socket
-	XT_LP_TIME,
 };
 
 
@@ -26,7 +24,6 @@ struct xt_lp_fd {
 
 
 struct xt_lp_tm {
-	enum xt_lp_t        t;
 	//int                 id;
 	struct timeval      tw;    ///< time to elapse until fire (timval to work with)
 	struct timeval     *to;    ///< keep reference to the original timeval
@@ -34,7 +31,7 @@ struct xt_lp_tm {
 	struct xt_lp_tm    *nxt;   ///< next pointer for linked list
 };
 
-//#ifdef XT_LOOP_SELECT
+
 /// xt_lp implementation for select based loops
 struct xt_lp {
 	fd_set            rfds;
@@ -47,13 +44,22 @@ struct xt_lp {
 	struct xt_lp_tm  *tm_head;
 	struct xt_lp_fd **fd_set;   ///< array with pointers to fd_events indexed by fd
 };
-//#endif
 
 
 // xt_lp.c
 struct xt_lp *xt_lp_check_ud ( lua_State *luaVM, int pos );
 struct xt_lp *xt_lp_create_ud( lua_State *luaVM, size_t sz );
 int           lxt_lp_New     ( lua_State *luaVM );
+
+void xt_lp_executetimer      ( lua_State *luaVM, struct xt_lp *lp );
+void xt_lp_executehandle     ( lua_State *luaVM, struct xt_lp *lp, int fd );
+
+
+// xt_lp_(impl).c   (Implementation specific functions) INTERFACE
+void xt_lp_create_ud_impl    ( struct xt_lp *lp );
+void xt_lp_addhandle_impl    ( struct xt_lp *lp, int fd, int read );
+void xt_lp_addtimer_impl     ( struct xt_lp *lp, struct timeval *tv );
+void xt_lp_poll_impl         ( lua_State *luaVM, struct xt_lp *lp );
 
 
 

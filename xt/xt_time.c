@@ -38,17 +38,17 @@
  * \param  *tB struct timeval pointer
  * \return 1 if *tA is greater than *tB
  * e      -1 if *tA is smaller than *tB
- *         0 if both are equal 
+ *         0 if both are equal
  * --------------------------------------------------------------------------*/
 int xt_time_cmp (struct timeval *tA, struct timeval *tB)
 {
 	if (tA->tv_sec + tA->tv_sec / 1000000 +tA->tv_usec%1000000 <
 	    tB->tv_sec + tB->tv_sec / 1000000 +tB->tv_usec%1000000 )
 		return -1;
-	else return (tA->tv_sec + tA->tv_sec / 1000000 +tA->tv_usec%1000000 ==
-	             tB->tv_sec + tB->tv_sec / 1000000 +tB->tv_usec%1000000 );
+	else
+		return (tA->tv_sec + tA->tv_sec / 1000000 +tA->tv_usec%1000000 ==
+	           tB->tv_sec + tB->tv_sec / 1000000 +tB->tv_usec%1000000 );
 }
-
 
 
 /**--------------------------------------------------------------------------
