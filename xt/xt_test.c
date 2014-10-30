@@ -11,7 +11,6 @@
 
 #include <string.h>            // strlen
 #include <strings.h>           // strncasecmp
-#include <memory.h>            // memset
 #include <stdlib.h>            // malloc
 
 #include "xt.h"

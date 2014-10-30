@@ -10,9 +10,9 @@
  */
 
 
-#include <memory.h>               // memset
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>               // memset
 
 #include "xt.h"
 #include "xt_buf.h"

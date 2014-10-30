@@ -331,7 +331,7 @@ static int lxt_sck_recv_from(lua_State *luaVM)
 	struct xt_buf      *buf;
 	struct sockaddr_in *si_cli;
 	int                 rcvd;
-	char                buffer[ MAX_BUF_SIZE ];
+	char                buffer[ BUFSIZ ];
 	char               *rcv = &(buffer[ 0 ]);
 	int                 len = sizeof( buffer )-1;
 
@@ -414,7 +414,7 @@ static int lxt_sck_recv_strm( lua_State *luaVM )
 	struct xt_sck  *sck;
 	struct xt_buf  *buf;
 	int             rcvd;
-	char            buffer[MAX_BUF_SIZE];
+	char            buffer[ BUFSIZ ];
 	char           *rcv = &(buffer[0]);
 	int             len = sizeof (buffer)-1;
 

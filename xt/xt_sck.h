@@ -6,23 +6,6 @@
  *
  * data definitions
  */
-#ifdef _WIN32
-#include <WinSock2.h>
-#include <winsock.h>
-#include <time.h>
-#include <stdint.h>
-#include <WS2tcpip.h>
-#include <Windows.h>
-#else
-#include <string.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <arpa/inet.h>
-#include <netinet/in.h>
-#include <sys/socket.h>
-#include <sys/select.h>
-#endif
-#define MAX_BUF_SIZE      4096
 
 enum xt_sck_t {
 	XT_SCK_UDP,

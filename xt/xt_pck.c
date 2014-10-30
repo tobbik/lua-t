@@ -9,7 +9,8 @@
  * \copyright See Copyright notice at the end of xt.h
  */
 
-#include <memory.h>               // memset
+
+#include <string.h>               // memset
 
 #include "xt.h"
 #include "xt_buf.h"

@@ -8,10 +8,10 @@
  * \copyright See Copyright notice at the end of xt.h
  */
 
-#include <memory.h>               // memset
 
 #include "xt.h"
 #include "xt_buf.h"
+#include <string.h>               // memset
 
 
 /**--------------------------------------------------------------------------
