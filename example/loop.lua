@@ -1,5 +1,6 @@
 #!../out/bin/lua
 xt = require'xt'
+s  = xt.Socket.bind( 'UDP', '192.168.0.219', 8888 )
 l  = nil
 n  = 10
 tm = {}
@@ -23,6 +24,10 @@ function r(s)
 		local t = msg:match("remove (%d+)")
 		print( "remove timer ".. tonumber(t) )
 		l:removeTimer( tm[ tonumber(t) ] )
+	elseif msg:sub( 1, 2 ) == 'rL' then
+		l:removeHandle( s )
+		print( "remove listener -> go exit" )
+		l:stop()
 	end
 end
 
@@ -32,7 +37,6 @@ for i=1,n do
 	print( tm[i] )
 	l:addTimer( tm[i], p, "----------------Timer " ..i.. "-----------------" )
 end
-s  = xt.Socket.bind( 'UDP', '192.168.0.219', 8888 )
 l:addHandle( s, true, r, s )
 
 l:run()

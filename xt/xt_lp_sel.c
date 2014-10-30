@@ -16,8 +16,9 @@
 #include "xt.h"
 #include "xt_lp.h"
 
+#include <string.h>           // memcpy
 #ifndef _WIN32
-#include <sys/time.h>
+#include <sys/time.h>         // gettimeofday
 #endif
 
 

@@ -5,13 +5,15 @@
  * \brief     OOP wrapper for an asyncronous eventloop (xt.Loop)
  *            This covers the generic functions which are usable accross
  *            specific implementations
- *            They mainly handle the creation of data structures and their
- *            bindings to the Lua state
+ *            They mainly handle the creation of data structures, their
+ *            bindings to the Lua state and the list/collection opeartions
  * \author    tkieslich
  * \copyright See Copyright notice at the end of xt.h
  */
 
+
 #include "xt.h"
+#include <stdlib.h>               // malloc, free
 #include "xt_lp.h"
 #include "xt_time.h"
 
@@ -131,7 +133,8 @@ void xt_lp_executetimer( lua_State *luaVM, struct xt_lp *lp, struct timeval *rt 
  * --------------------------------------------------------------------------*/
 void xt_lp_executehandle( lua_State *luaVM, struct xt_lp *lp, int fd )
 {
-	lua_call( luaVM, xt_lp_getfunc( luaVM, lp->fd_set[ fd ]->fR ), 0 );
+	int n = xt_lp_getfunc( luaVM, lp->fd_set[ fd ]->fR );
+	lua_call( luaVM, n , 0 );
 	lua_pop( luaVM, 1 );             // remove the table
 }
 
@@ -236,14 +239,49 @@ static int lxt_lp_addhandle( lua_State *luaVM )
 
 	lua_createtable( luaVM, n-4, 0 );  // create function/parameter table
 	lua_insert( luaVM, 4 );
-	//Stack: lp,tv,rp,TABLE,func,...
+	//Stack: lp,tv,read/write,TABLE,func,...
 	while (n > 4)
 		lua_rawseti( luaVM, 4, (n--)-4 );   // add arguments and function (pops each item)
 	lp->fd_set[ fd ]->fR = luaL_ref( luaVM, LUA_REGISTRYINDEX );      // pop the function/parameter table
+	lua_pop( luaVM, 1 ); // pop the read write boolean
+	lp->fd_set[ fd ]->hR = luaL_ref( luaVM, LUA_REGISTRYINDEX );      // keep ref to handle so it doesnt gc
 
 	return  0;
 }
 
+
+/**--------------------------------------------------------------------------
+ * Remove a Handle event handler from the xt.Loop.
+ * \param   luaVM    The lua state.
+ * \lparam  userdata xt.Loop.                                    // 1
+ * \lparam  userdata socket or file.                             // 2
+ * \return  #stack items returned by function call.
+ * TODO: optimize!
+ * --------------------------------------------------------------------------*/
+static int lxt_lp_removehandle( lua_State *luaVM )
+{
+	luaL_Stream     *lS;
+	struct xt_sck   *sc;
+	int              fd = 0;
+	struct xt_lp    *lp = xt_lp_check_ud( luaVM, 1 );
+
+	lS = (luaL_Stream *) luaL_testudata( luaVM, 2, LUA_FILEHANDLE );
+	if (NULL != lS)
+		fd = fileno( lS->f );
+
+	sc = (struct xt_sck *) luaL_testudata( luaVM, 2, "xt.Socket" );
+	if (NULL != sc)
+		fd = sc->fd;
+
+	if (0 == fd)
+		return xt_push_error( luaVM, "Argument to addHandle must be file or socket" );
+	luaL_unref( luaVM, LUA_REGISTRYINDEX, lp->fd_set[ fd ]->fR );
+	luaL_unref( luaVM, LUA_REGISTRYINDEX, lp->fd_set[ fd ]->hR );
+	free( lp->fd_set[ fd ] );
+	lp->fd_set[ fd ] = NULL;
+
+	return 0;
+}
 
 /**--------------------------------------------------------------------------
  * Add a Timer event handler to the xt.Loop.
@@ -433,6 +471,8 @@ static int lxt_lp__gc( lua_State *luaVM )
 	{
 		if (NULL != lp->fd_set[ i ])
 		{
+			luaL_unref( luaVM, LUA_REGISTRYINDEX, lp->fd_set[ i ]->fR );
+			luaL_unref( luaVM, LUA_REGISTRYINDEX, lp->fd_set[ i ]->hR );
 			free( lp->fd_set[ i ] );
 		}
 	}
@@ -469,6 +509,7 @@ static const struct luaL_Reg xt_lp_m [] =
 	{"addTimer",       lxt_lp_addtimer},
 	{"removeTimer",    lxt_lp_removetimer},
 	{"addHandle",      lxt_lp_addhandle},
+	{"removeHandle",   lxt_lp_removehandle},
 	{"run",            lxt_lp_run},
 	{"stop",           lxt_lp_stop},
 	{"show",           lxt_lp_showloop},

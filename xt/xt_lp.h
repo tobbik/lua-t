@@ -20,6 +20,7 @@ struct xt_lp_fd {
 	enum xt_lp_t        t;
 	int                 fd;    ///< descriptor
 	int                 fR;    ///< function reference in LUA_REGISTRYINDEX
+	int                 hR;    ///< handle   reference in LUA_REGISTRYINDEX (xt.Socket or Lua file)
 };
 
 
