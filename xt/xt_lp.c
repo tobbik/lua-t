@@ -22,16 +22,31 @@
  * \lreturn xt_lp_tm Timer event struct.
  * \return  void.
  * --------------------------------------------------------------------------*/
-static inline void xt_lp_slottimer( struct xt_lp *lp, struct xt_lp_tm *te )
+static inline void xt_lp_instimer( struct xt_lp *lp, struct xt_lp_tm *te )
 {
 	struct xt_lp_tm *tr;
-	if (NULL == lp->tm_head)
+
+	if (NULL == lp->tm_head || xt_time_cmp( &lp->tm_head->tw, &te->tw, > ))
+	{
+#if PRINT_DEBUGS == 1
+		printf( "Make HEAD   {%2ld:%6ld}\t PRE{%2ld:%6ld}\n", 
+			te->tw.tv_sec,  te->tw.tv_usec,
+			(NULL != lp->tm_head) ? lp->tm_head->tw.tv_sec  : 0,
+			(NULL != lp->tm_head) ? lp->tm_head->tw.tv_usec : 0);
+#endif
+		te->nxt     = lp->tm_head;
 		lp->tm_head = te;
+	}
 	else
 	{
 		tr = lp->tm_head;
-		while (NULL != tr->nxt && xt_time_cmp( &tr->tw, &te->tw ))
+		while (NULL != tr->nxt && xt_time_cmp( &tr->nxt->tw, &te->tw, < ))
 			tr = tr->nxt;
+#if PRINT_DEBUGS == 1
+		printf( "Make NODE   {%2ld:%6ld}\tPAST{%2ld:%6ld}\n", 
+			te->tw.tv_sec,  te->tw.tv_usec,
+			tr->tw.tv_sec,  tr->tw.tv_usec);
+#endif
 		te->nxt = tr->nxt;
 		tr->nxt = te;
 	}
@@ -128,8 +143,8 @@ void xt_lp_executetimer( lua_State *luaVM, struct xt_lp *lp )
 			te->to->tv_sec, te->to->tv_usec, te->to
 	);
 #endif
-		*te->to= *tv;
-		te->tw = *tv;
+		*te->to = *tv;
+		te->tw  = *tv;
 #if PRINT_DEBUGS == 1
 	printf( "tv{%2ld:%6ld}%p       tw{%2ld:%6ld}      to{%2ld:%6ld}%p\n\n",
 			tv->tv_sec,     tv->tv_usec, tv,
@@ -137,7 +152,7 @@ void xt_lp_executetimer( lua_State *luaVM, struct xt_lp *lp )
 			te->to->tv_sec, te->to->tv_usec, te->to
 	);
 #endif
-		xt_lp_slottimer( lp, te );
+		xt_lp_instimer( lp, te );
 	}
 	lua_pop( luaVM, 2 );   // pop the one value that lua_call allows to be
 	                       // returned and the original reference table
@@ -298,7 +313,7 @@ static int lxt_lp_addtimer( lua_State *luaVM )
 		lua_rawseti( luaVM, 3, (n--)-3 );            // add arguments and function (pops each item)
 	te->fR = luaL_ref( luaVM, LUA_REGISTRYINDEX );  // pop the function/parameter table
 	// insert into ordered linked list of time events
-	xt_lp_slottimer( lp, te );
+	xt_lp_instimer( lp, te );
 
 	return 1;
 }
