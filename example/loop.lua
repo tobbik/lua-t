@@ -16,6 +16,9 @@ function r(s)
 	if msg:sub( 1, 4 ) == 'exit' then
 		print( "go exit" )
 		l:stop()
+	elseif msg:sub( 1, 8 ) == 'showloop' then
+		print( "SHOW LOOP:" )
+		l:show( )
 	elseif msg:sub( 1, 7 ) == 'remove ' then
 		local t = msg:match("remove (%d+)")
 		print( "remove timer ".. tonumber(t) )
@@ -25,7 +28,7 @@ end
 
 l   = xt.Loop( n )      ---< Loop with n slots for filehandles
 for i=1,n do
-	table.insert( tm, xt.Time( i*1000 + math.random( 100,950 ) ) )
+	table.insert( tm, xt.Time( math.random( 950, n*1000 ) ) )
 	print( tm[i] )
 	l:addTimer( tm[i], p, "----------------Timer " ..i.. "-----------------" )
 end

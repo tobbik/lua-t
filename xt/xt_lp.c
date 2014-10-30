@@ -53,29 +53,6 @@ static inline void xt_lp_instimer( struct xt_lp *lp, struct xt_lp_tm *te )
 }
 
 
-#if PRINT_DEBUGS == 1
-/**--------------------------------------------------------------------------
- * DebuG printfor loops timer event list.
- * \param   xt_lp    Loop Struct.
- * \lreturn xt_lp_tm Timer event struct.
- * \return  void.
- * --------------------------------------------------------------------------*/
-static inline void xt_lp_printTimers( struct xt_lp *lp )
-{
-	struct xt_lp_tm *tr = lp->tm_head;
-	int              i=0;
-	printf( "LOOP TIMER LIST:\n" );
-	while (NULL != tr)
-	{
-		printf("\t%d\t{%2ld:%6ld}\t%p\n", ++i,
-			tr->tv->tv_sec,  tr->tv->tv_usec,
-			tr->tv);
-		tr = tr->nxt;
-	}
-}
-#endif
-
-
 /**--------------------------------------------------------------------------
  * Adjust amount of time in the loops timer event list.
  *          substract ta from each timer in the list.
@@ -138,12 +115,6 @@ void xt_lp_executetimer( lua_State *luaVM, struct xt_lp *lp, struct timeval *rt 
 	else
 	{
 		*te->tv = *tv;
-#if PRINT_DEBUGS == 1
-	printf( "tv{%2ld:%6ld}%p     te->tv{%2ld:%6ld}%p\n",
-			tv->tv_sec,     tv->tv_usec, tv,
-			te->tv->tv_sec, te->tv->tv_usec, te->tv
-	);
-#endif
 		xt_lp_instimer( lp, te );
 	}
 	lua_pop( luaVM, 2 );   // pop the one value that lua_call allows to be
@@ -370,9 +341,6 @@ static int lxt_lp_run( lua_State *luaVM )
 
 	while (lp->run)
 	{
-#if PRINT_DEBUGS == 1
-		xt_lp_printTimers( lp );
-#endif
 		xt_lp_poll_impl( luaVM, lp );
 		// if there are no events left in the loop stop processing
 		lp->run =  (NULL==lp->tm_head && lp->mxfd<1) ? 0 : lp->run;
@@ -407,6 +375,36 @@ static int lxt_lp__tostring( lua_State *luaVM )
 	struct xt_lp *lp = xt_lp_check_ud( luaVM, 1 );
 	lua_pushfstring( luaVM, "xt.Loop(select){%d}: %p", lp->mxfd, lp );
 	return 1;
+}
+
+
+/**--------------------------------------------------------------------------
+ * Debug print for loops.
+ * \param   xt_lp    Loop Struct.
+ * \return  int #elements returned to function call(Stack)
+ * --------------------------------------------------------------------------*/
+static int lxt_lp_showloop( lua_State *luaVM )
+{
+	struct xt_lp    *lp = xt_lp_check_ud( luaVM, 1 );
+	struct xt_lp_tm *tr = lp->tm_head;
+	int              i=0;
+	printf( "LOOP %p TIMER LIST:\n", lp );
+	while (NULL != tr)
+	{
+		printf("\t%d\t{%2ld:%6ld}\t%p\n", ++i,
+			tr->tv->tv_sec,  tr->tv->tv_usec,
+			tr->tv);
+		tr = tr->nxt;
+	}
+	printf( "LOOP %p HANDLE LIST:\n", lp );
+	for( i=0; i<lp->mxfd+1; i++)
+	{
+		if (NULL==lp->fd_set[ i ])
+			continue;
+		printf("\t%d\t%s\n", i,
+			(XT_LP_READ == lp->fd_set[i]->t) ? "READER" : "WRITER");
+	}
+	return 0;
 }
 
 
@@ -473,6 +471,7 @@ static const struct luaL_Reg xt_lp_m [] =
 	{"addHandle",      lxt_lp_addhandle},
 	{"run",            lxt_lp_run},
 	{"stop",           lxt_lp_stop},
+	{"show",           lxt_lp_showloop},
 	{NULL,   NULL}
 };
 

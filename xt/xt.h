@@ -24,7 +24,7 @@
 
 #define MAX_PKT_BYTES     1500
 
-#define PRINT_DEBUGS      1
+#define PRINT_DEBUGS      0
 
 
 // http://stackoverflow.com/questions/2100331/c-macro-definition-to-determine-big-endian-or-little-endian-machine
