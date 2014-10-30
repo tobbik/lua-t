@@ -17,7 +17,6 @@ print( s, ip )
 while true do
 	io.write( "Enter command and type enter ('help' for command list': ")
 	local cmd = io.read( '*l' )
-	print(cmd)
 	if 'HELP' == cmd:upper() then printhelp() end
 	s:sendTo( ip, cmd )
 	if 'EXIT' == cmd:upper() then break end
