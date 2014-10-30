@@ -128,6 +128,7 @@ static int lxt_sck_listen( lua_State *luaVM )
 	int             backlog = luaL_checkint(luaVM, 2);
 
 	sck = xt_sck_check_ud (luaVM, 1);
+	luaL_argcheck( luaVM, (XT_SCK_TCP == sck->t), 1, "Must be an TCP socket" );
 
 	if( listen(sck->fd , backlog ) == -1)
 		return xt_push_error(luaVM, "ERROR listen to socket");
@@ -238,6 +239,7 @@ static int lxt_sck_accept( lua_State *luaVM )
 	socklen_t           their_addr_size = sizeof( struct sockaddr_in );
 
 	lsck = xt_sck_check_ud( luaVM, 1 );
+	luaL_argcheck( luaVM, (XT_SCK_TCP == lsck->t), 1, "Must be an TCP socket" );
 	asck = xt_sck_create_ud( luaVM, XT_SCK_TCP );
 
 	si_cli = create_ud_ipendpoint( luaVM );
@@ -285,6 +287,7 @@ static int lxt_sck_send_to(lua_State *luaVM)
 	const char         *msg;
 
 	sck = xt_sck_check_ud( luaVM, 1 );
+	luaL_argcheck( luaVM, (XT_SCK_UDP == sck->t), 1, "Must be an UDP socket" );
 	ip   = check_ud_ipendpoint( luaVM, 2 );
 	if (lua_isstring( luaVM, 3 ))
 	{
@@ -335,6 +338,7 @@ static int lxt_sck_recv_from(lua_State *luaVM)
 	unsigned int        slen = sizeof( si_cli );
 
 	sck = xt_sck_check_ud( luaVM, 1 );
+	luaL_argcheck( luaVM, (XT_SCK_UDP == sck->t), 1, "Must be an UDP socket" );
 	if (lua_isuserdata( luaVM, 2 )) {
 		buf  = xt_buf_check_ud ( luaVM, 2 );
 		rcv  = (char *) &(buf->b[ 0 ]);
@@ -374,6 +378,7 @@ static int lxt_sck_send_strm( lua_State *luaVM )
 	size_t          into_msg=0;   // where in the message to start sending from
 
 	sck = xt_sck_check_ud( luaVM, 1 );
+	luaL_argcheck( luaVM, (XT_SCK_TCP == sck->t), 1, "Must be an TCP socket" );
 	if (lua_isstring( luaVM, 2 ))
 		msg   = lua_tolstring( luaVM, 2, &to_send );
 	else
@@ -414,6 +419,7 @@ static int lxt_sck_recv_strm( lua_State *luaVM )
 	int             len = sizeof (buffer)-1;
 
 	sck = xt_sck_check_ud( luaVM, 1 );
+	luaL_argcheck( luaVM, (XT_SCK_TCP == sck->t), 1, "Must be an TCP socket" );
 	if (lua_isuserdata( luaVM, 2 )) {
 		buf  = xt_buf_check_ud( luaVM, 2 );
 		rcv  = (char *) &(buf->b[ 0 ]);
@@ -450,6 +456,7 @@ static int lxt_sck_getsockname( lua_State *luaVM )
 	socklen_t           ip_len = sizeof( struct sockaddr_in );
 
 	sck = xt_sck_check_ud( luaVM, 1 );
+	luaL_argcheck( luaVM, (XT_SCK_TCP == sck->t), 1, "Must be an TCP socket" );
 
 	if (lua_isuserdata( luaVM, 2 ))  ip = check_ud_ipendpoint( luaVM, 2 );
 	else                             ip = create_ud_ipendpoint( luaVM );
