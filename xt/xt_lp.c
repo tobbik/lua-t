@@ -285,12 +285,11 @@ static int lxt_lp_addhandle( lua_State *luaVM )
 
 
 /**--------------------------------------------------------------------------
- * Add an Timer event handler to the xt.Loop.
+ * Add a Timer event handler to the xt.Loop.
  * \param   luaVM  The lua state.
  * \lparam  userdata xt.Loop.                                    // 1
  * \lparam  userdata timeval.                                    // 2
- * \lparam  bool     shall this be treated as an interval?       // 3
- * \lparam  function to be executed when event handler fires.    // 4
+ * \lparam  function to be executed when event handler fires.    // 3
  * \lparam  ...    parameters to function when executed.
  * \return  #stack items returned by function call.
  * --------------------------------------------------------------------------*/
@@ -319,6 +318,47 @@ static int lxt_lp_addtimer( lua_State *luaVM )
 
 	return 1;
 }
+
+
+/**--------------------------------------------------------------------------
+ * Remove a Timer event handler from the xt.Loop.
+ * \param   luaVM    The lua state.
+ * \lparam  userdata xt.Loop.                                    // 1
+ * \lparam  userdata timeval.                                    // 2
+ * \return  #stack items returned by function call.
+ * TODO: optimize!
+ * --------------------------------------------------------------------------*/
+static int lxt_lp_removetimer( lua_State *luaVM )
+{
+	struct xt_lp    *lp = xt_lp_check_ud( luaVM, 1 );
+	struct timeval  *tv = xt_time_check_ud( luaVM, 2 );
+	struct xt_lp_tm *tp = lp->tm_head;
+	struct xt_lp_tm *te = tp->nxt;       ///< previous Timer event
+
+	// if head is node in question
+	if (NULL != tp  &&  tp->to == tv)
+	{
+		lp->tm_head = te;
+		luaL_unref( luaVM,LUA_REGISTRYINDEX, tp->fR );
+		free( tp );
+		return 0;
+	}
+	while (NULL != te && te->to != tv)
+	{
+		tp = te;
+		te = te->nxt;
+	}
+
+	if (te->to == tv)
+	{
+		tp->nxt = te->nxt;
+		luaL_unref( luaVM,LUA_REGISTRYINDEX, te->fR );
+		free( te );
+	}
+
+	return 0;
+}
+
 
 
 /**--------------------------------------------------------------------------
@@ -436,6 +476,7 @@ static const luaL_Reg xt_lp_cf [] =
 static const struct luaL_Reg xt_lp_m [] =
 {
 	{"addTimer",       lxt_lp_addtimer},
+	{"removeTimer",    lxt_lp_removetimer},
 	{"addHandle",      lxt_lp_addhandle},
 	{"run",            lxt_lp_run},
 	{"stop",           lxt_lp_stop},
