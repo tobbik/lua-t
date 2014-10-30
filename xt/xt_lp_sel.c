@@ -16,6 +16,10 @@
 #include "xt.h"
 #include "xt_lp.h"
 
+#ifndef _WIN32
+#include <sys/time.h>
+#endif
+
 
 /**--------------------------------------------------------------------------
  * Select() specific initialization of xt_lp.
@@ -80,7 +84,7 @@ void xt_lp_poll_impl( lua_State *luaVM, struct xt_lp *lp )
 	struct timeval   rt;      ///< timer to calculate runtime over this poll
 
 	gettimeofday( &rt, 0 );
-	tv  = (NULL != lp->tm_head) ? &lp->tm_head->tw : NULL;
+	tv  = (NULL != lp->tm_head) ? lp->tm_head->tv : NULL;
 
 	memcpy( &lp->rfds_w, &lp->rfds, sizeof( fd_set ) );
 	memcpy( &lp->wfds_w, &lp->wfds, sizeof( fd_set ) );

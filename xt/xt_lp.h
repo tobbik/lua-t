@@ -24,10 +24,9 @@ struct xt_lp_fd {
 
 
 struct xt_lp_tm {
-	//int                 id;
-	struct timeval      tw;    ///< time to elapse until fire (timval to work with)
-	struct timeval     *to;    ///< keep reference to the original timeval
 	int                 fR;    ///< function reference in LUA_REGISTRYINDEX
+	int                 tR;    ///< xt.Time  reference in LUA_REGISTRYINDEX
+	struct timeval     *tv;    ///< time to elapse until fire (timval to work with)
 	struct xt_lp_tm    *nxt;   ///< next pointer for linked list
 };
 

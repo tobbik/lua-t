@@ -26,13 +26,13 @@ static inline void xt_lp_instimer( struct xt_lp *lp, struct xt_lp_tm *te )
 {
 	struct xt_lp_tm *tr;
 
-	if (NULL == lp->tm_head || xt_time_cmp( &lp->tm_head->tw, &te->tw, > ))
+	if (NULL == lp->tm_head || xt_time_cmp( lp->tm_head->tv, te->tv, > ))
 	{
 #if PRINT_DEBUGS == 1
-		printf( "Make HEAD   {%2ld:%6ld}\t PRE{%2ld:%6ld}\n", 
-			te->tw.tv_sec,  te->tw.tv_usec,
-			(NULL != lp->tm_head) ? lp->tm_head->tw.tv_sec  : 0,
-			(NULL != lp->tm_head) ? lp->tm_head->tw.tv_usec : 0);
+		printf( "Make HEAD   {%2ld:%6ld}\t PRE{%2ld:%6ld}\n",
+			te->tv->tv_sec,  te->tv->tv_usec,
+			(NULL != lp->tm_head) ? lp->tm_head->tv->tv_sec  : 0,
+			(NULL != lp->tm_head) ? lp->tm_head->tv->tv_usec : 0);
 #endif
 		te->nxt     = lp->tm_head;
 		lp->tm_head = te;
@@ -40,12 +40,12 @@ static inline void xt_lp_instimer( struct xt_lp *lp, struct xt_lp_tm *te )
 	else
 	{
 		tr = lp->tm_head;
-		while (NULL != tr->nxt && xt_time_cmp( &tr->nxt->tw, &te->tw, < ))
+		while (NULL != tr->nxt && xt_time_cmp( tr->nxt->tv, te->tv, < ))
 			tr = tr->nxt;
 #if PRINT_DEBUGS == 1
-		printf( "Make NODE   {%2ld:%6ld}\tPAST{%2ld:%6ld}\n", 
-			te->tw.tv_sec,  te->tw.tv_usec,
-			tr->tw.tv_sec,  tr->tw.tv_usec);
+		printf( "Make NODE   {%2ld:%6ld}\tPAST{%2ld:%6ld}\n",
+			te->tv->tv_sec,  te->tv->tv_usec,
+			tr->tv->tv_sec,  tr->tv->tv_usec);
 #endif
 		te->nxt = tr->nxt;
 		tr->nxt = te;
@@ -67,10 +67,9 @@ static inline void xt_lp_printTimers( struct xt_lp *lp )
 	printf( "LOOP TIMER LIST:\n" );
 	while (NULL != tr)
 	{
-		printf("\t%d\t{%2ld:%6ld}\t{%2ld:%6ld}\t%p\n", ++i,
-			tr->tw.tv_sec,  tr->tw.tv_usec,
-			tr->to->tv_sec, tr->to->tv_usec,
-			tr->to);
+		printf("\t%d\t{%2ld:%6ld}\t%p\n", ++i,
+			tr->tv->tv_sec,  tr->tv->tv_usec,
+			tr->tv);
 		tr = tr->nxt;
 	}
 }
@@ -89,7 +88,7 @@ static inline void xt_lp_adjusttimer( struct xt_lp *lp, struct timeval *ta )
 	struct xt_lp_tm *tr = lp->tm_head;
 	while (NULL != tr)
 	{
-		xt_time_sub( &tr->tw, ta, &tr->tw );
+		xt_time_sub( tr->tv, ta, tr->tv );
 		tr = tr->nxt;
 	}
 }
@@ -138,20 +137,11 @@ void xt_lp_executetimer( lua_State *luaVM, struct xt_lp *lp, struct timeval *rt 
 		free (te);
 	else
 	{
+		*te->tv = *tv;
 #if PRINT_DEBUGS == 1
-	printf( "tv{%2ld:%6ld}%p       tw{%2ld:%6ld}      to{%2ld:%6ld}%p\n",
+	printf( "tv{%2ld:%6ld}%p     te->tv{%2ld:%6ld}%p\n",
 			tv->tv_sec,     tv->tv_usec, tv,
-			te->tw.tv_sec,  te->tw.tv_usec,
-			te->to->tv_sec, te->to->tv_usec, te->to
-	);
-#endif
-		*te->to = *tv;
-		te->tw  = *tv;
-#if PRINT_DEBUGS == 1
-	printf( "tv{%2ld:%6ld}%p       tw{%2ld:%6ld}      to{%2ld:%6ld}%p\n\n",
-			tv->tv_sec,     tv->tv_usec, tv,
-			te->tw.tv_sec,  te->tw.tv_usec,
-			te->to->tv_sec, te->to->tv_usec, te->to
+			te->tv->tv_sec, te->tv->tv_usec, te->tv
 	);
 #endif
 		xt_lp_instimer( lp, te );
@@ -303,16 +293,16 @@ static int lxt_lp_addtimer( lua_State *luaVM )
 	luaL_checktype( luaVM, 3, LUA_TFUNCTION );
 	// Build up the timer element
 	te = (struct xt_lp_tm *) malloc( sizeof( struct xt_lp_tm ) );
-	te->tw = *tv;
-	te->to =  tv;
+	te->tv =  tv;
 	//xt_lp_addtimer_impl( lp, tv );
-	//te->id = ++lp->mxfd;
 	lua_createtable( luaVM, n-3, 0 );  // create function/parameter table
 	lua_insert( luaVM, 3 );
-	//Stack: lp,tv,rp,TABLE,func,...
+	// Stack: lp,tv,TABLE,func,...
 	while (n > 3)
 		lua_rawseti( luaVM, 3, (n--)-3 );            // add arguments and function (pops each item)
 	te->fR = luaL_ref( luaVM, LUA_REGISTRYINDEX );  // pop the function/parameter table
+	// making the time val part of lua registry guarantees the gc can't destroy it
+	te->tR = luaL_ref( luaVM, LUA_REGISTRYINDEX );  // pop the timeval
 	// insert into ordered linked list of time events
 	xt_lp_instimer( lp, te );
 
@@ -336,23 +326,25 @@ static int lxt_lp_removetimer( lua_State *luaVM )
 	struct xt_lp_tm *te = tp->nxt;       ///< previous Timer event
 
 	// if head is node in question
-	if (NULL != tp  &&  tp->to == tv)
+	if (NULL != tp  &&  tp->tv == tv)
 	{
 		lp->tm_head = te;
 		luaL_unref( luaVM,LUA_REGISTRYINDEX, tp->fR );
+		luaL_unref( luaVM,LUA_REGISTRYINDEX, tp->tR );
 		free( tp );
 		return 0;
 	}
-	while (NULL != te && te->to != tv)
+	while (NULL != te && te->tv != tv)
 	{
 		tp = te;
 		te = te->nxt;
 	}
 
-	if (te->to == tv)
+	if (te->tv == tv)
 	{
 		tp->nxt = te->nxt;
 		luaL_unref( luaVM,LUA_REGISTRYINDEX, te->fR );
+		luaL_unref( luaVM,LUA_REGISTRYINDEX, tp->tR );
 		free( te );
 	}
 
@@ -435,6 +427,7 @@ static int lxt_lp__gc( lua_State *luaVM )
 	{
 		t = lp->tm_head;
 		luaL_unref( luaVM, LUA_REGISTRYINDEX, t->fR ); // remove func/arg table from registry
+		luaL_unref( luaVM, LUA_REGISTRYINDEX, t->tR ); // remove timeval ref from registry
 		lp->tm_head = t->nxt;
 		free( t );
 	}
