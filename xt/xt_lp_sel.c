@@ -77,7 +77,9 @@ void xt_lp_poll_impl( lua_State *luaVM, struct xt_lp *lp )
 {
 	int              i,r;
 	struct timeval  *tv;
+	struct timeval   rt;      ///< timer to calculate runtime over this poll
 
+	gettimeofday( &rt, 0 );
 	tv  = (NULL != lp->tm_head) ? &lp->tm_head->tw : NULL;
 
 	memcpy( &lp->rfds_w, &lp->rfds, sizeof( fd_set ) );
@@ -88,7 +90,7 @@ void xt_lp_poll_impl( lua_State *luaVM, struct xt_lp *lp )
 	if (0==r) // deal with timer
 	{
 		// get, unpack and execute func/parm table
-		xt_lp_executetimer( luaVM, lp );
+		xt_lp_executetimer( luaVM, lp, &rt );
 	}
 	else      // deal with sockets/file handles
 	{

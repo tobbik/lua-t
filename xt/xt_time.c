@@ -79,8 +79,8 @@ void xt_time_since (struct timeval *tA)
 {
 	struct timeval tC;
 
-	gettimeofday (&tC, 0);
-	xt_time_sub (&tC, tA, tA);
+	gettimeofday( &tC, 0 );
+	xt_time_sub( &tC, tA, tA );
 }
 
 

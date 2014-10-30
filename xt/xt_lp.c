@@ -52,6 +52,7 @@ static inline void xt_lp_instimer( struct xt_lp *lp, struct xt_lp_tm *te )
 	}
 }
 
+
 #if PRINT_DEBUGS == 1
 /**--------------------------------------------------------------------------
  * DebuG printfor loops timer event list.
@@ -76,23 +77,22 @@ static inline void xt_lp_printTimers( struct xt_lp *lp )
 #endif
 
 
-
 /**--------------------------------------------------------------------------
  * Adjust amount of time in the loops timer event list.
+ *          substract ta from each timer in the list.
  * \param   xt_lp    Loop Struct.
  * \lreturn xt_lp_tm Timer event struct.
  * \return  void.
  * --------------------------------------------------------------------------*/
-// static inline void xt_lp_adjusttimer( struct xt_lp *lp, struct timeval *ta )
-// {
-// 	struct xt_lp_tm *tr = lp->tm_head;
-// 	while (NULL != tr)
-// 	{
-// 		xt_time_sub( &tr->tw, ta, &tr->tw );
-// 		tr = tr->nxt;
-// 	}
-// }
-
+static inline void xt_lp_adjusttimer( struct xt_lp *lp, struct timeval *ta )
+{
+	struct xt_lp_tm *tr = lp->tm_head;
+	while (NULL != tr)
+	{
+		xt_time_sub( &tr->tw, ta, &tr->tw );
+		tr = tr->nxt;
+	}
+}
 
 
 /**--------------------------------------------------------------------------
@@ -123,13 +123,15 @@ static inline int xt_lp_getfunc( lua_State *luaVM, int refPos )
  * \lparam  userdata      xt.Loop.
  * \return  void.
  * --------------------------------------------------------------------------*/
-void xt_lp_executetimer( lua_State *luaVM, struct xt_lp *lp )
+void xt_lp_executetimer( lua_State *luaVM, struct xt_lp *lp, struct timeval *rt )
 {
 	struct timeval *tv; ///< timer returned by execution -> if there is
 	// the timer to be executed is the tm_head, ALWAYS
 	struct xt_lp_tm *te = lp->tm_head;
 	lp->tm_head = lp->tm_head->nxt;
 	lua_call( luaVM, xt_lp_getfunc( luaVM, te->fR ), 1 );
+	xt_time_since( rt );
+	xt_lp_adjusttimer( lp, rt );
 	tv = (struct timeval *) luaL_testudata( luaVM, -1, "xt.Time" );
 	// reorganize linked timer list
 	if (NULL == tv)

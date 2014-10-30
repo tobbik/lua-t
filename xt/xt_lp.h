@@ -51,7 +51,7 @@ struct xt_lp *xt_lp_check_ud ( lua_State *luaVM, int pos );
 struct xt_lp *xt_lp_create_ud( lua_State *luaVM, size_t sz );
 int           lxt_lp_New     ( lua_State *luaVM );
 
-void xt_lp_executetimer      ( lua_State *luaVM, struct xt_lp *lp );
+void xt_lp_executetimer      ( lua_State *luaVM, struct xt_lp *lp, struct timeval *rt );
 void xt_lp_executehandle     ( lua_State *luaVM, struct xt_lp *lp, int fd );
 
 
