@@ -16,7 +16,7 @@ function r(s)
 	if msg:sub( 1, 4 ) == 'exit' then
 		print( "go exit" )
 		l:stop()
-	elseif msg:sub( 1, 8 ) == 'showloop' then
+	elseif msg:sub( 1, 8 ) == 'show' then
 		print( "SHOW LOOP:" )
 		l:show( )
 	elseif msg:sub( 1, 7 ) == 'remove ' then

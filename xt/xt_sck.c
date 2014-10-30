@@ -59,7 +59,7 @@ int lxt_sck_New( lua_State *luaVM )
 	struct xt_sck   __attribute__ ((unused)) *sck;
 
 	sck = xt_sck_create_ud( luaVM,
-			(enum xt_sck_t) luaL_checkoption (luaVM, 2, "TCP", xt_sck_t_lst) );
+			(enum xt_sck_t) luaL_checkoption (luaVM, 1, "TCP", xt_sck_t_lst) );
 	return 1 ;
 }
 
@@ -92,6 +92,8 @@ struct xt_sck *xt_sck_create_ud( lua_State *luaVM, enum xt_sck_t type )
 		default:
 			return NULL;
 	}
+
+	sck->t = type;
 
 	luaL_getmetatable( luaVM, "xt.Socket" );
 	lua_setmetatable( luaVM, -2 );
@@ -467,7 +469,8 @@ static int lxt_sck_getsockname( lua_State *luaVM )
 static int lxt_sck__tostring( lua_State *luaVM )
 {
 	struct xt_sck *sck = xt_sck_check_ud( luaVM, 1 );
-	lua_pushfstring( luaVM, "Socket(%d): %p",
+	lua_pushfstring( luaVM, "Socket{%s:%d}: %p",
+			(XT_SCK_TCP == sck->t) ? "TCP" : "UDP",
 			sck->fd,
 			sck );
 	return 1;

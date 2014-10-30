@@ -61,7 +61,6 @@ void stackDump (lua_State *luaVM) {
 int xt_push_error(lua_State *luaVM, const char *fmt, ...)
 {
 	va_list argp;
-	//lua_pushnil (luaVM);
 	if (NULL==fmt) {
 		if (0==errno) return luaL_error (luaVM, strerror(errno));
 		else          return luaL_error (luaVM, "Unknown Error");
