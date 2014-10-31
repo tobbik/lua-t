@@ -2,6 +2,8 @@
 local t=require('t')
 local fmt=string.format
 
+ipadd = arg[1] or '127.0.0.1'
+
 -- a client to interact with the loop.lua example
 printhelp = function()
 	print([[

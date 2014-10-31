@@ -71,9 +71,9 @@ lt_ipx__Call( lua_State *luaVM )
  * \param   luaVM The lua state.
  * \param   int   offset  on stack to start reading values
  * \param   struct sockaddr_in*  pointer to ip where values will be set
- * \lparam  port  the port for the socket.
  * \lparam  ip    the IP address for the socket.
- * \lreturn int error number.
+ * \lparam  port  the port for the socket.
+ * \lreturn int error number .
  * TODO:  allow for empty endpoints if it makes sense
  * --------------------------------------------------------------------------*/
 int
