@@ -175,7 +175,6 @@ static int lxt_pck_a__newindex( lua_State *luaVM )
 int lxt_pck_a__call( lua_State *luaVM )
 {
 	struct xt_pck_a *ap;
-	struct xt_buf   *b;
 	int              pos = 0;  ///< moving position in the puffer
 
 	if (lua_isnumber( luaVM, -1 ))
@@ -195,7 +194,7 @@ int lxt_pck_a__call( lua_State *luaVM )
 	}
 	else
 	{
-		b  = xt_buf_check_ud( luaVM, -2 );
+		xt_buf_check_ud( luaVM, -2 );
 		lua_pop( luaVM, 1);
 		ap->bR = luaL_ref( luaVM, LUA_REGISTRYINDEX );
 		ap->bP = pos;
