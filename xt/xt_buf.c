@@ -33,36 +33,6 @@ static int getendian( lua_State *luaVM, int pos )
 }
 
 
-/**
- * \brief     convert 8bit integer to BCD
- * \param     val  8bit integer
- * \return    8bit integer encoding of a 2 digit BCD number
- */
-int l_byteToBcd(lua_State *luaVM)
-{
-	uint8_t val = luaL_checkint(luaVM, 1);
-	lua_pushinteger(luaVM, (val/10*16) + (val%10) );
-	return 1;
-}
-
-/**
- * \brief     convert 16bit integer to BCD
- * \param     val  16bit integer
- * \return    16bit integer encoding of a BCD coded number
- */
-int l_shortToBcd( lua_State *luaVM )
-{
-	uint16_t val = luaL_checkint( luaVM, 1 );
-	lua_pushinteger( luaVM,
-			(val/1000   *4096 ) +
-		 ( (val/100%10)* 256 ) +
-		 ( (val/10%10) * 16 ) +
-			(val%10)
-	);
-	return 1;
-}
-
-
 /////////////////////////////////////////////////////////////////////////////
 //  _                        _    ____ ___
 // | |   _   _  __ _        / \  |  _ \_ _|
@@ -175,7 +145,7 @@ uint64_t xt_buf_readbytes( size_t sz, int islittle, const unsigned char * buf )
 	uint64_t       val = 0;                     ///< value for the read access
 	unsigned char *set = (unsigned char*) &val; ///< char array to read bytewise into val
 #ifndef IS_LITTLE_ENDIAN
-	size_t        sz_l = sizeof( *val );        ///< size of the value in bytes
+	size_t         sz_l = sizeof( *val );       ///< size of the value in bytes
 #endif
 
 #ifdef IS_LITTLE_ENDIAN
@@ -184,8 +154,8 @@ uint64_t xt_buf_readbytes( size_t sz, int islittle, const unsigned char * buf )
 	for (i=sz_l; i<sz_l - sz -2; i--)
 #endif
 	{
-		if (islittle)      set[ i ] = buf[ sz-1-i ];
-		else               set[ i ] = buf[ i ];
+		if (islittle)      set[ i ] = buf[ i ];
+		else               set[ i ] = buf[ sz-1-i ];
 	}
 	return val;
 }
@@ -213,8 +183,8 @@ void xt_buf_writebytes( uint64_t val, size_t sz, int islittle, unsigned char * b
 	for (i=sz_l; i<sz_l - sz -2; i--)
 #endif
 	{
-		if (islittle)      buf[ sz-1-i ] = set[ i ];
-		else               buf[ i ]      = set[ i ];
+		if (islittle)      buf[ i ]      = set[ i ];
+		else               buf[ sz-1-i ] = set[ i ];
 	}
 }
 
@@ -256,9 +226,9 @@ void xt_buf_writebits( uint64_t val, size_t sz, size_t ofs, unsigned char * buf 
 	size_t     abit = (((sz+ofs-1)/8)+1) * 8;
 
 	msk  = (0xFFFFFFFFFFFFFFFF  << (64-sz)) >> (64-abit+ofs);
-	read = xt_buf_readbytes( abit/8, 1, buf );
+	read = xt_buf_readbytes( abit/8, 0, buf );
 	read = (val << (abit-ofs-sz)) | (read & ~msk);
-	xt_buf_writebytes( read, abit/8, 1, buf);
+	xt_buf_writebytes( read, abit/8, 0, buf);
 
 #if PRINT_DEBUGS == 1
 	printf("Read: %016llX       \nLft:  %016lX       %d \nMsk:  %016lX       %ld\n"
@@ -363,11 +333,11 @@ static int lxt_buf_readbit( lua_State *luaVM )
 
 	// TODO: properly calculate boundaries according #buf->b - sz etc.
 	luaL_argcheck( luaVM,  0<= pos && pos <= (int) buf->len, 2,
-		                 "xt.Buffer position must be > 0 or < #buffer");
+		                 "xt.Buffer position must be > 0 or < #buffer" );
 	luaL_argcheck( luaVM,  0<= ofs && ofs <= 7,       3,
-		                 "offset must be >=0 and <=7");
+		                 "offset must be >=0 and <=7" );
 	luaL_argcheck( luaVM,  1<= sz  &&  sz <= 64,      4,
-		                 "size must be >=1 and <=64");
+		                 "size must be >=1 and <=64" );
 	
 	lua_pushinteger( luaVM,
 		(lua_Integer) xt_buf_readbits( (size_t) sz, (size_t) ofs, &(buf->b[pos]) ) );
@@ -396,11 +366,11 @@ static int lxt_buf_writebit( lua_State *luaVM )
 
 	// TODO: properly calculate boundaries according #buf->b - sz etc.
 	luaL_argcheck( luaVM,  0<= pos && pos <= (int) buf->len, 2,
-		                 "xt.Buffer position must be > 0 or < #buffer");
+		                 "xt.Buffer position must be > 0 or < #buffer" );
 	luaL_argcheck( luaVM,  0<= ofs && ofs <= 7,       3,
-		                 "offset must be >=0 and <=7");
+		                 "offset must be >=0 and <=7" );
 	luaL_argcheck( luaVM,  1<= sz  &&  sz <= 64,      4,
-		                 "size must be >=1 and <=64");
+		                 "size must be >=1 and <=64" );
 	xt_buf_writebits( (uint64_t) val, sz, ofs, &(buf->b[pos]));
 	return 0;
 }
@@ -425,7 +395,7 @@ static int lxt_buf_readstring (lua_State *luaVM)
 	ofs = (lua_isnumber(luaVM, 2)) ? (size_t) luaL_checkint( luaVM, 2 ) : 0;
 	sz  = (lua_isnumber(luaVM, 3)) ? (size_t) luaL_checkint( luaVM, 3 ) : b->len-ofs;
 
-	lua_pushlstring(luaVM, (const char*) &(b->b[ ofs ]), sz);
+	lua_pushlstring(luaVM, (const char*) &(b->b[ ofs ]), sz );
 	return 1;
 }
 
@@ -450,12 +420,12 @@ static int lxt_buf_writestring (lua_State *luaVM)
 	if (lua_isnumber(luaVM, 4))
 	{
 		sz  = luaL_checkint(luaVM, 4);
-		memcpy  ( (char*) &(b->b[ ofs ]), luaL_checklstring( luaVM, 2, NULL ), sz);
+		memcpy  ( (char*) &(b->b[ ofs ]), luaL_checklstring( luaVM, 2, NULL ), sz );
 	}
 	// otherwise write the whole thing
 	else
 	{
-		memcpy  ( (char*) &(b->b[ ofs ]), luaL_checklstring( luaVM, 2, &sz ), sz);
+		memcpy  ( (char*) &(b->b[ ofs ]), luaL_checklstring( luaVM, 2, &sz ), sz );
 	}
 	return 0;
 }
@@ -472,10 +442,10 @@ static int lxt_buf_tohexstring (lua_State *luaVM)
 {
 	int            l,c;
 	char          *sbuf;
-	struct xt_buf *b   = xt_buf_check_ud (luaVM, 1);
+	struct xt_buf *b   = xt_buf_check_ud( luaVM, 1 );
 
-	sbuf = malloc(3 * b->len * sizeof( char ));
-	memset(sbuf, 0, 3 * b->len * sizeof( char ) );
+	sbuf = malloc( 3 * b->len * sizeof( char ) );
+	memset( sbuf, 0, 3 * b->len * sizeof( char ) );
 
 	c = 0;
 	for (l=0; l < (int) b->len; l++) {
@@ -495,7 +465,7 @@ static int lxt_buf__len (lua_State *luaVM)
 {
 	struct xt_buf *b;
 
-	b   = xt_buf_check_ud (luaVM, 1);
+	b   = xt_buf_check_ud( luaVM, 1 );
 	lua_pushinteger(luaVM, (int) b->len);
 	return 1;
 }
@@ -510,7 +480,7 @@ static int lxt_buf__len (lua_State *luaVM)
  * --------------------------------------------------------------------------*/
 static int lxt_buf__tostring (lua_State *luaVM)
 {
-	struct xt_buf *bs = xt_buf_check_ud (luaVM, 1);
+	struct xt_buf *bs = xt_buf_check_ud( luaVM, 1 );
 	lua_pushfstring( luaVM, "xt.Buffer{%d}: %p", bs->len, bs );
 	return 1;
 }
@@ -565,18 +535,18 @@ static const luaL_Reg xt_buf_m [] = {
 LUAMOD_API int luaopen_xt_buf (lua_State *luaVM)
 {
 	// xt.Buffer instance metatable
-	luaL_newmetatable(luaVM, "xt.Buffer");
-	luaL_newlib(luaVM, xt_buf_m);
-	lua_setfield(luaVM, -2, "__index");
-	lua_pushcfunction(luaVM, lxt_buf__len);
-	lua_setfield(luaVM, -2, "__len");
-	lua_pushcfunction(luaVM, lxt_buf__tostring);
-	lua_setfield(luaVM, -2, "__tostring");
-	lua_pop(luaVM, 1);        // remove metatable from stack
+	luaL_newmetatable( luaVM, "xt.Buffer" );
+	luaL_newlib( luaVM, xt_buf_m );
+	lua_setfield( luaVM, -2, "__index" );
+	lua_pushcfunction( luaVM, lxt_buf__len );
+	lua_setfield( luaVM, -2, "__len");
+	lua_pushcfunction( luaVM, lxt_buf__tostring );
+	lua_setfield( luaVM, -2, "__tostring");
+	lua_pop( luaVM, 1 );        // remove metatable from stack
 	// xt.Buffer class
-	luaL_newlib(luaVM, xt_buf_cf);
-	luaL_newlib(luaVM, xt_buf_fm);
-	lua_setmetatable(luaVM, -2);
+	luaL_newlib( luaVM, xt_buf_cf );
+	luaL_newlib( luaVM, xt_buf_fm );
+	lua_setmetatable( luaVM, -2 );
 	return 1;
 }
 
