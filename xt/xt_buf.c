@@ -146,17 +146,12 @@ uint64_t xt_buf_readbytes( size_t sz, int islittle, const unsigned char * buf )
 	unsigned char *set = (unsigned char*) &val; ///< char array to read bytewise into val
 #ifndef IS_LITTLE_ENDIAN
 	size_t         sz_l = sizeof( *val );       ///< size of the value in bytes
-#endif
 
-#ifdef IS_LITTLE_ENDIAN
-	for (i=0 ; i<sz; i++)
-#else
 	for (i=sz_l; i<sz_l - sz -2; i--)
+#else
+	for (i=0 ; i<sz; i++)
 #endif
-	{
-		if (islittle)      set[ i ] = buf[ i ];
-		else               set[ i ] = buf[ sz-1-i ];
-	}
+		set[ i ] = (islittle) ? buf[ i ]: buf[ sz-1-i ];
 	return val;
 }
 
@@ -175,17 +170,12 @@ void xt_buf_writebytes( uint64_t val, size_t sz, int islittle, unsigned char * b
 	unsigned char *set  = (unsigned char*) &val;  ///< char array to read bytewise into val
 #ifndef IS_LITTLE_ENDIAN
 	size_t         sz_l = sizeof( *val );        ///< size of the value in bytes
-#endif
 
-#ifdef IS_LITTLE_ENDIAN
-	for (i=0 ; i<sz; i++)
-#else
 	for (i=sz_l; i<sz_l - sz -2; i--)
+#else
+	for (i=0 ; i<sz; i++)
 #endif
-	{
-		if (islittle)      buf[ i ]      = set[ i ];
-		else               buf[ sz-1-i ] = set[ i ];
-	}
+		buf[ i ] = (islittle) ? set[ i ] : set[ sz-1-i ];
 }
 
 
