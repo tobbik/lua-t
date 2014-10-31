@@ -266,6 +266,37 @@ static int lxt_pck_pack( lua_State *luaVM )
 	}
 }
 
+/**--------------------------------------------------------------------------
+ * Get the size in bytes for a partucular packer/struct value.
+ * \param   luaVM   The lua state.
+ * \lparam  xt.Packer.* instance.
+ * \lreturn int   size in bytes.
+ * \return  The # of items pushed to the stack.
+ * --------------------------------------------------------------------------*/
+static int lxt_pck_sz( lua_State *luaVM )
+{
+	struct xt_pck   *p;
+	struct xt_pck_s *ps;
+	struct xt_pck_a *pa;
+
+	if (NULL != luaL_testudata( luaVM, -1, "xt.Packer" ))
+	{
+		p = xt_pck_check_ud( luaVM, -1 );
+		lua_pushinteger( luaVM, p->sz );
+	}
+	if (NULL != luaL_testudata( luaVM, -1, "xt.Packer.Struct" ))
+	{
+		ps  = xt_pck_s_check_ud( luaVM, -1 );
+		lua_pushinteger( luaVM, ps->sz );
+	}
+	if (NULL != luaL_testudata( luaVM, -1, "xt.Packer.Array" ))
+	{
+		pa  = xt_pck_a_check_ud( luaVM, -1 );
+		lua_pushinteger( luaVM, pa->sz );
+	}
+	return 1;
+}
+
 
 /**--------------------------------------------------------------------------
  * __tostring (print) representation of a packer instance.
@@ -328,6 +359,7 @@ static const struct luaL_Reg xt_pck_cf [] = {
 	{"String",    lxt_pck_String},
 	{"Struct",    lxt_pck_Struct},
 	{"Array",     lxt_pck_Array},
+	{"size",      lxt_pck_sz},
 	{NULL,    NULL}
 };
 
