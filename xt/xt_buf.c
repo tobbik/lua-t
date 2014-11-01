@@ -181,43 +181,43 @@ void xt_buf_writebytes( uint64_t val, size_t sz, int islittle, unsigned char * b
 
 /**--------------------------------------------------------------------------
  * Read an integer of y bits from a char buffer with offset ofs.
- * \param   sz   size in bits (1-64).
+ * \param   len  size in bits (1-64).
  * \param   ofs  offset   in bits (0-7).
  * \param  *buf  char buffer already on proper position
  * \return  val        integer value.
  * --------------------------------------------------------------------------*/
-uint64_t xt_buf_readbits( size_t sz, size_t ofs, const unsigned char * buf )
+uint64_t xt_buf_readbits( size_t len, size_t ofs, const unsigned char * buf )
 {
-	uint64_t val = xt_buf_readbytes( (sz+ofs)/8 +1, 0, buf );
+	uint64_t val = xt_buf_readbytes( (len+ofs)/8 +1, 0, buf );
 
 #if PRINT_DEBUGS == 1
 	printf("Read Val:    %016llX\nShift Left:  %016llX\nShift right: %016llX\n%d      %d\n",
 			val,
-			(val << (64- ((sz/8+1)*8) + ofs ) ),
-			(val << (64- ((sz/8+1)*8) + ofs ) ) >> (64 - sz),
-			(64- ((sz/8+1)*8) + ofs ), (64-sz));
+			(val << (64- ((len/8+1)*8) + ofs ) ),
+			(val << (64- ((len/8+1)*8) + ofs ) ) >> (64 - len),
+			(64- ((len/8+1)*8) + ofs ), (64-len));
 #endif
-	return  (val << (64- ((sz/8+1)*8) + ofs ) ) >> (64 - sz);
+	return  (val << (64- ((len/8+1)*8) + ofs ) ) >> (64 - len);
 }
 
 
 /**--------------------------------------------------------------------------
  * Write an integer of y bits from ta char buffer with offset ofs.
- * \param  val   the val gets written to.
- * \param   sz   size in bits (1-64).
+ * \param   val  the val gets written to.
+ * \param   len  size in bits (1-64).
  * \param   ofs  offset   in bits (0-7).
  * \param  *buf  char buffer already on proper position
  * --------------------------------------------------------------------------*/
-void xt_buf_writebits( uint64_t val, size_t sz, size_t ofs, unsigned char * buf )
+void xt_buf_writebits( uint64_t val, size_t len, size_t ofs, unsigned char * buf )
 {
 	uint64_t   read = 0;                           ///< value for the read access
 	uint64_t   msk  = 0;                           ///< mask
 	/// how many bit are in all the bytes needed for the conversion
-	size_t     abit = (((sz+ofs-1)/8)+1) * 8;
+	size_t     abit = (((len+ofs-1)/8)+1) * 8;
 
-	msk  = (0xFFFFFFFFFFFFFFFF  << (64-sz)) >> (64-abit+ofs);
+	msk  = (0xFFFFFFFFFFFFFFFF  << (64-len)) >> (64-abit+ofs);
 	read = xt_buf_readbytes( abit/8, 0, buf );
-	read = (val << (abit-ofs-sz)) | (read & ~msk);
+	read = (val << (abit-ofs-len)) | (read & ~msk);
 	xt_buf_writebytes( read, abit/8, 0, buf);
 
 #if PRINT_DEBUGS == 1
@@ -225,12 +225,12 @@ void xt_buf_writebits( uint64_t val, size_t sz, size_t ofs, unsigned char * buf 
 	       "Nmsk: %016llX       \nval:  %016llX         \n"
 	       "Sval: %016llX    %ld\nRslt: %016llX         \n",
 			read,
-			 0xFFFFFFFFFFFFFFFF <<   (64-sz), (64-sz),  /// Mask after left shift
-			(0xFFFFFFFFFFFFFFFF <<	 (64-sz)) >> (64-abit+ofs), (64-abit+ofs),
+			 0xFFFFFFFFFFFFFFFF <<   (64-len), (64-len),  /// Mask after left shift
+			(0xFFFFFFFFFFFFFFFF <<	 (64-len)) >> (64-abit+ofs), (64-abit+ofs),
 			read & ~msk,
 			val,
-			 val << (abit-ofs-sz),  abit-ofs-sz,
-			(val << (abit-ofs-sz)) | (read & ~msk)
+			 val << (abit-ofs-len),  abit-ofs-len,
+			(val << (abit-ofs-len)) | (read & ~msk)
 			);
 #endif
 }

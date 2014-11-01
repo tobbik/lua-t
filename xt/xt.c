@@ -304,7 +304,7 @@ LUAMOD_API int luaopen_xt( lua_State *luaVM )
 	luaopen_xt_buf( luaVM );
 	lua_setfield( luaVM, -2, "Buffer" );
 	luaopen_xt_pck( luaVM );
-	lua_setfield( luaVM, -2, "Packer" );
+	lua_setfield( luaVM, -2, "Pack" );
 	luaopen_xt_enc( luaVM );
 	lua_setfield( luaVM, -2, "Encode" );
 	luaopen_xt_test( luaVM );

@@ -28,9 +28,9 @@ XT_SRC=xt.c \
 	 xt_enc_b64.c \
 	 xt_buf.c \
 	 xt_pck.c \
-	 xt_pck_s.c \
-	 xt_pck_a.c \
+	 xt_pckc.c \
 	 xt_test.c
+
 
 XT_OBJ=$(XT_SRC:.c=.o)
 
