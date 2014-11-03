@@ -31,9 +31,10 @@ int lxt_pckc_Struct( lua_State *luaVM )
 	cp     = (struct xt_pck *) lua_newuserdata( luaVM, sizeof( struct xt_pck ) );
 	cp->n  = lua_gettop( luaVM )-1;  // number of elements on stack -1 (the Struct userdata)
 	cp->sz = 0;
+	cp->oC = 0;
 	cp->t  = XT_PCK_STRUCT;
 
-	lua_newtable( luaVM ); // Stack: ..., Struct,idx
+	lua_createtable( luaVM, cp->n, cp->n ); // Stack: ..., Struct,idx
 
 	for (i=1; i<lua_gettop( luaVM )-1; i++)
 	{
@@ -100,10 +101,11 @@ int lxt_pckc_Array( lua_State *luaVM )
 	struct xt_pck     *p;      ///< packer
 	struct xt_pck     *ap;     ///< array userdata to be created
 
-	p = xt_pckc_check_ud( luaVM, -2 );    // allow x.Pack and xt.Pack.Struct
+	p = xt_pckc_check_ud( luaVM, -2 );    // allow x.Pack or xt.Pack.Struct
 	ap     = (struct xt_pck *) lua_newuserdata( luaVM, sizeof( struct xt_pck ) );
 	ap->n  = luaL_checkint( luaVM, -2 );       // how many elements in the array
 	ap->sz = ap->n * sizeof( p->sz );
+	ap->oC = 0;
 	ap->t  = XT_PCK_ARRAY;
 
 	lua_newtable( luaVM );     // Stack: Pack,n,Array,idx
@@ -123,7 +125,7 @@ int lxt_pckc_Array( lua_State *luaVM )
 
 
 /**--------------------------------------------------------------------------
- * \brief   check a value on the stack for being a Test
+ * \brief   check a value on the stack for being an xt.Pack OR * xt.Pack.Struct/Array
  * \param   luaVM    The lua state.
  * \param   int      position on the stack.
  * \lparam  userdata xt.Pack.Struct on the stack.
@@ -151,14 +153,20 @@ struct xt_pck *xt_pckc_check_ud( lua_State *luaVM, int pos )
 static int lxt_pckc__index( lua_State *luaVM )
 {
 	struct xt_pck *cp = xt_pckc_check_ud( luaVM, -2 );
+	struct xt_pck *p;
 
 	// Access the idx table by key to get numeric index onto stack
 	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, cp->iR );
-	lua_pushvalue( luaVM, -2 );     // Stack: Struct, name/id, idx, name/id
-	lua_rawget( luaVM, -2 );        // Stack: Struct, name, idx, Pack or name
-	if (XT_PCK_STRUCT==cp->t  && ! lua_tonumber( luaVM, -2 ))
-		lua_rawget( luaVM, -2 );     // Stack: Struct, name, idx, Pack
-
+	// if (XT_PCK_STRUCT==cp->t  && ! lua_tonumber( luaVM, -3 ))
+	if (XT_PCK_STRUCT == cp->t)
+	{
+		if (lua_tonumber( luaVM, -2 ))
+			lua_rawgeti( luaVM, -1, lua_tointeger( luaVM, -2 ) );
+		else
+			lua_pushvalue( luaVM, -2 );
+		lua_rawget( luaVM, -2 );        // Stack: Struct, name, idx, Pack or name
+		p = xt_pckc_check_ud( luaVM, -1);
+	}
 	// no checks -> if it didn't find something nil gets returned and that's expected
 	return 1;
 }
