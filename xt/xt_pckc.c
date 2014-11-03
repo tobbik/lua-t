@@ -31,7 +31,6 @@ int lxt_pckc_Struct( lua_State *luaVM )
 	cp     = (struct xt_pck *) lua_newuserdata( luaVM, sizeof( struct xt_pck ) );
 	cp->n  = lua_gettop( luaVM )-1;  // number of elements on stack -1 (the Struct userdata)
 	cp->sz = 0;
-	cp->oC = 0;
 	cp->t  = XT_PCK_STRUCT;
 
 	// create Index table and offset table
@@ -105,7 +104,6 @@ int lxt_pckc_Array( lua_State *luaVM )
 	ap     = (struct xt_pck *) lua_newuserdata( luaVM, sizeof( struct xt_pck ) );
 	ap->n  = luaL_checkint( luaVM, -2 );       // how many elements in the array
 	ap->sz = ap->n * sizeof( p->sz );
-	ap->oC = 0;
 	ap->t  = XT_PCK_ARRAY;
 
 	lua_newtable( luaVM );     // Stack: Pack,n,Array,idx
@@ -157,7 +155,6 @@ static int lxt_pckc__index( lua_State *luaVM )
 
 	// Access the idx table by key to get numeric index onto stack
 	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, cp->iR );
-	// if (XT_PCK_STRUCT==cp->t  && ! lua_tonumber( luaVM, -3 ))
 	if (XT_PCK_STRUCT == cp->t)
 	{
 		if (lua_tonumber( luaVM, -2 ))
@@ -165,8 +162,13 @@ static int lxt_pckc__index( lua_State *luaVM )
 		else
 			lua_pushvalue( luaVM, -2 );
 		lua_rawget( luaVM, -2 );        // Stack: Struct, name, idx, Pack or name
-		p = xt_pckc_check_ud( luaVM, -1);
 	}
+	if (XT_PCK_ARRAY == cp->t)
+	{
+		lua_rawgeti( luaVM, -1, luaL_checkint( luaVM, -2 ) );
+	}
+	p = xt_pckc_check_ud( luaVM, -1);
+
 	// no checks -> if it didn't find something nil gets returned and that's expected
 	return 1;
 }

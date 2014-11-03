@@ -28,11 +28,10 @@ enum xt_pck_t {
 /// The userdata struct for xt.Pack/xt.Pack.Struct
 struct xt_pck {
 	size_t          sz;   ///< how many bytes are covered in this packer/Structure (incl. su structs)
-	int             oA;   ///< access based offset accumulation
-	size_t          oC;   ///< offset in bytes within combinator
 	size_t          lB;   ///< how many bits are covered in this packer
 	size_t          oB;   ///< offset in bits in the first byte
-	int             iR;   ///< Lua registry reference to index table
+	int             iR;   ///< Lua registry ref to index table
+	int             oR;   ///< Lua registry ref to offset table
 	size_t          n;    ///< how many elements in struct (lua_rawlen of iR table)
 	enum  xt_pck_t  t;    ///< type of packer
 };

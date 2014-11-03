@@ -119,7 +119,6 @@ struct xt_pck *xt_pck_create_ud( lua_State *luaVM, enum xt_pck_t t)
 	p = (struct xt_pck *) lua_newuserdata( luaVM, sizeof( struct xt_pck ));
 
 	p->t  = t;
-	p->oC = 0;
 	luaL_getmetatable( luaVM, "xt.Pack" );
 	lua_setmetatable( luaVM, -2 );
 	return p;
@@ -157,13 +156,13 @@ int xt_pck_read( lua_State *luaVM, struct xt_pck *p, const unsigned char *b)
 	{
 		case XT_PCK_INTL:
 		case XT_PCK_INTB:
-			lua_pushinteger( luaVM, (lua_Integer) xt_buf_readbytes( p->sz, p->t, b+p->oC ) );
+			lua_pushinteger( luaVM, (lua_Integer) xt_buf_readbytes( p->sz, p->t, b ) );
 			break;
 		case XT_PCK_BIT:
-			lua_pushinteger( luaVM, (lua_Integer) xt_buf_readbits( p->lB, p->oB, b+p->oC ) );
+			lua_pushinteger( luaVM, (lua_Integer) xt_buf_readbits( p->lB, p->oB, b ) );
 			break;
 		case XT_PCK_STR:
-			lua_pushlstring( luaVM, (const char*) b+p->oC, p->sz );
+			lua_pushlstring( luaVM, (const char*) b, p->sz );
 			break;
 		default:
 			return xt_push_error( luaVM, "Can't read value from unknown packer type" );
@@ -196,20 +195,20 @@ int xt_pck_write( lua_State *luaVM, struct xt_pck *p, unsigned char *b )
 			intVal = luaL_checkint( luaVM, -1 );
 			luaL_argcheck( luaVM,  intVal  <  0x01 << (p->sz*8), -1,
 			              "value to pack must be smaller than the maximum value for the packer size");
-			xt_buf_writebytes( (uint64_t) intVal, p->sz, p->t, b+p->oC );
+			xt_buf_writebytes( (uint64_t) intVal, p->sz, p->t, b );
 			break;
 		case XT_PCK_BIT:
 			intVal = luaL_checkint( luaVM, -1 );
 			luaL_argcheck( luaVM,  intVal  <  0x01 << p->lB, -1,
 			              "value to pack must be smaller than the maximum value for the packer size");
-			xt_buf_writebits( (uint64_t) intVal, p->lB, p->oB, b+p->oC );
+			xt_buf_writebits( (uint64_t) intVal, p->lB, p->oB, b );
 			break;
 		case XT_PCK_STR:
 			strVal = luaL_checklstring( luaVM, -1, &sL );
 			if (p->sz < sL)
 			luaL_argcheck( luaVM,  p->sz < sL, -1,
 			              "String is to big for the field" );
-			memcpy( b+p->oC, strVal, sL );
+			memcpy( b, strVal, sL );
 			break;
 		default:
 			return xt_push_error( luaVM, "Can't pack a value in unknown packer type" );
