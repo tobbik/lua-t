@@ -34,9 +34,10 @@ int lxt_pckc_Struct( lua_State *luaVM )
 	cp->oC = 0;
 	cp->t  = XT_PCK_STRUCT;
 
+	// create Index table and offset table
 	lua_createtable( luaVM, cp->n, cp->n ); // Stack: ..., Struct,idx
 
-	for (i=1; i<lua_gettop( luaVM )-1; i++)
+	for (i=1; i<=cp->n; i++)
 	{
 		// are we creating a named element?
 		if (lua_istable( luaVM, i))
@@ -44,7 +45,7 @@ int lxt_pckc_Struct( lua_State *luaVM )
 			// Stack gymnastic:
 			// enter into the idx table [name]=pack and [id]=name
 			lua_pushnil( luaVM );
-			if (!lua_next( luaVM, i ))    // Stack: ...,Struct,idx,name,Pack
+			if (!lua_next( luaVM, i ))         // Stack: ...,Struct,idx,name,Pack
 				return xt_push_error( luaVM, "the table argument must contain one key/value pair.");
 		}
 		else
@@ -52,6 +53,7 @@ int lxt_pckc_Struct( lua_State *luaVM )
 			lua_pushfstring( luaVM, "%d", i ); // Stack: ...,Struct,idx,"i"
 			lua_pushvalue( luaVM, i );         // Stack: ...,Struct,idx,"i",Pack
 		}
+		p = xt_pckc_check_ud( luaVM, -1 );    // allow xt.Pack or xt.Pack.Struct
 		// populate idx table
 		lua_insert( luaVM, -2);               // Stack: ...,Struct,idx,Pack,name
 		lua_pushvalue( luaVM, -1);            // Stack: ...,Struct,idx,Pack,name,name
@@ -59,9 +61,7 @@ int lxt_pckc_Struct( lua_State *luaVM )
 		lua_pushvalue( luaVM, -2);            // Stack: ...,Struct,idx,Pack,name,Pack
 		lua_rawset( luaVM, -4 );              // Stack: ...,Struct,idx,Pack
 		// Stack: ...,Struct,idx,Pack/Struct
-		p = xt_pckc_check_ud( luaVM, -1 );    // allow xt.Pack or xt.Pack.Struct
 		// handle Bit type packers
-		p->oC = cp->sz;                       // offset within combinator
 		if (XT_PCK_BIT == p->t)
 		{
 			p->oB = bc%8;
@@ -79,7 +79,7 @@ int lxt_pckc_Struct( lua_State *luaVM )
 		}
 		lua_pop( luaVM, 1 );   // pop packer from stack for next round
 	}
-	cp->iR = luaL_ref( luaVM, LUA_REGISTRYINDEX);
+	cp->iR = luaL_ref( luaVM, LUA_REGISTRYINDEX); // register index  table
 	luaL_getmetatable( luaVM, "xt.Pack.Struct" ); // Stack: ...,xt.Pack.Struct
 	lua_setmetatable( luaVM, -2 ) ;
 
