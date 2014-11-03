@@ -58,8 +58,9 @@ int lxt_pckc_Struct( lua_State *luaVM )
 		lua_pushvalue( luaVM, -2);            // Stack: ...,Struct,idx,Pack,name,Pack
 		lua_rawset( luaVM, -4 );              // Stack: ...,Struct,idx,Pack
 		// Stack: ...,Struct,idx,Pack/Struct
-		p = xt_pckc_check_ud( luaVM, -1 );    // allow x.Pack and xt.Pack.Struct
+		p = xt_pckc_check_ud( luaVM, -1 );    // allow xt.Pack or xt.Pack.Struct
 		// handle Bit type packers
+		p->oC = cp->sz;                       // offset within combinator
 		if (XT_PCK_BIT == p->t)
 		{
 			p->oB = bc%8;
@@ -70,7 +71,7 @@ int lxt_pckc_Struct( lua_State *luaVM )
 		else
 		{
 			if (bc%8)
-				xt_push_error( luaVM, "bitsized fields must always be grouped by byte size " );
+				xt_push_error( luaVM, "bitsized fields must always be grouped by byte size" );
 			else
 				bc = 0;
 			cp->sz += p->sz;

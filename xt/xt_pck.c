@@ -118,7 +118,8 @@ struct xt_pck *xt_pck_create_ud( lua_State *luaVM, enum xt_pck_t t)
 	struct xt_pck  *p;
 	p = (struct xt_pck *) lua_newuserdata( luaVM, sizeof( struct xt_pck ));
 
-	p->t = t;
+	p->t  = t;
+	p->oC = 0;
 	luaL_getmetatable( luaVM, "xt.Pack" );
 	lua_setmetatable( luaVM, -2 );
 	return p;
@@ -150,19 +151,19 @@ struct xt_pck *xt_pck_check_ud( lua_State *luaVM, int pos )
  * \lreturn value from the buffer a packers position according to packer format.
  * \return  integer number of values left on the stack.
  *  -------------------------------------------------------------------------*/
-int xt_pck_read( lua_State *luaVM, struct xt_pck *p, const unsigned char *buffer)
+int xt_pck_read( lua_State *luaVM, struct xt_pck *p, const unsigned char *b)
 {
 	switch( p->t )
 	{
 		case XT_PCK_INTL:
 		case XT_PCK_INTB:
-			lua_pushinteger( luaVM, (lua_Integer) xt_buf_readbytes( p->sz, p->t, buffer ) );
+			lua_pushinteger( luaVM, (lua_Integer) xt_buf_readbytes( p->sz, p->t, b+p->oC ) );
 			break;
 		case XT_PCK_BIT:
-			lua_pushinteger( luaVM, (lua_Integer) xt_buf_readbits( p->lB, p->oB, buffer ) );
+			lua_pushinteger( luaVM, (lua_Integer) xt_buf_readbits( p->lB, p->oB, b+p->oC ) );
 			break;
 		case XT_PCK_STR:
-			lua_pushlstring( luaVM, (const char*) buffer, p->sz );
+			lua_pushlstring( luaVM, (const char*) b+p->oC, p->sz );
 			break;
 		default:
 			return xt_push_error( luaVM, "Can't read value from unknown packer type" );
@@ -180,7 +181,7 @@ int xt_pck_read( lua_State *luaVM, struct xt_pck *p, const unsigned char *buffer
  *
  * return integer return code -0==success; !=0 means errors pushed to Lua stack
  *  -------------------------------------------------------------------------*/
-int xt_pck_write( lua_State *luaVM, struct xt_pck *p, unsigned char *buffer )
+int xt_pck_write( lua_State *luaVM, struct xt_pck *p, unsigned char *b )
 {
 	lua_Integer     intVal;
 	//lua_Number      fltVal;
@@ -195,20 +196,20 @@ int xt_pck_write( lua_State *luaVM, struct xt_pck *p, unsigned char *buffer )
 			intVal = luaL_checkint( luaVM, -1 );
 			luaL_argcheck( luaVM,  intVal  <  0x01 << (p->sz*8), -1,
 			              "value to pack must be smaller than the maximum value for the packer size");
-			xt_buf_writebytes( (uint64_t) intVal, p->sz, p->t, buffer );
+			xt_buf_writebytes( (uint64_t) intVal, p->sz, p->t, b+p->oC );
 			break;
 		case XT_PCK_BIT:
 			intVal = luaL_checkint( luaVM, -1 );
 			luaL_argcheck( luaVM,  intVal  <  0x01 << p->lB, -1,
 			              "value to pack must be smaller than the maximum value for the packer size");
-			xt_buf_writebits( (uint64_t) intVal, p->lB, p->oB, buffer );
+			xt_buf_writebits( (uint64_t) intVal, p->lB, p->oB, b+p->oC );
 			break;
 		case XT_PCK_STR:
 			strVal = luaL_checklstring( luaVM, -1, &sL );
 			if (p->sz < sL)
 			luaL_argcheck( luaVM,  p->sz < sL, -1,
 			              "String is to big for the field" );
-			memcpy( buffer, strVal, sL );
+			memcpy( b+p->oC, strVal, sL );
 			break;
 		default:
 			return xt_push_error( luaVM, "Can't pack a value in unknown packer type" );
@@ -264,6 +265,31 @@ static int lxt_pck_pack( lua_State *luaVM )
 		return 1;
 	}
 }
+
+
+/**--------------------------------------------------------------------------
+ * reads a Lua Value from an xt.Buffer/String according to the Packer.
+ * \param   luaVM lua Virtual Machine.
+ * \lparam  userdata xt.Pack.
+ * \lparam  userdata xt.Buffer.
+ * \lreturn value    from xt.Buffer/String according to packer format.
+ * \return integer number of values left on the stack.
+ *  -------------------------------------------------------------------------*/
+static int lxt_pck_read( lua_State *luaVM )
+{
+	struct xt_pck *p      = xt_pckc_check_ud( luaVM, 1 );  // allow Pack or Struct
+	struct xt_buf *b      = xt_buf_check_ud( luaVM, 2 );
+
+	if (p->t < XT_PCK_STRUCT)       // xt.Pack value type -> return result
+	{
+		return xt_pck_read( luaVM, p, (const unsigned char *) b->b );
+	}
+	else                            // xt.Pack.Struct comb type -> return table
+	{
+		return 0;;
+	}
+}
+
 
 
 /**--------------------------------------------------------------------------
@@ -343,6 +369,7 @@ static const struct luaL_Reg xt_pck_cf [] = {
 	{"Struct",    lxt_pckc_Struct},
 	{"Array",     lxt_pckc_Array},
 	{"len",       lxt_pck_len},
+	{"read",      lxt_pck_read},
 	{NULL,    NULL}
 };
 
