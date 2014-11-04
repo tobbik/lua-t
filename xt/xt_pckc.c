@@ -33,8 +33,10 @@ int lxt_pckc_Struct( lua_State *luaVM )
 	cp->sz = 0;
 	cp->t  = XT_PCK_STRUCT;
 
-	// create Index table and offset table
+	// create index table
 	lua_createtable( luaVM, cp->n, cp->n ); // Stack: ..., Struct,idx
+	// create offset table
+	lua_createtable( luaVM, cp->n, cp->n ); // Stack: ..., Struct,idx,ofs
 
 	for (i=1; i<=cp->n; i++)
 	{
@@ -42,23 +44,27 @@ int lxt_pckc_Struct( lua_State *luaVM )
 		if (lua_istable( luaVM, i))
 		{
 			// Stack gymnastic:
-			// enter into the idx table [name]=pack and [id]=name
 			lua_pushnil( luaVM );
-			if (!lua_next( luaVM, i ))         // Stack: ...,Struct,idx,name,Pack
+			if (!lua_next( luaVM, i ))         // Stack: ...,Struct,idx,ofs,name,Pack
 				return xt_push_error( luaVM, "the table argument must contain one key/value pair.");
 		}
 		else
 		{
-			lua_pushfstring( luaVM, "%d", i ); // Stack: ...,Struct,idx,"i"
-			lua_pushvalue( luaVM, i );         // Stack: ...,Struct,idx,"i",Pack
+			lua_pushfstring( luaVM, "%d", i ); // Stack: ...,Struct,idx,ofs,"i"
+			lua_pushvalue( luaVM, i );         // Stack: ...,Struct,idx,ofs,"i",Pack
 		}
 		p = xt_pckc_check_ud( luaVM, -1, 1 );    // allow xt.Pack or xt.Pack.Struct
-		// populate idx table
-		lua_insert( luaVM, -2);               // Stack: ...,Struct,idx,Pack,name
-		lua_pushvalue( luaVM, -1);            // Stack: ...,Struct,idx,Pack,name,name
-		lua_rawseti( luaVM, -4, i );          // Stack: ...,Struct,idx,Pack,name
-		lua_pushvalue( luaVM, -2);            // Stack: ...,Struct,idx,Pack,name,Pack
-		lua_rawset( luaVM, -4 );              // Stack: ...,Struct,idx,Pack
+		// populate idx and the ofs table
+		lua_insert( luaVM, -2);           // Stack: ...,Struct,idx,ofs,Pack,name             swap pack/name
+		lua_pushvalue( luaVM, -1);        // Stack: ...,Struct,idx,ofs,Pack,name,name
+		lua_rawseti( luaVM, -5, i );      // Stack: ...,Struct,idx,ofs,Pack,name             idx[i]=name
+		lua_pushinteger( luaVM, cp->sz);  // Stack: ...,Struct,idx,ofs,Pack,name,offset
+		lua_rawseti( luaVM, -4, i );      // Stack: ...,Struct,idx,ofs,Pack,name             ofs[i]=offset
+		lua_pushvalue( luaVM, -1);        // Stack: ...,Struct,idx,ofs,Pack,name,name
+		lua_pushinteger( luaVM, i);       // Stack: ...,Struct,idx,ofs,Pack,name,name,index
+		lua_rawset( luaVM, -5 );          // Stack: ...,Struct,idx,ofs,Pack,name             ofs[name]=i
+		lua_pushvalue( luaVM, -2);        // Stack: ...,Struct,idx,ofs,Pack,name,Pack
+		lua_rawset( luaVM, -5 );          // Stack: ...,Struct,idx,ofs,Pack                  idx[name]=Pack
 		// Stack: ...,Struct,idx,Pack/Struct
 		// handle Bit type packers
 		if (XT_PCK_BIT == p->t)
@@ -78,6 +84,7 @@ int lxt_pckc_Struct( lua_State *luaVM )
 		}
 		lua_pop( luaVM, 1 );   // pop packer from stack for next round
 	}
+	cp->oR = luaL_ref( luaVM, LUA_REGISTRYINDEX); // register offset table
 	cp->iR = luaL_ref( luaVM, LUA_REGISTRYINDEX); // register index  table
 	luaL_getmetatable( luaVM, "xt.Pack.Struct" ); // Stack: ...,xt.Pack.Struct
 	lua_setmetatable( luaVM, -2 ) ;
@@ -157,31 +164,43 @@ static int lxt_pckc__index( lua_State *luaVM )
 	struct xt_pck *cp = xt_pckc_check_ud( luaVM, -2, 1 );
 	struct xt_pck *p;
 	int    pos        = lua_tointeger( luaVM, lua_upvalueindex( 1 ) );
-	printf( "pos = %d\n", pos);
+	printf( "pos = %d\n", pos );
 
-	// Access the idx table by key to get numeric index onto stack
-	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, cp->iR );
-	if (XT_PCK_STRUCT == cp->t)
+	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, cp->iR );  // get idx table(struct) or packer type(array)
+	// Stack: Struct,idx/name,idx/Packer
+	if (LUA_TUSERDATA == lua_type( luaVM, 1 ))        // xt.Array
+	{
+		if (n > cp->n)
+		{
+			lua_pushinteger( luaVM, 0 );
+			lua_replace( luaVM, lua_upvalueindex( 1 ) );
+			lua_pushnil( luaVM );
+			return 1;
+		}
+		else
+		{
+			p   = xt_pckc_check_ud( luaVM, -1, 0 );
+			pos = pos + (p->sz * luaL_checkint( luaVM, -2 ));
+		}
+	}
+	else                                              // xt.Struct
 	{
 		if (lua_tonumber( luaVM, -2 ))
-			lua_rawgeti( luaVM, -1, lua_tointeger( luaVM, -2 ) );
+			lua_rawgeti( luaVM, -1, lua_tointeger( luaVM, -2 ) );  // Stack: Struct,id,idx,name
 		else
-			lua_pushvalue( luaVM, -2 );
-		lua_rawget( luaVM, -2 );        // Stack: Struct, name, idx, Pack or name
+			lua_pushvalue( luaVM, -2 );                            // Stack: Struct,name,idx,name
+		lua_rawget( luaVM, -2 );        // Stack: Struct, name, idx, Pack
+		p = xt_pckc_check_ud( luaVM, -1, 0 );
 	}
-	if (XT_PCK_ARRAY == cp->t)
-	{
-		lua_rawgeti( luaVM, -1, luaL_checkint( luaVM, -2 ) );
-	}
+
 	// if it's empty or an actual packer reset pos and set p->oB appropriately
-	p = xt_pckc_check_ud( luaVM, -1, 0 );
 	if (NULL == p)
 	{
 		lua_pushinteger( luaVM, 0 );
 	}
 	else
 	{
-		if (p->t > XT_PCK_STR)        // that's astruct or array -> Accumulate offset
+		if (p->t > XT_PCK_STR)        // that's a struct or array -> Accumulate offset
 		{
 			lua_pushinteger( luaVM, pos+4 );
 		}

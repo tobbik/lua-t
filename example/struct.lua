@@ -52,6 +52,7 @@ t = xt.Pack.Struct (
 		{isShopMode  = xt.Pack.Bit( 1 )},  -- is the train set in shop mode?
 		{padding     = xt.Pack.Bit( 1 )}   -- padding
 	)},
+	{internal       = ss},
  	{['@status']    = xt.Pack.Int( 1 )},
 	xt.Pack.Int( 2 ),
  	{ConsistCount   = xt.Pack.Int( 1 )}

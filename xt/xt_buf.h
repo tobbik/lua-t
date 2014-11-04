@@ -41,6 +41,35 @@ struct xt_pck {
 };
 
 
+/// The userdata struct for xt.Pack/xt.Pack.Struct
+/// it needs size and type information
+struct xt_pck {
+	size_t          sz;   ///< how many bytes are covered in this packer/Structure (incl. su structs)
+	size_t          lB;   ///< how many bits are covered in this packer
+	size_t          oB;   ///< offset in bits in the first byte
+	enum  xt_pck_t  t;    ///< type of packer
+};
+
+
+/// The userdata struct for xt.Pack.Struct Member
+/// it needs type reference, and specific offset information
+struct xt_pckc {
+	size_t          sz;   ///< how many bytes are covered in this Structure (incl. su structs)
+	size_t          oS;   ///< offset from start
+	/// Lua Registry Reference to the packer on this position (Type Ref)
+	int             tR;   ///< Lua registry ref to index table
+	/// Lua Registry Reference to the table which holds the index and name and
+	/// Pack reference.  Table looks like [id] = name and [name] = xt.Pack
+	int             iR;   ///< Lua registry ref to index table
+	/// Lua Registry Reference to the table which holds the offsets within the
+	/// Struct or Array.  Table looks like [id] = offset and [name] = id
+	size_t          n;    ///< how many elements in struct (lua_rawlen of iR table)
+	enum  xt_pck_t  t;    ///< type of packer
+};
+
+
+
+
 /// The userdata struct for xt.Packer
 //struct xt_pck {
 //	size_t          sz;   ///< how many bytes are covered in this packer
