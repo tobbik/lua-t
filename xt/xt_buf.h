@@ -30,8 +30,12 @@ struct xt_pck {
 	size_t          sz;   ///< how many bytes are covered in this packer/Structure (incl. su structs)
 	size_t          lB;   ///< how many bits are covered in this packer
 	size_t          oB;   ///< offset in bits in the first byte
+	/// Lua Registry Reference to the table which holds the index and name and
+	/// Pack reference.  Table looks like [id] = name and [name] = xt.Pack
 	int             iR;   ///< Lua registry ref to index table
-	int             oR;   ///< Lua registry ref to offset table
+	/// Lua Registry Reference to the table which holds the offsets within the
+	/// Struct or Array.  Table looks like [id] = offset and [name] = id
+	int             oR;
 	size_t          n;    ///< how many elements in struct (lua_rawlen of iR table)
 	enum  xt_pck_t  t;    ///< type of packer
 };
@@ -84,7 +88,7 @@ int xt_pck_write( lua_State *luaVM, struct xt_pck *p, unsigned char *buffer );
 
 // xt_pckc.c
 int              luaopen_xt_pckc ( lua_State *luaVM );
-struct xt_pck   *xt_pckc_check_ud( lua_State *luaVM, int pos );
+struct xt_pck   *xt_pckc_check_ud( lua_State *luaVM, int pos, int check );
 int              lxt_pckc_Struct ( lua_State *luaVM );
 int              lxt_pckc_Array  ( lua_State *luaVM );
 

@@ -22,7 +22,7 @@
  * --------------------------------------------------------------------------*/
 int lxt_pckc_Struct( lua_State *luaVM )
 {
-	int                i;      ///< iterator for going through the arguments
+	size_t             i;      ///< iterator for going through the arguments
 	size_t             bc=0;   ///< count bitSize for bit type packers
 	struct xt_pck     *p;      ///< temporary packer/struct for iteration
 	struct xt_pck     *cp;     ///< the userdata this constructor creates
@@ -52,7 +52,7 @@ int lxt_pckc_Struct( lua_State *luaVM )
 			lua_pushfstring( luaVM, "%d", i ); // Stack: ...,Struct,idx,"i"
 			lua_pushvalue( luaVM, i );         // Stack: ...,Struct,idx,"i",Pack
 		}
-		p = xt_pckc_check_ud( luaVM, -1 );    // allow xt.Pack or xt.Pack.Struct
+		p = xt_pckc_check_ud( luaVM, -1, 1 );    // allow xt.Pack or xt.Pack.Struct
 		// populate idx table
 		lua_insert( luaVM, -2);               // Stack: ...,Struct,idx,Pack,name
 		lua_pushvalue( luaVM, -1);            // Stack: ...,Struct,idx,Pack,name,name
@@ -100,7 +100,7 @@ int lxt_pckc_Array( lua_State *luaVM )
 	struct xt_pck     *p;      ///< packer
 	struct xt_pck     *ap;     ///< array userdata to be created
 
-	p = xt_pckc_check_ud( luaVM, -2 );    // allow x.Pack or xt.Pack.Struct
+	p = xt_pckc_check_ud( luaVM, -2, 1 );    // allow x.Pack or xt.Pack.Struct
 	ap     = (struct xt_pck *) lua_newuserdata( luaVM, sizeof( struct xt_pck ) );
 	ap->n  = luaL_checkint( luaVM, -2 );       // how many elements in the array
 	ap->sz = ap->n * sizeof( p->sz );
@@ -126,17 +126,21 @@ int lxt_pckc_Array( lua_State *luaVM )
  * \brief   check a value on the stack for being an xt.Pack OR * xt.Pack.Struct/Array
  * \param   luaVM    The lua state.
  * \param   int      position on the stack.
+ * \param   int      check -> treats as check -> erros if fail
  * \lparam  userdata xt.Pack.Struct on the stack.
  * \return  xt_pck_s pointer.
  * --------------------------------------------------------------------------*/
-struct xt_pck *xt_pckc_check_ud( lua_State *luaVM, int pos )
+struct xt_pck *xt_pckc_check_ud( lua_State *luaVM, int pos, int check )
 {
 	void *ud = luaL_testudata( luaVM, pos, "xt.Pack.Struct" );
 	if (NULL != ud)
 		return (struct xt_pck *) ud;
-	ud = luaL_checkudata( luaVM, pos, "xt.Pack" );
-	luaL_argcheck( luaVM, ud != NULL, pos, "`xt.Pack.Struct` or `xt.Pack` expected" );
-	return (struct xt_pck *) ud;
+	ud = luaL_testudata( luaVM, pos, "xt.Pack" );
+	if (NULL != ud)
+		return (struct xt_pck *) ud;
+	if (check)
+		luaL_argcheck( luaVM, ud != NULL, pos, "`xt.Pack.Struct` or `xt.Pack` expected" );
+	return NULL;
 }
 
 
@@ -150,8 +154,10 @@ struct xt_pck *xt_pckc_check_ud( lua_State *luaVM, int pos )
  * --------------------------------------------------------------------------*/
 static int lxt_pckc__index( lua_State *luaVM )
 {
-	struct xt_pck *cp = xt_pckc_check_ud( luaVM, -2 );
+	struct xt_pck *cp = xt_pckc_check_ud( luaVM, -2, 1 );
 	struct xt_pck *p;
+	int    pos        = lua_tointeger( luaVM, lua_upvalueindex( 1 ) );
+	printf( "pos = %d\n", pos);
 
 	// Access the idx table by key to get numeric index onto stack
 	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, cp->iR );
@@ -167,7 +173,25 @@ static int lxt_pckc__index( lua_State *luaVM )
 	{
 		lua_rawgeti( luaVM, -1, luaL_checkint( luaVM, -2 ) );
 	}
-	p = xt_pckc_check_ud( luaVM, -1);
+	// if it's empty or an actual packer reset pos and set p->oB appropriately
+	p = xt_pckc_check_ud( luaVM, -1, 0 );
+	if (NULL == p)
+	{
+		lua_pushinteger( luaVM, 0 );
+	}
+	else
+	{
+		if (p->t > XT_PCK_STR)        // that's astruct or array -> Accumulate offset
+		{
+			lua_pushinteger( luaVM, pos+4 );
+		}
+		else  // calculate the offset to the accumulated pos + internal offset
+		{
+			lua_pushinteger( luaVM, 0 );
+			p->oB = pos;
+		}
+	}
+	lua_replace( luaVM, lua_upvalueindex( 1 ) );
 
 	// no checks -> if it didn't find something nil gets returned and that's expected
 	return 1;
@@ -184,7 +208,7 @@ static int lxt_pckc__index( lua_State *luaVM )
  * --------------------------------------------------------------------------*/
 static int lxt_pckc__newindex( lua_State *luaVM )
 {
-	xt_pckc_check_ud( luaVM, -2 );
+	xt_pckc_check_ud( luaVM, -2, 1 );
 
 	return xt_push_error( luaVM, "Packers are static and can't be updated!" );
 }
@@ -198,7 +222,7 @@ static int lxt_pckc__newindex( lua_State *luaVM )
  * -------------------------------------------------------------------------*/
 static int lxt_pckc__gc( lua_State *luaVM )
 {
-	struct xt_pck *cp = xt_pckc_check_ud( luaVM, 1 );
+	struct xt_pck *cp = xt_pckc_check_ud( luaVM, 1, 1 );
 	luaL_unref( luaVM, LUA_REGISTRYINDEX, cp->iR );
 	return 0;
 }
@@ -212,7 +236,7 @@ static int lxt_pckc__gc( lua_State *luaVM )
  * -------------------------------------------------------------------------*/
 static int lxt_pckc__len( lua_State *luaVM )
 {
-	struct xt_pck *cp = xt_pckc_check_ud( luaVM, 1 );
+	struct xt_pck *cp = xt_pckc_check_ud( luaVM, 1, 1 );
 
 	lua_pushinteger( luaVM, cp->sz );
 	return 1;
@@ -228,7 +252,7 @@ static int lxt_pckc__len( lua_State *luaVM )
  * --------------------------------------------------------------------------*/
 static int lxt_pckc__tostring( lua_State *luaVM )
 {
-	struct xt_pck *p = xt_pckc_check_ud( luaVM, 1 );
+	struct xt_pck *p = xt_pckc_check_ud( luaVM, 1, 1 );
 
 	switch( p->t )
 	{
@@ -257,7 +281,7 @@ static int lxt_pckc__tostring( lua_State *luaVM )
  *  -------------------------------------------------------------------------*/
 static int xt_pckc_iter( lua_State *luaVM )
 {
-	struct xt_pck *cp = xt_pckc_check_ud( luaVM, lua_upvalueindex( 1 ) );
+	struct xt_pck *cp = xt_pckc_check_ud( luaVM, lua_upvalueindex( 1 ), 1 );
 	int crs;
 
 	crs = lua_tointeger( luaVM, lua_upvalueindex( 2 ) );
@@ -287,7 +311,7 @@ static int xt_pckc_iter( lua_State *luaVM )
  *  -------------------------------------------------------------------------*/
 int lxt_pckc__pairs( lua_State *luaVM )
 {
-	xt_pckc_check_ud( luaVM, 1 );
+	xt_pckc_check_ud( luaVM, 1, 1 );
 	lua_pushnumber( luaVM, 0 );
 	lua_pushcclosure( luaVM, &xt_pckc_iter, 2 );
 	lua_pushvalue( luaVM, -1 );
@@ -308,7 +332,8 @@ LUAMOD_API int luaopen_xt_pckc( lua_State *luaVM )
 {
 	// xt.Pack.Struct instance metatable
 	luaL_newmetatable( luaVM, "xt.Pack.Struct" );   // stack: functions meta
-	lua_pushcfunction( luaVM, lxt_pckc__index );
+	lua_pushnumber( luaVM, 0 );
+	lua_pushcclosure( luaVM, lxt_pckc__index, 1 );
 	lua_setfield( luaVM, -2, "__index" );
 	lua_pushcfunction( luaVM, lxt_pckc__newindex );
 	lua_setfield( luaVM, -2, "__newindex" );
