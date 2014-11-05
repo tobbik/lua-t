@@ -13,7 +13,7 @@ ts = xt.Pack.Struct (
 
 ss = xt.Pack.Struct (
 	p,
-	xt.Pack.Int( 2 ),
+	p,
 	xt.Pack.Struct (
 		xt.Pack.Bit( 1 ),  -- is the train set healthy?
 		xt.Pack.Bit( 1 ),  -- is the train set stationary?

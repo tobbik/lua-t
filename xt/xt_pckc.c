@@ -302,12 +302,35 @@ static int lxt_pckrc__len( lua_State *luaVM )
  * \lreturn string     formatted string representing Struct.
  * \return  The number of results to be passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
-static int lxt_pckrc__tostring( lua_State *luaVM )
+static int lxt_pckc__tostring( lua_State *luaVM )
 {
-	struct xt_pckr *pr  = xt_pckr_check_ud( luaVM, -1, 0 );
-	struct xt_pck  *p;
+	struct xt_pck *pc  = xt_pckc_check_ud( luaVM, -1, 1 );
 
-	p = (NULL==pr) ? xt_pckc_check_ud( luaVM, -1, 1 ): pr->p;
+	switch( pc->t )
+	{
+		case XT_PCK_STRUCT:
+			lua_pushfstring( luaVM, "xt.Pack.Struct[%d]{%d}: %p", pc->n, pc->sz, pc );
+			break;
+		case XT_PCK_ARRAY:
+			lua_pushfstring( luaVM, "xt.Pack.Array[%d]{%d}: %p", pc->n, pc->sz, pc );
+			break;
+		default:
+			xt_push_error( luaVM, "Can't read value from unknown packer type" );
+	}
+	return 1;
+}
+
+/**--------------------------------------------------------------------------
+ * ToString representation of a xt.Pack.Reader.
+ * \param   luaVM      The lua state.
+ * \lparam  xt_pck_s   user_data.
+ * \lreturn string     formatted string representing Struct.
+ * \return  The number of results to be passed back to the calling Lua script.
+ * --------------------------------------------------------------------------*/
+static int lxt_pckr__tostring( lua_State *luaVM )
+{
+	struct xt_pckr *pr  = xt_pckr_check_ud( luaVM, -1, 1 );
+	struct xt_pck  *p   = pr->p;
 
 	switch( p->t )
 	{
@@ -315,7 +338,7 @@ static int lxt_pckrc__tostring( lua_State *luaVM )
 			lua_pushfstring( luaVM, "xt.Pack.Reader{INTL:%d}: %p", p->sz, p );
 			break;
 		case XT_PCK_INTB:
-			lua_pushfstring( luaVM, "xt.Pack.Reader{INTB}: %p", p );
+			lua_pushfstring( luaVM, "xt.Pack.Reader{INTB:%d}: %p", p->sz, p );
 			break;
 		case XT_PCK_BIT:
 			lua_pushfstring( luaVM, "xt.Pack.Reader{BIT[%d/%d]:%d}: %p", p->lB, p->oB, p->sz, p );
@@ -415,7 +438,7 @@ LUAMOD_API int luaopen_xt_pckc( lua_State *luaVM )
 	lua_setfield( luaVM, -2, "__newindex" );
 	lua_pushcfunction( luaVM, lxt_pckrc__pairs );
 	lua_setfield( luaVM, -2, "__pairs" );
-	lua_pushcfunction( luaVM, lxt_pckrc__tostring );
+	lua_pushcfunction( luaVM, lxt_pckc__tostring );
 	lua_setfield( luaVM, -2, "__tostring" );
 	lua_pushcfunction( luaVM, lxt_pckrc__len );
 	lua_setfield( luaVM, -2, "__len" );
@@ -444,7 +467,7 @@ LUAMOD_API int luaopen_xt_pckr( lua_State *luaVM )
 	lua_setfield( luaVM, -2, "__newindex" );
 	lua_pushcfunction( luaVM, lxt_pckrc__pairs );
 	lua_setfield( luaVM, -2, "__pairs" );
-	lua_pushcfunction( luaVM, lxt_pckrc__tostring );
+	lua_pushcfunction( luaVM, lxt_pckr__tostring );
 	lua_setfield( luaVM, -2, "__tostring" );
 	lua_pushcfunction( luaVM, lxt_pckrc__len );
 	lua_setfield( luaVM, -2, "__len" );
