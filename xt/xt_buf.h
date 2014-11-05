@@ -20,8 +20,9 @@ enum xt_pck_t {
 	XT_PCK_BIT,          ///< X  Bit  wide field
 	XT_PCK_FLT,          ///< X  Byte wide field as Float
 	XT_PCK_STR,          ///< X  Byte wide field of char bytes
-	XT_PCK_STRUCT,       ///< X  Struct Type Packer combinator
-	XT_PCK_ARRAY,        ///< X  Array  Type Packer combinator
+	XT_PCK_ARRAY,        ///< X  Array    Type Packer combinator
+	XT_PCK_SEQ,          ///< X  Sequence Type Packer combinator
+	XT_PCK_STRUCT,       ///< X  Struct   Type Packer combinator
 };
 
 
@@ -30,12 +31,13 @@ struct xt_pck {
 	size_t          sz;   ///< how many bytes are covered in this Structure (incl. su structs)
 	size_t          lB;   ///< how many bits are covered in this packer
 	size_t          oB;   ///< offset in bits in the first byte
-	// Lua Registry Reference to the table which holds the index and name and
-	// Pack reference.  Table looks like [id] = name and [name] = xt.Pack
+	/// Lua Registry Reference to the table which holds the pack reference, name
+	/// and offset controlled by index.  The structure looks like the following:
+	/// idx[i]    = Pack
+	/// idx[n+i]  = ofs
+	/// idx[2n+i] = name
+	/// idx[name] = i
 	int             iR;   ///< Lua registry ref to index table
-	// Lua Registry Reference to the table which holds the offset within struct
-	// Table looks like [name] = id and [id] = offset
-	int             oR;   ///< Lua registry ref to offset table
 	size_t          n;    ///< How many elements in the Packer
 	enum  xt_pck_t  t;    ///< type of packer
 };
@@ -81,5 +83,6 @@ struct xt_pckr  *xt_pckr_check_ud ( lua_State *luaVM, int pos, int check );
 struct xt_pckr  *xt_pckr_create_ud( lua_State *luaVM, struct xt_pck *p, size_t o );
 int              lxt_pckc_Struct  ( lua_State *luaVM );
 int              lxt_pckc_Array   ( lua_State *luaVM );
+int              lxt_pckc_Sequence( lua_State *luaVM );
 
 

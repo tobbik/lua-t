@@ -213,7 +213,6 @@ int xt_pck_write( lua_State *luaVM, struct xt_pck *p, unsigned char *b )
 		default:
 			return xt_push_error( luaVM, "Can't pack a value in unknown packer type" );
 	}
-	p->oR = 0;
 	return 0;
 }
 
@@ -280,7 +279,7 @@ static int lxt_pck_read( lua_State *luaVM )
 	struct xt_pck *p      = xt_pckc_check_ud( luaVM, 1, 1 );  // allow Pack or Struct
 	struct xt_buf *b      = xt_buf_check_ud( luaVM, 2 );
 
-	if (p->t < XT_PCK_STRUCT)       // xt.Pack value type -> return result
+	if (p->t < XT_PCK_ARRAY)       // xt.Pack value type -> return result
 	{
 		return xt_pck_read( luaVM, p, (const unsigned char *) b->b );
 	}
@@ -368,6 +367,7 @@ static const struct luaL_Reg xt_pck_cf [] = {
 	{"String",    lxt_pck_String},
 	{"Struct",    lxt_pckc_Struct},
 	{"Array",     lxt_pckc_Array},
+	{"Sequence",  lxt_pckc_Sequence},
 	{"size",      lxt_pck_size},
 	{"read",      lxt_pck_read},
 	{NULL,    NULL}

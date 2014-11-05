@@ -4,17 +4,17 @@ xt=require'xt'
 p = xt.Pack.IntB( 2 )
 c = xt.Pack.Int( 2 )
 
-ts = xt.Pack.Struct (
+ts = xt.Pack.Sequence (
 	p,
 	xt.Pack.Int( 2 ),
 	xt.Pack.Int( 1 ),
 	xt.Pack.Int( 1 )
 )
 
-ss = xt.Pack.Struct (
+ss = xt.Pack.Sequence (
 	p,
 	p,
-	xt.Pack.Struct (
+	xt.Pack.Sequence (
 		xt.Pack.Bit( 1 ),  -- is the train set healthy?
 		xt.Pack.Bit( 1 ),  -- is the train set stationary?
 		xt.Pack.Bit( 1 ),  -- is the train set in maint mode?
@@ -55,7 +55,7 @@ t = xt.Pack.Struct (
 -- 	-- boolean flags -> status
 	{ status    = sbits},
 	{ internal  = ss},
-	p,
+	{ another   = p},
  	{ count     = p},
 	{ status2   = sbits},
  	{ count2    = p}
