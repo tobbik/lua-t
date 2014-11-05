@@ -335,25 +335,25 @@ static int lxt_pckr__tostring( lua_State *luaVM )
 	switch( p->t )
 	{
 		case XT_PCK_INTL:
-			lua_pushfstring( luaVM, "xt.Pack.Reader{INTL:%d}: %p", p->sz, p );
+			lua_pushfstring( luaVM, "xt.Pack.Reader{INTL:%d/%d}: %p", p->sz, pr->o, p );
 			break;
 		case XT_PCK_INTB:
-			lua_pushfstring( luaVM, "xt.Pack.Reader{INTB:%d}: %p", p->sz, p );
+			lua_pushfstring( luaVM, "xt.Pack.Reader{INTB:%d/%d}: %p", p->sz, pr->o, p );
 			break;
 		case XT_PCK_BIT:
-			lua_pushfstring( luaVM, "xt.Pack.Reader{BIT[%d/%d]:%d}: %p", p->lB, p->oB, p->sz, p );
+			lua_pushfstring( luaVM, "xt.Pack.Reader{BIT[%d/%d]:%d/%d}: %p", p->lB, p->oB, p->sz, pr->o, p );
 			break;
 		case XT_PCK_STR:
-			lua_pushfstring( luaVM, "xt.Pack.Reader{STRING:%d}: %p", p->sz, p );
+			lua_pushfstring( luaVM, "xt.Pack.Reader{STRING:%d/%d}: %p", p->sz, pr->o, p );
 			break;
 		case XT_PCK_FLT:
-			lua_pushfstring( luaVM, "xt.Pack.Reader{FLOAT:%d}: %p", p->sz, p );
+			lua_pushfstring( luaVM, "xt.Pack.Reader{FLOAT:%d/%d}: %p", p->sz, pr->o, p );
 			break;
 		case XT_PCK_STRUCT:
-			lua_pushfstring( luaVM, "xt.Pack.Reader{STRUCT[%d]:%d}: %p", p->n, p->sz, p );
+			lua_pushfstring( luaVM, "xt.Pack.Reader{STRUCT[%d]:%d/%d}: %p", p->n, p->sz, pr->o, p );
 			break;
 		case XT_PCK_ARRAY:
-			lua_pushfstring( luaVM, "xt.Pack.Reader{ARRAY[%d]:%d}: %p", p->n, p->sz, p );
+			lua_pushfstring( luaVM, "xt.Pack.Reader{ARRAY[%d]:%d/%d}: %p", p->n, p->sz, pr->o, p );
 			break;
 		default:
 			xt_push_error( luaVM, "Can't read value from unknown packer type" );
