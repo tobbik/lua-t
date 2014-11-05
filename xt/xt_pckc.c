@@ -284,7 +284,7 @@ static int lxt_pckc__gc( lua_State *luaVM )
  * -------------------------------------------------------------------------*/
 static int lxt_pckrc__len( lua_State *luaVM )
 {
-	struct xt_pckr *pr = xt_pckr_check_ud( luaVM, lua_upvalueindex( 1 ), 0 );
+	struct xt_pckr *pr = xt_pckr_check_ud( luaVM, 1, 0 );
 	struct xt_pck  *pc = (NULL == pr) ? xt_pckc_check_ud( luaVM, -1, 1 ) : pr->p;
 
 	lua_pushinteger( luaVM, pc->n );

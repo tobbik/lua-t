@@ -300,7 +300,7 @@ static int lxt_pck_read( lua_State *luaVM )
  * --------------------------------------------------------------------------*/
 static int lxt_pck_size( lua_State *luaVM )
 {
-	struct xt_pckr *pr = xt_pckr_check_ud( luaVM, lua_upvalueindex( 1 ), 0 );
+	struct xt_pckr *pr = xt_pckr_check_ud( luaVM, 1, 0 );
 	struct xt_pck  *pc = (NULL == pr) ? xt_pckc_check_ud( luaVM, -1, 1 ) : pr->p;
 	lua_pushinteger( luaVM, pc->sz );
 	return 1;
