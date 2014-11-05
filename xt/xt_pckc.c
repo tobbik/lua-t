@@ -195,11 +195,9 @@ struct xt_pckr *xt_pckr_check_ud( lua_State *luaVM, int pos, int check )
 static int lxt_pckrc__index( lua_State *luaVM )
 {
 	struct xt_pckr *pr  = xt_pckr_check_ud( luaVM, -2, 0 );
-	struct xt_pck  *pc;
+	struct xt_pck  *pc  = (NULL == pr) ? xt_pckc_check_ud( luaVM, -2, 1 ) : pr->p;
 	struct xt_pck  *p;
-	int             pos;
-
-	pc = (NULL == pr) ? xt_pckc_check_ud( luaVM, -2, 1 ) : pr->p;
+	int             pos = (NULL == pr) ? 0 : pr->o;
 
 	// get idx table (struct) or packer type (array)
 	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, pc->iR );
@@ -214,7 +212,7 @@ static int lxt_pckrc__index( lua_State *luaVM )
 		else
 		{
 			p = xt_pckc_check_ud( luaVM, -1, 0 );
-			pos = (p->sz * luaL_checkint( luaVM, -2 ));
+			pos += (p->sz * luaL_checkint( luaVM, -2 ));
 		}
 	}
 	else                                              // xt.Struct
@@ -223,7 +221,7 @@ static int lxt_pckrc__index( lua_State *luaVM )
 		if (lua_tonumber( luaVM, -3 ))
 		{
 			lua_rawgeti( luaVM, -1, lua_tointeger( luaVM, -3 ) );  // Stack: Struct,id,idx,ofs,pos
-			pos = luaL_checkint( luaVM, -1);
+			pos += luaL_checkint( luaVM, -1);
 			lua_pop( luaVM, 2 );                                   // Stack: Struct,id,idx
 			lua_rawgeti( luaVM, -1, lua_tointeger( luaVM, -2 ) );  // Stack: Struct,id,idx,name
 		}
@@ -232,13 +230,13 @@ static int lxt_pckrc__index( lua_State *luaVM )
 			lua_pushvalue( luaVM, -3 );                            // Stack: Struct,name,idx,ofs,name
 			lua_rawget( luaVM, -2 );                               // Stack: Struct,name,idx,ofs,id
 			lua_rawgeti( luaVM, -2, lua_tointeger( luaVM, -1 ) );  // Stack: Struct,name,idx,ofs,id,pos
-			pos = luaL_checkint( luaVM, -1);                       // Stack: Struct,name,idx,ofs,id,pos
+			pos += luaL_checkint( luaVM, -1);                       // Stack: Struct,name,idx,ofs,id,pos
 			lua_pop( luaVM, 3 );                                   // Stack: Struct,name,idx
 			lua_pushvalue( luaVM, -2 );                            // Stack: Struct,name,idx,name
 		}
 		lua_rawget( luaVM, -2 );                                  // Stack: Struct,name,idx,Pack
 	}
-	xt_pckr_create_ud( luaVM, xt_pckc_check_ud( luaVM, -1, 0 ), pos);
+	xt_pckr_create_ud( luaVM, xt_pckc_check_ud( luaVM, -1, 0 ), pos );
 
 	// no checks -> if it didn't find something nil gets returned and that's expected
 	return 1;
