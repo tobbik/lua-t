@@ -329,6 +329,8 @@ static int lxt_pckr__call( lua_State *luaVM )
 		b   = (unsigned char *) luaL_checklstring( luaVM, 2, &l );
 		luaL_argcheck( luaVM,  l > pr->o+pr->p->sz,
 		2, "The length of the Buffer must be longer than Pack offset plus Pack length.");
+		luaL_argcheck( luaVM,  2 == lua_gettop( luaVM ), 2
+		2, "Can't write to a Lua String since they are immutable.");
 		b   =  b+pr->o;
 	}
 
