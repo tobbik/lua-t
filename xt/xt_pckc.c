@@ -3,7 +3,9 @@
 /**
  * \file      xt_pckc.c
  * \brief     create a packer Struct/Array
- *            combinators for packers to create structures
+ *            Combinators for packers to create structures and arrays. This is
+ *            interleved with xt.Pack.Reader functionality (xt_packr) becuase a
+ *            lot of logic can be shared
  * \author    tkieslich
  * \copyright See Copyright notice at the end of xt.h
  */
@@ -47,6 +49,7 @@ int lxt_pckc_Struct( lua_State *luaVM )
 			lua_pushnil( luaVM );
 			if (!lua_next( luaVM, i ))         // Stack: ...,Struct,idx,ofs,name,Pack
 				return xt_push_error( luaVM, "the table argument must contain one key/value pair.");
+			// TODO: check if name is already used!
 		}
 		else
 		{
@@ -293,6 +296,69 @@ static int lxt_pckrc__len( lua_State *luaVM )
 
 
 /**--------------------------------------------------------------------------
+ * __call (#) for a an xt.Pack.Reader instance.
+ *          This is used to either read from ar write to a string or xt.Buffer.
+ *          one argument means read, two arguments mean write.
+ * \param   luaVM     lua Virtual Machine.
+ * \lparam  ud        xt.Pack.Reader instance.
+ * \lparam  ud,string xt.Buffer or Lua string.
+ * \lparam   xt.Buffer or Lua string.
+ * \lreturn value     read from Buffer/String according to xt.Pack.Reader.
+ * \return  int    # of values left on te stack.
+ * -------------------------------------------------------------------------*/
+static int lxt_pckr__call( lua_State *luaVM )
+{
+	struct xt_pckr *pr  = xt_pckr_check_ud( luaVM, 1, 1 );
+	struct xt_buf  *buf;
+	unsigned char  *b;
+	size_t          l;                   /// length of string or buffer overall
+
+	luaL_argcheck( luaVM,  2<=lua_gettop(luaVM) && lua_gettop( luaVM )<=3,
+		2, "Calling an xt.Pack.Reader takes 2 or 3 arguments!");
+	// TODO:  comprehensive length check
+	if (lua_isuserdata( luaVM, 2 ))      // xt.Buffer
+	{
+		buf = xt_buf_check_ud ( luaVM, 2 );
+		luaL_argcheck( luaVM,  buf->len > pr->o+pr->p->sz,
+		2, "The length of the Buffer must be longer than Pack offset plus Pack length.");
+		b   =  &(buf->b[ pr->o ]);
+	}
+	else
+	{
+		b   = (unsigned char *) luaL_checklstring( luaVM, 2, &l );
+		luaL_argcheck( luaVM,  l > pr->o+pr->p->sz,
+		2, "The length of the Buffer must be longer than Pack offset plus Pack length.");
+		b   =  b+pr->o;
+	}
+
+	if (2 == lua_gettop( luaVM ))     // read from input
+	{
+		if (pr->p->t < XT_PCK_STRUCT)      // handle atomic packer, return single value
+		{
+			return xt_pck_read( luaVM, pr->p, (const unsigned char *) b );
+		}
+		else  // create a table ...
+		{
+			return xt_push_error( luaVM, "reading of complex types is not implemented yet");
+		}
+	}
+	else                              // write to input
+	{
+		if (pr->p->t < XT_PCK_STRUCT)      // handle atomic packer, return single value
+		{
+			return xt_pck_write( luaVM, pr->p, (unsigned char *) b );
+		}
+		else  // create a table ...
+		{
+			return xt_push_error( luaVM, "writing of complex types is not implemented yet");
+		}
+	}
+
+	return 0;
+}
+
+
+/**--------------------------------------------------------------------------
  * __tostring() representation of a xt.Pack.Struct.
  * \param   luaVM      The lua state.
  * \lparam  xt_pck_s   user_data.
@@ -463,6 +529,8 @@ LUAMOD_API int luaopen_xt_pckr( lua_State *luaVM )
 	lua_setfield( luaVM, -2, "__newindex" );
 	lua_pushcfunction( luaVM, lxt_pckrc__pairs );
 	lua_setfield( luaVM, -2, "__pairs" );
+	lua_pushcfunction( luaVM, lxt_pckr__call );
+	lua_setfield( luaVM, -2, "__call" );
 	lua_pushcfunction( luaVM, lxt_pckr__tostring );
 	lua_setfield( luaVM, -2, "__tostring" );
 	lua_pushcfunction( luaVM, lxt_pckrc__len );
