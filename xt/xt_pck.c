@@ -291,18 +291,18 @@ static int lxt_pck_read( lua_State *luaVM )
 }
 
 
-
 /**--------------------------------------------------------------------------
- * Get the number of elements in any packer/struct value.
- * \param   luaVM   The lua state.
- * \lparam  xt.Pack.* instance.
- * \lreturn int   size in bytes.
- * \return  The # of items pushed to the stack.
+ * Get size in bytes covered by packer/struct/reader.
+ * \param   luaVM  The lua state.
+ * \lparam  ud     xt.Pack.* instance.
+ * \lreturn int    size in bytes.
+ * \return  int    The # of items pushed to the stack.
  * --------------------------------------------------------------------------*/
-static int lxt_pck_len( lua_State *luaVM )
+static int lxt_pck_size( lua_State *luaVM )
 {
-	struct xt_pck   *p = xt_pckc_check_ud( luaVM, -1, 1 );   // Allow for both packer or struct
-	lua_pushinteger( luaVM, p->n );
+	struct xt_pckr *pr = xt_pckr_check_ud( luaVM, lua_upvalueindex( 1 ), 0 );
+	struct xt_pck  *pc = (NULL == pr) ? xt_pckc_check_ud( luaVM, -1, 1 ) : pr->p;
+	lua_pushinteger( luaVM, pc->sz );
 	return 1;
 }
 
@@ -368,7 +368,7 @@ static const struct luaL_Reg xt_pck_cf [] = {
 	{"String",    lxt_pck_String},
 	{"Struct",    lxt_pckc_Struct},
 	{"Array",     lxt_pckc_Array},
-	{"len",       lxt_pck_len},
+	{"size",      lxt_pck_size},
 	{"read",      lxt_pck_read},
 	{NULL,    NULL}
 };

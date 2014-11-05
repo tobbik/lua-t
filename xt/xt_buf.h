@@ -74,13 +74,12 @@ int xt_pck_read ( lua_State *luaVM, struct xt_pck *p, const unsigned char *buffe
 int xt_pck_write( lua_State *luaVM, struct xt_pck *p, unsigned char *buffer );
 
 // xt_pckc.c
-int              luaopen_xt_pckc ( lua_State *luaVM );
-struct xt_pck   *xt_pckc_check_ud( lua_State *luaVM, int pos, int check );
-int              lxt_pckc_Struct ( lua_State *luaVM );
-int              lxt_pckc_Array  ( lua_State *luaVM );
-
-// xt_pckr.c
+int              luaopen_xt_pckc  ( lua_State *luaVM );
 int              luaopen_xt_pckr  ( lua_State *luaVM );
-struct xt_pckr  *xt_pckr_create_ud( lua_State *luaVM, struct xt_pck *p, size_t o );
+struct xt_pck   *xt_pckc_check_ud ( lua_State *luaVM, int pos, int check );
 struct xt_pckr  *xt_pckr_check_ud ( lua_State *luaVM, int pos, int check );
+struct xt_pckr  *xt_pckr_create_ud( lua_State *luaVM, struct xt_pck *p, size_t o );
+int              lxt_pckc_Struct  ( lua_State *luaVM );
+int              lxt_pckc_Array   ( lua_State *luaVM );
+
 

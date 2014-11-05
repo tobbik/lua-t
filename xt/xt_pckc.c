@@ -150,7 +150,7 @@ struct xt_pck *xt_pckc_check_ud( lua_State *luaVM, int pos, int check )
  *
  * \return  struct xt_pckr*  pointer to the  xt_pckr struct
  * --------------------------------------------------------------------------*/
-struct xt_pckr *xt_pckr_create_ud( lua_State *luaVM, struct xt_pck *p, size_t o)
+struct xt_pckr *xt_pckr_create_ud( lua_State *luaVM, struct xt_pck *p, size_t o )
 {
 	struct xt_pckr  *pr;
 	pr = (struct xt_pckr *) lua_newuserdata( luaVM, sizeof( struct xt_pckr ));
@@ -204,7 +204,7 @@ static int lxt_pckrc__index( lua_State *luaVM )
 	// Stack: Struct,idx/name,idx/Packer
 	if (LUA_TUSERDATA == lua_type( luaVM, -1 ))        // xt.Array
 	{
-		if (luaL_checkint( luaVM, -2 ) > (int) pc->n)          // Array out of bound: return nil
+		if (luaL_checkint( luaVM, -2 ) > (int) pc->n)             // Array out of bound: return nil
 		{
 			lua_pushnil( luaVM );
 			return 1;
@@ -236,9 +236,8 @@ static int lxt_pckrc__index( lua_State *luaVM )
 		}
 		lua_rawget( luaVM, -2 );                                  // Stack: Struct,name,idx,Pack
 	}
-	xt_pckr_create_ud( luaVM, xt_pckc_check_ud( luaVM, -1, 0 ), pos );
 
-	// no checks -> if it didn't find something nil gets returned and that's expected
+	xt_pckr_create_ud( luaVM, xt_pckc_check_ud( luaVM, -1, 0 ), pos );
 	return 1;
 }
 
@@ -262,31 +261,31 @@ static int lxt_pckrc__newindex( lua_State *luaVM )
 
 
 /**--------------------------------------------------------------------------
- * Garbage Collector. Dissassociates buffers from Packs.
+ * __gc Garbage Collector. Releases references from Lua Registry.
  * \param  luaVM lua Virtual Machine.
- * \lparam table xt.Pack.Struct.
- * \return integer number of values left on te stack.
+ * \lparam ud    xt.Pack.Struct.
+ * \return int   # of values left on te stack.
  * -------------------------------------------------------------------------*/
 static int lxt_pckc__gc( lua_State *luaVM )
 {
 	struct xt_pck *cp = xt_pckc_check_ud( luaVM, 1, 1 );
 	luaL_unref( luaVM, LUA_REGISTRYINDEX, cp->iR );
+	luaL_unref( luaVM, LUA_REGISTRYINDEX, cp->oR );
 	return 0;
 }
 
 
 /**--------------------------------------------------------------------------
- * Length of Struct in bytes
- * \param  luaVM    lua Virtual Machine.
- * \lparam userdata xt.Pack.Struct instance.
- * \return int      # of values left on te stack.
+ * __len (#) representation of a Struct/Reader instance.
+ * \param   luaVM  lua Virtual Machine.
+ * \lparam  ud     xt.Pack.Struct/Reader instance.
+ * \lreturn int    # of elements in xt.Pack.Struct/Reader instance.
+ * \return  int    # of values left on te stack.
  * -------------------------------------------------------------------------*/
 static int lxt_pckrc__len( lua_State *luaVM )
 {
-	struct xt_pckr *pr  = xt_pckr_check_ud( luaVM, -1, 0 );
-	struct xt_pck  *pc;
-
-	pc = (NULL == pr) ? xt_pckc_check_ud( luaVM, -1, 1 ) : pr->p;
+	struct xt_pckr *pr = xt_pckr_check_ud( luaVM, lua_upvalueindex( 1 ), 0 );
+	struct xt_pck  *pc = (NULL == pr) ? xt_pckc_check_ud( luaVM, -1, 1 ) : pr->p;
 
 	lua_pushinteger( luaVM, pc->n );
 	return 1;
@@ -294,7 +293,7 @@ static int lxt_pckrc__len( lua_State *luaVM )
 
 
 /**--------------------------------------------------------------------------
- * ToString representation of a xt.Pack.Struct.
+ * __tostring() representation of a xt.Pack.Struct.
  * \param   luaVM      The lua state.
  * \lparam  xt_pck_s   user_data.
  * \lreturn string     formatted string representing Struct.
@@ -372,10 +371,9 @@ static int lxt_pckr__tostring( lua_State *luaVM )
  *  -------------------------------------------------------------------------*/
 static int xt_pckrc_iter( lua_State *luaVM )
 {
-	struct xt_pckr *pr  = xt_pckr_check_ud( luaVM, lua_upvalueindex( 1 ), 0 );
-	struct xt_pck  *pc;
+	struct xt_pckr *pr = xt_pckr_check_ud( luaVM, lua_upvalueindex( 1 ), 0 );
+	struct xt_pck  *pc = (NULL == pr) ? xt_pckc_check_ud( luaVM, -1, 1 ) : pr->p;
 
-	pc = (NULL == pr) ? xt_pckc_check_ud( luaVM, -1, 1 ) : pr->p;
 	int crs;
 
 	crs = lua_tointeger( luaVM, lua_upvalueindex( 2 ) );
