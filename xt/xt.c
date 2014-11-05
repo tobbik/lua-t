@@ -24,7 +24,7 @@
 void stackDump (lua_State *luaVM) {
 	int i;
 	int top = lua_gettop(luaVM);
-	printf("LUA STACK[%d]:\t", top);
+	printf("STACK[%d]:   ", top);
 	for (i = 1; i <= top; i++) {     /* repeat for each level */
 		int t = lua_type(luaVM, i);
 		switch (t) {
@@ -41,13 +41,33 @@ void stackDump (lua_State *luaVM) {
 				printf("%g", lua_tonumber(luaVM, i));
 				break;
 
+			case LUA_TUSERDATA:    // userdata
+				if (luaL_getmetafield(luaVM, i, "__name"))  // does it have a metatable?
+				{
+					printf( "u.%s", lua_tostring( luaVM, -1 ) );
+					lua_pop( luaVM, 1);
+				}
+				else
+					printf( "ud" );
+				break;
+
+			case LUA_TTABLE:    // tables
+				if (luaL_getmetafield(luaVM, i, "__name"))  // does it have a metatable?
+				{
+					printf( "t.%s", lua_tostring( luaVM, -1 ) );
+					lua_pop( luaVM, 1);
+				}
+				else
+					printf( "table" );
+				break;
+
 			default:	            /* other values */
 				printf("%s", lua_typename(luaVM, t));
 				break;
 		}
-		printf("\t");  /* put a separator */
+		printf("   ");  /* put a separator */
 	}
-	printf("\n");  /* end the listing */
+	printf( "\n" );  /* end the listing */
 }
 
 
