@@ -61,7 +61,7 @@ t = xt.Pack.Struct (
  	{ count2    = p}
 )
 
-b=xt.Buffer( 'ABCDEFGHIJKLMNOPQRS' )
+b=xt.Buffer( 'ABCDEFGHIJKLMNOPQRSTUVW' )
 
 --for k,v in pairs(s) do print( k,v ) end
 

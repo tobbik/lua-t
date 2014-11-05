@@ -296,7 +296,7 @@ static int lxt_pckrc__len( lua_State *luaVM )
 
 
 /**--------------------------------------------------------------------------
- * __call (#) for a an xt.Pack.Reader instance.
+ * __call (#) for a an xt.Pack.Reader/Struct instance.
  *          This is used to either read from or write to a string or xt.Buffer.
  *          one argument means read, two arguments mean write.
  * \param   luaVM     lua Virtual Machine.
@@ -306,47 +306,51 @@ static int lxt_pckrc__len( lua_State *luaVM )
  * \lreturn value     read from Buffer/String according to xt.Pack.Reader.
  * \return  int    # of values left on te stack.
  * -------------------------------------------------------------------------*/
-static int lxt_pckr__call( lua_State *luaVM );    // declaration for recursive call
-static int lxt_pckr__call( lua_State *luaVM )
+static int lxt_pckrc__call( lua_State *luaVM );    // declaration for recursive call
+static int lxt_pckrc__call( lua_State *luaVM )
 {
-	struct xt_pckr *pr  = xt_pckr_check_ud( luaVM, 1, 1 );
+	struct xt_pckr *pr = xt_pckr_check_ud( luaVM, -2, 0 );
+	struct xt_pck  *p  = (NULL == pr) ? xt_pckc_check_ud( luaVM, -2, 1 ) : pr->p;
+	size_t          o  = (NULL == pr) ? 0 : pr->o;
+
 	struct xt_buf  *buf;
 	unsigned char  *b;
 	size_t          l;                   /// length of string or buffer overall
 	size_t          n;                   /// iterator for complex types
+	luaL_argcheck( luaVM,  2<=lua_gettop(luaVM) && lua_gettop( luaVM )<=3, 2,
+		"Calling an xt.Pack.Reader takes 2 or 3 arguments!" );
 
-	luaL_argcheck( luaVM,  2<=lua_gettop(luaVM) && lua_gettop( luaVM )<=3,
-		2, "Calling an xt.Pack.Reader takes 2 or 3 arguments!");
 	if (lua_isuserdata( luaVM, 2 ))      // xt.Buffer
 	{
 		buf = xt_buf_check_ud ( luaVM, 2 );
-		luaL_argcheck( luaVM,  buf->len > pr->o+pr->p->sz,
-		2, "The length of the Buffer must be longer than Pack offset plus Pack length.");
-		b   =  &(buf->b[ pr->o ]);
+		luaL_argcheck( luaVM,  buf->len > o+p->sz, 2,
+			"The length of the Buffer must be longer than Pack offset plus Pack length." );
+		b   =  &(buf->b[ o ]);
 	}
 	else
 	{
 		b   = (unsigned char *) luaL_checklstring( luaVM, 2, &l );
-		luaL_argcheck( luaVM,  l > pr->o+pr->p->sz,
-		2, "The length of the Buffer must be longer than Pack offset plus Pack length.");
-		luaL_argcheck( luaVM,  2 == lua_gettop( luaVM ), 2
-		2, "Can't write to a Lua String since they are immutable.");
-		b   =  b+pr->o;
+		luaL_argcheck( luaVM,  l > o+p->sz, 2,
+			"The length of the Buffer must be longer than Pack offset plus Pack length." );
+		luaL_argcheck( luaVM,  2 == lua_gettop( luaVM ), 2,
+			"Can't write to a Lua String since they are immutable." );
+		b   =  b+ o;
 	}
+
 
 	if (2 == lua_gettop( luaVM ))     // read from input
 	{
-		if (pr->p->t < XT_PCK_STRUCT)      // handle atomic packer, return single value
+		if (p->t < XT_PCK_STRUCT)      // handle atomic packer, return single value
 		{
-			return xt_pck_read( luaVM, pr->p, (const unsigned char *) b );
+			return xt_pck_read( luaVM, p, (const unsigned char *) b );
 		}
-		if (pr->p->t == XT_PCK_STRUCT)      // handle Struct, return table
+		if (p->t == XT_PCK_STRUCT)      // handle Struct, return table
 		{
-			lua_rawgeti( luaVM, LUA_REGISTRYINDEX, pr->p->iR ); // get index table
-			lua_createtable( luaVM, 0, pr->p->n);   //Stack: r,buf,idx,res
-			for (n=1; n<pr->p->n; n++)
+			lua_rawgeti( luaVM, LUA_REGISTRYINDEX, p->iR ); // get index table
+			lua_createtable( luaVM, 0, p->n);   //Stack: r,buf,idx,res
+			for (n=1; n<p->n; n++)
 			{
-				lua_pushcfunction( luaVM, lxt_pckr__call );   //Stack: r,buf,idx,res,__call
+				lua_pushcfunction( luaVM, lxt_pckrc__call );  //Stack: r,buf,idx,res,__call
 				lua_pushcfunction( luaVM, lxt_pckrc__index ); //Stack: r,buf,idx,res,_call,__index
 				lua_pushvalue( luaVM, -6 );          //Stack: r,buf,idx,res,__call,__index,r
 				lua_rawgeti( luaVM, -5, n );         //Stack: r,buf,idx,res,__call,__index,r,name
@@ -360,12 +364,12 @@ static int lxt_pckr__call( lua_State *luaVM )
 			lua_remove( luaVM, -2 );                //Stack: r,buf,res
 			return 1;
 		}
-		if (pr->p->t == XT_PCK_ARRAY)      // handle Array; return table
+		if (p->t == XT_PCK_ARRAY)      // handle Array; return table
 		{
-			lua_createtable( luaVM, 0, pr->p->n);   //Stack: r,buf,idx,res
-			for (n=1; n<pr->p->n; n++)
+			lua_createtable( luaVM, 0, p->n);   //Stack: r,buf,idx,res
+			for (n=1; n<p->n; n++)
 			{
-				lua_pushcfunction( luaVM, lxt_pckr__call );   //Stack: r,buf,idx,res,__call
+				lua_pushcfunction( luaVM, lxt_pckrc__call );  //Stack: r,buf,idx,res,__call
 				lua_pushcfunction( luaVM, lxt_pckrc__index ); //Stack: r,buf,idx,res,__index
 				lua_pushvalue( luaVM, -5 );          //Stack: r,buf,idx,res,__call,__index,r
 				lua_pushinteger( luaVM, n );         //Stack: r,buf,idx,res,__call,__index,r,n
@@ -380,9 +384,9 @@ static int lxt_pckr__call( lua_State *luaVM )
 	}
 	else                              // write to input
 	{
-		if (pr->p->t < XT_PCK_STRUCT)      // handle atomic packer, return single value
+		if (p->t < XT_PCK_STRUCT)      // handle atomic packer, return single value
 		{
-			return xt_pck_write( luaVM, pr->p, (unsigned char *) b );
+			return xt_pck_write( luaVM, p, (unsigned char *) b );
 		}
 		else  // create a table ...
 		{
@@ -536,6 +540,8 @@ LUAMOD_API int luaopen_xt_pckc( lua_State *luaVM )
 	lua_setfield( luaVM, -2, "__newindex" );
 	lua_pushcfunction( luaVM, lxt_pckrc__pairs );
 	lua_setfield( luaVM, -2, "__pairs" );
+	lua_pushcfunction( luaVM, lxt_pckrc__call );
+	lua_setfield( luaVM, -2, "__call" );
 	lua_pushcfunction( luaVM, lxt_pckc__tostring );
 	lua_setfield( luaVM, -2, "__tostring" );
 	lua_pushcfunction( luaVM, lxt_pckrc__len );
@@ -565,7 +571,7 @@ LUAMOD_API int luaopen_xt_pckr( lua_State *luaVM )
 	lua_setfield( luaVM, -2, "__newindex" );
 	lua_pushcfunction( luaVM, lxt_pckrc__pairs );
 	lua_setfield( luaVM, -2, "__pairs" );
-	lua_pushcfunction( luaVM, lxt_pckr__call );
+	lua_pushcfunction( luaVM, lxt_pckrc__call );
 	lua_setfield( luaVM, -2, "__call" );
 	lua_pushcfunction( luaVM, lxt_pckr__tostring );
 	lua_setfield( luaVM, -2, "__tostring" );
