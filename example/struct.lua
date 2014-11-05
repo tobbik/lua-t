@@ -60,7 +60,7 @@ t = xt.Pack.Struct (
 
 b=xt.Buffer( 'ABCDEFGH' )
 
-for k,v in pairs(s) do print( k,v ) end
+--for k,v in pairs(s) do print( k,v ) end
 
 
 

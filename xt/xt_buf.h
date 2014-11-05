@@ -27,71 +27,29 @@ enum xt_pck_t {
 
 /// The userdata struct for xt.Pack/xt.Pack.Struct
 struct xt_pck {
-	size_t          sz;   ///< how many bytes are covered in this packer/Structure (incl. su structs)
-	size_t          lB;   ///< how many bits are covered in this packer
-	size_t          oB;   ///< offset in bits in the first byte
-	/// Lua Registry Reference to the table which holds the index and name and
-	/// Pack reference.  Table looks like [id] = name and [name] = xt.Pack
-	int             iR;   ///< Lua registry ref to index table
-	/// Lua Registry Reference to the table which holds the offsets within the
-	/// Struct or Array.  Table looks like [id] = offset and [name] = id
-	int             oR;
-	size_t          n;    ///< how many elements in struct (lua_rawlen of iR table)
-	enum  xt_pck_t  t;    ///< type of packer
-};
-
-
-/// The userdata struct for xt.Pack/xt.Pack.Struct
-/// it needs size and type information
-struct xt_pck {
-	size_t          sz;   ///< how many bytes are covered in this packer/Structure (incl. su structs)
-	size_t          lB;   ///< how many bits are covered in this packer
-	size_t          oB;   ///< offset in bits in the first byte
-	enum  xt_pck_t  t;    ///< type of packer
-};
-
-
-/// The userdata struct for xt.Pack.Struct Member
-/// it needs type reference, and specific offset information
-struct xt_pckc {
 	size_t          sz;   ///< how many bytes are covered in this Structure (incl. su structs)
-	size_t          oS;   ///< offset from start
-	/// Lua Registry Reference to the packer on this position (Type Ref)
-	int             tR;   ///< Lua registry ref to index table
-	/// Lua Registry Reference to the table which holds the index and name and
-	/// Pack reference.  Table looks like [id] = name and [name] = xt.Pack
+	size_t          lB;   ///< how many bits are covered in this packer
+	size_t          oB;   ///< offset in bits in the first byte
+	// Lua Registry Reference to the table which holds the index and name and
+	// Pack reference.  Table looks like [id] = name and [name] = xt.Pack
 	int             iR;   ///< Lua registry ref to index table
-	/// Lua Registry Reference to the table which holds the offsets within the
-	/// Struct or Array.  Table looks like [id] = offset and [name] = id
-	size_t          n;    ///< how many elements in struct (lua_rawlen of iR table)
+	// Lua Registry Reference to the table which holds the offset within struct
+	// Table looks like [name] = id and [id] = offset
+	int             oR;   ///< Lua registry ref to offset table
+	size_t          n;    ///< How many elements in the Packer
 	enum  xt_pck_t  t;    ///< type of packer
 };
 
 
+/// The userdata struct for xt.Pack.Reader
+struct xt_pckr {
+	struct xt_pck   *p;   ///< reference to packer type
+	size_t           o;   ///< offset from the beginning of the wrapping Struct
+};
 
 
-/// The userdata struct for xt.Packer
-//struct xt_pck {
-//	size_t          sz;   ///< how many bytes are covered in this packer
-//	size_t          oC;   ///< offset in bytes within combinator
-//	size_t          lB;   ///< how many bits are covered in this packer
-//	size_t          oB;   ///< offset in bits in the first byte
-//	enum  xt_pck_t  t;    ///< type of value in the packer
-//};
-
-
-/// The userdata struct for xt.Packer.Struct/Array
-//struct xt_pck_c {
-//	size_t          sz;   ///< how many bytes are covered in this packer
-//	size_t          oC;   ///< offset in bytes within combinator
-//	size_t           n;   ///< how many packers are in this
-//	int             iR;   ///< Lua registry reference to index table
-//	enum  xt_pck_t  t;    ///< type of value in the packer
-//};
-
-
-// Constructors
 // xt_buf.c
+// Constructors
 int              luaopen_xt_buf  ( lua_State *luaVM );
 int              lxt_buf_New     ( lua_State *luaVM );
 struct xt_buf   *xt_buf_check_ud ( lua_State *luaVM, int pos );
@@ -103,15 +61,15 @@ void      xt_buf_writebytes( uint64_t val, size_t sz, int islittle,       unsign
 uint64_t  xt_buf_readbits  (               size_t sz, size_t ofs,   const unsigned char * buf );
 void      xt_buf_writebits ( uint64_t val, size_t sz, size_t ofs,         unsigned char * buf );
 
-// Constructors
 // xt_pck.c
+// Constructors
 int             lxt_pck_Int     ( lua_State *luaVM );
 int             lxt_pck_Bit     ( lua_State *luaVM );
 int             lxt_pck_String  ( lua_State *luaVM );
 struct xt_pck  *xt_pck_check_ud ( lua_State *luaVM, int pos );
 struct xt_pck  *xt_pck_create_ud( lua_State *luaVM, enum xt_pck_t );
 
-// accessor helpers for the buffer
+// accessor helpers for the Packers
 int xt_pck_read ( lua_State *luaVM, struct xt_pck *p, const unsigned char *buffer);
 int xt_pck_write( lua_State *luaVM, struct xt_pck *p, unsigned char *buffer );
 
@@ -121,15 +79,8 @@ struct xt_pck   *xt_pckc_check_ud( lua_State *luaVM, int pos, int check );
 int              lxt_pckc_Struct ( lua_State *luaVM );
 int              lxt_pckc_Array  ( lua_State *luaVM );
 
-// xt_pck_s.c
-//int              luaopen_xt_pck_s  ( lua_State *luaVM );
-//struct xt_pck_s *xt_pck_s_check_ud ( lua_State *luaVM, int pos );
-//int              lxt_pck_s__call   ( lua_State *luaVM );
-//int              lxt_pck_Struct    ( lua_State *luaVM );
-//
-//// xt_pck_a.c
-//int              luaopen_xt_pck_a  ( lua_State *luaVM );
-//struct xt_pck_a *xt_pck_a_check_ud ( lua_State *luaVM, int pos );
-//int              lxt_pck_a__call   ( lua_State *luaVM );
-//int              lxt_pck_Array     ( lua_State *luaVM );
+// xt_pckr.c
+int              luaopen_xt_pckr  ( lua_State *luaVM );
+struct xt_pckr  *xt_pckr_create_ud( lua_State *luaVM, struct xt_pck *p, size_t o );
+struct xt_pckr  *xt_pckr_check_ud ( lua_State *luaVM, int pos, int check );
 
