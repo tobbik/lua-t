@@ -297,7 +297,7 @@ static int lxt_pckrc__len( lua_State *luaVM )
 
 /**--------------------------------------------------------------------------
  * __call (#) for a an xt.Pack.Reader instance.
- *          This is used to either read from ar write to a string or xt.Buffer.
+ *          This is used to either read from or write to a string or xt.Buffer.
  *          one argument means read, two arguments mean write.
  * \param   luaVM     lua Virtual Machine.
  * \lparam  ud        xt.Pack.Reader instance.
@@ -306,16 +306,17 @@ static int lxt_pckrc__len( lua_State *luaVM )
  * \lreturn value     read from Buffer/String according to xt.Pack.Reader.
  * \return  int    # of values left on te stack.
  * -------------------------------------------------------------------------*/
+static int lxt_pckr__call( lua_State *luaVM );    // declaration for recursive call
 static int lxt_pckr__call( lua_State *luaVM )
 {
 	struct xt_pckr *pr  = xt_pckr_check_ud( luaVM, 1, 1 );
 	struct xt_buf  *buf;
 	unsigned char  *b;
 	size_t          l;                   /// length of string or buffer overall
+	size_t          n;                   /// iterator for complex types
 
 	luaL_argcheck( luaVM,  2<=lua_gettop(luaVM) && lua_gettop( luaVM )<=3,
 		2, "Calling an xt.Pack.Reader takes 2 or 3 arguments!");
-	// TODO:  comprehensive length check
 	if (lua_isuserdata( luaVM, 2 ))      // xt.Buffer
 	{
 		buf = xt_buf_check_ud ( luaVM, 2 );
@@ -337,9 +338,42 @@ static int lxt_pckr__call( lua_State *luaVM )
 		{
 			return xt_pck_read( luaVM, pr->p, (const unsigned char *) b );
 		}
-		else  // create a table ...
+		if (pr->p->t == XT_PCK_STRUCT)      // handle Struct, return table
 		{
-			return xt_push_error( luaVM, "reading of complex types is not implemented yet");
+			lua_rawgeti( luaVM, LUA_REGISTRYINDEX, pr->p->iR ); // get index table
+			lua_createtable( luaVM, 0, pr->p->n);   //Stack: r,buf,idx,res
+			for (n=1; n<pr->p->n; n++)
+			{
+				lua_pushcfunction( luaVM, lxt_pckr__call );   //Stack: r,buf,idx,res,__call
+				lua_pushcfunction( luaVM, lxt_pckrc__index ); //Stack: r,buf,idx,res,_call,__index
+				lua_pushvalue( luaVM, -6 );          //Stack: r,buf,idx,res,__call,__index,r
+				lua_rawgeti( luaVM, -5, n );         //Stack: r,buf,idx,res,__call,__index,r,name
+				lua_pushvalue( luaVM, -1 );          //Stack: r,buf,idx,res,__call,__index,r,name,name
+				lua_insert( luaVM, -5 );             //Stack: r,buf,idx,res,name,__call,__index,r,name
+				lua_call( luaVM, 2, 1 );             //Stack: r,buf,idx,res,name,__call,value
+				lua_pushvalue( luaVM, -6 );          //Stack: r,buf,idx,res,name,__call,value,buf
+				lua_call( luaVM, 2, 1 );             //Stack: r,buf,idx,res,name,__call,value,buf
+				lua_rawset( luaVM, -3 );             //Stack: r,buf,idx,res
+			}
+			lua_remove( luaVM, -2 );                //Stack: r,buf,res
+			return 1;
+		}
+		if (pr->p->t == XT_PCK_ARRAY)      // handle Array; return table
+		{
+			lua_createtable( luaVM, 0, pr->p->n);   //Stack: r,buf,idx,res
+			for (n=1; n<pr->p->n; n++)
+			{
+				lua_pushcfunction( luaVM, lxt_pckr__call );   //Stack: r,buf,idx,res,__call
+				lua_pushcfunction( luaVM, lxt_pckrc__index ); //Stack: r,buf,idx,res,__index
+				lua_pushvalue( luaVM, -5 );          //Stack: r,buf,idx,res,__call,__index,r
+				lua_pushinteger( luaVM, n );         //Stack: r,buf,idx,res,__call,__index,r,n
+				lua_call( luaVM, 2, 1 );             //Stack: r,buf,idx,res,__call,value
+				lua_pushvalue( luaVM, -5 );          //Stack: r,buf,idx,res,__call,value,buf
+				lua_call( luaVM, 2, 1 );             //Stack: r,buf,idx,res,value
+				lua_rawseti( luaVM, -2, n );         //Stack: r,buf,idx,res
+			}
+			lua_remove( luaVM, -2 );                //Stack: r,buf,res
+			return 1;
 		}
 	}
 	else                              // write to input
@@ -350,7 +384,7 @@ static int lxt_pckr__call( lua_State *luaVM )
 		}
 		else  // create a table ...
 		{
-			return xt_push_error( luaVM, "writing of complex types is not implemented yet");
+			return xt_push_error( luaVM, "writing of complex types is not yet implemented");
 		}
 	}
 
