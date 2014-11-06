@@ -317,7 +317,7 @@ static int lxt_enc_crc_calc( lua_State *luaVM )
 	// if xt_buffer
 	else if (lua_isuserdata( luaVM, 2 ))
 	{
-		buf  = xt_buf_check_ud( luaVM, 2 );
+		buf  = xt_buf_check_ud( luaVM, 2, 1 );
 		msg  = (const char *) &(buf->b[ sta ]);
 		//msg  =  &(buf->b[ 0 ]);
 		len  = buf->len;

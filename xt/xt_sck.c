@@ -296,7 +296,7 @@ static int lxt_sck_send_to(lua_State *luaVM)
 	}
 	else if (lua_isuserdata( luaVM, 3 ))
 	{
-		buf  = xt_buf_check_ud( luaVM, 3 );
+		buf  = xt_buf_check_ud( luaVM, 3, 1 );
 		msg  = (char *) &(buf->b[ 0 ]);
 		len  = buf->len;
 	}
@@ -340,7 +340,7 @@ static int lxt_sck_recv_from(lua_State *luaVM)
 	sck = xt_sck_check_ud( luaVM, 1 );
 	luaL_argcheck( luaVM, (XT_SCK_UDP == sck->t), 1, "Must be an UDP socket" );
 	if (lua_isuserdata( luaVM, 2 )) {
-		buf  = xt_buf_check_ud ( luaVM, 2 );
+		buf  = xt_buf_check_ud ( luaVM, 2, 1 );
 		rcv  = (char *) &(buf->b[ 0 ]);
 		len  = buf->len;
 	}
@@ -421,7 +421,7 @@ static int lxt_sck_recv_strm( lua_State *luaVM )
 	sck = xt_sck_check_ud( luaVM, 1 );
 	luaL_argcheck( luaVM, (XT_SCK_TCP == sck->t), 1, "Must be an TCP socket" );
 	if (lua_isuserdata( luaVM, 2 )) {
-		buf  = xt_buf_check_ud( luaVM, 2 );
+		buf  = xt_buf_check_ud( luaVM, 2, 1 );
 		rcv  = (char *) &(buf->b[ 0 ]);
 		len  = buf->len;
 	}

@@ -54,7 +54,7 @@ struct xt_pckr {
 // Constructors
 int              luaopen_xt_buf  ( lua_State *luaVM );
 int              lxt_buf_New     ( lua_State *luaVM );
-struct xt_buf   *xt_buf_check_ud ( lua_State *luaVM, int pos );
+struct xt_buf   *xt_buf_check_ud ( lua_State *luaVM, int pos, int check );
 struct xt_buf   *xt_buf_create_ud( lua_State *luaVM, int size );
 
 // accessor helpers for the buffer

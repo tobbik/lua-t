@@ -117,11 +117,11 @@ struct xt_buf *xt_buf_create_ud( lua_State *luaVM, int size )
  *
  * \return struct xt_buf* pointer to xt_buf struct
  * --------------------------------------------------------------------------*/
-struct xt_buf *xt_buf_check_ud( lua_State *luaVM, int pos )
+struct xt_buf *xt_buf_check_ud( lua_State *luaVM, int pos, int check )
 {
-	void *ud = luaL_checkudata( luaVM, pos, "xt.Buffer" );
-	luaL_argcheck( luaVM, ud != NULL, pos, "`xt.Buffer` expected" );
-	return (struct xt_buf *) ud;
+	void *ud = luaL_testudata( luaVM, pos, "xt.Buffer" );
+	luaL_argcheck( luaVM, (ud != NULL || !check), pos, "`xt.Buffer` expected" );
+	return (NULL==ud) ? NULL : (struct xt_buf *) ud;
 }
 
 
@@ -250,7 +250,7 @@ void xt_buf_writebits( uint64_t val, size_t len, size_t ofs, unsigned char * buf
  * --------------------------------------------------------------------------*/
 static int lxt_buf_readint( lua_State *luaVM )
 {
-	struct xt_buf *buf = xt_buf_check_ud( luaVM, 1 );
+	struct xt_buf *buf = xt_buf_check_ud( luaVM, 1, 1 );
 	int            pos = luaL_checkint( luaVM, 2 );   ///< starting byte  b->b[pos]
 	int             sz = luaL_checkint( luaVM, 3 );   ///< how many bytes to read
 	lua_Unsigned   val = 0;                           ///< value for the read access
@@ -284,7 +284,7 @@ static int lxt_buf_readint( lua_State *luaVM )
  * --------------------------------------------------------------------------*/
 static int lxt_buf_writeint( lua_State *luaVM )
 {
-	struct xt_buf *buf = xt_buf_check_ud( luaVM, 1 );
+	struct xt_buf *buf = xt_buf_check_ud( luaVM, 1, 1 );
 	lua_Unsigned   val = (lua_Unsigned) luaL_checkinteger( luaVM, 2 );   ///< value to be written
 	int            pos = luaL_checkint( luaVM, 3 );   ///< starting byte  b->b[pos]
 	int             sz = luaL_checkint( luaVM, 4 );   ///< how many bytes to read
@@ -316,7 +316,7 @@ static int lxt_buf_writeint( lua_State *luaVM )
  * --------------------------------------------------------------------------*/
 static int lxt_buf_readbit( lua_State *luaVM )
 {
-	struct xt_buf *buf = xt_buf_check_ud( luaVM, 1 );
+	struct xt_buf *buf = xt_buf_check_ud( luaVM, 1, 1 );
 	int            pos = luaL_checkint( luaVM, 2 );   ///< starting byte  b->b[pos]
 	int            ofs = luaL_checkint( luaVM, 3 );   ///< starting byte  b->b[pos] + ofs bits
 	int             sz = luaL_checkint( luaVM, 4 );   ///< how many bits  to read
@@ -348,7 +348,7 @@ static int lxt_buf_readbit( lua_State *luaVM )
  * --------------------------------------------------------------------------*/
 static int lxt_buf_writebit( lua_State *luaVM )
 {
-	struct xt_buf *buf = xt_buf_check_ud( luaVM, 1 );
+	struct xt_buf *buf = xt_buf_check_ud( luaVM, 1, 1 );
 	lua_Unsigned   val = (lua_Unsigned) luaL_checkinteger( luaVM, 2 );   ///< value to be written
 	int            pos = luaL_checkint( luaVM, 3 );   ///< starting byte  b->b[pos]
 	int            ofs = luaL_checkint( luaVM, 4 );   ///< starting byte  b->b[pos] + ofs bits
@@ -379,13 +379,13 @@ static int lxt_buf_writebit( lua_State *luaVM )
  * --------------------------------------------------------------------------*/
 static int lxt_buf_readstring (lua_State *luaVM)
 {
-	struct xt_buf *b   = xt_buf_check_ud (luaVM, 1);
+	struct xt_buf *buf = xt_buf_check_ud( luaVM, 1, 1 );
 	int            ofs;
 	int            sz;
 	ofs = (lua_isnumber(luaVM, 2)) ? (size_t) luaL_checkint( luaVM, 2 ) : 0;
-	sz  = (lua_isnumber(luaVM, 3)) ? (size_t) luaL_checkint( luaVM, 3 ) : b->len-ofs;
+	sz  = (lua_isnumber(luaVM, 3)) ? (size_t) luaL_checkint( luaVM, 3 ) : buf->len-ofs;
 
-	lua_pushlstring(luaVM, (const char*) &(b->b[ ofs ]), sz );
+	lua_pushlstring(luaVM, (const char*) &(buf->b[ ofs ]), sz );
 	return 1;
 }
 
@@ -403,19 +403,19 @@ static int lxt_buf_readstring (lua_State *luaVM)
  * --------------------------------------------------------------------------*/
 static int lxt_buf_writestring (lua_State *luaVM)
 {
-	struct xt_buf *b   = xt_buf_check_ud (luaVM, 1);
+	struct xt_buf *buf = xt_buf_check_ud( luaVM, 1, 1 );
 	int            ofs = (lua_isnumber(luaVM, 3)) ? luaL_checkint(luaVM, 3) : 0;
 	size_t         sz;
 	// if a third parameter is given write only x bytes of the input string to the buffer
 	if (lua_isnumber(luaVM, 4))
 	{
 		sz  = luaL_checkint(luaVM, 4);
-		memcpy  ( (char*) &(b->b[ ofs ]), luaL_checklstring( luaVM, 2, NULL ), sz );
+		memcpy  ( (char*) &(buf->b[ ofs ]), luaL_checklstring( luaVM, 2, NULL ), sz );
 	}
 	// otherwise write the whole thing
 	else
 	{
-		memcpy  ( (char*) &(b->b[ ofs ]), luaL_checklstring( luaVM, 2, &sz ), sz );
+		memcpy  ( (char*) &(buf->b[ ofs ]), luaL_checklstring( luaVM, 2, &sz ), sz );
 	}
 	return 0;
 }
@@ -432,14 +432,14 @@ static int lxt_buf_tohexstring (lua_State *luaVM)
 {
 	int            l,c;
 	char          *sbuf;
-	struct xt_buf *b   = xt_buf_check_ud( luaVM, 1 );
+	struct xt_buf *buf = xt_buf_check_ud( luaVM, 1, 1 );
 
-	sbuf = malloc( 3 * b->len * sizeof( char ) );
-	memset( sbuf, 0, 3 * b->len * sizeof( char ) );
+	sbuf = malloc( 3 * buf->len * sizeof( char ) );
+	memset( sbuf, 0, 3 * buf->len * sizeof( char ) );
 
 	c = 0;
-	for (l=0; l < (int) b->len; l++) {
-		c += snprintf( sbuf+c, 4, "%02X ", b->b[l] );
+	for (l=0; l < (int) buf->len; l++) {
+		c += snprintf( sbuf+c, 4, "%02X ", buf->b[l] );
 	}
 	lua_pushstring(luaVM, sbuf);
 	return 1;
@@ -453,10 +453,9 @@ static int lxt_buf_tohexstring (lua_State *luaVM)
  * --------------------------------------------------------------------------*/
 static int lxt_buf__len (lua_State *luaVM)
 {
-	struct xt_buf *b;
+	struct xt_buf *buf = xt_buf_check_ud( luaVM, 1, 1 );
 
-	b   = xt_buf_check_ud( luaVM, 1 );
-	lua_pushinteger(luaVM, (int) b->len);
+	lua_pushinteger(luaVM, (int) buf->len);
 	return 1;
 }
 
@@ -470,8 +469,8 @@ static int lxt_buf__len (lua_State *luaVM)
  * --------------------------------------------------------------------------*/
 static int lxt_buf__tostring (lua_State *luaVM)
 {
-	struct xt_buf *bs = xt_buf_check_ud( luaVM, 1 );
-	lua_pushfstring( luaVM, "xt.Buffer{%d}: %p", bs->len, bs );
+	struct xt_buf *buf = xt_buf_check_ud( luaVM, 1, 1 );
+	lua_pushfstring( luaVM, "xt.Buffer{%d}: %p", buf->len, buf );
 	return 1;
 }
 
@@ -539,4 +538,5 @@ LUAMOD_API int luaopen_xt_buf (lua_State *luaVM)
 	lua_setmetatable( luaVM, -2 );
 	return 1;
 }
+
 
