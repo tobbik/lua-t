@@ -267,30 +267,6 @@ static int lxt_pck_pack( lua_State *luaVM )
 
 
 /**--------------------------------------------------------------------------
- * reads a Lua Value from an xt.Buffer/String according to the Packer.
- * \param   luaVM lua Virtual Machine.
- * \lparam  userdata xt.Pack.
- * \lparam  userdata xt.Buffer.
- * \lreturn value    from xt.Buffer/String according to packer format.
- * \return integer number of values left on the stack.
- *  -------------------------------------------------------------------------*/
-static int lxt_pck_read( lua_State *luaVM )
-{
-	struct xt_pck *p      = xt_pckc_check_ud( luaVM, 1, 1 );  // allow Pack or Struct
-	struct xt_buf *b      = xt_buf_check_ud( luaVM, 2 );
-
-	if (p->t < XT_PCK_ARRAY)       // xt.Pack value type -> return result
-	{
-		return xt_pck_read( luaVM, p, (const unsigned char *) b->b );
-	}
-	else                            // xt.Pack.Struct comb type -> return table
-	{
-		return 0;;
-	}
-}
-
-
-/**--------------------------------------------------------------------------
  * Get size in bytes covered by packer/struct/reader.
  * \param   luaVM  The lua state.
  * \lparam  ud     xt.Pack.* instance.
@@ -365,11 +341,10 @@ static const struct luaL_Reg xt_pck_cf [] = {
 	{"IntL",      lxt_pck_IntL},
 	{"IntB",      lxt_pck_IntB},
 	{"String",    lxt_pck_String},
-	{"Struct",    lxt_pckc_Struct},
 	{"Array",     lxt_pckc_Array},
 	{"Sequence",  lxt_pckc_Sequence},
+	{"Struct",    lxt_pckc_Struct},
 	{"size",      lxt_pck_size},
-	{"read",      lxt_pck_read},
 	{NULL,    NULL}
 };
 

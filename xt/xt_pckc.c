@@ -15,81 +15,6 @@
 #include "xt_buf.h"
 
 
-/**--------------------------------------------------------------------------
- * Create a  xt.Pack.Struct Object and put it onto the stack.
- * \param   luaVM  The lua state.
- * \lparam  ... multiple of type  table { name = xt.Pack}.
- * \lreturn userdata of xt.Pack.Struct.
- * \return  # of results  passed back to the calling Lua script.
- * --------------------------------------------------------------------------*/
-int lxt_pckc_Struct( lua_State *luaVM )
-{
-	size_t             i;      ///< iterator for going through the arguments
-	size_t             bc=0;   ///< count bitSize for bit type packers
-	struct xt_pck     *p;      ///< temporary packer/struct for iteration
-	struct xt_pck     *cp;     ///< the userdata this constructor creates
-
-	// size = sizof(...) -1 because the array has already one member
-	cp     = (struct xt_pck *) lua_newuserdata( luaVM, sizeof( struct xt_pck ) );
-	cp->n  = lua_gettop( luaVM )-1;  // number of elements on stack -1 (the Struct userdata)
-	cp->sz = 0;
-	cp->t  = XT_PCK_STRUCT;
-
-	// create index table
-	lua_createtable( luaVM, cp->n, cp->n ); // Stack: ..., Struct,idx
-
-	for (i=1; i<=cp->n; i++)
-	{
-		luaL_argcheck( luaVM, lua_istable( luaVM, i ), i,
-			"Arguments must be tables with single key/xt.Pack pair" );
-		// Stack gymnastic:
-		lua_pushnil( luaVM );
-		if (!lua_next( luaVM, i ))         // Stack: ...,Struct,idx,name,Pack
-			return xt_push_error( luaVM, "the table argument must contain one key/value pair.");
-		// TODO: check if name is already used!
-		lua_pushvalue( luaVM, -2 );        // Stack: ...,Struct,idx,name,Pack,name
-		lua_rawget( luaVM, -4 );
-		if (! lua_isnoneornil( luaVM, -1 ))
-			return xt_push_error( luaVM, "All elements in xt.Pack.Struct must have unique key.");
-		lua_pop( luaVM, 1 );               // pop the nil
-		p = xt_pckc_check_ud( luaVM, -1, 1 );    // allow xt.Pack or xt.Pack.Struct
-		// populate idx table
-		lua_pushinteger( luaVM, cp->sz);    // Stack: ...,Seq,idx,name,Pack,ofs
-		lua_rawseti( luaVM, -4, i+cp->n );  // Stack: ...,Seq,idx,name,Pack             idx[n+i] = offset
-		lua_pushvalue( luaVM, -1 );         // Stack: ...,Seq,idx,name,Pack,Pack
-		lua_rawseti( luaVM, -4, i );        // Stack: ...,Seq,idx,name,Pack             idx[i] = Pack
-		lua_insert( luaVM, -2);             // Stack: ...,Seq,idx,Pack,name             swap pack/name
-		lua_pushvalue( luaVM, -1 );         // Stack: ...,Seq,idx,Pack,name,name
-		lua_rawseti( luaVM, -4, cp->n*2+i );// Stack: ...,Seq,idx,Pack,name             idx[2n+i] = name
-		lua_pushinteger( luaVM, i);         // Stack: ...,Seq,idx,Pack,name,i
-		lua_rawset( luaVM, -4 );            // Stack: ...,Seq,idx,Pack                  idx[name] = i
-		// Stack: ...,Struct,idx,Pack/Struct
-		// handle Bit type packers
-		if (XT_PCK_BIT == p->t)
-		{
-			p->oB = bc%8;
-			if ((bc + p->lB)/8 > bc/8)
-					  cp->sz += 1;
-			bc = bc + p->lB;
-		}
-		else
-		{
-			if (bc%8)
-					  xt_push_error( luaVM, "bitsized fields must always be grouped by byte size" );
-			else   
-					  bc = 0;
-			cp->sz += p->sz;
-		}
-		lua_pop( luaVM, 1 );   // pop packer from stack for next round
-	}
-	cp->iR = luaL_ref( luaVM, LUA_REGISTRYINDEX); // register index  table
-
-	luaL_getmetatable( luaVM, "xt.Pack.Struct" ); // Stack: ...,xt.Pack.Struct
-	lua_setmetatable( luaVM, -2 ) ;
-
-	return 1;
-}
-
 
 /**--------------------------------------------------------------------------
  * Create a  xt.Pack.Array Object and put it onto the stack.
@@ -149,6 +74,82 @@ int lxt_pckc_Sequence( lua_State *luaVM )
 		lua_rawseti( luaVM, -3, i+cp->n ); // Stack: ...,Seq,idx,Pack     idx[n+i] = offset
 		lua_rawseti( luaVM, -2, i );       // Stack: ...,Seq,idx,         idx[i]   = Pack
 		lua_pushvalue( luaVM, i);          // Stack: ...,Seq,idx,Pack
+		// handle Bit type packers
+		if (XT_PCK_BIT == p->t)
+		{
+			p->oB = bc%8;
+			if ((bc + p->lB)/8 > bc/8)
+					  cp->sz += 1;
+			bc = bc + p->lB;
+		}
+		else
+		{
+			if (bc%8)
+					  xt_push_error( luaVM, "bitsized fields must always be grouped by byte size" );
+			else   
+					  bc = 0;
+			cp->sz += p->sz;
+		}
+		lua_pop( luaVM, 1 );   // pop packer from stack for next round
+	}
+	cp->iR = luaL_ref( luaVM, LUA_REGISTRYINDEX); // register index  table
+
+	luaL_getmetatable( luaVM, "xt.Pack.Struct" ); // Stack: ...,xt.Pack.Struct
+	lua_setmetatable( luaVM, -2 ) ;
+
+	return 1;
+}
+
+
+/**--------------------------------------------------------------------------
+ * Create a  xt.Pack.Struct Object and put it onto the stack.
+ * \param   luaVM  The lua state.
+ * \lparam  ... multiple of type  table { name = xt.Pack}.
+ * \lreturn userdata of xt.Pack.Struct.
+ * \return  # of results  passed back to the calling Lua script.
+ * --------------------------------------------------------------------------*/
+int lxt_pckc_Struct( lua_State *luaVM )
+{
+	size_t             i;      ///< iterator for going through the arguments
+	size_t             bc=0;   ///< count bitSize for bit type packers
+	struct xt_pck     *p;      ///< temporary packer/struct for iteration
+	struct xt_pck     *cp;     ///< the userdata this constructor creates
+
+	// size = sizof(...) -1 because the array has already one member
+	cp     = (struct xt_pck *) lua_newuserdata( luaVM, sizeof( struct xt_pck ) );
+	cp->n  = lua_gettop( luaVM )-1;  // number of elements on stack -1 (the Struct userdata)
+	cp->sz = 0;
+	cp->t  = XT_PCK_STRUCT;
+
+	// create index table
+	lua_createtable( luaVM, cp->n, cp->n ); // Stack: ..., Struct,idx
+
+	for (i=1; i<=cp->n; i++)
+	{
+		luaL_argcheck( luaVM, lua_istable( luaVM, i ), i,
+			"Arguments must be tables with single key/xt.Pack pair" );
+		// Stack gymnastic:
+		lua_pushnil( luaVM );
+		if (!lua_next( luaVM, i ))         // Stack: ...,Struct,idx,name,Pack
+			return xt_push_error( luaVM, "the table argument must contain one key/value pair.");
+		// check if name is already used!
+		lua_pushvalue( luaVM, -2 );        // Stack: ...,Struct,idx,name,Pack,name
+		lua_rawget( luaVM, -4 );
+		if (! lua_isnoneornil( luaVM, -1 ))
+			return xt_push_error( luaVM, "All elements in xt.Pack.Struct must have unique key.");
+		lua_pop( luaVM, 1 );               // pop the nil
+		p = xt_pckc_check_ud( luaVM, -1, 1 );    // allow xt.Pack or xt.Pack.Struct
+		// populate idx table
+		lua_pushinteger( luaVM, cp->sz);    // Stack: ...,Seq,idx,name,Pack,ofs
+		lua_rawseti( luaVM, -4, i+cp->n );  // Stack: ...,Seq,idx,name,Pack             idx[n+i] = offset
+		lua_pushvalue( luaVM, -1 );         // Stack: ...,Seq,idx,name,Pack,Pack
+		lua_rawseti( luaVM, -4, i );        // Stack: ...,Seq,idx,name,Pack             idx[i] = Pack
+		lua_insert( luaVM, -2);             // Stack: ...,Seq,idx,Pack,name             swap pack/name
+		lua_pushvalue( luaVM, -1 );         // Stack: ...,Seq,idx,Pack,name,name
+		lua_rawseti( luaVM, -4, cp->n*2+i );// Stack: ...,Seq,idx,Pack,name             idx[2n+i] = name
+		lua_pushinteger( luaVM, i);         // Stack: ...,Seq,idx,Pack,name,i
+		lua_rawset( luaVM, -4 );            // Stack: ...,Seq,idx,Pack                  idx[name] = i
+		// Stack: ...,Struct,idx,Pack/Struct
 		// handle Bit type packers
 		if (XT_PCK_BIT == p->t)
 		{
@@ -269,10 +270,10 @@ static int lxt_pckrc__index( lua_State *luaVM )
 		p = xt_pckc_check_ud( luaVM, -1, 0 );
 		pos += (p->sz * luaL_checkint( luaVM, -2 ));
 	}
-	else                                              // xt.Struct
+	else                                              // xt.Struct/Sequence
 	{
 		lua_pushvalue( luaVM, -2 );        // Stack: Struct,key,idx,key
-		if (! lua_tonumber( luaVM, -3 ))
+		if (! lua_tonumber( luaVM, -3 ))               // xt.Struct
 			lua_rawget( luaVM, -2);    // Stack: Struct,key,idx,i
 		lua_rawgeti( luaVM, -2, lua_tointeger( luaVM, -1 ) + pc->n );  // Stack: Seq,key,idx,i,ofs
 		pos += luaL_checkint( luaVM, -1);
@@ -384,22 +385,19 @@ static int lxt_pckrc__call( lua_State *luaVM )
 		{
 			return xt_pck_read( luaVM, p, (const unsigned char *) b );
 		}
-		if (p->t == XT_PCK_STRUCT)      // handle Struct, return table
+		if (p->t == XT_PCK_ARRAY)      // handle Array; return table
 		{
-			lua_rawgeti( luaVM, LUA_REGISTRYINDEX, p->iR ); // get index table
 			lua_createtable( luaVM, 0, p->n);   //Stack: r,buf,idx,res
 			for (n=1; n<p->n; n++)
 			{
-				lua_pushcfunction( luaVM, lxt_pckrc__call );  //Stack: r,buf,idx,res,__call
-				lua_pushcfunction( luaVM, lxt_pckrc__index ); //Stack: r,buf,idx,res,_call,__index
-				lua_pushvalue( luaVM, -6 );          //Stack: r,buf,idx,res,__call,__index,r
-				lua_rawgeti( luaVM, -5, 2*p->n + n );//Stack: r,buf,idx,res,__call,__index,r,name
-				lua_pushvalue( luaVM, -1 );          //Stack: r,buf,idx,res,__call,__index,r,name,name
-				lua_insert( luaVM, -5 );             //Stack: r,buf,idx,res,name,__call,__index,r,name
-				lua_call( luaVM, 2, 1 );             //Stack: r,buf,idx,res,name,__call,value
-				lua_pushvalue( luaVM, -6 );          //Stack: r,buf,idx,res,name,__call,value,buf
-				lua_call( luaVM, 2, 1 );             //Stack: r,buf,idx,res,name,value
-				lua_rawset( luaVM, -3 );             //Stack: r,buf,idx,res
+				lua_pushcfunction( luaVM, lxt_pckrc__call );  //Stack: r,buf,res,__call
+				lua_pushcfunction( luaVM, lxt_pckrc__index ); //Stack: r,buf,res,__call,__index
+				lua_pushvalue( luaVM, -5 );          //Stack: r,buf,res,__call,__index,r
+				lua_pushinteger( luaVM, n );         //Stack: r,buf,res,__call,__index,r,n
+				lua_call( luaVM, 2, 1 );             //Stack: r,buf,res,__call,value
+				lua_pushvalue( luaVM, -4 );          //Stack: r,buf,res,__call,value,buf
+				lua_call( luaVM, 2, 1 );             //Stack: r,buf,res,value
+				lua_rawseti( luaVM, -2, n );         //Stack: r,buf,res
 			}
 			lua_remove( luaVM, -2 );                //Stack: r,buf,res
 			return 1;
@@ -422,19 +420,22 @@ static int lxt_pckrc__call( lua_State *luaVM )
 			lua_remove( luaVM, -2 );                //Stack: r,buf,res
 			return 1;
 		}
-		if (p->t == XT_PCK_ARRAY)      // handle Array; return table
+		if (p->t == XT_PCK_STRUCT)      // handle Struct, return table
 		{
+			lua_rawgeti( luaVM, LUA_REGISTRYINDEX, p->iR ); // get index table
 			lua_createtable( luaVM, 0, p->n);   //Stack: r,buf,idx,res
 			for (n=1; n<p->n; n++)
 			{
 				lua_pushcfunction( luaVM, lxt_pckrc__call );  //Stack: r,buf,idx,res,__call
-				lua_pushcfunction( luaVM, lxt_pckrc__index ); //Stack: r,buf,idx,res,__index
-				lua_pushvalue( luaVM, -5 );          //Stack: r,buf,idx,res,__call,__index,r
-				lua_pushinteger( luaVM, n );         //Stack: r,buf,idx,res,__call,__index,r,n
-				lua_call( luaVM, 2, 1 );             //Stack: r,buf,idx,res,__call,value
-				lua_pushvalue( luaVM, -5 );          //Stack: r,buf,idx,res,__call,value,buf
-				lua_call( luaVM, 2, 1 );             //Stack: r,buf,idx,res,value
-				lua_rawseti( luaVM, -2, n );         //Stack: r,buf,idx,res
+				lua_pushcfunction( luaVM, lxt_pckrc__index ); //Stack: r,buf,idx,res,_call,__index
+				lua_pushvalue( luaVM, -6 );          //Stack: r,buf,idx,res,__call,__index,r
+				lua_rawgeti( luaVM, -5, 2*p->n + n );//Stack: r,buf,idx,res,__call,__index,r,name
+				lua_pushvalue( luaVM, -1 );          //Stack: r,buf,idx,res,__call,__index,r,name,name
+				lua_insert( luaVM, -5 );             //Stack: r,buf,idx,res,name,__call,__index,r,name
+				lua_call( luaVM, 2, 1 );             //Stack: r,buf,idx,res,name,__call,value
+				lua_pushvalue( luaVM, -6 );          //Stack: r,buf,idx,res,name,__call,value,buf
+				lua_call( luaVM, 2, 1 );             //Stack: r,buf,idx,res,name,value
+				lua_rawset( luaVM, -3 );             //Stack: r,buf,idx,res
 			}
 			lua_remove( luaVM, -2 );                //Stack: r,buf,res
 			return 1;
@@ -469,14 +470,14 @@ static int lxt_pckc__tostring( lua_State *luaVM )
 
 	switch( pc->t )
 	{
-		case XT_PCK_STRUCT:
-			lua_pushfstring( luaVM, "xt.Pack.Struct[%d]{%d}: %p", pc->n, pc->sz, pc );
-			break;
 		case XT_PCK_ARRAY:
 			lua_pushfstring( luaVM, "xt.Pack.Array[%d]{%d}: %p", pc->n, pc->sz, pc );
 			break;
 		case XT_PCK_SEQ:
 			lua_pushfstring( luaVM, "xt.Pack.Sequence[%d]{%d}: %p", pc->n, pc->sz, pc );
+			break;
+		case XT_PCK_STRUCT:
+			lua_pushfstring( luaVM, "xt.Pack.Struct[%d]{%d}: %p", pc->n, pc->sz, pc );
 			break;
 		default:
 			xt_push_error( luaVM, "Can't read value from unknown packer type" );
@@ -513,14 +514,14 @@ static int lxt_pckr__tostring( lua_State *luaVM )
 		case XT_PCK_FLT:
 			lua_pushfstring( luaVM, "xt.Pack.Reader{FLOAT:%d/%d}: %p", p->sz, pr->o, p );
 			break;
-		case XT_PCK_STRUCT:
-			lua_pushfstring( luaVM, "xt.Pack.Reader{STRUCT[%d]:%d/%d}: %p", p->n, p->sz, pr->o, p );
-			break;
 		case XT_PCK_ARRAY:
 			lua_pushfstring( luaVM, "xt.Pack.Reader{ARRAY[%d]:%d/%d}: %p", p->n, p->sz, pr->o, p );
 			break;
 		case XT_PCK_SEQ:
 			lua_pushfstring( luaVM, "xt.Pack.Reader{SEQUENCE[%d]:%d/%d}: %p", p->n, p->sz, pr->o, p );
+			break;
+		case XT_PCK_STRUCT:
+			lua_pushfstring( luaVM, "xt.Pack.Reader{STRUCT[%d]:%d/%d}: %p", p->n, p->sz, pr->o, p );
 			break;
 		default:
 			xt_push_error( luaVM, "Can't read value from unknown packer type" );
@@ -557,7 +558,7 @@ static int xt_pckrc_iter( lua_State *luaVM )
 		lua_replace( luaVM, lua_upvalueindex( 2 ) );
 	}
 	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, pc->iR );
-	if (pc->t > XT_PCK_SEQ)
+	if (XT_PCK_STRUCT == pc->t)                    // Get the name for a Struct value
 		lua_rawgeti( luaVM, -1 , crs + pc->n*2 );   // Stack: func,nP,_idx,nC
 	else
 		lua_pushinteger( luaVM, crs );     // Stack: func,iP,_idx,iC
