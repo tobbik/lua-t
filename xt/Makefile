@@ -18,7 +18,7 @@ VER= 5.2
 
 XT_SRC=xt.c \
 	 xt_sck.c \
-	 l_xt_ip.c \
+	 xt_ip.c \
 	 xt_lp.c \
 	 xt_lp_sel.c \
 	 xt_time.c \

@@ -299,8 +299,8 @@ LUAMOD_API int luaopen_xt( lua_State *luaVM )
 	lua_setfield( luaVM, -2, "Time" );
 	luaopen_xt_sck( luaVM );
 	lua_setfield( luaVM, -2, "Socket" );
-	luaopen_ipendpoint( luaVM );
-	lua_setfield( luaVM, -2, "IpEndpoint" );
+	luaopen_xt_ip( luaVM );
+	lua_setfield( luaVM, -2, "Ip" );
 	luaopen_xt_buf( luaVM );
 	lua_setfield( luaVM, -2, "Buffer" );
 	luaopen_xt_pck( luaVM );

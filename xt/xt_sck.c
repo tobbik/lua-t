@@ -29,23 +29,6 @@
 #include "xt_sck.h"
 #include "xt_buf.h"         // the ability to send and recv buffers
 
-
-
-/**--------------------------------------------------------------------------
- * construct a Socket and return it.
- * \param   luaVM  The lua state.
- * \lparam  CLASS table Socket
- * \lparam  string    type "TCP", "UDP", ...
- * \lreturn struct xt_sck userdata.
- * \return  The number of results to be passed back to the calling Lua script.
- * --------------------------------------------------------------------------*/
-static int lxt_sck__Call( lua_State *luaVM )
-{
-	lua_remove( luaVM, 1 );
-	return lxt_sck_New( luaVM );
-}
-
-
 /** -------------------------------------------------------------------------
  * \brief   create a socket and return it.
  * \param   luaVM  The lua state.
@@ -61,6 +44,21 @@ int lxt_sck_New( lua_State *luaVM )
 	sck = xt_sck_create_ud( luaVM,
 			(enum xt_sck_t) luaL_checkoption (luaVM, 1, "TCP", xt_sck_t_lst) );
 	return 1 ;
+}
+
+
+/**--------------------------------------------------------------------------
+ * construct a Socket and return it.
+ * \param   luaVM  The lua state.
+ * \lparam  CLASS table Socket
+ * \lparam  string    type "TCP", "UDP", ...
+ * \lreturn struct xt_sck userdata.
+ * \return  The number of results to be passed back to the calling Lua script.
+ * --------------------------------------------------------------------------*/
+static int lxt_sck__Call( lua_State *luaVM )
+{
+	lua_remove( luaVM, 1 );
+	return lxt_sck_New( luaVM );
 }
 
 
@@ -163,12 +161,12 @@ static int lxt_sck_bind( lua_State *luaVM )
 	if ( lua_isuserdata(luaVM, 2) )
 	{
 		// it's assumed that IP/port et cetera are assigned
-		ip   = check_ud_ipendpoint (luaVM, 2);
-		lua_pushvalue(luaVM, 1);
+		ip   = xt_ip_check_ud(luaVM, 2, 1 );
+		lua_pushvalue( luaVM, 1 );
 	}
 	else {
-		ip = create_ud_ipendpoint( luaVM );
-		set_ipendpoint_values( luaVM, 2, ip );
+		ip = xt_ip_create_ud( luaVM );
+		xt_ip_set( luaVM, 2, ip );
 	}
 
 	if (bind( sck->fd , (struct sockaddr*) &(*ip), sizeof( struct sockaddr ) ) == -1)
@@ -205,13 +203,13 @@ static int lxt_sck_connect( lua_State *luaVM )
 	if (lua_isuserdata( luaVM, 2 ))
 	{
 		// it's assumed that IP/port et cetera are assigned
-		ip = check_ud_ipendpoint( luaVM, 2 );
+		ip = xt_ip_check_ud( luaVM, 2, 1 );
 		lua_pushvalue( luaVM, 1 );
 	}
 	else
 	{
-		ip = create_ud_ipendpoint( luaVM );
-		set_ipendpoint_values( luaVM, 2, ip );
+		ip = xt_ip_create_ud( luaVM );
+		xt_ip_set( luaVM, 2, ip );
 	}
 
 	if (connect( sck->fd , (struct sockaddr*) &(*ip), sizeof( struct sockaddr ) ) == -1)
@@ -242,7 +240,7 @@ static int lxt_sck_accept( lua_State *luaVM )
 	luaL_argcheck( luaVM, (XT_SCK_TCP == lsck->t), 1, "Must be an TCP socket" );
 	asck = xt_sck_create_ud( luaVM, XT_SCK_TCP );
 
-	si_cli = create_ud_ipendpoint( luaVM );
+	si_cli = xt_ip_create_ud( luaVM );
 	asck->fd = accept( lsck->fd, (struct sockaddr *) &(*si_cli), &their_addr_size );
 
 	return 2;
@@ -277,9 +275,9 @@ static int lxt_sck_close( lua_State *luaVM )
  * \lreturn sent   number of bytes sent.
  * \return  The number of results to be passed back to the calling Lua script.
  *-------------------------------------------------------------------------*/
-static int lxt_sck_send_to(lua_State *luaVM)
+static int lxt_sck_send_to( lua_State *luaVM )
 {
-	struct xt_sck     *sck;
+	struct xt_sck      *sck;
 	struct sockaddr_in *ip;
 	struct xt_buf      *buf;
 	int                 sent;
@@ -288,7 +286,7 @@ static int lxt_sck_send_to(lua_State *luaVM)
 
 	sck = xt_sck_check_ud( luaVM, 1 );
 	luaL_argcheck( luaVM, (XT_SCK_UDP == sck->t), 1, "Must be an UDP socket" );
-	ip   = check_ud_ipendpoint( luaVM, 2 );
+	ip   = xt_ip_check_ud( luaVM, 2, 1 );
 	if (lua_isstring( luaVM, 3 ))
 	{
 		msg   = lua_tostring( luaVM, 3 );
@@ -325,7 +323,7 @@ static int lxt_sck_send_to(lua_State *luaVM)
  * \lreturn ip     ip endpoint userdata.
  * \return  The number of results to be passed back to the calling Lua script.
  *-------------------------------------------------------------------------*/
-static int lxt_sck_recv_from(lua_State *luaVM)
+static int lxt_sck_recv_from( lua_State *luaVM )
 {
 	struct xt_sck      *sck;
 	struct xt_buf      *buf;
@@ -344,7 +342,7 @@ static int lxt_sck_recv_from(lua_State *luaVM)
 		rcv  = (char *) &(buf->b[ 0 ]);
 		len  = buf->len;
 	}
-	si_cli = create_ud_ipendpoint( luaVM );
+	si_cli = xt_ip_create_ud( luaVM );
 
 	if ((rcvd = recvfrom(
 	  sck->fd,
@@ -458,8 +456,8 @@ static int lxt_sck_getsockname( lua_State *luaVM )
 	sck = xt_sck_check_ud( luaVM, 1 );
 	luaL_argcheck( luaVM, (XT_SCK_TCP == sck->t), 1, "Must be an TCP socket" );
 
-	if (lua_isuserdata( luaVM, 2 ))  ip = check_ud_ipendpoint( luaVM, 2 );
-	else                             ip = create_ud_ipendpoint( luaVM );
+	if (lua_isuserdata( luaVM, 2 ))  ip = xt_ip_check_ud( luaVM, 2, 1 );
+	else                             ip = xt_ip_create_ud( luaVM );
 
 	getsockname( sck->fd, (struct sockaddr*) &(*ip), &ip_len );
 	return 1;

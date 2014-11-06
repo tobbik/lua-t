@@ -24,14 +24,13 @@ struct xt_sck {
 };
 
 // Constructors
-// l_xt_ipendpoint.c
-struct sockaddr_in *check_ud_ipendpoint (lua_State *luaVM, int pos);
-struct sockaddr_in *create_ud_ipendpoint (lua_State *luaVM);
-int    set_ipendpoint_values (lua_State *luaVM, int pos, struct sockaddr_in *ip);
+// xt_ip.c
+struct sockaddr_in *xt_ip_check_ud  (lua_State *luaVM, int pos, int check);
+struct sockaddr_in *xt_ip_create_ud (lua_State *luaVM);
+int                 xt_ip_set       (lua_State *luaVM, int pos, struct sockaddr_in *ip);
 
-// l_xt_socket.c
+// xt_sck.c
 int            luaopen_xt_sck    ( lua_State *luaVM );
-int            lxt_sck_New       ( lua_State *luaVM );
 struct xt_sck *xt_sck_check_ud   ( lua_State *luaVM, int pos );
 struct xt_sck *xt_sck_create_ud  ( lua_State *luaVM, enum xt_sck_t type);
 
