@@ -360,6 +360,7 @@ static int lxt_pckrc__call( lua_State *luaVM )
 	luaL_argcheck( luaVM,  2<=lua_gettop(luaVM) && lua_gettop( luaVM )<=3, 2,
 		"Calling an xt.Pack.Reader takes 2 or 3 arguments!" );
 
+	// are we reading/writing to from xt.Buffer or Lua String
 	if (lua_isuserdata( luaVM, 2 ))      // xt.Buffer
 	{
 		buf = xt_buf_check_ud ( luaVM, 2 );
@@ -376,7 +377,6 @@ static int lxt_pckrc__call( lua_State *luaVM )
 			"Can't write to a Lua String since they are immutable." );
 		b   =  b+ o;
 	}
-
 
 	if (2 == lua_gettop( luaVM ))     // read from input
 	{
@@ -542,12 +542,13 @@ static int lxt_pckr__tostring( lua_State *luaVM )
 static int xt_pckrc_iter( lua_State *luaVM )
 {
 	struct xt_pckr *pr = xt_pckr_check_ud( luaVM, lua_upvalueindex( 1 ), 0 );
-	struct xt_pck  *pc = (NULL == pr) ? xt_pckc_check_ud( luaVM, -1, 1 ) : pr->p;
+	struct xt_pck  *pc = (NULL == pr) ? xt_pckc_check_ud( luaVM, lua_upvalueindex( 1 ), 1 ) : pr->p;
 
 	int crs;
 
 	crs = lua_tointeger( luaVM, lua_upvalueindex( 2 ) );
 	crs++;
+
 	if (crs > (int) pc->n)
 		return 0;
 	else
@@ -556,10 +557,17 @@ static int xt_pckrc_iter( lua_State *luaVM )
 		lua_replace( luaVM, lua_upvalueindex( 2 ) );
 	}
 	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, pc->iR );
-	lua_rawgeti( luaVM, -2 ,crs );    // Stack: _idx, name
-	lua_pushvalue( luaVM, -1);        // Stack: _idx, name, name
-	lua_rawget( luaVM, -3 );          // Stack: _idx, name, Pack
-	lua_remove( luaVM, -3 );          // remove idx table
+	if (pc->t > XT_PCK_SEQ)
+		lua_rawgeti( luaVM, -1 , crs + pc->n*2 );   // Stack: func,nP,_idx,nC
+	else
+		lua_pushinteger( luaVM, crs );     // Stack: func,iP,_idx,iC
+	lua_rawgeti( luaVM, -2 , crs );       // Stack: func,nP,_idx,xC,pack
+	lua_rawgeti( luaVM, -3 , crs+pc->n ); // Stack: func,nP,_idx,xC,pack,pos
+	lua_remove( luaVM, -4 );              // Stack: func,nP,xC,pack,pos
+	xt_pckr_create_ud( luaVM,  xt_pckc_check_ud( luaVM, -2, 1 ), luaL_checkint( luaVM, -1 ) );
+	lua_insert( luaVM, -3);
+	lua_pop( luaVM, 2);
+
 	return 2;
 }
 
@@ -573,10 +581,9 @@ static int xt_pckrc_iter( lua_State *luaVM )
  *  -------------------------------------------------------------------------*/
 int lxt_pckrc__pairs( lua_State *luaVM )
 {
-	struct xt_pckr *pr  = xt_pckr_check_ud( luaVM, -1, 0 );
-	struct xt_pck  *pc;
-
-	pc = (NULL == pr) ? xt_pckc_check_ud( luaVM, -1, 1 ) : pr->p;
+	struct xt_pckr *pr = xt_pckr_check_ud( luaVM, 1, 0 );
+	if (NULL == pr)
+		xt_pckc_check_ud( luaVM, 1, 1 );
 
 	lua_pushnumber( luaVM, 0 );
 	lua_pushcclosure( luaVM, &xt_pckrc_iter, 2 );
