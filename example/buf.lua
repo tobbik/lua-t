@@ -32,16 +32,17 @@ print( "READING ACCESS by BITS" )
 b = xt.Buffer( string.char( 0x00, 0x00,0x00, 0x0F, 0xF0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 ) )
 print( b:toHex() )
 -- pos 4, ofs 0, length 10
-print( b:readBit( 3, 0, 10 ) )
-print( b:readBit( 3, 3, 9 ) )
-print( b:readBit( 3, 5, 8 ) )
+print( b:readBits( 3, 0, 10 ) )
+print( b:readBits( 3, 3, 9 ) )
+print( b:readBits( 3, 5, 8 ) )
 
 print( "WRITING ACCESS by BITS" )
-b:writeBit( 128, 7, 5, 8 )
+b:writeBits( 128, 7, 5, 8 )
 print( b:toHex() )
 b:writeInt( 255, 9, 1 )
 print( b:toHex() )
-b:writeBit( 128, 8, 5, 8 )
+b:writeBits( 128, 8, 5, 8 )
+b:writeInt( 123, 1, 2 )
 print( b:toHex() )
 
 

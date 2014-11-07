@@ -17,7 +17,10 @@ struct xt_buf {
 enum xt_pck_t {
 	XT_PCK_INTB,         ///< X  Byte wide field as Integer -> Big    Endian
 	XT_PCK_INTL,         ///< X  Byte wide field as Integer -> Little Endian
-	XT_PCK_BIT,          ///< X  Bit  wide field
+	XT_PCK_BIT,          ///< X  1 Bit   wide field
+	XT_PCK_BITS,         ///< X  x Bits  wide field
+	XT_PCK_HNBL,         ///< X  Hi  Nibble (4 bits most  significant)
+	XT_PCK_LNBL,         ///< X  Low Nibble (4 bits least significant)
 	XT_PCK_FLT,          ///< X  Byte wide field as Float
 	XT_PCK_STR,          ///< X  Byte wide field of char bytes
 	XT_PCK_ARRAY,        ///< X  Array    Type Packer combinator
@@ -56,6 +59,10 @@ int              luaopen_xt_buf  ( lua_State *luaVM );
 int              lxt_buf_New     ( lua_State *luaVM );
 struct xt_buf   *xt_buf_check_ud ( lua_State *luaVM, int pos, int check );
 struct xt_buf   *xt_buf_create_ud( lua_State *luaVM, int size );
+
+// Macro helper functions
+#define HI_NIBBLE_GET(b) (((b) >> 4) & 0xF)
+#define LO_NIBBLE_GET(b) ((b)  & 0xF)
 
 // accessor helpers for the buffer
 uint64_t  xt_buf_readbytes (               size_t sz, int islittle, const unsigned char * buf );

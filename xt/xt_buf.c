@@ -18,7 +18,6 @@
 #include "xt_buf.h"
 
 
-// inline helper functions
 
 // --------------------------------- HELPERS from Lua 5.3 code
 static int getendian( lua_State *luaVM, int pos )
@@ -178,7 +177,6 @@ void xt_buf_writebytes( uint64_t val, size_t sz, int islittle, unsigned char * b
 		buf[ i ] = (islittle) ? set[ i ] : set[ sz-1-i ];
 }
 
-
 /**--------------------------------------------------------------------------
  * Read an integer of y bits from a char buffer with offset ofs.
  * \param   len  size in bits (1-64).
@@ -305,6 +303,32 @@ static int lxt_buf_writeint( lua_State *luaVM )
 
 
 /**--------------------------------------------------------------------------
+ * Read a Nibble from the buffer at position x.
+ * \lparam  buf  userdata of type xt.Buffer (struct xt_buf).
+ * \lparam  pos  position in bytes.
+ * \lparam  side nibble side (L-HI, H-HI).
+ * \lreturn val  lua_Integer.
+ *
+ * \return integer 1 left on the stack.
+ * --------------------------------------------------------------------------*/
+static int lxt_buf_readnibble( lua_State *luaVM )
+{
+	struct xt_buf *buf = xt_buf_check_ud( luaVM, 1, 1 );
+	int            pos = luaL_checkint( luaVM, 2 );   ///< starting byte  b->b[pos]
+	const char    *nbl = luaL_optstring( luaVM, 3, "H" );
+	luaL_argcheck( luaVM,  0<= pos && pos <= (int) buf->len, 2,
+		                 "xt.Buffer position must be > 0 or < #buffer" );
+
+	lua_pushinteger( luaVM, 
+		(lua_Integer) ('H' == *nbl)
+		? HI_NIBBLE_GET( buf->b[pos] )
+		: LO_NIBBLE_GET( buf->b[pos] ) );
+
+	return 1;
+}
+
+
+/**--------------------------------------------------------------------------
  * Read an integer of y bits from the buffer at position x.
  * \lparam  buf  userdata of type xt.Buffer (struct xt_buf).
  * \lparam  pos  position in bytes.
@@ -314,7 +338,7 @@ static int lxt_buf_writeint( lua_State *luaVM )
  *
  * \return integer 1 left on the stack.
  * --------------------------------------------------------------------------*/
-static int lxt_buf_readbit( lua_State *luaVM )
+static int lxt_buf_readbits( lua_State *luaVM )
 {
 	struct xt_buf *buf = xt_buf_check_ud( luaVM, 1, 1 );
 	int            pos = luaL_checkint( luaVM, 2 );   ///< starting byte  b->b[pos]
@@ -346,7 +370,7 @@ static int lxt_buf_readbit( lua_State *luaVM )
  *
  * \return integer 1 left on the stack.
  * --------------------------------------------------------------------------*/
-static int lxt_buf_writebit( lua_State *luaVM )
+static int lxt_buf_writebits( lua_State *luaVM )
 {
 	struct xt_buf *buf = xt_buf_check_ud( luaVM, 1, 1 );
 	lua_Unsigned   val = (lua_Unsigned) luaL_checkinteger( luaVM, 2 );   ///< value to be written
@@ -501,8 +525,9 @@ static const luaL_Reg xt_buf_m [] = {
 	// new implementation
 	{"readInt",       lxt_buf_readint},
 	{"writeInt",      lxt_buf_writeint},
-	{"readBit",       lxt_buf_readbit},
-	{"writeBit",      lxt_buf_writebit},
+	{"readNibble",    lxt_buf_readnibble},
+	{"readBits",      lxt_buf_readbits},
+	{"writeBits",     lxt_buf_writebits},
 	{"readString",    lxt_buf_readstring},
 	{"writeString",   lxt_buf_writestring},
 	// univeral stuff
