@@ -207,11 +207,11 @@ void xt_buf_writebytes( uint64_t val, size_t sz, int islittle, unsigned char * b
  * --------------------------------------------------------------------------*/
 uint64_t xt_buf_readbits( size_t len, size_t ofs, const unsigned char * buf )
 {
-	uint64_t val = xt_buf_readbytes( (len+ofs)/8 +1, 0, buf );
+	uint64_t val = xt_buf_readbytes( (len+ofs-1)/8 +1, 0, buf );
 
 #if PRINT_DEBUGS == 1
-	printf("Read Val:    %016llX\nShift Left:  %016llX\nShift right: %016llX\n%d      %d\n",
-			val,
+	printf("Read Val:    %016llX (%d)\nShift Left:  %016llX\nShift right: %016llX\n%d      %d\n",
+			val, (len+ofs-1)/8 +1,
 			(val << (64- ((len/8+1)*8) + ofs ) ),
 			(val << (64- ((len/8+1)*8) + ofs ) ) >> (64 - len),
 			(64- ((len/8+1)*8) + ofs ), (64-len));
