@@ -246,6 +246,9 @@ int xt_pck_write( lua_State *luaVM, struct xt_pck *p, unsigned char *b )
 			              "value to pack must be smaller than the maximum value for the packer size");
 			xt_buf_writebits( (uint64_t) intVal, p->lB, p->oB, b );
 			break;
+		case XT_PCK_BIT:
+			*b = BIT_SET( *b, p->oB, lua_toboolean( luaVM, -1 ) );
+			break;
 		case XT_PCK_NBL:
 			intVal = luaL_checkint( luaVM, -1 );
 			luaL_argcheck( luaVM,  intVal  <  0x01 << 0x0F, -1,

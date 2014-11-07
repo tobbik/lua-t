@@ -412,16 +412,14 @@ static int lxt_buf_writebit( lua_State *luaVM )
 {
 	int            pos;                               ///< starting byte  b->b[pos]
 	struct xt_buf *buf = xt_buf_getbuffer( luaVM, 1 , 3, &pos);
-	lua_Unsigned   val = (lua_Unsigned) luaL_checkinteger( luaVM, 2 );   ///< value to be written
+	char           val = (char) lua_toboolean( luaVM, 2 );   ///< value to be written
 	int            ofs = luaL_checkint( luaVM, 4 );   ///< starting byte  b->b[pos] + ofs bits
-	int             sz = luaL_checkint( luaVM, 5 );   ///< how many bits  to write
 
 	// TODO: properly calculate boundaries according #buf->b - sz etc.
 	luaL_argcheck( luaVM,  0<= ofs && ofs <= 7,       3,
 		                 "offset must be >=0 and <=7" );
-	luaL_argcheck( luaVM,  1<= sz  &&  sz <= 64,      4,
-		                 "size must be >=1 and <=64" );
-	xt_buf_writebits( (uint64_t) val, sz, ofs, &(buf->b[pos]));
+
+	buf->b[ pos ] = BIT_SET( buf->b[ pos ], ofs, val );
 	return 0;
 }
 
