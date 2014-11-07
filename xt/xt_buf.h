@@ -14,6 +14,7 @@ struct xt_buf {
 	unsigned char  b[1];  ///<  pointer to the variable size buffer -> must be last in struct
 };
 
+
 enum xt_pck_t {
 	XT_PCK_INTB,         ///< X  Byte wide field as Integer -> Big    Endian
 	XT_PCK_INTL,         ///< X  Byte wide field as Integer -> Little Endian
@@ -31,7 +32,7 @@ enum xt_pck_t {
 
 /// The userdata struct for xt.Pack/xt.Pack.Struct
 struct xt_pck {
-	size_t          sz;   ///< how many bytes are covered in this Structure (incl. su structs)
+	size_t          sz;   ///< how many bytes are covered in this Structure (incl. sub elements)
 	size_t          lB;   ///< how many bits are covered in this packer
 	size_t          oB;   ///< offset in bits in the first byte
 	/// Lua Registry Reference to the table which holds the pack reference, name
@@ -63,6 +64,10 @@ struct xt_buf   *xt_buf_create_ud( lua_State *luaVM, int size );
 // Macro helper functions
 #define HI_NIBBLE_GET(b) (((b) >> 4) & 0xF)
 #define LO_NIBBLE_GET(b) ((b)  & 0xF)
+
+#define HI_NIBBLE_SET(b,v) ( ((b) & 0x0F) | (((v)<<4) & 0xF0 ) )
+#define LO_NIBBLE_SET(b,v) ( ((b) & 0xF0) | ( (v)     & 0x0F ) )
+
 
 // accessor helpers for the buffer
 uint64_t  xt_buf_readbytes (               size_t sz, int islittle, const unsigned char * buf );

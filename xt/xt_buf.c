@@ -20,7 +20,7 @@
 
 
 // --------------------------------- HELPERS from Lua 5.3 code
-static int getendian( lua_State *luaVM, int pos )
+static inline int getendian( lua_State *luaVM, int pos )
 {
 	const char *endian = luaL_optstring( luaVM, pos,
 	                           (IS_LITTLE_ENDIAN ? "l" : "b"));
@@ -29,6 +29,15 @@ static int getendian( lua_State *luaVM, int pos )
 	luaL_argcheck( luaVM, *endian == 'l' || *endian == 'b', pos,
 	                 "endianness must be 'l'/'b'/'n'" );
 	return (*endian == 'l');
+}
+
+
+static inline int getnibble( lua_State *luaVM, int pos )
+{
+	const char *nibble = luaL_optstring( luaVM, pos, "h" );
+	luaL_argcheck( luaVM, *nibble == 'h' || *nibble == 'l', pos,
+	                 "nibble identifier must be 'l'/'h'" );
+	return (*nibble == 'h');
 }
 
 
@@ -315,16 +324,44 @@ static int lxt_buf_readnibble( lua_State *luaVM )
 {
 	struct xt_buf *buf = xt_buf_check_ud( luaVM, 1, 1 );
 	int            pos = luaL_checkint( luaVM, 2 );   ///< starting byte  b->b[pos]
-	const char    *nbl = luaL_optstring( luaVM, 3, "H" );
 	luaL_argcheck( luaVM,  0<= pos && pos <= (int) buf->len, 2,
 		                 "xt.Buffer position must be > 0 or < #buffer" );
 
 	lua_pushinteger( luaVM, 
-		(lua_Integer) ('H' == *nbl)
+		(lua_Integer) (getnibble( luaVM, 4 ))
 		? HI_NIBBLE_GET( buf->b[pos] )
 		: LO_NIBBLE_GET( buf->b[pos] ) );
 
 	return 1;
+}
+
+
+/**--------------------------------------------------------------------------
+ * Write a Nibble to the buffer at position x.
+ * \lparam  buf  userdata of type xt.Buffer (struct xt_buf).
+ * \lparam  val  Integer value to be written into the buffer.
+ * \lparam  pos  position in bytes.
+ * \lparam  side nibble side (L-HI, H-HI).
+ * \lreturn val  lua_Integer.
+ *
+ * \return integer 1 left on the stack.
+ * --------------------------------------------------------------------------*/
+static int lxt_buf_writenibble( lua_State *luaVM )
+{
+	struct xt_buf *buf = xt_buf_check_ud( luaVM, 1, 1 );
+	lua_Integer    val = luaL_checkint( luaVM, 2 );         ///< value to write
+	int            pos = luaL_checkint( luaVM, 3 );         ///< starting byte  b->b[pos]
+	luaL_argcheck( luaVM,  0<= pos && pos <= (int) buf->len, 3,
+		                 "xt.Buffer position must be > 0 or < #buffer" );
+	luaL_argcheck( luaVM,  0x00 <= val  &&  val <= 0x0F,     2,
+		                 "Nibbble value must be >=0  and <=15" );
+
+
+	buf->b[ pos ] = (getnibble( luaVM, 4 ))
+		? HI_NIBBLE_SET( buf->b[pos], (char) val )
+		: LO_NIBBLE_SET( buf->b[pos], (char) val );
+
+	return 0;
 }
 
 
@@ -526,6 +563,7 @@ static const luaL_Reg xt_buf_m [] = {
 	{"readInt",       lxt_buf_readint},
 	{"writeInt",      lxt_buf_writeint},
 	{"readNibble",    lxt_buf_readnibble},
+	{"writeNibble",   lxt_buf_writenibble},
 	{"readBits",      lxt_buf_readbits},
 	{"writeBits",     lxt_buf_writebits},
 	{"readString",    lxt_buf_readstring},

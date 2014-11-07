@@ -2,7 +2,7 @@
 xt = require("xt")
 fmt= string.format
 
-rbyte = function( pos,len,endian)
+rbyte = function( pos,len,endian )
 	local lb,ls = b:readInt( 4,4,'l'), s:undumpint( 5,4,'l')
 	lb,ls = b:readInt( pos, len, endian), s:undumpint( pos+1, len, endian)
 	print( lb, string.format("%016X", lb), ls, string.format("%016X", ls)  )
