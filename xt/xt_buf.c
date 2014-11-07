@@ -32,7 +32,7 @@ static inline int getendian( lua_State *luaVM, int pos )
 }
 
 
-static inline int getnibble( lua_State *luaVM, int pos )
+int xt_buf_getnibble( lua_State *luaVM, int pos )
 {
 	const char *nibble = luaL_optstring( luaVM, pos, "h" );
 	luaL_argcheck( luaVM, *nibble == 'h' || *nibble == 'l', pos,
@@ -40,7 +40,7 @@ static inline int getnibble( lua_State *luaVM, int pos )
 	return (*nibble == 'h');
 }
 
-static inline struct xt_buf * getbuffer( lua_State *luaVM, int pB, int pP, int *pos )
+struct xt_buf * xt_buf_getbuffer( lua_State *luaVM, int pB, int pP, int *pos )
 {
 	struct xt_buf *buf = xt_buf_check_ud( luaVM, pB, 1 );
 
@@ -270,7 +270,7 @@ void xt_buf_writebits( uint64_t val, size_t len, size_t ofs, unsigned char * buf
 static int lxt_buf_readint( lua_State *luaVM )
 {
 	int            pos;                               ///< starting byte  b->b[pos]
-	struct xt_buf *buf = getbuffer( luaVM, 1 , 2, &pos);
+	struct xt_buf *buf = xt_buf_getbuffer( luaVM, 1 , 2, &pos);
 	int             sz = luaL_checkint( luaVM, 3 );   ///< how many bytes to read
 	lua_Unsigned   val = 0;                           ///< value for the read access
 
@@ -302,7 +302,7 @@ static int lxt_buf_readint( lua_State *luaVM )
 static int lxt_buf_writeint( lua_State *luaVM )
 {
 	int            pos;                               ///< starting byte  b->b[pos]
-	struct xt_buf *buf = getbuffer( luaVM, 1 , 3, &pos);
+	struct xt_buf *buf = xt_buf_getbuffer( luaVM, 1 , 3, &pos);
 	lua_Unsigned   val = (lua_Unsigned) luaL_checkinteger( luaVM, 2 );   ///< value to be written
 	int             sz = luaL_checkint( luaVM, 4 );   ///< how many bytes to read
 
@@ -333,12 +333,12 @@ static int lxt_buf_writeint( lua_State *luaVM )
 static int lxt_buf_readnibble( lua_State *luaVM )
 {
 	int            pos;                               ///< starting byte  b->b[pos]
-	struct xt_buf *buf = getbuffer( luaVM, 1 , 2, &pos);
+	struct xt_buf *buf = xt_buf_getbuffer( luaVM, 1 , 2, &pos);
 	luaL_argcheck( luaVM,  0<= pos && pos <= (int) buf->len, 2,
 		                 "xt.Buffer position must be > 0 or < #buffer" );
 
 	lua_pushinteger( luaVM, 
-		(lua_Integer) (getnibble( luaVM, 3 ))
+		(lua_Integer) (xt_buf_getnibble( luaVM, 3 ))
 		? HI_NIBBLE_GET( buf->b[pos] )
 		: LO_NIBBLE_GET( buf->b[pos] ) );
 
@@ -359,13 +359,13 @@ static int lxt_buf_readnibble( lua_State *luaVM )
 static int lxt_buf_writenibble( lua_State *luaVM )
 {
 	int            pos;                               ///< starting byte  b->b[pos]
-	struct xt_buf *buf = getbuffer( luaVM, 1 , 3, &pos);
+	struct xt_buf *buf = xt_buf_getbuffer( luaVM, 1 , 3, &pos);
 	lua_Integer    val = luaL_checkint( luaVM, 2 );         ///< value to write
 	luaL_argcheck( luaVM,  0x00 <= val  &&  val <= 0x0F,     2,
 		                 "Nibbble value must be >=0  and <=15" );
 
 
-	buf->b[ pos ] = (getnibble( luaVM, 4 ))
+	buf->b[ pos ] = (xt_buf_getnibble( luaVM, 4 ))
 		? HI_NIBBLE_SET( buf->b[pos], (char) val )
 		: LO_NIBBLE_SET( buf->b[pos], (char) val );
 
@@ -386,7 +386,7 @@ static int lxt_buf_writenibble( lua_State *luaVM )
 static int lxt_buf_readbit( lua_State *luaVM )
 {
 	int            pos;                               ///< starting byte  b->b[pos]
-	struct xt_buf *buf = getbuffer( luaVM, 1 , 2, &pos);
+	struct xt_buf *buf = xt_buf_getbuffer( luaVM, 1 , 2, &pos);
 	int            ofs = luaL_checkint( luaVM, 3 );   ///< starting byte  b->b[pos] + ofs bits
 
 	luaL_argcheck( luaVM,  0<= ofs && ofs <= 7,       3,
@@ -411,7 +411,7 @@ static int lxt_buf_readbit( lua_State *luaVM )
 static int lxt_buf_writebit( lua_State *luaVM )
 {
 	int            pos;                               ///< starting byte  b->b[pos]
-	struct xt_buf *buf = getbuffer( luaVM, 1 , 3, &pos);
+	struct xt_buf *buf = xt_buf_getbuffer( luaVM, 1 , 3, &pos);
 	lua_Unsigned   val = (lua_Unsigned) luaL_checkinteger( luaVM, 2 );   ///< value to be written
 	int            ofs = luaL_checkint( luaVM, 4 );   ///< starting byte  b->b[pos] + ofs bits
 	int             sz = luaL_checkint( luaVM, 5 );   ///< how many bits  to write
@@ -439,7 +439,7 @@ static int lxt_buf_writebit( lua_State *luaVM )
 static int lxt_buf_readbits( lua_State *luaVM )
 {
 	int            pos;                               ///< starting byte  b->b[pos]
-	struct xt_buf *buf = getbuffer( luaVM, 1 , 2, &pos);
+	struct xt_buf *buf = xt_buf_getbuffer( luaVM, 1 , 2, &pos);
 	int            ofs = luaL_checkint( luaVM, 3 );   ///< starting byte  b->b[pos] + ofs bits
 	int             sz = luaL_checkint( luaVM, 4 );   ///< how many bits  to read
 
@@ -469,7 +469,7 @@ static int lxt_buf_readbits( lua_State *luaVM )
 static int lxt_buf_writebits( lua_State *luaVM )
 {
 	int            pos;                               ///< starting byte  b->b[pos]
-	struct xt_buf *buf = getbuffer( luaVM, 1 , 3, &pos);
+	struct xt_buf *buf = xt_buf_getbuffer( luaVM, 1 , 3, &pos);
 	lua_Unsigned   val = (lua_Unsigned) luaL_checkinteger( luaVM, 2 );   ///< value to be written
 	int            ofs = luaL_checkint( luaVM, 4 );   ///< starting byte  b->b[pos] + ofs bits
 	int             sz = luaL_checkint( luaVM, 5 );   ///< how many bits  to write

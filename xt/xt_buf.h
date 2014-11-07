@@ -20,8 +20,7 @@ enum xt_pck_t {
 	XT_PCK_INTL,         ///< X  Byte wide field as Integer -> Little Endian
 	XT_PCK_BIT,          ///< X  1 Bit   wide field
 	XT_PCK_BITS,         ///< X  x Bits  wide field
-	XT_PCK_HNBL,         ///< X  Hi  Nibble (4 bits most  significant)
-	XT_PCK_LNBL,         ///< X  Low Nibble (4 bits least significant)
+	XT_PCK_NBL,          ///< X  Nibble (4 bits) HI/LO stored in p->oB
 	XT_PCK_FLT,          ///< X  Byte wide field as Float
 	XT_PCK_STR,          ///< X  Byte wide field of char bytes
 	XT_PCK_ARRAY,        ///< X  Array    Type Packer combinator
@@ -76,11 +75,13 @@ void      xt_buf_writebytes( uint64_t val, size_t sz, int islittle,       unsign
 uint64_t  xt_buf_readbits  (               size_t sz, size_t ofs,   const unsigned char * buf );
 void      xt_buf_writebits ( uint64_t val, size_t sz, size_t ofs,         unsigned char * buf );
 
+// helpers to check and verify input on stack
+int xt_buf_getnibble( lua_State *luaVM, int pos );
+struct xt_buf * xt_buf_getbuffer( lua_State *luaVM, int pB, int pP, int *pos );
+
+
 // xt_pck.c
 // Constructors
-int             lxt_pck_Int     ( lua_State *luaVM );
-int             lxt_pck_Bit     ( lua_State *luaVM );
-int             lxt_pck_String  ( lua_State *luaVM );
 struct xt_pck  *xt_pck_check_ud ( lua_State *luaVM, int pos );
 struct xt_pck  *xt_pck_create_ud( lua_State *luaVM, enum xt_pck_t );
 
