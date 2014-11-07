@@ -45,5 +45,21 @@ b:writeBits( 128, 8, 5, 8 )
 b:writeInt( 123, 1, 2 )
 print( b:toHex() )
 
-l = xt.Buffer( string.char( 0x01, 0x03,0x07, 0x0C, 0x10, 0x30, 0x70, 0xC0) )
+
+print( "READING ACCESS by BITS AGAIN" )
+l = xt.Buffer( string.char( 0x80, 0x40,0x20, 0x10, 0x08, 0x04, 0x02, 0x01) )
+io.write( 'bits   ')
+for k=0,7 do io.write( fmt("%02X       ", l:readInt(k, 1) ) ) end
+print()
+for i=0,7 do
+	io.write( i..'      ' )
+	for k=0,7 do io.write( l:readBits( i, k, 1 ) .. '        ' ) end
+	io.write( '\n' )
+end
+
+for i=0,7 do
+	io.write( i )
+	for k=0,7 do io.write( fmt( '%9s', l:readBit( i, k ) ) ) end
+	io.write( '\n' )
+end
 
