@@ -45,4 +45,5 @@ b:writeBits( 128, 8, 5, 8 )
 b:writeInt( 123, 1, 2 )
 print( b:toHex() )
 
+l = xt.Buffer( string.char( 0x01, 0x03,0x07, 0x0C, 0x10, 0x30, 0x70, 0xC0) )
 

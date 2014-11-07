@@ -198,6 +198,7 @@ void xt_buf_writebytes( uint64_t val, size_t sz, int islittle, unsigned char * b
 		buf[ i ] = (islittle) ? set[ i ] : set[ sz-1-i ];
 }
 
+
 /**--------------------------------------------------------------------------
  * Read an integer of y bits from a char buffer with offset ofs.
  * \param   len  size in bits (1-64).
@@ -369,6 +370,59 @@ static int lxt_buf_writenibble( lua_State *luaVM )
 		? HI_NIBBLE_SET( buf->b[pos], (char) val )
 		: LO_NIBBLE_SET( buf->b[pos], (char) val );
 
+	return 0;
+}
+
+
+/**--------------------------------------------------------------------------
+ * Read a boolean value of 1 bit from the buffer at position x.
+ * \lparam  buf  userdata of type xt.Buffer (struct xt_buf).
+ * \lparam  pos  position in bytes.
+ * \lparam  ofs  offset   in bits (0-7).
+ * \lparam  sz   size in bits (1-64).
+ * \lreturn val  lua_Integer.
+ *
+ * \return integer 1 left on the stack.
+ * --------------------------------------------------------------------------*/
+static int lxt_buf_readbit( lua_State *luaVM )
+{
+	int            pos;                               ///< starting byte  b->b[pos]
+	struct xt_buf *buf = getbuffer( luaVM, 1 , 2, &pos);
+	int            ofs = luaL_checkint( luaVM, 3 );   ///< starting byte  b->b[pos] + ofs bits
+
+	luaL_argcheck( luaVM,  0<= ofs && ofs <= 7,       3,
+		                 "offset must be >=0 and <=7" );
+	
+	lua_pushboolean( luaVM, BIT_GET( buf->b[ pos ], ofs ) );
+
+	return 1;
+}
+
+
+/**--------------------------------------------------------------------------
+ * Write a boolean value of 1 bit to the buffer at position x.
+ * \lparam  buf  userdata of type xt.Buffer (struct xt_buf).
+ * \loaram  val  lua_Integer.
+ * \lparam  pos  position in bytes.
+ * \lparam  ofs  offset   in bits (0-7).
+ * \lparam  sz   size in bits (1-64).
+ *
+ * \return integer 1 left on the stack.
+ * --------------------------------------------------------------------------*/
+static int lxt_buf_writebit( lua_State *luaVM )
+{
+	int            pos;                               ///< starting byte  b->b[pos]
+	struct xt_buf *buf = getbuffer( luaVM, 1 , 3, &pos);
+	lua_Unsigned   val = (lua_Unsigned) luaL_checkinteger( luaVM, 2 );   ///< value to be written
+	int            ofs = luaL_checkint( luaVM, 4 );   ///< starting byte  b->b[pos] + ofs bits
+	int             sz = luaL_checkint( luaVM, 5 );   ///< how many bits  to write
+
+	// TODO: properly calculate boundaries according #buf->b - sz etc.
+	luaL_argcheck( luaVM,  0<= ofs && ofs <= 7,       3,
+		                 "offset must be >=0 and <=7" );
+	luaL_argcheck( luaVM,  1<= sz  &&  sz <= 64,      4,
+		                 "size must be >=1 and <=64" );
+	xt_buf_writebits( (uint64_t) val, sz, ofs, &(buf->b[pos]));
 	return 0;
 }
 
@@ -570,6 +624,8 @@ static const luaL_Reg xt_buf_m [] = {
 	{"writeInt",      lxt_buf_writeint},
 	{"readNibble",    lxt_buf_readnibble},
 	{"writeNibble",   lxt_buf_writenibble},
+	{"readBit",       lxt_buf_readbit},
+	{"writeBit",      lxt_buf_writebit},
 	{"readBits",      lxt_buf_readbits},
 	{"writeBits",     lxt_buf_writebits},
 	{"readString",    lxt_buf_readstring},
