@@ -2,6 +2,7 @@
 xt = require("xt")
 
 p = xt.Pack.IntB(2)
+bt = xt.Pack.Byte()
 nl = xt.Pack.Nibble('l')
 nh = xt.Pack.Nibble('h')
 

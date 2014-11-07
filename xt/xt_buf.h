@@ -7,7 +7,6 @@
  * \copyright See Copyright notice at the end of xt.h
  */
 
-
 /// The userdata struct for xt.Buffer
 struct xt_buf {
 	size_t         len;   ///<  length of the entire buffer in bytes
@@ -18,9 +17,10 @@ struct xt_buf {
 enum xt_pck_t {
 	XT_PCK_INTB,         ///< X  Byte wide field as Integer -> Big    Endian
 	XT_PCK_INTL,         ///< X  Byte wide field as Integer -> Little Endian
+	XT_PCK_BYTE,         ///< X  1 Byte wide field
+	XT_PCK_NBL,          ///< X  Nibble (4 bits) HI/LO stored in p->oB
 	XT_PCK_BIT,          ///< X  1 Bit   wide field
 	XT_PCK_BITS,         ///< X  x Bits  wide field
-	XT_PCK_NBL,          ///< X  Nibble (4 bits) HI/LO stored in p->oB
 	XT_PCK_FLT,          ///< X  Byte wide field as Float
 	XT_PCK_STR,          ///< X  Byte wide field of char bytes
 	XT_PCK_ARRAY,        ///< X  Array    Type Packer combinator
