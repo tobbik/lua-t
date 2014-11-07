@@ -302,6 +302,7 @@ static int lxt_pck_pack( lua_State *luaVM )
 
 	luaL_buffinit( luaVM, &lB );
 	buffer = luaL_prepbuffsize( &lB, p->sz );
+	memset( buffer, 0, p->sz * sizeof( char ) );
 
 	if ((retVal = xt_pck_write( luaVM, p, (unsigned char *) buffer )) != 0)
 	{
