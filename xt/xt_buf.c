@@ -387,9 +387,9 @@ static int lxt_buf_readbit( lua_State *luaVM )
 {
 	int            pos;                               ///< starting byte  b->b[pos]
 	struct xt_buf *buf = xt_buf_getbuffer( luaVM, 1 , 2, &pos);
-	int            ofs = luaL_checkint( luaVM, 3 ) -1;   ///< starting byte  b->b[pos] + ofs bits
+	int            ofs = luaL_checkint( luaVM, 3 );   ///< starting byte  b->b[pos] + ofs bits
 
-	luaL_argcheck( luaVM,  0 <= ofs && ofs <= 7,       3,
+	luaL_argcheck( luaVM,  1 <= ofs && ofs <= 8,       3,
 		                 "offset must be >=1 and <=8" );
 	
 	lua_pushboolean( luaVM, BIT_GET( buf->b[ pos ], ofs ) );
@@ -412,10 +412,10 @@ static int lxt_buf_writebit( lua_State *luaVM )
 	int            pos;                               ///< starting byte  b->b[pos]
 	struct xt_buf *buf = xt_buf_getbuffer( luaVM, 1 , 3, &pos);
 	char           val = (char) lua_toboolean( luaVM, 2 );   ///< value to be written
-	int            ofs = luaL_checkint( luaVM, 4 ) -1;   ///< starting byte  b->b[pos] + ofs bits
+	int            ofs = luaL_checkint( luaVM, 4 );   ///< starting byte  b->b[pos] + ofs bits
 
 	// TODO: properly calculate boundaries according #buf->b - sz etc.
-	luaL_argcheck( luaVM, 0 <= ofs && ofs <= 7,       4,
+	luaL_argcheck( luaVM, 1 <= ofs && ofs <= 8,       4,
 		                 "offset must be >=1 and <=8" );
 
 	buf->b[ pos ] = BIT_SET( buf->b[ pos ], ofs-1, val );

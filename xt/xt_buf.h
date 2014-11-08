@@ -67,11 +67,11 @@ struct xt_buf   *xt_buf_create_ud( lua_State *luaVM, int size );
 #define HI_NIBBLE_SET(b,v) ( ((b) & 0x0F) | (((v)<<4) & 0xF0 ) )
 #define LO_NIBBLE_SET(b,v) ( ((b) & 0xF0) | ( (v)     & 0x0F ) )
 
-#define BIT_GET(b,n)       ( ((b) >> (7-n)) & 0x01 )
+#define BIT_GET(b,n)       ( ((b) >> (7-(n))) & 0x01 )
 #define BIT_SET(b,n,v)     \
 	( (1==v)              ? \
-	 ((b) | (  (0x01) << (7-n)))    : \
-	 ((b) & (~((0x01) << (7-n)))) )
+	 ((b) | (  (0x01) << (7-(n))))    : \
+	 ((b) & (~((0x01) << (7-(n))))) )
 
 // accessor helpers for the buffer
 uint64_t  xt_buf_readbytes (               size_t sz, int islittle, const unsigned char * buf );

@@ -205,6 +205,7 @@ struct xt_pck *xt_pck_check_ud( lua_State *luaVM, int pos )
  *  -------------------------------------------------------------------------*/
 int xt_pck_read( lua_State *luaVM, struct xt_pck *p, const unsigned char *b)
 {
+	int o;
 	switch( p->t )
 	{
 		case XT_PCK_INTL:
@@ -218,7 +219,8 @@ int xt_pck_read( lua_State *luaVM, struct xt_pck *p, const unsigned char *b)
 			lua_pushinteger( luaVM, (p->oB > 4) ? LO_NIBBLE_GET( *b ) : HI_NIBBLE_GET( *b ) );
 			break;
 		case XT_PCK_BIT:
-			lua_pushboolean( luaVM, BIT_GET( *b, p->oB ) );
+			o = p->oB - 1;
+			lua_pushboolean( luaVM, BIT_GET( *b, o ) );
 			break;
 		case XT_PCK_BITS:
 			lua_pushinteger( luaVM, (lua_Integer) xt_buf_readbits( p->lB, p->oB, b ) );
@@ -272,7 +274,8 @@ int xt_pck_write( lua_State *luaVM, struct xt_pck *p, unsigned char *b )
 			*b = (p->oB > 4) ? LO_NIBBLE_SET( *b, (char) intVal ) : HI_NIBBLE_SET( *b, (char) intVal ) ;
 			break;
 		case XT_PCK_BIT:
-			*b = BIT_SET( *b, p->oB-1, lua_toboolean( luaVM, -1 ) );
+			sL = p->oB-1;
+			*b = BIT_SET( *b, sL, lua_toboolean( luaVM, -1 ) );
 			break;
 		case XT_PCK_BITS:
 			intVal = luaL_checkint( luaVM, -1 );
