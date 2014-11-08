@@ -70,14 +70,14 @@ int lxt_pckc_Sequence( lua_State *luaVM )
 	{
 		p = xt_pckc_check_ud( luaVM, i, 1 );
 		lua_pushvalue( luaVM, i);          // Stack: ...,Seq,idx,Pack
-		lua_pushinteger( luaVM, cp->sz);   // Stack: ...,Seq,idx,Pack,ofs
+		lua_pushinteger( luaVM, cp->sz+1); // Stack: ...,Seq,idx,Pack,ofs
 		lua_rawseti( luaVM, -3, i+cp->n ); // Stack: ...,Seq,idx,Pack     idx[n+i] = offset
 		lua_rawseti( luaVM, -2, i );       // Stack: ...,Seq,idx,         idx[i]   = Pack
 		lua_pushvalue( luaVM, i);          // Stack: ...,Seq,idx,Pack
 		// handle Bit type packers
 		if (XT_PCK_BIT==p->t || XT_PCK_BITS==p->t || XT_PCK_NBL==p->t)
 		{
-			if (p->oB != bc%8)
+			if ((p->oB-1) != bc%8)
 				xt_push_error( luaVM, "bitsized fields must be ordered in appropriate size type" );
 			if ((bc + p->lB)/8 > bc/8)
 					  cp->sz += 1;
@@ -87,7 +87,7 @@ int lxt_pckc_Sequence( lua_State *luaVM )
 		{
 			if (bc%8)
 				xt_push_error( luaVM, "bitsized fields must be ordered in appropriate size type" );
-			else   
+			else
 				bc = 0;
 			cp->sz += p->sz;
 		}
@@ -141,7 +141,7 @@ int lxt_pckc_Struct( lua_State *luaVM )
 		lua_pop( luaVM, 1 );               // pop the nil
 		p = xt_pckc_check_ud( luaVM, -1, 1 );    // allow xt.Pack or xt.Pack.Struct
 		// populate idx table
-		lua_pushinteger( luaVM, cp->sz);    // Stack: ...,Seq,idx,name,Pack,ofs
+		lua_pushinteger( luaVM, cp->sz+1);  // Stack: ...,Seq,idx,name,Pack,ofs
 		lua_rawseti( luaVM, -4, i+cp->n );  // Stack: ...,Seq,idx,name,Pack             idx[n+i] = offset
 		lua_pushvalue( luaVM, -1 );         // Stack: ...,Seq,idx,name,Pack,Pack
 		lua_rawseti( luaVM, -4, i );        // Stack: ...,Seq,idx,name,Pack             idx[i] = Pack
@@ -154,7 +154,7 @@ int lxt_pckc_Struct( lua_State *luaVM )
 		// handle Bit type packers
 		if (XT_PCK_BIT==p->t || XT_PCK_BITS==p->t || XT_PCK_NBL==p->t)
 		{
-			if (p->oB != bc%8)
+			if ((p->oB-1) != bc%8)
 				xt_push_error( luaVM, "bitsized fields must be ordered in appropriate size type" );
 			if ((bc + p->lB)/8 > bc/8)
 					  cp->sz += 1;
@@ -164,7 +164,7 @@ int lxt_pckc_Struct( lua_State *luaVM )
 		{
 			if (bc%8)
 				xt_push_error( luaVM, "bitsized fields must be ordered in appropriate size type" );
-			else   
+			else
 				bc = 0;
 			cp->sz += p->sz;
 		}
@@ -281,7 +281,7 @@ static int lxt_pckrc__index( lua_State *luaVM )
 		pos += luaL_checkint( luaVM, -1);
 		lua_rawgeti( luaVM, -3, lua_tointeger( luaVM, -2 ) );  // Stack: Seq,key,idx,i,ofs,Pack
 	}
-	p =  xt_pckc_check_ud( luaVM, -1, 1 );
+	p =  xt_pckc_check_ud( luaVM, -1, 1 );  // Stack: Seq,key,idx,i,ofs,Pack,Reader
 	lua_pop( luaVM, 3 );
 
 	xt_pckr_create_ud( luaVM, p, pos );
@@ -517,7 +517,7 @@ static int lxt_pckr__tostring( lua_State *luaVM )
 			lua_pushfstring( luaVM, "xt.Pack.Reader{BIT/%d:/%d}: %p",  p->oB, pr->o, p );
 			break;
 		case XT_PCK_NBL:
-			lua_pushfstring( luaVM, "xt.Pack.Reader{NIBBLE[%s]/%d}: %p", (p->oB>3)?"Lo":"Hi", pr->o,  p );
+			lua_pushfstring( luaVM, "xt.Pack.Reader{NIBBLE[%s]/%d}: %p", (p->oB>4)?"Lo":"Hi", pr->o,  p );
 			break;
 		case XT_PCK_STR:
 			lua_pushfstring( luaVM, "xt.Pack.Reader{STRING:%d/%d}: %p", p->sz, pr->o, p );

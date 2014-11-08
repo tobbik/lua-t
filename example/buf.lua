@@ -4,7 +4,7 @@ fmt= string.format
 
 rbyte = function( pos,len,endian )
 	local lb,ls = b:readInt( pos, len, endian), s:undumpint( pos, len, endian)
-	print( pos,len,'',lb, string.format("%016X", lb), ls, string.format("%016X", ls)  )
+	print( pos,len,endian,'',lb, string.format("%016X", lb), ls, string.format("%016X", ls)  )
 end
 
 s = 'Alles wird irgendwann wieder gut!'
@@ -31,9 +31,9 @@ print( "READING ACCESS by BITS" )
 b = xt.Buffer( string.char( 0x00, 0x00,0x00, 0x0F, 0xF0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 ) )
 print( b:toHex() )
 -- pos 4, ofs 0, length 10
-print( b:readBits( 3, 1, 10 ) )
-print( b:readBits( 3, 4, 9 ) )
-print( b:readBits( 3, 5, 8 ) )
+print( b:readBits( 4, 1, 10 ) )
+print( b:readBits( 4, 4, 9 ) )
+print( b:readBits( 4, 5, 8 ) )
 
 print( "WRITING ACCESS by BITS" )
 b:writeBits( 128, 7, 6, 8 )

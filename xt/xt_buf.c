@@ -392,7 +392,7 @@ static int lxt_buf_readbit( lua_State *luaVM )
 	luaL_argcheck( luaVM,  1 <= ofs && ofs <= 8,       3,
 		                 "offset must be >=1 and <=8" );
 	
-	lua_pushboolean( luaVM, BIT_GET( buf->b[ pos ], ofs ) );
+	lua_pushboolean( luaVM, BIT_GET( buf->b[ pos ], ofs-1 ) );
 
 	return 1;
 }

@@ -205,7 +205,6 @@ struct xt_pck *xt_pck_check_ud( lua_State *luaVM, int pos )
  *  -------------------------------------------------------------------------*/
 int xt_pck_read( lua_State *luaVM, struct xt_pck *p, const unsigned char *b)
 {
-	int o;
 	switch( p->t )
 	{
 		case XT_PCK_INTL:
@@ -219,11 +218,10 @@ int xt_pck_read( lua_State *luaVM, struct xt_pck *p, const unsigned char *b)
 			lua_pushinteger( luaVM, (p->oB > 4) ? LO_NIBBLE_GET( *b ) : HI_NIBBLE_GET( *b ) );
 			break;
 		case XT_PCK_BIT:
-			o = p->oB - 1;
-			lua_pushboolean( luaVM, BIT_GET( *b, o ) );
+			lua_pushboolean( luaVM, BIT_GET( *b, p->oB - 1 ) );
 			break;
 		case XT_PCK_BITS:
-			lua_pushinteger( luaVM, (lua_Integer) xt_buf_readbits( p->lB, p->oB, b ) );
+			lua_pushinteger( luaVM, (lua_Integer) xt_buf_readbits( p->lB, p->oB - 1 , b ) );
 			break;
 		case XT_PCK_STR:
 			lua_pushlstring( luaVM, (const char*) b, p->sz );
@@ -274,14 +272,13 @@ int xt_pck_write( lua_State *luaVM, struct xt_pck *p, unsigned char *b )
 			*b = (p->oB > 4) ? LO_NIBBLE_SET( *b, (char) intVal ) : HI_NIBBLE_SET( *b, (char) intVal ) ;
 			break;
 		case XT_PCK_BIT:
-			sL = p->oB-1;
-			*b = BIT_SET( *b, sL, lua_toboolean( luaVM, -1 ) );
+			*b = BIT_SET( *b, p->oB - 1, lua_toboolean( luaVM, -1 ) );
 			break;
 		case XT_PCK_BITS:
 			intVal = luaL_checkint( luaVM, -1 );
 			luaL_argcheck( luaVM,  intVal  <  0x01 << p->lB, -1,
 			              "value to pack must be smaller than the maximum value for the packer size");
-			xt_buf_writebits( (uint64_t) intVal, p->lB, p->oB-1, b );
+			xt_buf_writebits( (uint64_t) intVal, p->lB, p->oB - 1, b );
 			break;
 		case XT_PCK_STR:
 			strVal = luaL_checklstring( luaVM, -1, &sL );
@@ -392,7 +389,7 @@ static int lxt_pck__tostring( lua_State *luaVM )
 			lua_pushfstring( luaVM, "xt.Pack{BITS[%d/%d]:%d}: %p", p->lB, p->oB, p->sz, p );
 			break;
 		case XT_PCK_NBL:
-			lua_pushfstring( luaVM, "xt.Pack{NIBBLE[%s]}: %p", (p->oB>3)?"Lo":"Hi",  p );
+			lua_pushfstring( luaVM, "xt.Pack{NIBBLE[%s]}: %p", (p->oB>4)?"Lo":"Hi",  p );
 			break;
 		case XT_PCK_STR:
 			lua_pushfstring( luaVM, "xt.Pack{STRING:%d}: %p", p->sz, p );
