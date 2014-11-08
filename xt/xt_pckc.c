@@ -367,7 +367,7 @@ static int lxt_pckrc__call( lua_State *luaVM )
 	if (lua_isuserdata( luaVM, 2 ))      // xt.Buffer
 	{
 		buf = xt_buf_check_ud ( luaVM, 2, 1 );
-		luaL_argcheck( luaVM,  buf->len > o+p->sz, 2,
+		luaL_argcheck( luaVM,  buf->len >= o+p->sz, 2,
 			"The length of the Buffer must be longer than Pack offset plus Pack length." );
 		b   =  &(buf->b[ o ]);
 	}

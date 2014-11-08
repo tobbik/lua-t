@@ -15,14 +15,14 @@ ss = xt.Pack.Sequence (
 	p,
 	p,
 	xt.Pack.Sequence (
-		xt.Pack.Bit( 1 ),  -- is the train set healthy?
+		xt.Pack.Bit( 0 ),  -- is the train set healthy?
 		xt.Pack.Bit( 1 ),  -- is the train set stationary?
-		xt.Pack.Bit( 1 ),  -- is the train set in maint mode?
-		xt.Pack.Bit( 1 ),  -- is a passenger request active?
-		xt.Pack.Bit( 1 ),  -- is a file waiting for download (RTDM ready)
-		xt.Pack.Bit( 1 ),  -- is the connection to the vmds lost?
-		xt.Pack.Bit( 1 ),  -- is the train set in shop mode?
-		xt.Pack.Bit( 1 )   -- padding
+		xt.Pack.Bit( 2 ),  -- is the train set in maint mode?
+		xt.Pack.Bit( 3 ),  -- is a passenger request active?
+		xt.Pack.Bit( 4 ),  -- is a file waiting for download (RTDM ready)
+		xt.Pack.Bit( 5 ),  -- is the connection to the vmds lost?
+		xt.Pack.Bit( 6 ),  -- is the train set in shop mode?
+		xt.Pack.Bit( 7 )   -- padding
 	),
 	xt.Pack.Int(1),
 	xt.Pack.Int(1)
@@ -37,14 +37,14 @@ s = xt.Pack.Struct (
 )
 
 sbits   = xt.Pack.Struct (
-	{isHealthy   = xt.Pack.Bit( 1 )},  -- is the train set healthy?
+	{isHealthy   = xt.Pack.Bit( 0 )},  -- is the train set healthy?
 	{isZeroSpeed = xt.Pack.Bit( 1 )},  -- is the train set stationary?
-	{isMaintMode = xt.Pack.Bit( 1 )},  -- is the train set in maint mode?
-	{isPassReq   = xt.Pack.Bit( 1 )},  -- is a passenger request active?
-	{isFileForDl = xt.Pack.Bit( 1 )},  -- is a file waiting for download (RTDM ready)
-	{isVmdsConnd = xt.Pack.Bit( 1 )},  -- is the connection to the vmds lost?
-	{isShopMode  = xt.Pack.Bit( 1 )},  -- is the train set in shop mode?
-	{padding     = xt.Pack.Bit( 1 )}   -- padding
+	{isMaintMode = xt.Pack.Bit( 2 )},  -- is the train set in maint mode?
+	{isPassReq   = xt.Pack.Bit( 3 )},  -- is a passenger request active?
+	{isFileForDl = xt.Pack.Bit( 4 )},  -- is a file waiting for download (RTDM ready)
+	{isVmdsConnd = xt.Pack.Bit( 5 )},  -- is the connection to the vmds lost?
+	{isShopMode  = xt.Pack.Bit( 6 )},  -- is the train set in shop mode?
+	{padding     = xt.Pack.Bit( 7 )}   -- padding
 )
 
 

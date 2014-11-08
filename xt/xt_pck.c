@@ -111,8 +111,7 @@ static int lxt_pck_Bit( lua_State *luaVM )
 	struct xt_pck  *p;
 	int             ofs = luaL_checkint( luaVM, 1 );  ///< how many its from starting byte to read
 
-	ofs = luaL_checkint( luaVM, 2 );
-	luaL_argcheck( luaVM,  0<= ofs && ofs <= 8,       2,
+	luaL_argcheck( luaVM,  0<= ofs && ofs <= 8,       1,
 	                 "offset must be >=0 and <=8" );
 
 	p = xt_pck_create_ud( luaVM, XT_PCK_BIT );
