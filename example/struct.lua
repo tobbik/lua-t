@@ -44,14 +44,14 @@ sbits   = xt.Pack.Struct (
 	{isFileForDl = xt.Pack.Bit( 4 )},  -- is a file waiting for download (RTDM ready)
 	{isVmdsConnd = xt.Pack.Bit( 5 )},  -- is the connection to the vmds lost?
 	{isShopMode  = xt.Pack.Bit( 6 )},  -- is the train set in shop mode?
-	{padding     = xt.Pack.Bit( 7 )}   -- padding
+	{paddingBit  = xt.Pack.Bit( 7 )}   -- padding
 )
 
 
 t = xt.Pack.Struct (
 	{ length    = p },
 	{ ['type']  = p },
-	-- 	-- BitField is a special type as the constructor resets the actual offset for each single bit
+-- 	-- BitField is a special type as the constructor resets the actual offset for each single bit
 -- 	-- boolean flags -> status
 	{ status    = sbits},
 	{ internal  = ss},
@@ -60,6 +60,8 @@ t = xt.Pack.Struct (
 	{ status2   = sbits},
  	{ count2    = p}
 )
+
+s=string.char( 76, 94, 1, 0, 0x55) .. 'abcdefghijklmnop'
 
 b=xt.Buffer( 'ABCDEFGHIJKLMNOPQRS' )
 

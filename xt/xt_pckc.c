@@ -378,7 +378,7 @@ static int lxt_pckrc__call( lua_State *luaVM )
 			"The length of the Buffer must be longer than Pack offset plus Pack length." );
 		luaL_argcheck( luaVM,  2 == lua_gettop( luaVM ), 2,
 			"Can't write to a Lua String since they are immutable." );
-		b   =  b+ o;
+		b   =  b + o;
 	}
 
 	if (2 == lua_gettop( luaVM ))     // read from input
@@ -555,6 +555,7 @@ static int xt_pckrc_iter( lua_State *luaVM )
 {
 	struct xt_pckr *pr = xt_pckr_check_ud( luaVM, lua_upvalueindex( 1 ), 0 );
 	struct xt_pck  *pc = (NULL == pr) ? xt_pckc_check_ud( luaVM, lua_upvalueindex( 1 ), 1 ) : pr->p;
+	int              o = (NULL == pr) ? 0 : pr->o;
 
 	int crs;
 
@@ -576,7 +577,7 @@ static int xt_pckrc_iter( lua_State *luaVM )
 	lua_rawgeti( luaVM, -2 , crs );       // Stack: func,nP,_idx,xC,pack
 	lua_rawgeti( luaVM, -3 , crs+pc->n ); // Stack: func,nP,_idx,xC,pack,pos
 	lua_remove( luaVM, -4 );              // Stack: func,nP,xC,pack,pos
-	xt_pckr_create_ud( luaVM,  xt_pckc_check_ud( luaVM, -2, 1 ), luaL_checkint( luaVM, -1 ) );
+	xt_pckr_create_ud( luaVM,  xt_pckc_check_ud( luaVM, -2, 1 ), luaL_checkint( luaVM, -1 ) + o );
 	lua_insert( luaVM, -3);
 	lua_pop( luaVM, 2);
 
