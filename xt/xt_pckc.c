@@ -389,7 +389,7 @@ static int lxt_pckrc__call( lua_State *luaVM )
 		}
 		if (p->t == XT_PCK_ARRAY)      // handle Array; return table
 		{
-			lua_createtable( luaVM, 0, p->n);   //Stack: r,buf,idx,res
+			lua_createtable( luaVM, 0, p->n );   //Stack: r,buf,idx,res
 			for (n=1; n<p->n; n++)
 			{
 				lua_pushcfunction( luaVM, lxt_pckrc__call );  //Stack: r,buf,res,__call
@@ -407,7 +407,7 @@ static int lxt_pckrc__call( lua_State *luaVM )
 		if (p->t == XT_PCK_SEQ)            // handle Sequence, return table
 		{
 			lua_rawgeti( luaVM, LUA_REGISTRYINDEX, p->iR ); // get index table
-			lua_createtable( luaVM, 0, p->n);   //Stack: r,buf,idx,res
+			lua_createtable( luaVM, 0, p->n );   //Stack: r,buf,idx,res
 			for (n=1; n<p->n; n++)
 			{
 				lua_pushcfunction( luaVM, lxt_pckrc__call );  //Stack: r,buf,idx,res,__call
@@ -425,7 +425,7 @@ static int lxt_pckrc__call( lua_State *luaVM )
 		if (p->t == XT_PCK_STRUCT)      // handle Struct, return table
 		{
 			lua_rawgeti( luaVM, LUA_REGISTRYINDEX, p->iR ); // get index table
-			lua_createtable( luaVM, 0, p->n);   //Stack: r,buf,idx,res
+			lua_createtable( luaVM, 0, p->n );   //Stack: r,buf,idx,res
 			for (n=1; n<p->n; n++)
 			{
 				lua_pushcfunction( luaVM, lxt_pckrc__call );  //Stack: r,buf,idx,res,__call

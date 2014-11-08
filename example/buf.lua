@@ -3,9 +3,8 @@ xt = require("xt")
 fmt= string.format
 
 rbyte = function( pos,len,endian )
-	local lb,ls = b:readInt( 4,4,'l'), s:undumpint( 5,4,'l')
-	lb,ls = b:readInt( pos, len, endian), s:undumpint( pos+1, len, endian)
-	print( lb, string.format("%016X", lb), ls, string.format("%016X", ls)  )
+	local lb,ls = b:readInt( pos, len, endian), s:undumpint( pos, len, endian)
+	print( pos,len,'',lb, string.format("%016X", lb), ls, string.format("%016X", ls)  )
 end
 
 s = 'Alles wird irgendwann wieder gut!'
@@ -32,34 +31,34 @@ print( "READING ACCESS by BITS" )
 b = xt.Buffer( string.char( 0x00, 0x00,0x00, 0x0F, 0xF0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 ) )
 print( b:toHex() )
 -- pos 4, ofs 0, length 10
-print( b:readBits( 3, 0, 10 ) )
-print( b:readBits( 3, 3, 9 ) )
+print( b:readBits( 3, 1, 10 ) )
+print( b:readBits( 3, 4, 9 ) )
 print( b:readBits( 3, 5, 8 ) )
 
 print( "WRITING ACCESS by BITS" )
-b:writeBits( 128, 7, 5, 8 )
+b:writeBits( 128, 7, 6, 8 )
 print( b:toHex() )
 b:writeInt( 255, 9, 1 )
 print( b:toHex() )
-b:writeBits( 128, 8, 5, 8 )
+b:writeBits( 128, 8, 6, 8 )
 b:writeInt( 123, 1, 2 )
 print( b:toHex() )
 
 
 print( "READING ACCESS by BITS AGAIN" )
-l = xt.Buffer( string.char( 0x80, 0x40,0x20, 0x10, 0x08, 0x04, 0x02, 0x01) )
+l = xt.Buffer( string.char( 0x80, 0x40, 0x20, 0x10, 0x08, 0x04, 0x02, 0x01) )
 io.write( 'bits   ')
-for k=0,7 do io.write( fmt("%02X       ", l:readInt(k, 1) ) ) end
+for k=1,8 do io.write( fmt("%02X       ", l:readInt( k, 1 ) ) ) end
 print()
-for i=0,7 do
+for i=1,8 do
 	io.write( i..'      ' )
-	for k=0,7 do io.write( l:readBits( i, k, 1 ) .. '        ' ) end
+	for k=1,8 do io.write( l:readBits( i, k, 1 ) .. '        ' ) end
 	io.write( '\n' )
 end
 
-for i=0,7 do
+for i=1,8 do
 	io.write( i )
-	for k=0,7 do io.write( fmt( '%9s', l:readBit( i, k ) ) ) end
+	for k=1,8 do io.write( fmt( '%9s', l:readBit( i, k ) ) ) end
 	io.write( '\n' )
 end
 

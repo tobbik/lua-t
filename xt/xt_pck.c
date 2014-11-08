@@ -88,12 +88,12 @@ static int lxt_pck_Bits( lua_State *luaVM )
 
 	luaL_argcheck( luaVM,  1<= sz && sz <= 8*8,       1,
 	                 "size must be >=1 and <=8" );
-	luaL_argcheck( luaVM,  0<= ofs && ofs <= 8,       2,
-	                 "offset must be >=0 and <=8" );
+	luaL_argcheck( luaVM,  1<= ofs && ofs <= 8,       2,
+	                 "offset must be >=1 and <=8" );
 
 	p = xt_pck_create_ud( luaVM, XT_PCK_BITS );
 
-	p->sz  = ((sz+ofs-1)/8)+1;
+	p->sz  = ((sz+ofs-2)/8)+1;
 	p->lB  = sz;
 	p->oB  = ofs;
 	return 1;
@@ -111,8 +111,8 @@ static int lxt_pck_Bit( lua_State *luaVM )
 	struct xt_pck  *p;
 	int             ofs = luaL_checkint( luaVM, 1 );  ///< how many its from starting byte to read
 
-	luaL_argcheck( luaVM,  0<= ofs && ofs <= 8,       1,
-	                 "offset must be >=0 and <=8" );
+	luaL_argcheck( luaVM,  1 <= ofs && ofs <= 8,       1,
+	                 "offset must be >=1 and <=8" );
 
 	p = xt_pck_create_ud( luaVM, XT_PCK_BIT );
 
@@ -135,7 +135,7 @@ static int lxt_pck_Nibble( lua_State *luaVM )
 
 	p = xt_pck_create_ud( luaVM, XT_PCK_NBL );
 
-	p->oB  =  (xt_buf_getnibble( luaVM, 1 )) ? 0 : 4;
+	p->oB  =  (xt_buf_getnibble( luaVM, 1 )) ? 1 : 5;
 	p->sz  = 1;
 	return 1;
 }
@@ -151,7 +151,7 @@ static int lxt_pck_String( lua_State *luaVM )
 {
 	struct xt_pck  *p;
 	int             sz = luaL_checkint( luaVM, 1 );   ///< how many chars in this packer
-	luaL_argcheck( luaVM,  1<= sz , 1,
+	luaL_argcheck( luaVM,  1 <= sz , 1,
 		                 "size must be >=1" ); 
 	p = xt_pck_create_ud( luaVM, XT_PCK_STR );
 
@@ -215,7 +215,7 @@ int xt_pck_read( lua_State *luaVM, struct xt_pck *p, const unsigned char *b)
 			lua_pushinteger( luaVM, (lua_Integer) *b );
 			break;
 		case XT_PCK_NBL:
-			lua_pushinteger( luaVM, (p->oB > 3) ? LO_NIBBLE_GET( *b ) : HI_NIBBLE_GET( *b ) );
+			lua_pushinteger( luaVM, (p->oB > 4) ? LO_NIBBLE_GET( *b ) : HI_NIBBLE_GET( *b ) );
 			break;
 		case XT_PCK_BIT:
 			lua_pushboolean( luaVM, BIT_GET( *b, p->oB ) );
@@ -269,16 +269,16 @@ int xt_pck_write( lua_State *luaVM, struct xt_pck *p, unsigned char *b )
 			intVal = luaL_checkint( luaVM, -1 );
 			luaL_argcheck( luaVM,  intVal  <  0x01 << 0x0F, -1,
 			              "value to pack nibble must be smaller than 16 (0x0F)");
-			*b = (p->oB > 3) ? LO_NIBBLE_SET( *b, (char) intVal ) : HI_NIBBLE_SET( *b, (char) intVal ) ;
+			*b = (p->oB > 4) ? LO_NIBBLE_SET( *b, (char) intVal ) : HI_NIBBLE_SET( *b, (char) intVal ) ;
 			break;
 		case XT_PCK_BIT:
-			*b = BIT_SET( *b, p->oB, lua_toboolean( luaVM, -1 ) );
+			*b = BIT_SET( *b, p->oB-1, lua_toboolean( luaVM, -1 ) );
 			break;
 		case XT_PCK_BITS:
 			intVal = luaL_checkint( luaVM, -1 );
 			luaL_argcheck( luaVM,  intVal  <  0x01 << p->lB, -1,
 			              "value to pack must be smaller than the maximum value for the packer size");
-			xt_buf_writebits( (uint64_t) intVal, p->lB, p->oB, b );
+			xt_buf_writebits( (uint64_t) intVal, p->lB, p->oB-1, b );
 			break;
 		case XT_PCK_STR:
 			strVal = luaL_checklstring( luaVM, -1, &sL );
