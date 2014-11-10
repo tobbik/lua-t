@@ -1,6 +1,6 @@
 #!../out/bin/lua
 xt = require'xt'
-s  = xt.Socket.bind( 'UDP', '192.168.0.219', 8888 )
+s  = xt.Socket.bind( 'UDP',  8888 )
 l  = nil
 n  = 10
 tm = {}

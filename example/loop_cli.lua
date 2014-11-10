@@ -12,7 +12,7 @@ printhelp = function()
 end
 
 s  = xt.Socket('UDP')
-ip = xt.IpEndpoint('192.168.0.219', 8888)
+ip = xt.Ip( xt.Ip.localhost, 8888 )
 print( s, ip )
 while true do
 	io.write( "Enter command and type enter ('help' for command list': ")
