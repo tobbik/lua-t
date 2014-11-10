@@ -93,7 +93,7 @@ int xt_ip_set( lua_State *luaVM, int pos, struct sockaddr_in *ip )
 #endif
 		if (lua_isnumber( luaVM, pos+1 ))
 		{
-			port = luaL_checkint( luaVM, pos+1 );
+			port = luaL_checkinteger( luaVM, pos+1 );
 			luaL_argcheck( luaVM, 1 <= port && port <= 65536, 3,
 								  "port number out of range" );
 			ip->sin_port   = htons( port );
@@ -102,7 +102,7 @@ int xt_ip_set( lua_State *luaVM, int pos, struct sockaddr_in *ip )
 	else if (lua_isnumber( luaVM, pos+0 ))
 	{
 		ip->sin_addr.s_addr = htonl( INADDR_ANY );
-		port = luaL_checkint( luaVM, pos+0 );
+		port = luaL_checkinteger( luaVM, pos+0 );
 		luaL_argcheck( luaVM, 1 <= port && port <= 65536, 2,
 		                 "port number out of range" );
 		ip->sin_port   = htons( port );
@@ -184,7 +184,7 @@ static int lxt_ip_set_ip( lua_State *luaVM )
 static int lxt_ip_set_port( lua_State *luaVM )
 {
 	struct sockaddr_in *ip = xt_ip_check_ud( luaVM, 1, 1 );
-	int               port = luaL_checkint( luaVM, 2 );
+	int               port = luaL_checkinteger( luaVM, 2 );
 
 	luaL_argcheck( luaVM, 1 <= port && port <= 65536, 2,
 	                 "port number out of range" );
@@ -292,11 +292,11 @@ static int lxt_ip___eq (lua_State *luaVM) {
  * --------------------------------------------------------------------------*/
 static int lxt_ip_int2ip (lua_State *luaVM)
 {
-	uint32_t  ip_int  = luaL_checkint (luaVM, 1);
+	uint32_t  ip_int  = luaL_checkinteger( luaVM, 1 );
 	uint8_t  *ip      = (uint8_t *) &ip_int;
 
-	lua_pushfstring (luaVM, "%d.%d.%d.%d",
-		ip[3], ip[2], ip[1], ip[0]);
+	lua_pushfstring( luaVM, "%d.%d.%d.%d",
+		ip[3], ip[2], ip[1], ip[0] );
 	return 1;
 }
 

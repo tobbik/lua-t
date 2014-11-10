@@ -123,7 +123,7 @@ struct xt_sck *xt_sck_check_ud( lua_State *luaVM, int pos )
 static int lxt_sck_listen( lua_State *luaVM )
 {
 	struct xt_sck  *sck;
-	int             backlog = luaL_checkint(luaVM, 2);
+	int             backlog = luaL_checkinteger( luaVM, 2 );
 
 	sck = xt_sck_check_ud (luaVM, 1);
 	luaL_argcheck( luaVM, (XT_SCK_TCP == sck->t), 1, "Must be an TCP socket" );
