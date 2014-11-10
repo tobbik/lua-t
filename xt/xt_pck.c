@@ -463,6 +463,35 @@ static int lxt_pck__len( lua_State *luaVM )
 }
 
 
+/**--------------------------------------------------------------------------
+ * Exports all types of xt.Pack as global variables
+ * \param   luaVM      The lua state.
+ * \lparam  xt_pack    the packer instance user_data.
+ * \lreturn string     formatted string representing packer.
+ * \return  The number of results to be passed back to the calling Lua script.
+ * --------------------------------------------------------------------------*/
+static int lxt_pck_export( lua_State *luaVM )
+{
+	luaL_getsubtable( luaVM, LUA_REGISTRYINDEX, "_LOADED" );
+	lua_getfield( luaVM, -1, "xt" );
+	lua_getfield( luaVM, -1, "Pack" );
+	lua_pushnil( luaVM );
+	while (lua_next( luaVM, -2 ))
+	{                            // Stack, _LOADED,xt,Pack,name,func
+		if(90 < *(lua_tostring( luaVM, -2 )))  // only uppercase elements
+		{
+			lua_pop( luaVM, 1 );
+			continue;
+		}
+		else
+			lua_setglobal( luaVM, lua_tostring( luaVM, -2 ) );
+	}
+	lua_pop( luaVM, 3 );
+	return 0;
+}
+
+
+
 /**
  * \brief    the metatble for the module
  */
@@ -473,6 +502,7 @@ static const struct luaL_Reg xt_pck_cf [] = {
 	{"Sequence",  lxt_pckc_Sequence},
 	{"Struct",    lxt_pckc_Struct},
 	{"size",      lxt_pck_size},
+	{"export",    lxt_pck_export},
 	{NULL,    NULL}
 };
 
