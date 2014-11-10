@@ -82,7 +82,6 @@ int xt_ip_set( lua_State *luaVM, int pos, struct sockaddr_in *ip )
 	memset( (char *) &(*ip), 0, sizeof(ip) );
 	ip->sin_family = AF_INET;
 
-	stackDump(luaVM);
 	if (lua_isnumber( luaVM, pos+0 ))
 	{
 		ip->sin_addr.s_addr = htonl( INADDR_ANY );
@@ -237,7 +236,7 @@ static int lxt_ip_get_port( lua_State *luaVM )
 static int lxt_ip___tostring (lua_State *luaVM)
 {
 	struct sockaddr_in *ip = xt_ip_check_ud( luaVM, 1, 1 );
-	lua_pushfstring( luaVM, "IpEndpoint{%s:%d}: %p",
+	lua_pushfstring( luaVM, "xt.Ip{%s:%d}: %p",
 			inet_ntoa( ip->sin_addr ),
 			ntohs( ip->sin_port ),
 			ip );

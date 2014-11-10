@@ -474,7 +474,7 @@ static int lxt_sck_getsockname( lua_State *luaVM )
 static int lxt_sck__tostring( lua_State *luaVM )
 {
 	struct xt_sck *sck = xt_sck_check_ud( luaVM, 1 );
-	lua_pushfstring( luaVM, "Socket{%s:%d}: %p",
+	lua_pushfstring( luaVM, "xt.Socket{%s:%d}: %p",
 			(XT_SCK_TCP == sck->t) ? "TCP" : "UDP",
 			sck->fd,
 			sck );
