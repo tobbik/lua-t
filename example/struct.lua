@@ -54,7 +54,7 @@ t = xt.Pack.Struct (
 -- 	-- BitField is a special type as the constructor resets the actual offset for each single bit
 -- 	-- boolean flags -> status
 	{ status    = sbits},
-	{ internal  = ss},
+	{ interna   = ss},
 	{ another   = p},
 	{ count     = p},
 	{ status2   = sbits},

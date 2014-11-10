@@ -391,6 +391,44 @@ static int lxt_pck_size( lua_State *luaVM )
 	return 1;
 }
 
+/**--------------------------------------------------------------------------
+ * __tostring helper that prints the packer type.
+ * \param   luaVM      The lua state.
+ * \param   xt_pack    the packer instance struct.
+ * \lreturn  leaves two strings on the Lua Stack.
+ * --------------------------------------------------------------------------*/
+void xt_pck_format( lua_State *luaVM, struct xt_pck *p )
+{
+	lua_pushfstring( luaVM, "%s", xt_pck_t_lst[ p->t ] );
+	switch( p->t )
+	{
+		case XT_PCK_INTL:
+		case XT_PCK_INTB:
+			lua_pushfstring( luaVM, "%d", p->sz );
+			break;
+		case XT_PCK_BYTE:
+			lua_pushfstring( luaVM, "" );          // satisfy lua_concat()
+			break;
+		case XT_PCK_BIT:
+			lua_pushfstring( luaVM, "%d",  p->oB );
+			break;
+		case XT_PCK_BITS:
+			lua_pushfstring( luaVM, "{%d/%d}", p->lB, p->oB );
+			break;
+		case XT_PCK_NBL:
+			lua_pushfstring( luaVM, "%c", (p->oB>4)?'L':'H' );
+			break;
+		case XT_PCK_STR:
+			lua_pushfstring( luaVM, "[%d]", p->sz );
+			break;
+		case XT_PCK_FLT:
+			lua_pushfstring( luaVM, "%d", p->sz );
+			break;
+		default:
+			lua_pushfstring( luaVM, "[%d]", p->n );
+	}
+}
+
 
 /**--------------------------------------------------------------------------
  * __tostring (print) representation of a packer instance.
@@ -402,36 +440,10 @@ static int lxt_pck_size( lua_State *luaVM )
 static int lxt_pck__tostring( lua_State *luaVM )
 {
 	struct xt_pck *p = xt_pck_check_ud( luaVM, 1 );
-
-	switch( p->t )
-	{
-		case XT_PCK_INTL:
-			lua_pushfstring( luaVM, "xt.Pack.IntL%d: %p", p->sz, p );
-			break;
-		case XT_PCK_INTB:
-			lua_pushfstring( luaVM, "xt.Pack.IntB%d: %p", p->sz, p );
-			break;
-		case XT_PCK_BYTE:
-			lua_pushfstring( luaVM, "xt.Pack.Byte: %p", p );
-			break;
-		case XT_PCK_BIT:
-			lua_pushfstring( luaVM, "xt.Pack.Bit%d: %p",  p->oB, p );
-			break;
-		case XT_PCK_BITS:
-			lua_pushfstring( luaVM, "xt.Pack.Bits{%d/%d}(%d): %p", p->lB, p->oB, p->sz, p );
-			break;
-		case XT_PCK_NBL:
-			lua_pushfstring( luaVM, "xt.Pack.Nibble%c: %p", (p->oB>4)?'L':'H',  p );
-			break;
-		case XT_PCK_STR:
-			lua_pushfstring( luaVM, "xt.Pack.String[%d]: %p", p->sz, p );
-			break;
-		case XT_PCK_FLT:
-			lua_pushfstring( luaVM, "xt.Pack.Float%d: %p", p->sz, p );
-			break;
-		default:
-			xt_push_error( luaVM, "Can't read value from unknown packer type" );
-	}
+	lua_pushfstring( luaVM, "xt.Pack." );
+	xt_pck_format( luaVM, p );
+	lua_pushfstring( luaVM, ": %p", p );
+	lua_concat( luaVM, 4 );
 	return 1;
 }
 

@@ -28,6 +28,21 @@ enum xt_pck_t {
 	XT_PCK_STRUCT,       ///< X  Struct   Type Packer combinator
 };
 
+static const char *const xt_pck_t_lst[] = {
+	"IntB",        ///< X  Byte wide field as Integer -> Big    Endian
+	"IntL",        ///< X  Byte wide field as Integer -> Little Endian
+	"Byte",         ///< X  1 Byte wide field
+	"Nibble",       ///< X  Nibble (4 bits) HI/LO stored in p->oB
+	"Bit",          ///< X  1 Bit   wide field
+	"Bits",         ///< X  x Bits  wide field
+	"Float",        ///< X  Byte wide field as Float
+	"String",       ///< X  Byte wide field of char bytes
+	"Array",        ///< X  Array    Type Packer combinator
+	"Sequence",     ///< X  Sequence Type Packer combinator
+	"Struct",       ///< X  Struct   Type Packer combinator
+	NULL
+};
+
 
 /// The userdata struct for xt.Pack/xt.Pack.Struct
 struct xt_pck {
@@ -72,6 +87,10 @@ struct xt_pck  *xt_pck_create_ud( lua_State *luaVM, enum xt_pck_t );
 // accessor helpers for the Packers
 int xt_pck_read ( lua_State *luaVM, struct xt_pck *p, const unsigned char *buffer);
 int xt_pck_write( lua_State *luaVM, struct xt_pck *p, unsigned char *buffer );
+
+// tostring helper
+void xt_pck_format( lua_State *luaVM, struct xt_pck *p );
+
 
 // xt_pckc.c
 int              luaopen_xt_pckc  ( lua_State *luaVM );
