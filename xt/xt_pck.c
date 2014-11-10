@@ -135,90 +135,12 @@ static inline void xt_buf_writebits( uint64_t val, size_t len, size_t ofs, unsig
 			);
 #endif
 }
-// Constructors for dynamic packer types
 
 
-/** ---------------------------------------------------------------------------
- * creates a bits type packer field.  Always return numeric value.
- * \param    luaVM    lua state.
- * \lparam   sz       size of packer in bits.
- * \lparam   bofs     bit offset from beginning of byte. Default 0.
- * \return integer number of values left on the stack.
- *  -------------------------------------------------------------------------*/
-static int lxt_pck_Bits( lua_State *luaVM )
-{
-	struct xt_pck  *p;
-	int             sz  = luaL_checkint( luaVM, 1 );  ///< how many bits  to read
-	int             ofs = luaL_checkint( luaVM, 2 );  ///< how many its from starting byte to read
-
-	luaL_argcheck( luaVM,  1<= sz && sz <= 8*8,       1,
-	                 "size must be >=1 and <=8" );
-	luaL_argcheck( luaVM,  1<= ofs && ofs <= 8,       2,
-	                 "offset must be >=1 and <=8" );
-
-	p = xt_pck_create_ud( luaVM, XT_PCK_BITS );
-
-	p->sz  = ((sz+ofs-2)/8)+1;
-	p->lB  = sz;
-	p->oB  = ofs;
-	return 1;
-}
-
-
-/** ---------------------------------------------------------------------------
- * creates a string type packer field.
- * \param    luaVM    lua state.
- * \lparam   sz       size of packer in bytes (chars).
- * \return integer number of values left on the stack.
- *  -------------------------------------------------------------------------*/
-static int lxt_pck_String( lua_State *luaVM )
-{
-	struct xt_pck  *p;
-	int             sz = luaL_checkint( luaVM, 1 );   ///< how many chars in this packer
-	luaL_argcheck( luaVM,  1 <= sz , 1,
-		                 "size must be >=1" ); 
-	p = xt_pck_create_ud( luaVM, XT_PCK_STR );
-
-	p->sz    = sz;
-	return 1;
-}
-
-
-/**--------------------------------------------------------------------------
- * create a xt_pack and push to LuaStack.
- * \param   luaVM  The lua state.
- *
- * \return  struct xt_pack*  pointer to the  xt_pack struct
- * --------------------------------------------------------------------------*/
-struct xt_pck *xt_pck_create_ud( lua_State *luaVM, enum xt_pck_t t)
-{
-	struct xt_pck  *p;
-	p = (struct xt_pck *) lua_newuserdata( luaVM, sizeof( struct xt_pck ));
-
-	p->t  = t;
-	luaL_getmetatable( luaVM, "xt.Pack" );
-	lua_setmetatable( luaVM, -2 );
-	return p;
-}
-
-
-/**--------------------------------------------------------------------------
- * Check if the item on stack position pos is an xt_pack struct and return it
- * \param  luaVM    the Lua State
- * \param  pos      position on the stack
- *
- * \return struct xt_pack* pointer to xt_pack struct
- * --------------------------------------------------------------------------*/
-struct xt_pck *xt_pck_check_ud( lua_State *luaVM, int pos )
-{
-	void *ud = luaL_checkudata( luaVM, pos, "xt.Pack" );
-	luaL_argcheck( luaVM, ud != NULL, pos, "`xt.Pack` expected" );
-	return (struct xt_pck *) ud;
-}
-
-
-////////////////////////////////////////////////////---------------ACCESSORS
-
+//////////////////////////////////////////////////////////////////////////////////////
+//
+// ================================= GENERIC xt_pck API========================
+// Reader and writer for packer data
 /**--------------------------------------------------------------------------
  * reads a value from the packer and pushes it onto the Lua stack.
  * \param   luaVM lua Virtual Machine.
@@ -316,6 +238,92 @@ int xt_pck_write( lua_State *luaVM, struct xt_pck *p, unsigned char *b )
 	}
 	return 0;
 }
+
+
+
+
+//////////////////////////////////////////////////////////////////////////////////////
+//
+// ================================= GENERIC LUA API========================
+// Constructors for dynamic packer types
+/** ---------------------------------------------------------------------------
+ * creates a bits type packer field.  Always return numeric value.
+ * \param    luaVM    lua state.
+ * \lparam   sz       size of packer in bits.
+ * \lparam   bofs     bit offset from beginning of byte. Default 0.
+ * \return integer number of values left on the stack.
+ *  -------------------------------------------------------------------------*/
+static int lxt_pck_Bits( lua_State *luaVM )
+{
+	struct xt_pck  *p;
+	int             sz  = luaL_checkint( luaVM, 1 );  ///< how many bits  to read
+	int             ofs = luaL_checkint( luaVM, 2 );  ///< how many its from starting byte to read
+
+	luaL_argcheck( luaVM,  1<= sz && sz <= 8*8,       1,
+	                 "size must be >=1 and <=8" );
+	luaL_argcheck( luaVM,  1<= ofs && ofs <= 8,       2,
+	                 "offset must be >=1 and <=8" );
+
+	p = xt_pck_create_ud( luaVM, XT_PCK_BITS );
+
+	p->sz  = ((sz+ofs-2)/8)+1;
+	p->lB  = sz;
+	p->oB  = ofs;
+	return 1;
+}
+
+
+/** ---------------------------------------------------------------------------
+ * creates a string type packer field.
+ * \param    luaVM    lua state.
+ * \lparam   sz       size of packer in bytes (chars).
+ * \return integer number of values left on the stack.
+ *  -------------------------------------------------------------------------*/
+static int lxt_pck_String( lua_State *luaVM )
+{
+	struct xt_pck  *p;
+	int             sz = luaL_checkint( luaVM, 1 );   ///< how many chars in this packer
+	luaL_argcheck( luaVM,  1 <= sz , 1,
+		                 "size must be >=1" ); 
+	p = xt_pck_create_ud( luaVM, XT_PCK_STR );
+
+	p->sz    = sz;
+	return 1;
+}
+
+
+/**--------------------------------------------------------------------------
+ * create a xt_pack and push to LuaStack.
+ * \param   luaVM  The lua state.
+ *
+ * \return  struct xt_pack*  pointer to the  xt_pack struct
+ * --------------------------------------------------------------------------*/
+struct xt_pck *xt_pck_create_ud( lua_State *luaVM, enum xt_pck_t t)
+{
+	struct xt_pck  *p;
+	p = (struct xt_pck *) lua_newuserdata( luaVM, sizeof( struct xt_pck ));
+
+	p->t  = t;
+	luaL_getmetatable( luaVM, "xt.Pack" );
+	lua_setmetatable( luaVM, -2 );
+	return p;
+}
+
+
+/**--------------------------------------------------------------------------
+ * Check if the item on stack position pos is an xt_pack struct and return it
+ * \param  luaVM    the Lua State
+ * \param  pos      position on the stack
+ *
+ * \return struct xt_pack* pointer to xt_pack struct
+ * --------------------------------------------------------------------------*/
+struct xt_pck *xt_pck_check_ud( lua_State *luaVM, int pos )
+{
+	void *ud = luaL_checkudata( luaVM, pos, "xt.Pack" );
+	luaL_argcheck( luaVM, ud != NULL, pos, "`xt.Pack` expected" );
+	return (struct xt_pck *) ud;
+}
+
 
 
 /**--------------------------------------------------------------------------
