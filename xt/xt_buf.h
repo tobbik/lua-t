@@ -56,32 +56,12 @@ struct xt_pckr {
 // xt_buf.c
 // Constructors
 int              luaopen_xt_buf  ( lua_State *luaVM );
-int              lxt_buf_New     ( lua_State *luaVM );
 struct xt_buf   *xt_buf_check_ud ( lua_State *luaVM, int pos, int check );
 struct xt_buf   *xt_buf_create_ud( lua_State *luaVM, int size );
 
-// Macro helper functions
-#define HI_NIBBLE_GET(b)   (((b) >> 4) & 0xF)
-#define LO_NIBBLE_GET(b)   ((b)  & 0xF)
-
-#define HI_NIBBLE_SET(b,v) ( ((b) & 0x0F) | (((v)<<4) & 0xF0 ) )
-#define LO_NIBBLE_SET(b,v) ( ((b) & 0xF0) | ( (v)     & 0x0F ) )
-
-#define BIT_GET(b,n)       ( ((b) >> (7-(n))) & 0x01 )
-#define BIT_SET(b,n,v)     \
-	( (1==v)              ? \
-	 ((b) | (  (0x01) << (7-(n))))    : \
-	 ((b) & (~((0x01) << (7-(n))))) )
-
-// accessor helpers for the buffer
-uint64_t  xt_buf_readbytes (               size_t sz, int islittle, const unsigned char * buf );
-void      xt_buf_writebytes( uint64_t val, size_t sz, int islittle,       unsigned char * buf );
-uint64_t  xt_buf_readbits  (               size_t sz, size_t ofs,   const unsigned char * buf );
-void      xt_buf_writebits ( uint64_t val, size_t sz, size_t ofs,         unsigned char * buf );
-
 // helpers to check and verify input on stack
-int xt_buf_getnibble( lua_State *luaVM, int pos );
 struct xt_buf * xt_buf_getbuffer( lua_State *luaVM, int pB, int pP, int *pos );
+
 
 
 // xt_pck.c

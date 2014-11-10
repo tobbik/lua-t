@@ -52,21 +52,6 @@ struct xt_buf * xt_buf_getbuffer( lua_State *luaVM, int pB, int pP, int *pos )
 // |_____\__,_|\__,_|    /_/   \_\_|  |___|
 /////////////////////////////////////////////////////////////////////////////
 /** -------------------------------------------------------------------------
- * \brief     creates the buffer from the Constructor
- * \param     luaVM  lua state
- * \lparam    CLASS table Time
- * \lparam    length of buffer
- * \lparam    string buffer content initialized            OPTIONAL
- * \return    integer   how many elements are placed on the Lua stack
- *  -------------------------------------------------------------------------*/
-static int lxt_buf__Call (lua_State *luaVM)
-{
-	lua_remove( luaVM, 1 );    // remove the xt.Buffer Class table
-	return lxt_buf_New( luaVM );
-}
-
-
-/** -------------------------------------------------------------------------
  * \brief     creates the buffer from the function call
  * \param     luaVM  lua state
  * \lparam    length of buffer
@@ -74,7 +59,7 @@ static int lxt_buf__Call (lua_State *luaVM)
  * \lparam    string buffer content initialized
  * \return    integer   how many elements are placed on the Lua stack
  *  -------------------------------------------------------------------------*/
-int lxt_buf_New( lua_State *luaVM )
+static int lxt_buf_New( lua_State *luaVM )
 {
 	size_t                                   sz;
 	struct xt_buf  __attribute__ ((unused)) *buf;
@@ -95,6 +80,21 @@ int lxt_buf_New( lua_State *luaVM )
 		xt_push_error( luaVM, "can't create xt.Buffer because of wrong argument type" );
 	}
 	return 1;
+}
+
+
+/** -------------------------------------------------------------------------
+ * \brief     creates the buffer from the Constructor
+ * \param     luaVM  lua state
+ * \lparam    CLASS table Time
+ * \lparam    length of buffer
+ * \lparam    string buffer content initialized            OPTIONAL
+ * \return    integer   how many elements are placed on the Lua stack
+ *  -------------------------------------------------------------------------*/
+static int lxt_buf__Call (lua_State *luaVM)
+{
+	lua_remove( luaVM, 1 );    // remove the xt.Buffer Class table
+	return lxt_buf_New( luaVM );
 }
 
 
@@ -139,111 +139,6 @@ struct xt_buf *xt_buf_check_ud( lua_State *luaVM, int pos, int check )
 //////////////////////////////////////////////////////////////////////////////////////
 /////////////// NEW IMPLEMENTATION
 
-// =========+Buffer accessor Helpers
-//
-/**--------------------------------------------------------------------------
- * Read an integer of y bytes from a char buffer pointer
- * General helper function to read the value of an 64 bit integer from a char array
- * \param   sz         how many bytes to read.
- * \param   islittle   treat input as little endian?
- * \param   buf        pointer to char array to read from.
- * \return  val        integer value.
- * --------------------------------------------------------------------------*/
-uint64_t xt_buf_readbytes( size_t sz, int islittle, const unsigned char * buf )
-{
-	size_t         i;
-	uint64_t       val = 0;                     ///< value for the read access
-	unsigned char *set = (unsigned char*) &val; ///< char array to read bytewise into val
-#ifndef IS_LITTLE_ENDIAN
-	size_t         sz_l = sizeof( *val );       ///< size of the value in bytes
-
-	for (i=sz_l; i<sz_l - sz -2; i--)
-#else
-	for (i=0 ; i<sz; i++)
-#endif
-		set[ i ] = (islittle) ? buf[ i ]: buf[ sz-1-i ];
-	return val;
-}
-
-
-/**--------------------------------------------------------------------------
- * Write an integer of y bytes to a char buffer pointer
- * General helper function to write the value of an 64 bit integer to a char array
- * \param  val         value to be written.
- * \param   sz         how many bytes to write.
- * \param   islittle   treat input as little endian?
- * \param   buf        pointer to char array to write to.
- * --------------------------------------------------------------------------*/
-void xt_buf_writebytes( uint64_t val, size_t sz, int islittle, unsigned char * buf )
-{
-	size_t         i;
-	unsigned char *set  = (unsigned char*) &val;  ///< char array to read bytewise into val
-#ifndef IS_LITTLE_ENDIAN
-	size_t         sz_l = sizeof( *val );        ///< size of the value in bytes
-
-	for (i=sz_l; i<sz_l - sz -2; i--)
-#else
-	for (i=0 ; i<sz; i++)
-#endif
-		buf[ i ] = (islittle) ? set[ i ] : set[ sz-1-i ];
-}
-
-
-/**--------------------------------------------------------------------------
- * Read an integer of y bits from a char buffer with offset ofs.
- * \param   len  size in bits (1-64).
- * \param   ofs  offset   in bits (0-7).
- * \param  *buf  char buffer already on proper position
- * \return  val        integer value.
- * --------------------------------------------------------------------------*/
-uint64_t xt_buf_readbits( size_t len, size_t ofs, const unsigned char * buf )
-{
-	uint64_t val = xt_buf_readbytes( (len+ofs-1)/8 +1, 0, buf );
-
-#if PRINT_DEBUGS == 1
-	printf("Read Val:    %016llX (%d)\nShift Left:  %016llX\nShift right: %016llX\n%d      %d\n",
-			val, (len+ofs-1)/8 +1,
-			(val << (64- ((len/8+1)*8) + ofs ) ),
-			(val << (64- ((len/8+1)*8) + ofs ) ) >> (64 - len),
-			(64- ((len/8+1)*8) + ofs ), (64-len));
-#endif
-	return  (val << (64- ((len/8+1)*8) + ofs ) ) >> (64 - len);
-}
-
-
-/**--------------------------------------------------------------------------
- * Write an integer of y bits from ta char buffer with offset ofs.
- * \param   val  the val gets written to.
- * \param   len  size in bits (1-64).
- * \param   ofs  offset   in bits (0-7).
- * \param  *buf  char buffer already on proper position
- * --------------------------------------------------------------------------*/
-void xt_buf_writebits( uint64_t val, size_t len, size_t ofs, unsigned char * buf )
-{
-	uint64_t   read = 0;                           ///< value for the read access
-	uint64_t   msk  = 0;                           ///< mask
-	/// how many bit are in all the bytes needed for the conversion
-	size_t     abit = (((len+ofs-1)/8)+1) * 8;
-
-	msk  = (0xFFFFFFFFFFFFFFFF  << (64-len)) >> (64-abit+ofs);
-	read = xt_buf_readbytes( abit/8, 0, buf );
-	read = (val << (abit-ofs-len)) | (read & ~msk);
-	xt_buf_writebytes( read, abit/8, 0, buf);
-
-#if PRINT_DEBUGS == 1
-	printf("Read: %016llX       \nLft:  %016lX       %d \nMsk:  %016lX       %ld\n"
-	       "Nmsk: %016llX       \nval:  %016llX         \n"
-	       "Sval: %016llX    %ld\nRslt: %016llX         \n",
-			read,
-			 0xFFFFFFFFFFFFFFFF <<   (64-len), (64-len),  /// Mask after left shift
-			(0xFFFFFFFFFFFFFFFF <<	 (64-len)) >> (64-abit+ofs), (64-abit+ofs),
-			read & ~msk,
-			val,
-			 val << (abit-ofs-len),  abit-ofs-len,
-			(val << (abit-ofs-len)) | (read & ~msk)
-			);
-#endif
-}
 
 //
 // ================================= GENERIC LUA API========================

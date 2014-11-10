@@ -517,7 +517,7 @@ static int lxt_pckr__tostring( lua_State *luaVM )
 			lua_pushfstring( luaVM, "xt.Pack.Reader{BIT/%d:/%d}: %p",  p->oB, pr->o, p );
 			break;
 		case XT_PCK_NBL:
-			lua_pushfstring( luaVM, "xt.Pack.Reader{NIBBLE[%s]/%d}: %p", (p->oB>4)?"Lo":"Hi", pr->o,  p );
+			lua_pushfstring( luaVM, "xt.Pack.Reader{NIBBLE_%c/%d}: %p", (p->oB>4)?'L':'H', pr->o,  p );
 			break;
 		case XT_PCK_STR:
 			lua_pushfstring( luaVM, "xt.Pack.Reader{STRING:%d/%d}: %p", p->sz, pr->o, p );
