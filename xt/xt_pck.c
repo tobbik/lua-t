@@ -15,62 +15,7 @@
 #include "xt.h"
 #include "xt_buf.h"
 
-// Constructors for packer types
-/** ---------------------------------------------------------------------------
- * creates a byte type packer field with little Endian.
- * \param    luaVM    lua state.
- * \lparam   sz       size of packer in bytes.
- * \lparam   islittle treat as litlle endian?
- * \return integer number of values left on the stack.
- *  -------------------------------------------------------------------------*/
-static int lxt_pck_IntL( lua_State *luaVM )
-{
-	struct xt_pck  *p;
-	int             sz = luaL_checkint( luaVM, 1 );   ///< how many bytes to read
-	luaL_argcheck( luaVM,  1<= sz && sz <= 8,       1,
-		                 "size must be >=1 and <=8" );
-	p = xt_pck_create_ud( luaVM, XT_PCK_INTL );
-
-	p->sz    = sz;
-	return 1;
-}
-
-
-/** ---------------------------------------------------------------------------
- * creates a byte type packer field with Big Endian.
- * \param    luaVM    lua state.
- * \lparam   sz       size of packer in bytes.
- * \lparam   islittle treat as litlle endian?
- * \return integer number of values left on the stack.
- *  -------------------------------------------------------------------------*/
-static int lxt_pck_IntB( lua_State *luaVM )
-{
-	struct xt_pck  *p;
-	int             sz = luaL_checkint( luaVM, 1 );   ///< how many bytes to read
-	luaL_argcheck( luaVM,  1<= sz && sz <= 8,       1,
-		                 "size must be >=1 and <=8" );
-	p = xt_pck_create_ud( luaVM, XT_PCK_INTB );
-
-	p->sz    = sz;
-	return 1;
-}
-
-
-/** ---------------------------------------------------------------------------
- * creates a Byte type packer field.
- * \param    luaVM    lua state.
- * \lparam   string   Hi or Lo nibble.  Defaults to XT_DEF_NIBBLE
- * \return integer number of values left on the stack.
- *  -------------------------------------------------------------------------*/
-static int lxt_pck_Byte( lua_State *luaVM )
-{
-	struct xt_pck  *p;
-
-	p = xt_pck_create_ud( luaVM, XT_PCK_BYTE );
-
-	p->sz  = 1;
-	return 1;
-}
+// Constructors for dynamic packer types
 
 
 /** ---------------------------------------------------------------------------
@@ -96,47 +41,6 @@ static int lxt_pck_Bits( lua_State *luaVM )
 	p->sz  = ((sz+ofs-2)/8)+1;
 	p->lB  = sz;
 	p->oB  = ofs;
-	return 1;
-}
-
-
-/** ---------------------------------------------------------------------------
- * creates a bit type packer field. Always return boolean value.
- * \param    luaVM    lua state.
- * \lparam   bofs     bit offset from beginning of byte. Default 0.
- * \return integer number of values left on the stack.
- *  -------------------------------------------------------------------------*/
-static int lxt_pck_Bit( lua_State *luaVM )
-{
-	struct xt_pck  *p;
-	int             ofs = luaL_checkint( luaVM, 1 );  ///< how many its from starting byte to read
-
-	luaL_argcheck( luaVM,  1 <= ofs && ofs <= 8,       1,
-	                 "offset must be >=1 and <=8" );
-
-	p = xt_pck_create_ud( luaVM, XT_PCK_BIT );
-
-	p->sz  = 1;
-	p->lB  = 1;
-	p->oB  = ofs;
-	return 1;
-}
-
-
-/** ---------------------------------------------------------------------------
- * creates a Nibble type packer field.
- * \param    luaVM    lua state.
- * \lparam   string   Hi or Lo nibble.  Defaults to XT_DEF_NIBBLE
- * \return integer number of values left on the stack.
- *  -------------------------------------------------------------------------*/
-static int lxt_pck_Nibble( lua_State *luaVM )
-{
-	struct xt_pck  *p;
-
-	p = xt_pck_create_ud( luaVM, XT_PCK_NBL );
-
-	p->oB  =  (xt_buf_getnibble( luaVM, 1 )) ? 1 : 5;
-	p->sz  = 1;
 	return 1;
 }
 
@@ -374,28 +278,28 @@ static int lxt_pck__tostring( lua_State *luaVM )
 	switch( p->t )
 	{
 		case XT_PCK_INTL:
-			lua_pushfstring( luaVM, "xt.Pack{INTL:%d}: %p", p->sz, p );
+			lua_pushfstring( luaVM, "xt.Pack.IntL%d: %p", p->sz, p );
 			break;
 		case XT_PCK_INTB:
-			lua_pushfstring( luaVM, "xt.Pack{INTB}: %p", p );
+			lua_pushfstring( luaVM, "xt.Pack.IntB%d: %p", p->sz, p );
 			break;
 		case XT_PCK_BYTE:
-			lua_pushfstring( luaVM, "xt.Pack{BYTE}: %p",  p->oB, p );
+			lua_pushfstring( luaVM, "xt.Pack.Byte: %p", p );
 			break;
 		case XT_PCK_BIT:
-			lua_pushfstring( luaVM, "xt.Pack{BIT[/%d]}: %p",  p->oB, p );
+			lua_pushfstring( luaVM, "xt.Pack.Bit%d: %p",  p->oB, p );
 			break;
 		case XT_PCK_BITS:
-			lua_pushfstring( luaVM, "xt.Pack{BITS[%d/%d]:%d}: %p", p->lB, p->oB, p->sz, p );
+			lua_pushfstring( luaVM, "xt.Pack.Bits{%d/%d}(%d): %p", p->lB, p->oB, p->sz, p );
 			break;
 		case XT_PCK_NBL:
-			lua_pushfstring( luaVM, "xt.Pack{NIBBLE[%s]}: %p", (p->oB>4)?"Lo":"Hi",  p );
+			lua_pushfstring( luaVM, "xt.Pack.Nibble%d: %p", (p->oB>4)?"L":"H",  p );
 			break;
 		case XT_PCK_STR:
-			lua_pushfstring( luaVM, "xt.Pack{STRING:%d}: %p", p->sz, p );
+			lua_pushfstring( luaVM, "xt.Pack.String[%d]: %p", p->sz, p );
 			break;
 		case XT_PCK_FLT:
-			lua_pushfstring( luaVM, "xt.Pack{FLOAT:%d}: %p", p->sz, p );
+			lua_pushfstring( luaVM, "xt.Pack.Float%d: %p", p->sz, p );
 			break;
 		default:
 			xt_push_error( luaVM, "Can't read value from unknown packer type" );
@@ -423,13 +327,7 @@ static int lxt_pck__len( lua_State *luaVM )
  * \brief    the metatble for the module
  */
 static const struct luaL_Reg xt_pck_cf [] = {
-	{"Bit",       lxt_pck_Bit},
 	{"Bits",      lxt_pck_Bits},
-	{"Nibble",    lxt_pck_Nibble},
-	{"Int",       lxt_pck_IntL},
-	{"IntL",      lxt_pck_IntL},
-	{"IntB",      lxt_pck_IntB},
-	{"Byte",      lxt_pck_Byte},
 	{"String",    lxt_pck_String},
 	{"Array",     lxt_pckc_Array},
 	{"Sequence",  lxt_pckc_Sequence},
@@ -461,6 +359,9 @@ static const luaL_Reg xt_pck_m [] = {
  * --------------------------------------------------------------------------*/
 LUAMOD_API int luaopen_xt_pck( lua_State *luaVM )
 {
+	
+	int            i;                   /// iterator for type creation
+	struct xt_pck *t;                   /// type pointer for type creation
 	// xt.Pack instance metatable
 	luaL_newmetatable( luaVM, "xt.Pack" );   // stack: functions meta
 	luaL_newlib( luaVM, xt_pck_m );
@@ -471,10 +372,58 @@ LUAMOD_API int luaopen_xt_pck( lua_State *luaVM )
 	lua_setfield( luaVM, -2, "__len" );
 	lua_pop( luaVM, 1 );        // remove metatable from stack
 
-
 	// Push the class onto the stack
 	// this is avalable as xt.Pack.<member>
 	luaL_newlib( luaVM, xt_pck_cf );
+	// register static types
+	// IntL,IntB
+	for (i=1; i<=8; i++)
+	{
+		lua_pushfstring( luaVM, "IntL%d", i );
+		t     = xt_pck_create_ud( luaVM, XT_PCK_INTL );
+		t->sz = i;
+		lua_rawset( luaVM, -3 );
+		lua_pushfstring( luaVM, "IntB%d", i );
+		t     = xt_pck_create_ud( luaVM, XT_PCK_INTB );
+		t->sz = i;
+		lua_rawset( luaVM, -3 );
+		// native endian
+		lua_pushfstring( luaVM, "Int%d", i );
+		if (IS_LITTLE_ENDIAN)
+			lua_pushfstring( luaVM, "IntL%d", i );
+		else
+			lua_pushfstring( luaVM, "IntB%d", i );
+		lua_rawget( luaVM, -3 );
+		lua_rawset( luaVM, -3 );
+
+	}
+	// Bit1 ..Bit8
+	for (i=1; i<=8; i++)
+	{
+		lua_pushfstring( luaVM, "Bit%d", i );
+		t = xt_pck_create_ud( luaVM, XT_PCK_BIT );
+		t->sz  = 1;
+		t->lB  = 1;
+		t->oB  = i;
+		lua_rawset( luaVM, -3 );
+	}
+	// NibbleL
+	lua_pushstring( luaVM, "NibbleL" );
+	t = xt_pck_create_ud( luaVM, XT_PCK_NBL );
+	t->oB  = 1;
+	t->sz  = 1;
+	lua_rawset( luaVM, -3 );
+	// NibbleH
+	lua_pushstring( luaVM, "NibbleH" );
+	t = xt_pck_create_ud( luaVM, XT_PCK_NBL );
+	t->oB  = 5;
+	t->sz  = 1;
+	lua_rawset( luaVM, -3 );
+	// Byte
+	lua_pushstring( luaVM, "Byte" );
+	t = xt_pck_create_ud( luaVM, XT_PCK_BYTE );
+	t->sz  = 1;
+	lua_rawset( luaVM, -3 );
 	luaopen_xt_pckc( luaVM );
 	luaopen_xt_pckr( luaVM );
 	return 1;

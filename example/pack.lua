@@ -2,18 +2,18 @@
 xt = require("xt")
 fmt= string.format
 
-b1 = xt.Pack.Bit(1)
-b2 = xt.Pack.Bit(2)
-b3 = xt.Pack.Bit(3)
-b4 = xt.Pack.Bit(4)
-b5 = xt.Pack.Bit(5)
-b6 = xt.Pack.Bit(6)
-b7 = xt.Pack.Bit(7)
-b8 = xt.Pack.Bit(8)
-p  = xt.Pack.IntB(2)
-bt = xt.Pack.Byte()
-nl = xt.Pack.Nibble('l')
-nh = xt.Pack.Nibble('h')
+b1 = xt.Pack.Bit1
+b2 = xt.Pack.Bit2
+b3 = xt.Pack.Bit3
+b4 = xt.Pack.Bit4
+b5 = xt.Pack.Bit5
+b6 = xt.Pack.Bit6
+b7 = xt.Pack.Bit7
+b8 = xt.Pack.Bit8
+p  = xt.Pack.IntB2
+bt = xt.Pack.Byte
+nl = xt.Pack.NibbleL
+nh = xt.Pack.NibbleH
 
 print( p, nl, nh )
 
