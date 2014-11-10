@@ -641,9 +641,9 @@ static int xt_test_case__call (lua_State *luaVM)
 	lua_getfield (luaVM, 2, "_suitename");// Stack: 5
 	lua_getfield (luaVM, 1, "name");      // Stack: 6
 	lua_getfield (luaVM, 1, "line");      // Stack: 7
-	printf ("%2d - %s.%s:%d  ... ",
+	printf ("%2d - %s.%s:%ld  ... ",
 	   n                      , lua_tostring (luaVM, 5),
-	   lua_tostring (luaVM, 6), luaL_checkint (luaVM, 7));
+	   lua_tostring (luaVM, 6), luaL_checkinteger (luaVM, 7));
 	lua_pushinteger (luaVM, n);
 	lua_setfield (luaVM, 1, "ord");
 	fflush (stdout);
