@@ -158,19 +158,19 @@ int xt_pck_write( lua_State *luaVM, struct xt_pck *p, unsigned char *b )
 	{
 		case XT_PCK_INTL:
 		case XT_PCK_INTB:
-			intVal = luaL_checkint( luaVM, -1 );
-			luaL_argcheck( luaVM,  intVal  <  0x01 << (p->sz*8), -1,
+			intVal = luaL_checkinteger( luaVM, -1 );
+			luaL_argcheck( luaVM,  0 == (intVal >> (p->sz*8)) , -1,
 			              "value to pack must be smaller than the maximum value for the packer size");
 			xt_buf_writebytes( (uint64_t) intVal, p->sz, p->t, b );
 			break;
 		case XT_PCK_BYTE:
-			intVal = luaL_checkint( luaVM, -1 );
+			intVal = luaL_checkinteger( luaVM, -1 );
 			luaL_argcheck( luaVM,  0<= intVal && intVal<=255, -1,
 			              "value to pack must be greaer 0 and less than 255");
 			*b = (char) intVal;
 			break;
 		case XT_PCK_NBL:
-			intVal = luaL_checkint( luaVM, -1 );
+			intVal = luaL_checkinteger( luaVM, -1 );
 			luaL_argcheck( luaVM,  intVal  <  0x01 << 0x0F, -1,
 			              "value to pack nibble must be smaller than 16 (0x0F)");
 			*b = (p->oB > 4) ? LO_NIBBLE_SET( *b, (char) intVal ) : HI_NIBBLE_SET( *b, (char) intVal ) ;
@@ -179,8 +179,8 @@ int xt_pck_write( lua_State *luaVM, struct xt_pck *p, unsigned char *b )
 			*b = BIT_SET( *b, p->oB - 1, lua_toboolean( luaVM, -1 ) );
 			break;
 		case XT_PCK_BITS:
-			intVal = luaL_checkint( luaVM, -1 );
-			luaL_argcheck( luaVM,  intVal  <  0x01 << p->lB, -1,
+			intVal = luaL_checkinteger( luaVM, -1 );
+			luaL_argcheck( luaVM,  0 == (intVal >> (p->sz*8)) , -1,
 			              "value to pack must be smaller than the maximum value for the packer size");
 			xt_buf_writebits( (uint64_t) intVal, p->lB, p->oB - 1, b );
 			break;
@@ -293,7 +293,7 @@ static int lxt_pck__tostring( lua_State *luaVM )
 			lua_pushfstring( luaVM, "xt.Pack.Bits{%d/%d}(%d): %p", p->lB, p->oB, p->sz, p );
 			break;
 		case XT_PCK_NBL:
-			lua_pushfstring( luaVM, "xt.Pack.Nibble%d: %p", (p->oB>4)?"L":"H",  p );
+			lua_pushfstring( luaVM, "xt.Pack.Nibble%c: %p", (p->oB>4)?'L':'H',  p );
 			break;
 		case XT_PCK_STR:
 			lua_pushfstring( luaVM, "xt.Pack.String[%d]: %p", p->sz, p );

@@ -3,7 +3,8 @@ xt = require("xt")
 fmt= string.format
 
 rbyte = function( pos,len,endian )
-	local lb,ls = b:readInt( pos, len, endian), s:undumpint( pos, len, endian)
+	local lb = b:read( pos, xt.Pack[fmt('Int%s%d', endian:upper(), len)])
+	local ls = s:undumpint( pos, len, endian)
 	print( pos,len,endian,lb, string.format("%016X", lb), ls, string.format("%016X", ls)  )
 end
 
@@ -21,45 +22,48 @@ rbyte( 9, 6, 'l' )
 print( "WRITING ACCESS by BYTES" )
 b = xt.Buffer(20)
 print( b:toHex() )
-b:writeInt(0x0000112233445566, 15, 4, 'b')
+b:write(15, xt.Pack.IntB4, 0x0000000033445566)
 print( b:toHex() )
-b:writeInt(0x0000112233445566, 11, 3, 'l')
+b:write(11, xt.Pack.IntL3, 0x0000000000445566)
 print( b:toHex() )
-b:writeInt(0x0000998877665544,  3, 6, 'l')
+b:write(3, xt.Pack.IntL6, 0x0000998877665544)
 print( b:toHex() )
 
 
 print( "READING ACCESS by BITS" )
 b = xt.Buffer( string.char( 0x00, 0x00,0x00, 0x0F, 0xF0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 ) )
 print( b:toHex() )
--- pos 4, ofs 0, length 10
-print( 4, 1, 10, b:readBits( 4, 1, 10 ) )
-print( 4, 3, 9, b:readBits( 4, 3, 9 ) )
-print( 4, 8, 8, b:readBits( 4, 6, 8 ) )
+-- pos 4, ofs 1, length 10
+--print( 4, 1, 10, b:readBits( 4, 1, 10 ) )
+--print( 4, 3, 9, b:readBits( 4, 3, 9 ) )
+--print( 4, 8, 8, b:readBits( 4, 6, 8 ) )
+print( 4, 1, 10, b:read( 4, xt.Pack.Bits(10,1)) )
+print( 4, 3, 9,  b:read( 4, xt.Pack.Bits(9, 3)) )
+print( 4, 8, 8,  b:read( 4, xt.Pack.Bits(8, 6)) )
 
 print( "WRITING ACCESS by BITS" )
-b:writeBits( 128, 7, 6, 8 )
+b:write( 7, xt.Pack.Bits(8,6), 128)
 print( b:toHex() )
-b:writeInt( 255, 9, 1 )
+b:write( 9, xt.Pack.Int1, 255)
 print( b:toHex() )
-b:writeBits( 128, 8, 6, 8 )
+b:write( 8, xt.Pack.Bits(8,6), 128)
 print( b:toHex() )
 
 
 print( "READING ACCESS by BITS AGAIN" )
 l = xt.Buffer( string.char( 0x80, 0x40, 0x20, 0x10, 0x08, 0x04, 0x02, 0x01) )
 io.write( 'bits   ')
-for k=1,8 do io.write( fmt("%02X       ", l:readInt( k, 1 ) ) ) end
+for k=1,8 do io.write( fmt("%02X       ", l:read( k, xt.Pack.Byte ) ) ) end
 print()
 for i=1,8 do
 	io.write( i..'      ' )
-	for k=1,8 do io.write( l:readBits( i, k, 1 ) .. '        ' ) end
+	for k=1,8 do io.write( l:read( i, xt.Pack.Bits(1,k)) .. '        ' ) end
 	io.write( '\n' )
 end
 
 for i=1,8 do
 	io.write( i )
-	for k=1,8 do io.write( fmt( '%9s', l:readBit( i, k ) ) ) end
+	for k=1,8 do io.write( fmt( '%9s', l:read( i, xt.Pack[fmt('Bit%d',k)] ) ) ) end
 	io.write( '\n' )
 end
 
