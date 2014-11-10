@@ -641,12 +641,12 @@ static int xt_test__tostring (lua_State *luaVM)
 static int xt_test_case__call (lua_State *luaVM)
 {
 	int n;           ///< execution order number
-	n = luaL_optint (luaVM, 3, 0);
+	n = luaL_optinteger (luaVM, 3, 0);
 	lua_pushcfunction (luaVM, traceback); // Stack: 4
 	lua_getfield (luaVM, 2, "_suitename");// Stack: 5
 	lua_getfield (luaVM, 1, "name");      // Stack: 6
 	lua_getfield (luaVM, 1, "line");      // Stack: 7
-	printf ("%2d - %s.%s:%ld  ... ",
+	printf ("%2d - %s.%s:%lld  ... ",
 	   n                      , lua_tostring (luaVM, 5),
 	   lua_tostring (luaVM, 6), luaL_checkinteger (luaVM, 7));
 	lua_pushinteger (luaVM, n);

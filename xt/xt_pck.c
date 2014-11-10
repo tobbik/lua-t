@@ -256,8 +256,8 @@ int xt_pck_write( lua_State *luaVM, struct xt_pck *p, unsigned char *b )
 static int lxt_pck_Bits( lua_State *luaVM )
 {
 	struct xt_pck  *p;
-	int             sz  = luaL_checkint( luaVM, 1 );  ///< how many bits  to read
-	int             ofs = luaL_checkint( luaVM, 2 );  ///< how many its from starting byte to read
+	int             sz  = luaL_checkinteger( luaVM, 1 );  ///< how many bits  to read
+	int             ofs = luaL_checkinteger( luaVM, 2 );  ///< how many its from starting byte to read
 
 	luaL_argcheck( luaVM,  1<= sz && sz <= 8*8,       1,
 	                 "size must be >=1 and <=8" );
@@ -282,7 +282,7 @@ static int lxt_pck_Bits( lua_State *luaVM )
 static int lxt_pck_String( lua_State *luaVM )
 {
 	struct xt_pck  *p;
-	int             sz = luaL_checkint( luaVM, 1 );   ///< how many chars in this packer
+	int             sz = luaL_checkinteger( luaVM, 1 );   ///< how many chars in this packer
 	luaL_argcheck( luaVM,  1 <= sz , 1,
 		                 "size must be >=1" ); 
 	p = xt_pck_create_ud( luaVM, XT_PCK_STR );

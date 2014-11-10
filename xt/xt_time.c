@@ -130,7 +130,7 @@ int lxt_time_New( lua_State *luaVM )
 
 	tv = xt_time_create_ud (luaVM);
 	if (lua_isnumber(luaVM, 1)) {
-		ms          = luaL_checkint(luaVM, 1);
+		ms          = luaL_checkinteger(luaVM, 1);
 		tv->tv_sec  = ms/1000;
 		tv->tv_usec = (ms % 1000) * 1000;
 	}
@@ -184,7 +184,7 @@ static int lxt_time_set( lua_State *luaVM )
 
 	if (lua_isnumber( luaVM, 2 ))
 	{
-		ms = luaL_checkint( luaVM, 2 );
+		ms = luaL_checkinteger( luaVM, 2 );
 		tv->tv_sec  = ms/1000;
 		tv->tv_usec = (ms % 1000) * 1000;
 	}

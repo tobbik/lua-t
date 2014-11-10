@@ -162,7 +162,7 @@ static int lxt_lp__Call( lua_State *luaVM )
  * --------------------------------------------------------------------------*/
 int lxt_lp_New( lua_State *luaVM )
 {
-	size_t                                   sz = luaL_checkint( luaVM, 1 );
+	size_t                                   sz = luaL_checkinteger( luaVM, 1 );
 	struct xt_lp  __attribute__ ((unused))  *lp = xt_lp_create_ud( luaVM, sz );
 	return 1;
 }

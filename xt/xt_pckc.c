@@ -31,7 +31,7 @@ int lxt_pckc_Array( lua_State *luaVM )
 
 	p = xt_pckc_check_ud( luaVM, -2, 1 );    // allow x.Pack or xt.Pack.Struct
 	ap     = (struct xt_pck *) lua_newuserdata( luaVM, sizeof( struct xt_pck ) );
-	ap->n  = luaL_checkint( luaVM, -2 );       // how many elements in the array
+	ap->n  = luaL_checkinteger( luaVM, -2 );       // how many elements in the array
 	ap->sz = ap->n * sizeof( p->sz );
 	ap->t  = XT_PCK_ARRAY;
 
@@ -258,7 +258,7 @@ static int lxt_pckrc__index( lua_State *luaVM )
 	struct xt_pck  *p;
 	int             pos = (NULL == pr) ? 0 : pr->o;
 
-	if (lua_tonumber( luaVM, -1 ) && luaL_checkint( luaVM, -1 ) > (int) pc->n)
+	if (lua_tonumber( luaVM, -1 ) && luaL_checkinteger( luaVM, -1 ) > (int) pc->n)
 	{
 		// Array/Sequence out of bound: return nil
 		lua_pushnil( luaVM );
@@ -270,7 +270,7 @@ static int lxt_pckrc__index( lua_State *luaVM )
 	if (LUA_TUSERDATA == lua_type( luaVM, -1 ))        // xt.Array
 	{
 		p = xt_pckc_check_ud( luaVM, -1, 0 );
-		pos += (p->sz * luaL_checkint( luaVM, -2 ));
+		pos += (p->sz * luaL_checkinteger( luaVM, -2 ));
 	}
 	else                                              // xt.Struct/Sequence
 	{
@@ -278,7 +278,7 @@ static int lxt_pckrc__index( lua_State *luaVM )
 		if (! lua_tonumber( luaVM, -3 ))               // xt.Struct
 			lua_rawget( luaVM, -2);    // Stack: Struct,key,idx,i
 		lua_rawgeti( luaVM, -2, lua_tointeger( luaVM, -1 ) + pc->n );  // Stack: Seq,key,idx,i,ofs
-		pos += luaL_checkint( luaVM, -1);
+		pos += luaL_checkinteger( luaVM, -1);
 		lua_rawgeti( luaVM, -3, lua_tointeger( luaVM, -2 ) );  // Stack: Seq,key,idx,i,ofs,Pack
 	}
 	p =  xt_pckc_check_ud( luaVM, -1, 1 );  // Stack: Seq,key,idx,i,ofs,Pack,Reader
@@ -577,7 +577,7 @@ static int xt_pckrc_iter( lua_State *luaVM )
 	lua_rawgeti( luaVM, -2 , crs );       // Stack: func,nP,_idx,xC,pack
 	lua_rawgeti( luaVM, -3 , crs+pc->n ); // Stack: func,nP,_idx,xC,pack,pos
 	lua_remove( luaVM, -4 );              // Stack: func,nP,xC,pack,pos
-	xt_pckr_create_ud( luaVM,  xt_pckc_check_ud( luaVM, -2, 1 ), luaL_checkint( luaVM, -1 ) + o );
+	xt_pckr_create_ud( luaVM,  xt_pckc_check_ud( luaVM, -2, 1 ), luaL_checkinteger( luaVM, -1 ) + o );
 	lua_insert( luaVM, -3);
 	lua_pop( luaVM, 2);
 

@@ -34,7 +34,7 @@ struct xt_buf * xt_buf_getbuffer( lua_State *luaVM, int pB, int pP, int *pos )
 {
 	struct xt_buf *buf = xt_buf_check_ud( luaVM, pB, 1 );
 
-	*pos = luaL_checkint( luaVM, pP );   ///< starting byte  b->b[pos]
+	*pos = luaL_checkinteger( luaVM, pP );   ///< starting byte  b->b[pos]
 
 	luaL_argcheck( luaVM,  1 <= *pos && *pos <= (int) buf->len, 2,
 		                 "xt.Buffer position must be >= 1 or <= #buffer" );
@@ -66,7 +66,7 @@ static int lxt_buf_New( lua_State *luaVM )
 
 	if (lua_isnumber( luaVM, 1))
 	{
-		sz  = luaL_checkint( luaVM, 1 );
+		sz  = luaL_checkinteger( luaVM, 1 );
 		buf = xt_buf_create_ud( luaVM, sz );
 	}
 	else if (lua_isstring( luaVM, 1 ))
@@ -197,8 +197,8 @@ static int lxt_buf_readraw (lua_State *luaVM)
 	int            pos;
 	int            sz;
 
-	pos = (lua_isnumber(luaVM, 2)) ? (size_t) luaL_checkint( luaVM, 2 ) : 0;
-	sz  = (lua_isnumber(luaVM, 3)) ? (size_t) luaL_checkint( luaVM, 3 ) : buf->len - pos;
+	pos = (lua_isnumber(luaVM, 2)) ? (size_t) luaL_checkinteger( luaVM, 2 ) : 0;
+	sz  = (lua_isnumber(luaVM, 3)) ? (size_t) luaL_checkinteger( luaVM, 3 ) : buf->len - pos;
 
 	lua_pushlstring(luaVM, (const char*) &(buf->b[ pos ]), sz );
 	return 1;
@@ -218,13 +218,13 @@ static int lxt_buf_readraw (lua_State *luaVM)
 static int lxt_buf_writeraw (lua_State *luaVM)
 {
 	struct xt_buf *buf = xt_buf_check_ud( luaVM, 1, 1 );
-	int            pos = (lua_isnumber(luaVM, 3)) ? luaL_checkint(luaVM, 3) : 0;
+	int            pos = (lua_isnumber(luaVM, 3)) ? luaL_checkinteger(luaVM, 3) : 0;
 	size_t         sz;
 
 	// if a third parameter is given write only x bytes of the input string to the buffer
 	if (lua_isnumber(luaVM, 4))
 	{
-		sz  = luaL_checkint(luaVM, 4);
+		sz  = luaL_checkinteger(luaVM, 4);
 		memcpy  ( (char*) &(buf->b[ pos ]), luaL_checklstring( luaVM, 2, NULL ), sz );
 	}
 	// otherwise write the whole thing

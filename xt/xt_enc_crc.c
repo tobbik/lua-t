@@ -230,7 +230,7 @@ lxt_enc_crc_New( lua_State *luaVM )
 	int                   alg;
 
 	crc = xt_enc_crc_create_ud( luaVM );
-	alg = luaL_checkint( luaVM, 1 );
+	alg = luaL_checkinteger( luaVM, 1 );
 	switch (alg) {
 		case CRC_ALG_8:
 			init_8( crc, POLY_8 );
@@ -308,7 +308,7 @@ static int lxt_enc_crc_calc( lua_State *luaVM )
 	int                 res;
 
 	crc = xt_enc_crc_check_ud( luaVM, 1 );
-	sta = (lua_isnumber( luaVM, 3 )) ? luaL_checkint( luaVM, 3 )     : 0;
+	sta = (lua_isnumber( luaVM, 3 )) ? luaL_checkinteger( luaVM, 3 )     : 0;
 	// if string
 	if (lua_isstring( luaVM, 2 ))
 	{
@@ -326,7 +326,7 @@ static int lxt_enc_crc_calc( lua_State *luaVM )
 		return xt_push_error( luaVM,
 			"ERROR xt.Encode.Crc:calc(msg) takes msg argument" );
 
-	len = (lua_isnumber( luaVM, 4 )) ? (size_t) luaL_checkint( luaVM, 4 )-sta : len - sta;
+	len = (lua_isnumber( luaVM, 4 )) ? (size_t) luaL_checkinteger( luaVM, 4 )-sta : len - sta;
 
 	res = crc->calc( crc, msg, len );
 	lua_pushinteger( luaVM, res );
