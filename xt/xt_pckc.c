@@ -489,9 +489,9 @@ static int lxt_pckr__tostring( lua_State *luaVM )
 	struct xt_pckr *pr  = xt_pckr_check_ud( luaVM, -1, 1 );
 	struct xt_pck  *p   = pr->p;
 
-	lua_pushfstring( luaVM, "xt.Pack.Reader(" );
+	lua_pushfstring( luaVM, "xt.Pack.Reader[%d](", pr->o );
 	xt_pck_format( luaVM, p );
-	lua_pushfstring( luaVM, ")[%d]: %p", pr->o, p );
+	lua_pushfstring( luaVM, "): %p", p );
 	lua_concat( luaVM, 4 );
 
 	return 1;
