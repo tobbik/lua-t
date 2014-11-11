@@ -352,8 +352,8 @@ static int lxt_pckrc__len( lua_State *luaVM )
 static int lxt_pckrc__call( lua_State *luaVM );    // declaration for recursive call
 static int lxt_pckrc__call( lua_State *luaVM )
 {
-	struct xt_pckr *pr = xt_pckr_check_ud( luaVM, -2, 0 );
-	struct xt_pck  *p  = (NULL == pr) ? xt_pckc_check_ud( luaVM, -2, 1 ) : pr->p;
+	struct xt_pckr *pr = xt_pckr_check_ud( luaVM, 1, 0 );
+	struct xt_pck  *p  = (NULL == pr) ? xt_pckc_check_ud( luaVM, 1, 1 ) : pr->p;
 	size_t          o  = (NULL == pr) ? 0 : pr->o;
 
 	struct xt_buf  *buf;
