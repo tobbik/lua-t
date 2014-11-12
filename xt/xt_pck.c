@@ -269,6 +269,7 @@ static int lxt_pck_Bits( lua_State *luaVM )
 	p->sz  = ((sz+ofs-2)/8)+1;
 	p->lB  = sz;
 	p->oB  = ofs;
+	p->iR  = LUA_NOREF;
 	return 1;
 }
 
@@ -287,7 +288,8 @@ static int lxt_pck_String( lua_State *luaVM )
 		                 "size must be >=1" ); 
 	p = xt_pck_create_ud( luaVM, XT_PCK_STR );
 
-	p->sz    = sz;
+	p->sz  = sz;
+	p->iR  = LUA_NOREF;
 	return 1;
 }
 
@@ -388,6 +390,25 @@ static int lxt_pck_size( lua_State *luaVM )
 	struct xt_pckr *pr = xt_pckr_check_ud( luaVM, 1, 0 );
 	struct xt_pck  *pc = (NULL == pr) ? xt_pckc_check_ud( luaVM, -1, 1 ) : pr->p;
 	lua_pushinteger( luaVM, pc->sz );
+	return 1;
+}
+
+
+/**--------------------------------------------------------------------------
+ * DEBUG: Get internal reference table from a Struct/Packer.
+ * \param   luaVM  The lua state.
+ * \lparam  ud     xt.Pack.* instance.
+ * \lreturn table  Reference table of all members.
+ * \return  int    The # of items pushed to the stack.
+ * --------------------------------------------------------------------------*/
+static int lxt_pck_getir( lua_State *luaVM )
+{
+	struct xt_pckr *pr = xt_pckr_check_ud( luaVM, 1, 0 );
+	struct xt_pck  *pc = (NULL == pr) ? xt_pckc_check_ud( luaVM, -1, 1 ) : pr->p;
+	if (LUA_NOREF != pc->iR)
+		lua_rawgeti( luaVM, LUA_REGISTRYINDEX, pc->iR );
+	else
+		lua_pushnil( luaVM );
 	return 1;
 }
 
@@ -503,6 +524,7 @@ static const struct luaL_Reg xt_pck_cf [] = {
 	{"Struct",    lxt_pckc_Struct},
 	{"size",      lxt_pck_size},
 	{"export",    lxt_pck_export},
+	{"get_ref",   lxt_pck_getir},
 	{NULL,    NULL}
 };
 
@@ -556,6 +578,7 @@ LUAMOD_API int luaopen_xt_pck( lua_State *luaVM )
 		lua_pushfstring( luaVM, "IntB%d", i );
 		t     = xt_pck_create_ud( luaVM, XT_PCK_INTB );
 		t->sz = i;
+		t->iR = LUA_NOREF;
 		lua_rawset( luaVM, -3 );
 		// native endian
 		lua_pushfstring( luaVM, "Int%d", i );
@@ -575,6 +598,7 @@ LUAMOD_API int luaopen_xt_pck( lua_State *luaVM )
 		t->sz  = 1;
 		t->lB  = 1;
 		t->oB  = i;
+		t->iR = LUA_NOREF;
 		lua_rawset( luaVM, -3 );
 	}
 	// NibbleL
@@ -582,17 +606,20 @@ LUAMOD_API int luaopen_xt_pck( lua_State *luaVM )
 	t = xt_pck_create_ud( luaVM, XT_PCK_NBL );
 	t->oB  = 1;
 	t->sz  = 1;
+	t->iR = LUA_NOREF;
 	lua_rawset( luaVM, -3 );
 	// NibbleH
 	lua_pushstring( luaVM, "NibbleH" );
 	t = xt_pck_create_ud( luaVM, XT_PCK_NBL );
 	t->oB  = 5;
 	t->sz  = 1;
+	t->iR = LUA_NOREF;
 	lua_rawset( luaVM, -3 );
 	// Byte
 	lua_pushstring( luaVM, "Byte" );
 	t = xt_pck_create_ud( luaVM, XT_PCK_BYTE );
 	t->sz  = 1;
+	t->iR = LUA_NOREF;
 	lua_rawset( luaVM, -3 );
 	luaopen_xt_pckc( luaVM );
 	luaopen_xt_pckr( luaVM );

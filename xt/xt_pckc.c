@@ -29,11 +29,14 @@ int lxt_pckc_Array( lua_State *luaVM )
 	struct xt_pck     *p;      ///< packer
 	struct xt_pck     *ap;     ///< array userdata to be created
 
-	p = xt_pckc_check_ud( luaVM, -2, 1 );    // allow x.Pack or xt.Pack.Struct
+	p = xt_pckc_check_ud( luaVM, -2, 1 );          // allow xt.Pack or xt.Pack.Struct
 	ap     = (struct xt_pck *) lua_newuserdata( luaVM, sizeof( struct xt_pck ) );
 	ap->n  = luaL_checkinteger( luaVM, -2 );       // how many elements in the array
 	ap->sz = ap->n * sizeof( p->sz );
 	ap->t  = XT_PCK_ARRAY;
+
+	lua_pushvalue( luaVM, -3 );
+	ap->iR = luaL_ref( luaVM, LUA_REGISTRYINDEX);  // register packer table
 
 	luaL_getmetatable( luaVM, "xt.Pack.Struct" );
 	lua_setmetatable( luaVM, -2 ) ;
@@ -141,7 +144,7 @@ int lxt_pckc_Struct( lua_State *luaVM )
 		lua_pop( luaVM, 1 );               // pop the nil
 		p = xt_pckc_check_ud( luaVM, -1, 1 );    // allow xt.Pack or xt.Pack.Struct
 		// populate idx table
-		lua_pushinteger( luaVM, cp->sz+1);  // Stack: ...,Seq,idx,name,Pack,ofs
+		lua_pushinteger( luaVM, cp->sz+1)   // Stack: ...,Seq,idx,name,Pack,ofs
 		lua_rawseti( luaVM, -4, i+cp->n );  // Stack: ...,Seq,idx,name,Pack             idx[n+i] = offset
 		lua_pushvalue( luaVM, -1 );         // Stack: ...,Seq,idx,name,Pack,Pack
 		lua_rawseti( luaVM, -4, i );        // Stack: ...,Seq,idx,name,Pack             idx[i] = Pack
@@ -476,6 +479,7 @@ static int lxt_pckc__tostring( lua_State *luaVM )
 		xt_pck_t_lst[ pc->t ], pc->n, pc->sz, pc );
 	return 1;
 }
+
 
 /**--------------------------------------------------------------------------
  * ToString representation of a xt.Pack.Reader.
