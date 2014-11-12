@@ -17,9 +17,9 @@ nh = xt.Pack.NibbleH
 
 print( p, nl, nh )
 
-print( p:pack( 16706 ) )
+print( p:pack( 17519 ), xt.Buffer( p:pack( 17519 ) ):toHex() )
 
-print( p:unpack( 'AB' ) )
+print( p:unpack( 'Do' ) )
 
 print( string.format("%02X", nl:pack( 0xA ):byte(1) ) )
 print( string.format("%02X", nh:pack( 0x6 ):byte(1) ) )
