@@ -144,7 +144,7 @@ int lxt_pckc_Struct( lua_State *luaVM )
 		lua_pop( luaVM, 1 );               // pop the nil
 		p = xt_pckc_check_ud( luaVM, -1, 1 );    // allow xt.Pack or xt.Pack.Struct
 		// populate idx table
-		lua_pushinteger( luaVM, cp->sz);    // Stack: ...,Seq,idx,name,Pack,ofs
+		lua_pushinteger( luaVM, cp->sz+1);  // Stack: ...,Seq,idx,name,Pack,ofs
 		lua_rawseti( luaVM, -4, i+cp->n );  // Stack: ...,Seq,idx,name,Pack             idx[n+i] = offset
 		lua_pushvalue( luaVM, -1 );         // Stack: ...,Seq,idx,name,Pack,Pack
 		lua_rawseti( luaVM, -4, i );        // Stack: ...,Seq,idx,name,Pack             idx[i] = Pack
@@ -259,9 +259,11 @@ static int lxt_pckrc__index( lua_State *luaVM )
 	struct xt_pckr *pr  = xt_pckr_check_ud( luaVM, -2, 0 );
 	struct xt_pck  *pc  = (NULL == pr) ? xt_pckc_check_ud( luaVM, -2, 1 ) : pr->p;
 	struct xt_pck  *p;
-	int             pos = (NULL == pr) ? 0 : pr->o;
+	int             pos = (NULL == pr) ? 0 : pr->o-1;  // recorded offset is 1 based -> don't add up
 
-	if (lua_tonumber( luaVM, -1 ) && luaL_checkinteger( luaVM, -1 ) > (int) pc->n)
+	if (LUA_TNUMBER == lua_type( luaVM, -1 ) &&
+	      ((luaL_checkinteger( luaVM, -1 ) > (int) pc->n) || (luaL_checkinteger( luaVM, -1 ) < 1))
+	   )
 	{
 		// Array/Sequence out of bound: return nil
 		lua_pushnil( luaVM );
@@ -273,9 +275,9 @@ static int lxt_pckrc__index( lua_State *luaVM )
 	if (LUA_TUSERDATA == lua_type( luaVM, -1 ))        // xt.Array
 	{
 		p = xt_pckc_check_ud( luaVM, -1, 0 );
-		pos += (p->sz * luaL_checkinteger( luaVM, -2 ));
+		pos += (p->sz * (luaL_checkinteger( luaVM, -2 )-1)) + 1;
 	}
-	else                                              // xt.Struct/Sequence
+	else                                               // xt.Struct/Sequence
 	{
 		lua_pushvalue( luaVM, -2 );        // Stack: Struct,key,idx,key
 		if (! lua_tonumber( luaVM, -3 ))               // xt.Struct
@@ -356,7 +358,7 @@ static int lxt_pckrc__call( lua_State *luaVM )
 {
 	struct xt_pckr *pr = xt_pckr_check_ud( luaVM, 1, 0 );
 	struct xt_pck  *p  = (NULL == pr) ? xt_pckc_check_ud( luaVM, 1, 1 ) : pr->p;
-	size_t          o  = (NULL == pr) ? 0 : pr->o;
+	size_t          o  = (NULL == pr) ? 0 : pr->o-1;
 
 	struct xt_buf  *buf;
 	unsigned char  *b;
