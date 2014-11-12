@@ -412,6 +412,7 @@ static int lxt_pck_getir( lua_State *luaVM )
 	return 1;
 }
 
+
 /**--------------------------------------------------------------------------
  * __tostring helper that prints the packer type.
  * \param   luaVM      The lua state.
@@ -446,7 +447,7 @@ void xt_pck_format( lua_State *luaVM, struct xt_pck *p )
 			lua_pushfstring( luaVM, "%d", p->sz );
 			break;
 		default:
-			lua_pushfstring( luaVM, "[%d]", p->n );
+			lua_pushfstring( luaVM, "[%d:%d]", p->n, p->sz );
 	}
 }
 
