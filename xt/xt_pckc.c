@@ -73,7 +73,7 @@ int lxt_pckc_Sequence( lua_State *luaVM )
 	{
 		p = xt_pckc_check_ud( luaVM, i, 1 );
 		lua_pushvalue( luaVM, i);          // Stack: ...,Seq,idx,Pack
-		lua_pushinteger( luaVM, cp->sz+1); // Stack: ...,Seq,idx,Pack,ofs
+		lua_pushinteger( luaVM, cp->sz);   // Stack: ...,Seq,idx,Pack,ofs
 		lua_rawseti( luaVM, -3, i+cp->n ); // Stack: ...,Seq,idx,Pack     idx[n+i] = offset
 		lua_rawseti( luaVM, -2, i );       // Stack: ...,Seq,idx,         idx[i]   = Pack
 		lua_pushvalue( luaVM, i);          // Stack: ...,Seq,idx,Pack
@@ -144,7 +144,7 @@ int lxt_pckc_Struct( lua_State *luaVM )
 		lua_pop( luaVM, 1 );               // pop the nil
 		p = xt_pckc_check_ud( luaVM, -1, 1 );    // allow xt.Pack or xt.Pack.Struct
 		// populate idx table
-		lua_pushinteger( luaVM, cp->sz+1)   // Stack: ...,Seq,idx,name,Pack,ofs
+		lua_pushinteger( luaVM, cp->sz);    // Stack: ...,Seq,idx,name,Pack,ofs
 		lua_rawseti( luaVM, -4, i+cp->n );  // Stack: ...,Seq,idx,name,Pack             idx[n+i] = offset
 		lua_pushvalue( luaVM, -1 );         // Stack: ...,Seq,idx,name,Pack,Pack
 		lua_rawseti( luaVM, -4, i );        // Stack: ...,Seq,idx,name,Pack             idx[i] = Pack
@@ -352,7 +352,6 @@ static int lxt_pckrc__len( lua_State *luaVM )
  * \lreturn value     read from Buffer/String according to xt.Pack.Reader.
  * \return  int    # of values left on te stack.
  * -------------------------------------------------------------------------*/
-static int lxt_pckrc__call( lua_State *luaVM );    // declaration for recursive call
 static int lxt_pckrc__call( lua_State *luaVM )
 {
 	struct xt_pckr *pr = xt_pckr_check_ud( luaVM, 1, 0 );
@@ -363,7 +362,7 @@ static int lxt_pckrc__call( lua_State *luaVM )
 	unsigned char  *b;
 	size_t          l;                   /// length of string or buffer overall
 	size_t          n;                   /// iterator for complex types
-	luaL_argcheck( luaVM,  2<=lua_gettop(luaVM) && lua_gettop( luaVM )<=3, 2,
+	luaL_argcheck( luaVM,  2<=lua_gettop( luaVM ) && lua_gettop( luaVM )<=3, 2,
 		"Calling an xt.Pack.Reader takes 2 or 3 arguments!" );
 
 	// are we reading/writing to from xt.Buffer or Lua String
@@ -384,15 +383,15 @@ static int lxt_pckrc__call( lua_State *luaVM )
 		b   =  b + o;
 	}
 
-	if (2 == lua_gettop( luaVM ))     // read from input
+	if (2 == lua_gettop( luaVM ))    // read from input
 	{
 		if (p->t < XT_PCK_ARRAY)      // handle atomic packer, return single value
 		{
 			return xt_pck_read( luaVM, p, (const unsigned char *) b );
 		}
-		if (p->t == XT_PCK_ARRAY)      // handle Array; return table
+		if (p->t == XT_PCK_ARRAY)     // handle Array; return table
 		{
-			lua_createtable( luaVM, 0, p->n );   //Stack: r,buf,idx,res
+			lua_createtable( luaVM, p->n, 0 );      //Stack: r,buf,idx,res
 			for (n=1; n<p->n; n++)
 			{
 				lua_pushcfunction( luaVM, lxt_pckrc__call );  //Stack: r,buf,res,__call
@@ -407,10 +406,10 @@ static int lxt_pckrc__call( lua_State *luaVM )
 			lua_remove( luaVM, -2 );                //Stack: r,buf,res
 			return 1;
 		}
-		if (p->t == XT_PCK_SEQ)            // handle Sequence, return table
+		if (p->t == XT_PCK_SEQ)       // handle Sequence, return table
 		{
 			lua_rawgeti( luaVM, LUA_REGISTRYINDEX, p->iR ); // get index table
-			lua_createtable( luaVM, 0, p->n );   //Stack: r,buf,idx,res
+			lua_createtable( luaVM, 0, p->n );      //Stack: r,buf,idx,res
 			for (n=1; n<p->n; n++)
 			{
 				lua_pushcfunction( luaVM, lxt_pckrc__call );  //Stack: r,buf,idx,res,__call
@@ -425,10 +424,10 @@ static int lxt_pckrc__call( lua_State *luaVM )
 			lua_remove( luaVM, -2 );                //Stack: r,buf,res
 			return 1;
 		}
-		if (p->t == XT_PCK_STRUCT)      // handle Struct, return table
+		if (p->t == XT_PCK_STRUCT)    // handle Struct, return table
 		{
 			lua_rawgeti( luaVM, LUA_REGISTRYINDEX, p->iR ); // get index table
-			lua_createtable( luaVM, 0, p->n );   //Stack: r,buf,idx,res
+			lua_createtable( luaVM, 0, p->n );      //Stack: r,buf,idx,res
 			for (n=1; n<p->n; n++)
 			{
 				lua_pushcfunction( luaVM, lxt_pckrc__call );  //Stack: r,buf,idx,res,__call
