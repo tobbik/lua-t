@@ -76,7 +76,6 @@ int lxt_pckc_Sequence( lua_State *luaVM )
 		lua_pushinteger( luaVM, cp->sz);   // Stack: ...,Seq,idx,Pack,ofs
 		lua_rawseti( luaVM, -3, i+cp->n ); // Stack: ...,Seq,idx,Pack     idx[n+i] = offset
 		lua_rawseti( luaVM, -2, i );       // Stack: ...,Seq,idx,         idx[i]   = Pack
-		lua_pushvalue( luaVM, i);          // Stack: ...,Seq,idx,Pack
 		// handle Bit type packers
 		if (XT_PCK_BIT==p->t || XT_PCK_BITS==p->t || XT_PCK_NBL==p->t)
 		{
@@ -94,7 +93,6 @@ int lxt_pckc_Sequence( lua_State *luaVM )
 				bc = 0;
 			cp->sz += p->sz;
 		}
-		lua_pop( luaVM, 1 );   // pop packer from stack for next round
 	}
 	cp->iR = luaL_ref( luaVM, LUA_REGISTRYINDEX); // register index  table
 
@@ -145,15 +143,13 @@ int lxt_pckc_Struct( lua_State *luaVM )
 		p = xt_pckc_check_ud( luaVM, -1, 1 );    // allow xt.Pack or xt.Pack.Struct
 		// populate idx table
 		lua_pushinteger( luaVM, cp->sz+1);  // Stack: ...,Seq,idx,name,Pack,ofs
-		lua_rawseti( luaVM, -4, i+cp->n );  // Stack: ...,Seq,idx,name,Pack             idx[n+i] = offset
-		lua_pushvalue( luaVM, -1 );         // Stack: ...,Seq,idx,name,Pack,Pack
-		lua_rawseti( luaVM, -4, i );        // Stack: ...,Seq,idx,name,Pack             idx[i] = Pack
-		lua_insert( luaVM, -2);             // Stack: ...,Seq,idx,Pack,name             swap pack/name
-		lua_pushvalue( luaVM, -1 );         // Stack: ...,Seq,idx,Pack,name,name
-		lua_rawseti( luaVM, -4, cp->n*2+i );// Stack: ...,Seq,idx,Pack,name             idx[2n+i] = name
-		lua_pushinteger( luaVM, i);         // Stack: ...,Seq,idx,Pack,name,i
-		lua_rawset( luaVM, -4 );            // Stack: ...,Seq,idx,Pack                  idx[name] = i
-		// Stack: ...,Struct,idx,Pack/Struct
+		lua_rawseti( luaVM, -4, i+cp->n );  // Stack: ...,Seq,idx,name,Pack        idx[n+i] = offset
+		lua_rawseti( luaVM, -3, i );        // Stack: ...,Seq,idx,name             idx[i] = Pack
+		lua_pushvalue( luaVM, -1 );         // Stack: ...,Seq,idx,name,name
+		lua_rawseti( luaVM, -3, cp->n*2+i );// Stack: ...,Seq,idx,name             idx[2n+i] = name
+		lua_pushinteger( luaVM, i);         // Stack: ...,Seq,idx,name,i
+		lua_rawset( luaVM, -3 );            // Stack: ...,Seq,idx                  idx[name] = i
+		// Stack: ...,Struct,idx
 		// handle Bit type packers
 		if (XT_PCK_BIT==p->t || XT_PCK_BITS==p->t || XT_PCK_NBL==p->t)
 		{
@@ -171,7 +167,6 @@ int lxt_pckc_Struct( lua_State *luaVM )
 				bc = 0;
 			cp->sz += p->sz;
 		}
-		lua_pop( luaVM, 1 );   // pop packer from stack for next round
 	}
 	cp->iR = luaL_ref( luaVM, LUA_REGISTRYINDEX); // register index  table
 
