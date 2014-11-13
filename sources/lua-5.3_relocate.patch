@@ -1,7 +1,7 @@
 diff -ru LUA53_org/src/loadlib.c LUA53/src/loadlib.c
 --- LUA53_org/src/loadlib.c	2014-07-29 09:01:00.000000000 -0700
 +++ LUA53/src/loadlib.c	2014-09-29 10:07:55.138880823 -0700
-@@ -680,13 +680,27 @@
+@@ -677,13 +677,27 @@
    if (path == NULL)  /* no environment variable? */
      path = getenv(envname2);  /* try alternative name */
    if (path == NULL || noenv(L))  /* no environment variable? */
@@ -42,7 +42,7 @@ diff -ru LUA53_org/src/lua.c LUA53/src/lua.c
  
  #define lua_c
  
-@@ -567,6 +568,10 @@
+@@ -566,6 +567,10 @@
      lua_pushboolean(L, 1);  /* signal for libraries to ignore env. vars. */
      lua_setfield(L, LUA_REGISTRYINDEX, "LUA_NOENV");
    }
@@ -56,7 +56,7 @@ diff -ru LUA53_org/src/lua.c LUA53/src/lua.c
 diff -ru LUA53_org/src/luaconf.h LUA53/src/luaconf.h
 --- LUA53_org/src/luaconf.h	2014-07-24 12:33:29.000000000 -0700
 +++ LUA53/src/luaconf.h	2014-09-29 10:15:00.715459099 -0700
-@@ -121,7 +121,7 @@
+@@ -144,7 +144,7 @@
  
  #else			/* }{ */
  
