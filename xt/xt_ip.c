@@ -44,7 +44,7 @@ static int lxt_ip_New( lua_State *luaVM )
 {
 	struct sockaddr_in  *ip;
 	ip = xt_ip_create_ud( luaVM );
-	xt_ip_set( luaVM, 2, ip );
+	xt_ip_set( luaVM, 1, ip );
 	return 1;
 }
 
@@ -82,7 +82,7 @@ int xt_ip_set( lua_State *luaVM, int pos, struct sockaddr_in *ip )
 	memset( (char *) &(*ip), 0, sizeof(ip) );
 	ip->sin_family = AF_INET;
 
-	if (lua_isnumber( luaVM, pos+0 ))
+	if (LUA_TNUMBER == lua_type( luaVM, pos+0 ))
 	{
 		ip->sin_addr.s_addr = htonl( INADDR_ANY );
 		port = luaL_checkinteger( luaVM, pos+0 );
@@ -90,7 +90,8 @@ int xt_ip_set( lua_State *luaVM, int pos, struct sockaddr_in *ip )
 		                 "port number out of range" );
 		ip->sin_port   = htons( port );
 	}
-	else if (lua_isstring( luaVM, pos+0 )) {
+	else if (LUA_TSTRING == lua_type( luaVM, pos+0 ))
+	{
 		ips = luaL_checkstring( luaVM, pos+0 );
 #ifdef _WIN32
 		if ( InetPton (AF_INET, ips, &(ip->sin_addr))==0)
