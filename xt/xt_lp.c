@@ -351,7 +351,7 @@ static int lxt_lp_removetimer( lua_State *luaVM )
 		te = te->nxt;
 	}
 
-	if (te->tv == tv)
+	if (NULL!=te && te->tv == tv)
 	{
 		tp->nxt = te->nxt;
 		luaL_unref( luaVM,LUA_REGISTRYINDEX, te->fR );
