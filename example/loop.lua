@@ -6,8 +6,9 @@ n  = 10
 tm = {}
 
 p = function( ... )
-	print( table.unpack( {...} ) )
-	return xt.Time( math.random( 1500, 11500 ) )
+	local t = xt.Time( math.random( 1500, 11500 ) )
+	print( table.unpack( {...} ), 'return   ' .. tostring( (t:get()>2500) and t:get() or 0 ) )
+	return (t:get()>2500) and t or nil
 end
 
 
@@ -31,7 +32,7 @@ function r(s)
 	end
 end
 
-l   = xt.Loop( n )      ---< Loop with n slots for filehandles
+l   = xt.Loop( 3 )      ---< Loop with n slots for filehandles
 for i=1,n do
 	table.insert( tm, xt.Time( math.random( 950, n*1000 ) ) )
 	print( tm[i] )

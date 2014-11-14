@@ -14,6 +14,7 @@
 
 #include "xt.h"
 #include <stdlib.h>               // malloc, free
+#include <string.h>               // memset
 #include "xt_lp.h"
 #include "xt_time.h"
 
@@ -183,6 +184,7 @@ struct xt_lp *xt_lp_create_ud( lua_State *luaVM, size_t sz )
 	lp->mxfd    = 0;
 	lp->tm_head = NULL;
 	lp->fd_set  = (struct xt_lp_fd **) malloc( lp->fd_sz * sizeof( struct xt_lp_fd * ) );
+	memset( lp->fd_set, 0, lp->fd_sz * sizeof( struct xt_lp_fd * ) );
 	xt_lp_create_ud_impl( lp );
 	luaL_getmetatable( luaVM, "xt.Loop" );
 	lua_setmetatable( luaVM, -2 );
