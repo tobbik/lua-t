@@ -29,8 +29,8 @@ enum xt_pck_t {
 };
 
 static const char *const xt_pck_t_lst[] = {
-	"IntB",        ///< X  Byte wide field as Integer -> Big    Endian
-	"IntL",        ///< X  Byte wide field as Integer -> Little Endian
+	"IntB",         ///< X  Byte wide field as Integer -> Big    Endian
+	"IntL",         ///< X  Byte wide field as Integer -> Little Endian
 	"Byte",         ///< X  1 Byte wide field
 	"Nibble",       ///< X  Nibble (4 bits) HI/LO stored in p->oB
 	"Bit",          ///< X  1 Bit   wide field
