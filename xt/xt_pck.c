@@ -208,7 +208,7 @@ int xt_pck_write( lua_State *luaVM, struct xt_pck *p, unsigned char *b )
 		case XT_PCK_BYTE:
 			intVal = luaL_checkinteger( luaVM, -1 );
 			luaL_argcheck( luaVM,  0<= intVal && intVal<=255, -1,
-			              "value to pack must be greaer 0 and less than 255");
+			              "value to pack must be greater 0 and less than 255");
 			*b = (char) intVal;
 			break;
 		case XT_PCK_NBL:
