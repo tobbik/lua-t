@@ -59,7 +59,7 @@ void xt_lp_executehandle     ( lua_State *luaVM, struct xt_lp *lp, int fd );
 void xt_lp_create_ud_impl    ( struct xt_lp *lp );
 void xt_lp_addhandle_impl    ( struct xt_lp *lp, int fd, int read );
 void xt_lp_addtimer_impl     ( struct xt_lp *lp, struct timeval *tv );
-void xt_lp_poll_impl         ( lua_State *luaVM, struct xt_lp *lp );
+int  xt_lp_poll_impl         ( lua_State *luaVM, struct xt_lp *lp );
 
 
 

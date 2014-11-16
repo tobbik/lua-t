@@ -363,6 +363,42 @@ static int lxt_lp_removetimer( lua_State *luaVM )
 }
 
 
+/**--------------------------------------------------------------------------
+ * Garbage Collector. Free events in allocated spots.
+ * \param  luaVM   lua Virtual Machine.
+ * \lparam table   xt.Loop.
+ * \return integer number of values left on te stack.
+ * -------------------------------------------------------------------------*/
+static int lxt_lp__gc( lua_State *luaVM )
+{
+	struct xt_lp    *lp = xt_lp_check_ud( luaVM, 1 );
+	//struct xt_lp_fd *f;
+	struct xt_lp_tm *tf, *tr = lp->tm_head;
+	size_t           i;       ///< the iterator for all fields
+
+	while (NULL != tr)
+	{
+		tf = tr;
+		//printf( "Start  %p   %d   %d    %p\n", tf, tf->fR, tf->tR, tf->nxt );
+		luaL_unref( luaVM, LUA_REGISTRYINDEX, tf->fR ); // remove func/arg table from registry
+		luaL_unref( luaVM, LUA_REGISTRYINDEX, tf->tR ); // remove timeval ref from registry
+		tr = tr->nxt;
+		//printf( "Free   %p   %d   %d    %p\n", tf, tf->fR, tf->tR, tf->nxt );
+		free( tf );
+	}
+	//printf("---------");
+	for (i=0; i < lp->fd_sz; i++)
+	{
+		if (NULL != lp->fd_set[ i ])
+		{
+			luaL_unref( luaVM, LUA_REGISTRYINDEX, lp->fd_set[ i ]->fR );
+			luaL_unref( luaVM, LUA_REGISTRYINDEX, lp->fd_set[ i ]->hR );
+			free( lp->fd_set[ i ] );
+		}
+	}
+	return 0;
+}
+
 
 /**--------------------------------------------------------------------------
  * Set up a select call for all events in the xt.Loop
@@ -381,7 +417,8 @@ static int lxt_lp_run( lua_State *luaVM )
 
 	while (lp->run)
 	{
-		xt_lp_poll_impl( luaVM, lp );
+		if (xt_lp_poll_impl( luaVM, lp ) < 0)
+			return 0;
 		// if there are no events left in the loop stop processing
 		lp->run =  (NULL==lp->tm_head && lp->mxfd<1) ? 0 : lp->run;
 	}
@@ -443,40 +480,6 @@ static int lxt_lp_showloop( lua_State *luaVM )
 			continue;
 		printf("\t%d\t%s\n", i,
 			(XT_LP_READ == lp->fd_set[i]->t) ? "READER" : "WRITER");
-	}
-	return 0;
-}
-
-
-/**--------------------------------------------------------------------------
- * Garbage Collector. Free events in allocated spots.
- * \param  luaVM   lua Virtual Machine.
- * \lparam table   xt.Loop.
- * \return integer number of values left on te stack.
- * -------------------------------------------------------------------------*/
-static int lxt_lp__gc( lua_State *luaVM )
-{
-	struct xt_lp    *lp = xt_lp_check_ud( luaVM, 1 );
-	//struct xt_lp_fd *f;
-	struct xt_lp_tm *t;
-	size_t           i;       ///< the iterator for all fields
-
-	while (NULL != lp->tm_head)
-	{
-		t = lp->tm_head;
-		luaL_unref( luaVM, LUA_REGISTRYINDEX, t->fR ); // remove func/arg table from registry
-		luaL_unref( luaVM, LUA_REGISTRYINDEX, t->tR ); // remove timeval ref from registry
-		lp->tm_head = t->nxt;
-		free( t );
-	}
-	for (i=0; i < lp->fd_sz; i++)
-	{
-		if (NULL != lp->fd_set[ i ])
-		{
-			luaL_unref( luaVM, LUA_REGISTRYINDEX, lp->fd_set[ i ]->fR );
-			luaL_unref( luaVM, LUA_REGISTRYINDEX, lp->fd_set[ i ]->hR );
-			free( lp->fd_set[ i ] );
-		}
 	}
 	return 0;
 }

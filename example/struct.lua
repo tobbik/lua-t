@@ -1,3 +1,4 @@
+#!../out/bin/lua
 xt=require'xt'
 
 

@@ -77,8 +77,9 @@ void xt_lp_addhandle_impl( struct xt_lp *lp, int fd, int read )
  * Set up a select call for all events in the xt.Loop
  * \param   luaVM          The lua state.
  * \param   struct xt_lp   The loop struct.
+ * \return  number returns from select.
  * --------------------------------------------------------------------------*/
-void xt_lp_poll_impl( lua_State *luaVM, struct xt_lp *lp )
+int xt_lp_poll_impl( lua_State *luaVM, struct xt_lp *lp )
 {
 	int              i,r;
 	struct timeval  *tv;
@@ -91,6 +92,9 @@ void xt_lp_poll_impl( lua_State *luaVM, struct xt_lp *lp )
 	memcpy( &lp->wfds_w, &lp->wfds, sizeof( fd_set ) );
 
 	r = select( lp->mxfd+1, &lp->rfds_w, &lp->wfds_w, NULL, tv );
+	//printf("RESULT: %d\n",r);
+	if (r<0)
+		return r;
 
 	if (0==r) // deal with timer
 	{
@@ -110,5 +114,6 @@ void xt_lp_poll_impl( lua_State *luaVM, struct xt_lp *lp )
 			}
 		}
 	}
+	return r;
 }
 
