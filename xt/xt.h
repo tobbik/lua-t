@@ -39,8 +39,9 @@
 #define XTSWAP(type,a,b) do{type SWAP_tmp= b; b= a; a= SWAP_tmp;}while(0)
 
 
-void stackDump       (lua_State *luaVM);
-int  xt_push_error   (lua_State *luaVM, const char *fmt, ...);
+void stackDump       ( lua_State *luaVM );
+void xt_stackPrint   ( lua_State *luaVM, int first, int last );
+int  xt_push_error   ( lua_State *luaVM, const char *fmt, ... );
 
 
 // global helper functions

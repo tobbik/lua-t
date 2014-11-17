@@ -464,13 +464,18 @@ static int lxt_lp_showloop( lua_State *luaVM )
 {
 	struct xt_lp    *lp = xt_lp_check_ud( luaVM, 1 );
 	struct xt_lp_tm *tr = lp->tm_head;
-	int              i=0;
+	int              i  = 0;
+	int              n  = lua_gettop( luaVM );
 	printf( "LOOP %p TIMER LIST:\n", lp );
 	while (NULL != tr)
 	{
-		printf("\t%d\t{%2ld:%6ld}\t%p\n", ++i,
+		printf("\t%d\t{%2ld:%6ld}\t%p   ", ++i,
 			tr->tv->tv_sec,  tr->tv->tv_usec,
 			tr->tv);
+		xt_lp_getfunc( luaVM, tr->fR );
+		xt_stackPrint( luaVM, n+1, lua_gettop( luaVM ) );
+		lua_pop( luaVM, lua_gettop( luaVM ) - n );
+		printf("\n");
 		tr = tr->nxt;
 	}
 	printf( "LOOP %p HANDLE LIST:\n", lp );
@@ -478,8 +483,12 @@ static int lxt_lp_showloop( lua_State *luaVM )
 	{
 		if (NULL==lp->fd_set[ i ])
 			continue;
-		printf("\t%d\t%s\n", i,
+		printf("\t%d\t%s   ", i,
 			(XT_LP_READ == lp->fd_set[i]->t) ? "READER" : "WRITER");
+		xt_lp_getfunc( luaVM, lp->fd_set[i]->fR );
+		xt_stackPrint( luaVM, n+1, lua_gettop( luaVM ) );
+		lua_pop( luaVM, lua_gettop( luaVM ) - n );
+		printf("\n");
 	}
 	return 0;
 }

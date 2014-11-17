@@ -16,36 +16,30 @@
 #include "xt_sck.h"
 
 
-
-/**
- * \brief  Prints a list of items on the lua stack.
- * \param  luaVM The Lua state.
- */
-void stackDump (lua_State *luaVM) {
-	int i;
-	int top = lua_gettop(luaVM);
-	printf("STACK[%d]:   ", top);
-	for (i = 1; i <= top; i++) {     /* repeat for each level */
+void xt_stackPrint( lua_State *luaVM, int i, int last )
+{
+	for ( ;i <= last; i++)
+	{     /* repeat for each level */
 		int t = lua_type(luaVM, i);
-		switch (t) {
-
+		switch (t)
+		{
 			case LUA_TSTRING:    /* strings */
-				printf("`%s'", lua_tostring(luaVM, i));
+				printf( "`%s`", lua_tostring( luaVM, i ) );
 				break;
 
 			case LUA_TBOOLEAN:   /* booleans */
-				printf(lua_toboolean(luaVM, i) ? "true" : "false");
+				printf( lua_toboolean( luaVM, i ) ? "true" : "false" );
 				break;
 
 			case LUA_TNUMBER:    /* numbers */
-				printf("%g", lua_tonumber(luaVM, i));
+				printf( "%g", lua_tonumber( luaVM, i ) );
 				break;
 
 			case LUA_TUSERDATA:    // userdata
-				if (luaL_getmetafield(luaVM, i, "__name"))  // does it have a metatable?
+				if (luaL_getmetafield( luaVM, i, "__name" ))  // does it have a metatable?
 				{
 					printf( "u.%s", lua_tostring( luaVM, -1 ) );
-					lua_pop( luaVM, 1);
+					lua_pop( luaVM, 1 );
 				}
 				else
 					printf( "ud" );
@@ -62,11 +56,22 @@ void stackDump (lua_State *luaVM) {
 				break;
 
 			default:	            /* other values */
-				printf("%s", lua_typename(luaVM, t));
+				printf( "%s", lua_typename( luaVM, t ) );
 				break;
 		}
-		printf("   ");  /* put a separator */
+		printf( "   " );  /* put a separator */
 	}
+}
+
+/**
+ * \brief  Prints a list of items on the lua stack.
+ * \param  luaVM The Lua state.
+ */
+void xt_stackDump ( lua_State *luaVM )
+{
+	int top = lua_gettop(luaVM);
+	printf("STACK[%d]:   ", top);
+	xt_stackPrint( luaVM, 1, top );
 	printf( "\n" );  /* end the listing */
 }
 
