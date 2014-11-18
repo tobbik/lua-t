@@ -114,7 +114,11 @@ void xt_lp_executetimer( lua_State *luaVM, struct xt_lp *lp, struct timeval *rt 
 	tv = (struct timeval *) luaL_testudata( luaVM, -1, "xt.Time" );
 	// reorganize linked timer list
 	if (NULL == tv)
+	{
+		luaL_unref( luaVM,LUA_REGISTRYINDEX, te->fR );
+		luaL_unref( luaVM,LUA_REGISTRYINDEX, te->tR );
 		free (te);
+	}
 	else
 	{
 		*te->tv = *tv;
