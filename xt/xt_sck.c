@@ -255,14 +255,12 @@ static int lxt_sck_accept( lua_State *luaVM )
  *-------------------------------------------------------------------------*/
 static int lxt_sck_close( lua_State *luaVM )
 {
-	struct xt_sck  *sck;
+	struct xt_sck *sck = xt_sck_check_ud( luaVM, 1 );
 
-	sck = xt_sck_check_ud (luaVM, 1);
+	if (-1 == close( sck->fd ))
+		return xt_push_error( luaVM, "ERROR closing socket" );
 
-	if( close(sck->fd)  == -1)
-		return( xt_push_error(luaVM, "ERROR closing socket") );
-
-	return( 0 );
+	return 0;
 }
 
 
@@ -481,6 +479,7 @@ static int lxt_sck__tostring( lua_State *luaVM )
 	return 1;
 }
 
+
 /** -------------------------------------------------------------------------
  * Return the FD int representation of the socket
  * \param   luaVM  The lua state.
@@ -559,6 +558,8 @@ int luaopen_xt_sck( lua_State *luaVM )
 	lua_setfield( luaVM, -2, "__index" );
 	lua_pushcfunction( luaVM, lxt_sck__tostring );
 	lua_setfield( luaVM, -2, "__tostring");
+	lua_pushcfunction( luaVM, lxt_sck_close );
+	lua_setfield( luaVM, -2, "__gc");
 	lua_pop( luaVM, 1 );        // remove metatable from stack
 
 	// Push the class onto the stack
