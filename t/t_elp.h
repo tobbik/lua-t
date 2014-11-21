@@ -2,7 +2,7 @@
 */
 /**
  * \file      t_elp.h
- * \brief     OOP wrapper for an asyncronous eventloop (t.Loop)
+ * \brief     OOP wrapper for an asyncronous eventloop (T.Loop)
  *            data types and global functions
  * \author    tkieslich
  * \copyright See Copyright notice at the end of t.h
@@ -20,13 +20,13 @@ struct t_elp_fd {
 	enum t_elp_t       t;
 	int                fd;    ///< descriptor
 	int                fR;    ///< function reference in LUA_REGISTRYINDEX
-	int                hR;    ///< handle   reference in LUA_REGISTRYINDEX (t.Socket or Lua file)
+	int                hR;    ///< handle   reference in LUA_REGISTRYINDEX (T.Socket or Lua file)
 };
 
 
 struct t_elp_tm {
 	int                fR;    ///< function reference in LUA_REGISTRYINDEX
-	int                tR;    ///< t.Time  reference in LUA_REGISTRYINDEX
+	int                tR;    ///< T.Time  reference in LUA_REGISTRYINDEX
 	struct timeval    *tv;    ///< time to elapse until fire (timval to work with)
 	struct t_elp_tm   *nxt;   ///< next pointer for linked list
 };

@@ -4,7 +4,7 @@
  * \file      t_pckc.c
  * \brief     create a packer Struct/Array
  *            Combinators for packers to create structures and arrays. This is
- *            interleved with t.Pack.Reader functionality (t_packr) becuase a
+ *            interleved with T.Pack.Reader functionality (t_packr) becuase a
  *            lot of logic can be shared
  * \author    tkieslich
  * \copyright See Copyright notice at the end of t.h
@@ -17,11 +17,11 @@
 
 
 /**--------------------------------------------------------------------------
- * Create a  t.Pack.Array Object and put it onto the stack.
+ * Create a  T.Pack.Array Object and put it onto the stack.
  * \param   luaVM  The lua state.
- * \lparam  type identifier  t.Pack, t.Pack.Struct, t.Pack.Array .
+ * \lparam  type identifier  T.Pack, T.Pack.Struct, T.Pack.Array .
  * \lparam  len              Number of elements in the array.
- * \lreturn userdata of t.Pack.Struct.
+ * \lreturn userdata of T.Pack.Struct.
  * \return  # of results  passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
 int
@@ -30,7 +30,7 @@ lt_pckc_Array( lua_State *luaVM )
 	struct t_pck     *p;      ///< packer
 	struct t_pck     *ap;     ///< array userdata to be created
 
-	p = t_pckc_check_ud( luaVM, -2, 1 );          // allow t.Pack or t.Pack.Struct
+	p = t_pckc_check_ud( luaVM, -2, 1 );          // allow T.Pack or T.Pack.Struct
 	ap     = (struct t_pck *) lua_newuserdata( luaVM, sizeof( struct t_pck ) );
 	ap->n  = luaL_checkinteger( luaVM, -2 );       // how many elements in the array
 	ap->sz = ap->n * sizeof( p->sz );
@@ -39,7 +39,7 @@ lt_pckc_Array( lua_State *luaVM )
 	lua_pushvalue( luaVM, -3 );
 	ap->iR = luaL_ref( luaVM, LUA_REGISTRYINDEX);  // register packer table
 
-	luaL_getmetatable( luaVM, "t.Pack.Struct" );
+	luaL_getmetatable( luaVM, "T.Pack.Struct" );
 	lua_setmetatable( luaVM, -2 ) ;
 
 	return 1;
@@ -47,10 +47,10 @@ lt_pckc_Array( lua_State *luaVM )
 
 
 /**--------------------------------------------------------------------------
- * Create a  t.Pack.Sequence Object and put it onto the stack.
+ * Create a  T.Pack.Sequence Object and put it onto the stack.
  * \param   luaVM  The lua state.
- * \lparam  ... multiple of type  t.Pack.
- * \lreturn userdata of t.Pack.Sequence.
+ * \lparam  ... multiple of type  T.Pack.
+ * \lreturn userdata of T.Pack.Sequence.
  * \return  # of results  passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
 int
@@ -98,7 +98,7 @@ lt_pckc_Sequence( lua_State *luaVM )
 	}
 	cp->iR = luaL_ref( luaVM, LUA_REGISTRYINDEX); // register index  table
 
-	luaL_getmetatable( luaVM, "t.Pack.Struct" ); // Stack: ...,t.Pack.Struct
+	luaL_getmetatable( luaVM, "T.Pack.Struct" ); // Stack: ...,T.Pack.Struct
 	lua_setmetatable( luaVM, -2 ) ;
 
 	return 1;
@@ -106,10 +106,10 @@ lt_pckc_Sequence( lua_State *luaVM )
 
 
 /**--------------------------------------------------------------------------
- * Create a  t.Pack.Struct Object and put it onto the stack.
+ * Create a  T.Pack.Struct Object and put it onto the stack.
  * \param   luaVM  The lua state.
- * \lparam  ... multiple of type  table { name = t.Pack}.
- * \lreturn userdata of t.Pack.Struct.
+ * \lparam  ... multiple of type  table { name = T.Pack}.
+ * \lreturn userdata of T.Pack.Struct.
  * \return  # of results  passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
 int
@@ -132,7 +132,7 @@ lt_pckc_Struct( lua_State *luaVM )
 	for (i=1; i<=cp->n; i++)
 	{
 		luaL_argcheck( luaVM, lua_istable( luaVM, i ), i,
-			"Arguments must be tables with single key/t.Pack pair" );
+			"Arguments must be tables with single key/T.Pack pair" );
 		// Stack gymnastic:
 		lua_pushnil( luaVM );
 		if (!lua_next( luaVM, i ))         // Stack: ...,Struct,idx,name,Pack
@@ -141,9 +141,9 @@ lt_pckc_Struct( lua_State *luaVM )
 		lua_pushvalue( luaVM, -2 );        // Stack: ...,Struct,idx,name,Pack,name
 		lua_rawget( luaVM, -4 );
 		if (! lua_isnoneornil( luaVM, -1 ))
-			return t_push_error( luaVM, "All elements in t.Pack.Struct must have unique key.");
+			return t_push_error( luaVM, "All elements in T.Pack.Struct must have unique key.");
 		lua_pop( luaVM, 1 );               // pop the nil
-		p = t_pckc_check_ud( luaVM, -1, 1 );    // allow t.Pack or t.Pack.Struct
+		p = t_pckc_check_ud( luaVM, -1, 1 );    // allow T.Pack or T.Pack.Struct
 		// populate idx table
 		lua_pushinteger( luaVM, cp->sz+1);  // Stack: ...,Seq,idx,name,Pack,ofs
 		lua_rawseti( luaVM, -4, i+cp->n );  // Stack: ...,Seq,idx,name,Pack        idx[n+i] = offset
@@ -173,7 +173,7 @@ lt_pckc_Struct( lua_State *luaVM )
 	}
 	cp->iR = luaL_ref( luaVM, LUA_REGISTRYINDEX); // register index  table
 
-	luaL_getmetatable( luaVM, "t.Pack.Struct" ); // Stack: ...,t.Pack.Struct
+	luaL_getmetatable( luaVM, "T.Pack.Struct" ); // Stack: ...,T.Pack.Struct
 	lua_setmetatable( luaVM, -2 ) ;
 
 	return 1;
@@ -181,24 +181,24 @@ lt_pckc_Struct( lua_State *luaVM )
 
 
 /**--------------------------------------------------------------------------
- * \brief   check a value on the stack for being an t.Pack OR * t.Pack.Struct/Array
+ * \brief   check a value on the stack for being an T.Pack OR * T.Pack.Struct/Array
  * \param   luaVM    The lua state.
  * \param   int      position on the stack.
  * \param   int      check -> treats as check -> erros if fail
- * \lparam  userdata t.Pack.Struct on the stack.
+ * \lparam  userdata T.Pack.Struct on the stack.
  * \return  t_pck_s pointer.
  * --------------------------------------------------------------------------*/
 struct t_pck
 *t_pckc_check_ud( lua_State *luaVM, int pos, int check )
 {
-	void *ud = luaL_testudata( luaVM, pos, "t.Pack.Struct" );
+	void *ud = luaL_testudata( luaVM, pos, "T.Pack.Struct" );
 	if (NULL != ud)
 		return (struct t_pck *) ud;
-	ud = luaL_testudata( luaVM, pos, "t.Pack" );
+	ud = luaL_testudata( luaVM, pos, "T.Pack" );
 	if (NULL != ud)
 		return (struct t_pck *) ud;
 	if (check)
-		luaL_argcheck( luaVM, ud != NULL, pos, "`t.Pack.Struct` or `t.Pack` expected" );
+		luaL_argcheck( luaVM, ud != NULL, pos, "`T.Pack.Struct` or `T.Pack` expected" );
 	return NULL;
 }
 
@@ -219,26 +219,26 @@ struct t_pckr
 
 	pr->p  = p;
 	pr->o  = o;
-	luaL_getmetatable( luaVM, "t.Pack.Reader" );
+	luaL_getmetatable( luaVM, "T.Pack.Reader" );
 	lua_setmetatable( luaVM, -2 );
 	return pr;
 }
 
 
 /**--------------------------------------------------------------------------
- * \brief   check a value on the stack for being an t.Pack.Result
+ * \brief   check a value on the stack for being an T.Pack.Result
  * \param   luaVM    The lua state.
  * \param   int      position on the stack.
  * \param   int      check -> treats as check -> erros if fail
- * \lparam  userdata t.Pack.Result on the stack.
+ * \lparam  userdata T.Pack.Result on the stack.
  * \return  t_pck_s pointer.
  * --------------------------------------------------------------------------*/
 struct t_pckr
 *t_pckr_check_ud( lua_State *luaVM, int pos, int check )
 {
-	void *ud = luaL_testudata( luaVM, pos, "t.Pack.Reader" );
+	void *ud = luaL_testudata( luaVM, pos, "T.Pack.Reader" );
 	if (check)
-		luaL_argcheck( luaVM, ud != NULL, pos, "`t.Pack.Reader` expected" );
+		luaL_argcheck( luaVM, ud != NULL, pos, "`T.Pack.Reader` expected" );
 	return (NULL==ud) ? NULL : ((struct t_pckr *) ud);
 }
 
@@ -247,10 +247,10 @@ struct t_pckr
  * Read a Struct packer value.
  *          This can not simply return a packer/Struct type since it now has
  *          meta information about the position it is requested from.  For this
- *          the is a new datatype t.Pack.Result which carries type and position
+ *          the is a new datatype T.Pack.Result which carries type and position
  *          information
  * \param   luaVM    The lua state.
- * \lparam  userdata t.Pack.Struct instance.
+ * \lparam  userdata T.Pack.Struct instance.
  * \lparam  key      string/integer.
  * \lreturn userdata Pack or Struct instance.
  * \return  The # of items pushed to the stack.
@@ -274,15 +274,15 @@ lt_pckrc__index( lua_State *luaVM )
 	// get idx table (struct) or packer type (array)
 	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, pc->iR );
 	// Stack: Struct,idx/name,idx/Packer
-	if (LUA_TUSERDATA == lua_type( luaVM, -1 ))        // t.Array
+	if (LUA_TUSERDATA == lua_type( luaVM, -1 ))        // T.Array
 	{
 		p = t_pckc_check_ud( luaVM, -1, 0 );
 		pos += (p->sz * (luaL_checkinteger( luaVM, -2 )-1)) + 1;
 	}
-	else                                               // t.Struct/Sequence
+	else                                               // T.Struct/Sequence
 	{
 		lua_pushvalue( luaVM, -2 );        // Stack: Struct,key,idx,key
-		if (! lua_tonumber( luaVM, -3 ))               // t.Struct
+		if (! lua_tonumber( luaVM, -3 ))               // T.Struct
 			lua_rawget( luaVM, -2);    // Stack: Struct,key,idx,i
 		lua_rawgeti( luaVM, -2, lua_tointeger( luaVM, -1 ) + pc->n );  // Stack: Seq,key,idx,i,ofs
 		pos += luaL_checkinteger( luaVM, -1);
@@ -297,7 +297,7 @@ lt_pckrc__index( lua_State *luaVM )
 
 
 /**--------------------------------------------------------------------------
- * update a packer value in an t.Pack.Struct.
+ * update a packer value in an T.Pack.Struct.
  * \param   luaVM    The lua state.
  * \lparam  Combinator instance
  * \lparam  key   string/integer
@@ -318,7 +318,7 @@ lt_pckrc__newindex( lua_State *luaVM )
 /**--------------------------------------------------------------------------
  * __gc Garbage Collector. Releases references from Lua Registry.
  * \param  luaVM lua Virtual Machine.
- * \lparam ud    t.Pack.Struct.
+ * \lparam ud    T.Pack.Struct.
  * \return int   # of values left on te stack.
  * -------------------------------------------------------------------------*/
 static int
@@ -333,8 +333,8 @@ lt_pckc__gc( lua_State *luaVM )
 /**--------------------------------------------------------------------------
  * __len (#) representation of a Struct/Reader instance.
  * \param   luaVM  lua Virtual Machine.
- * \lparam  ud     t.Pack.Struct/Reader instance.
- * \lreturn int    # of elements in t.Pack.Struct/Reader instance.
+ * \lparam  ud     T.Pack.Struct/Reader instance.
+ * \lreturn int    # of elements in T.Pack.Struct/Reader instance.
  * \return  int    # of values left on te stack.
  * -------------------------------------------------------------------------*/
 static int
@@ -349,14 +349,14 @@ lt_pckrc__len( lua_State *luaVM )
 
 
 /**--------------------------------------------------------------------------
- * __call (#) for a an t.Pack.Reader/Struct instance.
- *          This is used to either read from or write to a string or t.Buffer.
+ * __call (#) for a an T.Pack.Reader/Struct instance.
+ *          This is used to either read from or write to a string or T.Buffer.
  *          one argument means read, two arguments mean write.
  * \param   luaVM     lua Virtual Machine.
- * \lparam  ud        t.Pack.Reader instance.
- * \lparam  ud,string t.Buffer or Lua string.
- * \lparam  t.Buffer or Lua string.
- * \lreturn value     read from Buffer/String according to t.Pack.Reader.
+ * \lparam  ud        T.Pack.Reader instance.
+ * \lparam  ud,string T.Buffer or Lua string.
+ * \lparam  T.Buffer or Lua string.
+ * \lreturn value     read from Buffer/String according to T.Pack.Reader.
  * \return  int    # of values left on te stack.
  * -------------------------------------------------------------------------*/
 static int
@@ -371,10 +371,10 @@ lt_pckrc__call( lua_State *luaVM )
 	size_t         l;                   /// length of string or buffer overall
 	size_t         n;                   /// iterator for complex types
 	luaL_argcheck( luaVM,  2<=lua_gettop( luaVM ) && lua_gettop( luaVM )<=3, 2,
-		"Calling an t.Pack.Reader takes 2 or 3 arguments!" );
+		"Calling an T.Pack.Reader takes 2 or 3 arguments!" );
 
-	// are we reading/writing to from t.Buffer or Lua String
-	if (lua_isuserdata( luaVM, 2 ))      // t.Buffer
+	// are we reading/writing to from T.Buffer or Lua String
+	if (lua_isuserdata( luaVM, 2 ))      // T.Buffer
 	{
 		buf = t_buf_check_ud ( luaVM, 2, 1 );
 		luaL_argcheck( luaVM,  buf->len >= o+p->sz, 2,
@@ -470,7 +470,7 @@ lt_pckrc__call( lua_State *luaVM )
 
 
 /**--------------------------------------------------------------------------
- * __tostring() representation of a t.Pack.Struct.
+ * __tostring() representation of a T.Pack.Struct.
  * \param   luaVM      The lua state.
  * \lparam  t_pck_s   user_data.
  * \lreturn string     formatted string representing Struct.
@@ -483,14 +483,14 @@ lt_pckc__tostring( lua_State *luaVM )
 
 	if (pc->t<T_PCK_ARRAY || pc->t > T_PCK_STRUCT)
 		t_push_error( luaVM, "Can't read value from unknown packer type" );
-	lua_pushfstring( luaVM, "t.Pack.%s[%d]{%d}: %p",
+	lua_pushfstring( luaVM, "T.Pack.%s[%d]{%d}: %p",
 		t_pck_t_lst[ pc->t ], pc->n, pc->sz, pc );
 	return 1;
 }
 
 
 /**--------------------------------------------------------------------------
- * ToString representation of a t.Pack.Reader.
+ * ToString representation of a T.Pack.Reader.
  * \param   luaVM     The lua state.
  * \lparam  t_pck_s   user_data.
  * \lreturn string    formatted string representing Struct.
@@ -502,7 +502,7 @@ lt_pckr__tostring( lua_State *luaVM )
 	struct t_pckr *pr  = t_pckr_check_ud( luaVM, -1, 1 );
 	struct t_pck  *p   = pr->p;
 
-	lua_pushfstring( luaVM, "t.Pack.Reader[%d](", pr->o );
+	lua_pushfstring( luaVM, "T.Pack.Reader[%d](", pr->o );
 	t_pck_format( luaVM, p );
 	lua_pushfstring( luaVM, "): %p", p );
 	lua_concat( luaVM, 4 );
@@ -512,7 +512,7 @@ lt_pckr__tostring( lua_State *luaVM )
 
 
 /**--------------------------------------------------------------------------
- * the actual iterate(next) over the t.Pack.Struct.
+ * the actual iterate(next) over the T.Pack.Struct.
  * It will return key,value pairs in proper order as defined in the constructor.
  * \param   luaVM lua Virtual Machine.
  * \lparam  cfunction.
@@ -557,9 +557,9 @@ t_pckrc_iter( lua_State *luaVM )
 
 
 /**--------------------------------------------------------------------------
- * Pairs method to iterate over the t.Pack.Struct.
+ * Pairs method to iterate over the T.Pack.Struct.
  * \param   luaVM lua Virtual Machine.
- * \lparam  iterator t.Pack.Struct.
+ * \lparam  iterator T.Pack.Struct.
  * \lreturn pos    position in t_buf.
  * \return integer number of values left on te stack.
  *  -------------------------------------------------------------------------*/
@@ -579,7 +579,7 @@ lt_pckrc__pairs( lua_State *luaVM )
 
 
 /**--------------------------------------------------------------------------
- * \brief   pushes the t.Pack.Struct library onto the stack
+ * \brief   pushes the T.Pack.Struct library onto the stack
  *          - creates Metatable with functions
  *          - creates metatable with methods
  * \param   luaVM     The lua state.
@@ -589,8 +589,8 @@ lt_pckrc__pairs( lua_State *luaVM )
 LUAMOD_API int
 luaopen_t_pckc( lua_State *luaVM )
 {
-	// t.Pack.Struct instance metatable
-	luaL_newmetatable( luaVM, "t.Pack.Struct" );   // stack: functions meta
+	// T.Pack.Struct instance metatable
+	luaL_newmetatable( luaVM, "T.Pack.Struct" );   // stack: functions meta
 	lua_pushcfunction( luaVM, lt_pckrc__index);
 	lua_setfield( luaVM, -2, "__index" );
 	lua_pushcfunction( luaVM, lt_pckrc__newindex );
@@ -611,7 +611,7 @@ luaopen_t_pckc( lua_State *luaVM )
 
 
 /**--------------------------------------------------------------------------
- * \brief   pushes the t.Pack.Reader library onto the stack
+ * \brief   pushes the T.Pack.Reader library onto the stack
  *          - creates Metatable with functions
  *          - creates metatable with methods
  * \param   luaVM     The lua state.
@@ -621,8 +621,8 @@ luaopen_t_pckc( lua_State *luaVM )
 LUAMOD_API int
 luaopen_t_pckr( lua_State *luaVM )
 {
-	// t.Pack.Struct instance metatable
-	luaL_newmetatable( luaVM, "t.Pack.Reader" );   // stack: functions meta
+	// T.Pack.Struct instance metatable
+	luaL_newmetatable( luaVM, "T.Pack.Reader" );   // stack: functions meta
 	lua_pushcfunction( luaVM, lt_pckrc__index);
 	lua_setfield( luaVM, -2, "__index" );
 	lua_pushcfunction( luaVM, lt_pckrc__newindex );

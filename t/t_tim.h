@@ -1,4 +1,4 @@
-// xt_tim.c
+// t_tim.c
 struct timeval *t_tim_check_ud ( lua_State *luaVM, int pos );
 struct timeval *t_tim_create_ud( lua_State *luaVM );
 

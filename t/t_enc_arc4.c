@@ -135,7 +135,7 @@ struct t_enc_arc4
 	struct t_enc_arc4 *arc4;
 
 	arc4 = (struct t_enc_arc4 *) lua_newuserdata( luaVM, sizeof( struct t_enc_arc4 ) );
-	luaL_getmetatable( luaVM, "t.Encode.Arc4" );
+	luaL_getmetatable( luaVM, "T.Encode.Arc4" );
 	lua_setmetatable( luaVM, -2 );
 	return arc4;
 }
@@ -150,8 +150,8 @@ struct t_enc_arc4
 struct t_enc_arc4
 *t_enc_arc4_check_ud( lua_State *luaVM, int pos )
 {
-	void *ud = luaL_checkudata( luaVM, pos, "t.Encode.Arc4" );
-	luaL_argcheck( luaVM, ud != NULL, pos, "`t.Encode.Arc4` expected" );
+	void *ud = luaL_checkudata( luaVM, pos, "T.Encode.Arc4" );
+	luaL_argcheck( luaVM, ud != NULL, pos, "`T.Encode.Arc4` expected" );
 	return (struct t_enc_arc4 *) ud;
 }
 
@@ -182,7 +182,7 @@ lt_enc_arc4_crypt( lua_State *luaVM )
 	}
 	else
 	{
-		return t_push_error( luaVM, "t.Arc4.crypt takes at least one string parameter" );
+		return t_push_error( luaVM, "T.Arc4.crypt takes at least one string parameter" );
 	}
 	// if a key is provided for encoding,
 	// reset the Arc4 state by initializing it with new key
@@ -232,7 +232,7 @@ static const luaL_Reg t_enc_arc4_m [] = {
 
 
 /**--------------------------------------------------------------------------
- * \brief   pushes the t.Encode.Arc4 library onto the stack
+ * \brief   pushes the T.Encode.Arc4 library onto the stack
  *          - creates Metatable with functions
  *          - creates metatable with methods
  * \param   luaVM     The lua state.
@@ -244,7 +244,7 @@ luaopen_t_enc_arc4( lua_State *luaVM )
 {
 	// just make metatable known to be able to register and check userdata
 	// this is only avalable a <instance>:func()
-	luaL_newmetatable( luaVM, "t.Encode.Arc4" );   // stack: functions meta
+	luaL_newmetatable( luaVM, "T.Encode.Arc4" );   // stack: functions meta
 	luaL_newlib( luaVM, t_enc_arc4_m );
 	lua_setfield( luaVM, -2, "__index" );
 	lua_pop( luaVM, 1 );        // remove metatable from stack

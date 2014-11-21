@@ -4,7 +4,10 @@ fmt= string.format
 
 rbyte = function( pos,len,endian )
 	local lb = b:read( pos, t.Pack[fmt('Int%s%d', endian:upper(), len)])
-	local ls = s:undumpint( pos, len, endian)
+	local ft = (endian=="l") and "<" or ">"
+	ft       = ft..'i'..len
+	print(ft)
+	local ls = string.unpack( ft, s, pos)
 	print( pos,len,endian,lb, string.format("%016X", lb), ls, string.format("%016X", ls)  )
 end
 

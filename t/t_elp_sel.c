@@ -2,7 +2,7 @@
 */
 /**
  * \file      t_elp_sel.c
- * \brief     select() specific implementation for t.Loop.
+ * \brief     select() specific implementation for T.Loop.
  * Handles    implmentation specific functions such as registreing events and
  *            executing the loop
  *            Being based on the select() system call this version shall work
@@ -38,7 +38,7 @@ t_elp_create_ud_impl( struct t_elp *elp )
 
 
 /**--------------------------------------------------------------------------
- * Add an File/Socket event handler to the t.Loop.
+ * Add an File/Socket event handler to the T.Loop.
  * \param   struct t_elp*.
  * \param   int       fd.
  * \param   int(bool) for reading on handle.
@@ -61,9 +61,9 @@ t_elp_addhandle_impl( struct t_elp *elp, int fd, int read )
 
 
 /**--------------------------------------------------------------------------
- * Add an Timer event handler to the t.Loop.
+ * Add an Timer event handler to the T.Loop.
  * \param   luaVM  The lua state.
- * \lparam  userdata t.Loop.                                     // 1
+ * \lparam  userdata T.Loop.                                     // 1
  * \lparam  userdata timeval.                                    // 2
  * \lparam  bool     shall this be treated as an interval?       // 3
  * \lparam  function to be executed when event handler fires.    // 4
@@ -76,7 +76,7 @@ t_elp_addhandle_impl( struct t_elp *elp, int fd, int read )
 
 
 /**--------------------------------------------------------------------------
- * Set up a select call for all events in the t.Loop
+ * Set up a select call for all events in the T.Loop
  * \param   luaVM         The lua state.
  * \param   struct t_elp   The loop struct.
  * \return  number returns from select.

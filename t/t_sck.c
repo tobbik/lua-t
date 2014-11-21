@@ -96,7 +96,7 @@ struct t_sck
 
 	sck->t = type;
 
-	luaL_getmetatable( luaVM, "t.Socket" );
+	luaL_getmetatable( luaVM, "T.Socket" );
 	lua_setmetatable( luaVM, -2 );
 	return sck;
 }
@@ -111,8 +111,8 @@ struct t_sck
 struct t_sck
 *t_sck_check_ud( lua_State *luaVM, int pos )
 {
-	void *ud = luaL_checkudata( luaVM, pos, "t.Socket" );
-	luaL_argcheck( luaVM, ud != NULL, pos, "`t.Socket` expected" );
+	void *ud = luaL_checkudata( luaVM, pos, "T.Socket" );
+	luaL_argcheck( luaVM, ud != NULL, pos, "`T.Socket` expected" );
 	return (struct t_sck *) ud;
 }
 
@@ -159,7 +159,7 @@ lt_sck_bind( lua_State *luaVM )
 		sck = t_sck_check_ud( luaVM, 1 );
 	}
 	else
-	{                            // handle t.Socket.bind()
+	{                            // handle T.Socket.bind()
 		type = (enum t_sck_t) luaL_checkoption( luaVM, 1, "TCP", t_sck_t_lst );
 		sck = t_sck_create_ud( luaVM, type );
 	}
@@ -204,7 +204,7 @@ lt_sck_connect( lua_State *luaVM )
 		sck = t_sck_check_ud( luaVM, 1 );
 	}
 	else
-	{                            // handle t.Socket.connect()
+	{                            // handle T.Socket.connect()
 		type = (enum t_sck_t) luaL_checkoption( luaVM, 1, "TCP", t_sck_t_lst );
 		sck = t_sck_create_ud( luaVM, type);
 	}
@@ -488,7 +488,7 @@ static int
 lt_sck__tostring( lua_State *luaVM )
 {
 	struct t_sck *sck = t_sck_check_ud( luaVM, 1 );
-	lua_pushfstring( luaVM, "t.Socket{%s:%d}: %p",
+	lua_pushfstring( luaVM, "T.Socket{%s:%d}: %p",
 			(T_SCK_TCP == sck->t) ? "TCP" : "UDP",
 			sck->fd,
 			sck );
@@ -571,7 +571,7 @@ LUA_API int
 luaopen_t_sck( lua_State *luaVM )
 {
 	// just make metatable known to be able to register and check userdata
-	luaL_newmetatable( luaVM, "t.Socket" );   // stack: functions meta
+	luaL_newmetatable( luaVM, "T.Socket" );   // stack: functions meta
 	luaL_newlib( luaVM, t_sck_m);
 	lua_setfield( luaVM, -2, "__index" );
 	lua_pushcfunction( luaVM, lt_sck__tostring );

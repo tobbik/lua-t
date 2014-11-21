@@ -49,7 +49,7 @@ sbits   = t.Pack.Struct (
 )
 
 
-t = t.Pack.Struct (
+tr = t.Pack.Struct (
 	{ length    = p },
 	{ ['type']  = p },
 -- 	-- BitField is a special type as the constructor resets the actual offset for each single bit
@@ -66,8 +66,8 @@ s=string.char( 76, 94, 1, 0, 0x55) .. 'abcdefghijklmnop'
 
 b=t.Buffer( 'ABCDEFGHIJKLMNOPQRST' )
 
-for k,v in pairs(t) do print( k, v, v(b) ) end
-for k,v in pairs(t.status) do print( k, v, v(b) ) end
+for k,v in pairs(tr) do print( k, v, v(b) ) end
+for k,v in pairs(tr.status) do print( k, v, v(b) ) end
 
 
 

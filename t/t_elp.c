@@ -2,7 +2,7 @@
 */
 /**
  * \file      t_elp.c
- * \brief     OOP wrapper for an asyncronous eventloop (t.Loop)
+ * \brief     OOP wrapper for an asyncronous eventloop (T.Loop)
  *            This covers the generic functions which are usable accross
  *            specific implementations
  *            They mainly handle the creation of data structures, their
@@ -102,7 +102,7 @@ t_elp_getfunc( lua_State *luaVM, int refPos )
  * Executes a timer function and reorganizes the timer linked list
  * \param   luaVM         The lua state.
  * \param   struct xp_lp  Loop struct.
- * \lparam  userdata      t.Loop.
+ * \lparam  userdata      T.Loop.
  * \return  void.
  * --------------------------------------------------------------------------*/
 void 
@@ -117,7 +117,7 @@ t_elp_executetimer( lua_State *luaVM, struct t_elp *elp, struct timeval *rt )
 	lua_call( luaVM, l, 1 );
 	t_tim_since( rt );
 	t_elp_adjusttimer( elp, rt );
-	tv = (struct timeval *) luaL_testudata( luaVM, -1, "t.Time" );
+	tv = (struct timeval *) luaL_testudata( luaVM, -1, "T.Time" );
 	// reorganize linked timer list
 	if (NULL == tv)
 	{
@@ -199,7 +199,7 @@ struct t_elp
 	elp->fd_set  = (struct t_elp_fd **) malloc( elp->fd_sz * sizeof( struct t_elp_fd * ) );
 	memset( elp->fd_set, 0, elp->fd_sz * sizeof( struct t_elp_fd * ) );
 	t_elp_create_ud_impl( elp );
-	luaL_getmetatable( luaVM, "t.Loop" );
+	luaL_getmetatable( luaVM, "T.Loop" );
 	lua_setmetatable( luaVM, -2 );
 	return elp;
 }
@@ -214,16 +214,16 @@ struct t_elp
 struct t_elp
 *t_elp_check_ud( lua_State *luaVM, int pos )
 {
-	void *ud = luaL_checkudata( luaVM, pos, "t.Loop" );
-	luaL_argcheck( luaVM, ud != NULL, pos, "`t.Loop` expected" );
+	void *ud = luaL_checkudata( luaVM, pos, "T.Loop" );
+	luaL_argcheck( luaVM, ud != NULL, pos, "`T.Loop` expected" );
 	return (struct t_elp *) ud;
 }
 
 
 /**--------------------------------------------------------------------------
- * Add an File/Socket event handler to the t.Loop.
+ * Add an File/Socket event handler to the T.Loop.
  * \param   luaVM  The lua state.
- * \lparam  userdata t.Loop.
+ * \lparam  userdata T.Loop.
  * \lparam  userdata handle.
  * \lparam  bool     shall this be treated as a reader?
  * \lparam  function to be executed when event handler fires.
@@ -244,7 +244,7 @@ lt_elp_addhandle( lua_State *luaVM )
 	if (NULL != lS)
 		fd = fileno( lS->f );
 
-	sc = (struct t_sck *) luaL_testudata( luaVM, 2, "t.Socket" );
+	sc = (struct t_sck *) luaL_testudata( luaVM, 2, "T.Socket" );
 	if (NULL != sc)
 		fd = sc->fd;
 
@@ -268,9 +268,9 @@ lt_elp_addhandle( lua_State *luaVM )
 
 
 /**--------------------------------------------------------------------------
- * Remove a Handle event handler from the t.Loop.
+ * Remove a Handle event handler from the T.Loop.
  * \param   luaVM    The lua state.
- * \lparam  userdata t.Loop.                                    // 1
+ * \lparam  userdata T.Loop.                                    // 1
  * \lparam  userdata socket or file.                             // 2
  * \return  #stack items returned by function call.
  * TODO: optimize!
@@ -287,7 +287,7 @@ lt_elp_removehandle( lua_State *luaVM )
 	if (NULL != lS)
 		fd = fileno( lS->f );
 
-	sc = (struct t_sck *) luaL_testudata( luaVM, 2, "t.Socket" );
+	sc = (struct t_sck *) luaL_testudata( luaVM, 2, "T.Socket" );
 	if (NULL != sc)
 		fd = sc->fd;
 
@@ -302,9 +302,9 @@ lt_elp_removehandle( lua_State *luaVM )
 }
 
 /**--------------------------------------------------------------------------
- * Add a Timer event handler to the t.Loop.
+ * Add a Timer event handler to the T.Loop.
  * \param   luaVM  The lua state.
- * \lparam  userdata t.Loop.                                    // 1
+ * \lparam  userdata T.Loop.                                    // 1
  * \lparam  userdata timeval.                                    // 2
  * \lparam  function to be executed when event handler fires.    // 3
  * \lparam  ...    parameters to function when executed.
@@ -339,9 +339,9 @@ lt_elp_addtimer( lua_State *luaVM )
 
 
 /**--------------------------------------------------------------------------
- * Remove a Timer event handler from the t.Loop.
+ * Remove a Timer event handler from the T.Loop.
  * \param   luaVM    The lua state.
- * \lparam  userdata t.Loop.                                    // 1
+ * \lparam  userdata T.Loop.                                    // 1
  * \lparam  userdata timeval.                                    // 2
  * \return  #stack items returned by function call.
  * TODO: optimize!
@@ -384,7 +384,7 @@ lt_elp_removetimer( lua_State *luaVM )
 /**--------------------------------------------------------------------------
  * Garbage Collector. Free events in allocated spots.
  * \param  luaVM   lua Virtual Machine.
- * \lparam table   t.Loop.
+ * \lparam table   T.Loop.
  * \return integer number of values left on te stack.
  * -------------------------------------------------------------------------*/
 static int
@@ -419,9 +419,9 @@ lt_elp__gc( lua_State *luaVM )
 
 
 /**--------------------------------------------------------------------------
- * Set up a select call for all events in the t.Loop
+ * Set up a select call for all events in the T.Loop
  * \param   luaVM  The lua state.
- * \lparam  userdata t.Loop.                                    // 1
+ * \lparam  userdata T.Loop.                                    // 1
  * \lparam  userdata timeval.                                    // 2
  * \lparam  bool     shall this be treated as an interval?       // 3
  * \lparam  function to be executed when event handler fires.    // 4
@@ -447,9 +447,9 @@ lt_elp_run( lua_State *luaVM )
 
 
 /**--------------------------------------------------------------------------
- * Stop an t.Loop.
+ * Stop an T.Loop.
  * \param   luaVM  The lua state.
- * \lparam  userdata t.Loop.                                    // 1
+ * \lparam  userdata T.Loop.                                    // 1
  * \return  #stack items returned by function call.
  * --------------------------------------------------------------------------*/
 static int
@@ -463,15 +463,15 @@ lt_elp_stop( lua_State *luaVM )
 /**--------------------------------------------------------------------------
  * Prints out the Loop.
  * \param   luaVM     The lua state.
- * \lparam  userdata  t.Loop userdata
- * \lreturn string    formatted string representing t.Loop.
+ * \lparam  userdata  T.Loop userdata
+ * \lreturn string    formatted string representing T.Loop.
  * \return  The number of results to be passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
 static int
 lt_elp__tostring( lua_State *luaVM )
 {
 	struct t_elp *elp = t_elp_check_ud( luaVM, 1 );
-	lua_pushfstring( luaVM, "t.Loop(select){%d}: %p", elp->mxfd, elp );
+	lua_pushfstring( luaVM, "T.Loop(select){%d}: %p", elp->mxfd, elp );
 	return 1;
 }
 
@@ -565,7 +565,7 @@ LUA_API int
 luaopen_t_elp( lua_State *luaVM )
 {
 	// just make metatable known to be able to register and check userdata
-	luaL_newmetatable( luaVM, "t.Loop" );   // stack: functions meta
+	luaL_newmetatable( luaVM, "T.Loop" );   // stack: functions meta
 	luaL_newlib( luaVM, t_elp_m );
 	lua_setfield( luaVM, -2, "__index" );
 	lua_pushcfunction( luaVM, lt_elp__tostring );

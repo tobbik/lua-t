@@ -106,7 +106,7 @@ t_enc_b64_encode (lua_State *luaVM)
 	else
 	{
 		return t_push_error( luaVM,
-			    "t.Encode.Base64.encode takes at least one string parameter" );
+			    "T.Encode.Base64.encode takes at least one string parameter" );
 	}
 
 	rLen = b64_res_size( bLen, 1 );
@@ -114,7 +114,7 @@ t_enc_b64_encode (lua_State *luaVM)
 	if (res == NULL)
 	{
 		return t_push_error( luaVM,
-		        "t.Encode.Base64.encode failed due to internal memory allocation problem" );
+		        "T.Encode.Base64.encode failed due to internal memory allocation problem" );
 	}
 
 	b64_encode( body, res, bLen);
@@ -145,7 +145,7 @@ t_enc_b64_decode (lua_State *luaVM)
 	else
 	{
 		return t_push_error( luaVM,
-			    "t.Encode.Base64.decode takes at least one string parameter" );
+			    "T.Encode.Base64.decode takes at least one string parameter" );
 	}
 
 	rLen = b64_res_size( bLen, 0 );
@@ -153,7 +153,7 @@ t_enc_b64_decode (lua_State *luaVM)
 	if (res == NULL)
 	{
 		return t_push_error( luaVM,
-		        "t.Encode.Base64.decode failed due to internal memory allocation problem" );
+		        "T.Encode.Base64.decode failed due to internal memory allocation problem" );
 	}
 
 	b64_decode(  body, res, bLen);
@@ -175,7 +175,7 @@ static const struct luaL_Reg t_enc_b64_cf [] = {
 
 
 /**--------------------------------------------------------------------------
- * \brief   pushes the t.Encode.Base64 library onto the stack
+ * \brief   pushes the T.Encode.Base64 library onto the stack
  *          - creates Metatable with functions
  *          - creates metatable with methods
  * \param   luaVM     The lua state.
@@ -192,7 +192,7 @@ luaopen_t_enc_b64 (lua_State *luaVM)
 		dec_table[ enc_table[i] ] = i;
 	}
 	// Push the class onto the stack
-	// this is avalable as t.Encode.Base64.(en/de)code
+	// this is avalable as T.Encode.Base64.(en/de)code
 	luaL_newlib( luaVM, t_enc_b64_cf );
 	return 1;
 }

@@ -244,7 +244,7 @@ lt_enc_crc_reset( lua_State *luaVM )
  * \param   luaVM The lua state.
  * \lparam  key   key string (optional)
  * \lparam  kLen  length of key string (if key contains \0 bytes (optional))
- * \lreturn struct t.Crc userdata.
+ * \lreturn struct T.Encode.Crc userdata.
  * \return  The number of results to be passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
 int
@@ -292,7 +292,7 @@ struct t_enc_crc
 	struct t_enc_crc *crc;
 
 	crc = (struct t_enc_crc *) lua_newuserdata( luaVM, sizeof( struct t_enc_crc ) );
-	luaL_getmetatable( luaVM, "t.Encode.Crc" );
+	luaL_getmetatable( luaVM, "T.Encode.Crc" );
 	lua_setmetatable( luaVM, -2 );
 	return crc;
 }
@@ -307,17 +307,17 @@ struct t_enc_crc
 struct t_enc_crc
 *t_enc_crc_check_ud( lua_State *luaVM, int pos )
 {
-	void *ud = luaL_checkudata( luaVM, pos, "t.Encode.Crc" );
-	luaL_argcheck( luaVM, ud != NULL, pos, "`t.Encode.Crc` expected" );
+	void *ud = luaL_checkudata( luaVM, pos, "T.Encode.Crc" );
+	luaL_argcheck( luaVM, ud != NULL, pos, "`T.Encode.Crc` expected" );
 	return (struct t_enc_crc *) ud;
 }
 
 
 /** -------------------------------------------------------------------------
- * \brief   Calculate the CRC checksum over a string or t.Buffer.
+ * \brief   Calculate the CRC checksum over a string or T.Buffer.
  * \param   luaVM  The lua state.
  * \lparam  t_enc_crc userdata.
- * \lparam  data       luastring or t.Buffer.
+ * \lparam  data       luastring or T.Buffer.
  * \lparam  sta        start index in data.
  * \lparam  end        end index in data.
  * \lreturn crc        the CRC checksum.
@@ -350,7 +350,7 @@ lt_enc_crc_calc( lua_State *luaVM )
 	}
 	else
 		return t_push_error( luaVM,
-			"ERROR t.Encode.Crc:calc(msg) takes msg argument" );
+			"ERROR T.Encode.Crc:calc(msg) takes msg argument" );
 
 	len = (lua_isnumber( luaVM, 4 )) ? (size_t) luaL_checkinteger( luaVM, 4 )-sta : len - sta;
 
@@ -393,7 +393,7 @@ static const luaL_Reg t_enc_crc_m [] =
 
 
 /**--------------------------------------------------------------------------
- * \brief   pushes the t.Encode.CRC library onto the stack
+ * \brief   pushes the T.Encode.CRC library onto the stack
  *          - creates Metatable with functions
  *          - creates metatable with methods
  * \param   luaVM     The lua state.
@@ -405,7 +405,7 @@ luaopen_t_enc_crc( lua_State *luaVM )
 {
 	// just make metatable known to be able to register and check userdata
 	// this is only avalable a <instance>:func()
-	luaL_newmetatable( luaVM, "t.Encode.Crc" );   // stack: functions meta
+	luaL_newmetatable( luaVM, "T.Encode.Crc" );   // stack: functions meta
 	luaL_newlib( luaVM, t_enc_crc_m );
 	lua_setfield( luaVM, -2, "__index" );
 	lua_pop( luaVM, 1 );        // remove metatable from stack

@@ -7,7 +7,7 @@
  * \copyright See Copyright notice at the end of t.h
  */
 
-/// The userdata struct for t.Buffer
+/// The userdata struct for T.Buffer
 struct t_buf {
 	size_t         len;   ///<  length of the entire buffer in bytes
 	unsigned char  b[1];  ///<  pointer to the variable size buffer -> must be last in struct
@@ -44,7 +44,7 @@ static const char *const t_pck_t_lst[] = {
 };
 
 
-/// The userdata struct for t.Pack/t.Pack.Struct
+/// The userdata struct for T.Pack/T.Pack.Struct
 struct t_pck {
 	size_t         sz;   ///< how many bytes are covered in this Structure (incl. sub elements)
 	size_t         lB;   ///< how many bits are covered in this packer
@@ -61,7 +61,7 @@ struct t_pck {
 };
 
 
-/// The userdata struct for t.Pack.Reader
+/// The userdata struct for T.Pack.Reader
 struct t_pckr {
 	struct t_pck   *p;   ///< reference to packer type
 	size_t          o;   ///< offset from the beginning of the wrapping Struct

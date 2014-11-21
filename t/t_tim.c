@@ -2,7 +2,7 @@
 */
 /**
  * \file      t_tim.c
- * \brief     OOP wrapper for time values(t.Time)
+ * \brief     OOP wrapper for time values(T.Time)
  *            This is a thin wrapper around struct timeval
  * \author    tkieslich
  * \copyright See Copyright notice at the end of t.h
@@ -154,7 +154,7 @@ struct timeval
 
 	tv = (struct timeval *) lua_newuserdata( luaVM, sizeof( struct timeval ) );
 	gettimeofday( tv, 0 );
-	luaL_getmetatable( luaVM, "t.Time" );
+	luaL_getmetatable( luaVM, "T.Time" );
 	lua_setmetatable( luaVM, -2 );
 	return tv;
 }
@@ -169,8 +169,8 @@ struct timeval
 struct timeval
 *t_tim_check_ud( lua_State *luaVM, int pos )
 {
-	void *ud = luaL_checkudata( luaVM, pos, "t.Time" );
-	luaL_argcheck( luaVM, ud != NULL, pos, "`t.Time` expected" );
+	void *ud = luaL_checkudata( luaVM, pos, "T.Time" );
+	luaL_argcheck( luaVM, ud != NULL, pos, "`T.Time` expected" );
 	return (struct timeval *) ud;
 }
 
@@ -222,7 +222,7 @@ lt_tim_get( lua_State *luaVM )
 /**--------------------------------------------------------------------------
  * \brief   prints out the timer.
  * \param   luaVM     The lua state.
- * \lparam  userdata  t.Timer.
+ * \lparam  userdata  T.Timer.
  * \lreturn string    formatted string representing sockkaddr (IP:Port).
  * \return  The number of results to be passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
@@ -231,7 +231,7 @@ lt_tim__tostring( lua_State *luaVM )
 {
 	struct timeval *tv = t_tim_check_ud( luaVM, 1 );
 	lua_pushfstring( luaVM,
-			"t.Time{%d:%d}: %p",
+			"T.Time{%d:%d}: %p",
 			//tv->tv_sec*1000 + tv->tv_usec/1000,
 			tv->tv_sec, tv->tv_usec,
 			tv
@@ -379,7 +379,7 @@ LUA_API int
 luaopen_t_tim( lua_State *luaVM )
 {
 	// just make metatable known to be able to register and check userdata
-	luaL_newmetatable( luaVM, "t.Time" );   // stack: functions meta
+	luaL_newmetatable( luaVM, "T.Time" );   // stack: functions meta
 	luaL_newlib( luaVM, t_tim_m );
 	lua_setfield( luaVM, -2, "__index" );
 	lua_pushcfunction( luaVM, lt_tim__tostring );

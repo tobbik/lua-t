@@ -131,7 +131,7 @@ struct sockaddr_in
 
 	ip = (struct sockaddr_in *) lua_newuserdata (luaVM, sizeof(struct sockaddr_in) );
 
-	luaL_getmetatable(luaVM, "t.Ip");
+	luaL_getmetatable(luaVM, "T.Ip");
 	lua_setmetatable(luaVM, -2);
 	return ip;
 }
@@ -146,8 +146,8 @@ struct sockaddr_in
 struct sockaddr_in
 *t_ipx_check_ud( lua_State *luaVM, int pos, int check )
 {
-	void *ud = luaL_testudata(luaVM, pos, "t.Ip");
-	luaL_argcheck( luaVM, (ud != NULL  || !check), pos, "`t.Ip` expected");
+	void *ud = luaL_testudata(luaVM, pos, "T.Ip");
+	luaL_argcheck( luaVM, (ud != NULL  || !check), pos, "`T.Ip` expected");
 	return (NULL==ud) ? NULL : (struct sockaddr_in *) ud;
 }
 
@@ -248,7 +248,7 @@ static int
 lt_ipx___tostring (lua_State *luaVM)
 {
 	struct sockaddr_in *ip = t_ipx_check_ud( luaVM, 1, 1 );
-	lua_pushfstring( luaVM, "t.Ip{%s:%d}: %p",
+	lua_pushfstring( luaVM, "T.Ip{%s:%d}: %p",
 			inet_ntoa( ip->sin_addr ),
 			ntohs( ip->sin_port ),
 			ip );
@@ -379,7 +379,7 @@ luaopen_t_ipx( lua_State *luaVM )
 {
 	// just make metatable known to be able to register and check userdata
 	// this is only avalable a <instance>:func()
-	luaL_newmetatable( luaVM, "t.Ip" );   // stack: functions meta
+	luaL_newmetatable( luaVM, "T.Ip" );   // stack: functions meta
 	luaL_newlib( luaVM, t_ipx_m );
 	lua_setfield( luaVM, -2, "__index" );
 	lua_pushcfunction( luaVM, lt_ipx___tostring );
@@ -389,7 +389,7 @@ luaopen_t_ipx( lua_State *luaVM )
 	lua_pop( luaVM, 1 );        // remove metatable from stack
 
 	// Push the class onto the stack
-	// this is avalable as t.ip.<member>
+	// this is avalable as T.ip.<member>
 	luaL_newlib( luaVM, t_ipx_cf );
 	lua_pushstring(luaVM, "127.0.0.1");
 	lua_setfield(luaVM, -2, "localhost");

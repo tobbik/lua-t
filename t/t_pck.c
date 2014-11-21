@@ -315,7 +315,7 @@ struct t_pck
 	p = (struct t_pck *) lua_newuserdata( luaVM, sizeof( struct t_pck ));
 
 	p->t  = t;
-	luaL_getmetatable( luaVM, "t.Pack" );
+	luaL_getmetatable( luaVM, "T.Pack" );
 	lua_setmetatable( luaVM, -2 );
 	return p;
 }
@@ -331,8 +331,8 @@ struct t_pck
 struct t_pck
 *t_pck_check_ud( lua_State *luaVM, int pos )
 {
-	void *ud = luaL_checkudata( luaVM, pos, "t.Pack" );
-	luaL_argcheck( luaVM, ud != NULL, pos, "`t.Pack` expected" );
+	void *ud = luaL_checkudata( luaVM, pos, "T.Pack" );
+	luaL_argcheck( luaVM, ud != NULL, pos, "`T.Pack` expected" );
 	return (struct t_pck *) ud;
 }
 
@@ -393,7 +393,7 @@ lt_pck_pack( lua_State *luaVM )
 /**--------------------------------------------------------------------------
  * Get size in bytes covered by packer/struct/reader.
  * \param   luaVM  The lua state.
- * \lparam  ud     t.Pack.* instance.
+ * \lparam  ud     T.Pack.* instance.
  * \lreturn int    size in bytes.
  * \return  int    The # of items pushed to the stack.
  * --------------------------------------------------------------------------*/
@@ -410,7 +410,7 @@ lt_pck_size( lua_State *luaVM )
 /**--------------------------------------------------------------------------
  * DEBUG: Get internal reference table from a Struct/Packer.
  * \param   luaVM  The lua state.
- * \lparam  ud     t.Pack.* instance.
+ * \lparam  ud     T.Pack.* instance.
  * \lreturn table  Reference table of all members.
  * \return  int    The # of items pushed to the stack.
  * --------------------------------------------------------------------------*/
@@ -478,7 +478,7 @@ static int
 lt_pck__tostring( lua_State *luaVM )
 {
 	struct t_pck *p = t_pck_check_ud( luaVM, 1 );
-	lua_pushfstring( luaVM, "t.Pack." );
+	lua_pushfstring( luaVM, "T.Pack." );
 	t_pck_format( luaVM, p );
 	lua_pushfstring( luaVM, ": %p", p );
 	lua_concat( luaVM, 4 );
@@ -503,7 +503,7 @@ lt_pck__len( lua_State *luaVM )
 
 
 /**--------------------------------------------------------------------------
- * Exports all types of t.Pack as global variables
+ * Exports all types of T.Pack as global variables
  * \param   luaVM     The lua state.
  * \lparam  t_pack    the packer instance user_data.
  * \lreturn string    formatted string representing packer.
@@ -561,7 +561,7 @@ static const luaL_Reg t_pck_m [] = {
 
 
 /**--------------------------------------------------------------------------
- * \brief   pushes the t.Pack library onto the stack
+ * \brief   pushes the T.Pack library onto the stack
  *          - creates Metatable with functions
  *          - creates metatable with methods
  * \param   luaVM     The lua state.
@@ -574,8 +574,8 @@ luaopen_t_pck( lua_State *luaVM )
 	
 	int           i;                   /// iterator for type creation
 	struct t_pck *t;                   /// type pointer for type creation
-	// t.Pack instance metatable
-	luaL_newmetatable( luaVM, "t.Pack" );   // stack: functions meta
+	// T.Pack instance metatable
+	luaL_newmetatable( luaVM, "T.Pack" );   // stack: functions meta
 	luaL_newlib( luaVM, t_pck_m );
 	lua_setfield( luaVM, -2, "__index" );
 	lua_pushcfunction( luaVM, lt_pck__tostring );
@@ -585,7 +585,7 @@ luaopen_t_pck( lua_State *luaVM )
 	lua_pop( luaVM, 1 );        // remove metatable from stack
 
 	// Push the class onto the stack
-	// this is avalable as t.Pack.<member>
+	// this is avalable as T.Pack.<member>
 	luaL_newlib( luaVM, t_pck_cf );
 	// register static types
 	// IntL,IntB

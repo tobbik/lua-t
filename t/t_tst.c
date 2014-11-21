@@ -2,8 +2,8 @@
 */
 /**
  * \file      t_tst.c
- * \brief     t unit testing framework (t.Test)
- *            provides t.Test and t.Test.Case
+ * \brief     t unit testing framework (T.Test)
+ *            provides T.Test and T.Test.Case
  *            implemented as Lua Table
  * \author    tkieslich
  * \copyright See Copyright notice at the end of t.h
@@ -71,7 +71,7 @@ t_tst_New(lua_State *luaVM)
 	else
 		lua_pushliteral (luaVM, "anonymous");
 	lua_setfield (luaVM, -2 , "_suitename");
-	luaL_getmetatable (luaVM, "t.Test");
+	luaL_getmetatable (luaVM, "T.Test");
 	lua_setmetatable (luaVM, -2);
 	return 1;
 }
@@ -107,13 +107,13 @@ t_tst_check_ud (lua_State *luaVM, int pos)
 	luaL_checktype(luaVM, pos, LUA_TTABLE);
    if (lua_getmetatable(luaVM, pos))  /* does it have a metatable? */
 	{
-		luaL_getmetatable(luaVM, "t.Test");   /* get correct metatable */
+		luaL_getmetatable(luaVM, "T.Test");   /* get correct metatable */
 		if (!lua_rawequal(luaVM, -1, -2))      /* not the same? */
-			t_push_error (luaVM, "wrong argumnet, `t.Test` expected");
+			t_push_error (luaVM, "wrong argumnet, `T.Test` expected");
 		lua_pop (luaVM, 2);
 	}
 	else
-		t_push_error (luaVM, "worong argument, `t.Test` expected");
+		t_push_error (luaVM, "worong argument, `T.Test` expected");
 }
 
 
@@ -296,7 +296,7 @@ t_tst__newindex (lua_State *luaVM)
 			// TODO: find a more elegant way without that much stack gymnastics
 			lua_newtable (luaVM);                // Stack 4: empty table
 			t_get_fn_source(luaVM);
-			luaL_getmetatable (luaVM, "t.Test.Case");
+			luaL_getmetatable (luaVM, "T.Test.Case");
 			lua_setmetatable (luaVM, 4);
 
 			lua_pushvalue (luaVM , 2);           // copy name from 2 to 5
@@ -376,7 +376,7 @@ t_tst_equal (lua_State *luaVM)
 {
 	if (lua_gettop (luaVM)<2 || lua_gettop (luaVM)>3)
 	{
-		return t_push_error (luaVM, "t.Test._equals expects two or three arguments");
+		return t_push_error (luaVM, "T.Test._equals expects two or three arguments");
 	}
 	if (3==lua_gettop (luaVM))
 	{
@@ -430,7 +430,7 @@ t_tst_equal_not (lua_State *luaVM)
 {
 	if (lua_gettop (luaVM)<2 || lua_gettop (luaVM)>3)
 	{
-		return t_push_error (luaVM, "t.Test._equals expects two or three arguments");
+		return t_push_error (luaVM, "T.Test._equals expects two or three arguments");
 	}
 	if (3==lua_gettop (luaVM))
 	{
@@ -478,7 +478,7 @@ t_tst_lt (lua_State *luaVM)
 {
 	if (lua_gettop (luaVM)<2 || lua_gettop (luaVM)>3)
 	{
-		return t_push_error (luaVM, "t.Test._lt expects two or three arguments");
+		return t_push_error (luaVM, "T.Test._lt expects two or three arguments");
 	}
 	// compare types, references, metatable.__eq and values
 	if (lua_compare (luaVM, 1, 2, LUA_OPLT))
@@ -754,7 +754,7 @@ LUA_API int
 luaopen_t_tst( lua_State *luaVM )
 {
 	// internal metatable that allows the it to be called
-	luaL_newmetatable( luaVM, "t.Test.Case" );   // stack: functions meta
+	luaL_newmetatable( luaVM, "T.Test.Case" );   // stack: functions meta
 	lua_pushcfunction( luaVM, t_tst_case__call );
 	lua_setfield (luaVM, -2, "__call" );
 	lua_pushcfunction( luaVM, t_tst_case__tostring );
@@ -763,7 +763,7 @@ luaopen_t_tst( lua_State *luaVM )
 
 	// just make metatable known to be able to register and check type
 	// this is only avalable a <instance>:func()
-	luaL_newmetatable( luaVM, "t.Test" );   // stack: functions meta
+	luaL_newmetatable( luaVM, "T.Test" );   // stack: functions meta
 	luaL_newlib( luaVM, t_tst_m );
 	lua_setfield( luaVM, -2, "__index" );
 	lua_pushcfunction( luaVM, t_tst__newindex );
