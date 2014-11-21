@@ -107,8 +107,10 @@ void xt_lp_executetimer( lua_State *luaVM, struct xt_lp *lp, struct timeval *rt 
 	struct timeval *tv; ///< timer returned by execution -> if there is
 	// the timer to be executed is the tm_head, ALWAYS
 	struct xt_lp_tm *te = lp->tm_head;
+	int    l;           ///< length of arguments to call 
 	lp->tm_head = lp->tm_head->nxt;
-	lua_call( luaVM, xt_lp_getfunc( luaVM, te->fR ), 1 );
+	l = xt_lp_getfunc( luaVM, te->fR );
+	lua_call( luaVM, l, 1 );
 	xt_time_since( rt );
 	xt_lp_adjusttimer( lp, rt );
 	tv = (struct timeval *) luaL_testudata( luaVM, -1, "xt.Time" );
