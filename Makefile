@@ -59,7 +59,10 @@ install: $(COMPDIR)/$(VER)/src/lua $(XTDIR)/xt.so
 
 clean:
 	cd $(XTDIR); make clean
-	rm -rf $(COMPDIR) $(OUTDIR)
+	rm -rf $(COMPDIR)
+
+remove: clean
+	rm -rf $(OUTDIR)
 
 pristine:
 	rm $(SRCDIR)/$(LUASRC)
