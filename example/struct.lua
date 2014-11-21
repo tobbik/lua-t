@@ -1,55 +1,55 @@
 #!../out/bin/lua
-xt=require'xt'
+t=require't'
 
 
-p = xt.Pack.IntB2
-c = xt.Pack.Int2
+p = t.Pack.IntB2
+c = t.Pack.Int2
 
-ts = xt.Pack.Sequence (
+ts = t.Pack.Sequence (
 	p,
-	xt.Pack.Int2,
-	xt.Pack.Int1,
-	xt.Pack.Int1
+	t.Pack.Int2,
+	t.Pack.Int1,
+	t.Pack.Int1
 )
 
-ss = xt.Pack.Sequence (
+ss = t.Pack.Sequence (
 	p,
 	p,
-	xt.Pack.Sequence (
-		xt.Pack.Bit1,  -- is the train set healthy?
-		xt.Pack.Bit2,  -- is the train set stationary?
-		xt.Pack.Bit3,  -- is the train set in maint mode?
-		xt.Pack.Bit4,  -- is a passenger request active?
-		xt.Pack.Bit5,  -- is a file waiting for download (RTDM ready)
-		xt.Pack.Bit6,  -- is the connection to the vmds lost?
-		xt.Pack.Bit7,  -- is the train set in shop mode?
-		xt.Pack.Bit8   -- padding
+	t.Pack.Sequence (
+		t.Pack.Bit1,  -- is the train set healthy?
+		t.Pack.Bit2,  -- is the train set stationary?
+		t.Pack.Bit3,  -- is the train set in maint mode?
+		t.Pack.Bit4,  -- is a passenger request active?
+		t.Pack.Bit5,  -- is a file waiting for download (RTDM ready)
+		t.Pack.Bit6,  -- is the connection to the vmds lost?
+		t.Pack.Bit7,  -- is the train set in shop mode?
+		t.Pack.Bit8   -- padding
 	),
-	xt.Pack.Int1,
-	xt.Pack.Int1
+	t.Pack.Int1,
+	t.Pack.Int1
 )
 
 
-s = xt.Pack.Struct (
-	{ length       = xt.Pack.Int2 },
-	{ ['type']     = xt.Pack.Int2 },
-	{ ['@status']  = xt.Pack.Int1 },
-	{ ConsistCount = xt.Pack.Int1 }
+s = t.Pack.Struct (
+	{ length       = t.Pack.Int2 },
+	{ ['type']     = t.Pack.Int2 },
+	{ ['@status']  = t.Pack.Int1 },
+	{ ConsistCount = t.Pack.Int1 }
 )
 
-sbits   = xt.Pack.Struct (
-	{isHealthy   = xt.Pack.Bit1},  -- is the train set healthy?
-	{isZeroSpeed = xt.Pack.Bit2},  -- is the train set stationary?
-	{isMaintMode = xt.Pack.Bit3},  -- is the train set in maint mode?
-	{isPassReq   = xt.Pack.Bit4},  -- is a passenger request active?
-	{isFileForDl = xt.Pack.Bit5},  -- is a file waiting for download (RTDM ready)
-	{isVmdsConnd = xt.Pack.Bit6},  -- is the connection to the vmds lost?
-	{isShopMode  = xt.Pack.Bit7},  -- is the train set in shop mode?
-	{paddingBit  = xt.Pack.Bit8}   -- padding
+sbits   = t.Pack.Struct (
+	{isHealthy   = t.Pack.Bit1},  -- is the train set healthy?
+	{isZeroSpeed = t.Pack.Bit2},  -- is the train set stationary?
+	{isMaintMode = t.Pack.Bit3},  -- is the train set in maint mode?
+	{isPassReq   = t.Pack.Bit4},  -- is a passenger request active?
+	{isFileForDl = t.Pack.Bit5},  -- is a file waiting for download (RTDM ready)
+	{isVmdsConnd = t.Pack.Bit6},  -- is the connection to the vmds lost?
+	{isShopMode  = t.Pack.Bit7},  -- is the train set in shop mode?
+	{paddingBit  = t.Pack.Bit8}   -- padding
 )
 
 
-t = xt.Pack.Struct (
+t = t.Pack.Struct (
 	{ length    = p },
 	{ ['type']  = p },
 -- 	-- BitField is a special type as the constructor resets the actual offset for each single bit
@@ -64,7 +64,7 @@ t = xt.Pack.Struct (
 
 s=string.char( 76, 94, 1, 0, 0x55) .. 'abcdefghijklmnop'
 
-b=xt.Buffer( 'ABCDEFGHIJKLMNOPQRST' )
+b=t.Buffer( 'ABCDEFGHIJKLMNOPQRST' )
 
 for k,v in pairs(t) do print( k, v, v(b) ) end
 for k,v in pairs(t.status) do print( k, v, v(b) ) end
@@ -72,4 +72,4 @@ for k,v in pairs(t.status) do print( k, v, v(b) ) end
 
 
 
-a = xt.Pack.Array( xt.Pack.IntB2, 4 )
+a = t.Pack.Array( t.Pack.IntB2, 4 )

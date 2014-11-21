@@ -1,11 +1,11 @@
 /* vim: ts=3 sw=3 sts=3 tw=80 sta noet list
 */
 /**
- * \file      xt_sck.c
+ * \file      t_sck.c
  * \brief     OOP wrapper around network sockets.
  *            TCP/UDP, read write connect bind etc
  * \author    tkieslich
- * \copyright See Copyright notice at the end of xt.h
+ * \copyright See Copyright notice at the end of t.h
  */
 
 
@@ -25,9 +25,9 @@
 #include <sys/socket.h>
 #include <sys/select.h>
 #endif
-#include "xt.h"
-#include "xt_sck.h"
-#include "xt_buf.h"         // the ability to send and recv buffers
+#include "t.h"
+#include "t_sck.h"
+#include "t_buf.h"         // the ability to send and recv buffers
 
 /** -------------------------------------------------------------------------
  * \brief   create a socket and return it.
@@ -37,12 +37,13 @@
  * \lreturn socket Lua UserData wrapped socket.
  * \return  The number of results to be passed back to the calling Lua script.
  *-------------------------------------------------------------------------*/
-int lxt_sck_New( lua_State *luaVM )
+int
+lt_sck_New( lua_State *luaVM )
 {
-	struct xt_sck   __attribute__ ((unused)) *sck;
+	struct t_sck   __attribute__ ((unused)) *sck;
 
-	sck = xt_sck_create_ud( luaVM,
-			(enum xt_sck_t) luaL_checkoption (luaVM, 1, "TCP", xt_sck_t_lst) );
+	sck = t_sck_create_ud( luaVM,
+			(enum t_sck_t) luaL_checkoption (luaVM, 1, "TCP", t_sck_t_lst) );
 	return 1 ;
 }
 
@@ -52,35 +53,37 @@ int lxt_sck_New( lua_State *luaVM )
  * \param   luaVM  The lua state.
  * \lparam  CLASS table Socket
  * \lparam  string    type "TCP", "UDP", ...
- * \lreturn struct xt_sck userdata.
+ * \lreturn struct t_sck userdata.
  * \return  The number of results to be passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
-static int lxt_sck__Call( lua_State *luaVM )
+static int
+lt_sck__Call( lua_State *luaVM )
 {
 	lua_remove( luaVM, 1 );
-	return lxt_sck_New( luaVM );
+	return lt_sck_New( luaVM );
 }
 
 
 /**--------------------------------------------------------------------------
  * \brief   create a socket and push to LuaStack.
  * \param   luaVM  The lua state.
- * \return  struct xt_sck*  pointer to the socket struct
+ * \return  struct t_sck*  pointer to the socket struct
  * --------------------------------------------------------------------------*/
-struct xt_sck *xt_sck_create_ud( lua_State *luaVM, enum xt_sck_t type )
+struct t_sck
+*t_sck_create_ud( lua_State *luaVM, enum t_sck_t type )
 {
-	int             on = 1;
-	struct xt_sck  *sck = (struct xt_sck*) lua_newuserdata( luaVM, sizeof( struct xt_sck ) );
+	int            on  = 1;
+	struct t_sck  *sck = (struct t_sck*) lua_newuserdata( luaVM, sizeof( struct t_sck ) );
 
 	switch (type)
 	{
-		case XT_SCK_UDP:
+		case T_SCK_UDP:
 			if ( (sck->fd  =  socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1 ) {
 				return NULL;
 			}
 			break;
 
-		case XT_SCK_TCP:
+		case T_SCK_TCP:
 			if ( (sck->fd  =  socket(AF_INET, SOCK_STREAM, 0)) == -1 ) {
 				return NULL;
 			}
@@ -93,23 +96,24 @@ struct xt_sck *xt_sck_create_ud( lua_State *luaVM, enum xt_sck_t type )
 
 	sck->t = type;
 
-	luaL_getmetatable( luaVM, "xt.Socket" );
+	luaL_getmetatable( luaVM, "t.Socket" );
 	lua_setmetatable( luaVM, -2 );
 	return sck;
 }
 
 
 /**--------------------------------------------------------------------------
- * Check a value on the stack for being a struct xt_sck.
+ * Check a value on the stack for being a struct t_sck.
  * \param   luaVM    The lua state.
  * \param   int      position on the stack.
- * \return  struct xt_sck*  pointer to the struct xt_sck.
+ * \return  struct t_sck*  pointer to the struct t_sck.
  * --------------------------------------------------------------------------*/
-struct xt_sck *xt_sck_check_ud( lua_State *luaVM, int pos )
+struct t_sck
+*t_sck_check_ud( lua_State *luaVM, int pos )
 {
-	void *ud = luaL_checkudata( luaVM, pos, "xt.Socket" );
-	luaL_argcheck( luaVM, ud != NULL, pos, "`xt.Socket` expected" );
-	return (struct xt_sck *) ud;
+	void *ud = luaL_checkudata( luaVM, pos, "t.Socket" );
+	luaL_argcheck( luaVM, ud != NULL, pos, "`t.Socket` expected" );
+	return (struct t_sck *) ud;
 }
 
 
@@ -120,16 +124,17 @@ struct xt_sck *xt_sck_check_ud( lua_State *luaVM, int pos )
  * \lparam  int    Backlog connections.
  * \return  The number of results to be passed back to the calling Lua script.
  *-------------------------------------------------------------------------*/
-static int lxt_sck_listen( lua_State *luaVM )
+static int
+lt_sck_listen( lua_State *luaVM )
 {
-	struct xt_sck  *sck;
-	int             backlog = luaL_checkinteger( luaVM, 2 );
+	struct t_sck  *sck;
+	int            backlog = luaL_checkinteger( luaVM, 2 );
 
-	sck = xt_sck_check_ud (luaVM, 1);
-	luaL_argcheck( luaVM, (XT_SCK_TCP == sck->t), 1, "Must be an TCP socket" );
+	sck = t_sck_check_ud (luaVM, 1);
+	luaL_argcheck( luaVM, (T_SCK_TCP == sck->t), 1, "Must be an TCP socket" );
 
 	if( listen(sck->fd , backlog ) == -1)
-		return xt_push_error(luaVM, "ERROR listen to socket");
+		return t_push_error(luaVM, "ERROR listen to socket");
 
 	return( 0 );
 }
@@ -142,35 +147,37 @@ static int lxt_sck_listen( lua_State *luaVM )
  * \lparam  ip     sockaddr userdata.
  * \return  The number of results to be passed back to the calling Lua script.
  *-------------------------------------------------------------------------*/
-static int lxt_sck_bind( lua_State *luaVM )
+static int
+lt_sck_bind( lua_State *luaVM )
 {
-	struct xt_sck      *sck;
+	struct t_sck       *sck;
 	struct sockaddr_in *ip;
-	enum   xt_sck_t     type;
+	enum   t_sck_t      type;
 
 	if (lua_isuserdata( luaVM, 1 ))
 	{ // handle sock:bind()
-		sck = xt_sck_check_ud( luaVM, 1 );
+		sck = t_sck_check_ud( luaVM, 1 );
 	}
 	else
-	{                            // handle xt.Socket.bind()
-		type = (enum xt_sck_t) luaL_checkoption( luaVM, 1, "TCP", xt_sck_t_lst );
-		sck = xt_sck_create_ud( luaVM, type );
+	{                            // handle t.Socket.bind()
+		type = (enum t_sck_t) luaL_checkoption( luaVM, 1, "TCP", t_sck_t_lst );
+		sck = t_sck_create_ud( luaVM, type );
 	}
 
 	if ( lua_isuserdata(luaVM, 2) )
 	{
 		// it's assumed that IP/port et cetera are assigned
-		ip   = xt_ip_check_ud(luaVM, 2, 1 );
+		ip   = t_ipx_check_ud(luaVM, 2, 1 );
 		lua_pushvalue( luaVM, 1 );
 	}
-	else {
-		ip = xt_ip_create_ud( luaVM );
-		xt_ip_set( luaVM, 2, ip );
+	else
+	{
+		ip = t_ipx_create_ud( luaVM );
+		t_ipx_set( luaVM, 2, ip );
 	}
 
 	if (bind( sck->fd , (struct sockaddr*) &(*ip), sizeof( struct sockaddr ) ) == -1)
-		return xt_push_error( luaVM, "ERROR binding socket to %s:%d",
+		return t_push_error( luaVM, "ERROR binding socket to %s:%d",
 					 inet_ntoa( ip->sin_addr ),
 					 ntohs( ip->sin_port ) );
 
@@ -185,35 +192,36 @@ static int lxt_sck_bind( lua_State *luaVM )
  * \lparam  ip     sockaddr userdata.
  * \return  The number of results to be passed back to the calling Lua script.
  *-------------------------------------------------------------------------*/
-static int lxt_sck_connect( lua_State *luaVM )
+static int
+lt_sck_connect( lua_State *luaVM )
 {
-	struct xt_sck      *sck;
+	struct t_sck       *sck;
 	struct sockaddr_in *ip;
-	enum   xt_sck_t     type;
+	enum   t_sck_t      type;
 
 	if (lua_isuserdata( luaVM, 1 ))
 	{ // handle sock:connect()
-		sck = xt_sck_check_ud( luaVM, 1 );
+		sck = t_sck_check_ud( luaVM, 1 );
 	}
 	else
-	{                            // handle xt.Socket.connect()
-		type = (enum xt_sck_t) luaL_checkoption( luaVM, 1, "TCP", xt_sck_t_lst );
-		sck = xt_sck_create_ud( luaVM, type);
+	{                            // handle t.Socket.connect()
+		type = (enum t_sck_t) luaL_checkoption( luaVM, 1, "TCP", t_sck_t_lst );
+		sck = t_sck_create_ud( luaVM, type);
 	}
 	if (lua_isuserdata( luaVM, 2 ))
 	{
 		// it's assumed that IP/port et cetera are assigned
-		ip = xt_ip_check_ud( luaVM, 2, 1 );
+		ip = t_ipx_check_ud( luaVM, 2, 1 );
 		lua_pushvalue( luaVM, 1 );
 	}
 	else
 	{
-		ip = xt_ip_create_ud( luaVM );
-		xt_ip_set( luaVM, 2, ip );
+		ip = t_ipx_create_ud( luaVM );
+		t_ipx_set( luaVM, 2, ip );
 	}
 
 	if (connect( sck->fd , (struct sockaddr*) &(*ip), sizeof( struct sockaddr ) ) == -1)
-		return xt_push_error( luaVM, "ERROR connecting socket to %s:%d",
+		return t_push_error( luaVM, "ERROR connecting socket to %s:%d",
 					 inet_ntoa(ip->sin_addr),
 					 ntohs(ip->sin_port) );
 
@@ -229,18 +237,19 @@ static int lxt_sck_connect( lua_State *luaVM )
  * \lreturn ip      sockaddr userdata.
  * \return  The number of results to be passed back to the calling Lua script.
  *-------------------------------------------------------------------------*/
-static int lxt_sck_accept( lua_State *luaVM )
+static int
+lt_sck_accept( lua_State *luaVM )
 {
-	struct xt_sck  *lsck;   // listening socket
-	struct xt_sck  *asck;   // accepted connection socket
+	struct t_sck       *lsck;   // listening socket
+	struct t_sck       *asck;   // accepted connection socket
 	struct sockaddr_in *si_cli;
 	socklen_t           their_addr_size = sizeof( struct sockaddr_in );
 
-	lsck = xt_sck_check_ud( luaVM, 1 );
-	luaL_argcheck( luaVM, (XT_SCK_TCP == lsck->t), 1, "Must be an TCP socket" );
-	asck = xt_sck_create_ud( luaVM, XT_SCK_TCP );
+	lsck = t_sck_check_ud( luaVM, 1 );
+	luaL_argcheck( luaVM, (T_SCK_TCP == lsck->t), 1, "Must be an TCP socket" );
+	asck = t_sck_create_ud( luaVM, T_SCK_TCP );
 
-	si_cli = xt_ip_create_ud( luaVM );
+	si_cli = t_ipx_create_ud( luaVM );
 	asck->fd = accept( lsck->fd, (struct sockaddr *) &(*si_cli), &their_addr_size );
 
 	return 2;
@@ -253,12 +262,13 @@ static int lxt_sck_accept( lua_State *luaVM )
  * \lparam  socket socket userdata.
  * \return  The number of results to be passed back to the calling Lua script.
  *-------------------------------------------------------------------------*/
-static int lxt_sck_close( lua_State *luaVM )
+static int
+lt_sck_close( lua_State *luaVM )
 {
-	struct xt_sck *sck = xt_sck_check_ud( luaVM, 1 );
+	struct t_sck *sck = t_sck_check_ud( luaVM, 1 );
 
 	if (-1 == close( sck->fd ))
-		return xt_push_error( luaVM, "ERROR closing socket" );
+		return t_push_error( luaVM, "ERROR closing socket" );
 
 	return 0;
 }
@@ -273,18 +283,19 @@ static int lxt_sck_close( lua_State *luaVM )
  * \lreturn sent   number of bytes sent.
  * \return  The number of results to be passed back to the calling Lua script.
  *-------------------------------------------------------------------------*/
-static int lxt_sck_send_to( lua_State *luaVM )
+static int
+lt_sck_send_to( lua_State *luaVM )
 {
-	struct xt_sck      *sck;
+	struct t_sck       *sck;
 	struct sockaddr_in *ip;
-	struct xt_buf      *buf;
+	struct t_buf       *buf;
 	int                 sent;
 	int                 len;
 	const char         *msg;
 
-	sck = xt_sck_check_ud( luaVM, 1 );
-	luaL_argcheck( luaVM, (XT_SCK_UDP == sck->t), 1, "Must be an UDP socket" );
-	ip   = xt_ip_check_ud( luaVM, 2, 1 );
+	sck = t_sck_check_ud( luaVM, 1 );
+	luaL_argcheck( luaVM, (T_SCK_UDP == sck->t), 1, "Must be an UDP socket" );
+	ip   = t_ipx_check_ud( luaVM, 2, 1 );
 	if (lua_isstring( luaVM, 3 ))
 	{
 		msg   = lua_tostring( luaVM, 3 );
@@ -292,19 +303,19 @@ static int lxt_sck_send_to( lua_State *luaVM )
 	}
 	else if (lua_isuserdata( luaVM, 3 ))
 	{
-		buf  = xt_buf_check_ud( luaVM, 3, 1 );
+		buf  = t_buf_check_ud( luaVM, 3, 1 );
 		msg  = (char *) &(buf->b[ 0 ]);
 		len  = buf->len;
 	}
 	else
-		return xt_push_error( luaVM, "ERROR sendTo(socket,ip,msg) takes msg argument" );
+		return t_push_error( luaVM, "ERROR sendTo(socket,ip,msg) takes msg argument" );
 
 	if ((sent = sendto(
 	  sck->fd,
 	  msg, len, 0,
 	  (struct sockaddr *) &(*ip), sizeof( struct sockaddr ))
 	  ) == -1)
-		return xt_push_error( luaVM, "Failed to send UDP packet to %s:%d",
+		return t_push_error( luaVM, "Failed to send UDP packet to %s:%d",
 					 inet_ntoa( ip->sin_addr ),
 					 ntohs( ip->sin_port ) );
 
@@ -321,10 +332,11 @@ static int lxt_sck_send_to( lua_State *luaVM )
  * \lreturn ip     ip endpoint userdata.
  * \return  The number of results to be passed back to the calling Lua script.
  *-------------------------------------------------------------------------*/
-static int lxt_sck_recv_from( lua_State *luaVM )
+static int
+lt_sck_recv_from( lua_State *luaVM )
 {
-	struct xt_sck      *sck;
-	struct xt_buf      *buf;
+	struct t_sck       *sck;
+	struct t_buf       *buf;
 	struct sockaddr_in *si_cli;
 	int                 rcvd;
 	char                buffer[ BUFSIZ ];
@@ -333,21 +345,21 @@ static int lxt_sck_recv_from( lua_State *luaVM )
 
 	unsigned int        slen = sizeof( si_cli );
 
-	sck = xt_sck_check_ud( luaVM, 1 );
-	luaL_argcheck( luaVM, (XT_SCK_UDP == sck->t), 1, "Must be an UDP socket" );
+	sck = t_sck_check_ud( luaVM, 1 );
+	luaL_argcheck( luaVM, (T_SCK_UDP == sck->t), 1, "Must be an UDP socket" );
 	if (lua_isuserdata( luaVM, 2 )) {
-		buf  = xt_buf_check_ud ( luaVM, 2, 1 );
+		buf  = t_buf_check_ud ( luaVM, 2, 1 );
 		rcv  = (char *) &(buf->b[ 0 ]);
 		len  = buf->len;
 	}
-	si_cli = xt_ip_create_ud( luaVM );
+	si_cli = t_ipx_create_ud( luaVM );
 
 	if ((rcvd = recvfrom(
 	  sck->fd,
 	  rcv, len, 0,
 	  (struct sockaddr *) &(*si_cli), &slen )
 	  ) == -1)
-		return( xt_push_error( luaVM, "Failed to recieve UDP packet") );
+		return t_push_error( luaVM, "Failed to recieve UDP packet");
 
 	// return buffer, length, IpEndpoint
 	lua_pushlstring( luaVM, rcv, rcvd );
@@ -365,20 +377,21 @@ static int lxt_sck_recv_from( lua_State *luaVM )
  * \lreturn sent   number of bytes sent.
  * \return  The number of results to be passed back to the calling Lua script.
  *-------------------------------------------------------------------------*/
-static int lxt_sck_send_strm( lua_State *luaVM )
+static int
+lt_sck_send_strm( lua_State *luaVM )
 {
-	struct xt_sck  *sck;
-	ssize_t         sent;         // How much did get sent out
-	size_t          to_send;      // How much should get send out maximally
-	const char     *msg;
-	size_t          into_msg=0;   // where in the message to start sending from
+	struct t_sck *sck;
+	ssize_t       sent;         // How much did get sent out
+	size_t        to_send;      // How much should get send out maximally
+	const char   *msg;
+	size_t        into_msg=0;   // where in the message to start sending from
 
-	sck = xt_sck_check_ud( luaVM, 1 );
-	luaL_argcheck( luaVM, (XT_SCK_TCP == sck->t), 1, "Must be an TCP socket" );
+	sck = t_sck_check_ud( luaVM, 1 );
+	luaL_argcheck( luaVM, (T_SCK_TCP == sck->t), 1, "Must be an TCP socket" );
 	if (lua_isstring( luaVM, 2 ))
 		msg   = lua_tolstring( luaVM, 2, &to_send );
 	else
-		return xt_push_error( luaVM, "ERROR send(socket,msg) takes msg argument" ) ;
+		return t_push_error( luaVM, "ERROR send(socket,msg) takes msg argument" ) ;
 	if (lua_isnumber( luaVM, 3 )) {
 		into_msg = lua_tointeger( luaVM, 3 );
 	}
@@ -389,7 +402,7 @@ static int lxt_sck_send_strm( lua_State *luaVM )
 	  sck->fd,
 	  msg, to_send, 0)
 	  ) == -1)
-		return xt_push_error( luaVM, "Failed to send TCP message" ) ;
+		return t_push_error( luaVM, "Failed to send TCP message" ) ;
 
 	lua_pushinteger( luaVM, sent );
 	return 1;
@@ -405,19 +418,20 @@ static int lxt_sck_send_strm( lua_State *luaVM )
  * \return  The number of results to be passed back to the calling Lua script.
  * TODO:  If no Buffer is passed for receiving, use a LuaL_Buffer instead
  *-------------------------------------------------------------------------*/
-static int lxt_sck_recv_strm( lua_State *luaVM )
+static int
+lt_sck_recv_strm( lua_State *luaVM )
 {
-	struct xt_sck  *sck;
-	struct xt_buf  *buf;
-	int             rcvd;
-	char            buffer[ BUFSIZ ];
-	char           *rcv = &(buffer[0]);
-	int             len = sizeof (buffer)-1;
+	struct t_sck *sck;
+	struct t_buf *buf;
+	int           rcvd;
+	char          buffer[ BUFSIZ ];
+	char         *rcv = &(buffer[0]);
+	int           len = sizeof (buffer)-1;
 
-	sck = xt_sck_check_ud( luaVM, 1 );
-	luaL_argcheck( luaVM, (XT_SCK_TCP == sck->t), 1, "Must be an TCP socket" );
+	sck = t_sck_check_ud( luaVM, 1 );
+	luaL_argcheck( luaVM, (T_SCK_TCP == sck->t), 1, "Must be an TCP socket" );
 	if (lua_isuserdata( luaVM, 2 )) {
-		buf  = xt_buf_check_ud( luaVM, 2, 1 );
+		buf  = t_buf_check_ud( luaVM, 2, 1 );
 		rcv  = (char *) &(buf->b[ 0 ]);
 		len  = buf->len;
 	}
@@ -426,7 +440,7 @@ static int lxt_sck_recv_strm( lua_State *luaVM )
 	  sck->fd,
 	  rcv, len, 0)
 	  ) == -1)
-		return xt_push_error( luaVM, "Failed to recieve TCP packet" );
+		return t_push_error( luaVM, "Failed to recieve TCP packet" );
 
 	// return buffer, length, ip, port
 	lua_pushlstring( luaVM, buffer, rcvd );
@@ -445,17 +459,18 @@ static int lxt_sck_recv_strm( lua_State *luaVM )
  * \return  The number of results to be passed back to the calling Lua script.
  * TODO:  Allow it to accept an existing LuaBuffer to ammend incoming packages
  *-------------------------------------------------------------------------*/
-static int lxt_sck_getsockname( lua_State *luaVM )
+static int
+lt_sck_getsockname( lua_State *luaVM )
 {
-	struct xt_sck      *sck;
+	struct t_sck       *sck;
 	struct sockaddr_in *ip;
 	socklen_t           ip_len = sizeof( struct sockaddr_in );
 
-	sck = xt_sck_check_ud( luaVM, 1 );
-	luaL_argcheck( luaVM, (XT_SCK_TCP == sck->t), 1, "Must be an TCP socket" );
+	sck = t_sck_check_ud( luaVM, 1 );
+	luaL_argcheck( luaVM, (T_SCK_TCP == sck->t), 1, "Must be an TCP socket" );
 
-	if (lua_isuserdata( luaVM, 2 ))  ip = xt_ip_check_ud( luaVM, 2, 1 );
-	else                             ip = xt_ip_create_ud( luaVM );
+	if (lua_isuserdata( luaVM, 2 ))  ip = t_ipx_check_ud( luaVM, 2, 1 );
+	else                             ip = t_ipx_create_ud( luaVM );
 
 	getsockname( sck->fd, (struct sockaddr*) &(*ip), &ip_len );
 	return 1;
@@ -464,16 +479,17 @@ static int lxt_sck_getsockname( lua_State *luaVM )
 
 /**--------------------------------------------------------------------------
  * \brief   prints out the socket.
- * \param   luaVM     The lua state.
- * \lparam  struct xt_sck the socket userdata.
- * \lreturn string    formatted string representing sockkaddr (IP:Port).
+ * \param   luaVM    The lua state.
+ * \lparam  struct t_sck the socket userdata.
+ * \lreturn string   formatted string representing sockkaddr (IP:Port).
  * \return  The number of results to be passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
-static int lxt_sck__tostring( lua_State *luaVM )
+static int
+lt_sck__tostring( lua_State *luaVM )
 {
-	struct xt_sck *sck = xt_sck_check_ud( luaVM, 1 );
-	lua_pushfstring( luaVM, "xt.Socket{%s:%d}: %p",
-			(XT_SCK_TCP == sck->t) ? "TCP" : "UDP",
+	struct t_sck *sck = t_sck_check_ud( luaVM, 1 );
+	lua_pushfstring( luaVM, "t.Socket{%s:%d}: %p",
+			(T_SCK_TCP == sck->t) ? "TCP" : "UDP",
 			sck->fd,
 			sck );
 	return 1;
@@ -487,11 +503,12 @@ static int lxt_sck__tostring( lua_State *luaVM )
  * \lreturn socketFD int.
  * \return  The number of results to be passed back to the calling Lua script.
  *-------------------------------------------------------------------------*/
-static int lxt_sck_getfdid( lua_State *luaVM )
+static int
+lt_sck_getfdid( lua_State *luaVM )
 {
-	struct xt_sck      *sck;
+	struct t_sck      *sck;
 
-	sck = xt_sck_check_ud( luaVM, 1 );
+	sck = t_sck_check_ud( luaVM, 1 );
 	lua_pushinteger( luaVM, sck->fd );
 	return 1;
 }
@@ -501,8 +518,8 @@ static int lxt_sck_getfdid( lua_State *luaVM )
 /**
  * \brief    the metatble for the module
  */
-static const struct luaL_Reg xt_sck_fm [] = {
-	{"__call",      lxt_sck__Call},
+static const struct luaL_Reg t_sck_fm [] = {
+	{"__call",      lt_sck__Call},
 	{NULL,   NULL}
 };
 
@@ -511,19 +528,19 @@ static const struct luaL_Reg xt_sck_fm [] = {
  * \brief      the socketlibrary definition
  *             assigns Lua available names to C-functions
  */
-static const luaL_Reg xt_sck_m [] =
+static const luaL_Reg t_sck_m [] =
 {
-	{"listen",    lxt_sck_listen},
-	{"bind",      lxt_sck_bind},
-	{"connect",   lxt_sck_connect},
-	{"accept",    lxt_sck_accept},
-	{"close",     lxt_sck_close},
-	{"sendTo",    lxt_sck_send_to},
-	{"recvFrom",  lxt_sck_recv_from},
-	{"send",      lxt_sck_send_strm},
-	{"recv",      lxt_sck_recv_strm},
-	{"getId",     lxt_sck_getfdid},
-	{"getIp",     lxt_sck_getsockname},
+	{"listen",    lt_sck_listen},
+	{"bind",      lt_sck_bind},
+	{"connect",   lt_sck_connect},
+	{"accept",    lt_sck_accept},
+	{"close",     lt_sck_close},
+	{"sendTo",    lt_sck_send_to},
+	{"recvFrom",  lt_sck_recv_from},
+	{"send",      lt_sck_send_strm},
+	{"recv",      lt_sck_recv_strm},
+	{"getId",     lt_sck_getfdid},
+	{"getIp",     lt_sck_getsockname},
 	{NULL,        NULL}
 };
 
@@ -532,11 +549,11 @@ static const luaL_Reg xt_sck_m [] =
  * \brief      the socket library class functions definition
  *             assigns Lua available names to C-functions
  */
-static const luaL_Reg xt_sck_cf [] =
+static const luaL_Reg t_sck_cf [] =
 {
-	{"new",       lxt_sck_New},
-	{"bind",      lxt_sck_bind},
-	{"connect",   lxt_sck_connect},
+	{"new",       lt_sck_New},
+	{"bind",      lt_sck_bind},
+	{"connect",   lt_sck_connect},
 	{NULL,        NULL}
 };
 
@@ -550,24 +567,25 @@ static const luaL_Reg xt_sck_cf [] =
  * \lreturn string    the library
  * \return  The number of results to be passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
-int luaopen_xt_sck( lua_State *luaVM )
+LUA_API int
+luaopen_t_sck( lua_State *luaVM )
 {
 	// just make metatable known to be able to register and check userdata
-	luaL_newmetatable( luaVM, "xt.Socket" );   // stack: functions meta
-	luaL_newlib( luaVM, xt_sck_m);
+	luaL_newmetatable( luaVM, "t.Socket" );   // stack: functions meta
+	luaL_newlib( luaVM, t_sck_m);
 	lua_setfield( luaVM, -2, "__index" );
-	lua_pushcfunction( luaVM, lxt_sck__tostring );
+	lua_pushcfunction( luaVM, lt_sck__tostring );
 	lua_setfield( luaVM, -2, "__tostring");
-	lua_pushcfunction( luaVM, lxt_sck_close );
+	lua_pushcfunction( luaVM, lt_sck_close );
 	lua_setfield( luaVM, -2, "__gc");
 	lua_pop( luaVM, 1 );        // remove metatable from stack
 
 	// Push the class onto the stack
 	// this is avalable as Socket.<member>
-	luaL_newlib( luaVM, xt_sck_cf );
+	luaL_newlib( luaVM, t_sck_cf );
 	// set the methods as metatable
 	// this is only avalable a <instance>.<member>
-	luaL_newlib( luaVM, xt_sck_fm );
+	luaL_newlib( luaVM, t_sck_fm );
 	lua_setmetatable( luaVM, -2 );
 	return 1;
 }

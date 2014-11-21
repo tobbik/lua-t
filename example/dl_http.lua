@@ -1,7 +1,7 @@
 #!../out/bin/lua
-local xt=require('xt')
+local t=require('t')
 
-local tcpsock,ip = xt.Socket.connect('TCP','128.30.52.37', 80)
+local tcpsock,ip = t.Socket.connect('TCP','128.30.52.37', 80)
 local len     = tcpsock:send("GET /TR/REC-html32.html HTTP/1.0\r\n\r\n")
 local buffer = {}
 local length = 0

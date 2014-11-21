@@ -1,23 +1,23 @@
 #!../out/bin/lua
-xt = require("xt")
+t = require("t")
 fmt= string.format
 
-b1 = xt.Pack.Bit1
-b2 = xt.Pack.Bit2
-b3 = xt.Pack.Bit3
-b4 = xt.Pack.Bit4
-b5 = xt.Pack.Bit5
-b6 = xt.Pack.Bit6
-b7 = xt.Pack.Bit7
-b8 = xt.Pack.Bit8
-p  = xt.Pack.IntB2
-bt = xt.Pack.Byte
-nl = xt.Pack.NibbleL
-nh = xt.Pack.NibbleH
+b1 = t.Pack.Bit1
+b2 = t.Pack.Bit2
+b3 = t.Pack.Bit3
+b4 = t.Pack.Bit4
+b5 = t.Pack.Bit5
+b6 = t.Pack.Bit6
+b7 = t.Pack.Bit7
+b8 = t.Pack.Bit8
+p  = t.Pack.IntB2
+bt = t.Pack.Byte
+nl = t.Pack.NibbleL
+nh = t.Pack.NibbleH
 
 print( p, nl, nh )
 
-print( p:pack( 17519 ), xt.Buffer( p:pack( 17519 ) ):toHex() )
+print( p:pack( 17519 ), t.Buffer( p:pack( 17519 ) ):toHex() )
 
 print( p:unpack( 'Do' ) )
 

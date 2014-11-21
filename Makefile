@@ -9,7 +9,7 @@ endif
 COMPDIR=$(CURDIR)/compile
 OUTDIR=$(CURDIR)/out
 SRCDIR=$(CURDIR)/sources
-XTDIR=$(CURDIR)/xt
+TDIR=$(CURDIR)/t
 CC=clang
 LD=clang
 relocate=true
@@ -40,25 +40,25 @@ $(COMPDIR)/$(VER)/src/lua: $(COMPDIR)/$(VER)/src
 		MYCFLAGS=" -g -fPIC "\
 		linux
 
-$(XTDIR)/xt.so: $(COMPDIR)/$(VER)/src
-	cd $(XTDIR) ; $(MAKE) -j 4 CC=$(CC) LD=$(LD) \
+$(TDIR)/t.so: $(COMPDIR)/$(VER)/src
+	cd $(TDIR) ; $(MAKE) -j 4 CC=$(CC) LD=$(LD) \
 		VER=$(VER) \
 		MYCFLAGS=' -g' \
-		INCS="$(COMPDIR)/$(VER)/src" xt.so
+		INCS="$(COMPDIR)/$(VER)/src" t.so
 
-install: $(COMPDIR)/$(VER)/src/lua $(XTDIR)/xt.so
+install: $(COMPDIR)/$(VER)/src/lua $(TDIR)/t.so
 	cd $(COMPDIR)/$(VER) ; $(MAKE) CC=$(CC) LD=$(LD) \
 		VER=$(VER) \
 		INSTALL_TOP="$(OUTDIR)" \
 		install
-	cd $(XTDIR) ; $(MAKE) CC=$(CC) LD=$(LD) \
+	cd $(TDIR) ; $(MAKE) CC=$(CC) LD=$(LD) \
 		VER=$(VER) \
 		MYCFLAGS=' -g' \
 		INCS="$(COMPDIR)/$(VER)/src" \
 		PREFIX="$(OUTDIR)" install
 
 clean:
-	cd $(XTDIR); make clean
+	cd $(TDIR); make clean
 	rm -rf $(COMPDIR)
 
 remove: clean

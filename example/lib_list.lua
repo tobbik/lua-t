@@ -1,5 +1,5 @@
 #!../out/bin/lua
-xt=require('xt')
+t=require('t')
 
 local print_table = function(name, t)
 	print('ELEMS of ' .. name)

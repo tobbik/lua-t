@@ -1,15 +1,15 @@
 #!../out/bin/lua
-xt = require("xt")
+t = require("t")
 fmt= string.format
 
 rbyte = function( pos,len,endian )
-	local lb = b:read( pos, xt.Pack[fmt('Int%s%d', endian:upper(), len)])
+	local lb = b:read( pos, t.Pack[fmt('Int%s%d', endian:upper(), len)])
 	local ls = s:undumpint( pos, len, endian)
 	print( pos,len,endian,lb, string.format("%016X", lb), ls, string.format("%016X", ls)  )
 end
 
 s = 'Alles wird irgendwann wieder gut!'
-b = xt.Buffer(s)
+b = t.Buffer(s)
 print("\t\t\tBUFFER ACCESS");
 print( "READING ACCESS by BYTES" )
 print( b:toHex() )
@@ -20,50 +20,50 @@ rbyte( 9, 6, 'l' )
 
 
 print( "WRITING ACCESS by BYTES" )
-b = xt.Buffer(20)
+b = t.Buffer(20)
 print( b:toHex() )
-b:write(15, xt.Pack.IntB4, 0x0000000033445566)
+b:write(15, t.Pack.IntB4, 0x0000000033445566)
 print( b:toHex() )
-b:write(11, xt.Pack.IntL3, 0x0000000000445566)
+b:write(11, t.Pack.IntL3, 0x0000000000445566)
 print( b:toHex() )
-b:write(3, xt.Pack.IntL6, 0x0000998877665544)
+b:write(3, t.Pack.IntL6, 0x0000998877665544)
 print( b:toHex() )
 
 
 print( "READING ACCESS by BITS" )
-b = xt.Buffer( string.char( 0x00, 0x00,0x00, 0x0F, 0xF0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 ) )
+b = t.Buffer( string.char( 0x00, 0x00,0x00, 0x0F, 0xF0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 ) )
 print( b:toHex() )
 -- pos 4, ofs 1, length 10
 --print( 4, 1, 10, b:readBits( 4, 1, 10 ) )
 --print( 4, 3, 9, b:readBits( 4, 3, 9 ) )
 --print( 4, 8, 8, b:readBits( 4, 6, 8 ) )
-print( 4, 1, 10, b:read( 4, xt.Pack.Bits(10,1)) )
-print( 4, 3, 9,  b:read( 4, xt.Pack.Bits(9, 3)) )
-print( 4, 8, 8,  b:read( 4, xt.Pack.Bits(8, 6)) )
+print( 4, 1, 10, b:read( 4, t.Pack.Bits(10,1)) )
+print( 4, 3, 9,  b:read( 4, t.Pack.Bits(9, 3)) )
+print( 4, 8, 8,  b:read( 4, t.Pack.Bits(8, 6)) )
 
 print( "WRITING ACCESS by BITS" )
-b:write( 7, xt.Pack.Bits(8,6), 128)
+b:write( 7, t.Pack.Bits(8,6), 128)
 print( b:toHex() )
-b:write( 9, xt.Pack.Int1, 255)
+b:write( 9, t.Pack.Int1, 255)
 print( b:toHex() )
-b:write( 8, xt.Pack.Bits(8,6), 128)
+b:write( 8, t.Pack.Bits(8,6), 128)
 print( b:toHex() )
 
 
 print( "READING ACCESS by BITS AGAIN" )
-l = xt.Buffer( string.char( 0x80, 0x40, 0x20, 0x10, 0x08, 0x04, 0x02, 0x01) )
+l = t.Buffer( string.char( 0x80, 0x40, 0x20, 0x10, 0x08, 0x04, 0x02, 0x01) )
 io.write( 'bits   ')
-for k=1,8 do io.write( fmt("%02X       ", l:read( k, xt.Pack.Byte ) ) ) end
+for k=1,8 do io.write( fmt("%02X       ", l:read( k, t.Pack.Byte ) ) ) end
 print()
 for i=1,8 do
 	io.write( i..'      ' )
-	for k=1,8 do io.write( l:read( i, xt.Pack.Bits(1,k)) .. '        ' ) end
+	for k=1,8 do io.write( l:read( i, t.Pack.Bits(1,k)) .. '        ' ) end
 	io.write( '\n' )
 end
 
 for i=1,8 do
 	io.write( i )
-	for k=1,8 do io.write( fmt( '%9s', l:read( i, xt.Pack[fmt('Bit%d',k)] ) ) ) end
+	for k=1,8 do io.write( fmt( '%9s', l:read( i, t.Pack[fmt('Bit%d',k)] ) ) ) end
 	io.write( '\n' )
 end
 

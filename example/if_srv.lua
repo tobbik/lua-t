@@ -1,15 +1,15 @@
 #!../out/bin/lua
-local xt=require('xt')
+local t=require('t')
 --local sip,sport='10.128.3.131',8888
 local sip,sport='192.168.0.200',8888
 
-tcpsock,ip = xt.Socket.bind('TCP', sip, sport)
+tcpsock,ip = t.Socket.bind('TCP', sip, sport)
 tcpsock:listen(5)
 print(tcpsock,ip)
 
 conns  = { tcpsock }
 while true do
-	res = xt.select(conns, {})
+	res = t.select(conns, {})
 	io.write('LOOP['..#res..']:')
 	for n,cli in ipairs(res) do
 		io.write('  '..tostring(cli)..'')

@@ -1,11 +1,11 @@
 #!../out/bin/lua
-local xt,fmt=require('xt'),string.format
+local t,fmt=require('t'),string.format
 local ipadd,port='192.168.0.219',8888
 
---tcpsock = xt.Socket('TCP')
---ip      = xt.IpEndpoint(ipadd, port)
+--tcpsock = t.Socket('TCP')
+--ip      = t.IpEndpoint(ipadd, port)
 --tcpsock:bind(ip)
-tcpsock,ip = xt.Socket.bind('TCP',ipadd,port)
+tcpsock,ip = t.Socket.bind('TCP',ipadd,port)
 print(tcpsock, ip)
 tcpsock:listen(5)
 consock,cip = tcpsock:accept()

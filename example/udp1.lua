@@ -1,14 +1,14 @@
 #!../out/bin/lua
-local xt=require('xt')
+local t=require('t')
 
 
-local s,ip = xt.Socket.bind('UDP','192.168.0.219', 8888)
+local s,ip = t.Socket.bind('UDP','192.168.0.219', 8888)
 print(s,ip)
 
 -- this select loop makes no sense, but prooves that select is in fact working
 -- as expected
 while true do
-	res = xt.select({s},{})
+	res = t.select({s},{})
 	print(#res, s)
 	msg, len, ip = res[1]:recvFrom()
 	if len<1 then

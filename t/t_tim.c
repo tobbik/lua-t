@@ -1,11 +1,11 @@
 /* vim: ts=3 sw=3 sts=3 tw=80 sta noet list
 */
 /**
- * \file      xt_time.c
- * \brief     OOP wrapper for time values(xt.Time)
+ * \file      t_tim.c
+ * \brief     OOP wrapper for time values(t.Time)
  *            This is a thin wrapper around struct timeval
  * \author    tkieslich
- * \copyright See Copyright notice at the end of xt.h
+ * \copyright See Copyright notice at the end of t.h
  */
 
 
@@ -27,8 +27,8 @@
 #include <sys/time.h>    // gettimeofday()
 #endif
 
-#include "xt.h"
-#include "xt_time.h"
+#include "t.h"
+#include "t_tim.h"
 
 
 /**--------------------------------------------------------------------------
@@ -36,7 +36,7 @@
  * \param  *tA struct timeval pointer
  * \param  *tB struct timeval pointer
  * --------------------------------------------------------------------------*/
-void xt_time_add (struct timeval *tA, struct timeval *tB, struct timeval *tX)
+void t_tim_add (struct timeval *tA, struct timeval *tB, struct timeval *tX)
 {
 	struct timeval tC;
 
@@ -54,7 +54,7 @@ void xt_time_add (struct timeval *tA, struct timeval *tB, struct timeval *tX)
  * \param  *tA struct timeval pointer
  * \param  *tB struct timeval pointer
  * --------------------------------------------------------------------------*/
-void xt_time_sub (struct timeval *tA, struct timeval *tB, struct timeval *tX)
+void t_tim_sub (struct timeval *tA, struct timeval *tB, struct timeval *tX)
 {
 	struct timeval tC;
 
@@ -75,12 +75,12 @@ void xt_time_sub (struct timeval *tA, struct timeval *tB, struct timeval *tX)
  * \brief  sets tm to time different between tm and now
  * \param  *tv struct timeval pointer
  * --------------------------------------------------------------------------*/
-void xt_time_since (struct timeval *tA)
+void t_tim_since (struct timeval *tA)
 {
 	struct timeval tC;
 
 	gettimeofday( &tC, 0 );
-	xt_time_sub( &tC, tA, tA );
+	t_tim_sub( &tC, tA, tA );
 }
 
 
@@ -89,7 +89,7 @@ void xt_time_since (struct timeval *tA)
  * \param  *tv struct timeval pointer
  * \return timeval value in milliseconds
  * --------------------------------------------------------------------------*/
-long xt_time_getms (struct timeval *tA)
+long t_tim_getms (struct timeval *tA)
 {
 	return tA->tv_sec*1000 + tA->tv_usec/1000;
 }
@@ -101,20 +101,6 @@ long xt_time_getms (struct timeval *tA)
 // | |__| |_| | (_| |_____/ ___ \|  __/| | 
 // |_____\__,_|\__,_|    /_/   \_\_|  |___|
 /////////////////////////////////////////////////////////////////////////////
-/**--------------------------------------------------------------------------
- * construct a timer an Timer and return it.
- * \param   luaVM  The lua state.
- * \lparam  CLASS table Time
- * \lparam  int    time spam in milliseconds, if omitted time since epoch
- * \lreturn struct timeval userdata.
- * \return  The number of results to be passed back to the calling Lua script.
- * --------------------------------------------------------------------------*/
-static int lxt_time__Call( lua_State *luaVM )
-{
-	lua_remove( luaVM, 1 );
-	return lxt_time_New( luaVM );
-}
-
 
 /**--------------------------------------------------------------------------
  * create an Timer and return it.
@@ -123,12 +109,13 @@ static int lxt_time__Call( lua_State *luaVM )
  * \lreturn struct timeval userdata.
  * \return  The number of results to be passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
-int lxt_time_New( lua_State *luaVM )
+static int
+lt_tim_New( lua_State *luaVM )
 {
 	struct timeval  *tv;
 	int              ms;
 
-	tv = xt_time_create_ud (luaVM);
+	tv = t_tim_create_ud (luaVM);
 	if (lua_isnumber(luaVM, 1)) {
 		ms          = luaL_checkinteger(luaVM, 1);
 		tv->tv_sec  = ms/1000;
@@ -140,17 +127,34 @@ int lxt_time_New( lua_State *luaVM )
 
 
 /**--------------------------------------------------------------------------
+ * construct a timer an Timer and return it.
+ * \param   luaVM  The lua state.
+ * \lparam  CLASS table Time
+ * \lparam  int    time spam in milliseconds, if omitted time since epoch
+ * \lreturn struct timeval userdata.
+ * \return  The number of results to be passed back to the calling Lua script.
+ * --------------------------------------------------------------------------*/
+static int
+lt_tim__Call( lua_State *luaVM )
+{
+	lua_remove( luaVM, 1 );
+	return lt_tim_New( luaVM );
+}
+
+
+/**--------------------------------------------------------------------------
  * \brief   create an timer userdata and push to LuaStack.
  * \param   luaVM  The lua state.
  * \return  struct timeval*  pointer to userdata at Stack position.
  * --------------------------------------------------------------------------*/
-struct timeval *xt_time_create_ud( lua_State *luaVM )
+struct timeval
+*t_tim_create_ud( lua_State *luaVM )
 {
 	struct timeval *tv;
 
 	tv = (struct timeval *) lua_newuserdata( luaVM, sizeof( struct timeval ) );
 	gettimeofday( tv, 0 );
-	luaL_getmetatable( luaVM, "xt.Time" );
+	luaL_getmetatable( luaVM, "t.Time" );
 	lua_setmetatable( luaVM, -2 );
 	return tv;
 }
@@ -162,10 +166,11 @@ struct timeval *xt_time_create_ud( lua_State *luaVM )
  * \param   int      position on the stack
  * \return  struct timeval*  pointer to userdata at Stack position.
  * --------------------------------------------------------------------------*/
-struct timeval *xt_time_check_ud( lua_State *luaVM, int pos )
+struct timeval
+*t_tim_check_ud( lua_State *luaVM, int pos )
 {
-	void *ud = luaL_checkudata( luaVM, pos, "xt.Time" );
-	luaL_argcheck( luaVM, ud != NULL, pos, "`xt.Time` expected" );
+	void *ud = luaL_checkudata( luaVM, pos, "t.Time" );
+	luaL_argcheck( luaVM, ud != NULL, pos, "`t.Time` expected" );
 	return (struct timeval *) ud;
 }
 
@@ -177,9 +182,10 @@ struct timeval *xt_time_check_ud( lua_State *luaVM, int pos )
  * \lparam  int      time to set in milliseconds  (optional).
  * \return  The number of results to be passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
-static int lxt_time_set( lua_State *luaVM )
+static int
+lt_tim_set( lua_State *luaVM )
 {
-	struct timeval *tv = xt_time_check_ud( luaVM, 1 );
+	struct timeval *tv = t_tim_check_ud( luaVM, 1 );
 	int             ms;
 
 	if (lua_isnumber( luaVM, 2 ))
@@ -204,10 +210,11 @@ static int lxt_time_set( lua_State *luaVM )
  * \lreturn string   xxx.xxx.xxx.xxx formatted string representing sockkaddr IP.
  * \return  The number of results to be passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
-static int lxt_time_get( lua_State *luaVM )
+static int
+lt_tim_get( lua_State *luaVM )
 {
-	struct timeval *tv = xt_time_check_ud( luaVM, 1 );
-	lua_pushinteger( luaVM, xt_time_getms( tv ) );
+	struct timeval *tv = t_tim_check_ud( luaVM, 1 );
+	lua_pushinteger( luaVM, t_tim_getms( tv ) );
 	return 1;
 }
 
@@ -215,15 +222,16 @@ static int lxt_time_get( lua_State *luaVM )
 /**--------------------------------------------------------------------------
  * \brief   prints out the timer.
  * \param   luaVM     The lua state.
- * \lparam  userdata  xt.Timer.
+ * \lparam  userdata  t.Timer.
  * \lreturn string    formatted string representing sockkaddr (IP:Port).
  * \return  The number of results to be passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
-static int lxt_time__tostring( lua_State *luaVM )
+static int
+lt_tim__tostring( lua_State *luaVM )
 {
-	struct timeval *tv = xt_time_check_ud( luaVM, 1 );
+	struct timeval *tv = t_tim_check_ud( luaVM, 1 );
 	lua_pushfstring( luaVM,
-			"xt.Time{%d:%d}: %p",
+			"t.Time{%d:%d}: %p",
 			//tv->tv_sec*1000 + tv->tv_usec/1000,
 			tv->tv_sec, tv->tv_usec,
 			tv
@@ -240,10 +248,11 @@ static int lxt_time__tostring( lua_State *luaVM )
  * \lreturn boolean   true if equal otherwise false.
  * \return  The number of results to be passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
-static int lxt_time__eq( lua_State *luaVM )
+static int
+lt_tim__eq( lua_State *luaVM )
 {
-	struct timeval *tA = xt_time_check_ud( luaVM, 1 );
-	struct timeval *tB = xt_time_check_ud( luaVM, 2 );
+	struct timeval *tA = t_tim_check_ud( luaVM, 1 );
+	struct timeval *tB = t_tim_check_ud( luaVM, 2 );
 	if (tA->tv_sec == tB->tv_sec && tA->tv_usec == tB->tv_usec)
 		lua_pushboolean( luaVM, 1 );
 	else
@@ -260,13 +269,14 @@ static int lxt_time__eq( lua_State *luaVM )
  * \lreturn timeval   the difference in time.
  * \return  The number of results to be passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
-static int lxt_time__add( lua_State *luaVM )
+static int
+lt_tim__add( lua_State *luaVM )
 {
-	struct timeval *tA = xt_time_check_ud( luaVM, 1 );
-	struct timeval *tB = xt_time_check_ud( luaVM, 2 );
-	struct timeval *tC = xt_time_create_ud( luaVM );
+	struct timeval *tA = t_tim_check_ud( luaVM, 1 );
+	struct timeval *tB = t_tim_check_ud( luaVM, 2 );
+	struct timeval *tC = t_tim_create_ud( luaVM );
 
-	xt_time_add( tA,tB,tC );
+	t_tim_add( tA, tB, tC );
 	return 1;
 }
 
@@ -279,12 +289,14 @@ static int lxt_time__add( lua_State *luaVM )
  * \lreturn timeval   true if equal otherwise false.
  * \return  The number of results to be passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
-static int lxt_time__sub( lua_State *luaVM )
+static int
+lt_tim__sub( lua_State *luaVM )
 {
-	struct timeval *tA = xt_time_check_ud( luaVM, 1 );
-	struct timeval *tB = xt_time_check_ud( luaVM, 2 );
-	struct timeval *tC = xt_time_create_ud( luaVM );
-	xt_time_sub( tA, tB, tC );
+	struct timeval *tA = t_tim_check_ud( luaVM, 1 );
+	struct timeval *tB = t_tim_check_ud( luaVM, 2 );
+	struct timeval *tC = t_tim_create_ud( luaVM );
+
+	t_tim_sub( tA, tB, tC );
 	return 1;
 }
 
@@ -296,7 +308,8 @@ static int lxt_time__sub( lua_State *luaVM )
  * \lparam     int  milliseconds to sleep
  * \return     0 return values
  * --------------------------------------------------------------------------*/
-static int lxt_time_sleep( lua_State *luaVM )
+static int
+lt_tim_sleep( lua_State *luaVM )
 {
 #ifdef _WIN32
 	fd_set dummy;
@@ -304,8 +317,8 @@ static int lxt_time_sleep( lua_State *luaVM )
 #endif
 	struct timeval *tv;
 	long  sec, usec;
-	if (lua_isnumber( luaVM, -1 ))  lxt_time_New( luaVM );
-	tv  = xt_time_check_ud( luaVM, -1 );
+	if (lua_isnumber( luaVM, -1 ))  lt_tim_New( luaVM );
+	tv  = t_tim_check_ud( luaVM, -1 );
 	sec = tv->tv_sec; usec=tv->tv_usec;
 #ifdef _WIN32
 	s = socket( PF_INET, SOCK_STREAM, IPPROTO_TCP );
@@ -323,9 +336,9 @@ static int lxt_time_sleep( lua_State *luaVM )
 /**
  * \brief    the metatble for the module
  */
-static const struct luaL_Reg xt_time_fm [] =
+static const struct luaL_Reg t_tim_fm [] =
 {
-	{"__call",    lxt_time__Call},
+	{"__call",    lt_tim__Call},
 	{NULL,   NULL}
 };
 
@@ -333,10 +346,10 @@ static const struct luaL_Reg xt_time_fm [] =
  * \brief      the Time library class functions definition
  *             assigns Lua available names to C-functions
  */
-static const luaL_Reg xt_time_cf [] =
+static const luaL_Reg t_tim_cf [] =
 {
-	{"new",       lxt_time_New},
-	{"sleep",     lxt_time_sleep},     // method can work on class aor instance
+	{"new",       lt_tim_New},
+	{"sleep",     lt_tim_sleep},     // method can work on class aor instance
 	{NULL,        NULL}
 };
 
@@ -345,11 +358,11 @@ static const luaL_Reg xt_time_cf [] =
  * \brief      the Timer library definition
  *             assigns Lua available names to C-functions
  */
-static const struct luaL_Reg xt_time_m [] =
+static const struct luaL_Reg t_tim_m [] =
 {
-	{"set",       lxt_time_set},
-	{"get",       lxt_time_get},
-	{"sleep",     lxt_time_sleep},
+	{"set",       lt_tim_set},
+	{"get",       lt_tim_get},
+	{"sleep",     lt_tim_sleep},
 	{NULL,   NULL}
 };
 
@@ -362,28 +375,29 @@ static const struct luaL_Reg xt_time_m [] =
  * \lreturn string    the library
  * \return  The number of results to be passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
-int luaopen_xt_time( lua_State *luaVM )
+LUA_API int
+luaopen_t_tim( lua_State *luaVM )
 {
 	// just make metatable known to be able to register and check userdata
-	luaL_newmetatable( luaVM, "xt.Time" );   // stack: functions meta
-	luaL_newlib( luaVM, xt_time_m );
+	luaL_newmetatable( luaVM, "t.Time" );   // stack: functions meta
+	luaL_newlib( luaVM, t_tim_m );
 	lua_setfield( luaVM, -2, "__index" );
-	lua_pushcfunction( luaVM, lxt_time__tostring );
+	lua_pushcfunction( luaVM, lt_tim__tostring );
 	lua_setfield( luaVM, -2, "__tostring" );
-	lua_pushcfunction( luaVM, lxt_time__eq );
+	lua_pushcfunction( luaVM, lt_tim__eq );
 	lua_setfield( luaVM, -2, "__eq" );
-	lua_pushcfunction( luaVM, lxt_time__add );
+	lua_pushcfunction( luaVM, lt_tim__add );
 	lua_setfield( luaVM, -2, "__add" );
-	lua_pushcfunction( luaVM, lxt_time__sub );
+	lua_pushcfunction( luaVM, lt_tim__sub );
 	lua_setfield( luaVM, -2, "__sub" );
 	lua_pop( luaVM, 1 );        // remove metatable from stack
 
 	// Push the class onto the stack
 	// this is avalable as Timer.localhost
-	luaL_newlib( luaVM, xt_time_cf );
+	luaL_newlib( luaVM, t_tim_cf );
 	// set the methods as metatable
 	// this is only avalable a <instance>:func()
-	luaL_newlib( luaVM, xt_time_fm );
+	luaL_newlib( luaVM, t_tim_fm );
 	lua_setmetatable( luaVM, -2 );
 	return 1;
 }

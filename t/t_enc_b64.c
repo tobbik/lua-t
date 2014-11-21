@@ -1,17 +1,17 @@
 /* vim: ts=3 sw=3 sts=3 tw=80 sta noet list
 */
 /**
- * \file      xt_enc_b64.c
+ * \file      t_enc_b64.c
  * \brief     Base64 Encoding Decoding algorithm
  * \author    tkieslich
- * \copyright See Copyright notice at the end of xt.h
+ * \copyright See Copyright notice at the end of t.h
  */
 
 #include <stdio.h>
 #include <stdlib.h>      // calloc
 
-#include "xt.h"
-#include "xt_enc.h"
+#include "t.h"
+#include "t_enc.h"
 
 static const unsigned char enc_table[ 64 ] =
 	"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
@@ -92,7 +92,7 @@ b64_decode( const char *inbuf, char *outbuf, size_t inbuf_len)
  * \TODO: consider using a Lua_Buffer instead of allocating and freeing memory
  */
 static int
-xt_enc_b64_encode (lua_State *luaVM)
+t_enc_b64_encode (lua_State *luaVM)
 {
 	size_t              bLen;    ///< length of body
 	size_t              rLen;    ///< length of result
@@ -105,16 +105,16 @@ xt_enc_b64_encode (lua_State *luaVM)
 	}
 	else
 	{
-		return xt_push_error( luaVM,
-			    "xt.Encode.Base64.encode takes at least one string parameter" );
+		return t_push_error( luaVM,
+			    "t.Encode.Base64.encode takes at least one string parameter" );
 	}
 
 	rLen = b64_res_size( bLen, 1 );
 	res = malloc( rLen );
 	if (res == NULL)
 	{
-		return xt_push_error( luaVM,
-		        "xt.Encode.Base64.encode failed due to internal memory allocation problem" );
+		return t_push_error( luaVM,
+		        "t.Encode.Base64.encode failed due to internal memory allocation problem" );
 	}
 
 	b64_encode( body, res, bLen);
@@ -131,7 +131,7 @@ xt_enc_b64_encode (lua_State *luaVM)
  * \TODO: consider using a Lua_Buffer instead of allocating and freeing memory
  */
 static int
-xt_enc_b64_decode (lua_State *luaVM)
+t_enc_b64_decode (lua_State *luaVM)
 {
 	size_t              bLen;    ///< length of body
 	size_t              rLen;    ///< length of result
@@ -144,16 +144,16 @@ xt_enc_b64_decode (lua_State *luaVM)
 	}
 	else
 	{
-		return xt_push_error( luaVM,
-			    "xt.Encode.Base64.decode takes at least one string parameter" );
+		return t_push_error( luaVM,
+			    "t.Encode.Base64.decode takes at least one string parameter" );
 	}
 
 	rLen = b64_res_size( bLen, 0 );
 	res = malloc( rLen );
 	if (res == NULL)
 	{
-		return xt_push_error( luaVM,
-		        "xt.Encode.Base64.decode failed due to internal memory allocation problem" );
+		return t_push_error( luaVM,
+		        "t.Encode.Base64.decode failed due to internal memory allocation problem" );
 	}
 
 	b64_decode(  body, res, bLen);
@@ -167,22 +167,23 @@ xt_enc_b64_decode (lua_State *luaVM)
  * \brief      the Base64 static class function library definition
  *             assigns Lua available names to C-functions
  */
-static const struct luaL_Reg xt_enc_b64_cf [] = {
-	{"encode",  xt_enc_b64_encode},
-	{"decode",  xt_enc_b64_decode},
+static const struct luaL_Reg t_enc_b64_cf [] = {
+	{"encode",  t_enc_b64_encode},
+	{"decode",  t_enc_b64_decode},
 	{NULL,      NULL}
 };
 
 
 /**--------------------------------------------------------------------------
- * \brief   pushes the xt.Encode.Base64 library onto the stack
+ * \brief   pushes the t.Encode.Base64 library onto the stack
  *          - creates Metatable with functions
  *          - creates metatable with methods
  * \param   luaVM     The lua state.
  * \lreturn string    the library
  * \return  The number of results to be passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
-int luaopen_xt_enc_b64 (lua_State *luaVM)
+LUAMOD_API int
+luaopen_t_enc_b64 (lua_State *luaVM)
 {
 	// initializes the decoder table
 	uint8_t i;
@@ -191,8 +192,8 @@ int luaopen_xt_enc_b64 (lua_State *luaVM)
 		dec_table[ enc_table[i] ] = i;
 	}
 	// Push the class onto the stack
-	// this is avalable as xt.Encode.Base64.(en/de)code
-	luaL_newlib( luaVM, xt_enc_b64_cf );
+	// this is avalable as t.Encode.Base64.(en/de)code
+	luaL_newlib( luaVM, t_enc_b64_cf );
 	return 1;
 }
 

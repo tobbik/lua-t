@@ -1,12 +1,12 @@
 /* vim: ts=3 sw=3 sts=3 tw=80 sta noet list
 */
 /**
- * \file      xt_buf.c
+ * \file      t_buf.c
  * \brief     OOP wrapper for a universal buffer implementation
  *            Allows for reading writing as mutable string
  *            can be used for socket communication
  * \author    tkieslich
- * \copyright See Copyright notice at the end of xt.h
+ * \copyright See Copyright notice at the end of t.h
  */
 
 
@@ -14,30 +14,30 @@
 #include <stdio.h>
 #include <string.h>               // memset
 
-#include "xt.h"
-#include "xt_buf.h"
+#include "t.h"
+#include "t_buf.h"
 
 
 // --------------------------------- HELPERS Functions
 
 /** -------------------------------------------------------------------------
- * Helper to check arguments for being a xt_buf and a valid position
- * \param     luaVM  lua state.
- * \param     pB     position on stack which is buffer.
- * \param     pB     position on stack which is position.
- *                   handled as pointer and decremented by one to deal with the
- *                   fact that C char buffers indexes are zero based.
- * \return   *xt_buf pointer to validated buffer.
+ * Helper to check arguments for being a t_buf and a valid position
+ * \param     luaVM lua state.
+ * \param     pB    position on stack which is buffer.
+ * \param     pB    position on stack which is position.
+ *                  handled as pointer and decremented by one to deal with the
+ *                  fact that C char buffers indexes are zero based.
+ * \return   *t_buf pointer to validated buffer.
  *  -------------------------------------------------------------------------*/
 
-struct xt_buf * xt_buf_getbuffer( lua_State *luaVM, int pB, int pP, int *pos )
+struct t_buf * t_buf_getbuffer( lua_State *luaVM, int pB, int pP, int *pos )
 {
-	struct xt_buf *buf = xt_buf_check_ud( luaVM, pB, 1 );
+	struct t_buf *buf = t_buf_check_ud( luaVM, pB, 1 );
 
 	*pos = luaL_checkinteger( luaVM, pP );   ///< starting byte  b->b[pos]
 
 	luaL_argcheck( luaVM,  1 <= *pos && *pos <= (int) buf->len, 2,
-		                 "xt.Buffer position must be >= 1 or <= #buffer" );
+		                 "t.Buffer position must be >= 1 or <= #buffer" );
 	*pos = *pos-1;     /// account for array access being 0 based
 	return buf;
 }
@@ -59,25 +59,25 @@ struct xt_buf * xt_buf_getbuffer( lua_State *luaVM, int pB, int pP, int *pos )
  * \lparam    string buffer content initialized
  * \return    integer   how many elements are placed on the Lua stack
  *  -------------------------------------------------------------------------*/
-static int lxt_buf_New( lua_State *luaVM )
+static int lt_buf_New( lua_State *luaVM )
 {
-	size_t                                   sz;
-	struct xt_buf  __attribute__ ((unused)) *buf;
+	size_t                                  sz;
+	struct t_buf  __attribute__ ((unused)) *buf;
 
 	if (lua_isnumber( luaVM, 1))
 	{
 		sz  = luaL_checkinteger( luaVM, 1 );
-		buf = xt_buf_create_ud( luaVM, sz );
+		buf = t_buf_create_ud( luaVM, sz );
 	}
 	else if (lua_isstring( luaVM, 1 ))
 	{
 		luaL_checklstring( luaVM, 1, &sz);
-		buf = xt_buf_create_ud( luaVM, sz );
+		buf = t_buf_create_ud( luaVM, sz );
 		memcpy( (char*) &(buf->b[0]), luaL_checklstring( luaVM, 1, NULL ), sz );
 	}
 	else
 	{
-		xt_push_error( luaVM, "can't create xt.Buffer because of wrong argument type" );
+		t_push_error( luaVM, "can't create t.Buffer because of wrong argument type" );
 	}
 	return 1;
 }
@@ -91,48 +91,48 @@ static int lxt_buf_New( lua_State *luaVM )
  * \lparam    string buffer content initialized            OPTIONAL
  * \return    integer   how many elements are placed on the Lua stack
  *  -------------------------------------------------------------------------*/
-static int lxt_buf__Call (lua_State *luaVM)
+static int lt_buf__Call (lua_State *luaVM)
 {
-	lua_remove( luaVM, 1 );    // remove the xt.Buffer Class table
-	return lxt_buf_New( luaVM );
+	lua_remove( luaVM, 1 );    // remove the t.Buffer Class table
+	return lt_buf_New( luaVM );
 }
 
 
 /**--------------------------------------------------------------------------
- * create a xt_buf and push to LuaStack.
+ * create a t_buf and push to LuaStack.
  * \param   luaVM  The lua state.
  *
- * \return  struct xt_buf*  pointer to the  xt_buf struct
+ * \return  struct t_buf*  pointer to the  t_buf struct
  * --------------------------------------------------------------------------*/
-struct xt_buf *xt_buf_create_ud( lua_State *luaVM, int size )
+struct t_buf *t_buf_create_ud( lua_State *luaVM, int size )
 {
-	struct xt_buf  *b;
+	struct t_buf  *b;
 	size_t          sz;
 
 	// size = sizof(...) -1 because the array has already one member
-	sz = sizeof( struct xt_buf ) + (size - 1) * sizeof( unsigned char );
-	b  = (struct xt_buf *) lua_newuserdata( luaVM, sz );
+	sz = sizeof( struct t_buf ) + (size - 1) * sizeof( unsigned char );
+	b  = (struct t_buf *) lua_newuserdata( luaVM, sz );
 	memset( b->b, 0, size * sizeof( unsigned char ) );
 
 	b->len = size;
-	luaL_getmetatable( luaVM, "xt.Buffer" );
+	luaL_getmetatable( luaVM, "t.Buffer" );
 	lua_setmetatable( luaVM, -2 );
 	return b;
 }
 
 
 /**--------------------------------------------------------------------------
- * Check if the item on stack position pos is an xt_buf struct and return it
+ * Check if the item on stack position pos is an t_buf struct and return it
  * \param  luaVM    the Lua State
  * \param  pos      position on the stack
  *
- * \return struct xt_buf* pointer to xt_buf struct
+ * \return struct t_buf* pointer to t_buf struct
  * --------------------------------------------------------------------------*/
-struct xt_buf *xt_buf_check_ud( lua_State *luaVM, int pos, int check )
+struct t_buf *t_buf_check_ud( lua_State *luaVM, int pos, int check )
 {
-	void *ud = luaL_testudata( luaVM, pos, "xt.Buffer" );
-	luaL_argcheck( luaVM, (ud != NULL || !check), pos, "`xt.Buffer` expected" );
-	return (NULL==ud) ? NULL : (struct xt_buf *) ud;
+	void *ud = luaL_testudata( luaVM, pos, "t.Buffer" );
+	luaL_argcheck( luaVM, (ud != NULL || !check), pos, "`t.Buffer` expected" );
+	return (NULL==ud) ? NULL : (struct t_buf *) ud;
 }
 
 
@@ -142,48 +142,48 @@ struct xt_buf *xt_buf_check_ud( lua_State *luaVM, int pos, int check )
 
 /**--------------------------------------------------------------------------
  * Read a value of type x from the buffer at pos y.
- * \lparam  ud   xt.Buffer (struct xt_buf).
- * \lparam  ud   xt.Pack (struct xt_pck).
+ * \lparam  ud   t.Buffer (struct t_buf).
+ * \lparam  ud   t.Pack (struct t_pck).
  * \lparam  pos  position in bytes.
  * \lreturn val  Lua value.
  *
  * \return integer 1 left on the stack.
  * --------------------------------------------------------------------------*/
-static int lxt_buf_read( lua_State *luaVM )
+static int lt_buf_read( lua_State *luaVM )
 {
-	int            pos;                               ///< starting byte  b->b[pos]
-	struct xt_buf *buf = xt_buf_getbuffer( luaVM, 1 , 2, &pos);
-	struct xt_pck *pck = xt_pck_check_ud( luaVM, 3 );
+	int           pos;                               ///< starting byte  b->b[pos]
+	struct t_buf *buf = t_buf_getbuffer( luaVM, 1 , 2, &pos);
+	struct t_pck *pck = t_pck_check_ud( luaVM, 3 );
 
-	return xt_pck_read( luaVM, pck, &(buf->b[ pos ]));
+	return t_pck_read( luaVM, pck, &(buf->b[ pos ]));
 }
 
 
 /**--------------------------------------------------------------------------
- * Write a value to the buffer as defined in the xt.Pack argument.
- * \lparam  ud   xt.Buffer (struct xt_buf).
- * \lparam  ud   xt.Pack (struct xt_pck).
+ * Write a value to the buffer as defined in the t.Pack argument.
+ * \lparam  ud   t.Buffer (struct t_buf).
+ * \lparam  ud   t.Pack (struct t_pck).
  * \lparam  pos  position in bytes.
  * \lparam  val  Lua value to write to buffer.
  *
  * \return integer 0 left on the stack.
  * --------------------------------------------------------------------------*/
-static int lxt_buf_write( lua_State *luaVM )
+static int lt_buf_write( lua_State *luaVM )
 {
-	int            pos;                               ///< starting byte  b->b[pos]
-	struct xt_buf *buf = xt_buf_getbuffer( luaVM, 1 , 2, &pos);
-	struct xt_pck *pck = xt_pck_check_ud( luaVM, 3 );
+	int          pos;                               ///< starting byte  b->b[pos]
+	struct t_buf *buf = t_buf_getbuffer( luaVM, 1 , 2, &pos);
+	struct t_pck *pck = t_pck_check_ud( luaVM, 3 );
 	int            ret;
 
-	if ((ret = xt_pck_write( luaVM, pck, &(buf->b[ pos ]) )) != 0)
-		return ret; // xt_push_error result
+	if ((ret = t_pck_write( luaVM, pck, &(buf->b[ pos ]) )) != 0)
+		return ret; // t_push_error result
 	return 0;
 }
 
 
 /**--------------------------------------------------------------------------
  * Read a set of chars to the buffer at position x.
- * \lparam  buf  userdata of type xt.Buffer (struct xt_buf).
+ * \lparam  buf  userdata of type t.Buffer (struct t_buf).
  * \lparam  pos  position in bytes.
  * \lparam  sz   size in bytes(1-#buf).
  * \lreturn val  lua_String.
@@ -191,11 +191,11 @@ static int lxt_buf_write( lua_State *luaVM )
  *
  * \return integer 1 left on the stack.
  * --------------------------------------------------------------------------*/
-static int lxt_buf_readraw (lua_State *luaVM)
+static int lt_buf_readraw (lua_State *luaVM)
 {
-	struct xt_buf *buf = xt_buf_check_ud( luaVM, 1, 1 );
-	int            pos;
-	int            sz;
+	struct t_buf *buf = t_buf_check_ud( luaVM, 1, 1 );
+	int           pos;
+	int           sz;
 
 	pos = (lua_isnumber(luaVM, 2)) ? (size_t) luaL_checkinteger( luaVM, 2 ) : 0;
 	sz  = (lua_isnumber(luaVM, 3)) ? (size_t) luaL_checkinteger( luaVM, 3 ) : buf->len - pos;
@@ -207,7 +207,7 @@ static int lxt_buf_readraw (lua_State *luaVM)
 
 /**--------------------------------------------------------------------------
  * Write an set of chars to the buffer at position x.
- * \lparam  buf  userdata of type xt.Buffer (struct xt_buf).
+ * \lparam  buf  userdata of type t.Buffer (struct t_buf).
  * \lparam  val  lua_String.
  * \lparam  pos  position in bytes.
  * \lparam  sz   size in bits (1-64).
@@ -215,11 +215,11 @@ static int lxt_buf_readraw (lua_State *luaVM)
  *
  * \return integer 1 left on the stack.
  * --------------------------------------------------------------------------*/
-static int lxt_buf_writeraw (lua_State *luaVM)
+static int lt_buf_writeraw (lua_State *luaVM)
 {
-	struct xt_buf *buf = xt_buf_check_ud( luaVM, 1, 1 );
-	int            pos = (lua_isnumber(luaVM, 3)) ? luaL_checkinteger(luaVM, 3) : 0;
-	size_t         sz;
+	struct t_buf *buf = t_buf_check_ud( luaVM, 1, 1 );
+	int           pos = (lua_isnumber(luaVM, 3)) ? luaL_checkinteger(luaVM, 3) : 0;
+	size_t        sz;
 
 	// if a third parameter is given write only x bytes of the input string to the buffer
 	if (lua_isnumber(luaVM, 4))
@@ -243,11 +243,11 @@ static int lxt_buf_writeraw (lua_State *luaVM)
  *
  * \return integer 0 left on the stack
  * --------------------------------------------------------------------------*/
-static int lxt_buf_tohexstring (lua_State *luaVM)
+static int lt_buf_tohexstring (lua_State *luaVM)
 {
-	int            l,c;
-	char          *sbuf;
-	struct xt_buf *buf = xt_buf_check_ud( luaVM, 1, 1 );
+	int           l,c;
+	char         *sbuf;
+	struct t_buf *buf = t_buf_check_ud( luaVM, 1, 1 );
 
 	sbuf = malloc( 3 * buf->len * sizeof( char ) );
 	memset( sbuf, 0, 3 * buf->len * sizeof( char ) );
@@ -266,9 +266,9 @@ static int lxt_buf_tohexstring (lua_State *luaVM)
  * \param     lua state
  * \return    integer   how many elements are placed on the Lua stack
  * --------------------------------------------------------------------------*/
-static int lxt_buf__len (lua_State *luaVM)
+static int lt_buf__len (lua_State *luaVM)
 {
-	struct xt_buf *buf = xt_buf_check_ud( luaVM, 1, 1 );
+	struct t_buf *buf = t_buf_check_ud( luaVM, 1, 1 );
 
 	lua_pushinteger( luaVM, (int) buf->len );
 	return 1;
@@ -282,10 +282,10 @@ static int lxt_buf__len (lua_State *luaVM)
  * \lreturn string    formatted string representing buffer.
  * \return  The number of results to be passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
-static int lxt_buf__tostring (lua_State *luaVM)
+static int lt_buf__tostring (lua_State *luaVM)
 {
-	struct xt_buf *buf = xt_buf_check_ud( luaVM, 1, 1 );
-	lua_pushfstring( luaVM, "xt.Buffer{%d}: %p", buf->len, buf );
+	struct t_buf *buf = t_buf_check_ud( luaVM, 1, 1 );
+	lua_pushfstring( luaVM, "t.Buffer{%d}: %p", buf->len, buf );
 	return 1;
 }
 
@@ -293,8 +293,8 @@ static int lxt_buf__tostring (lua_State *luaVM)
 /**--------------------------------------------------------------------------
  * \brief    the metatble for the module
  * --------------------------------------------------------------------------*/
-static const struct luaL_Reg xt_buf_fm [] = {
-	{"__call",        lxt_buf__Call},
+static const struct luaL_Reg t_buf_fm [] = {
+	{"__call",        lt_buf__Call},
 	{NULL,            NULL}
 };
 
@@ -302,8 +302,8 @@ static const struct luaL_Reg xt_buf_fm [] = {
 /**--------------------------------------------------------------------------
  * \brief    the metatble for the module
  * --------------------------------------------------------------------------*/
-static const struct luaL_Reg xt_buf_cf [] = {
-	{"new",           lxt_buf_New},
+static const struct luaL_Reg t_buf_cf [] = {
+	{"new",           lt_buf_New},
 	{NULL,            NULL}
 };
 
@@ -312,15 +312,15 @@ static const struct luaL_Reg xt_buf_cf [] = {
  * \brief      the buffer library definition
  *             assigns Lua available names to C-functions
  * --------------------------------------------------------------------------*/
-static const luaL_Reg xt_buf_m [] = {
-	{"read",       lxt_buf_read},
-	{"write",      lxt_buf_write},
-	{"readRaw",    lxt_buf_readraw},
-	{"writeRaw",   lxt_buf_writeraw},
+static const luaL_Reg t_buf_m [] = {
+	{"read",       lt_buf_read},
+	{"write",      lt_buf_write},
+	{"readRaw",    lt_buf_readraw},
+	{"writeRaw",   lt_buf_writeraw},
 	// univeral stuff
-	{"toHex",      lxt_buf_tohexstring},
-	{"length",     lxt_buf__len},
-	{"toString",   lxt_buf__tostring},
+	{"toHex",      lt_buf_tohexstring},
+	{"length",     lt_buf__len},
+	{"toString",   lt_buf__tostring},
 	{NULL,    NULL}
 };
 
@@ -333,20 +333,20 @@ static const luaL_Reg xt_buf_m [] = {
  * \lreturn string    the library
  * \return  The number of results to be passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
-LUAMOD_API int luaopen_xt_buf (lua_State *luaVM)
+LUAMOD_API int luaopen_t_buf (lua_State *luaVM)
 {
-	// xt.Buffer instance metatable
-	luaL_newmetatable( luaVM, "xt.Buffer" );
-	luaL_newlib( luaVM, xt_buf_m );
+	// t.Buffer instance metatable
+	luaL_newmetatable( luaVM, "t.Buffer" );
+	luaL_newlib( luaVM, t_buf_m );
 	lua_setfield( luaVM, -2, "__index" );
-	lua_pushcfunction( luaVM, lxt_buf__len );
+	lua_pushcfunction( luaVM, lt_buf__len );
 	lua_setfield( luaVM, -2, "__len");
-	lua_pushcfunction( luaVM, lxt_buf__tostring );
+	lua_pushcfunction( luaVM, lt_buf__tostring );
 	lua_setfield( luaVM, -2, "__tostring");
 	lua_pop( luaVM, 1 );        // remove metatable from stack
-	// xt.Buffer class
-	luaL_newlib( luaVM, xt_buf_cf );
-	luaL_newlib( luaVM, xt_buf_fm );
+	// t.Buffer class
+	luaL_newlib( luaVM, t_buf_cf );
+	luaL_newlib( luaVM, t_buf_fm );
 	lua_setmetatable( luaVM, -2 );
 	return 1;
 }

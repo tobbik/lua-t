@@ -1,9 +1,9 @@
 # vim: ts=3 sw=3 st=3 sts=3 sta noet tw=80 list
 #
 # \file      Makefile
-# \brief     Makefile for the lua-xt library
+# \brief     Makefile for the lua-t library
 # \author    tkieslich
-# \copyright See Copyright notice at the end of xt.h
+# \copyright See Copyright notice at the end of t.h
 
 #
 # clang can be substituted with gcc (command line args compatible)
@@ -16,34 +16,34 @@ AR= ar rcu
 RANLIB= ranlib
 VER= 5.2
 
-XT_SRC=xt.c \
-	 xt_sck.c \
-	 xt_ip.c \
-	 xt_lp.c \
-	 xt_lp_sel.c \
-	 xt_time.c \
-	 xt_enc.c \
-	 xt_enc_arc4.c \
-	 xt_enc_crc.c \
-	 xt_enc_b64.c \
-	 xt_buf.c \
-	 xt_pck.c \
-	 xt_pckc.c \
-	 xt_test.c
+T_SRC=t.c \
+	 t_sck.c \
+	 t_ipx.c \
+	 t_elp.c \
+	 t_elp_sel.c \
+	 t_tim.c \
+	 t_enc.c \
+	 t_enc_arc4.c \
+	 t_enc_crc.c \
+	 t_enc_b64.c \
+	 t_buf.c \
+	 t_pck.c \
+	 t_pckc.c \
+	 t_tst.c
 
 
-XT_OBJ=$(XT_SRC:.c=.o)
+T_OBJ=$(T_SRC:.c=.o)
 
-XT_LIB=xt.so
-XT_LIB_A=xt.a
+T_LIB=t.so
+T_LIB_A=t.a
 
-all: $(XT_SRC) $(XT_LIB) $(XT_LIB_A)
+all: $(T_SRC) $(T_LIB) $(T_LIB_A)
 
-$(XT_LIB): $(XT_OBJ)
-	$(LD) -O -shared $(XT_OBJ) -o $@ $(LDFLAGS) $(LIBS) -lcrypt
+$(T_LIB): $(T_OBJ)
+	$(LD) -O -shared $(T_OBJ) -o $@ $(LDFLAGS) $(LIBS) -lcrypt
 
-$(XT_LIB_A): $(XT_OBJ)
-	$(AR) $@ $(XT_OBJ)
+$(T_LIB_A): $(T_OBJ)
+	$(AR) $@ $(T_OBJ)
 	$(RANLIB) $@
 
 .c.o:
@@ -78,8 +78,8 @@ arm:
 	"INCS=-I$(HOME)/BLD/arm/staging/usr/include" \
 	all
 
-install: $(XT_SRC) $(XT_LIB)
-	cp $(XT_LIB)   $(PREFIX)/lib/lua/$(VER)/$(XT_LIB)
+install: $(T_SRC) $(T_LIB)
+	cp $(T_LIB)   $(PREFIX)/lib/lua/$(VER)/$(T_LIB)
 
 #%: %.c
 #	$(CC) -I$(INCS) $(CFLAGS) -c $< -o $@.o
@@ -96,4 +96,4 @@ install: $(XT_SRC) $(XT_LIB)
 	$(CC) -I$(INCS) $(CFLAGS) -c $< -o $@
 
 clean:
-	-rm $(XT_OBJ) $(XT_LIB) $(XT_LIB_A)
+	-rm $(T_OBJ) $(T_LIB) $(T_LIB_A)

@@ -1,12 +1,12 @@
 #!../out/bin/lua
-local xt=require('xt')
+local t=require('t')
 --local ip1,ip2,dip,dport= '10.128.3.200','10.128.3.201','10.128.3.131',8888
 local ip1,ip2,dip,dport= '192.168.0.140','192.168.0.131','192.168.0.200',8888
 
 local i=10
-tcpsock1,src_ip1 = xt.Socket.bind('TCP', ip1)
-tcpsock2,src_ip2 = xt.Socket.bind('TCP', ip2)
-dst_ip   = xt.IpEndpoint(dip,dport)
+tcpsock1,src_ip1 = t.Socket.bind('TCP', ip1)
+tcpsock2,src_ip2 = t.Socket.bind('TCP', ip2)
+dst_ip   = t.IpEndpoint(dip,dport)
 print(tcpsock1,src_ip1)
 print(tcpsock2,src_ip2)
 print(dst_ip)
@@ -17,10 +17,10 @@ print(tcpsock1, tcpsock2, src_ip1, src_ip2, dst_ip)
 while i>0 do
 	print("send:",
 		tcpsock1:send( i.." This is my TCP message to you from (1)\n") )
-	xt.sleep(1)
+	t.sleep(1)
 	print("send:",
 		tcpsock2:send( i.." This is my TCP message to you from (2)\n") )
-	xt.sleep(1200)
+	t.sleep(1200)
 	i=i-1
 end
 tcpsock1:close()

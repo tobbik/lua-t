@@ -1,37 +1,37 @@
 /* vim: ts=3 sw=3 sts=3 tw=80 sta noet list
 */
 /**
- * \file      xt.c
- * \brief     Global wrapper and packer for xt library.
+ * \file      t.c
+ * \brief     Global wrapper and packer for lua-t library.
  *            Exports sub libraries. Defines global helper functions.
  * \author    tkieslich
- * \copyright See Copyright notice at the end of xt.h
+ * \copyright See Copyright notice at the end of t.h
  */
 
 #include <stdio.h>
 #include <string.h>     // strerror
 #include <errno.h>      // errno
 
-#include "xt.h"
-#include "xt_sck.h"
+#include "t.h"
+#include "t_sck.h"
 
 
-void xt_stackPrint( lua_State *luaVM, int i, int last )
+void t_stackPrint( lua_State *luaVM, int i, int last )
 {
 	for ( ;i <= last; i++)
-	{     /* repeat for each level */
-		int t = lua_type(luaVM, i);
+	{     // repeat for each level
+		int t = lua_type( luaVM, i );
 		switch (t)
 		{
-			case LUA_TSTRING:    /* strings */
+			case LUA_TSTRING:    // strings
 				printf( "`%s`", lua_tostring( luaVM, i ) );
 				break;
 
-			case LUA_TBOOLEAN:   /* booleans */
+			case LUA_TBOOLEAN:   // booleans
 				printf( lua_toboolean( luaVM, i ) ? "true" : "false" );
 				break;
 
-			case LUA_TNUMBER:    /* numbers */
+			case LUA_TNUMBER:    // numbers 
 				printf( "%g", lua_tonumber( luaVM, i ) );
 				break;
 
@@ -46,7 +46,7 @@ void xt_stackPrint( lua_State *luaVM, int i, int last )
 				break;
 
 			case LUA_TTABLE:    // tables
-				if (luaL_getmetafield(luaVM, i, "__name"))  // does it have a metatable?
+				if (luaL_getmetafield( luaVM, i, "__name" ))  // does it have a metatable?
 				{
 					printf( "t.%s", lua_tostring( luaVM, -1 ) );
 					lua_pop( luaVM, 1);
@@ -55,11 +55,11 @@ void xt_stackPrint( lua_State *luaVM, int i, int last )
 					printf( "table" );
 				break;
 
-			default:	            /* other values */
+			default:	            // other values
 				printf( "%s", lua_typename( luaVM, t ) );
 				break;
 		}
-		printf( "   " );  /* put a separator */
+		printf( "   " );  // put a separator
 	}
 }
 
@@ -67,12 +67,12 @@ void xt_stackPrint( lua_State *luaVM, int i, int last )
  * \brief  Prints a list of items on the lua stack.
  * \param  luaVM The Lua state.
  */
-void xt_stackDump ( lua_State *luaVM )
+void t_stackDump ( lua_State *luaVM )
 {
-	int top = lua_gettop(luaVM);
-	printf("STACK[%d]:   ", top);
-	xt_stackPrint( luaVM, 1, top );
-	printf( "\n" );  /* end the listing */
+	int top = lua_gettop( luaVM );
+	printf( "STACK[%d]:   ", top );
+	t_stackPrint( luaVM, 1, top );
+	printf( "\n" );  // end the listing
 }
 
 
@@ -83,22 +83,24 @@ void xt_stackDump ( lua_State *luaVM )
  * \param  info  Error string.
  * \param  ...   variable arguments to fmt
  */
-int xt_push_error(lua_State *luaVM, const char *fmt, ...)
+int t_push_error( lua_State *luaVM, const char *fmt, ... )
 {
 	va_list argp;
-	if (NULL==fmt) {
-		if (0==errno) return luaL_error (luaVM, strerror(errno));
-		else          return luaL_error (luaVM, "Unknown Error");
+	if (NULL==fmt)
+	{
+		if (0==errno) return luaL_error( luaVM, strerror( errno ) );
+		else          return luaL_error( luaVM, "Unknown Error" );
 	}
-	else {
-		va_start(argp, fmt);
-		luaL_where(luaVM, 1);
-		lua_pushvfstring(luaVM, fmt, argp);
-		va_end(argp);
-		if (0==errno) lua_pushstring (luaVM, "\n");
-		else          lua_pushfstring (luaVM, ": %s\n", strerror(errno) );
-		lua_concat(luaVM, 3);
-		return lua_error(luaVM);
+	else
+	{
+		va_start( argp, fmt );
+		luaL_where( luaVM, 1 );
+		lua_pushvfstring( luaVM, fmt, argp );
+		va_end( argp );
+		if (0==errno) lua_pushstring( luaVM, "\n" );
+		else          lua_pushfstring( luaVM, ": %s\n", strerror( errno ) );
+		lua_concat( luaVM, 3 );
+		return lua_error( luaVM );
 	}
 }
 
@@ -109,7 +111,7 @@ int xt_push_error(lua_State *luaVM, const char *fmt, ...)
  * \param     value Unsigned 16 bit integer
  * \return    Integer with the opposite Endianness
  */
-inline uint16_t Reverse2Bytes(uint16_t value)
+inline uint16_t Reverse2Bytes( uint16_t value )
 {
 	return (
 		(value & 0xFFU) << 8 |
@@ -124,7 +126,7 @@ inline uint16_t Reverse2Bytes(uint16_t value)
  * \param     value Unsigned 32 bit integer
  * \return    integer with the opposite Endianness
  */
- inline uint32_t Reverse4Bytes(uint32_t value)
+ inline uint32_t Reverse4Bytes( uint32_t value )
 {
 	return (value & 0x000000FFU) << 24 |
 			 (value & 0x0000FF00U) << 8  |
@@ -139,7 +141,7 @@ inline uint16_t Reverse2Bytes(uint16_t value)
  * \param   value Unsigned 64 bit integer
  * \return  Integer with the opposite Endianness
  */
- inline uint64_t Reverse8Bytes(uint64_t value)
+ inline uint64_t Reverse8Bytes( uint64_t value )
 {
 	return (value & 0x00000000000000FFUL) << 56 |
 			 (value & 0x000000000000FF00UL) << 40 |
@@ -162,27 +164,28 @@ inline uint16_t Reverse2Bytes(uint16_t value)
  * \param  *int    the maximum socket(fd) value
  * \return  void.
  *-------------------------------------------------------------------------*/
-void make_fdset (lua_State *luaVM, int stack_pos, fd_set *collection, int *max_hndl)
+void make_fdset( lua_State *luaVM, int stack_pos, fd_set *collection, int *max_hndl )
 {
-	struct xt_sck  *hndl;
+	struct t_sck  *hndl;
 
-	FD_ZERO (collection);
+	FD_ZERO( collection );
 	// empty table == nil
-	if (lua_isnil (luaVM, stack_pos)) {
+	if (lua_isnil( luaVM, stack_pos) )
+	{
 		return;
 	}
 	// only accept tables
-	luaL_checktype (luaVM, stack_pos, LUA_TTABLE);
+	luaL_checktype( luaVM, stack_pos, LUA_TTABLE );
 	// TODO: check table for len==0 and return
 
 	// adding fh to FD_SETs
-	lua_pushnil(luaVM);
-	while (lua_next(luaVM, stack_pos))
+	lua_pushnil( luaVM );
+	while (lua_next( luaVM, stack_pos ))
 	{
-		hndl = (struct xt_sck *) lua_touserdata(luaVM, -1);
+		hndl = (struct t_sck *) lua_touserdata( luaVM, -1 );
 		FD_SET( hndl->fd, collection );
 		*max_hndl = (hndl->fd > *max_hndl) ? hndl->fd : *max_hndl;
-		lua_pop(luaVM, 1);   // remove the socket, keep key for next()
+		lua_pop( luaVM, 1 );   // remove the socket, keep key for next()
 	}
 }
 
@@ -197,17 +200,17 @@ void make_fdset (lua_State *luaVM, int stack_pos, fd_set *collection, int *max_h
  * \return  The number of results to be passed back to the calling Lua script.
  * TODO:  Allow for a Time Out to be handed to it
  *-------------------------------------------------------------------------*/
-static int l_select_handle(lua_State *luaVM)
+static int l_select_handle( lua_State *luaVM )
 {
-	fd_set           rfds, wfds;
-	struct xt_sck   *hndl;
-	int              rnum, wnum, readsocks, i/*, rp*/;
-	int              rset=1;//, wset=1;
+	fd_set          rfds, wfds;
+	struct t_sck   *hndl;
+	int             rnum, wnum, readsocks, i/*, rp*/;
+	int             rset=1;//, wset=1;
 
 	wnum = -1;
 	rnum = -1;
-	make_fdset (luaVM, 1, &rfds, &rnum);
-	make_fdset (luaVM, 2, &wfds, &wnum);
+	make_fdset( luaVM, 1, &rfds, &rnum );
+	make_fdset( luaVM, 2, &wfds, &wnum );
 
 	readsocks = select(
 		(wnum > rnum) ? wnum+1 : rnum+1,
@@ -217,31 +220,31 @@ static int l_select_handle(lua_State *luaVM)
 		NULL
 	);
 
-	lua_createtable(luaVM, 0, 0);     // create result table
+	lua_createtable( luaVM, 0, 0 );     // create result table
 	//TODO: check if readsocks hit 0 and break cuz we are done
 	for ( i=1 ; ; i++ )
 	{
-		lua_rawgeti(luaVM, 1, i);
+		lua_rawgeti( luaVM, 1, i );
 		// in table this is when the last index is found
-		if ( lua_isnil(luaVM, -1) )
+		if (lua_isnil( luaVM, -1 ))
 		{
-			lua_pop(luaVM, 1);
+			lua_pop( luaVM, 1 );
 			break;
 		}
-		hndl = (struct xt_sck *) lua_touserdata(luaVM, -1);
-		if FD_ISSET( hndl->fd, &rfds)
+		hndl = (struct t_sck *) lua_touserdata( luaVM, -1 );
+		if FD_ISSET( hndl->fd, &rfds )
 		{
-			lua_rawseti(luaVM, -2, rset++);
+			lua_rawseti( luaVM, -2, rset++ );
 			readsocks--;
 			if (0 == readsocks) {
 				break;
 			}
 		}
 		else {
-			lua_pop(luaVM, 1);
+			lua_pop( luaVM, 1 );
 		}
 	}
-	return (1);
+	return 1;
 }
 
 
@@ -255,16 +258,16 @@ static int l_select_handle(lua_State *luaVM)
  * \return  The number of results to be passed back to the calling Lua script.
  * TODO:  Allow for a Time Out to be handed to it
  *-------------------------------------------------------------------------*/
-static int l_select_handle_k(lua_State *luaVM)
+static int l_select_handle_k( lua_State *luaVM )
 {
-	fd_set           rfds, wfds;
-	struct xt_sck   *hndl;
+	fd_set          rfds, wfds;
+	struct t_sck   *hndl;
 	int              rnum, wnum, readsocks /*, rp*/;
 
 	wnum = -1;
 	rnum = -1;
-	make_fdset (luaVM, 1, &rfds, &rnum);
-	make_fdset (luaVM, 2, &wfds, &wnum);
+	make_fdset( luaVM, 1, &rfds, &rnum );
+	make_fdset( luaVM, 2, &wfds, &wnum );
 
 	readsocks = select(
 		(wnum > rnum) ? wnum+1 : rnum+1,
@@ -274,34 +277,34 @@ static int l_select_handle_k(lua_State *luaVM)
 		NULL
 	);
 
-	lua_createtable(luaVM, 0, 0);     // create result table
+	lua_createtable( luaVM, 0, 0 );     // create result table
 	//lua_createtable(luaVM, 0, 0);
-	lua_pushnil(luaVM);
-	while (lua_next(luaVM, 1))
+	lua_pushnil( luaVM );
+	while (lua_next( luaVM, 1 ))
 	{
-		hndl = (struct xt_sck *) lua_touserdata(luaVM, -1);
-		if FD_ISSET( hndl->fd, &rfds)
+		hndl = (struct t_sck *) lua_touserdata( luaVM, -1 );
+		if FD_ISSET( hndl->fd, &rfds )
 		{
 			//TODO: Find better way to preserve key for next iteration
-			lua_pushvalue(luaVM, -2);
-			lua_pushvalue(luaVM, -2);
-			lua_rawset(luaVM, -5);
+			lua_pushvalue( luaVM, -2 );
+			lua_pushvalue( luaVM, -2 );
+			lua_rawset( luaVM, -5 );
 			if (0 == --readsocks) {
-				lua_pop(luaVM, 2);
+				lua_pop( luaVM, 2 );
 				break;
 			}
 		}
-		lua_pop(luaVM, 1);
+		lua_pop( luaVM, 1 );
 	}
-	return (1);
+	return 1;
 }
 
 
 /**
- * \brief      the (empty) xt library definition
+ * \brief      the (empty) t library definition
  *             assigns Lua available names to C-functions
  */
-static const luaL_Reg l_xt_lib [] =
+static const luaL_Reg l_t_lib [] =
 {
 	// xt-global methods
 	{"select",      l_select_handle},
@@ -311,28 +314,28 @@ static const luaL_Reg l_xt_lib [] =
 
 
 /**
- * \brief     Export the xt library to Lua
+ * \brief     Export the t library to Lua
  *\param      The Lua state.
  * \return     1 return value
  */
-LUAMOD_API int luaopen_xt( lua_State *luaVM )
+LUAMOD_API int luaopen_t( lua_State *luaVM )
 {
-	luaL_newlib( luaVM, l_xt_lib );
-	luaopen_xt_lp( luaVM );
+	luaL_newlib( luaVM, l_t_lib );
+	luaopen_t_elp( luaVM );
 	lua_setfield( luaVM, -2, "Loop" );
-	luaopen_xt_time( luaVM );
+	luaopen_t_tim( luaVM );
 	lua_setfield( luaVM, -2, "Time" );
-	luaopen_xt_sck( luaVM );
+	luaopen_t_sck( luaVM );
 	lua_setfield( luaVM, -2, "Socket" );
-	luaopen_xt_ip( luaVM );
+	luaopen_t_ipx( luaVM );
 	lua_setfield( luaVM, -2, "Ip" );
-	luaopen_xt_buf( luaVM );
+	luaopen_t_buf( luaVM );
 	lua_setfield( luaVM, -2, "Buffer" );
-	luaopen_xt_pck( luaVM );
+	luaopen_t_pck( luaVM );
 	lua_setfield( luaVM, -2, "Pack" );
-	luaopen_xt_enc( luaVM );
+	luaopen_t_enc( luaVM );
 	lua_setfield( luaVM, -2, "Encode" );
-	luaopen_xt_test( luaVM );
+	luaopen_t_tst( luaVM );
 	lua_setfield( luaVM, -2, "Test" );
 	return 1;
 }

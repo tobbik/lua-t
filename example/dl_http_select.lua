@@ -1,8 +1,8 @@
 #!../out/bin/lua
-local xt=require('xt')
+local t=require('t')
 
 
-local tcpsock,ip = xt.Socket.connect('TCP','128.30.52.37', 80)
+local tcpsock,ip = t.Socket.connect('TCP','128.30.52.37', 80)
 local len     = tcpsock:send("GET /TR/REC-html32.html HTTP/1.0\r\n\r\n")
 local buffer = {}
 local length = 0
@@ -10,7 +10,7 @@ local length = 0
 -- this select loop makes no sense, but prooves that select is in fact working
 -- as expected
 while true do
-	res = xt.select({tcpsock},{})
+	res = t.select({tcpsock},{})
 	print(res[1], tcpsock)
 	msg, len = res[1]:recv()
 	if len<1 then

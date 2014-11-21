@@ -1,8 +1,8 @@
 /* vim: ts=3 sw=3 sts=3 tw=80 sta noet list
 */
 /**
- * \file      xt_lp_sel.c
- * \brief     select() specific implementation for xt.Loop.
+ * \file      t_elp_sel.c
+ * \brief     select() specific implementation for t.Loop.
  * Handles    implmentation specific functions such as registreing events and
  *            executing the loop
  *            Being based on the select() system call this version shall work
@@ -10,11 +10,11 @@
  *            if better versions don't work. However, all known limitation to
  *            select() apply.
  * \author    tkieslich
- * \copyright See Copyright notice at the end of xt.h
+ * \copyright See Copyright notice at the end of t.h
  */
 
-#include "xt.h"
-#include "xt_lp.h"
+#include "t.h"
+#include "t_elp.h"
 
 #include <string.h>           // memcpy
 #ifndef _WIN32
@@ -23,75 +23,78 @@
 
 
 /**--------------------------------------------------------------------------
- * Select() specific initialization of xt_lp.
- * \param   struct xt_lp * pointer to new userdata on Lua Stack
+ * Select() specific initialization of t_elp.
+ * \param   struct t_elp * pointer to new userdata on Lua Stack
  * \return  void
  * --------------------------------------------------------------------------*/
-void xt_lp_create_ud_impl( struct xt_lp *lp )
+void
+t_elp_create_ud_impl( struct t_elp *elp )
 {
-	FD_ZERO( &lp->rfds );
-	FD_ZERO( &lp->wfds );
-	FD_ZERO( &lp->rfds_w );
-	FD_ZERO( &lp->wfds_w );
+	FD_ZERO( &elp->rfds );
+	FD_ZERO( &elp->wfds );
+	FD_ZERO( &elp->rfds_w );
+	FD_ZERO( &elp->wfds_w );
 }
 
 
 /**--------------------------------------------------------------------------
- * Add an File/Socket event handler to the xt.Loop.
- * \param   struct xt_lp*.
+ * Add an File/Socket event handler to the t.Loop.
+ * \param   struct t_elp*.
  * \param   int       fd.
  * \param   int(bool) for reading on handle.
  * --------------------------------------------------------------------------*/
-void xt_lp_addhandle_impl( struct xt_lp *lp, int fd, int read )
+void
+t_elp_addhandle_impl( struct t_elp *elp, int fd, int read )
 {
 	if (read)
 	{
-		lp->fd_set[ fd ]->t = XT_LP_READ;
-		FD_SET( fd, &lp->rfds );
+		elp->fd_set[ fd ]->t = t_elp_READ;
+		FD_SET( fd, &elp->rfds );
 	}
 	else
 	{
-		lp->fd_set[ fd ]->t = XT_LP_WRIT;
-		FD_SET( fd, &lp->wfds );
+		elp->fd_set[ fd ]->t = t_elp_WRIT;
+		FD_SET( fd, &elp->wfds );
 	}
-	lp->mxfd = (fd > lp->mxfd) ? fd : lp->mxfd;
+	elp->mxfd = (fd > elp->mxfd) ? fd : elp->mxfd;
 }
 
 
 /**--------------------------------------------------------------------------
- * Add an Timer event handler to the xt.Loop.
+ * Add an Timer event handler to the t.Loop.
  * \param   luaVM  The lua state.
- * \lparam  userdata xt.Loop.                                    // 1
+ * \lparam  userdata t.Loop.                                     // 1
  * \lparam  userdata timeval.                                    // 2
  * \lparam  bool     shall this be treated as an interval?       // 3
  * \lparam  function to be executed when event handler fires.    // 4
  * \lparam  ...    parameters to function when executed.
  * \return  #stack items returned by function call.
  * --------------------------------------------------------------------------*/
-//void xt_lp_addtimer_impl( struct xt_lp *lp, struct timeval *tv )
+//void t_elp_addtimer_impl( struct t_elp *elp, struct timeval *tv )
 //{
 //}
 
 
 /**--------------------------------------------------------------------------
- * Set up a select call for all events in the xt.Loop
- * \param   luaVM          The lua state.
- * \param   struct xt_lp   The loop struct.
+ * Set up a select call for all events in the t.Loop
+ * \param   luaVM         The lua state.
+ * \param   struct t_elp   The loop struct.
  * \return  number returns from select.
  * --------------------------------------------------------------------------*/
-int xt_lp_poll_impl( lua_State *luaVM, struct xt_lp *lp )
+int
+t_elp_poll_impl( lua_State *luaVM, struct t_elp *elp )
 {
 	int              i,r;
 	struct timeval  *tv;
 	struct timeval   rt;      ///< timer to calculate runtime over this poll
 
 	gettimeofday( &rt, 0 );
-	tv  = (NULL != lp->tm_head) ? lp->tm_head->tv : NULL;
+	tv  = (NULL != elp->tm_head) ? elp->tm_head->tv : NULL;
 
-	memcpy( &lp->rfds_w, &lp->rfds, sizeof( fd_set ) );
-	memcpy( &lp->wfds_w, &lp->wfds, sizeof( fd_set ) );
+	memcpy( &elp->rfds_w, &elp->rfds, sizeof( fd_set ) );
+	memcpy( &elp->wfds_w, &elp->wfds, sizeof( fd_set ) );
 
-	r = select( lp->mxfd+1, &lp->rfds_w, &lp->wfds_w, NULL, tv );
+	r = select( elp->mxfd+1, &elp->rfds_w, &elp->wfds_w, NULL, tv );
 	//printf("RESULT: %d\n",r);
 	if (r<0)
 		return r;
@@ -99,18 +102,18 @@ int xt_lp_poll_impl( lua_State *luaVM, struct xt_lp *lp )
 	if (0==r) // deal with timer
 	{
 		// get, unpack and execute func/parm table
-		xt_lp_executetimer( luaVM, lp, &rt );
+		t_elp_executetimer( luaVM, elp, &rt );
 	}
 	else      // deal with sockets/file handles
 	{
-		for( i=0; r>0 && i <= lp->mxfd; i++ )
+		for( i=0; r>0 && i <= elp->mxfd; i++ )
 		{
-			if (NULL==lp->fd_set[ i ])
+			if (NULL==elp->fd_set[ i ])
 				continue;
-			if (FD_ISSET( i, &lp->rfds_w ) || FD_ISSET( i, &lp->wfds_w ))
+			if (FD_ISSET( i, &elp->rfds_w ) || FD_ISSET( i, &elp->wfds_w ))
 			{
 				r--;
-				xt_lp_executehandle( luaVM, lp, i );
+				t_elp_executehandle( luaVM, elp, i );
 			}
 		}
 	}

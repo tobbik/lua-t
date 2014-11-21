@@ -1,8 +1,8 @@
-xt=require'xt'
+t=require't'
 
-b=xt.Buffer( 'ABCDEFGH' )
+b=t.Buffer( 'ABCDEFGH' )
 
-a = xt.Packer.Array( xt.Packer.IntB(2), 4)
+a = t.Packer.Array( t.Packer.IntB(2), 4)
 
 a(b)
 for i,v in pairs(a) do print(i,v) end

@@ -1,5 +1,5 @@
 #!../out/bin/lua
-local xt=require('xt')
+local t=require('t')
 local fmt=string.format
 
 -- a client to interact with the loop.lua example
@@ -11,8 +11,8 @@ printhelp = function()
 		show      - make ser list all its loop events]] )
 end
 
-s  = xt.Socket('UDP')
-ip = xt.Ip( xt.Ip.localhost, 8888 )
+s  = t.Socket('UDP')
+ip = t.Ip( xt.Ip.localhost, 8888 )
 print( s, ip )
 while true do
 	io.write( "Enter command and type enter ('help' for command list': ")

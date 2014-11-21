@@ -1,10 +1,10 @@
 #!../out/bin/lua
-local xt=require('xt')
+local t=require('t')
 local ipadd,port='192.168.0.219',8888
 
-ip      = xt.IpEndpoint(ipadd, port)
-mip     = xt.IpEndpoint('192.168.0.219',54321)
-tcpsock = xt.Socket('TCP')
+ip      = t.IpEndpoint(ipadd, port)
+mip     = t.IpEndpoint('192.168.0.219',54321)
+tcpsock = t.Socket('TCP')
 tcpsock:bind(mip)
 tcpsock:connect(ip)
 print(tcpsock, ip, mip)

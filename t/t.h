@@ -1,11 +1,11 @@
 /* vim: ts=3 sw=3 sts=3 tw=80 sta noet list
 */
 /**
- * \file      xt.h
+ * \file      t.h
  * \brief     general functions and globally known values
  *            data definitions
  * \author    tkieslich
- * \copyright See Copyright notice at the end of xt.h
+ * \copyright See Copyright notice at the end of t.h
  */
 
 #ifdef _WIN32
@@ -36,12 +36,12 @@
 
 
 
-#define XTSWAP(type,a,b) do{type SWAP_tmp= b; b= a; a= SWAP_tmp;}while(0)
+#define TSWAP(type,a,b) do{type SWAP_tmp= b; b= a; a= SWAP_tmp;}while(0)
 
 
-void stackDump       ( lua_State *luaVM );
-void xt_stackPrint   ( lua_State *luaVM, int first, int last );
-int  xt_push_error   ( lua_State *luaVM, const char *fmt, ... );
+void stackDump      ( lua_State *luaVM );
+void t_stackPrint   ( lua_State *luaVM, int first, int last );
+int  t_push_error   ( lua_State *luaVM, const char *fmt, ... );
 
 
 // global helper functions
@@ -50,15 +50,15 @@ uint16_t get_crc16(const unsigned char *data, size_t size);
 
 
 // global sub classes registration
-LUAMOD_API int luaopen_xt_lp    (lua_State *luaVM);
-LUAMOD_API int luaopen_xt_time  (lua_State *luaVM);
-LUAMOD_API int luaopen_xt_ip    (lua_State *luaVM);
-LUAMOD_API int luaopen_xt_sck   (lua_State *luaVM);
-LUAMOD_API int luaopen_xt_enc   (lua_State *luaVM);
-LUAMOD_API int luaopen_xt_buf   (lua_State *luaVM);
-LUAMOD_API int luaopen_xt_pck   (lua_State *luaVM);
-LUAMOD_API int luaopen_xt_test  (lua_State *luaVM);
-LUAMOD_API int luaopen_xt       (lua_State *luaVM);
+LUAMOD_API int luaopen_t_elp   (lua_State *luaVM);
+LUAMOD_API int luaopen_t_tim   (lua_State *luaVM);
+LUAMOD_API int luaopen_t_ipx   (lua_State *luaVM);
+LUAMOD_API int luaopen_t_sck   (lua_State *luaVM);
+LUAMOD_API int luaopen_t_enc   (lua_State *luaVM);
+LUAMOD_API int luaopen_t_buf   (lua_State *luaVM);
+LUAMOD_API int luaopen_t_pck   (lua_State *luaVM);
+LUAMOD_API int luaopen_t_tst   (lua_State *luaVM);
+LUAMOD_API int luaopen_t       (lua_State *luaVM);
 
 
 /******************************************************************************

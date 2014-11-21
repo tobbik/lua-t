@@ -1,26 +1,25 @@
 /* vim: ts=3 sw=3 sts=3 tw=80 sta noet list
 */
 /**
- * \file      xt_test.c
- * \brief     xt unit testing framework (xt.Test)
- *            provides xt.Text and xt.Test.Case
+ * \file      t_tst.c
+ * \brief     t unit testing framework (t.Test)
+ *            provides t.Test and t.Test.Case
  *            implemented as Lua Table
  * \author    tkieslich
- * \copyright See Copyright notice at the end of xt.h
+ * \copyright See Copyright notice at the end of t.h
  */
 
 #include <string.h>            // strlen
 #include <strings.h>           // strncasecmp
 #include <stdlib.h>            // malloc
 
-#include "xt.h"
-#include "xt_time.h"
+#include "t.h"
+#include "t_tim.h"
 
 
 // forward declaration eliminates need for header file
-// l_xt_test.c
-void xt_test_check_ud (lua_State *luaVM, int pos);
-int  xt_test_new(lua_State *luaVM);
+// l_t_tst.c
+void t_tst_check_ud (lua_State *luaVM, int pos);
 
 
 /**--------------------------------------------------------------------------
@@ -29,7 +28,8 @@ int  xt_test_new(lua_State *luaVM);
  * \param   pos    integer.
  * \return  The number of results to be passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
-static void fmt_stack_item (lua_State *luaVM, int pos)
+static void
+fmt_stack_item (lua_State *luaVM, int pos)
 {
 	int t;
 	if (!luaL_callmeta (luaVM, pos, "__tostring"))
@@ -55,6 +55,29 @@ static void fmt_stack_item (lua_State *luaVM, int pos)
 
 
 /**--------------------------------------------------------------------------
+ * create an ceTest Object and put it onto the stack.
+ * \param   luaVM  The lua state.
+ * \lparam  string name of the unit test
+ * \lparam  string description of the unit test
+ * \lreturn luatable representing a test
+ * \return  The number of results to be passed back to the calling Lua script.
+ * --------------------------------------------------------------------------*/
+static int
+t_tst_New(lua_State *luaVM)
+{
+	lua_newtable (luaVM);
+	if (lua_gettop (luaVM) ==2 && lua_isstring (luaVM, 2))
+		lua_pushvalue (luaVM, 2);
+	else
+		lua_pushliteral (luaVM, "anonymous");
+	lua_setfield (luaVM, -2 , "_suitename");
+	luaL_getmetatable (luaVM, "t.Test");
+	lua_setmetatable (luaVM, -2);
+	return 1;
+}
+
+
+/**--------------------------------------------------------------------------
  * construct a Test and return it.
  * \param   luaVM  The lua state.
  * \lparam  CLASS  table Test
@@ -63,32 +86,11 @@ static void fmt_stack_item (lua_State *luaVM, int pos)
  * \lreturn luatable representing a test
  * \return  The number of results to be passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
-static int xt_test___call(lua_State *luaVM)
+static int
+t_tst__Call(lua_State *luaVM)
 {
 	lua_remove(luaVM, 1);
-	return xt_test_new(luaVM);
-}
-
-
-/**--------------------------------------------------------------------------
- * create an ceTest Object and put it onto the stack.
- * \param   luaVM  The lua state.
- * \lparam  string name of the unit test
- * \lparam  string description of the unit test
- * \lreturn luatable representing a test
- * \return  The number of results to be passed back to the calling Lua script.
- * --------------------------------------------------------------------------*/
-int xt_test_new(lua_State *luaVM)
-{
-	lua_newtable (luaVM);
-	if (lua_gettop (luaVM) ==2 && lua_isstring (luaVM, 2))
-		lua_pushvalue (luaVM, 2);
-	else
-		lua_pushliteral (luaVM, "anonymous");
-	lua_setfield (luaVM, -2 , "_suitename");
-	luaL_getmetatable (luaVM, "xt.Test");
-	lua_setmetatable (luaVM, -2);
-	return 1;
+	return t_tst_New(luaVM);
 }
 
 
@@ -99,18 +101,19 @@ int xt_test_new(lua_State *luaVM)
  * \lparam  the Test table on the stack
  * \lreturn leaves the test table on the stack
  * --------------------------------------------------------------------------*/
-void xt_test_check_ud (lua_State *luaVM, int pos)
+void
+t_tst_check_ud (lua_State *luaVM, int pos)
 {
 	luaL_checktype(luaVM, pos, LUA_TTABLE);
    if (lua_getmetatable(luaVM, pos))  /* does it have a metatable? */
 	{
-		luaL_getmetatable(luaVM, "xt.Test");   /* get correct metatable */
+		luaL_getmetatable(luaVM, "t.Test");   /* get correct metatable */
 		if (!lua_rawequal(luaVM, -1, -2))      /* not the same? */
-			xt_push_error (luaVM, "wrong argumnet, `xt.Test` expected");
+			t_push_error (luaVM, "wrong argumnet, `t.Test` expected");
 		lua_pop (luaVM, 2);
 	}
 	else
-		xt_push_error (luaVM, "worong argument, `xt.Test` expected");
+		t_push_error (luaVM, "worong argument, `t.Test` expected");
 }
 
 
@@ -118,10 +121,11 @@ void xt_test_check_ud (lua_State *luaVM, int pos)
  * \brief   creates a traceback from a function call
  * \param   luaVM    The lua state.
  * \lparam  either assert result table or generig string
- * \lreturn a xt_test result Failure description table
+ * \lreturn a t_tst result Failure description table
  * \return  The number of results to be passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
-static int traceback (lua_State *luaVM) {
+static int
+traceback (lua_State *luaVM) {
 	if (LUA_TSTRING == lua_type (luaVM, 1))
 	{
 		lua_newtable (luaVM);
@@ -147,22 +151,23 @@ static int traceback (lua_State *luaVM) {
  * \lreturn boolean true if all passed, otherwise false
  * \return  The number of results to be passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
-static int xt_test__call (lua_State *luaVM)
+static int
+t_tst__call (lua_State *luaVM)
 {
 	size_t          all  = 1,
 	                pass = 0,
 	                skip = 0;
 	struct timeval *tm;
 
-	xt_test_check_ud  (luaVM, 1);
+	t_tst_check_ud  (luaVM, 1);
 	lua_pushstring (luaVM, "_time");
-	tm =  xt_time_create_ud (luaVM);          // Stack: 2
+	tm =  t_tim_create_ud (luaVM);          // Stack: 2
 	lua_rawset (luaVM, 1);
 
 	lua_getfield (luaVM, 1, "setUp");
 	lua_pushvalue (luaVM, 1);
 	if (lua_pcall (luaVM, 1, 0, 0))
-		xt_push_error (luaVM, "Test setup failed %s", lua_tostring (luaVM, -1));
+		t_push_error (luaVM, "Test setup failed %s", lua_tostring (luaVM, -1));
 	for ( all=1 ;all < lua_rawlen (luaVM, 1)+1 ; all++ )
 	{
 		lua_rawgeti(luaVM, 1, all);
@@ -180,16 +185,16 @@ static int xt_test__call (lua_State *luaVM)
 	lua_getfield (luaVM, 1, "tearDown");
 	lua_pushvalue (luaVM, 1);
 	if (lua_pcall (luaVM, 1, 0, 0))
-		xt_push_error (luaVM, "Test tearDown failed %s", lua_tostring (luaVM, -1));
+		t_push_error (luaVM, "Test tearDown failed %s", lua_tostring (luaVM, -1));
 
-	xt_time_since (tm);
+	t_tim_since (tm);
 	--all;
 	printf ("---------------------------------------------------------\n"
 	        "Executed %lu tests in %03f seconds\n\n"
 	        "Skipped : %lu\n"
 	        "Failed  : %lu\n"
 	        "status  : %s\n",
-	   all, xt_time_getms(tm)/1000.0,
+	   all, t_tim_getms(tm)/1000.0,
 		skip,
 		all-pass,
 		(all==pass)? "OK":"FAIL");
@@ -207,7 +212,8 @@ static int xt_test__call (lua_State *luaVM)
  *          - extracts TODO, SKIP and DESC from the comments
  *
  */
-static void xt_get_fn_source (lua_State *luaVM)
+static void
+t_get_fn_source (lua_State *luaVM)
 {
 	lua_Debug  ar;
 	FILE      *f;
@@ -266,18 +272,19 @@ static void xt_get_fn_source (lua_State *luaVM)
  * \lparam  value LuaType
  * \return  The number of results to be passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
-static int xt_test__newindex (lua_State *luaVM)
+static int
+t_tst__newindex (lua_State *luaVM)
 {
 	const char *name;
-	xt_test_check_ud (luaVM, 1);                     // on Stack [1]
+	t_tst_check_ud (luaVM, 1);                     // on Stack [1]
 	name = luaL_checkstring(luaVM, 2);               // on Stack [2]
 
 	// throw out illegal assignments
 	if (lua_isnumber(luaVM, 2))
-		return xt_push_error(luaVM,
+		return t_push_error(luaVM,
 			"Can't overwrite or create numeric indices");
 	if ('_' == *name)
-		return xt_push_error(luaVM,
+		return t_push_error(luaVM,
 			"Can't overwrite or create internal test methods");
 
 	// insert a testcase
@@ -288,8 +295,8 @@ static int xt_test__newindex (lua_State *luaVM)
 		{
 			// TODO: find a more elegant way without that much stack gymnastics
 			lua_newtable (luaVM);                // Stack 4: empty table
-			xt_get_fn_source(luaVM);
-			luaL_getmetatable (luaVM, "xt.Test.Case");
+			t_get_fn_source(luaVM);
+			luaL_getmetatable (luaVM, "t.Test.Case");
 			lua_setmetatable (luaVM, 4);
 
 			lua_pushvalue (luaVM , 2);           // copy name from 2 to 5
@@ -303,7 +310,7 @@ static int xt_test__newindex (lua_State *luaVM)
 		}
 		else
 		{
-			return xt_push_error(luaVM,
+			return t_push_error(luaVM,
 				"test* named elements must be methods");
 		}
 	}
@@ -323,7 +330,8 @@ static int xt_test__newindex (lua_State *luaVM)
  * \return  boolean in 1 or 0
  * TODO: push an expressive error message onto the stack
  *--------------------------------------------------------------------------- */
-static int is_really_equal (lua_State *luaVM)
+static int
+is_really_equal (lua_State *luaVM)
 {
 	// if lua considers them equal ---> true
 	// catches value, reference an meta.__eq
@@ -333,7 +341,7 @@ static int is_really_equal (lua_State *luaVM)
 	if (LUA_TTABLE != lua_type (luaVM, -2))    return 0;
 	if (lua_rawlen (luaVM, -1) != lua_rawlen (luaVM, -2)) return 0;
 	lua_pushnil (luaVM);           // Stack: tableA tableB  nil
-	while (lua_next(luaVM, -3))    // Stack: tableA tableB  keyA  valueA
+	while (lua_next( luaVM, -3 ))    // Stack: tableA tableB  keyA  valueA
 	{
 		lua_pushvalue (luaVM, -2);  // Stack: tableA tableB  keyA  valueA  keyA
 		lua_gettable( luaVM, -4);   // Stack: tableA tableB  keyA  valueA  valueB
@@ -363,11 +371,12 @@ static int is_really_equal (lua_State *luaVM)
  * \lreturn boolean true-equal, false-not equal
  * \return  The number of results to be passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
-static int xt_test_equal (lua_State *luaVM)
+static int
+t_tst_equal (lua_State *luaVM)
 {
 	if (lua_gettop (luaVM)<2 || lua_gettop (luaVM)>3)
 	{
-		return xt_push_error (luaVM, "xt.Test._equals expects two or three arguments");
+		return t_push_error (luaVM, "t.Test._equals expects two or three arguments");
 	}
 	if (3==lua_gettop (luaVM))
 	{
@@ -416,11 +425,12 @@ static int xt_test_equal (lua_State *luaVM)
  * \lreturn boolean true-equal, false-not equal
  * \return  The number of results to be passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
-static int xt_test_equal_not (lua_State *luaVM)
+static int
+t_tst_equal_not (lua_State *luaVM)
 {
 	if (lua_gettop (luaVM)<2 || lua_gettop (luaVM)>3)
 	{
-		return xt_push_error (luaVM, "xt.Test._equals expects two or three arguments");
+		return t_push_error (luaVM, "t.Test._equals expects two or three arguments");
 	}
 	if (3==lua_gettop (luaVM))
 	{
@@ -463,11 +473,12 @@ static int xt_test_equal_not (lua_State *luaVM)
  * \lreturn boolean true-equal, false-not equal
  * \return  The number of results to be passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
-static int xt_test_lt (lua_State *luaVM)
+static int
+t_tst_lt (lua_State *luaVM)
 {
 	if (lua_gettop (luaVM)<2 || lua_gettop (luaVM)>3)
 	{
-		return xt_push_error (luaVM, "xt.Test._lt expects two or three arguments");
+		return t_push_error (luaVM, "t.Test._lt expects two or three arguments");
 	}
 	// compare types, references, metatable.__eq and values
 	if (lua_compare (luaVM, 1, 2, LUA_OPLT))
@@ -513,7 +524,8 @@ static int xt_test_lt (lua_State *luaVM)
  * \param   p     the position of the test on the stack
  * \param   m     the name of the diagnostic field
  */
-static void add_tap_diagnostics (lua_State *luaVM, luaL_Buffer *lB, const char *m)
+static void
+add_tap_diagnostics (lua_State *luaVM, luaL_Buffer *lB, const char *m)
 {
 	char *a = luaL_prepbuffer (lB);
 	lua_getfield (luaVM, 1, m);
@@ -535,10 +547,11 @@ static void add_tap_diagnostics (lua_State *luaVM, luaL_Buffer *lB, const char *
 /**
  * \brief formats one test case into a TAP line.
  * \param   luaVM the Lua state.
- * \lparam  xt_test_case  table with the on test_* function.
- * \lparam  xt_test       test suite table.
+ * \lparam  t_tst_case  table with the on test_* function.
+ * \lparam  t_tst       test suite table.
  */
-static int xt_test_case__tostring (lua_State *luaVM)
+static int
+t_tst_case__tostring (lua_State *luaVM)
 {
 	luaL_Buffer lB;
 	luaL_buffinit (luaVM, &lB);
@@ -603,11 +616,12 @@ static int xt_test_case__tostring (lua_State *luaVM)
  * \lparam  test instance table.
  * \return  The number of results to be passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
-static int xt_test__tostring (lua_State *luaVM)
+static int
+t_tst__tostring (lua_State *luaVM)
 {
 	luaL_Buffer lB;
 	int         i=1, t_len;
-	xt_test_check_ud  (luaVM, 1);
+	t_tst_check_ud  (luaVM, 1);
 	t_len           = luaL_len (luaVM, 1);
 	luaL_buffinit (luaVM, &lB);
 	luaL_addstring(&lB, "1..");
@@ -638,7 +652,8 @@ static int xt_test__tostring (lua_State *luaVM)
  * \lparam  test instance table.
  * \return  The number of results to be passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
-static int xt_test_case__call (lua_State *luaVM)
+static int
+t_tst_case__call (lua_State *luaVM)
 {
 	int n;           ///< execution order number
 	n = luaL_optinteger (luaVM, 3, 0);
@@ -694,8 +709,8 @@ static int xt_test_case__call (lua_State *luaVM)
 /**
  * \brief    the metatble for the module
  */
-static const struct luaL_Reg xt_test_fm [] = {
-	{"__call",              xt_test___call},
+static const struct luaL_Reg t_tst_fm [] = {
+	{"__call",              t_tst__Call},
 	{NULL,                  NULL}
 };
 
@@ -704,11 +719,11 @@ static const struct luaL_Reg xt_test_fm [] = {
  * \brief      the library definition
  *             assigns Lua available names to C-functions
  */
-static const struct luaL_Reg xt_test_m [] = {
-	{"run",                 xt_test__call},
-	{"_eq",                 xt_test_equal},
-	{"_eq_not",             xt_test_equal_not},
-	{"_lt",                 xt_test_lt},
+static const struct luaL_Reg t_tst_m [] = {
+	{"run",                 t_tst__call},
+	{"_eq",                 t_tst_equal},
+	{"_eq_not",             t_tst_equal_not},
+	{"_lt",                 t_tst_lt},
 	{NULL,                  NULL}
 };
 
@@ -717,12 +732,12 @@ static const struct luaL_Reg xt_test_m [] = {
  * \brief      the library class functions definition
  *             assigns Lua available names to C-functions
  */
-static const luaL_Reg xt_test_cf [] =
+static const luaL_Reg t_tst_cf [] =
 {
-	{"new",                 xt_test_new},
-	{"_eq",                 xt_test_equal},
-	{"_eq_not",             xt_test_equal_not},
-	{"_lt",                 xt_test_lt},
+	{"new",                 t_tst_New},
+	{"_eq",                 t_tst_equal},
+	{"_eq_not",             t_tst_equal_not},
+	{"_lt",                 t_tst_lt},
 	{NULL,                  NULL}
 };
 
@@ -735,35 +750,37 @@ static const luaL_Reg xt_test_cf [] =
  * \lreturn string    the library
  * \return  The number of results to be passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
-int luaopen_xt_test (lua_State *luaVM) {
+LUA_API int
+luaopen_t_tst( lua_State *luaVM )
+{
 	// internal metatable that allows the it to be called
-	luaL_newmetatable(luaVM, "xt.Test.Case");   // stack: functions meta
-	lua_pushcfunction(luaVM, xt_test_case__call);
-	lua_setfield(luaVM, -2, "__call");
-	lua_pushcfunction(luaVM, xt_test_case__tostring);
-	lua_setfield(luaVM, -2, "__tostring");
-	lua_pop(luaVM, 1);        // remove metatable from stack
+	luaL_newmetatable( luaVM, "t.Test.Case" );   // stack: functions meta
+	lua_pushcfunction( luaVM, t_tst_case__call );
+	lua_setfield (luaVM, -2, "__call" );
+	lua_pushcfunction( luaVM, t_tst_case__tostring );
+	lua_setfield( luaVM, -2, "__tostring" );
+	lua_pop( luaVM, 1);        // remove metatable from stack
 
 	// just make metatable known to be able to register and check type
 	// this is only avalable a <instance>:func()
-	luaL_newmetatable(luaVM, "xt.Test");   // stack: functions meta
-	luaL_newlib(luaVM, xt_test_m);
-	lua_setfield(luaVM, -2, "__index");
-	lua_pushcfunction(luaVM, xt_test__newindex);
-	lua_setfield(luaVM, -2, "__newindex");
-	lua_pushcfunction(luaVM, xt_test__call);
-	lua_setfield(luaVM, -2, "__call");
-	lua_pushcfunction(luaVM, xt_test__tostring);
-	lua_setfield(luaVM, -2, "__tostring");
-	lua_pop(luaVM, 1);        // remove metatable from stack
+	luaL_newmetatable( luaVM, "t.Test" );   // stack: functions meta
+	luaL_newlib( luaVM, t_tst_m );
+	lua_setfield( luaVM, -2, "__index" );
+	lua_pushcfunction( luaVM, t_tst__newindex );
+	lua_setfield( luaVM, -2, "__newindex" );
+	lua_pushcfunction( luaVM, t_tst__call );
+	lua_setfield( luaVM, -2, "__call" );
+	lua_pushcfunction( luaVM, t_tst__tostring );
+	lua_setfield( luaVM, -2, "__tostring" );
+	lua_pop( luaVM, 1 );        // remove metatable from stack
 
 	// Push the class onto the stack
 	// this is avalable as Test.new() ...
-	luaL_newlib(luaVM, xt_test_cf);
+	luaL_newlib( luaVM, t_tst_cf );
 	// set the methods as metatable
 	// this is only avalable a <instance>:func()
-	luaL_newlib(luaVM, xt_test_fm);
-	lua_setmetatable(luaVM, -2);
+	luaL_newlib( luaVM, t_tst_fm );
+	lua_setmetatable( luaVM, -2 );
 	return 1;
 }
 

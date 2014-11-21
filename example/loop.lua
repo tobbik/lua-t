@@ -1,12 +1,12 @@
 #!../out/bin/lua
-xt = require'xt'
-s  = xt.Socket.bind( 'UDP',  8888 )
+t = require't'
+s  = t.Socket.bind( 'UDP',  8888 )
 l  = nil
 n  = 10
 tm = {}
 
 p = function( ... )
-	local t = xt.Time( math.random( 1500, 11500 ) )
+	local t = t.Time( math.random( 1500, 11500 ) )
 	print( table.unpack( {...} ), 'return   ' .. tostring( (t:get()>2500) and t:get() or 0 ) )
 	return (t:get()>2500) and t or nil
 end
@@ -32,9 +32,9 @@ function r(s)
 	end
 end
 
-l   = xt.Loop( 3 )      ---< Loop with n slots for filehandles
+l   = t.Loop( 3 )      ---< Loop with n slots for filehandles
 for i=1,n do
-	table.insert( tm, xt.Time( math.random( 950, n*1000 ) ) )
+	table.insert( tm, t.Time( math.random( 950, n*1000 ) ) )
 	print( tm[i] )
 	l:addTimer( tm[i], p, "----------------Timer " ..i.. "-----------------" )
 end

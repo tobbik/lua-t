@@ -1,22 +1,22 @@
 /* vim: ts=3 sw=3 sts=3 tw=80 sta noet list
 */
 /**
- * \file      xt_enc.c
+ * \file      t_enc.c
  * \brief     Umbrella for various En/Decoding routines
  *            This covers encoding/Encryption
  * \author    tkieslich
- * \copyright See Copyright notice at the end of xt.h
+ * \copyright See Copyright notice at the end of t.h
  */
 
 #include <stdio.h>
 #include <string.h>     // strerror
 #include <errno.h>      // errno
-#include <unistd.h>      // crypt()
+#include <unistd.h>     // crypt()
 #include <crypt.h>      // crypt()
 #include <time.h>       // time()
 
-#include "xt.h"
-#include "xt_enc.h"
+#include "t.h"
+#include "t_enc.h"
 
 
 /** -------------------------------------------------------------------------
@@ -28,13 +28,14 @@
  * \lreturn salt
  * \return  void.
  *-------------------------------------------------------------------------*/
-static int xt_enc_crypt (lua_State *luaVM)
+static int
+t_enc_crypt( lua_State *luaVM )
 {
 	//char      *salt;
 	const char      *pass;
 
-	pass  = luaL_checkstring (luaVM, 1);
-	//salt  = luaL_checkstring (luaVM, 2);
+	pass  = luaL_checkstring( luaVM, 1 );
+	//salt  = luaL_checkstring( luaVM, 2 );
 
 	unsigned long seed[2];
 	char salt[] = "$1$........";
@@ -53,38 +54,39 @@ static int xt_enc_crypt (lua_State *luaVM)
 	  salt[3+i] = seedchars[(seed[i/5] >> (i%5)*6) & 0x3f];
 
 	/* Read in the user's password and encrypt it. */
-	lua_pushstring (luaVM, crypt (pass, salt));
+	lua_pushstring( luaVM, crypt( pass, salt ) );
 	return 1;
 }
 
 
 /**
- * \brief      the (empty) xt library definition
+ * \brief      the (empty) t library definition
  *             assigns Lua available names to C-functions
  */
-static const luaL_Reg xt_enc_lib [] =
+static const luaL_Reg t_enc_lib [] =
 {
-	//{"crypt",     xt_enc_crypt},
+	//{"crypt",     t_enc_crypt},
 	{NULL,        NULL}
 };
 
 
 /**
- * \brief     Export the xti enc libray to Lua
+ * \brief     Export the t_enc libray to Lua
  *\param      The Lua state.
  * \return     1 return value
  */
-LUAMOD_API int luaopen_xt_enc (lua_State *luaVM)
+LUAMOD_API int
+luaopen_t_enc( lua_State *luaVM )
 {
-	luaL_newlib (luaVM, xt_enc_lib);
-	luaopen_xt_enc_arc4 (luaVM);
-	lua_setfield(luaVM, -2, "Arc4");
-	luaopen_xt_enc_crc (luaVM);
-	lua_setfield(luaVM, -2, "Crc");
-	luaopen_xt_enc_b64 (luaVM);
-	lua_setfield(luaVM, -2, "Base64");
-	lua_pushcfunction (luaVM, xt_enc_crypt);
-	lua_setfield(luaVM, -2, "crypt");
+	luaL_newlib( luaVM, t_enc_lib );
+	luaopen_t_enc_arc4( luaVM );
+	lua_setfield( luaVM, -2, "Arc4" );
+	luaopen_t_enc_crc( luaVM );
+	lua_setfield( luaVM, -2, "Crc" );
+	luaopen_t_enc_b64( luaVM );
+	lua_setfield( luaVM, -2, "Base64" );
+	lua_pushcfunction( luaVM, t_enc_crypt );
+	lua_setfield( luaVM, -2, "crypt" );
 	return 1;
 }
 

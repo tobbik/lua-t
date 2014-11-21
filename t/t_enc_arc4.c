@@ -1,17 +1,17 @@
 /* vim: ts=3 sw=3 sts=3 tw=80 sta noet list
 */
 /**
- * \file      xt_enc_arc4.c
+ * \file      t_enc_arc4.c
  * \brief     Arc4 Encryption Decryption algorithm
  * \author    tkieslich
- * \copyright See Copyright notice at the end of xt.h
+ * \copyright See Copyright notice at the end of t.h
  */
 
 #include <stdio.h>
 #include <stdlib.h>      // calloc
 
-#include "xt.h"
-#include "xt_enc.h"
+#include "t.h"
+#include "t_enc.h"
 
 
 // ----------------------------- Native Arc4 functions
@@ -22,14 +22,14 @@
  * \param len  length of the key
  */
 static void
-xt_enc_arc4_init( struct xt_enc_arc4 *arc4, const unsigned char *key, size_t kLen )
+t_enc_arc4_init( struct t_enc_arc4 *arc4, const unsigned char *key, size_t kLen )
 {
 	// int i,j=0;
 	// for (i=0; i < 256; ++i)        arc4->prng[i] = i;
 	// for (i=0; i < 256; ++i)
 	// {
 	// 	j = (j + prng[i] + key[i % len]) % 256;
-	// 	XT_SWAP (unsigned char, prng[i], prng[j]);
+	// 	T_SWAP (unsigned char, prng[i], prng[j]);
 	// }
 
 	unsigned char j;
@@ -38,15 +38,16 @@ xt_enc_arc4_init( struct xt_enc_arc4 *arc4, const unsigned char *key, size_t kLe
 	for (i = 0; i < 256; i++)      arc4->prng[i] = (unsigned char) i;
 	arc4->i1 = 0; arc4->i2 = 0;
 	// randomize prng with the key
-	for (j = i = 0; i < 256; i++) {
+	for (j = i = 0; i < 256; i++)
+	{
 		j += arc4->prng[i] + key[i % kLen];
-		XTSWAP( uint8_t, arc4->prng[i], arc4->prng[j] );
+		TSWAP( uint8_t, arc4->prng[i], arc4->prng[j] );
 	}
 }
 
 
 static void
-xt_enc_arc4_crypt( struct xt_enc_arc4 *arc4, const char *inbuf, char *outbuf, size_t buflen )
+t_enc_arc4_crypt( struct t_enc_arc4 *arc4, const char *inbuf, char *outbuf, size_t buflen )
 {
 	uint8_t i,j;
 
@@ -57,7 +58,7 @@ xt_enc_arc4_crypt( struct xt_enc_arc4 *arc4, const char *inbuf, char *outbuf, si
 		arc4->i2 += arc4->prng[arc4->i1];
 
 		// Modify PRNG
-		XTSWAP (uint8_t,
+		TSWAP (uint8_t,
 		        arc4->prng[arc4->i1],
 		        arc4->prng[arc4->i2] );
 
@@ -73,7 +74,7 @@ void av_arc4_crypt(AVARC4 *r, uint8_t *dst, const uint8_t *src, int count, uint8
 	uint8_t *state = r->state;
 	while (count-- > 0) {
 		uint8_t sum = state[x] + state[y];
-		XT_SWAP (uint8_t, state[x], state[y]);
+		T_SWAP (uint8_t, state[x], state[y]);
 		*dst++ = src ? *src++ ^ state[sum] : state[sum];
 		x++;
 		y += state[x];
@@ -89,11 +90,11 @@ void av_arc4_crypt(AVARC4 *r, uint8_t *dst, const uint8_t *src, int count, uint8
  * \lparam  CLASS table Arc4
  * \return  The number of results to be passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
-static int 
-lxt_enc_arc4__Call( lua_State *luaVM )
+static int
+lt_enc_arc4__Call( lua_State *luaVM )
 {
 	lua_remove( luaVM, 1 );
-	return lxt_enc_arc4_New( luaVM );
+	return lt_enc_arc4_New( luaVM );
 }
 
 
@@ -106,16 +107,17 @@ lxt_enc_arc4__Call( lua_State *luaVM )
  * \return  The number of results to be passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
 int
-lxt_enc_arc4_New( lua_State *luaVM )
+lt_enc_arc4_New( lua_State *luaVM )
 {
-	struct xt_enc_arc4    *arc4;
+	struct t_enc_arc4    *arc4;
 	const  unsigned char *key;
 	size_t                kLen;
 
-	arc4 = xt_enc_arc4_create_ud( luaVM );
-	if (lua_isstring( luaVM, 1 )) {
+	arc4 = t_enc_arc4_create_ud( luaVM );
+	if (lua_isstring( luaVM, 1 ))
+	{
 		key   = (const unsigned char*) luaL_checklstring( luaVM, 1, &kLen );
-		xt_enc_arc4_init( arc4, key, kLen );
+		t_enc_arc4_init( arc4, key, kLen );
 	}
 
 	return 1;
@@ -125,15 +127,15 @@ lxt_enc_arc4_New( lua_State *luaVM )
 /**--------------------------------------------------------------------------
  * \brief   create a arc4 encode userdata and push to LuaStack.
  * \param   luaVM  The lua state.
- * \return  struct xt_enc_arc4*  pointer
+ * \return  struct t_enc_arc4*  pointer
  * --------------------------------------------------------------------------*/
-struct xt_enc_arc4
-*xt_enc_arc4_create_ud( lua_State *luaVM )
+struct t_enc_arc4
+*t_enc_arc4_create_ud( lua_State *luaVM )
 {
-	struct xt_enc_arc4 *arc4;
+	struct t_enc_arc4 *arc4;
 
-	arc4 = (struct xt_enc_arc4 *) lua_newuserdata( luaVM, sizeof( struct xt_enc_arc4 ) );
-	luaL_getmetatable( luaVM, "xt.Encode.Arc4" );
+	arc4 = (struct t_enc_arc4 *) lua_newuserdata( luaVM, sizeof( struct t_enc_arc4 ) );
+	luaL_getmetatable( luaVM, "t.Encode.Arc4" );
 	lua_setmetatable( luaVM, -2 );
 	return arc4;
 }
@@ -143,14 +145,14 @@ struct xt_enc_arc4
  * \brief   check a value on the stack for being a struct Arc4
  * \param   luaVM    The lua state.
  * \param   int      position on the stack
- * \return  struct xt_enc_arc4*
+ * \return  struct t_enc_arc4*
  * --------------------------------------------------------------------------*/
-struct xt_enc_arc4
-*xt_enc_arc4_check_ud( lua_State *luaVM, int pos )
+struct t_enc_arc4
+*t_enc_arc4_check_ud( lua_State *luaVM, int pos )
 {
-	void *ud = luaL_checkudata( luaVM, pos, "xt.Encode.Arc4" );
-	luaL_argcheck( luaVM, ud != NULL, pos, "`xt.Encode.Arc4` expected" );
-	return (struct xt_enc_arc4 *) ud;
+	void *ud = luaL_checkudata( luaVM, pos, "t.Encode.Arc4" );
+	luaL_argcheck( luaVM, ud != NULL, pos, "`t.Encode.Arc4` expected" );
+	return (struct t_enc_arc4 *) ud;
 }
 
 
@@ -165,34 +167,34 @@ struct xt_enc_arc4
  * \lparam oB64  Shall the output be treaded as Base64
  */
 static int
-lxt_enc_arc4_crypt( lua_State *luaVM )
+lt_enc_arc4_crypt( lua_State *luaVM )
 {
-	struct xt_enc_arc4  *arc4;
+	struct t_enc_arc4   *arc4;
 	size_t               kLen,bLen;    ///< length of key, length of body
 	const unsigned char *key;
 	const char          *body;
 	char                *res;
 	
-	arc4 = xt_enc_arc4_check_ud( luaVM, 1 );
+	arc4 = t_enc_arc4_check_ud( luaVM, 1 );
 	if (lua_isstring( luaVM, 2 ))
 	{
 		body = luaL_checklstring( luaVM, 2, &bLen );
 	}
 	else
 	{
-		return xt_push_error( luaVM, "xt.Arc4.crypt takes at least one string parameter" );
+		return t_push_error( luaVM, "t.Arc4.crypt takes at least one string parameter" );
 	}
 	// if a key is provided for encoding,
 	// reset the Arc4 state by initializing it with new key
 	if (lua_isstring( luaVM, 3 ))
 	{
 		key  = (const unsigned char*) luaL_checklstring( luaVM, 3, &kLen );
-		xt_enc_arc4_init( arc4, key, kLen );
+		t_enc_arc4_init( arc4, key, kLen );
 	}
 
 	res = malloc( bLen * sizeof( unsigned char ) );
 
-	xt_enc_arc4_crypt( arc4, body, res, bLen );
+	t_enc_arc4_crypt( arc4, body, res, bLen );
 	lua_pushlstring( luaVM, res, bLen );
 	free( res );
 
@@ -203,8 +205,8 @@ lxt_enc_arc4_crypt( lua_State *luaVM )
 /**
  * \brief    the metatble for the module
  */
-static const struct luaL_Reg xt_enc_arc4_fm [] = {
-	{"__call",  lxt_enc_arc4__Call},
+static const struct luaL_Reg t_enc_arc4_fm [] = {
+	{"__call",  lt_enc_arc4__Call},
 	{NULL,      NULL}
 };
 
@@ -213,8 +215,8 @@ static const struct luaL_Reg xt_enc_arc4_fm [] = {
  * \brief      the Arc4 static class function library definition
  *             assigns Lua available names to C-functions
  */
-static const struct luaL_Reg xt_enc_arc4_cf [] = {
-	{"new",     lxt_enc_arc4_New},
+static const struct luaL_Reg t_enc_arc4_cf [] = {
+	{"new",     lt_enc_arc4_New},
 	{NULL,      NULL}
 };
 
@@ -223,34 +225,35 @@ static const struct luaL_Reg xt_enc_arc4_cf [] = {
  * \brief      the Arc4 member functions definition
  *             assigns Lua available names to C-functions
  */
-static const luaL_Reg xt_enc_arc4_m [] = {
-	{"crypt",   lxt_enc_arc4_crypt},
+static const luaL_Reg t_enc_arc4_m [] = {
+	{"crypt",   lt_enc_arc4_crypt},
 	{NULL,      NULL}
 };
 
 
 /**--------------------------------------------------------------------------
- * \brief   pushes the xt.Encode.Arc4 library onto the stack
+ * \brief   pushes the t.Encode.Arc4 library onto the stack
  *          - creates Metatable with functions
  *          - creates metatable with methods
  * \param   luaVM     The lua state.
  * \lreturn string    the library
  * \return  The number of results to be passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
-int luaopen_xt_enc_arc4( lua_State *luaVM )
+LUAMOD_API int
+luaopen_t_enc_arc4( lua_State *luaVM )
 {
 	// just make metatable known to be able to register and check userdata
 	// this is only avalable a <instance>:func()
-	luaL_newmetatable( luaVM, "xt.Encode.Arc4" );   // stack: functions meta
-	luaL_newlib( luaVM, xt_enc_arc4_m );
+	luaL_newmetatable( luaVM, "t.Encode.Arc4" );   // stack: functions meta
+	luaL_newlib( luaVM, t_enc_arc4_m );
 	lua_setfield( luaVM, -2, "__index" );
 	lua_pop( luaVM, 1 );        // remove metatable from stack
 
 	// Push the class onto the stack
 	// this is avalable as Arc4.new
-	luaL_newlib( luaVM, xt_enc_arc4_cf );
+	luaL_newlib( luaVM, t_enc_arc4_cf );
 	// set the constructor metatable Arc4()
-	luaL_newlib( luaVM, xt_enc_arc4_fm );
+	luaL_newlib( luaVM, t_enc_arc4_fm );
 	lua_setmetatable( luaVM, -2 );
 	return 1;
 }

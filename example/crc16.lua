@@ -1,14 +1,14 @@
 #!../out/bin/lua
-local xt = require("xt")
+local t = require("t")
 
-b=xt.Buffer(10, 'ABCDEFGHxx')
+b=t.Buffer(10, 'ABCDEFGHxx')
 print(b:toHex())
 
 b:write16(8, 0x2222)
 print (b:toHex())
 
-crc1  = xt.Encode.Crc(1, true)    --      1 = CRC16
-crc2  = xt.Encode.Crc(1, false)   --      1 = CRC16
+crc1  = t.Encode.Crc(1, true)    --      1 = CRC16
+crc2  = t.Encode.Crc(1, false)   --      1 = CRC16
 crcA = crc1:calc('ABCDEFGH')
 crcB = crc2:calc('ABCDEFGH')
 print (string.format('%d  0x%04X', crcA,crcA), #b)
@@ -19,7 +19,7 @@ print (string.format('%d  0x%04X', crcC,crcC), #b)
 
 
 --crc8
-crc8  = xt.Encode.Crc(0, true)    --      0 = CRC8
+crc8  = t.Encode.Crc(0, true)    --      0 = CRC8
 crcA8 = crc8:calc('ABCDEFGH')
 print (string.format('%d  0x%02X', crcA8,crcA8), #b)
 crc8:reset()
