@@ -645,3 +645,108 @@ luaopen_t_pck( lua_State *luaVM )
 	luaopen_t_pckr( luaVM );
 	return 1;
 }
+
+// ==========================================================================
+// preserve float packing/unpacking code from Lua 5.3 alpha
+// Lua 5.3 went with lpack support
+
+/* translate a relative string position: negative means back from end */
+static lua_Integer posrelat (lua_Integer pos, size_t len) {
+  if (pos >= 0) return pos;
+  else if (0u - (size_t)pos > len) return 0;
+  else return (lua_Integer)len + pos + 1;
+}
+
+
+static union {
+  int dummy;
+  char little;  /* true iff machine is little endian */
+} const nativeendian = {1};
+
+
+static int getendian (lua_State *L, int arg) {
+  const char *endian = luaL_optstring(L, arg,
+                             (nativeendian.little ? "l" : "b"));
+  if (*endian == 'n')  /* native? */
+    return nativeendian.little;
+  luaL_argcheck(L, *endian == 'l' || *endian == 'b', arg,
+                   "endianness must be 'l'/'b'/'n'");
+  return (*endian == 'l');
+}
+
+static void correctendianness (lua_State *L, char *b, int size, int endianarg) {
+  int endian = getendian(L, endianarg);
+  if (endian != nativeendian.little) {  /* not native endianness? */
+    int i = 0;
+    while (i < --size) {
+      char temp = b[i];
+      b[i++] = b[size];
+      b[size] = temp;
+    }
+  }
+}
+
+
+static int getfloatsize (lua_State *L, int arg) {
+  const char *size = luaL_optstring(L, arg, "n");
+  if (*size == 'n') return sizeof(lua_Number);
+  luaL_argcheck(L, *size == 'd' || *size == 'f', arg,
+                   "size must be 'f'/'d'/'n'");
+  return (*size == 'd' ? sizeof(double) : sizeof(float));
+}
+
+
+static int dumpfloat_l (lua_State *L) {
+  float f;  double d;
+  char *pn;  /* pointer to number */
+  lua_Number n = luaL_checknumber(L, 1);
+  int size = getfloatsize(L, 2);
+  if (size == sizeof(lua_Number))
+    pn = (char*)&n;
+  else if (size == sizeof(float)) {
+    f = (float)n;
+    pn = (char*)&f;
+  }  
+  else {  /* native lua_Number may be neither float nor double */
+    lua_assert(size == sizeof(double));
+    d = (double)n;
+    pn = (char*)&d;
+  }
+  correctendianness(L, pn, size, 3);
+  lua_pushlstring(L, pn, size);
+  return 1;
+}
+
+
+static int undumpfloat_l (lua_State *L) {
+  lua_Number res;
+  size_t len;
+  const char *s = luaL_checklstring(L, 1, &len);
+  lua_Integer pos = posrelat(luaL_optinteger(L, 2, 1), len);
+  int size = getfloatsize(L, 3);
+  luaL_argcheck(L, 1 <= pos && (size_t)pos + size - 1 <= len, 1,
+                   "string too short");
+  if (size == sizeof(lua_Number)) {
+    memcpy(&res, s + pos - 1, size); 
+    correctendianness(L, (char*)&res, size, 4);
+  }
+  else if (size == sizeof(float)) {
+    float f;
+    memcpy(&f, s + pos - 1, size); 
+    correctendianness(L, (char*)&f, size, 4);
+    res = (lua_Number)f;
+  }  
+  else {  /* native lua_Number may be neither float nor double */
+    double d;
+    lua_assert(size == sizeof(double));
+    memcpy(&d, s + pos - 1, size); 
+    correctendianness(L, (char*)&d, size, 4);
+    res = (lua_Number)d;
+  }
+  lua_pushnumber(L, res);
+  return 1;
+}
+
+
+
+
