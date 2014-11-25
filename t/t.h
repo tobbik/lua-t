@@ -39,7 +39,7 @@
 #define TSWAP(type,a,b) do{type SWAP_tmp= b; b= a; a= SWAP_tmp;}while(0)
 
 
-void stackDump      ( lua_State *luaVM );
+void t_stackDump    ( lua_State *luaVM );
 void t_stackPrint   ( lua_State *luaVM, int first, int last );
 int  t_push_error   ( lua_State *luaVM, const char *fmt, ... );
 

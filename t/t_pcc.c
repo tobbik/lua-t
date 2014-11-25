@@ -271,8 +271,8 @@ get_num( const char **fmt, int df )
 // | |__| |_| | (_| |_____/ ___ \|  __/| |
 // |_____\__,_|\__,_|    /_/   \_\_|  |___|
 //###########################################################################
-static void
-t_pcc_getoption( lua_State *luaVM, const char **f, int *e )
+static struct t_pcc
+*t_pcc_getoption( lua_State *luaVM, const char **f, int *e )
 {
 	int           opt = *((*f)++);
 	struct t_pcc *p   = NULL;
@@ -295,20 +295,28 @@ t_pcc_getoption( lua_State *luaVM, const char **f, int *e )
 			break;
 		case 'I':
 			lua_pushfstring( luaVM, (1==*e) ? "IntUL%d" : "IntUB%D", get_num( f, sizeof( int ) ) );
+			break;
 		case 'c':
 			p = t_pcc_create_ud( luaVM, T_PCC_RAW );
 			p->s = get_num( f, 1 );
+			break;
 		case 'r': lua_pushfstring( luaVM, "BIT%d", get_num( f, sizeof( int ) ) ); break;
 		case 'R':
 			p = t_pcc_create_ud( luaVM, T_PCC_BIT );
 			p->s = get_num( f, 1 );
-		case '<': *e = 1; break;
-		case '>': *e = 0; break;
+			break;
+		case '<': *e = 1; return NULL; break;
+		case '>': *e = 0; return NULL; break;
 		default:
 			luaL_error( luaVM, "can't do that bro");
 	}
-	if (NULL!=p)
+	if (NULL==p)
+	{
 		lua_rawget( luaVM, -2 );
+		return t_pcc_check_ud( luaVM, -1, 1 );
+	}
+	else
+		return p;
 }
 
 
@@ -323,7 +331,12 @@ static int lt_pcc_New( lua_State *luaVM )
 	int                                     is_little = IS_LITTLE_ENDIAN;
 	const char                             *fmt = luaL_checkstring( luaVM, 1 );
 	struct t_pcc  __attribute__ ((unused)) *p;
-	t_pcc_getoption( luaVM, &fmt, &is_little );
+
+	luaL_getsubtable( luaVM, LUA_REGISTRYINDEX, "_LOADED" );
+	lua_getfield( luaVM, -1, "t" );
+	lua_getfield( luaVM, -1, "Pcc" );
+	p = t_pcc_getoption( luaVM, &fmt, &is_little );
+	while (NULL == p)  p = t_pcc_getoption( luaVM, &fmt, &is_little );
 	return 1;
 }
 
@@ -629,7 +642,7 @@ luaopen_t_pcc( lua_State *luaVM )
 	// this is avalable as T.Pack.<member>
 	luaL_newlib( luaVM, t_pcc_cf );
 	// register static types
-	// IntSL,IntUB
+	// IntSL,IntUB, Byte., Short.., Long.., LuaInteger..
 	for (i=1; i<=8; i++)
 	{
 		lua_pushfstring( luaVM, "IntSL%d", i );
@@ -652,6 +665,74 @@ luaopen_t_pcc( lua_State *luaVM )
 		t->s = i;
 		t->m = 2;
 		lua_rawset( luaVM, -3 );
+		if (1==i)
+		{
+			lua_pushstring( luaVM, "ByteS" );
+			lua_pushfstring( luaVM, "IntSL%d", i );
+			lua_rawget( luaVM, -3 );
+			lua_rawset( luaVM, -3 );
+			lua_pushstring( luaVM, "ByteU" );
+			lua_pushfstring( luaVM, "IntUL%d", i );
+			lua_rawget( luaVM, -3 );
+			lua_rawset( luaVM, -4 );
+		}
+		if (sizeof( short )==i)
+		{
+			lua_pushstring( luaVM, "ShortSL" );
+			lua_pushfstring( luaVM, "IntSL%d", i );
+			lua_rawget( luaVM, -3 );
+			lua_rawset( luaVM, -3 );
+			lua_pushstring( luaVM, "ShortUL" );
+			lua_pushfstring( luaVM, "IntUL%d", i );
+			lua_rawget( luaVM, -3 );
+			lua_rawset( luaVM, -4 );
+			lua_pushstring( luaVM, "ShortSB" );
+			lua_pushfstring( luaVM, "IntSB%d", i );
+			lua_rawget( luaVM, -3 );
+			lua_rawset( luaVM, -3 );
+			lua_pushstring( luaVM, "ShortUB" );
+			lua_pushfstring( luaVM, "IntUB%d", i );
+			lua_rawget( luaVM, -3 );
+			lua_rawset( luaVM, -4 );
+		}
+		if (sizeof( long )==i)
+		{
+			lua_pushstring( luaVM, "LongSL" );
+			lua_pushfstring( luaVM, "IntSL%d", i );
+			lua_rawget( luaVM, -3 );
+			lua_rawset( luaVM, -3 );
+			lua_pushstring( luaVM, "LongUL" );
+			lua_pushfstring( luaVM, "IntUL%d", i );
+			lua_rawget( luaVM, -3 );
+			lua_rawset( luaVM, -4 );
+			lua_pushstring( luaVM, "LongSB" );
+			lua_pushfstring( luaVM, "IntSB%d", i );
+			lua_rawget( luaVM, -3 );
+			lua_rawset( luaVM, -3 );
+			lua_pushstring( luaVM, "LongUB" );
+			lua_pushfstring( luaVM, "IntUB%d", i );
+			lua_rawget( luaVM, -3 );
+			lua_rawset( luaVM, -4 );
+		}
+		if (sizeof( lua_Integer )==i)
+		{
+			lua_pushstring( luaVM, "LuaIntegerSL" );
+			lua_pushfstring( luaVM, "IntSL%d", i );
+			lua_rawget( luaVM, -3 );
+			lua_rawset( luaVM, -3 );
+			lua_pushstring( luaVM, "LuaIntegerUL" );
+			lua_pushfstring( luaVM, "IntUL%d", i );
+			lua_rawget( luaVM, -3 );
+			lua_rawset( luaVM, -4 );
+			lua_pushstring( luaVM, "LuaIntegerSB" );
+			lua_pushfstring( luaVM, "IntSB%d", i );
+			lua_rawget( luaVM, -3 );
+			lua_rawset( luaVM, -3 );
+			lua_pushstring( luaVM, "LuaIntegerUB" );
+			lua_pushfstring( luaVM, "IntUB%d", i );
+			lua_rawget( luaVM, -3 );
+			lua_rawset( luaVM, -4 );
+		}
 	}
 	// Bit1 ..Bit8
 	for (i=1; i<=8; i++)
