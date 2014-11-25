@@ -331,8 +331,8 @@ LUAMOD_API int luaopen_t( lua_State *luaVM )
 	lua_setfield( luaVM, -2, "Ip" );
 	luaopen_t_buf( luaVM );
 	lua_setfield( luaVM, -2, "Buffer" );
-	//luaopen_t_pck( luaVM );
-	//lua_setfield( luaVM, -2, "Pack" );
+	luaopen_t_pck( luaVM );
+	lua_setfield( luaVM, -2, "Pack" );
 	luaopen_t_pcc( luaVM );
 	lua_setfield( luaVM, -2, "Pcc" );
 	luaopen_t_enc( luaVM );

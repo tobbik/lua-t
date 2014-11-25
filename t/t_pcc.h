@@ -14,6 +14,7 @@
 
 enum t_pcc_t {
 	T_PCC_INT,      ///< Packer         Integer
+	T_PCC_UNT,      ///< Packer         Unsigned Integer
 	T_PCC_FLT,      ///< Packer         Float
 	T_PCC_BIT,      ///< Packer         Bit
 	T_PCC_RAW,      ///< Packer         Raw  -  string/utf8/binary
@@ -24,6 +25,7 @@ enum t_pcc_t {
 
 static const char *const t_pcc_t_lst[] = {
 	"Int",          ///< Packer         Integer
+	"UInt",         ///< Packer         Unsigned Integer
 	"Float",        ///< Packer         Float
 	"Bit",          ///< Packer         Bit
 	"Raw",          ///< Packer         Raw  -  string/utf8/binary
@@ -67,6 +69,10 @@ struct t_pcr {
 // Constructors
 struct t_pcc  *t_pcc_check_ud ( lua_State *luaVM, int pos, int check );
 struct t_pcc  *t_pcc_create_ud( lua_State *luaVM, enum t_pcc_t );
+
+// helpers to interpret format strings
+struct t_pcc *t_pcc_lookup    ( lua_State *luaVM, enum t_pcc_t t, size_t s, int m);
+struct t_pcc *t_pcc_getoption ( lua_State *luaVM, const char **f, int *e );
 
 // accessor helpers for the Packers
 int t_pcc_read ( lua_State *luaVM, struct t_pcc *p, const unsigned char *buffer);

@@ -159,14 +159,14 @@ t_pcc_read( lua_State *luaVM, struct t_pcc *p, const unsigned char *b)
 	switch( p->t )
 	{
 		case T_PCC_INT:
-			if (1 == p->s)
-				lua_pushinteger( luaVM, (p->m > 0)
-					? (lua_Integer)   *b
-					: (lua_Unsigned)  *b );
-			else
-				lua_pushinteger( luaVM, (p->m > 0)
-					? (lua_Integer)   t_pcc_rbytes( p->s, ( 1 == p->m), b )
-					: (lua_Unsigned)  t_pcc_rbytes( p->s, (-1 == p->m), b ) );
+			lua_pushinteger( luaVM, (1 == p->s)
+				? (lua_Integer)  *b
+				: (lua_Integer)   t_pcc_rbytes( p->s, p->m, b ) );
+			break;
+		case T_PCC_UNT:
+			lua_pushinteger( luaVM, (1 == p->s)
+				? (lua_Unsigned) *b
+				: (lua_Unsigned)  t_pcc_rbytes( p->s, p->m, b ) );
 			break;
 		case T_PCC_BIT:
 			if (p->s == 1)
@@ -206,6 +206,7 @@ t_pcc_write( lua_State *luaVM, struct t_pcc *p, unsigned char *b )
 	switch( p->t )
 	{
 		case T_PCC_INT:
+		case T_PCC_UNT:
 			intVal = luaL_checkinteger( luaVM, -1 );
 			if (1==p->s)
 			{
@@ -217,7 +218,7 @@ t_pcc_write( lua_State *luaVM, struct t_pcc *p, unsigned char *b )
 			{
 				luaL_argcheck( luaVM,  0 == (intVal >> (p->s*8)) , -1,
 				   "value to pack must be smaller than the maximum value for the packer size");
-				t_pcc_wbytes( (uint64_t) intVal, p->s, (p->m > 0), b );
+				t_pcc_wbytes( (uint64_t) intVal, p->s, p->m, b );
 			}
 			break;
 		case T_PCC_BIT:
@@ -272,7 +273,7 @@ get_num( const char **fmt, int df )
  * \param     mod parameter.
  * \return    struct t_pcc* pointer.
  *  -------------------------------------------------------------------------*/
-static struct t_pcc
+struct t_pcc
 *t_pcc_lookup( lua_State *luaVM, enum t_pcc_t t, size_t s, int m)
 {
 	struct t_pcc  __attribute__ ((unused)) *p;
@@ -311,27 +312,28 @@ static struct t_pcc
 // | |__| |_| | (_| |_____/ ___ \|  __/| |
 // |_____\__,_|\__,_|    /_/   \_\_|  |___|
 //###########################################################################
-static struct t_pcc
+struct t_pcc
 *t_pcc_getoption( lua_State *luaVM, const char **f, int *e )
 {
 	int           opt = *((*f)++);
+	int           l   = (1==*e);
 	struct t_pcc *p   = NULL;
 	switch (opt)
 	{
-		case 'b': p=t_pcc_lookup( luaVM, T_PCC_INT,                      1,                -1 ); break;
-		case 'B': p=t_pcc_lookup( luaVM, T_PCC_INT,                      1,                 1 ); break;
-		case 'h': p=t_pcc_lookup( luaVM, T_PCC_INT, sizeof( short        ), (1==*e) ? -1 : -2 ); break;
-		case 'H': p=t_pcc_lookup( luaVM, T_PCC_INT, sizeof( short        ), (1==*e) ?  1 :  2 ); break;
-		case 'l': p=t_pcc_lookup( luaVM, T_PCC_INT, sizeof( long         ), (1==*e) ? -1 : -2 ); break;
-		case 'L': p=t_pcc_lookup( luaVM, T_PCC_INT, sizeof( long         ), (1==*e) ?  1 :  2 ); break;
-		case 'j': p=t_pcc_lookup( luaVM, T_PCC_INT, sizeof( lua_Integer  ), (1==*e) ? -1 : -2 ); break;
-		case 'J': p=t_pcc_lookup( luaVM, T_PCC_INT, sizeof( lua_Integer  ), (1==*e) ?  1 :  2 ); break;
-		case 'T': p=t_pcc_lookup( luaVM, T_PCC_INT, sizeof( size_t       ), (1==*e) ?  1 :  2 ); break;
-		case 'f': p=t_pcc_lookup( luaVM, T_PCC_INT, sizeof( float        ),                 0 ); break;
-		case 'd': p=t_pcc_lookup( luaVM, T_PCC_INT, sizeof( double       ),                 0 ); break;
-		case 'n': p=t_pcc_lookup( luaVM, T_PCC_INT, sizeof( lua_Number   ),                 0 ); break;
-		case 'i': p=t_pcc_lookup( luaVM, T_PCC_INT, get_num( f, sizeof( int ) ), (1==*e) ? -1 : -2 ); break;
-		case 'I': p=t_pcc_lookup( luaVM, T_PCC_INT, get_num( f, sizeof( int ) ), (1==*e) ?  1 :  2 ); break;
+		case 'b': p=t_pcc_lookup( luaVM, T_PCC_INT,                      1,                 l ); break;
+		case 'B': p=t_pcc_lookup( luaVM, T_PCC_UNT,                      1,                 l ); break;
+		case 'h': p=t_pcc_lookup( luaVM, T_PCC_INT, sizeof( short        ),                 l ); break;
+		case 'H': p=t_pcc_lookup( luaVM, T_PCC_UNT, sizeof( short        ),                 l ); break;
+		case 'l': p=t_pcc_lookup( luaVM, T_PCC_INT, sizeof( long         ),                 l ); break;
+		case 'L': p=t_pcc_lookup( luaVM, T_PCC_UNT, sizeof( long         ),                 l ); break;
+		case 'j': p=t_pcc_lookup( luaVM, T_PCC_INT, sizeof( lua_Integer  ),                 l ); break;
+		case 'J': p=t_pcc_lookup( luaVM, T_PCC_UNT, sizeof( lua_Integer  ),                 l ); break;
+		case 'T': p=t_pcc_lookup( luaVM, T_PCC_UNT, sizeof( size_t       ),                 l ); break;
+		case 'f': p=t_pcc_lookup( luaVM, T_PCC_FLT, sizeof( float        ),                 0 ); break;
+		case 'd': p=t_pcc_lookup( luaVM, T_PCC_FLT, sizeof( double       ),                 0 ); break;
+		case 'n': p=t_pcc_lookup( luaVM, T_PCC_FLT, sizeof( lua_Number   ),                 0 ); break;
+		case 'i': p=t_pcc_lookup( luaVM, T_PCC_INT, get_num( f, sizeof( int ) ),            l ); break;
+		case 'I': p=t_pcc_lookup( luaVM, T_PCC_UNT, get_num( f, sizeof( int ) ),            l ); break;
 		case 'c': p=t_pcc_lookup( luaVM, T_PCC_RAW, get_num( f, 1 )      ,                  0 ); break;
 		case 'r': p=t_pcc_lookup( luaVM, T_PCC_BIT,                    1 , get_num( f, 1 )    ); break;
 		case 'R': p=t_pcc_lookup( luaVM, T_PCC_BIT, get_num( f, 1 )      ,                  1 ); break;
@@ -520,10 +522,8 @@ t_pcc_format( lua_State *luaVM, enum t_pcc_t t, size_t s, int m )
 	switch( t )
 	{
 		case T_PCC_INT:
-			lua_pushfstring( luaVM, "%c%c%d",
-				(m > 0) ? 'U' : 'S',
-				(m*m == 4) ? 'B' : 'L',
-				s );
+		case T_PCC_UNT:
+			lua_pushfstring( luaVM, "%d%c", s, (1==m) ? 'L' : 'B' );
 			break;
 		case T_PCC_FLT:
 			lua_pushfstring( luaVM, "%d", s );
