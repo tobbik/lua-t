@@ -13,13 +13,23 @@
 
 
 enum t_pcc_t {
-	TPCC_INT,      ///< Packer         Integer
-	TPCC_FLT,      ///< Packer         Float
-	TPCC_BIT,      ///< Packer         Bit
-	TPCC_RAW,      ///< Packer         Raw  -  string/utf8/binary
-	TPCC_ARR,      ///< Combinator     Array
-	TPCC_SEQ,      ///< Combinator     Sequence
-	TPCC_STR,      ///< Combinator     Struct
+	T_PCC_INT,      ///< Packer         Integer
+	T_PCC_FLT,      ///< Packer         Float
+	T_PCC_BIT,      ///< Packer         Bit
+	T_PCC_RAW,      ///< Packer         Raw  -  string/utf8/binary
+	T_PCC_ARR,      ///< Combinator     Array
+	T_PCC_SEQ,      ///< Combinator     Sequence
+	T_PCC_STR,      ///< Combinator     Struct
+};
+
+static const char *const t_pcc_t_lst[] = {
+	"INT",          ///< Packer         Integer
+	"FLOAT",        ///< Packer         Float
+	"BIT",          ///< Packer         Bit
+	"RAW",          ///< Packer         Raw  -  string/utf8/binary
+	"ARRAY",        ///< Combinator     Array
+	"SEQUENCE",     ///< Combinator     Sequence
+	"STRUCT",       ///< Combinator     Struct
 };
 
 
@@ -55,7 +65,7 @@ struct t_pcr {
 
 // t_pck.c
 // Constructors
-struct t_pcc  *t_pcc_check_ud ( lua_State *luaVM, int pos );
+struct t_pcc  *t_pcc_check_ud ( lua_State *luaVM, int pos, int check );
 struct t_pcc  *t_pcc_create_ud( lua_State *luaVM, enum t_pcc_t );
 
 // accessor helpers for the Packers

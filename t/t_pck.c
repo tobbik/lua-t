@@ -646,11 +646,14 @@ luaopen_t_pck( lua_State *luaVM )
 	return 1;
 }
 
+
+
 // ==========================================================================
 // preserve float packing/unpacking code from Lua 5.3 alpha
 // Lua 5.3 went with lpack support
 
-/* translate a relative string position: negative means back from end */
+/*
+// translate a relative string position: negative means back from end
 static lua_Integer posrelat (lua_Integer pos, size_t len) {
   if (pos >= 0) return pos;
   else if (0u - (size_t)pos > len) return 0;
@@ -660,14 +663,14 @@ static lua_Integer posrelat (lua_Integer pos, size_t len) {
 
 static union {
   int dummy;
-  char little;  /* true iff machine is little endian */
+  char little;  // true iff machine is little endian
 } const nativeendian = {1};
 
 
 static int getendian (lua_State *L, int arg) {
   const char *endian = luaL_optstring(L, arg,
                              (nativeendian.little ? "l" : "b"));
-  if (*endian == 'n')  /* native? */
+  if (*endian == 'n')  // native?
     return nativeendian.little;
   luaL_argcheck(L, *endian == 'l' || *endian == 'b', arg,
                    "endianness must be 'l'/'b'/'n'");
@@ -676,7 +679,7 @@ static int getendian (lua_State *L, int arg) {
 
 static void correctendianness (lua_State *L, char *b, int size, int endianarg) {
   int endian = getendian(L, endianarg);
-  if (endian != nativeendian.little) {  /* not native endianness? */
+  if (endian != nativeendian.little) {  // not native endianness?
     int i = 0;
     while (i < --size) {
       char temp = b[i];
@@ -698,7 +701,7 @@ static int getfloatsize (lua_State *L, int arg) {
 
 static int dumpfloat_l (lua_State *L) {
   float f;  double d;
-  char *pn;  /* pointer to number */
+  char *pn;  // pointer to number
   lua_Number n = luaL_checknumber(L, 1);
   int size = getfloatsize(L, 2);
   if (size == sizeof(lua_Number))
@@ -707,7 +710,7 @@ static int dumpfloat_l (lua_State *L) {
     f = (float)n;
     pn = (char*)&f;
   }  
-  else {  /* native lua_Number may be neither float nor double */
+  else {  // native lua_Number may be neither float nor double
     lua_assert(size == sizeof(double));
     d = (double)n;
     pn = (char*)&d;
@@ -736,7 +739,7 @@ static int undumpfloat_l (lua_State *L) {
     correctendianness(L, (char*)&f, size, 4);
     res = (lua_Number)f;
   }  
-  else {  /* native lua_Number may be neither float nor double */
+  else {  // native lua_Number may be neither float nor double
     double d;
     lua_assert(size == sizeof(double));
     memcpy(&d, s + pos - 1, size); 
@@ -746,7 +749,5 @@ static int undumpfloat_l (lua_State *L) {
   lua_pushnumber(L, res);
   return 1;
 }
-
-
-
+*/
 
