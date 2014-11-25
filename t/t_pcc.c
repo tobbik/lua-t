@@ -264,6 +264,46 @@ get_num( const char **fmt, int df )
 }
 
 
+/** -------------------------------------------------------------------------
+ * See if requested type exists otherwise create and make part of Pcc.
+ * \param     luaVM  lua state.
+ * \param     enum   t_pcc_t.
+ * \param     size   number of elements.       
+ * \param     mod parameter.
+ * \return    struct t_pcc* pointer.
+ *  -------------------------------------------------------------------------*/
+static struct t_pcc
+*t_pcc_lookup( lua_State *luaVM, enum t_pcc_t t, size_t s, int m)
+{
+	struct t_pcc  __attribute__ ((unused)) *p;
+	int                                     i;
+
+	luaL_getsubtable( luaVM, LUA_REGISTRYINDEX, "_LOADED" );
+	lua_getfield( luaVM, -1, "t" );
+	lua_getfield( luaVM, -1, "Pcc" );
+	t_pcc_format( luaVM, t, s, m ); lua_concat( luaVM, 2 );
+	lua_rawget( luaVM, -2 );
+	if (lua_isnil( luaVM, -1 ))
+	{
+		lua_pop( luaVM, 1 );
+		t_pcc_format( luaVM, t, s, m ); lua_concat( luaVM, 2 );
+		p = t_pcc_create_ud( luaVM, t );
+		p->s = s; p->m = m;
+		lua_rawset( luaVM, -3);
+		t_pcc_format( luaVM, t, s, m ); lua_concat( luaVM, 2 );
+		lua_rawget( luaVM, -2);
+	}
+	else
+	{
+		p = t_pcc_check_ud( luaVM, -1, 1 );
+	}
+	for(i=0; i<3; i++)
+		lua_remove( luaVM, -2 );
+
+	return p;
+}
+
+
 //###########################################################################
 //  _                        _    ____ ___
 // | |   _   _  __ _        / \  |  _ \_ _|
@@ -278,45 +318,30 @@ static struct t_pcc
 	struct t_pcc *p   = NULL;
 	switch (opt)
 	{
-		case 'b': lua_pushstring( luaVM,                        "ByteS"    ); break;
-		case 'B': lua_pushstring( luaVM,                        "ByteU"    ); break;
-		case 'h': lua_pushstring( luaVM, (1==*e) ? "ShortSL"  : "ShortSB"  ); break;
-		case 'H': lua_pushstring( luaVM, (1==*e) ? "ShortUL"  : "ShortUB"  ); break;
-		case 'l': lua_pushstring( luaVM, (1==*e) ? "LongSL"   : "LongSB"   ); break;
-		case 'L': lua_pushstring( luaVM, (1==*e) ? "LongUL"   : "LongUB"   ); break;
-		case 'j': lua_pushstring( luaVM, (1==*e) ? "LuaIntSL" : "LuaIntSB" ); break;
-		case 'J': lua_pushstring( luaVM, (1==*e) ? "LuaIntUL" : "LuaIntUB" ); break;
-		case 'T': lua_pushstring( luaVM, (1==*e) ? "SizeTL"   : "SizeTB"   ); break;
-		case 'f': lua_pushstring( luaVM,                        "Float"    ); break;
-		case 'd': lua_pushstring( luaVM,                        "Double"   ); break;
-		case 'n': lua_pushstring( luaVM,                        "LuaNum"   ); break;
-		case 'i':
-			lua_pushfstring( luaVM, (1==*e) ? "IntSL%d" : "IntSB%D", get_num( f, sizeof( int ) ) );
-			break;
-		case 'I':
-			lua_pushfstring( luaVM, (1==*e) ? "IntUL%d" : "IntUB%D", get_num( f, sizeof( int ) ) );
-			break;
-		case 'c':
-			p = t_pcc_create_ud( luaVM, T_PCC_RAW );
-			p->s = get_num( f, 1 );
-			break;
-		case 'r': lua_pushfstring( luaVM, "BIT%d", get_num( f, sizeof( int ) ) ); break;
-		case 'R':
-			p = t_pcc_create_ud( luaVM, T_PCC_BIT );
-			p->s = get_num( f, 1 );
-			break;
+		case 'b': p=t_pcc_lookup( luaVM, T_PCC_INT,                      1,                -1 ); break;
+		case 'B': p=t_pcc_lookup( luaVM, T_PCC_INT,                      1,                 1 ); break;
+		case 'h': p=t_pcc_lookup( luaVM, T_PCC_INT, sizeof( short        ), (1==*e) ? -1 : -2 ); break;
+		case 'H': p=t_pcc_lookup( luaVM, T_PCC_INT, sizeof( short        ), (1==*e) ?  1 :  2 ); break;
+		case 'l': p=t_pcc_lookup( luaVM, T_PCC_INT, sizeof( long         ), (1==*e) ? -1 : -2 ); break;
+		case 'L': p=t_pcc_lookup( luaVM, T_PCC_INT, sizeof( long         ), (1==*e) ?  1 :  2 ); break;
+		case 'j': p=t_pcc_lookup( luaVM, T_PCC_INT, sizeof( lua_Integer  ), (1==*e) ? -1 : -2 ); break;
+		case 'J': p=t_pcc_lookup( luaVM, T_PCC_INT, sizeof( lua_Integer  ), (1==*e) ?  1 :  2 ); break;
+		case 'T': p=t_pcc_lookup( luaVM, T_PCC_INT, sizeof( size_t       ), (1==*e) ?  1 :  2 ); break;
+		case 'f': p=t_pcc_lookup( luaVM, T_PCC_INT, sizeof( float        ),                 0 ); break;
+		case 'd': p=t_pcc_lookup( luaVM, T_PCC_INT, sizeof( double       ),                 0 ); break;
+		case 'n': p=t_pcc_lookup( luaVM, T_PCC_INT, sizeof( lua_Number   ),                 0 ); break;
+		case 'i': p=t_pcc_lookup( luaVM, T_PCC_INT, get_num( f, sizeof( int ) ), (1==*e) ? -1 : -2 ); break;
+		case 'I': p=t_pcc_lookup( luaVM, T_PCC_INT, get_num( f, sizeof( int ) ), (1==*e) ?  1 :  2 ); break;
+		case 'c': p=t_pcc_lookup( luaVM, T_PCC_RAW, get_num( f, 1 )      ,                  0 ); break;
+		case 'r': p=t_pcc_lookup( luaVM, T_PCC_BIT,                    1 , get_num( f, 1 )    ); break;
+		case 'R': p=t_pcc_lookup( luaVM, T_PCC_BIT, get_num( f, 1 )      ,                  1 ); break;
+
 		case '<': *e = 1; return NULL; break;
 		case '>': *e = 0; return NULL; break;
 		default:
 			luaL_error( luaVM, "can't do that bro");
 	}
-	if (NULL==p)
-	{
-		lua_rawget( luaVM, -2 );
-		return t_pcc_check_ud( luaVM, -1, 1 );
-	}
-	else
-		return p;
+	return p;
 }
 
 
@@ -326,19 +351,18 @@ static struct t_pcc
  * \lparam    fmt string
  * \return    integer   how many elements are placed on the Lua stack
  *  -------------------------------------------------------------------------*/
-static int lt_pcc_New( lua_State *luaVM )
+static int
+lt_pcc_New( lua_State *luaVM )
 {
 	int                                     is_little = IS_LITTLE_ENDIAN;
 	const char                             *fmt = luaL_checkstring( luaVM, 1 );
 	struct t_pcc  __attribute__ ((unused)) *p;
 
-	luaL_getsubtable( luaVM, LUA_REGISTRYINDEX, "_LOADED" );
-	lua_getfield( luaVM, -1, "t" );
-	lua_getfield( luaVM, -1, "Pcc" );
 	p = t_pcc_getoption( luaVM, &fmt, &is_little );
 	while (NULL == p)  p = t_pcc_getoption( luaVM, &fmt, &is_little );
 	return 1;
 }
+
 
 
 /** -------------------------------------------------------------------------
@@ -489,28 +513,29 @@ lt_pcc_getir( lua_State *luaVM )
  * \lreturn  leaves two strings on the Lua Stack.
  * --------------------------------------------------------------------------*/
 void
-t_pcc_format( lua_State *luaVM, struct t_pcc *p )
+// t_pcc_format( lua_State *luaVM, struct t_pcc *p )
+t_pcc_format( lua_State *luaVM, enum t_pcc_t t, size_t s, int m )
 {
-	lua_pushfstring( luaVM, "%s", t_pcc_t_lst[ p->t ] );
-	switch( p->t )
+	lua_pushfstring( luaVM, "%s", t_pcc_t_lst[ t ] );
+	switch( t )
 	{
 		case T_PCC_INT:
-			lua_pushfstring( luaVM, "%c%c[%d]",
-				(p->m > 0) ? 'U' : 'S',
-				(p->m*p->m == 4) ? 'B' : 'L',
-				p->s );
+			lua_pushfstring( luaVM, "%c%c%d",
+				(m > 0) ? 'U' : 'S',
+				(m*m == 4) ? 'B' : 'L',
+				s );
 			break;
 		case T_PCC_FLT:
-			lua_pushfstring( luaVM, "[%d]", p->s );
+			lua_pushfstring( luaVM, "%d", s );
 			break;
 		case T_PCC_BIT:
-			lua_pushfstring( luaVM, "%d[%d]",  p->m, p->s );
+			lua_pushfstring( luaVM, "%d_%d",  s, m );
 			break;
 		case T_PCC_RAW:
-			lua_pushfstring( luaVM, "[%d]", p->s );
+			lua_pushfstring( luaVM, "%d", s );
 			break;
 		default:
-			lua_pushfstring( luaVM, "[%d:%d]", p->s, p->m );
+			lua_pushfstring( luaVM, "[%d:%d]", s, m );
 	}
 }
 
@@ -527,7 +552,7 @@ lt_pcc__tostring( lua_State *luaVM )
 {
 	struct t_pcc *p = t_pcc_check_ud( luaVM, 1, 1 );
 	lua_pushfstring( luaVM, "T.Pcc." );
-	t_pcc_format( luaVM, p );
+	t_pcc_format( luaVM, p->t, p->s, p->m );
 	lua_pushfstring( luaVM, ": %p", p );
 	lua_concat( luaVM, 4 );
 	return 1;
@@ -551,35 +576,6 @@ lt_pcc__len( lua_State *luaVM )
 
 
 /**--------------------------------------------------------------------------
- * Exports all types of T.Pack as global variables
- * \param   luaVM     The lua state.
- * \lparam  t_pack    the packer instance user_data.
- * \lreturn string    formatted string representing packer.
- * \return  The number of results to be passed back to the calling Lua script.
- * --------------------------------------------------------------------------*/
-static int
-lt_pcc_export( lua_State *luaVM )
-{
-	luaL_getsubtable( luaVM, LUA_REGISTRYINDEX, "_LOADED" );
-	lua_getfield( luaVM, -1, "t" );
-	lua_getfield( luaVM, -1, "Pcc" );
-	lua_pushnil( luaVM );
-	while (lua_next( luaVM, -2 ))
-	{                            // Stack, _LOADED,t,Pack,name,func
-		if(90 < *(lua_tostring( luaVM, -2 )))  // only uppercase elements
-		{
-			lua_pop( luaVM, 1 );
-			continue;
-		}
-		else
-			lua_setglobal( luaVM, lua_tostring( luaVM, -2 ) );
-	}
-	lua_pop( luaVM, 3 );
-	return 0;
-}
-
-
-/**--------------------------------------------------------------------------
  * \brief    the metatble for the module
  * --------------------------------------------------------------------------*/
 static const struct luaL_Reg t_pcc_fm [] = {
@@ -596,7 +592,6 @@ static const struct luaL_Reg t_pcc_cf [] = {
 //	{"Sequence",  lt_pckc_Sequence},
 //	{"Struct",    lt_pckc_Struct},
 	{"size",      lt_pcc_size},
-	{"export",    lt_pcc_export},
 	{"get_ref",   lt_pcc_getir},
 	{NULL,    NULL}
 };
@@ -625,9 +620,6 @@ static const luaL_Reg t_pcc_m [] = {
 LUAMOD_API int
 luaopen_t_pcc( lua_State *luaVM )
 {
-	
-	int           i;                   /// iterator for type creation
-	struct t_pcc *t;                   /// type pointer for type creation
 	// T.Pack instance metatable
 	luaL_newmetatable( luaVM, "T.Pcc" );   // stack: functions meta
 	luaL_newlib( luaVM, t_pcc_m );
@@ -641,131 +633,6 @@ luaopen_t_pcc( lua_State *luaVM )
 	// Push the class onto the stack
 	// this is avalable as T.Pack.<member>
 	luaL_newlib( luaVM, t_pcc_cf );
-	// register static types
-	// IntSL,IntUB, Byte., Short.., Long.., LuaInteger..
-	for (i=1; i<=8; i++)
-	{
-		lua_pushfstring( luaVM, "IntSL%d", i );
-		t    = t_pcc_create_ud( luaVM, T_PCC_INT );
-		t->s = i;
-		t->m = -1;
-		lua_rawset( luaVM, -3 );
-		lua_pushfstring( luaVM, "IntUL%d", i );
-		t     = t_pcc_create_ud( luaVM, T_PCC_INT );
-		t->s = i;
-		t->m = 1;
-		lua_rawset( luaVM, -3 );
-		lua_pushfstring( luaVM, "IntSB%d", i );
-		t    = t_pcc_create_ud( luaVM, T_PCC_INT );
-		t->s = i;
-		t->m = -2;
-		lua_rawset( luaVM, -3 );
-		lua_pushfstring( luaVM, "IntUB%d", i );
-		t     = t_pcc_create_ud( luaVM, T_PCC_INT );
-		t->s = i;
-		t->m = 2;
-		lua_rawset( luaVM, -3 );
-		if (1==i)
-		{
-			lua_pushstring( luaVM, "ByteS" );
-			lua_pushfstring( luaVM, "IntSL%d", i );
-			lua_rawget( luaVM, -3 );
-			lua_rawset( luaVM, -3 );
-			lua_pushstring( luaVM, "ByteU" );
-			lua_pushfstring( luaVM, "IntUL%d", i );
-			lua_rawget( luaVM, -3 );
-			lua_rawset( luaVM, -4 );
-		}
-		if (sizeof( short )==i)
-		{
-			lua_pushstring( luaVM, "ShortSL" );
-			lua_pushfstring( luaVM, "IntSL%d", i );
-			lua_rawget( luaVM, -3 );
-			lua_rawset( luaVM, -3 );
-			lua_pushstring( luaVM, "ShortUL" );
-			lua_pushfstring( luaVM, "IntUL%d", i );
-			lua_rawget( luaVM, -3 );
-			lua_rawset( luaVM, -4 );
-			lua_pushstring( luaVM, "ShortSB" );
-			lua_pushfstring( luaVM, "IntSB%d", i );
-			lua_rawget( luaVM, -3 );
-			lua_rawset( luaVM, -3 );
-			lua_pushstring( luaVM, "ShortUB" );
-			lua_pushfstring( luaVM, "IntUB%d", i );
-			lua_rawget( luaVM, -3 );
-			lua_rawset( luaVM, -4 );
-		}
-		if (sizeof( long )==i)
-		{
-			lua_pushstring( luaVM, "LongSL" );
-			lua_pushfstring( luaVM, "IntSL%d", i );
-			lua_rawget( luaVM, -3 );
-			lua_rawset( luaVM, -3 );
-			lua_pushstring( luaVM, "LongUL" );
-			lua_pushfstring( luaVM, "IntUL%d", i );
-			lua_rawget( luaVM, -3 );
-			lua_rawset( luaVM, -4 );
-			lua_pushstring( luaVM, "LongSB" );
-			lua_pushfstring( luaVM, "IntSB%d", i );
-			lua_rawget( luaVM, -3 );
-			lua_rawset( luaVM, -3 );
-			lua_pushstring( luaVM, "LongUB" );
-			lua_pushfstring( luaVM, "IntUB%d", i );
-			lua_rawget( luaVM, -3 );
-			lua_rawset( luaVM, -4 );
-		}
-		if (sizeof( lua_Integer )==i)
-		{
-			lua_pushstring( luaVM, "LuaIntegerSL" );
-			lua_pushfstring( luaVM, "IntSL%d", i );
-			lua_rawget( luaVM, -3 );
-			lua_rawset( luaVM, -3 );
-			lua_pushstring( luaVM, "LuaIntegerUL" );
-			lua_pushfstring( luaVM, "IntUL%d", i );
-			lua_rawget( luaVM, -3 );
-			lua_rawset( luaVM, -4 );
-			lua_pushstring( luaVM, "LuaIntegerSB" );
-			lua_pushfstring( luaVM, "IntSB%d", i );
-			lua_rawget( luaVM, -3 );
-			lua_rawset( luaVM, -3 );
-			lua_pushstring( luaVM, "LuaIntegerUB" );
-			lua_pushfstring( luaVM, "IntUB%d", i );
-			lua_rawget( luaVM, -3 );
-			lua_rawset( luaVM, -4 );
-		}
-	}
-	// Bit1 ..Bit8
-	for (i=1; i<=8; i++)
-	{
-		lua_pushfstring( luaVM, "Bit%d", i );
-		t = t_pcc_create_ud( luaVM, T_PCC_BIT );
-		t->s  = 1;
-		t->m  = i;
-		lua_rawset( luaVM, -3 );
-	}
-	// NibbleL
-	lua_pushstring( luaVM, "NibbleL" );
-	t = t_pcc_create_ud( luaVM, T_PCC_BIT );
-	t->s  = 4;
-	t->m  = 1;
-	lua_rawset( luaVM, -3 );
-	// NibbleH
-	lua_pushstring( luaVM, "NibbleH" );
-	t = t_pcc_create_ud( luaVM, T_PCC_BIT );
-	t->s  = 4;
-	t->m  = 5;
-	lua_rawset( luaVM, -3 );
-	// Byte
-	lua_pushstring( luaVM, "ByteS" );
-	t = t_pcc_create_ud( luaVM, T_PCC_INT );
-	t->s  = 1;
-	t->m  = -1;
-	lua_rawset( luaVM, -3 );
-	lua_pushstring( luaVM, "ByteU" );
-	t = t_pcc_create_ud( luaVM, T_PCC_INT );
-	t->s  = 1;
-	t->m  = 1;
-	lua_rawset( luaVM, -3 );
 	luaL_newlib( luaVM, t_pcc_fm );
 	lua_setmetatable( luaVM, -2 );
 	return 1;

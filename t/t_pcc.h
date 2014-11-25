@@ -23,13 +23,13 @@ enum t_pcc_t {
 };
 
 static const char *const t_pcc_t_lst[] = {
-	"INT",          ///< Packer         Integer
-	"FLOAT",        ///< Packer         Float
-	"BIT",          ///< Packer         Bit
-	"RAW",          ///< Packer         Raw  -  string/utf8/binary
-	"ARRAY",        ///< Combinator     Array
-	"SEQUENCE",     ///< Combinator     Sequence
-	"STRUCT",       ///< Combinator     Struct
+	"Int",          ///< Packer         Integer
+	"Float",        ///< Packer         Float
+	"Bit",          ///< Packer         Bit
+	"Raw",          ///< Packer         Raw  -  string/utf8/binary
+	"Array",        ///< Combinator     Array
+	"Sequence",     ///< Combinator     Sequence
+	"Struct",       ///< Combinator     Struct
 };
 
 
@@ -73,7 +73,7 @@ int t_pcc_read ( lua_State *luaVM, struct t_pcc *p, const unsigned char *buffer)
 int t_pcc_write( lua_State *luaVM, struct t_pcc *p, unsigned char *buffer );
 
 // tostring helper
-void t_pcc_format( lua_State *luaVM, struct t_pcc *p );
+void t_pcc_format( lua_State *luaVM, enum t_pcc_t t, size_t s, int m );
 
 
 // t_pckc.c

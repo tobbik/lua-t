@@ -29,3 +29,7 @@ iter = function (prefix, t) -- ...then define (for recursion)
 end
 
 iter('_G', _G)
+F=t.Pcc('<I6')
+f=t.Pcc('>i6')
+s=t.Pcc('<c50')
+
