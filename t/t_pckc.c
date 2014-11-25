@@ -400,7 +400,7 @@ lt_pckrc__call( lua_State *luaVM )
 		if (p->t == T_PCK_ARRAY)     // handle Array; return table
 		{
 			lua_createtable( luaVM, p->n, 0 );      //Stack: r,buf,idx,res
-			for (n=1; n<p->n; n++)
+			for (n=1; n<=p->n; n++)
 			{
 				lua_pushcfunction( luaVM, lt_pckrc__call );  //Stack: r,buf,res,__call
 				lua_pushcfunction( luaVM, lt_pckrc__index ); //Stack: r,buf,res,__call,__index
@@ -418,7 +418,7 @@ lt_pckrc__call( lua_State *luaVM )
 		{
 			lua_rawgeti( luaVM, LUA_REGISTRYINDEX, p->iR ); // get index table
 			lua_createtable( luaVM, 0, p->n );      //Stack: r,buf,idx,res
-			for (n=1; n<p->n; n++)
+			for (n=1; n<=p->n; n++)
 			{
 				lua_pushcfunction( luaVM, lt_pckrc__call );  //Stack: r,buf,idx,res,__call
 				lua_pushcfunction( luaVM, lt_pckrc__index ); //Stack: r,buf,idx,res,_call,__index
@@ -436,7 +436,7 @@ lt_pckrc__call( lua_State *luaVM )
 		{
 			lua_rawgeti( luaVM, LUA_REGISTRYINDEX, p->iR ); // get index table
 			lua_createtable( luaVM, 0, p->n );      //Stack: r,buf,idx,res
-			for (n=1; n<p->n; n++)
+			for (n=1; n<=p->n; n++)
 			{
 				lua_pushcfunction( luaVM, lt_pckrc__call );  //Stack: r,buf,idx,res,__call
 				lua_pushcfunction( luaVM, lt_pckrc__index ); //Stack: r,buf,idx,res,_call,__index

@@ -21,7 +21,7 @@
 // --------------------------------- HELPERS Functions
 
 /** -------------------------------------------------------------------------
- * Helper to check arguments for being a t_buf and a valid position
+ * Helper to check arguments for being a t_buf and a valid position.
  * \param     luaVM lua state.
  * \param     pB    position on stack which is buffer.
  * \param     pB    position on stack which is position.
@@ -52,12 +52,12 @@ struct t_buf * t_buf_getbuffer( lua_State *luaVM, int pB, int pP, int *pos )
 // |_____\__,_|\__,_|    /_/   \_\_|  |___|
 /////////////////////////////////////////////////////////////////////////////
 /** -------------------------------------------------------------------------
- * \brief     creates the buffer from the function call
- * \param     luaVM  lua state
- * \lparam    length of buffer
+ * creates the buffer from the function call.
+ * \param     luaVM  lua state.
+ * \lparam    length of buffer.
  *        ALTERNATIVE
- * \lparam    string buffer content initialized
- * \return    integer   how many elements are placed on the Lua stack
+ * \lparam    string buffer content initialized.
+ * \return    integer   how many elements are placed on the Lua stack.
  *  -------------------------------------------------------------------------*/
 static int lt_buf_New( lua_State *luaVM )
 {
@@ -84,12 +84,12 @@ static int lt_buf_New( lua_State *luaVM )
 
 
 /** -------------------------------------------------------------------------
- * \brief     creates the buffer from the Constructor
- * \param     luaVM  lua state
- * \lparam    CLASS table Time
- * \lparam    length of buffer
- * \lparam    string buffer content initialized            OPTIONAL
- * \return    integer   how many elements are placed on the Lua stack
+ * creates the buffer from the Constructor.
+ * \param     luaVM  lua state.
+ * \lparam    CLASS table Time.
+ * \lparam    length of buffer.
+ * \lparam    string buffer content initialized.            OPTIONAL
+ * \return    integer   how many elements are placed on the Lua stack.
  *  -------------------------------------------------------------------------*/
 static int lt_buf__Call (lua_State *luaVM)
 {

@@ -36,6 +36,7 @@ s = t.Pack.Struct (
 	{ ['@status']  = t.Pack.Int1 },
 	{ ConsistCount = t.Pack.Int1 }
 )
+sN= t.Pack('i2i2i1i1')
 
 sbits   = t.Pack.Struct (
 	{isHealthy   = t.Pack.Bit1},  -- is the train set healthy?
