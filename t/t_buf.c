@@ -153,7 +153,7 @@ static int lt_buf_read( lua_State *luaVM )
 {
 	int           pos;                               ///< starting byte  b->b[pos]
 	struct t_buf *buf = t_buf_getbuffer( luaVM, 1 , 2, &pos);
-	struct t_pck *pck = t_pck_check_ud( luaVM, 3 );
+	struct t_pck *pck = t_pck_check_ud( luaVM, 3, 1 );
 
 	return t_pck_read( luaVM, pck, &(buf->b[ pos ]));
 }
@@ -172,7 +172,7 @@ static int lt_buf_write( lua_State *luaVM )
 {
 	int          pos;                               ///< starting byte  b->b[pos]
 	struct t_buf *buf = t_buf_getbuffer( luaVM, 1 , 2, &pos);
-	struct t_pck *pck = t_pck_check_ud( luaVM, 3 );
+	struct t_pck *pck = t_pck_check_ud( luaVM, 3, 1 );
 	int            ret;
 
 	if ((ret = t_pck_write( luaVM, pck, &(buf->b[ pos ]) )) != 0)

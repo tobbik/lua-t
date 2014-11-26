@@ -14,50 +14,59 @@ struct t_buf {
 };
 
 
+// T.Pack is designed to work like Lua 5.3 pack/unpack support.  By the same
+// time it shall have more convienience and be more explicit.
+
 enum t_pck_t {
-	T_PCK_INTB,         ///< X  Byte wide field as Integer -> Big    Endian
-	T_PCK_INTL,         ///< X  Byte wide field as Integer -> Little Endian
-	T_PCK_BYTE,         ///< X  1 Byte wide field
-	T_PCK_NBL,          ///< X  Nibble (4 bits) HI/LO stored in p->oB
-	T_PCK_BIT,          ///< X  1 Bit   wide field
-	T_PCK_BITS,         ///< X  x Bits  wide field
-	T_PCK_FLT,          ///< X  Byte wide field as Float
-	T_PCK_STR,          ///< X  Byte wide field of char bytes
-	T_PCK_ARRAY,        ///< X  Array    Type Packer combinator
-	T_PCK_SEQ,          ///< X  Sequence Type Packer combinator
-	T_PCK_STRUCT,       ///< X  Struct   Type Packer combinator
+	T_PCK_INT,      ///< Packer         Integer
+	T_PCK_UNT,      ///< Packer         Unsigned Integer
+	T_PCK_FLT,      ///< Packer         Float
+	T_PCK_BIT,      ///< Packer         Bit
+	T_PCK_RAW,      ///< Packer         Raw  -  string/utf8/binary
+	T_PCK_ARR,      ///< Combinator     Array
+	T_PCK_SEQ,      ///< Combinator     Sequence
+	T_PCK_STR,      ///< Combinator     Struct
 };
 
 static const char *const t_pck_t_lst[] = {
-	"IntB",         ///< X  Byte wide field as Integer -> Big    Endian
-	"IntL",         ///< X  Byte wide field as Integer -> Little Endian
-	"Byte",         ///< X  1 Byte wide field
-	"Nibble",       ///< X  Nibble (4 bits) HI/LO stored in p->oB
-	"Bit",          ///< X  1 Bit   wide field
-	"Bits",         ///< X  x Bits  wide field
-	"Float",        ///< X  Byte wide field as Float
-	"String",       ///< X  Byte wide field of char bytes
-	"Array",        ///< X  Array    Type Packer combinator
-	"Sequence",     ///< X  Sequence Type Packer combinator
-	"Struct",       ///< X  Struct   Type Packer combinator
-	NULL
+	"Int",          ///< Packer         Integer
+	"UInt",         ///< Packer         Unsigned Integer
+	"Float",        ///< Packer         Float
+	"Bit",          ///< Packer         Bit
+	"Raw",          ///< Packer         Raw  -  string/utf8/binary
+	"Array",        ///< Combinator     Array
+	"Sequence",     ///< Combinator     Sequence
+	"Struct",       ///< Combinator     Struct
 };
 
 
 /// The userdata struct for T.Pack/T.Pack.Struct
 struct t_pck {
-	size_t         sz;   ///< how many bytes are covered in this Structure (incl. sub elements)
-	size_t         lB;   ///< how many bits are covered in this packer
-	size_t         oB;   ///< offset in bits in the first byte
-	/// Lua Registry Reference to the table which holds the pack reference, name
-	/// and offset controlled by index.  The structure looks like the following:
-	/// idx[i]    = Pack
-	/// idx[n+i]  = ofs
-	/// idx[2n+i] = name
-	/// idx[name] = i
-	int            iR;   ///< Lua registry ref to index table
-	size_t         n;    ///< How many elements in the Packer
-	enum  t_pck_t  t;    ///< type of packer
+	enum  t_pck_t  t;   ///< type of packer
+	/// size of packer -> various meanings
+	///  -- for int, float, raw      =  the number of bytes
+	///  -- for bit, bits and nibble =  the number of bits
+	///  -- for Seq,Struct,Arr       =  the number of elements in this Combinator
+	size_t         s;
+	/// modifier -> various meanings
+	///  -- for int                  = Endian (-2=Big, -1=Little, 1=Little, 2=Big)
+	///  -- for bit                  = Offset form beginning of byte (bit numbering: MSB 1)
+	///  -- for Raw                  = 
+	///  -- for Seq,Struct,Arr       = lua registry Reference for the table 
+	/// The structure looks like the following:
+	///                                         idx[i]    = Pack
+	///                                         idx[n+i]  = ofs
+	///                                         idx[2n+i] = name
+	///                                         idx[name] = i
+	int            m;
+};
+
+
+/// The userdata struct for T.Pack.Reader
+struct t_pcr {
+	struct t_pck   *p;   ///< reference to packer type
+	size_t          o;   ///< offset from the beginning of the wrapping Struct
+	size_t          s;   ///< size of this Reader
 };
 
 
@@ -81,19 +90,25 @@ struct t_buf * t_buf_getbuffer( lua_State *luaVM, int pB, int pP, int *pos );
 
 // t_pck.c
 // Constructors
-struct t_pck  *t_pck_check_ud ( lua_State *luaVM, int pos );
+struct t_pck  *t_pck_check_ud ( lua_State *luaVM, int pos, int check );
 struct t_pck  *t_pck_create_ud( lua_State *luaVM, enum t_pck_t );
+
+// helpers to interpret format strings
+struct t_pck *t_pck_lookup    ( lua_State *luaVM, enum t_pck_t t, size_t s, int m);
+struct t_pck *t_pck_getoption ( lua_State *luaVM, const char **f, int *e );
 
 // accessor helpers for the Packers
 int t_pck_read ( lua_State *luaVM, struct t_pck *p, const unsigned char *buffer);
 int t_pck_write( lua_State *luaVM, struct t_pck *p, unsigned char *buffer );
 
 // tostring helper
-void t_pck_format( lua_State *luaVM, struct t_pck *p );
+void t_pck_format( lua_State *luaVM, enum t_pck_t t, size_t s, int m );
 
 
-// t_pckc.c
-int             luaopen_t_pckc  ( lua_State *luaVM );
+
+// t_pcr.c
+/*
+int             luaopen_t_pcr  ( lua_State *luaVM );
 int             luaopen_t_pckr  ( lua_State *luaVM );
 struct t_pck   *t_pckc_check_ud ( lua_State *luaVM, int pos, int check );
 struct t_pckr  *t_pckr_check_ud ( lua_State *luaVM, int pos, int check );
@@ -101,5 +116,5 @@ struct t_pckr  *t_pckr_create_ud( lua_State *luaVM, struct t_pck *p, size_t o );
 int             lt_pckc_Struct  ( lua_State *luaVM );
 int             lt_pckc_Array   ( lua_State *luaVM );
 int             lt_pckc_Sequence( lua_State *luaVM );
-
+*/
 

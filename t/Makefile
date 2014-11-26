@@ -27,10 +27,11 @@ T_SRC=t.c \
 	 t_enc_crc.c \
 	 t_enc_b64.c \
 	 t_buf.c \
-	 t_pcc.c \
 	 t_pck.c \
-	 t_pckc.c \
 	 t_tst.c
+
+
+#	 t_pcr.c \
 
 
 T_OBJ=$(T_SRC:.c=.o)
