@@ -244,10 +244,23 @@ t_pcc_write( lua_State *luaVM, struct t_pcc *p, unsigned char *b )
 	return 0;
 }
 
-/// ----------------------------HELPERS
+// ###########################################################################
+//                                HELPERS
+/** -------------------------------------------------------------------------
+ * See if int represents a character which is a digit.
+ * \param     int c
+ * \return    boolean 0:flase - 1:true
+ *  -------------------------------------------------------------------------*/
 static int
 is_digit( int c ) { return '0' <= c && c<='9'; }
 
+
+/** -------------------------------------------------------------------------
+ * reads from string until input5 is not numeric any more.
+ * \param     char** format string
+ * \param     int    default value
+ * \return    int    read numeric value
+ *  -------------------------------------------------------------------------*/
 static int
 get_num( const char **fmt, int df )
 {
@@ -266,7 +279,9 @@ get_num( const char **fmt, int df )
 
 
 /** -------------------------------------------------------------------------
- * See if requested type exists otherwise create and make part of Pcc.
+ * See if requested type exists in t.Pcc. otherwise create and register.
+ * the format for a particular definition will never change. Hence, no need to
+ * create them over and over again.  This approach saves memory.
  * \param     luaVM  lua state.
  * \param     enum   t_pcc_t.
  * \param     size   number of elements.       
@@ -305,13 +320,6 @@ struct t_pcc
 }
 
 
-//###########################################################################
-//  _                        _    ____ ___
-// | |   _   _  __ _        / \  |  _ \_ _|
-// | |  | | | |/ _` |_____ / _ \ | |_) | |
-// | |__| |_| | (_| |_____/ ___ \|  __/| |
-// |_____\__,_|\__,_|    /_/   \_\_|  |___|
-//###########################################################################
 struct t_pcc
 *t_pcc_getoption( lua_State *luaVM, const char **f, int *e )
 {
@@ -347,6 +355,13 @@ struct t_pcc
 }
 
 
+//###########################################################################
+//  _                        _    ____ ___
+// | |   _   _  __ _        / \  |  _ \_ _|
+// | |  | | | |/ _` |_____ / _ \ | |_) | |
+// | |__| |_| | (_| |_____/ ___ \|  __/| |
+// |_____\__,_|\__,_|    /_/   \_\_|  |___|
+//###########################################################################
 /** -------------------------------------------------------------------------
  * \brief     creates a packerfrom the function call
  * \param     luaVM  lua state
