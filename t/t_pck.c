@@ -290,7 +290,7 @@ get_num( const char **fmt, int df )
  * \return    struct t_pck* pointer.
  *  -------------------------------------------------------------------------*/
 struct t_pck
-*t_pck_lookup( lua_State *luaVM, enum t_pck_t t, size_t s, int m)
+*t_pck_fnd( lua_State *luaVM, enum t_pck_t t, size_t s, int m)
 {
 	struct t_pck  __attribute__ ((unused)) *p;
 	int                                     i;
@@ -321,37 +321,51 @@ struct t_pck
 }
 
 
+/** -------------------------------------------------------------------------
+ * Determines type of Packer from format string.
+ * \param     luaVM  lua state.
+ * \param     char*  format string pointer. moved by this function.
+ * \param     int*   e pointer to current endianess.
+ * \param     int*   o pointer to current offset within fmt.
+ * \return    struct t_pck* pointer.
+ *  -------------------------------------------------------------------------*/
 struct t_pck
-*t_pck_getoption( lua_State *luaVM, const char **f, int *e )
+*t_pck_getoption( lua_State *luaVM, const char **f, int *e, int *o )
 {
 	int           opt = *((*f)++);
-	int           l   = (1==*e);
+	int           m;
+	size_t        s;
+	enum t_pck_t  t;
 	struct t_pck *p   = NULL;
 	switch (opt)
 	{
-		case 'b': p=t_pck_lookup( luaVM, T_PCK_INT,                      1,                 l ); break;
-		case 'B': p=t_pck_lookup( luaVM, T_PCK_UNT,                      1,                 l ); break;
-		case 'h': p=t_pck_lookup( luaVM, T_PCK_INT, sizeof( short        ),                 l ); break;
-		case 'H': p=t_pck_lookup( luaVM, T_PCK_UNT, sizeof( short        ),                 l ); break;
-		case 'l': p=t_pck_lookup( luaVM, T_PCK_INT, sizeof( long         ),                 l ); break;
-		case 'L': p=t_pck_lookup( luaVM, T_PCK_UNT, sizeof( long         ),                 l ); break;
-		case 'j': p=t_pck_lookup( luaVM, T_PCK_INT, sizeof( lua_Integer  ),                 l ); break;
-		case 'J': p=t_pck_lookup( luaVM, T_PCK_UNT, sizeof( lua_Integer  ),                 l ); break;
-		case 'T': p=t_pck_lookup( luaVM, T_PCK_UNT, sizeof( size_t       ),                 l ); break;
-		case 'f': p=t_pck_lookup( luaVM, T_PCK_FLT, sizeof( float        ),                 0 ); break;
-		case 'd': p=t_pck_lookup( luaVM, T_PCK_FLT, sizeof( double       ),                 0 ); break;
-		case 'n': p=t_pck_lookup( luaVM, T_PCK_FLT, sizeof( lua_Number   ),                 0 ); break;
-		case 'i': p=t_pck_lookup( luaVM, T_PCK_INT, get_num( f, sizeof( int ) ),            l ); break;
-		case 'I': p=t_pck_lookup( luaVM, T_PCK_UNT, get_num( f, sizeof( int ) ),            l ); break;
-		case 'c': p=t_pck_lookup( luaVM, T_PCK_RAW, get_num( f, 1 )      ,                  0 ); break;
-		case 'r': p=t_pck_lookup( luaVM, T_PCK_BIT,                    1 , get_num( f, 1 )    ); break;
-		case 'R': p=t_pck_lookup( luaVM, T_PCK_BIT, get_num( f, 1 )      ,                  1 ); break;
+		case 'b': t = T_PCK_INT; s =                     1; m = (1==*e); break;
+		case 'B': t = T_PCK_UNT; s =                     1; m = (1==*e); break;
+		case 'h': t = T_PCK_INT; s = sizeof(       short ); m = (1==*e); break;
+		case 'H': t = T_PCK_INT; s = sizeof(       short ); m = (1==*e); break;
+		case 'l': t = T_PCK_INT; s = sizeof(        long ); m = (1==*e); break;
+		case 'L': t = T_PCK_INT; s = sizeof(        long ); m = (1==*e); break;
+		case 'j': t = T_PCK_INT; s = sizeof( lua_Integer ); m = (1==*e); break;
+		case 'J': t = T_PCK_INT; s = sizeof( lua_Integer ); m = (1==*e); break;
+		case 'T': t = T_PCK_INT; s = sizeof( lua_Integer ); m = (1==*e); break;
+		case 'f': t = T_PCK_INT; s = sizeof(       float ); m = (1==*e); break;
+		case 'd': t = T_PCK_INT; s = sizeof(      double ); m = (1==*e); break;
+		case 'n': t = T_PCK_INT; s = sizeof(  lua_Number ); m = (1==*e); break;
+		case 'i': t = T_PCK_INT; s = get_num( f, sizeof( int ) ); m = (1==*e); break;
+		case 'I': t = T_PCK_UNT; s = get_num( f, sizeof( int ) ); m = (1==*e); break;
+		case 'c': t = T_PCK_RAW; s = get_num( f, 1 )      ; m = 0;       break;
+		case 'r': t = T_PCK_BIT; s =                     1; m = 1+(*o%8); break;
+		case 'R': t = T_PCK_BIT; s = get_num( f, 1 )      ; m = 1+(*o%8); break;
 
 		case '<': *e = 1; return NULL; break;
 		case '>': *e = 0; return NULL; break;
 		default:
 			luaL_error( luaVM, "can't do that bro");
+			return NULL;
 	}
+
+	p   = t_pck_fnd( luaVM, t, s, m );
+	*o  = *o + ((T_PCK_BIT==t) ? s : s*8);
 	return p;
 }
 
@@ -373,11 +387,12 @@ static int
 lt_pck_New( lua_State *luaVM )
 {
 	int                                     is_little = IS_LITTLE_ENDIAN;
+	int                                     offset    = 0;
 	const char                             *fmt = luaL_checkstring( luaVM, 1 );
 	struct t_pck  __attribute__ ((unused)) *p;
 
-	p = t_pck_getoption( luaVM, &fmt, &is_little );
-	while (NULL == p)  p = t_pck_getoption( luaVM, &fmt, &is_little );
+	p = t_pck_getoption( luaVM, &fmt, &is_little, &offset );
+	while (NULL == p)  p = t_pck_getoption( luaVM, &fmt, &is_little, &offset );
 	return 1;
 }
 
