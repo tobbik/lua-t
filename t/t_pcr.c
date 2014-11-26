@@ -24,37 +24,37 @@
  *	    - fmt string of mult items : let Sequence constructor handle and return result
  * \param   luaVM  The lua state.
  * \param   pos    position on stack.
- * \return  struct t_pcc* pointer.
+ * \return  struct t_pck* pointer.
  * --------------------------------------------------------------------------*/
-static struct t_pcc
-*t_pcc_get( lua_State luaVM, int pos )
+static struct t_pck
+*t_pck_get( lua_State luaVM, int pos )
 {
-	struct t_pcc     *p;      ///< packer
-	int               is_little = IS_LITTLE_ENDIAN;
-	const char       *fmt;
+	struct t_pck *p;      ///< packer
+	int           is_little = IS_LITTLE_ENDIAN;
+	const char   *fmt;
 	if (lua_isuserdata( luaVM, pos ))
 	{
-		p = t_pcc_check_ud( luaVM, pos, 1 );          // allow T.Pack or T.Pack.Struct
+		p = t_pck_check_ud( luaVM, pos, 1 );          // allow T.Pack or T.Pack.Struct
 	}
 	else
 	{
 		fmt = luaL_checkstring( luaVM, pos );
-		p = t_pcc_getoption( luaVM, &fmt, &is_little );
+		p = t_pck_getoption( luaVM, &fmt, &is_little );
 		while ('\0' != *fmt)
 			while (NULL == p)
-				p = t_pcc_getoption( luaVM, &fmt, &is_little );
+				p = t_pck_getoption( luaVM, &fmt, &is_little );
 
 		lua_replace( luaVM, pos );
 	}
 }
 
 
-static struct t_pcc
-*t_pcc_getnext( lua_State luaVM, const char **fmt, int pos  )
+static struct t_pck
+*t_pck_getnext( lua_State luaVM, const char **fmt, int pos, int *ofs )
 {
-	int               nxt;
-	struct t_pcc     *p;                          ///< packer
-	int               is_little = IS_LITTLE_ENDIAN;
+	int           nxt;
+	struct t_pck *p;                          ///< packer
+	int           is_little = IS_LITTLE_ENDIAN;
 
 	if (NULL != fmt)
 	{
@@ -64,8 +64,10 @@ static struct t_pcc
 			lua_pushnil( luaVM );
 			return NULL;
 		}
-		p = t_pcc_getoption( luaVM, &fmt, &is_little );
-		while (NULL == p)  p = t_pcc_getoption( luaVM, &fmt, &is_little );
+		p = t_pck_getoption( luaVM, &fmt, &is_little );
+		while (NULL == p)  p = t_pck_getoption( luaVM, &fmt, &is_little );
+		if (T_PCK_BIT=p->t)
+
 		return p;
 	}
 	else
@@ -83,14 +85,12 @@ static struct t_pcc
  * \return  # of results  passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
 int
-lt_pcc_Array( lua_State *luaVM )
+lt_pck_Array( lua_State *luaVM )
 {
-	struct t_pcc     *p;      ///< packer
-	struct t_pcc     *ap;     ///< array userdata to be created
-	int               is_little = IS_LITTLE_ENDIAN;
-	const char       *fmt = luaL_checkstring( luaVM, 1 );
+	struct t_pck     *p;      ///< packer
+	struct t_pck     *ap;     ///< array userdata to be created
 
-	p = t_pcc_get( luaVM, -2 );
+	p = t_pck_get( luaVM, -2 );
 	ap     = (struct t_pck *) lua_newuserdata( luaVM, sizeof( struct t_pck ) );
 	ap->s  = luaL_checkinteger( luaVM, -2 );       // how many elements in the array
 	ap->t  = T_PCK_ARRAY;
@@ -114,7 +114,7 @@ lt_pcc_Array( lua_State *luaVM )
  * \return  # of results  passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
 int
-lt_pcc_Sequence( lua_State *luaVM )
+lt_pck_Sequence( lua_State *luaVM )
 {
 	size_t            i;      ///< iterator for going through the arguments
 	size_t            bc=0;   ///< count bitSize for bit type packers
@@ -188,8 +188,6 @@ lt_pckc_Struct( lua_State *luaVM )
 
 	// create index table
 	lua_createtable( luaVM, cp->n, cp->n ); // Stack: ..., Struct,idx
-
-	while (t_pcc_getnext
 
 	for (i=1; i<=cp->n; i++)
 	{
