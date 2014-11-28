@@ -91,10 +91,9 @@ struct t_buf * t_buf_getbuffer( lua_State *luaVM, int pB, int pP, int *pos );
 // t_pck.c
 // Constructors
 struct t_pck  *t_pck_check_ud ( lua_State *luaVM, int pos, int check );
-struct t_pck  *t_pck_create_ud( lua_State *luaVM, enum t_pck_t );
+struct t_pck  *t_pck_create_ud( lua_State *luaVM, enum t_pck_t t, size_t s, int m );
 
 // helpers to interpret format strings
-struct t_pck *t_pck_fnd       ( lua_State *luaVM, enum t_pck_t t, size_t s, int m);
 struct t_pck *t_pck_getoption ( lua_State *luaVM, const char **f, int *e, int *o );
 
 // accessor helpers for the Packers

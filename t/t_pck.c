@@ -280,48 +280,6 @@ get_num( const char **fmt, int df )
 
 
 /** -------------------------------------------------------------------------
- * See if requested type exists in t.Pack. otherwise create and register.
- * the format for a particular definition will never change. Hence, no need to
- * create them over and over again.  This approach saves memory.
- * \param     luaVM  lua state.
- * \param     enum   t_pck_t.
- * \param     size   number of elements.       
- * \param     mod parameter.
- * \return    struct t_pck* pointer.
- *  -------------------------------------------------------------------------*/
-struct t_pck
-*t_pck_fnd( lua_State *luaVM, enum t_pck_t t, size_t s, int m)
-{
-	struct t_pck  __attribute__ ((unused)) *p;
-	int                                     i;
-
-	luaL_getsubtable( luaVM, LUA_REGISTRYINDEX, "_LOADED" );
-	lua_getfield( luaVM, -1, "t" );
-	lua_getfield( luaVM, -1, "Pack" );
-	t_pck_format( luaVM, t, s, m ); lua_concat( luaVM, 2 );
-	lua_rawget( luaVM, -2 );
-	if (lua_isnil( luaVM, -1 ))
-	{
-		lua_pop( luaVM, 1 );
-		t_pck_format( luaVM, t, s, m ); lua_concat( luaVM, 2 );
-		p = t_pck_create_ud( luaVM, t );
-		p->s = s; p->m = m;
-		lua_rawset( luaVM, -3);
-		t_pck_format( luaVM, t, s, m ); lua_concat( luaVM, 2 );
-		lua_rawget( luaVM, -2);
-	}
-	else
-	{
-		p = t_pck_check_ud( luaVM, -1, 1 );
-	}
-	for(i=0; i<3; i++)
-		lua_remove( luaVM, -2 );
-
-	return p;
-}
-
-
-/** -------------------------------------------------------------------------
  * Determines type of Packer from format string.
  * \param     luaVM  lua state.
  * \param     char*  format string pointer. moved by this function.
@@ -364,7 +322,7 @@ struct t_pck
 			return NULL;
 	}
 
-	p   = t_pck_fnd( luaVM, t, s, m );
+	p   = t_pck_create_ud( luaVM, t, s, m );
 	*o  = *o + ((T_PCK_BIT==t) ? s : s*8);
 	return p;
 }
@@ -414,20 +372,48 @@ static int lt_pck__Call (lua_State *luaVM)
 
 
 /**--------------------------------------------------------------------------
- * create a t_pack and push to LuaStack.
- * \param   luaVM  The lua state.
- *
- * \return  struct t_pack*  pointer to the  t_pack struct
+ * See if requested type exists in t.Pack. otherwise create and register.
+ * the format for a particular definition will never change. Hence, no need to
+ * create them over and over again.  This approach saves memory.
+ * \param     luaVM  lua state.
+ * \param     enum   t_pck_t.
+ * \param     size   number of elements.       
+ * \param     mod parameter.
+ * \return    struct t_pck* pointer. create a t_pack and push to LuaStack.
  * --------------------------------------------------------------------------*/
 struct t_pck
-*t_pck_create_ud( lua_State *luaVM, enum t_pck_t t)
+*t_pck_create_ud( lua_State *luaVM, enum t_pck_t t, size_t s, int m )
 {
-	struct t_pck  *p;
-	p = (struct t_pck *) lua_newuserdata( luaVM, sizeof( struct t_pck ));
-	p->t  = t;
+	struct t_pck  __attribute__ ((unused)) *p;
+	int                                     i;
 
-	luaL_getmetatable( luaVM, "T.Pack" );
-	lua_setmetatable( luaVM, -2 );
+	luaL_getsubtable( luaVM, LUA_REGISTRYINDEX, "_LOADED" );
+	lua_getfield( luaVM, -1, "t" );
+	lua_getfield( luaVM, -1, "Pack" );
+	t_pck_format( luaVM, t, s, m ); lua_concat( luaVM, 2 );
+	lua_rawget( luaVM, -2 );
+	if (lua_isnil( luaVM, -1 ))
+	{
+		lua_pop( luaVM, 1 );
+		t_pck_format( luaVM, t, s, m ); lua_concat( luaVM, 2 );
+		p = (struct t_pck *) lua_newuserdata( luaVM, sizeof( struct t_pck ));
+		p->t = t;
+		p->s = s;
+		p->m = m;
+
+		luaL_getmetatable( luaVM, "T.Pack" );
+		lua_setmetatable( luaVM, -2 );
+		lua_rawset( luaVM, -3 );
+		t_pck_format( luaVM, t, s, m ); lua_concat( luaVM, 2 );
+		lua_rawget( luaVM, -2 );
+	}
+	else
+	{
+		p = t_pck_check_ud( luaVM, -1, 1 );
+	}
+	for (i=0; i<3; i++)
+		lua_remove( luaVM, -2 );
+
 	return p;
 }
 
