@@ -44,16 +44,19 @@ static const char *const t_pck_t_lst[] = {
 struct t_pck {
 	enum  t_pck_t  t;   ///< type of packer
 	/// size of packer -> various meanings
-	///  -- for int, float, raw      =  the number of bytes
+	///  -- for int/uint, float, raw =  the number of bytes
 	///  -- for bit, bits and nibble =  the number of bits
 	///  -- for Seq,Struct,Arr       =  the number of elements in this Combinator
 	size_t         s;
 	/// modifier -> various meanings
-	///  -- for int                  = Endian (-2=Big, -1=Little, 1=Little, 2=Big)
-	///  -- for bit                  = Offset form beginning of byte (bit numbering: MSB 1)
+	///  -- for int/uint             = Endian (0=Big, 1=Little)
+	///  -- for bit                  = Offset from beginning of byte (bit numbering: MSB 1)
 	///  -- for Raw                  = 
-	///  -- for Seq,Struct,Arr       = lua registry Reference for the table 
-	/// The structure looks like the following:
+	///  -- for Arr                  = lua registry Reference for packer
+	///  -- for Seq                  = lua registry Reference for the table 
+	///                                         idx[i]    = Pack
+	///                                         idx[n+i]  = ofs
+	///  -- for Struct               = lua registry Reference for the table 
 	///                                         idx[i]    = Pack
 	///                                         idx[n+i]  = ofs
 	///                                         idx[2n+i] = name

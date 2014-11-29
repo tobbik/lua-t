@@ -246,7 +246,7 @@ t_pck_write( lua_State *luaVM, struct t_pck *p, unsigned char *b )
 
 
 // ###########################################################################
-//                                HELPERS
+//                                HELPERS from Lua 5.3 Source
 /** -------------------------------------------------------------------------
  * See if int represents a character which is a digit.
  * \param     int c

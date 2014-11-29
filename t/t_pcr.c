@@ -12,67 +12,90 @@
 
 
 #include "t.h"
-#include "t_pck.h"
-
+#include "t_buf.h"
 
 /**--------------------------------------------------------------------------
- * Desides if the element on pos is a packer kind of type.
- * It decides between the following options:
- *	    - T.Pack type              : just return it
- *	    - T.Pack.Reader            : return reader->t
- *	    - fmt string of single item: fetch from cache or create
- *	    - fmt string of mult items : let Sequence constructor handle and return result
- * \param   luaVM  The lua state.
- * \param   pos    position on stack.
- * \return  struct t_pck* pointer.
+ * Get the size of a packer of any type in bytes.
+ * This will mainly be needed to calculate offsets when reading.
+ * \param   struct t_pck.
+ * \return  size in bytes.
+ * TODO: return 0 no matter if even one item is of unknown length.
  * --------------------------------------------------------------------------*/
-static struct t_pck
-*t_pck_get( lua_State luaVM, int pos )
+size_t 
+*t_pck_getsize( lua_State *luaVM,  struct t_pck *p )
 {
-	struct t_pck *p;      ///< packer
-	int           is_little = IS_LITTLE_ENDIAN;
-	const char   *fmt;
-	if (lua_isuserdata( luaVM, pos ))
+	struct t_pck *pt;      ///< packer
+	size_t        s = 0;
+	int           n;       ///< iterator over accumulated
+	switch (p->t)
 	{
-		p = t_pck_check_ud( luaVM, pos, 1 );          // allow T.Pack or T.Pack.Struct
-	}
-	else
-	{
-		fmt = luaL_checkstring( luaVM, pos );
-		p = t_pck_getoption( luaVM, &fmt, &is_little );
-		while ('\0' != *fmt)
-			while (NULL == p)
-				p = t_pck_getoption( luaVM, &fmt, &is_little );
-
-		lua_replace( luaVM, pos );
+		case T_PCK_INT:
+		case T_PCK_UNT:
+		case T_PCK_FLT:
+		case T_PCK_RAW:
+			return p->s;
+			break;
+		case T_PCK_BIT:
+			return ((p->s + p->ofs -2)/8) + 1;
+			break;
+		case T_PCK_ARR:
+			lua_rawgeti( luaVM, LUA_REGISTRYINDEX, p->m ); // get packer
+			return p->s * t_pck_getsize( luaVM, t_pck_check_ud( luaVM, -1, 1 ) );
+			break;
+		case T_PCK_SEQ:
+		case T_PCK_STR:
+			lua_rawgeti( luaVM, LUA_REGISTRYINDEX, p->m ); // get table
+			for (n = 1; n <= p->s; n++)
+			{
+				lua_rawget( luaVM, -1, n );
+				s += t_pck_getsize( luaVM, t_pck_check_ud( luaVM, -1, 1 ) );
+				lua_pop( luaVM, 1 );
+			}
+			lua_pop( luaVM, 1 );
+			return s;
+			break;
+		default:
+			return 0;
 	}
 }
 
 
-static struct t_pck
-*t_pck_getnext( lua_State luaVM, const char **fmt, int pos, int *ofs )
+/**--------------------------------------------------------------------------
+ * Decides if the element on pos is a packer kind of type.
+ * It decides between the following options:
+ *	    - T.Pack type              : just return it
+ *	    - T.Pack.Reader            : return reader->p
+ *	    - fmt string of single item: fetch from cache or create
+ *	    - fmt string of mult items : let Sequence constructor handle and return result
+ * \param   luaVM  The lua state.
+ * \param   pos    position on stack.
+ * \param   atom   boolean atomic packers only.
+ * \return  struct t_pck* pointer.
+ * --------------------------------------------------------------------------*/
+struct t_pck
+*t_pck_getpck( lua_State luaVM, int pos, int atom )
 {
-	int           nxt;
-	struct t_pck *p;                          ///< packer
+	struct t_pck *p;      ///< packer
+	struct t_pcr *r;      ///< reader
 	int           is_little = IS_LITTLE_ENDIAN;
+	int           offset    = 0;
+	const char   *fmt;
 
-	if (NULL != fmt)
+	if (lua_isuserdata( luaVM, pos ))
 	{
-		nxt = *((*f)++);
-		if ('0' == nxt)
-		{
-			lua_pushnil( luaVM );
-			return NULL;
-		}
-		p = t_pck_getoption( luaVM, &fmt, &is_little );
-		while (NULL == p)  p = t_pck_getoption( luaVM, &fmt, &is_little );
-		if (T_PCK_BIT=p->t)
-
-		return p;
+		r = t_pcr_check_ud( luaVM, pos, 0 );
+		p = (NULL == r) ? t_pcc_check_ud( luaVM, pos, 1 ) : r->p;
 	}
 	else
 	{
+		fmt = luaL_checkstring( luaVM, pos );
+		p   = t_pck_getoption( luaVM, &fmt, &is_little, &offset );
+		if ('\0' != *(fmt++))
+			p =  t_pck_mksq( luaVM, luaL_checkstring( luaVM, pos ) );
 	}
+	if (atom && T_PCK_RAW < p->t)
+		luaL_error( luaVM, "Atomic Packer type required" );
+	return p;
 }
 
 
@@ -81,80 +104,59 @@ static struct t_pck
  * \param   luaVM  The lua state.
  * \lparam  type identifier  T.Pack, T.Pack.Struct, T.Pack.Array .
  * \lparam  len              Number of elements in the array.
- * \lreturn userdata of T.Pack.Struct.
- * \return  # of results  passed back to the calling Lua script.
+ * \return  struct t_pck* pointer.
  * --------------------------------------------------------------------------*/
-int
-lt_pck_Array( lua_State *luaVM )
+struct t_pck
+*t_pck_mkarray( lua_State *luaVM )
 {
-	struct t_pck     *p;      ///< packer
+	struct t_pck     *p  = t_pck_getpck( luaVM, -2, 0 );  ///< packer
 	struct t_pck     *ap;     ///< array userdata to be created
 
-	p = t_pck_get( luaVM, -2 );
-	ap     = (struct t_pck *) lua_newuserdata( luaVM, sizeof( struct t_pck ) );
-	ap->s  = luaL_checkinteger( luaVM, -2 );       // how many elements in the array
-	ap->t  = T_PCK_ARRAY;
+	ap    = (struct t_pck *) lua_newuserdata( luaVM, sizeof( struct t_pck ) );
+	ap->t = T_PCK_ARR;
+	ap->s = luaL_checkinteger( luaVM, -2 );      // how many elements in the array
+
+	lua_pushvalue( luaVM, -3 );  // Stack: Pack,n,Array,Pack
+	ap->m = luaL_ref( luaVM, LUA_REGISTRYINDEX); // register packer table
 	//ap->sz = ap->n * sizeof( p->sz );
 
-	lua_pushvalue( luaVM, -3 );
-	ap->m = luaL_ref( luaVM, LUA_REGISTRYINDEX);  // register packer table
 
 	luaL_getmetatable( luaVM, "T.Pack.Struct" );
 	lua_setmetatable( luaVM, -2 ) ;
 
-	return 1;
+	return ap;
 }
 
 
 /**--------------------------------------------------------------------------
  * Create a  T.Pack.Sequence Object and put it onto the stack.
  * \param   luaVM  The lua state.
- * \lparam  ... multiple of type  T.Pack  or a sngle fmt string.
- * \lreturn userdata of T.Pack.Sequence.
- * \return  # of results  passed back to the calling Lua script.
+ * \param   int sp start position on Stack for first Packer.
+ * \param   int ep   end position on Stack for last Packer.
+ * \return  struct t_pck* pointer.
  * --------------------------------------------------------------------------*/
-int
-lt_pck_Sequence( lua_State *luaVM )
+struct t_pck
+t_pck_mkseq( lua_State *luaVM, int sp, int ep )
 {
-	size_t            i;      ///< iterator for going through the arguments
-	size_t            bc=0;   ///< count bitSize for bit type packers
-	struct t_pck     *p;      ///< temporary packer/struct for iteration
-	struct t_pck     *cp;     ///< the userdata this constructor creates
+	int           i;      ///< iterator for going through the arguments
+	size_t        o=0;    ///< byte offset within the sequence
+	struct t_pck *p;      ///< temporary packer/struct for iteration
+	struct t_pck *sq;     ///< the userdata this constructor creates
 
-	// size = sizof(...) -1 because the array has already one member
-	cp     = (struct t_pck *) lua_newuserdata( luaVM, sizeof( struct t_pck ) );
-	cp->n  = lua_gettop( luaVM )-1;  // number of elements on stack -1 (the Struct userdata)
-	cp->sz = 0;
-	cp->t  = T_PCK_SEQ;
+	sq     = (struct t_pck *) lua_newuserdata( luaVM, sizeof( struct t_pck ) );
+	sq->t  = T_PCK_SEQ;
+	sq->s  = ep-sp;
 
-	// create index table
-	lua_createtable( luaVM, 2*cp->n, cp->n ); // Stack: ..., Struct,idx
-
-	// populate table idx
-	for (i=1; i<=cp->n; i++)
+	// create and populate index table
+	lua_newtable( luaVM );                // Stack: fmt,Seq,idx
+	for (i=sp; i<=ep, i++)
 	{
-		p = t_pckc_check_ud( luaVM, i, 1 );
-		lua_pushvalue( luaVM, i);          // Stack: ...,Seq,idx,Pack
-		lua_pushinteger( luaVM, cp->sz);   // Stack: ...,Seq,idx,Pack,ofs
-		lua_rawseti( luaVM, -3, i+cp->n ); // Stack: ...,Seq,idx,Pack     idx[n+i] = offset
-		lua_rawseti( luaVM, -2, i );       // Stack: ...,Seq,idx,         idx[i]   = Pack
-		// handle Bit type packers
-		if (T_PCK_BIT==p->t)
-		{
-			if ((p->oB-1) != bc%8)
-				t_push_error( luaVM, "bitsized fields must be ordered in appropriate size type" );
-			if ((bc + p->lB)/8 > bc/8)
-					  cp->sz += 1;
-			bc = bc + p->lB;
-		}
-		else
-		{
-			if (bc%8)
-				t_push_error( luaVM, "bitsized fields must be ordered in appropriate size type" );
-			else
-				bc = 0;
-			cp->sz += p->sz;
-		}
+		p = t_pck_check_ud( luaVM, i, 1 );
+		lua_pushvalue( luaVM, i);                // Stack: fmt,Seq,idx,Pack
+		lua_pushinteger( luaVM, o );             // Stack: fmt,Seq,idx,Pack,ofs
+		lua_rawseti( luaVM, -3, i- sp + sq->s ); // Stack: fmt,Seq,idx,Pack     idx[n+i] = offset
+		lua_rawseti( luaVM, -2, i- sp );         // Stack: fmt,Seq,idx,         idx[i]   = Pack
+		o += t_pck_getsize( luaVM, p );
 	}
 	cp->m = luaL_ref( luaVM, LUA_REGISTRYINDEX); // register index  table
 
@@ -168,19 +170,45 @@ lt_pck_Sequence( lua_State *luaVM )
 /**--------------------------------------------------------------------------
  * Create a  T.Pack.Struct Object and put it onto the stack.
  * \param   luaVM  The lua state.
+ * \param   luaVM  The lua state.
+ * \param   int sp start position on Stack for first Packer.
+ * \param   int ep   end position on Stack for last Packer.
  * \lparam  ... multiple of type  table { name = T.Pack}.
- * \lreturn userdata of T.Pack.Struct.
- * \return  # of results  passed back to the calling Lua script.
+ * \return  struct t_pck* pointer.
  * --------------------------------------------------------------------------*/
-int
-lt_pckc_Struct( lua_State *luaVM )
+struct t_pck
+t_pck_mkstruct( lua_State *luaVM, int sp, int ep )
 {
 	size_t            i;      ///< iterator for going through the arguments
 	size_t            bc=0;   ///< count bitSize for bit type packers
 	struct t_pck     *p;      ///< temporary packer/struct for iteration
-	struct t_pck     *cp;     ///< the userdata this constructor creates
+	struct t_pck     *st;     ///< the userdata this constructor creates
 
-	// size = sizof(...) -1 because the array has already one member
+
+	sq     = (struct t_pck *) lua_newuserdata( luaVM, sizeof( struct t_pck ) );
+	sq->t  = T_PCK_SEQ;
+	sq->s  = ep-sp;
+
+	// create and populate index table
+	lua_newtable( luaVM );                // Stack: fmt,Seq,idx
+	for (i=sp; i<=ep, i++)
+	{
+		luaL_argcheck( luaVM, lua_istable( luaVM, i ), i,
+			"Arguments must be tables with single key/T.Pack pair" );
+		// Stack gymnastic:
+		lua_pushnil( luaVM );
+		if (!lua_next( luaVM, i ))         // Stack: ...,Struct,idx,name,Pack
+			return t_push_error( luaVM, "the table argument must contain one key/value pair.");
+		// check if name is already used!
+		lua_pushvalue( luaVM, -2 );        // Stack: ...,Struct,idx,name,Pack,name
+		lua_rawget( luaVM, -4 );
+		if (! lua_isnoneornil( luaVM, -1 ))
+			return t_push_error( luaVM, "All elements in T.Pack.Struct must have unique key.");
+		lua_pop( luaVM, 1 );               // pop the nil
+		p = t_pck_getpck( luaVM, -1, 1 );    // allow T.Pack or T.Pack.Struct
+
++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
 	cp     = (struct t_pck *) lua_newuserdata( luaVM, sizeof( struct t_pck ) );
 	cp->n  = lua_gettop( luaVM )-1;  // number of elements on stack -1 (the Struct userdata)
 	cp->sz = 0;
