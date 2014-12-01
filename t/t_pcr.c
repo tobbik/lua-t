@@ -63,10 +63,10 @@ size_t
 /**--------------------------------------------------------------------------
  * Decides if the element on pos is a packer kind of type.
  * It decides between the following options:
- *	    - T.Pack type              : just return it
- *	    - T.Pack.Reader            : return reader->p
- *	    - fmt string of single item: fetch from cache or create
- *	    - fmt string of mult items : let Sequence constructor handle and return result
+ *     - T.Pack type              : just return it
+ *     - T.Pack.Reader            : return reader->p
+ *     - fmt string of single item: fetch from cache or create
+ *     - fmt string of mult items : let Sequence constructor handle and return result
  * \param   luaVM  The lua state.
  * \param   pos    position on stack.
  * \param   atom   boolean atomic packers only.
@@ -77,8 +77,9 @@ struct t_pck
 {
 	struct t_pck *p;      ///< packer
 	struct t_pcr *r;      ///< reader
-	int           is_little = IS_LITTLE_ENDIAN;
-	int           offset    = 0;
+	int           l = IS_LITTLE_ENDIAN;
+	int           o = 0;
+	int           n = 1;  ///< counter for packers created from fmt string
 	const char   *fmt;
 
 	if (lua_isuserdata( luaVM, pos ))
@@ -89,9 +90,11 @@ struct t_pck
 	else
 	{
 		fmt = luaL_checkstring( luaVM, pos );
-		p   = t_pck_getoption( luaVM, &fmt, &is_little, &offset );
+		p   = t_pck_getoption( luaVM, &fmt, &l, &o );
 		if ('\0' != *(fmt++))
-			p =  t_pck_mksq( luaVM, luaL_checkstring( luaVM, pos ) );
+			while (NULL != p )
+				p   = t_pck_getoption( luaVM, &fmt, &l, &o );
+			p =  t_pck_mkseq( luaVM, luaL_checkstring( luaVM, pos ) );
 	}
 	if (atom && T_PCK_RAW < p->t)
 		luaL_error( luaVM, "Atomic Packer type required" );
@@ -152,7 +155,7 @@ t_pck_mkseq( lua_State *luaVM, int sp, int ep )
 	for (i=sp; i<=ep, i++)
 	{
 		p = t_pck_check_ud( luaVM, i, 1 );
-		lua_pushvalue( luaVM, i);                // Stack: fmt,Seq,idx,Pack
+		lua_pushvalue( luaVM, i );               // Stack: fmt,Seq,idx,Pack
 		lua_pushinteger( luaVM, o );             // Stack: fmt,Seq,idx,Pack,ofs
 		lua_rawseti( luaVM, -3, i- sp + sq->s ); // Stack: fmt,Seq,idx,Pack     idx[n+i] = offset
 		lua_rawseti( luaVM, -2, i- sp );         // Stack: fmt,Seq,idx,         idx[i]   = Pack

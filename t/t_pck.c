@@ -15,10 +15,8 @@
 #include "t.h"
 #include "t_buf.h"
 
-// =========+Buffer accessor Helpers
-//
-//
-// Macro helper functions
+// ========== Buffer accessor Helpers
+// Macro helpers
 #define HI_NIBBLE_GET(b)   (((b) >> 4) & 0xF)
 #define LO_NIBBLE_GET(b)   ((b)  & 0xF)
 
@@ -31,7 +29,7 @@
 	 ((b) | (  (0x01) << (7-(n))))    : \
 	 ((b) & (~((0x01) << (7-(n))))) )
 
-
+// Function helpers
 /**--------------------------------------------------------------------------
  * Read an integer of y bytes from a char buffer pointer
  * General helper function to read the value of an 64 bit integer from a char array
@@ -141,9 +139,9 @@ t_pck_wbits( uint64_t val, size_t len, size_t ofs, unsigned char * buf )
 }
 
 
-//////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 //
-// ================================= GENERIC t_pck API========================
+// ================================= GENERIC t_pck API ========================
 // Reader and writer for packer data
 /**--------------------------------------------------------------------------
  * reads a value from the packer and pushes it onto the Lua stack.
@@ -152,7 +150,7 @@ t_pck_wbits( uint64_t val, size_t len, size_t ofs, unsigned char * buf )
  * \param   pointer to the buffer to read from(already positioned).
  * \lreturn value from the buffer a packers position according to packer format.
  * \return  integer number of values left on the stack.
- *  -------------------------------------------------------------------------*/
+ * -------------------------------------------------------------------------- */
 int
 t_pck_read( lua_State *luaVM, struct t_pck *p, const unsigned char *b)
 {
