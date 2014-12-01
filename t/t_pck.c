@@ -29,6 +29,9 @@
 	 ((b) | (  (0x01) << (7-(n))))    : \
 	 ((b) & (~((0x01) << (7-(n))))) )
 
+
+struct t_pck *t_pck_mksequence( lua_State *luaVM, int sp, int ep );
+
 // Function helpers
 /**--------------------------------------------------------------------------
  * Read an integer of y bytes from a char buffer pointer
@@ -243,141 +246,6 @@ t_pck_write( lua_State *luaVM, struct t_pck *p, unsigned char *b )
 }
 
 
-// ###########################################################################
-//                                HELPERS from Lua 5.3 Source
-/** -------------------------------------------------------------------------
- * See if int represents a character which is a digit.
- * \param     int c
- * \return    boolean 0:flase - 1:true
- *  -------------------------------------------------------------------------*/
-static int
-is_digit( int c ) { return '0' <= c && c<='9'; }
-
-
-/** -------------------------------------------------------------------------
- * reads from string until input5 is not numeric any more.
- * \param     char** format string
- * \param     int    default value
- * \return    int    read numeric value
- *  -------------------------------------------------------------------------*/
-static int
-get_num( const char **fmt, int df )
-{
-	if (! is_digit(** fmt))    // no number
-		return df;
-	else
-	{
-		int a=0;
-		do
-		{
-			a = a*10+ *((*fmt)++) - '0';
-		} while (is_digit(**fmt) &&  a <(INT_MAX/10 - 10));
-		return a;
-	}
-}
-
-
-/** -------------------------------------------------------------------------
- * Determines type of Packer from format string.
- * Returns the Packer, or NULL if unsuccessful.
- * \param     luaVM  lua state.
- * \param     char*  format string pointer. moved by this function.
- * \param     int*   e pointer to current endianess.
- * \param     int*   o pointer to current offset within fmt.
- * \return    struct t_pck* pointer.
- *  -------------------------------------------------------------------------*/
-struct t_pck
-*t_pck_getoption( lua_State *luaVM, const char **f, int *e, int *o )
-{
-	int           opt = *((*f)++);
-	int           m;
-	size_t        s;
-	enum t_pck_t  t;
-	struct t_pck *p   = NULL;
-	while (NULL == p)
-	{
-		switch (opt)
-		{
-			case 'b': t = T_PCK_INT; s =                     1; m = (1==*e); break;
-			case 'B': t = T_PCK_UNT; s =                     1; m = (1==*e); break;
-			case 'h': t = T_PCK_INT; s = sizeof(       short ); m = (1==*e); break;
-			case 'H': t = T_PCK_INT; s = sizeof(       short ); m = (1==*e); break;
-			case 'l': t = T_PCK_INT; s = sizeof(        long ); m = (1==*e); break;
-			case 'L': t = T_PCK_INT; s = sizeof(        long ); m = (1==*e); break;
-			case 'j': t = T_PCK_INT; s = sizeof( lua_Integer ); m = (1==*e); break;
-			case 'J': t = T_PCK_INT; s = sizeof( lua_Integer ); m = (1==*e); break;
-			case 'T': t = T_PCK_INT; s = sizeof( lua_Integer ); m = (1==*e); break;
-			case 'f': t = T_PCK_INT; s = sizeof(       float ); m = (1==*e); break;
-			case 'd': t = T_PCK_INT; s = sizeof(      double ); m = (1==*e); break;
-			case 'n': t = T_PCK_INT; s = sizeof(  lua_Number ); m = (1==*e); break;
-			case 'i': t = T_PCK_INT; s = get_num( f, sizeof( int ) ); m = (1==*e); break;
-			case 'I': t = T_PCK_UNT; s = get_num( f, sizeof( int ) ); m = (1==*e); break;
-			case 'c': t = T_PCK_RAW; s = get_num( f, 1 )      ; m = 0;       break;
-			case 'r': t = T_PCK_BIT; s =                     1; m = 1+(*o%8); break;
-			case 'R': t = T_PCK_BIT; s = get_num( f, 1 )      ; m = 1+(*o%8); break;
-
-			case '<': *e = 1; continue; break;
-			case '>': *e = 0; continue; break;
-			case '0': return NULL; break;
-			default:
-				luaL_error( luaVM, "can't do that bro" );
-				return NULL;
-		}
-		// TODO: check if 0==offset%8 if byte type, else error
-		p   = t_pck_create_ud( luaVM, t, s, m );
-		*o  = *o + ((T_PCK_BIT==t) ? s : s*8);
-	}
-	return p;
-}
-
-
-//###########################################################################
-//  _                        _    ____ ___
-// | |   _   _  __ _        / \  |  _ \_ _|
-// | |  | | | |/ _` |_____ / _ \ | |_) | |
-// | |__| |_| | (_| |_____/ ___ \|  __/| |
-// |_____\__,_|\__,_|    /_/   \_\_|  |___|
-//###########################################################################
-//   ____                _                   _                 
-//  / ___|___  _ __  ___| |_ _ __ _   _  ___| |_ ___  _ __ ___ 
-// | |   / _ \| '_ \/ __| __| '__| | | |/ __| __/ _ \| '__/ __|
-// | |__| (_) | | | \__ \ |_| |  | |_| | (__| || (_) | |  \__ \
-//  \____\___/|_| |_|___/\__|_|   \__,_|\___|\__\___/|_|  |___/
-// #########################################################################
-/** -------------------------------------------------------------------------
- * \brief     creates a packerfrom the function call
- * \param     luaVM  lua state
- * \lparam    fmt string
- * \return    integer   how many elements are placed on the Lua stack
- *  -------------------------------------------------------------------------*/
-static int
-lt_pck_New( lua_State *luaVM )
-{
-	int                                     is_little = IS_LITTLE_ENDIAN;
-	int                                     offset    = 0;
-	const char                             *fmt = luaL_checkstring( luaVM, 1 );
-	struct t_pck  __attribute__ ((unused)) *p;
-
-	p = t_pck_getoption( luaVM, &fmt, &is_little, &offset );
-	return 1;
-}
-
-
-
-/** -------------------------------------------------------------------------
- * creates the buffer from the Constructor.
- * \param     luaVM  lua state
- * \lparam    CLASS table Time
- * \lparam    length of buffer
- * \lparam    string buffer content initialized            OPTIONAL
- * \return    integer   how many elements are placed on the Lua stack
- *  -------------------------------------------------------------------------*/
-static int lt_pck__Call (lua_State *luaVM)
-{
-	lua_remove( luaVM, 1 );    // remove the T.Buffer Class table
-	return lt_pck_New( luaVM );
-}
-
 // #########################################################################
 //  _                      _          _
 // | |_ _   _ _ __   ___  | |__   ___| |_ __   ___ _ __ ___ 
@@ -540,6 +408,215 @@ t_pck_getsize( lua_State *luaVM,  struct t_pck *p )
 	}
 }
 
+
+// ###########################################################################
+//                                HELPERS from Lua 5.3 Source
+/** -------------------------------------------------------------------------
+ * See if int represents a character which is a digit.
+ * \param     int c
+ * \return    boolean 0:flase - 1:true
+ *  -------------------------------------------------------------------------*/
+static int
+is_digit( int c ) { return '0' <= c && c<='9'; }
+
+
+/** -------------------------------------------------------------------------
+ * reads from string until input5 is not numeric any more.
+ * \param     char** format string
+ * \param     int    default value
+ * \return    int    read numeric value
+ *  -------------------------------------------------------------------------*/
+static int
+get_num( const char **fmt, int df )
+{
+	if (! is_digit(** fmt))    // no number
+		return df;
+	else
+	{
+		int a=0;
+		do
+		{
+			a = a*10+ *((*fmt)++) - '0';
+		} while (is_digit(**fmt) &&  a <(INT_MAX/10 - 10));
+		return a;
+	}
+}
+
+
+/** -------------------------------------------------------------------------
+ * Determines type of Packer from format string.
+ * Returns the Packer, or NULL if unsuccessful.
+ * \param     luaVM  lua state.
+ * \param     char*  format string pointer. moved by this function.
+ * \param     int*   e pointer to current endianess.
+ * \param     int*   o pointer to current offset within fmt.
+ * \return    struct t_pck* pointer.
+ *  -------------------------------------------------------------------------*/
+struct t_pck
+*t_pck_getoption( lua_State *luaVM, const char **f, int *e, int *o )
+{
+	int           opt = *((*f)++);
+	int           m;
+	size_t        s;
+	enum t_pck_t  t;
+	struct t_pck *p   = NULL;
+	while (NULL == p)
+	{
+		switch (opt)
+		{
+			case 'b': t = T_PCK_INT; s =                     1; m = (1==*e); break;
+			case 'B': t = T_PCK_UNT; s =                     1; m = (1==*e); break;
+			case 'h': t = T_PCK_INT; s = sizeof(       short ); m = (1==*e); break;
+			case 'H': t = T_PCK_INT; s = sizeof(       short ); m = (1==*e); break;
+			case 'l': t = T_PCK_INT; s = sizeof(        long ); m = (1==*e); break;
+			case 'L': t = T_PCK_INT; s = sizeof(        long ); m = (1==*e); break;
+			case 'j': t = T_PCK_INT; s = sizeof( lua_Integer ); m = (1==*e); break;
+			case 'J': t = T_PCK_INT; s = sizeof( lua_Integer ); m = (1==*e); break;
+			case 'T': t = T_PCK_INT; s = sizeof( lua_Integer ); m = (1==*e); break;
+			case 'f': t = T_PCK_INT; s = sizeof(       float ); m = (1==*e); break;
+			case 'd': t = T_PCK_INT; s = sizeof(      double ); m = (1==*e); break;
+			case 'n': t = T_PCK_INT; s = sizeof(  lua_Number ); m = (1==*e); break;
+			case 'i': t = T_PCK_INT; s = get_num( f, sizeof( int ) ); m = (1==*e); break;
+			case 'I': t = T_PCK_UNT; s = get_num( f, sizeof( int ) ); m = (1==*e); break;
+			case 'c': t = T_PCK_RAW; s = get_num( f, 1 )      ; m = 0;       break;
+			case 'r': t = T_PCK_BIT; s =                     1; m = 1+(*o%8); break;
+			case 'R': t = T_PCK_BIT; s = get_num( f, 1 )      ; m = 1+(*o%8); break;
+
+			case '<': *e = 1; continue; break;
+			case '>': *e = 0; continue; break;
+			case '0': return NULL; break;
+			default:
+				luaL_error( luaVM, "can't do that bro" );
+				return NULL;
+		}
+		// TODO: check if 0==offset%8 if byte type, else error
+		p   = t_pck_create_ud( luaVM, t, s, m );
+		*o  = *o + ((T_PCK_BIT==t) ? s : s*8);
+	}
+	return p;
+}
+
+
+/**--------------------------------------------------------------------------
+ * Decides if the element on pos is a packer kind of type.
+ * It decides between the following options:
+ *     - T.Pack type              : just return it
+ *     - T.Pack.Reader            : return reader->p
+ *     - fmt string of single item: fetch from cache or create
+ *     - fmt string of mult items : let Sequence constructor handle and return result
+ * \param   luaVM  The lua state.
+ * \param   pos    position on stack.
+ * \param   atom   boolean atomic packers only.
+ * \return  struct t_pck* pointer.
+ * --------------------------------------------------------------------------*/
+static struct t_pck
+*t_pck_getpck( lua_State *luaVM, int pos, int atom )
+{
+	struct t_pck *p;      ///< packer
+	struct t_pcr *r;      ///< reader
+	int           l = IS_LITTLE_ENDIAN;
+	int           o = 0;
+	// int           n = 1;  ///< counter for packers created from fmt string
+	const char   *fmt;
+
+	if (lua_isuserdata( luaVM, pos ))
+	{
+		r = t_pcr_check_ud( luaVM, pos, 0 );
+		p = (NULL == r) ? t_pck_check_ud( luaVM, pos, 1 ) : r->p;
+	}
+	else
+	{
+		fmt = luaL_checkstring( luaVM, pos );
+		p   = t_pck_getoption( luaVM, &fmt, &l, &o );
+		if ('\0' != *(fmt++))
+			while (NULL != p )
+				// TODO: actually create the packers and calculate positions
+				p =  t_pck_mksequence( luaVM, pos, 9 );
+	}
+	if (atom && T_PCK_RAW < p->t)
+		luaL_error( luaVM, "Atomic Packer type required" );
+	return p;
+}
+
+
+/**--------------------------------------------------------------------------
+ * Create a  T.Pack.Array Object and put it onto the stack.
+ * \param   luaVM  The lua state.
+ * \lparam  type identifier  T.Pack, T.Pack.Struct, T.Pack.Array .
+ * \lparam  len              Number of elements in the array.
+ * \return  struct t_pck* pointer.
+ * --------------------------------------------------------------------------*/
+static struct t_pck
+*t_pck_mkarray( lua_State *luaVM )
+{
+	struct t_pck  __attribute__ ((unused))   *p  = t_pck_getpck( luaVM, -2, 0 );  ///< packer
+	struct t_pck     *ap;     ///< array userdata to be created
+
+	ap    = (struct t_pck *) lua_newuserdata( luaVM, sizeof( struct t_pck ) );
+	ap->t = T_PCK_ARR;
+	ap->s = luaL_checkinteger( luaVM, -2 );      // how many elements in the array
+
+	lua_pushvalue( luaVM, -3 );  // Stack: Pack,n,Array,Pack
+	ap->m = luaL_ref( luaVM, LUA_REGISTRYINDEX); // register packer table
+	//ap->sz = ap->n * sizeof( p->sz );
+
+
+	luaL_getmetatable( luaVM, "T.Pack.Struct" );
+	lua_setmetatable( luaVM, -2 ) ;
+
+	return ap;
+}
+
+
+
+//###########################################################################
+//  _                        _    ____ ___
+// | |   _   _  __ _        / \  |  _ \_ _|
+// | |  | | | |/ _` |_____ / _ \ | |_) | |
+// | |__| |_| | (_| |_____/ ___ \|  __/| |
+// |_____\__,_|\__,_|    /_/   \_\_|  |___|
+//###########################################################################
+//   ____                _                   _                 
+//  / ___|___  _ __  ___| |_ _ __ _   _  ___| |_ ___  _ __ ___ 
+// | |   / _ \| '_ \/ __| __| '__| | | |/ __| __/ _ \| '__/ __|
+// | |__| (_) | | | \__ \ |_| |  | |_| | (__| || (_) | |  \__ \
+//  \____\___/|_| |_|___/\__|_|   \__,_|\___|\__\___/|_|  |___/
+// #########################################################################
+/** -------------------------------------------------------------------------
+ * \brief     creates a packerfrom the function call
+ * \param     luaVM  lua state
+ * \lparam    fmt string
+ * \return    integer   how many elements are placed on the Lua stack
+ *  -------------------------------------------------------------------------*/
+static int
+lt_pck_New( lua_State *luaVM )
+{
+	struct t_pck  __attribute__ ((unused)) *p;
+
+	if (2==lua_gettop( luaVM ) && LUA_TSTRING == lua_type( luaVM, -1 ))
+	{
+		p = t_pck_mkarray( luaVM );
+	}
+
+	//p = t_pck_getoption( luaVM, &fmt, &is_little, &offset );
+	return 1;
+}
+
+
+
+/** -------------------------------------------------------------------------
+ * creates the buffer from the Constructor.
+ * \param     luaVM  lua state
+ * \lparam    CLASS table Time
+ * \lparam    length of buffer
+ * \lparam    string buffer content initialized            OPTIONAL
+ * \return    integer   how many elements are placed on the Lua stack
+ *  -------------------------------------------------------------------------*/
+static int lt_pck__Call (lua_State *luaVM)
+{
+	lua_remove( luaVM, 1 );    // remove the T.Buffer Class table
+	return lt_pck_New( luaVM );
+}
 
 /**--------------------------------------------------------------------------
  * reads a value, unpacks it and pushes it onto the Lua stack.
