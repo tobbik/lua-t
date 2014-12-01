@@ -18,11 +18,13 @@ struct t_buf {
 // time it shall have more convienience and be more explicit.
 
 enum t_pck_t {
+	// atomic packer types
 	T_PCK_INT,      ///< Packer         Integer
 	T_PCK_UNT,      ///< Packer         Unsigned Integer
 	T_PCK_FLT,      ///< Packer         Float
 	T_PCK_BIT,      ///< Packer         Bit
 	T_PCK_RAW,      ///< Packer         Raw  -  string/utf8/binary
+	// complex packer types
 	T_PCK_ARR,      ///< Combinator     Array
 	T_PCK_SEQ,      ///< Combinator     Sequence
 	T_PCK_STR,      ///< Combinator     Struct
@@ -104,7 +106,8 @@ int t_pck_read ( lua_State *luaVM, struct t_pck *p, const unsigned char *buffer)
 int t_pck_write( lua_State *luaVM, struct t_pck *p, unsigned char *buffer );
 
 // tostring helper
-void t_pck_format( lua_State *luaVM, enum t_pck_t t, size_t s, int m );
+void   t_pck_format  ( lua_State *luaVM, enum t_pck_t t, size_t s, int m );
+size_t t_pck_getsize ( lua_State *luaVM, struct t_pck *p );
 
 
 

@@ -338,6 +338,12 @@ struct t_pck
 // | |__| |_| | (_| |_____/ ___ \|  __/| |
 // |_____\__,_|\__,_|    /_/   \_\_|  |___|
 //###########################################################################
+//   ____                _                   _                 
+//  / ___|___  _ __  ___| |_ _ __ _   _  ___| |_ ___  _ __ ___ 
+// | |   / _ \| '_ \/ __| __| '__| | | |/ __| __/ _ \| '__/ __|
+// | |__| (_) | | | \__ \ |_| |  | |_| | (__| || (_) | |  \__ \
+//  \____\___/|_| |_|___/\__|_|   \__,_|\___|\__\___/|_|  |___/
+// #########################################################################
 /** -------------------------------------------------------------------------
  * \brief     creates a packerfrom the function call
  * \param     luaVM  lua state
@@ -372,7 +378,14 @@ static int lt_pck__Call (lua_State *luaVM)
 	return lt_pck_New( luaVM );
 }
 
-
+// #########################################################################
+//  _                      _          _
+// | |_ _   _ _ __   ___  | |__   ___| |_ __   ___ _ __ ___ 
+// | __| | | | '_ \ / _ \ | '_ \ / _ \ | '_ \ / _ \ '__/ __|
+// | |_| |_| | |_) |  __/ | | | |  __/ | |_) |  __/ |  \__ \
+//  \__|\__, | .__/ \___| |_| |_|\___|_| .__/ \___|_|  |___/
+//      |___/|_|                       |_|                  
+// #########################################################################
 /**--------------------------------------------------------------------------
  * See if requested type exists in t.Pack. otherwise create and register.
  * the format for a particular definition will never change. Hence, no need to
@@ -421,18 +434,110 @@ struct t_pck
 
 
 /**--------------------------------------------------------------------------
- * Check if the item on stack position pos is an t_pack struct and return it
- * \param  luaVM    the Lua State
- * \param  pos      position on the stack
- *
- * \return struct t_pack* pointer to t_pack struct
+ * Check if value on stack is T.Pack OR * T.Pack.Struct/Sequence/Array
+ * \param   luaVM    The lua state.
+ * \param   int      position on the stack.
+ * \param   int      check -> treats as check -> error if fail
+ * \lparam  userdata T.Pack/Struct on the stack.
+ * \return  t_pck pointer.
  * --------------------------------------------------------------------------*/
 struct t_pck
 *t_pck_check_ud( lua_State *luaVM, int pos, int check )
 {
-	void *ud = luaL_testudata( luaVM, pos, "T.Pack" );
-	luaL_argcheck( luaVM, (ud != NULL || !check), pos, "`T.Pack` expected" );
-	return (NULL==ud) ? NULL : (struct t_pck *) ud;
+	void *ud = luaL_testudata( luaVM, pos, "T.Pack.Struct" );
+	if (NULL != ud)
+		return (struct t_pck *) ud;
+	ud = luaL_testudata( luaVM, pos, "T.Pack" );
+	if (NULL != ud)
+		return (struct t_pck *) ud;
+	if (check)
+		luaL_argcheck( luaVM, ud != NULL, pos, "`T.Pack.Struct` or `T.Pack` expected" );
+	return NULL;
+}
+
+
+/**--------------------------------------------------------------------------
+ * create a t_pcr and push to LuaStack.
+ * \param   luaVM  The lua state.
+ * \param   t_pck Packer reference.
+ * \param   buffer offset.
+ *
+ * \return  struct t_pcr*  pointer to the  t_pcr struct
+ * --------------------------------------------------------------------------*/
+struct t_pcr
+*t_pcr_create_ud( lua_State *luaVM, struct t_pck *p, size_t o )
+{
+	struct t_pcr  *r;
+	r = (struct t_pcr *) lua_newuserdata( luaVM, sizeof( struct t_pcr ));
+
+	r->p  = p;
+	r->o  = o;
+	luaL_getmetatable( luaVM, "T.Pack.Reader" );
+	lua_setmetatable( luaVM, -2 );
+	return r;
+}
+
+
+/**--------------------------------------------------------------------------
+ * \brief   check a value on the stack for being an T.Pack.Result
+ * \param   luaVM    The lua state.
+ * \param   int      position on the stack.
+ * \param   int      check -> treats as check -> erros if fail
+ * \lparam  userdata T.Pack.Result on the stack.
+ * \return  t_pck_s pointer.
+ * --------------------------------------------------------------------------*/
+struct t_pcr
+*t_pcr_check_ud( lua_State *luaVM, int pos, int check )
+{
+	void *ud = luaL_testudata( luaVM, pos, "T.Pack.Reader" );
+	if (check)
+		luaL_argcheck( luaVM, ud != NULL, pos, "`T.Pack.Reader` expected" );
+	return (NULL==ud) ? NULL : ((struct t_pcr *) ud);
+}
+
+
+/**--------------------------------------------------------------------------
+ * Get the size of a packer of any type in bytes.
+ * This will mainly be needed to calculate offsets when reading.
+ * \param   struct t_pck.
+ * \return  size in bytes.
+ * TODO: return 0 no matter if even one item is of unknown length.
+ * --------------------------------------------------------------------------*/
+size_t 
+t_pck_getsize( lua_State *luaVM,  struct t_pck *p )
+{
+	size_t        s = 0;
+	size_t        n;       ///< iterator over accumulated
+	switch (p->t)
+	{
+		case T_PCK_INT:
+		case T_PCK_UNT:
+		case T_PCK_FLT:
+		case T_PCK_RAW:
+			return p->s;
+			break;
+		case T_PCK_BIT:
+			return ((p->s + p->m -2)/8) + 1;
+			break;
+		case T_PCK_ARR:
+			lua_rawgeti( luaVM, LUA_REGISTRYINDEX, p->m ); // get packer
+			return p->s * t_pck_getsize( luaVM, t_pck_check_ud( luaVM, -1, 1 ) );
+			break;
+		case T_PCK_SEQ:
+		case T_PCK_STR:
+			lua_rawgeti( luaVM, LUA_REGISTRYINDEX, p->m ); // get table
+			for (n = 1; n <= p->s; n++)
+			{
+				lua_rawgeti( luaVM, -1, n );
+				s += t_pck_getsize( luaVM, t_pck_check_ud( luaVM, -1, 1 ) );
+				lua_pop( luaVM, 1 );
+			}
+			lua_pop( luaVM, 1 );
+			return s;
+			break;
+		default:
+			return 0;
+	}
 }
 
 
@@ -443,17 +548,17 @@ struct t_pck
  * \lreturn value  unpacked value according to packer format.
  * \return  integer number of values left on the stack.
  *  -------------------------------------------------------------------------*/
-static int
-lt_pck_unpack( lua_State *luaVM )
-{
-	struct t_pck *p   = t_pck_check_ud( luaVM, 1, 1);
-	size_t        sL;
-	const char   *buf = luaL_checklstring( luaVM, 2, &sL );
-	if (sL != p->s)
-		return t_push_error( luaVM, "Can only unpack data of the size suitable for this packers size" );
-
-	return t_pck_read( luaVM, p, (const unsigned char *) buf );
-}
+//static int
+//lt_pck_unpack( lua_State *luaVM )
+//{
+//	struct t_pck *p   = t_pck_check_ud( luaVM, 1, 1);
+//	size_t        sL;
+//	const char   *buf = luaL_checklstring( luaVM, 2, &sL );
+//	if (sL != p->s)
+//		return t_push_error( luaVM, "Can only unpack data of the size suitable for this packers size" );
+//
+//	return t_pck_read( luaVM, p, (const unsigned char *) buf );
+//}
 
 
 /**--------------------------------------------------------------------------
@@ -464,30 +569,37 @@ lt_pck_unpack( lua_State *luaVM )
  * \lreturn string packed value according to packer format.
  * \return integer number of values left on the stack.
  *  -------------------------------------------------------------------------*/
-static int
-lt_pck_pack( lua_State *luaVM )
-{
-	struct t_pck *p      = t_pck_check_ud( luaVM, 1, 1 );
-	luaL_Buffer   lB;
-	char         *buffer;
-	int           retVal; ///< return value to evaluate the succes of write operation
+//static int
+//lt_pck_pack( lua_State *luaVM )
+//{
+//	struct t_pck *p      = t_pck_check_ud( luaVM, 1, 1 );
+//	luaL_Buffer   lB;
+//	char         *buffer;
+//	int           retVal; ///< return value to evaluate the succes of write operation
+//
+//	luaL_buffinit( luaVM, &lB );
+//	buffer = luaL_prepbuffsize( &lB, p->s );
+//	memset( buffer, 0, p->s * sizeof( char ) );
+//
+//	if ((retVal = t_pck_write( luaVM, p, (unsigned char *) buffer )) != 0)
+//	{
+//		return retVal;
+//	}
+//	else
+//	{
+//		luaL_pushresultsize( &lB, p->s );
+//		return 1;
+//	}
+//}
 
-	luaL_buffinit( luaVM, &lB );
-	buffer = luaL_prepbuffsize( &lB, p->s );
-	memset( buffer, 0, p->s * sizeof( char ) );
 
-	if ((retVal = t_pck_write( luaVM, p, (unsigned char *) buffer )) != 0)
-	{
-		return retVal;
-	}
-	else
-	{
-		luaL_pushresultsize( &lB, p->s );
-		return 1;
-	}
-}
-
-
+// #########################################################################
+//   ____ _                                _   _               _     
+//  / ___| | __ _ ___ ___   _ __ ___   ___| |_| |__   ___   __| |___ 
+// | |   | |/ _` / __/ __| | '_ ` _ \ / _ \ __| '_ \ / _ \ / _` / __|
+// | |___| | (_| \__ \__ \ | | | | | |  __/ |_| | | | (_) | (_| \__ \
+//  \____|_|\__,_|___/___/ |_| |_| |_|\___|\__|_| |_|\___/ \__,_|___/
+// #########################################################################
 /**--------------------------------------------------------------------------
  * Get size in bytes covered by packer/struct/reader.
  * \param   luaVM  The lua state.
@@ -498,10 +610,9 @@ lt_pck_pack( lua_State *luaVM )
 static int
 lt_pck_size( lua_State *luaVM )
 {
-	//struct t_pckr *pr = t_pckr_check_ud( luaVM, 1, 0 );
-	//struct t_pck  *pc = (NULL == pr) ? t_pckc_check_ud( luaVM, -1, 1 ) : pr->p;
-	struct t_pck *p = t_pck_check_ud( luaVM, 1, 1 );
-	lua_pushinteger( luaVM, p->s );
+	struct t_pcr *pr = t_pcr_check_ud( luaVM, 1, 0 );
+	struct t_pck *pc = (NULL == pr) ? t_pck_check_ud( luaVM, -1, 1 ) : pr->p;
+	lua_pushinteger( luaVM, t_pck_getsize( luaVM, pc ) );
 	return 1;
 }
 
@@ -516,11 +627,10 @@ lt_pck_size( lua_State *luaVM )
 static int
 lt_pck_getir( lua_State *luaVM )
 {
-	//struct t_pckr *pr = t_pckr_check_ud( luaVM, 1, 0 );
-	//struct t_pck  *pc = (NULL == pr) ? t_pckc_check_ud( luaVM, -1, 1 ) : pr->p;
-	struct t_pck *p = t_pck_check_ud( luaVM, 1, 1 );
-	if (p->t > T_PCK_RAW && LUA_NOREF != p->m)
-		lua_rawgeti( luaVM, LUA_REGISTRYINDEX, p->m );
+	struct t_pcr *pr = t_pcr_check_ud( luaVM, 1, 0 );
+	struct t_pck *pc = (NULL == pr) ? t_pck_check_ud( luaVM, -1, 1 ) : pr->p;
+	if (pc->t > T_PCK_RAW && LUA_NOREF != pc->m)
+		lua_rawgeti( luaVM, LUA_REGISTRYINDEX, pc->m );
 	else
 		lua_pushnil( luaVM );
 	return 1;
@@ -553,14 +663,26 @@ t_pck_format( lua_State *luaVM, enum t_pck_t t, size_t s, int m )
 		case T_PCK_RAW:
 			lua_pushfstring( luaVM, "%d", s );
 			break;
+		case T_PCK_ARR:
+		case T_PCK_SEQ:
+		case T_PCK_STR:
+			lua_pushfstring( luaVM, "[%d]", s );
+			break;
 		default:
-			lua_pushfstring( luaVM, "[%d:%d]", s, m );
+			lua_pushfstring( luaVM, "UNKNOWN");
 	}
 }
 
 
+// #########################################################################
+//  __  __      _                         _   _               _     
+// |  \/  | ___| |_ __ _   _ __ ___   ___| |_| |__   ___   __| |___ 
+// | |\/| |/ _ \ __/ _` | | '_ ` _ \ / _ \ __| '_ \ / _ \ / _` / __|
+// | |  | |  __/ || (_| | | | | | | |  __/ |_| | | | (_) | (_| \__ \
+// |_|  |_|\___|\__\__,_| |_| |_| |_|\___|\__|_| |_|\___/ \__,_|___/
+// #########################################################################
 /**--------------------------------------------------------------------------
- * __tostring (print) representation of a packer instance.
+ * __tostring (print) representation of a T.Pack/Reader instance.
  * \param   luaVM     The lua state.
  * \lparam  t_pack   the packer instance user_data.
  * \lreturn string    formatted string representing packer.
@@ -569,27 +691,54 @@ t_pck_format( lua_State *luaVM, enum t_pck_t t, size_t s, int m )
 static int
 lt_pck__tostring( lua_State *luaVM )
 {
-	struct t_pck *p = t_pck_check_ud( luaVM, 1, 1 );
-	lua_pushfstring( luaVM, "T.Pack." );
-	t_pck_format( luaVM, p->t, p->s, p->m );
-	lua_pushfstring( luaVM, ": %p", p );
+	struct t_pcr *pr = t_pcr_check_ud( luaVM, 1, 0 );
+	struct t_pck *pc = (NULL == pr) ? t_pck_check_ud( luaVM, 1, 1 ) : pr->p;
+
+	if (NULL == pr)
+		lua_pushfstring( luaVM, "T.Pack." );
+	else
+		lua_pushfstring( luaVM, "T.Pack.Reader[%d](", pr->o );
+	t_pck_format( luaVM, pc->t, pc->s, pc->m );
+	lua_pushfstring( luaVM, "): %p", pc );
 	lua_concat( luaVM, 4 );
+
 	return 1;
 }
 
 
 /**--------------------------------------------------------------------------
- * __len (#) representation of a packer instance.
- * \param   luaVM     The lua state.
- * \lparam  t_pack    the packer instance user_data.
- * \lreturn string    formatted string representing packer.
- * \return  The number of results to be passed back to the calling Lua script.
- * --------------------------------------------------------------------------*/
+ * __gc Garbage Collector. Releases references from Lua Registry.
+ * \param  luaVM lua Virtual Machine.
+ * \lparam ud    T.Pack.Struct.
+ * \return int   # of values left on te stack.
+ * -------------------------------------------------------------------------*/
+static int
+lt_pck__gc( lua_State *luaVM )
+{
+	struct t_pcr *pr  = t_pcr_check_ud( luaVM, -2, 0 );
+	struct t_pck *pc  = (NULL == pr) ? t_pck_check_ud( luaVM, -2, 1 ) : pr->p;
+	if (pc->t > T_PCK_RAW)
+		luaL_unref( luaVM, LUA_REGISTRYINDEX, pc->m );
+	return 0;
+}
+
+
+/**--------------------------------------------------------------------------
+ * __len (#) representation of a Struct/Reader instance.
+ * \param   luaVM  lua Virtual Machine.
+ * \lparam  ud     T.Pack.Struct/Reader instance.
+ * \lreturn int    # of elements in T.Pack.Struct/Reader instance.
+ * \return  int    # of values left on te stack.
+ * -------------------------------------------------------------------------*/
 static int
 lt_pck__len( lua_State *luaVM )
 {
-	struct t_pck *p = t_pck_check_ud( luaVM, 1, 1 );
-	lua_pushinteger( luaVM, p->s );
+	struct t_pcr *pr = t_pcr_check_ud( luaVM, 1, 0 );
+	struct t_pck *pc = (NULL == pr) ? t_pck_check_ud( luaVM, -1, 1 ) : pr->p;
+
+	luaL_argcheck( luaVM, pc->t > T_PCK_RAW, 1, "Attempt to get length of atomic T.Pack type" );
+
+	lua_pushinteger( luaVM, pc->s );
 	return 1;
 }
 
@@ -607,25 +756,12 @@ static const struct luaL_Reg t_pck_fm [] = {
  * \brief    the metatble for the module
  * --------------------------------------------------------------------------*/
 static const struct luaL_Reg t_pck_cf [] = {
-//	{"Array",     lt_pckc_Array},
-//	{"Sequence",  lt_pckc_Sequence},
-//	{"Struct",    lt_pckc_Struct},
+	{"new",       lt_pck_New},
 	{"size",      lt_pck_size},
 	{"get_ref",   lt_pck_getir},
 	{NULL,    NULL}
 };
 
-
-/**--------------------------------------------------------------------------
- * \brief   the packer library definition
- *          assigns Lua available names to C-functions
- * --------------------------------------------------------------------------*/
-static const luaL_Reg t_pck_m [] = {
-	// new implementation
-	{"pack",      lt_pck_pack},
-	{"unpack",    lt_pck_unpack},
-	{NULL,    NULL}
-};
 
 
 /**--------------------------------------------------------------------------
@@ -641,12 +777,12 @@ luaopen_t_pck( lua_State *luaVM )
 {
 	// T.Pack instance metatable
 	luaL_newmetatable( luaVM, "T.Pack" );   // stack: functions meta
-	luaL_newlib( luaVM, t_pck_m );
-	lua_setfield( luaVM, -2, "__index" );
 	lua_pushcfunction( luaVM, lt_pck__tostring );
 	lua_setfield( luaVM, -2, "__tostring" );
 	lua_pushcfunction( luaVM, lt_pck__len );
 	lua_setfield( luaVM, -2, "__len" );
+	lua_pushcfunction( luaVM, lt_pck__gc );
+	lua_setfield( luaVM, -2, "__gc" );
 	lua_pop( luaVM, 1 );        // remove metatable from stack
 
 	// Push the class onto the stack
