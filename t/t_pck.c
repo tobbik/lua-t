@@ -248,12 +248,49 @@ t_pck_write( lua_State *luaVM, struct t_pck *p, unsigned char *b )
 
 // #########################################################################
 //  _                      _          _
-// | |_ _   _ _ __   ___  | |__   ___| |_ __   ___ _ __ ___ 
+// | |_ _   _ _ __   ___  | |__   ___| |_ __   ___ _ __ ___
 // | __| | | | '_ \ / _ \ | '_ \ / _ \ | '_ \ / _ \ '__/ __|
 // | |_| |_| | |_) |  __/ | | | |  __/ | |_) |  __/ |  \__ \
 //  \__|\__, | .__/ \___| |_| |_|\___|_| .__/ \___|_|  |___/
-//      |___/|_|                       |_|                  
+//      |___/|_|                       |_|
 // #########################################################################
+/**--------------------------------------------------------------------------
+ * __tostring helper that prints the packer type.
+ * \param   luaVM     The lua state.
+ * \param   t_pack    the packer instance struct.
+ * \lreturn  leaves two strings on the Lua Stack.
+ * --------------------------------------------------------------------------*/
+void
+// t_pck_format( lua_State *luaVM, struct t_pck *p )
+t_pck_format( lua_State *luaVM, enum t_pck_t t, size_t s, int m )
+{
+	lua_pushfstring( luaVM, "%s", t_pck_t_lst[ t ] );
+	switch( t )
+	{
+		case T_PCK_INT:
+		case T_PCK_UNT:
+			lua_pushfstring( luaVM, "%d%c", s, (1==m) ? 'L' : 'B' );
+			break;
+		case T_PCK_FLT:
+			lua_pushfstring( luaVM, "%d", s );
+			break;
+		case T_PCK_BIT:
+			lua_pushfstring( luaVM, "%d_%d",  s, m );
+			break;
+		case T_PCK_RAW:
+			lua_pushfstring( luaVM, "%d", s );
+			break;
+		case T_PCK_ARR:
+		case T_PCK_SEQ:
+		case T_PCK_STR:
+			lua_pushfstring( luaVM, "[%d]", s );
+			break;
+		default:
+			lua_pushfstring( luaVM, "UNKNOWN");
+	}
+}
+
+
 /**--------------------------------------------------------------------------
  * See if requested type exists in t.Pack. otherwise create and register.
  * the format for a particular definition will never change. Hence, no need to
@@ -367,7 +404,7 @@ struct t_pcr
  * \return  size in bytes.
  * TODO: return 0 no matter if even one item is of unknown length.
  * --------------------------------------------------------------------------*/
-size_t 
+static size_t 
 t_pck_getsize( lua_State *luaVM,  struct t_pck *p )
 {
 	size_t        s = 0;
@@ -759,43 +796,6 @@ lt_pck_getir( lua_State *luaVM )
 	else
 		lua_pushnil( luaVM );
 	return 1;
-}
-
-
-/**--------------------------------------------------------------------------
- * __tostring helper that prints the packer type.
- * \param   luaVM     The lua state.
- * \param   t_pack    the packer instance struct.
- * \lreturn  leaves two strings on the Lua Stack.
- * --------------------------------------------------------------------------*/
-void
-// t_pck_format( lua_State *luaVM, struct t_pck *p )
-t_pck_format( lua_State *luaVM, enum t_pck_t t, size_t s, int m )
-{
-	lua_pushfstring( luaVM, "%s", t_pck_t_lst[ t ] );
-	switch( t )
-	{
-		case T_PCK_INT:
-		case T_PCK_UNT:
-			lua_pushfstring( luaVM, "%d%c", s, (1==m) ? 'L' : 'B' );
-			break;
-		case T_PCK_FLT:
-			lua_pushfstring( luaVM, "%d", s );
-			break;
-		case T_PCK_BIT:
-			lua_pushfstring( luaVM, "%d_%d",  s, m );
-			break;
-		case T_PCK_RAW:
-			lua_pushfstring( luaVM, "%d", s );
-			break;
-		case T_PCK_ARR:
-		case T_PCK_SEQ:
-		case T_PCK_STR:
-			lua_pushfstring( luaVM, "[%d]", s );
-			break;
-		default:
-			lua_pushfstring( luaVM, "UNKNOWN");
-	}
 }
 
 

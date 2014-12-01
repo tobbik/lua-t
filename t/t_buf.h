@@ -53,15 +53,15 @@ struct t_pck {
 	/// modifier -> various meanings
 	///  -- for int/uint             = Endian (0=Big, 1=Little)
 	///  -- for bit                  = Offset from beginning of byte (bit numbering: MSB 1)
-	///  -- for Raw                  = 
+	///  -- for raw                  = ???
 	///  -- for Arr                  = lua registry Reference for packer
-	///  -- for Seq                  = lua registry Reference for the table 
+	///  -- for Seq                  = lua registry Reference for the table
 	///                                         idx[i]    = Pack
-	///                                         idx[n+i]  = ofs
-	///  -- for Struct               = lua registry Reference for the table 
+	///                                         idx[s+i]  = ofs
+	///  -- for Struct               = lua registry Reference for the table
 	///                                         idx[i]    = Pack
-	///                                         idx[n+i]  = ofs
-	///                                         idx[2n+i] = name
+	///                                         idx[s+i]  = ofs
+	///                                         idx[2s+i] = name
 	///                                         idx[name] = i
 	int            m;
 };
@@ -71,15 +71,9 @@ struct t_pck {
 struct t_pcr {
 	struct t_pck   *p;   ///< reference to packer type
 	size_t          o;   ///< offset from the beginning of the wrapping Struct
-	size_t          s;   ///< size of this Reader
+	//size_t          s;   ///< size of this Reader
 };
 
-
-/// The userdata struct for T.Pack.Reader
-struct t_pckr {
-	struct t_pck   *p;   ///< reference to packer type
-	size_t          o;   ///< offset from the beginning of the wrapping Struct
-};
 
 
 // t_buf.c
@@ -95,31 +89,12 @@ struct t_buf * t_buf_getbuffer( lua_State *luaVM, int pB, int pP, int *pos );
 
 // t_pck.c
 // Constructors
-struct t_pck  *t_pck_check_ud ( lua_State *luaVM, int pos, int check );
-struct t_pck  *t_pck_create_ud( lua_State *luaVM, enum t_pck_t t, size_t s, int m );
-
-// helpers to interpret format strings
-struct t_pck *t_pck_getoption ( lua_State *luaVM, const char **f, int *e, int *o );
+struct t_pck *t_pck_check_ud ( lua_State *luaVM, int pos, int check );
+struct t_pck *t_pck_create_ud( lua_State *luaVM, enum t_pck_t t, size_t s, int m );
+struct t_pcr *t_pcr_check_ud ( lua_State *luaVM, int pos, int check );
+struct t_pcr *t_pcr_create_ud( lua_State *luaVM, struct t_pck *p, size_t o );
 
 // accessor helpers for the Packers
 int t_pck_read ( lua_State *luaVM, struct t_pck *p, const unsigned char *buffer);
 int t_pck_write( lua_State *luaVM, struct t_pck *p, unsigned char *buffer );
-
-// tostring helper
-void   t_pck_format  ( lua_State *luaVM, enum t_pck_t t, size_t s, int m );
-size_t t_pck_getsize ( lua_State *luaVM, struct t_pck *p );
-
-
-
-// t_pcr.c
-/*
-int             luaopen_t_pcr  ( lua_State *luaVM );
-int             luaopen_t_pckr  ( lua_State *luaVM );
-struct t_pck   *t_pckc_check_ud ( lua_State *luaVM, int pos, int check );
-struct t_pckr  *t_pckr_check_ud ( lua_State *luaVM, int pos, int check );
-struct t_pckr  *t_pckr_create_ud( lua_State *luaVM, struct t_pck *p, size_t o );
-int             lt_pckc_Struct  ( lua_State *luaVM );
-int             lt_pckc_Array   ( lua_State *luaVM );
-int             lt_pckc_Sequence( lua_State *luaVM );
-*/
 
