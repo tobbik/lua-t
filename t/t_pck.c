@@ -559,7 +559,7 @@ static struct t_pck
 	const char   *fmt;
 
 	// get absolute stack position
-	pos = (pos < 0) ? lua_gettop( luaVM ) + pos +1 : pos;
+	pos = (pos < 0) ? lua_gettop( luaVM ) + pos + 1 : pos;
 
 	if (lua_isuserdata( luaVM, pos ))
 	{
@@ -577,7 +577,10 @@ static struct t_pck
 		}
 		// TODO: actually create the packers and calculate positions
 		if (1 < n)
+		{
+			t_stackDump( luaVM );
 			p =  t_pck_mksequence( luaVM, t+1, lua_gettop( luaVM ) );
+		}
 	}
 	lua_replace( luaVM, pos );
 	lua_pop( luaVM, lua_gettop( luaVM ) - t );
@@ -634,7 +637,7 @@ struct t_pck
 
 	sq     = (struct t_pck *) lua_newuserdata( luaVM, sizeof( struct t_pck ) );
 	sq->t  = T_PCK_SEQ;
-	sq->s  = ep-sp;
+	sq->s  = (ep-sp)+1;
 
 	// create and populate index table
 	lua_newtable( luaVM );                  // Stack: fmt,Seq,idx
@@ -854,6 +857,7 @@ lt_pck__index( lua_State *luaVM )
 		if (! lua_tonumber( luaVM, -3 ))               // T.Struct
 			lua_rawget( luaVM, -2);    // Stack: Struct,key,idx,i
 		lua_rawgeti( luaVM, -2, lua_tointeger( luaVM, -1 ) + pc->s );  // Stack: Seq,key,idx,i,ofs
+		t_stackDump( luaVM );
 		pos += luaL_checkinteger( luaVM, -1);
 		lua_rawgeti( luaVM, -3, lua_tointeger( luaVM, -2 ) );  // Stack: Seq,key,idx,i,ofs,Pack
 	}
@@ -919,8 +923,8 @@ lt_pck__tostring( lua_State *luaVM )
 static int
 lt_pck__gc( lua_State *luaVM )
 {
-	struct t_pcr *pr  = t_pcr_check_ud( luaVM, -2, 0 );
-	struct t_pck *pc  = (NULL == pr) ? t_pck_check_ud( luaVM, -2, 1 ) : pr->p;
+	struct t_pcr *pr  = t_pcr_check_ud( luaVM, -1, 0 );
+	struct t_pck *pc  = (NULL == pr) ? t_pck_check_ud( luaVM, -1, 1 ) : pr->p;
 	if (pc->t > T_PCK_RAW)
 		luaL_unref( luaVM, LUA_REGISTRYINDEX, pc->m );
 	return 0;
@@ -969,6 +973,37 @@ static const struct luaL_Reg t_pck_cf [] = {
 
 
 /**--------------------------------------------------------------------------
+ * \brief   pushes the T.Pack.Reader library onto the stack
+ *          - creates Metatable with functions
+ *          - creates metatable with methods
+ * \param   luaVM     The lua state.
+ * \lreturn string    the library
+ * \return  The number of results to be passed back to the calling Lua script.
+ * --------------------------------------------------------------------------*/
+static int
+luaopen_t_pckr( lua_State *luaVM )
+{
+	// T.Pack.Struct instance metatable
+	luaL_newmetatable( luaVM, "T.Pack.Reader" );   // stack: functions meta
+	lua_pushcfunction( luaVM, lt_pck__index);
+	lua_setfield( luaVM, -2, "__index" );
+	lua_pushcfunction( luaVM, lt_pck__newindex );
+	lua_setfield( luaVM, -2, "__newindex" );
+	//lua_pushcfunction( luaVM, lt_pck__pairs );
+	//lua_setfield( luaVM, -2, "__pairs" );
+	lua_pushcfunction( luaVM, lt_pck__tostring );
+	lua_setfield( luaVM, -2, "__tostring" );
+	lua_pushcfunction( luaVM, lt_pck__len );
+	lua_setfield( luaVM, -2, "__len" );
+	lua_pushcfunction( luaVM, lt_pck__gc );
+	lua_setfield( luaVM, -2, "__gc" );
+	//lua_pushcfunction( luaVM, lt_pcr__call );
+	//lua_setfield( luaVM, -2, "__call" );
+	lua_pop( luaVM, 1 );        // remove metatable from stack
+	return 0;
+}
+
+/**--------------------------------------------------------------------------
  * \brief   pushes the T.Pack library onto the stack
  *          - creates Metatable with functions
  *          - creates metatable with methods
@@ -1002,8 +1037,7 @@ luaopen_t_pck( lua_State *luaVM )
 	luaL_newlib( luaVM, t_pck_cf );
 	luaL_newlib( luaVM, t_pck_fm );
 	lua_setmetatable( luaVM, -2 );
-	//luaopen_t_pckc( luaVM );
-	//luaopen_t_pckr( luaVM );
+	luaopen_t_pckr( luaVM );
 	return 1;
 }
 
