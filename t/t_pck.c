@@ -663,15 +663,19 @@ struct t_pck
 
 //###########################################################################
 //   ____                _                   _                 
-//  / ___|___  _ __  ___| |_ _ __ _   _  ___| |_ ___  _ __ ___ 
-// | |   / _ \| '_ \/ __| __| '__| | | |/ __| __/ _ \| '__/ __|
-// | |__| (_) | | | \__ \ |_| |  | |_| | (__| || (_) | |  \__ \
-//  \____\___/|_| |_|___/\__|_|   \__,_|\___|\__\___/|_|  |___/
+//  / ___|___  _ __  ___| |_ _ __ _   _  ___| |_ ___  _ __ 
+// | |   / _ \| '_ \/ __| __| '__| | | |/ __| __/ _ \| '__|
+// | |__| (_) | | | \__ \ |_| |  | |_| | (__| || (_) | |
+//  \____\___/|_| |_|___/\__|_|   \__,_|\___|\__\___/|_|
 // #########################################################################
 /** -------------------------------------------------------------------------
- * \brief     creates a packerfrom the function call
- * \param     luaVM  lua state
- * \lparam    fmt string
+ * Creates a packerfrom the function call.
+ * \param     luaVM  lua state.
+ * \lparam    fmt    string.
+ *      or
+ * \lparam    T.Pack elements.
+ *      or
+ * \lparam    {name=T.Pack}, ...  name value pairs.
  * \return    integer   how many elements are placed on the Lua stack
  *  -------------------------------------------------------------------------*/
 static int
@@ -698,7 +702,8 @@ lt_pck_New( lua_State *luaVM )
 
 
 /** -------------------------------------------------------------------------
- * creates the buffer from the Constructor.
+ * Creates the Packer from the Constructor.
+ * Behaves differently based on arguments.
  * \param     luaVM  lua state
  * \lparam    CLASS table Time
  * \lparam    length of buffer
@@ -710,6 +715,7 @@ static int lt_pck__Call (lua_State *luaVM)
 	lua_remove( luaVM, 1 );    // remove the T.Buffer Class table
 	return lt_pck_New( luaVM );
 }
+
 
 /**--------------------------------------------------------------------------
  * reads a value, unpacks it and pushes it onto the Lua stack.
