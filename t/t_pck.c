@@ -682,6 +682,81 @@ t_pck_format( lua_State *luaVM, enum t_pck_t t, size_t s, int m )
 // |_|  |_|\___|\__\__,_| |_| |_| |_|\___|\__|_| |_|\___/ \__,_|___/
 // #########################################################################
 /**--------------------------------------------------------------------------
+ * Read a Struct packer value.
+ *          This can not simply return a packer/Struct type since it now has
+ *          meta information about the position it is requested from.  For this
+ *          the is a new datatype T.Pack.Result which carries type and position
+ *          information
+ * \param   luaVM    The lua state.
+ * \lparam  userdata T.Pack.Struct instance.
+ * \lparam  key      string/integer.
+ * \lreturn userdata Pack or Struct instance.
+ * \return  The # of items pushed to the stack.
+ * --------------------------------------------------------------------------*/
+static int
+lt_pck__index( lua_State *luaVM )
+{
+	struct t_pcr *pr  = t_pcr_check_ud( luaVM, -2, 0 );
+	struct t_pck *pc  = (NULL == pr) ? t_pck_check_ud( luaVM, -2, 1 ) : pr->p;
+	struct t_pck *p;
+	int           pos = (NULL == pr) ? 0 : pr->o-1;  // recorded offset is 1 based -> don't add up
+
+	luaL_argcheck( luaVM, pc->t > T_PCK_RAW, -2, "Trying to index Atomic T.Pack type" );
+
+	if (LUA_TNUMBER == lua_type( luaVM, -1 ) &&
+	      ((luaL_checkinteger( luaVM, -1 ) > (int) pc->s) || (luaL_checkinteger( luaVM, -1 ) < 1))
+	   )
+	{
+		// Array/Sequence out of bound: return nil
+		lua_pushnil( luaVM );
+		return 1;
+	}
+	// get idx table (struct) or packer type (array)
+	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, pc->m );
+	// Stack: Struct,idx/name,idx/Packer
+	if (LUA_TUSERDATA == lua_type( luaVM, -1 ))        // T.Array
+	{
+		p = t_pck_check_ud( luaVM, -1, 0 );
+		pos += ((t_pck_getsize( luaVM, p )) * (luaL_checkinteger( luaVM, -2 )-1)) + 1;
+	}
+	else                                               // T.Struct/Sequence
+	{
+		lua_pushvalue( luaVM, -2 );        // Stack: Struct,key,idx,key
+		if (! lua_tonumber( luaVM, -3 ))               // T.Struct
+			lua_rawget( luaVM, -2);    // Stack: Struct,key,idx,i
+		lua_rawgeti( luaVM, -2, lua_tointeger( luaVM, -1 ) + pc->s );  // Stack: Seq,key,idx,i,ofs
+		pos += luaL_checkinteger( luaVM, -1);
+		lua_rawgeti( luaVM, -3, lua_tointeger( luaVM, -2 ) );  // Stack: Seq,key,idx,i,ofs,Pack
+	}
+	p =  t_pck_check_ud( luaVM, -1, 1 );  // Stack: Seq,key,idx,i,ofs,Pack
+	lua_pop( luaVM, 3 );
+
+	t_pcr_create_ud( luaVM, p, pos );
+	return 1;
+}
+
+
+/**--------------------------------------------------------------------------
+ * update a packer value in an T.Pack.Struct ---> NOT ALLOWED.
+ * \param   luaVM    The lua state.
+ * \lparam  Combinator instance
+ * \lparam  key   string/integer
+ * \lparam  value LuaType
+ * \return  The # of items pushed to the stack.
+ * --------------------------------------------------------------------------*/
+static int
+lt_pck__newindex( lua_State *luaVM )
+{
+	struct t_pcr *pr  = t_pcr_check_ud( luaVM, -3, 0 );
+	struct t_pck *pc  = (NULL == pr) ? t_pck_check_ud( luaVM, -3, 1 ) : pr->p;
+
+	(NULL == pr) ? t_pck_check_ud( luaVM, -3, 1 ) : pr->p;
+	luaL_argcheck( luaVM, pc->t > T_PCK_RAW, -2, "Trying to index Atomic T.Pack type" );
+
+	return t_push_error( luaVM, "Packers are static and can't be updated!" );
+}
+
+/**--------------------------------------------------------------------------
  * __tostring (print) representation of a T.Pack/Reader instance.
  * \param   luaVM     The lua state.
  * \lparam  t_pack   the packer instance user_data.
@@ -775,14 +850,22 @@ static const struct luaL_Reg t_pck_cf [] = {
 LUAMOD_API int
 luaopen_t_pck( lua_State *luaVM )
 {
-	// T.Pack instance metatable
+	// T.Pack.Struct instance metatable
 	luaL_newmetatable( luaVM, "T.Pack" );   // stack: functions meta
+	lua_pushcfunction( luaVM, lt_pck__index);
+	lua_setfield( luaVM, -2, "__index" );
+	lua_pushcfunction( luaVM, lt_pck__newindex );
+	lua_setfield( luaVM, -2, "__newindex" );
+	//lua_pushcfunction( luaVM, lt_pck__pairs );
+	//lua_setfield( luaVM, -2, "__pairs" );
 	lua_pushcfunction( luaVM, lt_pck__tostring );
 	lua_setfield( luaVM, -2, "__tostring" );
 	lua_pushcfunction( luaVM, lt_pck__len );
 	lua_setfield( luaVM, -2, "__len" );
 	lua_pushcfunction( luaVM, lt_pck__gc );
 	lua_setfield( luaVM, -2, "__gc" );
+	//lua_pushcfunction( luaVM, lt_pcr__call );
+	//lua_setfield( luaVM, -2, "__call" );
 	lua_pop( luaVM, 1 );        // remove metatable from stack
 
 	// Push the class onto the stack
@@ -794,6 +877,7 @@ luaopen_t_pck( lua_State *luaVM )
 	//luaopen_t_pckr( luaVM );
 	return 1;
 }
+
 
 // ==========================================================================
 // preserve float packing/unpacking code from Lua 5.3 alpha
