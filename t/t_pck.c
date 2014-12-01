@@ -275,10 +275,9 @@ struct t_pck
 	lua_getfield( luaVM, -1, "Pack" );
 	t_pck_format( luaVM, t, s, m ); lua_concat( luaVM, 2 );
 	lua_rawget( luaVM, -2 );
-	if (lua_isnil( luaVM, -1 ))
+	if (lua_isnil( luaVM, -1 ))    // havent found in cache -> create it
 	{
-		lua_pop( luaVM, 1 );
-		t_pck_format( luaVM, t, s, m ); lua_concat( luaVM, 2 );
+		lua_pop( luaVM, 1 );        // pop the nil
 		p = (struct t_pck *) lua_newuserdata( luaVM, sizeof( struct t_pck ));
 		p->t = t;
 		p->s = s;
@@ -286,14 +285,11 @@ struct t_pck
 
 		luaL_getmetatable( luaVM, "T.Pack" );
 		lua_setmetatable( luaVM, -2 );
-		lua_rawset( luaVM, -3 );
 		t_pck_format( luaVM, t, s, m ); lua_concat( luaVM, 2 );
-		lua_rawget( luaVM, -2 );
+		lua_pushvalue( luaVM, -2 );
+		lua_rawset( luaVM, -4 );
 	}
-	else
-	{
-		p = t_pck_check_ud( luaVM, -1, 1 );
-	}
+	p = t_pck_check_ud( luaVM, -1, 1 );
 	for (i=0; i<3; i++)
 		lua_remove( luaVM, -2 );
 
@@ -621,12 +617,6 @@ struct t_pck
 
 
 //###########################################################################
-//  _                        _    ____ ___
-// | |   _   _  __ _        / \  |  _ \_ _|
-// | |  | | | |/ _` |_____ / _ \ | |_) | |
-// | |__| |_| | (_| |_____/ ___ \|  __/| |
-// |_____\__,_|\__,_|    /_/   \_\_|  |___|
-//###########################################################################
 //   ____                _                   _                 
 //  / ___|___  _ __  ___| |_ _ __ _   _  ___| |_ ___  _ __ ___ 
 // | |   / _ \| '_ \/ __| __| '__| | | |/ __| __/ _ \| '__/ __|
@@ -644,6 +634,13 @@ lt_pck_New( lua_State *luaVM )
 {
 	struct t_pck  __attribute__ ((unused)) *p;
 
+	// Handle single packer types 
+	if (1==lua_gettop( luaVM ))
+	{
+		p = t_pck_getpck( luaVM, 1 );
+		return 1;
+	}
+	// Handle Array packer types
 	if (2==lua_gettop( luaVM ) && LUA_TNUMBER == lua_type( luaVM, -1 ))
 	{
 		p = t_pck_mkarray( luaVM );
