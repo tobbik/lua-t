@@ -455,13 +455,16 @@ get_num( const char **fmt, int df )
 struct t_pck
 *t_pck_getoption( lua_State *luaVM, const char **f, int *e, int *o )
 {
-	int           opt = *((*f)++);
+	int           opt;
 	int           m;
 	size_t        s;
 	enum t_pck_t  t;
 	struct t_pck *p   = NULL;
+
 	while (NULL == p)
 	{
+		opt = *((*f)++);
+		printf("'%c'   %02X\n", opt, opt);
 		switch (opt)
 		{
 			case 'b': t = T_PCK_INT; s =                     1; m = (1==*e); break;
@@ -484,7 +487,7 @@ struct t_pck
 
 			case '<': *e = 1; continue; break;
 			case '>': *e = 0; continue; break;
-			case '0': return NULL; break;
+			case '\0': return NULL; break;
 			default:
 				luaL_error( luaVM, "can't do that bro" );
 				return NULL;
@@ -510,14 +513,17 @@ struct t_pck
  * \return  struct t_pck* pointer.
  * --------------------------------------------------------------------------*/
 static struct t_pck
-*t_pck_getpck( lua_State *luaVM, int pos, int atom )
+*t_pck_getpck( lua_State *luaVM, int pos )
 {
-	struct t_pck *p;      ///< packer
-	struct t_pcr *r;      ///< reader
+	struct t_pck *p = NULL; ///< packer
+	struct t_pcr *r;        ///< reader
 	int           l = IS_LITTLE_ENDIAN;
 	int           o = 0;
-	// int           n = 1;  ///< counter for packers created from fmt string
+	int           n = 0;  ///< counter for packers created from fmt string
 	const char   *fmt;
+
+	// get absolute stack position
+	pos = (pos < 0) ? lua_gettop( luaVM ) + pos +1 : pos;
 
 	if (lua_isuserdata( luaVM, pos ))
 	{
@@ -528,13 +534,17 @@ static struct t_pck
 	{
 		fmt = luaL_checkstring( luaVM, pos );
 		p   = t_pck_getoption( luaVM, &fmt, &l, &o );
-		if ('\0' != *(fmt++))
-			while (NULL != p )
-				// TODO: actually create the packers and calculate positions
-				p =  t_pck_mksequence( luaVM, pos, 9 );
+		while (NULL != p )
+		{
+			n++;
+			p   = t_pck_getoption( luaVM, &fmt, &l, &o );
+		}
+		// TODO: actually create the packers and calculate positions
+		if (1 < n)
+			p =  t_pck_mksequence( luaVM, pos, 9 );
 	}
-	if (atom && T_PCK_RAW < p->t)
-		luaL_error( luaVM, "Atomic Packer type required" );
+	lua_replace( luaVM, pos );
+	printf("%d\n",n);
 	return p;
 }
 
@@ -549,9 +559,11 @@ static struct t_pck
 static struct t_pck
 *t_pck_mkarray( lua_State *luaVM )
 {
-	struct t_pck  __attribute__ ((unused))   *p  = t_pck_getpck( luaVM, -2, 0 );  ///< packer
+	t_stackDump( luaVM );
+	struct t_pck  __attribute__ ((unused))   *p  = t_pck_getpck( luaVM, -2 );  ///< packer
 	struct t_pck     *ap;     ///< array userdata to be created
 
+	t_stackDump( luaVM );
 	ap    = (struct t_pck *) lua_newuserdata( luaVM, sizeof( struct t_pck ) );
 	ap->t = T_PCK_ARR;
 	ap->s = luaL_checkinteger( luaVM, -2 );      // how many elements in the array
@@ -561,12 +573,51 @@ static struct t_pck
 	//ap->sz = ap->n * sizeof( p->sz );
 
 
-	luaL_getmetatable( luaVM, "T.Pack.Struct" );
+	luaL_getmetatable( luaVM, "T.Pack" );
 	lua_setmetatable( luaVM, -2 ) ;
 
 	return ap;
 }
 
+
+/**--------------------------------------------------------------------------
+ * Create a  T.Pack.Sequence Object and put it onto the stack.
+ * \param   luaVM  The lua state.
+ * \param   int sp start position on Stack for first Packer.
+ * \param   int ep   end position on Stack for last Packer.
+ * \return  struct t_pck* pointer.
+ * --------------------------------------------------------------------------*/
+struct t_pck
+*t_pck_mksequence( lua_State *luaVM, int sp, int ep )
+{
+	int           n=1, i; ///< iterator for going through the arguments
+	size_t        o=0;    ///< byte offset within the sequence
+	struct t_pck *p;      ///< temporary packer/struct for iteration
+	struct t_pck *sq;     ///< the userdata this constructor creates
+
+	sq     = (struct t_pck *) lua_newuserdata( luaVM, sizeof( struct t_pck ) );
+	sq->t  = T_PCK_SEQ;
+	sq->s  = ep-sp;
+
+	// create and populate index table
+	lua_newtable( luaVM );                  // Stack: fmt,Seq,idx
+	for (i=sp; i<=ep; i++)
+	{
+		p = t_pck_check_ud( luaVM, i, 1 );
+		lua_pushvalue( luaVM, i );           // Stack: fmt,Seq,idx,Pack
+		lua_pushinteger( luaVM, o );         // Stack: fmt,Seq,idx,Pack,ofs
+		lua_rawseti( luaVM, -3, n + sq->s ); // Stack: fmt,Seq,idx,Pack     idx[n+i] = offset
+		lua_rawseti( luaVM, -2, n );         // Stack: fmt,Seq,idx,         idx[i]   = Pack
+		o += t_pck_getsize( luaVM, p );
+		n++;
+	}
+	sq->m = luaL_ref( luaVM, LUA_REGISTRYINDEX); // register index  table
+
+	luaL_getmetatable( luaVM, "T.Pack" ); // Stack: ...,T.Pack.Struct
+	lua_setmetatable( luaVM, -2 ) ;
+
+	return sq;
+}
 
 
 //###########################################################################
@@ -593,7 +644,7 @@ lt_pck_New( lua_State *luaVM )
 {
 	struct t_pck  __attribute__ ((unused)) *p;
 
-	if (2==lua_gettop( luaVM ) && LUA_TSTRING == lua_type( luaVM, -1 ))
+	if (2==lua_gettop( luaVM ) && LUA_TNUMBER == lua_type( luaVM, -1 ))
 	{
 		p = t_pck_mkarray( luaVM );
 	}

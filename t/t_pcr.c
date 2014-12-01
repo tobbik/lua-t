@@ -94,7 +94,7 @@ struct t_pck
  * \return  struct t_pck* pointer.
  * --------------------------------------------------------------------------*/
 struct t_pck
-t_pck_mksequence( lua_State *luaVM, int sp, int ep )
+*t_pck_mksequence( lua_State *luaVM, int sp, int ep )
 {
 	size_t        n=1, i; ///< iterator for going through the arguments
 	size_t        o=0;    ///< byte offset within the sequence
@@ -136,7 +136,7 @@ t_pck_mksequence( lua_State *luaVM, int sp, int ep )
  * \return  struct t_pck* pointer.
  * --------------------------------------------------------------------------*/
 struct t_pck
-t_pck_mkstruct( lua_State *luaVM, int sp, int ep )
+*t_pck_mkstruct( lua_State *luaVM, int sp, int ep )
 {
 	size_t        n=1, i; ///< iterator for going through the arguments
 	size_t        o=0;    ///< byte offset within the sequence
