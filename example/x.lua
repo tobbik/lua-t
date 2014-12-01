@@ -3,8 +3,9 @@ t=require't'
 
 -- examples for using the Packer constructor
 pc= t.Pack( '<I6' )
-sq= t.Pack( 'i2', 'i2', 'i1', 'i1' ) -- sequence of 4 packers, access by sq[3]
-sq= t.Pack( 'i2i2i1i1' )             -- compact way of definition
+sq1= t.Pack( 'i2i2i1<I6i1' )              -- compact way of definition
+sq1= t.Pack( 'i2', 'i2', 'i1', pc, 'i1' ) -- sequence of 5 packers, access by sq[3]
+sq2= t.Pack( 'i2i2', 'i1<I6i1' )          -- sequence of 2 sequences
 ar= t.Pack( '>i2', 14 )
 st= t.Pack(
 	{a='B'},         -- unsigned Byte, named a at pos 1
