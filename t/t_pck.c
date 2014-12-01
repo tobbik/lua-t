@@ -580,10 +580,10 @@ static struct t_pck
 		{
 			t_stackDump( luaVM );
 			p =  t_pck_mksequence( luaVM, t+1, lua_gettop( luaVM ) );
+			t_stackDump( luaVM );
 		}
+		lua_replace( luaVM, pos );
 	}
-	lua_replace( luaVM, pos );
-	lua_pop( luaVM, lua_gettop( luaVM ) - t );
 	printf("%d\n",n);
 	return p;
 }
@@ -630,7 +630,7 @@ static struct t_pck
 struct t_pck
 *t_pck_mksequence( lua_State *luaVM, int sp, int ep )
 {
-	int           n=1, i; ///< iterator for going through the arguments
+	size_t        n=1;    ///< iterator for going through the arguments
 	size_t        o=0;    ///< byte offset within the sequence
 	struct t_pck *p;      ///< temporary packer/struct for iteration
 	struct t_pck *sq;     ///< the userdata this constructor creates
@@ -641,15 +641,16 @@ struct t_pck
 
 	// create and populate index table
 	lua_newtable( luaVM );                  // Stack: fmt,Seq,idx
-	for (i=sp; i<=ep; i++)
+	while (n <= sq->s)
 	{
-		p = t_pck_check_ud( luaVM, i, 1 );
-		lua_pushvalue( luaVM, i );           // Stack: fmt,Seq,idx,Pack
+		p = t_pck_getpck( luaVM, sp );
+		lua_pushvalue( luaVM, sp );          // Stack: fmt,Seq,idx,Pack
 		lua_pushinteger( luaVM, o );         // Stack: fmt,Seq,idx,Pack,ofs
 		lua_rawseti( luaVM, -3, n + sq->s ); // Stack: fmt,Seq,idx,Pack     idx[n+i] = offset
 		lua_rawseti( luaVM, -2, n );         // Stack: fmt,Seq,idx,         idx[i]   = Pack
 		o += t_pck_getsize( luaVM, p );
 		n++;
+		lua_remove( luaVM, sp );
 	}
 	sq->m = luaL_ref( luaVM, LUA_REGISTRYINDEX); // register index  table
 
