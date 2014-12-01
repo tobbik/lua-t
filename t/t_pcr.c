@@ -109,7 +109,7 @@ struct t_pck
 	lua_newtable( luaVM );                  // Stack: fmt,Seq,idx
 	for (i=sp; i<=ep, i++)
 	{
-		p = t_pck_check_ud( luaVM, i, 1 );
+		p = t_pck_getpck( luaVM, i );
 		lua_pushvalue( luaVM, i );           // Stack: fmt,Seq,idx,Pack
 		lua_pushinteger( luaVM, o );         // Stack: fmt,Seq,idx,Pack,ofs
 		lua_rawseti( luaVM, -3, n + sq->s ); // Stack: fmt,Seq,idx,Pack     idx[n+i] = offset

@@ -261,7 +261,6 @@ t_pck_write( lua_State *luaVM, struct t_pck *p, unsigned char *b )
  * \lreturn  leaves two strings on the Lua Stack.
  * --------------------------------------------------------------------------*/
 void
-// t_pck_format( lua_State *luaVM, struct t_pck *p )
 t_pck_format( lua_State *luaVM, enum t_pck_t t, size_t s, int m )
 {
 	lua_pushfstring( luaVM, "%s", t_pck_t_lst[ t ] );
@@ -484,6 +483,9 @@ get_num( const char **fmt, int df )
  * \param     int*   e pointer to current endianess.
  * \param     int*   o pointer to current offset within fmt.
  * \return    struct t_pck* pointer.
+ * TODO: Deal with bit sized Packers:
+ *			- Detect if we are in Bit sized type(o%8 !=0)
+ *       - Dtect if fmt switched back to byte style and ERROR
  *  -------------------------------------------------------------------------*/
 struct t_pck
 *t_pck_getoption( lua_State *luaVM, const char **f, int *e, int *o )
@@ -553,6 +555,7 @@ static struct t_pck
 	int           l = IS_LITTLE_ENDIAN;
 	int           o = 0;
 	int           n = 0;  ///< counter for packers created from fmt string
+	int           t = lua_gettop( luaVM );  ///< top of stack before operations
 	const char   *fmt;
 
 	// get absolute stack position
@@ -574,9 +577,10 @@ static struct t_pck
 		}
 		// TODO: actually create the packers and calculate positions
 		if (1 < n)
-			p =  t_pck_mksequence( luaVM, pos, 9 );
+			p =  t_pck_mksequence( luaVM, t+1, lua_gettop( luaVM ) );
 	}
 	lua_replace( luaVM, pos );
+	lua_pop( luaVM, lua_gettop( luaVM ) - t );
 	printf("%d\n",n);
 	return p;
 }

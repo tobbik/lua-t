@@ -17,6 +17,7 @@ struct t_buf {
 // T.Pack is designed to work like Lua 5.3 pack/unpack support.  By the same
 // time it shall have more convienience and be more explicit.
 
+// TODO: make the cheack of enums based on Bit Masks to have subtype grouping
 enum t_pck_t {
 	// atomic packer types
 	T_PCK_INT,      ///< Packer         Integer
@@ -31,11 +32,13 @@ enum t_pck_t {
 };
 
 static const char *const t_pck_t_lst[] = {
+	// atomic packer types
 	"Int",          ///< Packer         Integer
 	"UInt",         ///< Packer         Unsigned Integer
 	"Float",        ///< Packer         Float
 	"Bit",          ///< Packer         Bit
 	"Raw",          ///< Packer         Raw  -  string/utf8/binary
+	// complex packer types
 	"Array",        ///< Combinator     Array
 	"Sequence",     ///< Combinator     Sequence
 	"Struct",       ///< Combinator     Struct
