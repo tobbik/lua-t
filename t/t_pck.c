@@ -35,19 +35,23 @@ struct t_pck *t_pck_mksequence( lua_State *luaVM, int sp, int ep );
 static inline struct t_pck
 *t_pck_getpckreader( lua_State * luaVM, int pos, struct t_pcr **prp )
 {
+	void         *ud = luaL_testudata( luaVM, pos, "T.Pack.Reader" );
+	struct t_pcr *pr = (NULL == ud) ? NULL : (struct t_pcr *) ud;
 	struct t_pck *pc;
-	struct t_pcr *pr;
-	pr = t_pcr_check_ud( luaVM, pos, 0 );
+	// get absolute stack position
+	pos = (pos < 0) ? lua_gettop( luaVM ) + pos + 1 : pos;
+
 	//printf("%p\n", pr);
 	if (NULL == pr)
 		return t_pck_check_ud( luaVM, pos, 1 );
 	else
 	{
 		if (NULL != prp)
-			*prp = *(&pr);
+			//*prp = *(&pr);
+			*prp = pr;
 		lua_rawgeti( luaVM, LUA_REGISTRYINDEX, pr->r );
 		pc = t_pck_check_ud( luaVM, -1, 1 );
-		lua_remove( luaVM, pos );
+		lua_replace( luaVM, pos );
 		return pc;
 	}
 }
@@ -374,46 +378,6 @@ struct t_pck
 	if (check)
 		luaL_argcheck( luaVM, ud != NULL, pos, "`T.Pack.Struct` or `T.Pack` expected" );
 	return NULL;
-}
-
-
-/**--------------------------------------------------------------------------
- * create a t_pcr and push to LuaStack. Expect Packer on end of stack(-1).
- * \param   luaVM  The lua state.
- * \param   buffer offset.
- *
- * \return  struct t_pcr*  pointer to the  t_pcr struct
- * --------------------------------------------------------------------------*/
-struct t_pcr
-*t_pcr_create_ud( lua_State *luaVM, size_t o )
-{
-	struct t_pcr  *r;
-	r = (struct t_pcr *) lua_newuserdata( luaVM, sizeof( struct t_pcr ));
-
-	lua_pushvalue( luaVM, -2 );
-	r->r  = luaL_ref( luaVM, LUA_REGISTRYINDEX );
-	r->o  = o;
-	luaL_getmetatable( luaVM, "T.Pack.Reader" );
-	lua_setmetatable( luaVM, -2 );
-	return r;
-}
-
-
-/**--------------------------------------------------------------------------
- * \brief   check a value on the stack for being an T.Pack.Result
- * \param   luaVM    The lua state.
- * \param   int      position on the stack.
- * \param   int      check -> treats as check -> erros if fail
- * \lparam  userdata T.Pack.Result on the stack.
- * \return  t_pck_s pointer.
- * --------------------------------------------------------------------------*/
-struct t_pcr
-*t_pcr_check_ud( lua_State *luaVM, int pos, int check )
-{
-	void *ud = luaL_testudata( luaVM, pos, "T.Pack.Reader" );
-	if (check)
-		luaL_argcheck( luaVM, ud != NULL, pos, "`T.Pack.Reader` expected" );
-	return (NULL==ud) ? NULL : ((struct t_pcr *) ud);
 }
 
 
@@ -866,8 +830,8 @@ lt_pck__index( lua_State *luaVM )
 {
 	struct t_pcr *pr  = NULL;
 	struct t_pck *pc  = t_pck_getpckreader( luaVM, -2, &pr );
-	int           pos = (NULL == pr )? 0 : pr->o -1 ; // recorded offset is 1 based -> don't add up
 	struct t_pck *p;
+	struct t_pcr *r;
 
 	luaL_argcheck( luaVM, pc->t > T_PCK_RAW, -2, "Trying to index Atomic T.Pack type" );
 
@@ -879,31 +843,36 @@ lt_pck__index( lua_State *luaVM )
 		lua_pushnil( luaVM );
 		return 1;
 	}
+	// push empty reader on stack
+	r = (struct t_pcr *) lua_newuserdata( luaVM, sizeof( struct t_pcr ));
+	r->o = (NULL == pr )? 0 : pr->o -1; // recorded offset is 1 based -> don't add up
 	// get idx table (struct) or packer type (array)
 	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, pc->m );
-	// Stack: Struct,idx/name,idx/Packer
+	// Stack: Struct,idx/name,Reader,idx/Packer
 	if (LUA_TUSERDATA == lua_type( luaVM, -1 ))        // T.Array
 	{
 		p = t_pck_check_ud( luaVM, -1, 1 );
-		pos += ((t_pck_getsize( luaVM, p )) * (luaL_checkinteger( luaVM, -2 )-1)) + 1;
+		r->o += ((t_pck_getsize( luaVM, p )) * (luaL_checkinteger( luaVM, -3 )-1)) + 1;
 	}
 	else                                               // T.Struct/Sequence
 	{
-		if (! lua_tonumber( luaVM, -2 ))               // T.Struct
+		if (! lua_tonumber( luaVM, -3 ))               // T.Struct
 		{
-			lua_pushvalue( luaVM, -2 );        // Stack: Struct,key,idx,key
-			lua_rawget( luaVM, -2 );           // Stack: Struct,key,idx,i
-			lua_replace( luaVM, -3 );          // Stack: Struct,i,idx
+			lua_pushvalue( luaVM, -3 );        // Stack: Struct,key,Reader,idx,key
+			lua_rawget( luaVM, -2 );           // Stack: Struct,key,Reader,idx,i
+			lua_replace( luaVM, -4 );          // Stack: Struct,i,Reader,idx
 		}
-		lua_rawgeti( luaVM, -1, lua_tointeger( luaVM, -2 ) + pc->s );  // Stack: Seq,i,idx,ofs
-		pos += luaL_checkinteger( luaVM, -1);
-		lua_pop( luaVM, 1 );                                   // Stack: Seq,i,idx
-		lua_rawgeti( luaVM, -1, lua_tointeger( luaVM, -2 ) );  // Stack: Seq,i,idx,Pack
+		lua_rawgeti( luaVM, -1, lua_tointeger( luaVM, -3 ) + pc->s );  // Stack: Seq,i,Reader,idx,ofs
+		r->o += luaL_checkinteger( luaVM, -1);
+		lua_pop( luaVM, 1 );                                   // Stack: Seq,i,Reader,idx
+		lua_rawgeti( luaVM, -1, lua_tointeger( luaVM, -3 ) );  // Stack: Seq,i,Reader,idx,Pack
 		lua_remove( luaVM, -2 );
-		p =  t_pck_check_ud( luaVM, -1, 1 );  // Stack: Seq,i,Pack
+		p =  t_pck_check_ud( luaVM, -1, 1 );  // Stack: Seq,i,Reader,Pack
 	}
 
-	t_pcr_create_ud( luaVM, pos );
+	r->r  = luaL_ref( luaVM, LUA_REGISTRYINDEX );   // Stack: Seq,i,Reader
+	luaL_getmetatable( luaVM, "T.Pack.Reader" );
+	lua_setmetatable( luaVM, -2 );
 	return 1;
 }
 

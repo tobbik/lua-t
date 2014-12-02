@@ -94,8 +94,6 @@ struct t_buf * t_buf_getbuffer( lua_State *luaVM, int pB, int pP, int *pos );
 // Constructors
 struct t_pck *t_pck_check_ud ( lua_State *luaVM, int pos, int check );
 struct t_pck *t_pck_create_ud( lua_State *luaVM, enum t_pck_t t, size_t s, int m );
-struct t_pcr *t_pcr_check_ud ( lua_State *luaVM, int pos, int check );
-struct t_pcr *t_pcr_create_ud( lua_State *luaVM, size_t o );
 
 // accessor helpers for the Packers
 int t_pck_read ( lua_State *luaVM, struct t_pck *p, const unsigned char *buffer);
