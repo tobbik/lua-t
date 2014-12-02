@@ -662,7 +662,7 @@ static struct t_pck
 	struct t_pck *st;     ///< the userdata this constructor creates
 
 	st     = (struct t_pck *) lua_newuserdata( luaVM, sizeof( struct t_pck ) );
-	st->t  = T_PCK_SEQ;
+	st->t  = T_PCK_STR;
 	st->s  = (ep-sp)+1;
 
 	// create and populate index table
@@ -908,8 +908,8 @@ lt_pck__index( lua_State *luaVM )
 	// Stack: Struct,idx/name,Reader,idx/Packer
 	if (LUA_TUSERDATA == lua_type( luaVM, -1 ))        // T.Array
 	{
-		p = t_pck_check_ud( luaVM, -1, 1 );
-		r->o += ((t_pck_getsize( luaVM, p )) * (luaL_checkinteger( luaVM, -3 )-1)) + 1;
+		p     = t_pck_check_ud( luaVM, -1, 1 );
+		r->o += ((t_pck_getsize( luaVM, p )) * (luaL_checkinteger( luaVM, -3 )-1));
 	}
 	else                                               // T.Struct/Sequence
 	{
