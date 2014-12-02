@@ -30,7 +30,7 @@
 	 ((b) & (~((0x01) << (7-(n))))) )
 
 
-struct t_pck *t_pck_mksequence( lua_State *luaVM, int sp, int ep );
+static struct t_pck *t_pck_mksequence( lua_State *luaVM, int sp, int ep );
 
 static inline struct t_pck
 *t_pck_getpckreader( lua_State * luaVM, int pos, struct t_pcr **prp )
@@ -611,7 +611,7 @@ static struct t_pck
  * \param   int ep   end position on Stack for last Packer.
  * \return  struct t_pck* pointer.
  * --------------------------------------------------------------------------*/
-struct t_pck
+static struct t_pck
 *t_pck_mksequence( lua_State *luaVM, int sp, int ep )
 {
 	size_t        n=1;    ///< iterator for going through the arguments
@@ -644,6 +644,63 @@ struct t_pck
 	return sq;
 }
 
+
+/**--------------------------------------------------------------------------
+ * Create a  T.Pack.Struct Object and put it onto the stack.
+ * \param   luaVM  The lua state.
+ * \param   int sp start position on Stack for first Packer.
+ * \param   int ep   end position on Stack for last Packer.
+ * \lparam  ... multiple of type  table { name = T.Pack}.
+ * \return  struct t_pck* pointer.
+ * --------------------------------------------------------------------------*/
+static struct t_pck
+*t_pck_mkstruct( lua_State *luaVM, int sp, int ep )
+{
+	size_t        n=1;    ///< iterator for going through the arguments
+	size_t        o=0;    ///< byte offset within the sequence
+	struct t_pck *p;      ///< temporary packer/struct for iteration
+	struct t_pck *st;     ///< the userdata this constructor creates
+
+	st     = (struct t_pck *) lua_newuserdata( luaVM, sizeof( struct t_pck ) );
+	st->t  = T_PCK_SEQ;
+	st->s  = (ep-sp)+1;
+
+	// create and populate index table
+	lua_newtable( luaVM );                  // Stack: fmt,Seq,idx
+	while (n <= st->s)
+	{
+		luaL_argcheck( luaVM, lua_istable( luaVM, sp ), n,
+			"Arguments must be tables with single key/T.Pack pair" );
+		// Stack gymnastic:
+		lua_pushnil( luaVM );
+		if (! lua_next( luaVM, sp ))         // Stack: ...,Struct,idx,name,Pack
+			luaL_error( luaVM, "the table argument must contain one key/value pair." );
+		// check if name is already used!
+		lua_pushvalue( luaVM, -2 );          // Stack: ...,Struct,idx,name,Pack,name
+		lua_rawget( luaVM, -4 );             // Stack: ...,Struct,idx,name,Pack,nil?
+		if (! lua_isnoneornil( luaVM, -1 ))
+			luaL_error( luaVM, "All elements in T.Pack.Struct must have unique key." );
+		lua_pop( luaVM, 1 );                 // Stack: ...,Struct,idx,name,Pack
+		p = t_pck_getpck( luaVM, -1 );       // allow T.Pack or T.Pack.Struct
+		// populate idx table
+		lua_pushinteger( luaVM, o );         // Stack: ...,Seq,idx,name,Pack,ofs
+		lua_rawseti( luaVM, -4, n + st->s ); // Stack: ...,Seq,idx,name,Pack        idx[n+i] = offset
+		lua_rawseti( luaVM, -3, n );         // Stack: ...,Seq,idx,name             idx[i] = Pack
+		lua_pushvalue( luaVM, -1 );          // Stack: ...,Seq,idx,name,name
+		lua_rawseti( luaVM, -3, st->s*2+n ); // Stack: ...,Seq,idx,name             idx[2n+i] = name
+		lua_pushinteger( luaVM, n);          // Stack: ...,Seq,idx,name,i
+		lua_rawset( luaVM, -3 );             // Stack: ...,Seq,idx                  idx[name] = i
+		o += t_pck_getsize( luaVM, p );
+		n++;
+		lua_remove( luaVM, sp );
+	}
+	st->m = luaL_ref( luaVM, LUA_REGISTRYINDEX); // register index  table
+
+	luaL_getmetatable( luaVM, "T.Pack" ); // Stack: ...,T.Pack.Struct
+	lua_setmetatable( luaVM, -2 ) ;
+
+	return st;
+}
 
 //###########################################################################
 //   ____                _                   _                 
@@ -682,7 +739,7 @@ lt_pck_New( lua_State *luaVM )
 	// Handle everyting else ->Struct
 	if (LUA_TTABLE == lua_type( luaVM, -1 ))
 	{
-		//p = t_pck_mkstruct( luaVM );
+		p = t_pck_mkstruct( luaVM, 1, lua_gettop( luaVM ) );
 		return 1;
 	}
 	else
