@@ -845,7 +845,7 @@ lt_pck__index( lua_State *luaVM )
 	}
 	// push empty reader on stack
 	r = (struct t_pcr *) lua_newuserdata( luaVM, sizeof( struct t_pcr ));
-	r->o = (NULL == pr )? 0 : pr->o -1; // recorded offset is 1 based -> don't add up
+	r->o = (NULL == pr )? 0 : pr->o;  // recorded offset is 1 based -> don't add up
 	// get idx table (struct) or packer type (array)
 	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, pc->m );
 	// Stack: Struct,idx/name,Reader,idx/Packer
