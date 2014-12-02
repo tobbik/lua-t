@@ -952,6 +952,78 @@ lt_pck__newindex( lua_State *luaVM )
 	return t_push_error( luaVM, "Packers are static and can't be updated!" );
 }
 
+
+/**--------------------------------------------------------------------------
+ * the actual iterate(next) over the T.Pack.Struct.
+ * It will return key,value pairs in proper order as defined in the constructor.
+ * \param   luaVM lua Virtual Machine.
+ * \lparam  cfunction.
+ * \lparam  previous key.
+ * \lparam  current key.
+ * \lreturn current key, current value.
+ * \return integer number of values left on te stack.
+ *  -------------------------------------------------------------------------*/
+static int
+t_pck_iter( lua_State *luaVM )
+{
+	struct t_pck *pc  = t_pck_check_ud( luaVM, lua_upvalueindex( 1 ), 1);
+	struct t_pcr *r;
+
+	// get current index and increment
+	int crs = lua_tointeger( luaVM, lua_upvalueindex( 2 ) ) + 1;
+
+	luaL_argcheck( luaVM, pc->t > T_PCK_RAW, lua_upvalueindex( 1 ),
+	   "Attempt to index atomic T.Pack type" );
+
+	if (crs > (int) pc->s)
+		return 0;
+	else
+	{
+		lua_pushinteger( luaVM, crs );
+		lua_replace( luaVM, lua_upvalueindex( 2 ) );
+	}
+	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, pc->m );// Stack: func,nP,_idx
+	if (T_PCK_STR == pc->t)                        // Get the name for a Struct value
+		lua_rawgeti( luaVM, -1 , crs + pc->s*2 );   // Stack: func,nP,_idx,nC
+	else
+		lua_pushinteger( luaVM, crs );     // Stack: func,iP,_idx,iC
+	r = (struct t_pcr *) lua_newuserdata( luaVM, sizeof( struct t_pcr ));
+	lua_rawgeti( luaVM, -3 , crs+pc->s ); // Stack: func,xP,_idx,xC,Rd,ofs
+	lua_rawgeti( luaVM, -4 , crs );       // Stack: func,xP,_idx,xC,Rd,ofs,pack
+	lua_remove( luaVM, -5 );              // Stack: func,xP,xC,Rd,ofs,pack
+
+	r->r = luaL_ref( luaVM, LUA_REGISTRYINDEX );   // Stack: func,xP,xC,Rd,ofs
+	r->o = lua_tointeger( luaVM, lua_upvalueindex( 3 ) ) + luaL_checkinteger( luaVM, -1 );
+	lua_pop( luaVM, 1 );                  // remove ofs
+	luaL_getmetatable( luaVM, "T.Pack.Reader" );
+	lua_setmetatable( luaVM, -2 );
+
+	return 2;
+}
+
+
+/**--------------------------------------------------------------------------
+ * Pairs method to iterate over the T.Pack.Struct.
+ * \param   luaVM lua Virtual Machine.
+ * \lparam  iterator T.Pack.Struct.
+ * \lreturn pos    position in t_buf.
+ * \return integer number of values left on te stack.
+ *  -------------------------------------------------------------------------*/
+static int
+lt_pck__pairs( lua_State *luaVM )
+{
+	struct t_pcr *pr = NULL;
+	t_pck_getpckreader( luaVM, -1, &pr );
+
+	lua_pushnumber( luaVM, 0 );
+	lua_pushinteger( luaVM, (NULL == pr) ? 0 : pr->o );  // preserve offset for iteration
+	lua_pushcclosure( luaVM, &t_pck_iter, 3 );
+	lua_pushvalue( luaVM, -1 );
+	lua_pushnil( luaVM );
+	return 3;
+}
+
+
 /**--------------------------------------------------------------------------
  * __tostring (print) representation of a T.Pack/Reader instance.
  * \param   luaVM     The lua state.
@@ -1054,8 +1126,8 @@ luaopen_t_pckr( lua_State *luaVM )
 	lua_setfield( luaVM, -2, "__index" );
 	lua_pushcfunction( luaVM, lt_pck__newindex );
 	lua_setfield( luaVM, -2, "__newindex" );
-	//lua_pushcfunction( luaVM, lt_pck__pairs );
-	//lua_setfield( luaVM, -2, "__pairs" );
+	lua_pushcfunction( luaVM, lt_pck__pairs );
+	lua_setfield( luaVM, -2, "__pairs" );
 	lua_pushcfunction( luaVM, lt_pck__tostring );
 	lua_setfield( luaVM, -2, "__tostring" );
 	lua_pushcfunction( luaVM, lt_pck__len );
@@ -1085,8 +1157,8 @@ luaopen_t_pck( lua_State *luaVM )
 	lua_setfield( luaVM, -2, "__index" );
 	lua_pushcfunction( luaVM, lt_pck__newindex );
 	lua_setfield( luaVM, -2, "__newindex" );
-	//lua_pushcfunction( luaVM, lt_pck__pairs );
-	//lua_setfield( luaVM, -2, "__pairs" );
+	lua_pushcfunction( luaVM, lt_pck__pairs );
+	lua_setfield( luaVM, -2, "__pairs" );
 	lua_pushcfunction( luaVM, lt_pck__tostring );
 	lua_setfield( luaVM, -2, "__tostring" );
 	lua_pushcfunction( luaVM, lt_pck__len );
