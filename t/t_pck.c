@@ -369,14 +369,11 @@ struct t_pck
 struct t_pck
 *t_pck_check_ud( lua_State *luaVM, int pos, int check )
 {
-	void *ud = luaL_testudata( luaVM, pos, "T.Pack.Struct" );
-	if (NULL != ud)
-		return (struct t_pck *) ud;
-	ud = luaL_testudata( luaVM, pos, "T.Pack" );
+	void *ud = luaL_testudata( luaVM, pos, "T.Pack" );
 	if (NULL != ud)
 		return (struct t_pck *) ud;
 	if (check)
-		luaL_argcheck( luaVM, ud != NULL, pos, "`T.Pack.Struct` or `T.Pack` expected" );
+		luaL_argcheck( luaVM, ud != NULL, pos, "`T.Pack` expected" );
 	return NULL;
 }
 
