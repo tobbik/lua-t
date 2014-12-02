@@ -30,7 +30,8 @@
 	 ((b) & (~((0x01) << (7-(n))))) )
 
 
-static struct t_pck *t_pck_mksequence( lua_State *luaVM, int sp, int ep );
+// Declaration because it is needed before implementation
+static struct t_pck *t_pck_mksequence( lua_State *luaVM, int sp, int ep, int *bo );
 
 static inline struct t_pck
 *t_pck_getpckreader( lua_State * luaVM, int pos, struct t_pcr **prp )
@@ -530,11 +531,10 @@ struct t_pck
  * \return  struct t_pck* pointer.
  * --------------------------------------------------------------------------*/
 static struct t_pck
-*t_pck_getpck( lua_State *luaVM, int pos )
+*t_pck_getpck( lua_State *luaVM, int pos, int *bo )
 {
 	struct t_pck *p = NULL; ///< packer
 	int           l = IS_LITTLE_ENDIAN;
-	int           o = 0;
 	int           n = 0;  ///< counter for packers created from fmt string
 	int           t = lua_gettop( luaVM );  ///< top of stack before operations
 	const char   *fmt;
@@ -549,17 +549,17 @@ static struct t_pck
 	else
 	{
 		fmt = luaL_checkstring( luaVM, pos );
-		p   = t_pck_getoption( luaVM, &fmt, &l, &o );
+		p   = t_pck_getoption( luaVM, &fmt, &l, bo );
 		while (NULL != p )
 		{
 			n++;
-			p   = t_pck_getoption( luaVM, &fmt, &l, &o );
+			p   = t_pck_getoption( luaVM, &fmt, &l, bo );
 		}
 		// TODO: actually create the packers and calculate positions
 		if (1 < n)
 		{
 			//t_stackDump( luaVM );
-			p =  t_pck_mksequence( luaVM, t+1, lua_gettop( luaVM ) );
+			p =  t_pck_mksequence( luaVM, t+1, lua_gettop( luaVM ), bo );
 			//t_stackDump( luaVM );
 		}
 		else
@@ -583,7 +583,8 @@ static struct t_pck
 *t_pck_mkarray( lua_State *luaVM )
 {
 	//t_stackDump( luaVM );
-	struct t_pck  __attribute__ ((unused))   *p  = t_pck_getpck( luaVM, -2 );  ///< packer
+	int               bo = 0;
+	struct t_pck  __attribute__ ((unused))   *p  = t_pck_getpck( luaVM, -2, &bo );  ///< packer
 	struct t_pck     *ap;     ///< array userdata to be created
 
 	//t_stackDump( luaVM );
@@ -609,7 +610,7 @@ static struct t_pck
  * \return  struct t_pck* pointer.
  * --------------------------------------------------------------------------*/
 static struct t_pck
-*t_pck_mksequence( lua_State *luaVM, int sp, int ep )
+*t_pck_mksequence( lua_State *luaVM, int sp, int ep, int *bo )
 {
 	size_t        n=1;    ///< iterator for going through the arguments
 	size_t        o=0;    ///< byte offset within the sequence
@@ -624,7 +625,7 @@ static struct t_pck
 	lua_newtable( luaVM );                  // Stack: fmt,Seq,idx
 	while (n <= sq->s)
 	{
-		p = t_pck_getpck( luaVM, sp );
+		p = t_pck_getpck( luaVM, sp, bo );
 		lua_pushvalue( luaVM, sp );          // Stack: fmt,Seq,idx,Pack
 		lua_pushinteger( luaVM, o );         // Stack: fmt,Seq,idx,Pack,ofs
 		lua_rawseti( luaVM, -3, n + sq->s ); // Stack: fmt,Seq,idx,Pack     idx[n+i] = offset
@@ -653,8 +654,9 @@ static struct t_pck
 static struct t_pck
 *t_pck_mkstruct( lua_State *luaVM, int sp, int ep )
 {
-	size_t        n=1;    ///< iterator for going through the arguments
-	size_t        o=0;    ///< byte offset within the sequence
+	size_t        n =1;    ///< iterator for going through the arguments
+	size_t        o =0;    ///< byte offset within the sequence
+	int           bo=0;    ///< bit  offset within the sequence
 	struct t_pck *p;      ///< temporary packer/struct for iteration
 	struct t_pck *st;     ///< the userdata this constructor creates
 
@@ -678,7 +680,7 @@ static struct t_pck
 		if (! lua_isnoneornil( luaVM, -1 ))
 			luaL_error( luaVM, "All elements in T.Pack.Struct must have unique key." );
 		lua_pop( luaVM, 1 );                 // Stack: ...,Struct,idx,name,Pack
-		p = t_pck_getpck( luaVM, -1 );       // allow T.Pack or T.Pack.Struct
+		p = t_pck_getpck( luaVM, -1, &bo );  // allow T.Pack or T.Pack.Struct
 		// populate idx table
 		lua_pushinteger( luaVM, o );         // Stack: ...,Seq,idx,name,Pack,ofs
 		lua_rawseti( luaVM, -4, n + st->s ); // Stack: ...,Seq,idx,name,Pack        idx[n+i] = offset
@@ -720,11 +722,12 @@ static int
 lt_pck_New( lua_State *luaVM )
 {
 	struct t_pck  __attribute__ ((unused)) *p;
+	int                                     bo = 0;
 
 	// Handle single packer types -> returns single packer or sequence
 	if (1==lua_gettop( luaVM ))
 	{
-		p = t_pck_getpck( luaVM, 1 );
+		p = t_pck_getpck( luaVM, 1, &bo );
 		return 1;
 	}
 	// Handle Array packer types
@@ -741,7 +744,7 @@ lt_pck_New( lua_State *luaVM )
 	}
 	else
 	{
-		p = t_pck_mksequence( luaVM, 1, lua_gettop( luaVM ) );
+		p = t_pck_mksequence( luaVM, 1, lua_gettop( luaVM ), &bo );
 		return 1;
 	}
 
