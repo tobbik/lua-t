@@ -1086,6 +1086,129 @@ lt_pck__len( lua_State *luaVM )
 
 
 /**--------------------------------------------------------------------------
+ * __call (#) for a an T.Pack.Reader/Struct instance.
+ *          This is used to either read from or write to a string or T.Buffer.
+ *          one argument means read, two arguments mean write.
+ * \param   luaVM     lua Virtual Machine.
+ * \lparam  ud        T.Pack.Reader instance.
+ * \lparam  ud,string T.Buffer or Lua string.
+ * \lparam  T.Buffer or Lua string.
+ * \lreturn value     read from Buffer/String according to T.Pack.Reader.
+ * \return  int    # of values left on te stack.
+ * -------------------------------------------------------------------------*/
+static int
+lt_pcr__call( lua_State *luaVM )
+{
+	struct t_pcr  *pr = NULL;
+	struct t_pck  *pc = t_pck_getpckreader( luaVM, 1, &pr );
+
+	size_t         o  = (NULL == pr) ? 0 : pr->o;
+
+	struct t_buf  *buf;
+	unsigned char *b;
+	size_t         l;                   /// length of string or buffer overall
+	size_t         n;                   /// iterator for complex types
+	luaL_argcheck( luaVM,  2<=lua_gettop( luaVM ) && lua_gettop( luaVM )<=3, 2,
+		"Calling an T.Pack.Reader takes 2 or 3 arguments!" );
+
+	// are we reading/writing to from T.Buffer or Lua String
+	if (lua_isuserdata( luaVM, 2 ))      // T.Buffer
+	{
+		buf = t_buf_check_ud ( luaVM, 2, 1 );
+		luaL_argcheck( luaVM,  buf->len >= o+t_pck_getsize( luaVM, pc ), 2,
+			"The length of the Buffer must be longer than Pack offset plus Pack length." );
+		b   =  &(buf->b[ o ]);
+	}
+	else
+	{
+		b   = (unsigned char *) luaL_checklstring( luaVM, 2, &l );
+		luaL_argcheck( luaVM,  l > o+t_pck_getsize( luaVM, pc ), 2,
+			"The length of the Buffer must be longer than Pack offset plus Pack length." );
+		luaL_argcheck( luaVM,  2 == lua_gettop( luaVM ), 2,
+			"Can't write to a Lua String since they are immutable." );
+		b   =  b + o;
+	}
+
+	if (2 == lua_gettop( luaVM ))    // read from input
+	{
+		if (pc->t < T_PCK_ARR)         // handle atomic packer, return single value
+		{
+			return t_pck_read( luaVM, pc, (const unsigned char *) b );
+		}
+		if (pc->t == T_PCK_ARR)     // handle Array; return table
+		{
+			lua_createtable( luaVM, pc->s, 0 );      //Stack: r,buf,idx,res
+			for (n=1; n <= pc->s; n++)
+			{
+				lua_pushcfunction( luaVM, lt_pcr__call );  //Stack: r,buf,res,__call
+				lua_pushcfunction( luaVM, lt_pck__index ); //Stack: r,buf,res,__call,__index
+				lua_pushvalue( luaVM, -5 );          //Stack: r,buf,res,__call,__index,r
+				lua_pushinteger( luaVM, n );         //Stack: r,buf,res,__call,__index,r,n
+				lua_call( luaVM, 2, 1 );             //Stack: r,buf,res,__call,value
+				lua_pushvalue( luaVM, -4 );          //Stack: r,buf,res,__call,value,buf
+				lua_call( luaVM, 2, 1 );             //Stack: r,buf,res,value
+				lua_rawseti( luaVM, -2, n );         //Stack: r,buf,res
+			}
+			lua_remove( luaVM, -2 );                //Stack: r,buf,res
+			return 1;
+		}
+		if (pc->t == T_PCK_SEQ)       // handle Sequence, return table
+		{
+			lua_rawgeti( luaVM, LUA_REGISTRYINDEX, pc->m ); // get index table
+			lua_createtable( luaVM, 0, pc->s );      //Stack: r,buf,idx,res
+			for (n=1; n <= pc->s; n++)
+			{
+				lua_pushcfunction( luaVM, lt_pcr__call );  //Stack: r,buf,idx,res,__call
+				lua_pushcfunction( luaVM, lt_pck__index ); //Stack: r,buf,idx,res,_call,__index
+				lua_pushvalue( luaVM, -6 );          //Stack: r,buf,idx,res,__call,__index,r
+				lua_pushinteger( luaVM, n );         //Stack: r,buf,idx,res,__call,__index,r,i
+				lua_call( luaVM, 2, 1 );             //Stack: r,buf,idx,res,__call,value
+				lua_pushvalue( luaVM, -5 );          //Stack: r,buf,idx,res,__call,value,buf
+				lua_call( luaVM, 2, 1 );             //Stack: r,buf,idx,res,value
+				lua_rawseti( luaVM, -2, n );         //Stack: r,buf,idx,res
+			}
+			lua_remove( luaVM, -2 );                //Stack: r,buf,res
+			return 1;
+		}
+		if (pc->t == T_PCK_STR)       // handle Struct, return table
+		{
+			lua_rawgeti( luaVM, LUA_REGISTRYINDEX, pc->m ); // get index table
+			lua_createtable( luaVM, 0, pc->s );      //Stack: r,buf,idx,res
+			for (n=1; n <= pc->s; n++)
+			{
+				lua_pushcfunction( luaVM, lt_pcr__call );  //Stack: r,buf,idx,res,__call
+				lua_pushcfunction( luaVM, lt_pck__index ); //Stack: r,buf,idx,res,_call,__index
+				lua_pushvalue( luaVM, -6 );          //Stack: r,buf,idx,res,__call,__index,r
+				lua_rawgeti( luaVM, -5, 2*pc->s + n );//Stack: r,buf,idx,res,__call,__index,r,name
+				lua_pushvalue( luaVM, -1 );          //Stack: r,buf,idx,res,__call,__index,r,name,name
+				lua_insert( luaVM, -5 );             //Stack: r,buf,idx,res,name,__call,__index,r,name
+				lua_call( luaVM, 2, 1 );             //Stack: r,buf,idx,res,name,__call,value
+				lua_pushvalue( luaVM, -6 );          //Stack: r,buf,idx,res,name,__call,value,buf
+				lua_call( luaVM, 2, 1 );             //Stack: r,buf,idx,res,name,value
+				lua_rawset( luaVM, -3 );             //Stack: r,buf,idx,res
+			}
+			lua_remove( luaVM, -2 );                //Stack: r,buf,res
+			return 1;
+		}
+	}
+	else                              // write to input
+	{
+		if (pc->t < T_PCK_ARR)          // handle atomic packer, return single value
+		{
+			return t_pck_write( luaVM, pc, (unsigned char *) b );
+		}
+		else  // create a table ...
+		{
+			return t_push_error( luaVM, "writing of complex types is not yet implemented");
+		}
+	}
+
+	return 0;
+}
+
+
+
+/**--------------------------------------------------------------------------
  * \brief    the metatble for the module
  * --------------------------------------------------------------------------*/
 static const struct luaL_Reg t_pck_fm [] = {
@@ -1131,8 +1254,8 @@ luaopen_t_pckr( lua_State *luaVM )
 	lua_setfield( luaVM, -2, "__len" );
 	lua_pushcfunction( luaVM, lt_pck__gc );
 	lua_setfield( luaVM, -2, "__gc" );
-	//lua_pushcfunction( luaVM, lt_pcr__call );
-	//lua_setfield( luaVM, -2, "__call" );
+	lua_pushcfunction( luaVM, lt_pcr__call );
+	lua_setfield( luaVM, -2, "__call" );
 	lua_pop( luaVM, 1 );        // remove metatable from stack
 	return 0;
 }
@@ -1162,8 +1285,8 @@ luaopen_t_pck( lua_State *luaVM )
 	lua_setfield( luaVM, -2, "__len" );
 	lua_pushcfunction( luaVM, lt_pck__gc );
 	lua_setfield( luaVM, -2, "__gc" );
-	//lua_pushcfunction( luaVM, lt_pcr__call );
-	//lua_setfield( luaVM, -2, "__call" );
+	lua_pushcfunction( luaVM, lt_pcr__call );
+	lua_setfield( luaVM, -2, "__call" );
 	lua_pop( luaVM, 1 );        // remove metatable from stack
 
 	// Push the class onto the stack

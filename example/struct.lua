@@ -68,6 +68,6 @@ s=string.char( 76, 94, 1, 0, 0x55) .. 'abcdefghijklmnop'
 
 b=t.Buffer( 'ABCDEFGHIJKLMNOPQRST' )
 
-for k,v in pairs(tr) do print( k, v, v(b) ) end
-for k,v in pairs(tr.status) do print( k, v, v(b) ) end
+--for k,v in pairs(tr) do print( k, v, v(b) ) end
+--for k,v in pairs(tr.status) do print( k, v, v(b) ) end
 
