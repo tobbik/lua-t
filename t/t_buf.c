@@ -24,7 +24,7 @@
  * Helper to check arguments for being a t_buf and a valid position.
  * \param     luaVM lua state.
  * \param     pB    position on stack which is buffer.
- * \param     pB    position on stack which is position.
+ * \param     pB    position on stack which is position (buffer index).
  *                  handled as pointer and decremented by one to deal with the
  *                  fact that C char buffers indexes are zero based.
  * \return   *t_buf pointer to validated buffer.
