@@ -38,17 +38,16 @@ static inline struct t_pck
 	struct t_pck *pc;
 	struct t_pcr *pr;
 	pr = t_pcr_check_ud( luaVM, pos, 0 );
-	printf("%p\n", pr);
+	//printf("%p\n", pr);
 	if (NULL == pr)
 		return t_pck_check_ud( luaVM, pos, 1 );
 	else
 	{
-		*prp = *(&pr);
-		t_stackDump( luaVM );
+		if (NULL != prp)
+			*prp = *(&pr);
 		lua_rawgeti( luaVM, LUA_REGISTRYINDEX, pr->r );
-		t_stackDump( luaVM );
 		pc = t_pck_check_ud( luaVM, -1, 1 );
-		lua_pop( luaVM, 1 );
+		lua_remove( luaVM, pos );
 		return pc;
 	}
 }
@@ -521,7 +520,7 @@ struct t_pck
 	while (NULL == p)
 	{
 		opt = *((*f)++);
-		printf("'%c'   %02X\n", opt, opt);
+		//printf("'%c'   %02X\n", opt, opt);
 		switch (opt)
 		{
 			case 'b': t = T_PCK_INT; s =                     1; m = (1==*e); break;
@@ -607,7 +606,7 @@ static struct t_pck
 		lua_replace( luaVM, pos );
 	}
 	//t_stackDump( luaVM );
-	printf("%d\n",n);
+	//printf("%d\n",n);
 	return p;
 }
 
@@ -937,10 +936,9 @@ lt_pck__newindex( lua_State *luaVM )
 static int
 lt_pck__tostring( lua_State *luaVM )
 {
-	t_stackDump( luaVM );
 	struct t_pcr *pr = NULL;
 	struct t_pck *pc = t_pck_getpckreader( luaVM, -1, &pr );
-	printf("%p\n", pr);
+	//printf("%p\n", pr);
 
 	if (NULL == pr)
 		lua_pushfstring( luaVM, "T.Pack." );
@@ -965,7 +963,7 @@ lt_pck__gc( lua_State *luaVM )
 {
 	struct t_pcr *pr = NULL;
 	struct t_pck *pc = t_pck_getpckreader( luaVM, -1, &pr );
-	if (NULL == pr)
+	if (NULL != pr)
 		luaL_unref( luaVM, LUA_REGISTRYINDEX, pr->r );
 	if (pc->t > T_PCK_RAW)
 		luaL_unref( luaVM, LUA_REGISTRYINDEX, pc->m );

@@ -2,14 +2,14 @@
 t=require't'
 
 --
---S=t.Pack('Bb<i4c17')
---s=t.Pack('Bb<i4c17', '<i4>i2c8H')
---s1=t.Pack( S, s, '<i4>i2c8H' )
+S=t.Pack('Bb<i4c17')
+s=t.Pack('Bb<i4c17', '<i4>i2c8H')
+s1=t.Pack( S, s, '<i4>i2c8H' )
 print( '###################################################################' )
---sq1= t.Pack( 'i2', 'i2', 'i1', 'i1' ) -- sequence of 5 packers, access by sq[3]
---sq1= t.Pack( 'i2', 'i2', 'i1', s1[1][3], 'i1' ) -- sequence of 5 packers, access by sq[3]
---sq1= t.Pack( 'h', 'l', 'i3', t.Pack('c12'), 'B' ) -- sequence of 5 packers, access by sq[3]
-s= t.Pack( 'h', 'l', 'i3', 'c12', 'B' ) -- sequence of 5 packers, access by sq[3]
+s2= t.Pack( 'i2', 'i2', 'i1', 'i1' ) -- sequence of 5 packers, access by sq[3]
+--s3= t.Pack( 'i2', 'i2', 'i1', s1[1][3], 'i1' ) -- sequence of 5 packers, access by sq[3]
+--s4= t.Pack( 'h', 'l', 'i3', t.Pack('c12'), 'B' ) -- sequence of 5 packers, access by sq[3]
+--s= t.Pack( 'h', 'l', 'i3', 'c12', 'B' ) -- sequence of 5 packers, access by sq[3]
 --print(S)
 --print(s)
 --print(s[1])
