@@ -23,7 +23,8 @@ enum t_pck_t {
 	T_PCK_INT,      ///< Packer         Integer
 	T_PCK_UNT,      ///< Packer         Unsigned Integer
 	T_PCK_FLT,      ///< Packer         Float
-	T_PCK_BIT,      ///< Packer         Bit
+	T_PCK_BOL,      ///< Packer         Boolean (1 Bit)
+	T_PCK_BIT,      ///< Packer         Bit (integer x Bit)
 	T_PCK_RAW,      ///< Packer         Raw  -  string/utf8/binary
 	// complex packer types
 	T_PCK_ARR,      ///< Combinator     Array
@@ -36,7 +37,8 @@ static const char *const t_pck_t_lst[] = {
 	"Int",          ///< Packer         Integer
 	"UInt",         ///< Packer         Unsigned Integer
 	"Float",        ///< Packer         Float
-	"Bit",          ///< Packer         Bit
+	"Boolean",      ///< Packer         Boolean (1 Bit)
+	"Bit",          ///< Packer         Bit (integer x Bit)
 	"Raw",          ///< Packer         Raw  -  string/utf8/binary
 	// complex packer types
 	"Array",        ///< Combinator     Array

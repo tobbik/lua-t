@@ -50,13 +50,20 @@ print( 4, 8, 8,  b:unpack( t.Pack('R7R8r')[2], 4 ) )   -- t.Pack.Bits(8, 6))
 
 
 print( "READING ACCESS by BITS AGAIN" )
-l = t.Buffer( string.char( 0x80, 0x40, 0x20, 0x10, 0x08, 0x04, 0x02, 0x01) )
+l = t.Buffer( string.char( 0x80, 0x40, 0x20, 0x10, 0x08, 0x04, 0x02, 0x01 ) )
 io.write( 'bits   ')
 for k=1,8 do io.write( fmt("%02X       ", l:unpack( 'B', k ) ) ) end
 print()
 for i=1,8 do
 	io.write( i..'      ' )
-	for k=1,8 do io.write( fmt( '%9s', l:unpack( t.Pack('rrrrrrrr')[k], i ) ) ) end
+	for k=1,8 do io.write( ' ' ..  l:unpack( t.Pack('R1', 8)[k], i ) .. '       ' ) end
+	io.write( '\n' )
+end
+
+print()
+for i=1,8 do
+	io.write( i..'      ' )
+	for k=1,8 do io.write( fmt( '%9s', l:unpack( t.Pack('r', 8)[k], i ) ) ) end
 	io.write( '\n' )
 end
 

@@ -203,9 +203,12 @@ t_pck_read( lua_State *luaVM, struct t_pck *p, const unsigned char *b )
 				? (lua_Unsigned) *b
 				: (lua_Unsigned)  t_pck_rbytes( p->s, p->m, b ) );
 			break;
+		case T_PCK_BOL:
+			lua_pushboolean( luaVM, BIT_GET( *b, p->m - 1 ) );
+			break;
 		case T_PCK_BIT:
 			if (p->s == 1)
-				lua_pushboolean( luaVM, BIT_GET( *b, p->m - 1 ) );
+				lua_pushinteger( luaVM, BIT_GET( *b, p->m - 1 ) );
 			else if (4 == p->s  && (1==p->m || 5==p->m))
 				lua_pushinteger( luaVM, (5==p->m) ? LO_NIBBLE_GET( *b ) : HI_NIBBLE_GET( *b ) );
 			else
@@ -244,43 +247,38 @@ t_pck_write( lua_State *luaVM, struct t_pck *p, unsigned char *b )
 		case T_PCK_INT:
 		case T_PCK_UNT:
 			intVal = luaL_checkinteger( luaVM, -1 );
+			luaL_argcheck( luaVM,  0 == (intVal >> (p->s*8)) , -1,
+			   "value to pack must be smaller than the maximum value for the packer size" );
 			if (1==p->s)
-			{
-				luaL_argcheck( luaVM,  0<= intVal && intVal<=255, -1,
-				   "value to pack must be greater 0 and less than 255");
 				*b = (char) intVal;
-			}
 			else
-			{
-				luaL_argcheck( luaVM,  0 == (intVal >> (p->s*8)) , -1,
-				   "value to pack must be smaller than the maximum value for the packer size");
 				t_pck_wbytes( (uint64_t) intVal, p->s, p->m, b );
-			}
+			break;
+		case T_PCK_BOL:
+			luaL_argcheck( luaVM,  lua_isboolean( luaVM, -1 ) , -1,
+			   "value to pack must be boolean type" );
+			*b = BIT_SET( *b, p->m - 1, lua_toboolean( luaVM, -1 ) );
 			break;
 		case T_PCK_BIT:
+			intVal = luaL_checkinteger( luaVM, -1 );
+			luaL_argcheck( luaVM,  0 == (intVal >> p->s) , -1,
+			   "value to pack must be smaller than the maximum value for the packer size" );
 			if (p->s == 1)
 				*b = BIT_SET( *b, p->m - 1, lua_toboolean( luaVM, -1 ) );
 			else if (4 == p->s  && (1==p->m || 5==p->m))
 			{
-				intVal = luaL_checkinteger( luaVM, -1 );
-				luaL_argcheck( luaVM,  0 == (intVal >> 4) , -1,
-				   "value to pack must be smaller than the maximum value for the packer size");
 				*b = (5==p->m)
 					? LO_NIBBLE_SET( *b, (char) intVal )
 					: HI_NIBBLE_SET( *b, (char) intVal );
 			}
 			else
 			{
-				intVal = luaL_checkinteger( luaVM, -1 );
-				luaL_argcheck( luaVM,  0 == (intVal >> p->s) , -1,
-				   "value to pack must be smaller than the maximum value for the packer size");
 				t_pck_wbits( (uint64_t) intVal, p->s, p->m - 1, b );
 			}
 			break;
 		case T_PCK_RAW:
 			strVal = luaL_checklstring( luaVM, -1, &sL );
-			luaL_argcheck( luaVM,  p->s < sL, -1,
-			              "String is to big for the field" );
+			luaL_argcheck( luaVM,  p->s < sL, -1, "String is to big for the field" );
 			memcpy( b, strVal, sL );
 			break;
 		default:
@@ -317,8 +315,11 @@ t_pck_format( lua_State *luaVM, enum t_pck_t t, size_t s, int m )
 		case T_PCK_FLT:
 			lua_pushfstring( luaVM, "%d", s );
 			break;
+		case T_PCK_BOL:
+			lua_pushfstring( luaVM, "%d", m );
+			break;
 		case T_PCK_BIT:
-			lua_pushfstring( luaVM, "%d:%d",  s, m );
+			lua_pushfstring( luaVM, "%d:%d", s, m );
 			break;
 		case T_PCK_RAW:
 			lua_pushfstring( luaVM, "%d", s );
@@ -421,6 +422,9 @@ t_pck_getsize( lua_State *luaVM,  struct t_pck *p, int bits )
 					? 8*p->s
 					: p->s);
 			break;
+		case T_PCK_BOL:
+			return 1;
+			break;
 		case T_PCK_BIT:
 			return ((bits)
 					? p->s
@@ -513,23 +517,23 @@ struct t_pck
 		//printf("'%c'   %02X\n", opt, opt);
 		switch (opt)
 		{
-			case 'b': t = T_PCK_INT; s =                     1; m = (1==*e); break;
-			case 'B': t = T_PCK_UNT; s =                     1; m = (1==*e); break;
-			case 'h': t = T_PCK_INT; s = sizeof(       short ); m = (1==*e); break;
-			case 'H': t = T_PCK_INT; s = sizeof(       short ); m = (1==*e); break;
-			case 'l': t = T_PCK_INT; s = sizeof(        long ); m = (1==*e); break;
-			case 'L': t = T_PCK_INT; s = sizeof(        long ); m = (1==*e); break;
-			case 'j': t = T_PCK_INT; s = sizeof( lua_Integer ); m = (1==*e); break;
-			case 'J': t = T_PCK_INT; s = sizeof( lua_Integer ); m = (1==*e); break;
-			case 'T': t = T_PCK_INT; s = sizeof( lua_Integer ); m = (1==*e); break;
-			case 'f': t = T_PCK_INT; s = sizeof(       float ); m = (1==*e); break;
-			case 'd': t = T_PCK_INT; s = sizeof(      double ); m = (1==*e); break;
-			case 'n': t = T_PCK_INT; s = sizeof(  lua_Number ); m = (1==*e); break;
-			case 'i': t = T_PCK_INT; s = get_num( f, sizeof( int ) ); m = (1==*e); break;
-			case 'I': t = T_PCK_UNT; s = get_num( f, sizeof( int ) ); m = (1==*e); break;
-			case 'c': t = T_PCK_RAW; s = get_num( f, 1 )      ; m = 0;       break;
-			case 'r': t = T_PCK_BIT; s =                     1; m = 1+(*bo%8); break;
-			case 'R': t = T_PCK_BIT; s = get_num( f, 1 )      ; m = 1+(*bo%8); break;
+			case 'b': t = T_PCK_INT; m = (1==*e);                 s = 1;                     break;
+			case 'B': t = T_PCK_UNT; m = (1==*e);                 s = 1;                     break;
+			case 'h': t = T_PCK_INT; m = (1==*e);                 s = sizeof( short );       break;
+			case 'H': t = T_PCK_UNT; m = (1==*e);                 s = sizeof( short );       break;
+			case 'l': t = T_PCK_INT; m = (1==*e);                 s = sizeof( long );        break;
+			case 'L': t = T_PCK_UNT; m = (1==*e);                 s = sizeof( long );        break;
+			case 'j': t = T_PCK_INT; m = (1==*e);                 s = sizeof( lua_Integer ); break;
+			case 'J': t = T_PCK_UNT; m = (1==*e);                 s = sizeof( lua_Integer ); break;
+			case 'T': t = T_PCK_INT; m = (1==*e);                 s = sizeof( size_t );      break;
+			case 'f': t = T_PCK_FLT; m = (1==*e);                 s = sizeof( float );       break;
+			case 'd': t = T_PCK_FLT; m = (1==*e);                 s = sizeof( double );      break;
+			case 'n': t = T_PCK_FLT; m = (1==*e);                 s = sizeof( lua_Number );  break;
+			case 'i': t = T_PCK_INT; m = (1==*e);                 s = get_num( f, sizeof( int ) ); break;
+			case 'I': t = T_PCK_UNT; m = (1==*e);                 s = get_num( f, sizeof( int ) ); break;
+			case 'c': t = T_PCK_RAW; m = 0;                       s = get_num( f, 1 );       break;
+			case 'r': t = T_PCK_BOL; m = get_num( f, 1+(*bo%8) ); s = 1;                     break;
+			case 'R': t = T_PCK_BIT; m = 1+(*bo%8);               s = get_num( f, 1 );       break;
 
 			case '<': *e = 1; continue; break;
 			case '>': *e = 0; continue; break;
@@ -540,7 +544,7 @@ struct t_pck
 		}
 		// TODO: check if 0==offset%8 if byte type, else error
 		p    = t_pck_create_ud( luaVM, t, s, m );
-		*bo += ((T_PCK_BIT==t) ? s : s*8);
+		*bo += ((T_PCK_BIT==t || T_PCK_BOL == t) ? s : s*8);
 	}
 	return p;
 }
