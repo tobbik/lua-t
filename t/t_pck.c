@@ -726,7 +726,7 @@ static struct t_pck
 // | |   / _ \| '_ \/ __| __| '__| | | |/ __| __/ _ \| '__|
 // | |__| (_) | | | \__ \ |_| |  | |_| | (__| || (_) | |
 //  \____\___/|_| |_|___/\__|_|   \__,_|\___|\__\___/|_|
-// #########################################################################
+//###########################################################################
 /** -------------------------------------------------------------------------
  * Creates a packerfrom the function call.
  * \param     luaVM  lua state.
@@ -840,13 +840,13 @@ static int lt_pck__Call (lua_State *luaVM)
 //}
 
 
-// #########################################################################
+//###########################################################################
 //   ____ _                                _   _               _     
 //  / ___| | __ _ ___ ___   _ __ ___   ___| |_| |__   ___   __| |___ 
 // | |   | |/ _` / __/ __| | '_ ` _ \ / _ \ __| '_ \ / _ \ / _` / __|
 // | |___| | (_| \__ \__ \ | | | | | |  __/ |_| | | | (_) | (_| \__ \
 //  \____|_|\__,_|___/___/ |_| |_| |_|\___|\__|_| |_|\___/ \__,_|___/
-// #########################################################################
+//###########################################################################
 /**--------------------------------------------------------------------------
  * Get size in bytes covered by packer/struct/reader.
  * \param   luaVM  The lua state.
@@ -882,13 +882,13 @@ lt_pck_getir( lua_State *luaVM )
 }
 
 
-// #########################################################################
+//###########################################################################
 //  __  __      _                         _   _               _     
 // |  \/  | ___| |_ __ _   _ __ ___   ___| |_| |__   ___   __| |___ 
 // | |\/| |/ _ \ __/ _` | | '_ ` _ \ / _ \ __| '_ \ / _ \ / _` / __|
 // | |  | |  __/ || (_| | | | | | | |  __/ |_| | | | (_) | (_| \__ \
 // |_|  |_|\___|\__\__,_| |_| |_| |_|\___|\__|_| |_|\___/ \__,_|___/
-// #########################################################################
+//###########################################################################
 /**--------------------------------------------------------------------------
  * Read a Struct packer value.
  *          This can not simply return a packer/Struct type since it now has
@@ -1108,6 +1108,74 @@ lt_pck__len( lua_State *luaVM )
 
 
 /**--------------------------------------------------------------------------
+ * __call helper to read from a T.Pack.Reader/Struct instance.
+ * Leaves one element on the stack.
+ * \param   luaVM         lua Virtual Machine.
+ * \param   stuct t_pck   T.Pack instance.
+ * \param   char *        buffer to read from.
+ * \return  int    # of values left on te stack.
+ * -------------------------------------------------------------------------*/
+int
+t_pcr__callread( lua_State *luaVM, struct t_pck *pc, const unsigned char *b )
+{
+	struct t_pck *p;      ///< packer currently processing
+	size_t        sz = 0; ///< size of packer currently processing
+	size_t         n;     /// iterator for complex types
+
+	if (pc->t < T_PCK_ARR)         // handle atomic packer, return single value
+	{
+		return t_pck_read( luaVM, pc,  b );
+	}
+	// for all others we need the p->m and a result table
+	lua_createtable( luaVM, pc->s, 0 );             //S:...,res
+	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, pc->m ); //S:...,res,idx
+	if (pc->t == T_PCK_ARR)        // handle Array; return table
+	{
+		p = t_pck_check_ud( luaVM, -1, 1 );
+		lua_pop( luaVM, 1 );
+		sz = t_pck_getsize( luaVM, p, 1 );       // size in bits!
+		for (n=1; n <= pc->s; n++)
+		{
+			t_pcr__callread( luaVM, p, b + ((sz * (n-1)) /8) );       // Stack: ...,res,val
+			lua_rawseti( luaVM, -2, n );
+		}
+		return 1;
+	}
+	if (pc->t == T_PCK_SEQ)       // handle Sequence, return table
+	{
+		for (n=1; n <= pc->s; n++)
+		{
+			lua_rawgeti( luaVM, -1, n );           //S:...,res,idx,pack
+			lua_rawgeti( luaVM, -2, pc->s+n );     //S:...,res,idx,pack,ofs
+			p = t_pck_check_ud( luaVM, -2, 1 );
+			t_pcr__callread( luaVM, p, b + luaL_checkinteger( luaVM, -1 ) );//S:...,res,idx,pack,ofs,val
+			lua_rawseti( luaVM, -5, n );           //S:...,res,idx,pack,ofs
+			lua_pop( luaVM, 2 );
+		}
+		lua_pop( luaVM, 1 );
+		return 1;
+	}
+	if (pc->t == T_PCK_STR)       // handle Struct, return table
+	{
+		for (n=1; n <= pc->s; n++)
+		{
+			lua_rawgeti( luaVM, -1, n );           //S:...,res,idx,pack
+			lua_rawgeti( luaVM, -2, pc->s+n );     //S:...,res,idx,pack,ofs
+			lua_rawgeti( luaVM, -3, 2*pc->s+n );   //S:...,res,idx,pack,ofs,name
+			p = t_pck_check_ud( luaVM, -3, 1 );
+			t_pcr__callread( luaVM, p, b + luaL_checkinteger( luaVM, -2 ) );//S:...,res,idx,pack,ofs,name,val
+			lua_rawset( luaVM, -5 );               // Stack: ...,res,idx,pack,ofs
+			lua_pop( luaVM, 2 );
+		}
+		lua_pop( luaVM, 1 );
+		return 1;
+	}
+	lua_pushnil( luaVM );
+	return 1;
+}
+
+
+/**--------------------------------------------------------------------------
  * __call (#) for a an T.Pack.Reader/Struct instance.
  *          This is used to either read from or write to a string or T.Buffer.
  *          one argument means read, two arguments mean write.
@@ -1118,7 +1186,7 @@ lt_pck__len( lua_State *luaVM )
  * \lreturn value     read from Buffer/String according to T.Pack.Reader.
  * \return  int    # of values left on te stack.
  * -------------------------------------------------------------------------*/
-int
+static int
 lt_pcr__call( lua_State *luaVM )
 {
 	struct t_pcr  *pr = NULL;
@@ -1129,7 +1197,6 @@ lt_pcr__call( lua_State *luaVM )
 	struct t_buf  *buf;
 	unsigned char *b;
 	size_t         l;                   /// length of string or buffer overall
-	size_t         n;                   /// iterator for complex types
 	luaL_argcheck( luaVM,  2<=lua_gettop( luaVM ) && lua_gettop( luaVM )<=3, 2,
 		"Calling an T.Pack.Reader takes 2 or 3 arguments!" );
 
@@ -1153,65 +1220,7 @@ lt_pcr__call( lua_State *luaVM )
 
 	if (2 == lua_gettop( luaVM ))    // read from input
 	{
-		if (pc->t < T_PCK_ARR)         // handle atomic packer, return single value
-		{
-			return t_pck_read( luaVM, pc, (const unsigned char *) b );
-		}
-		if (pc->t == T_PCK_ARR)     // handle Array; return table
-		{
-			lua_createtable( luaVM, pc->s, 0 );      //Stack: r,buf,idx,res
-			for (n=1; n <= pc->s; n++)
-			{
-				lua_pushcfunction( luaVM, lt_pcr__call );  //Stack: r,buf,res,__call
-				lua_pushcfunction( luaVM, lt_pck__index ); //Stack: r,buf,res,__call,__index
-				lua_pushvalue( luaVM, -5 );          //Stack: r,buf,res,__call,__index,r
-				lua_pushinteger( luaVM, n );         //Stack: r,buf,res,__call,__index,r,n
-				lua_call( luaVM, 2, 1 );             //Stack: r,buf,res,__call,value
-				lua_pushvalue( luaVM, -4 );          //Stack: r,buf,res,__call,value,buf
-				lua_call( luaVM, 2, 1 );             //Stack: r,buf,res,value
-				lua_rawseti( luaVM, -2, n );         //Stack: r,buf,res
-			}
-			lua_remove( luaVM, -2 );                //Stack: r,buf,res
-			return 1;
-		}
-		if (pc->t == T_PCK_SEQ)       // handle Sequence, return table
-		{
-			lua_rawgeti( luaVM, LUA_REGISTRYINDEX, pc->m ); // get index table
-			lua_createtable( luaVM, 0, pc->s );      //Stack: r,buf,idx,res
-			for (n=1; n <= pc->s; n++)
-			{
-				lua_pushcfunction( luaVM, lt_pcr__call );  //Stack: r,buf,idx,res,__call
-				lua_pushcfunction( luaVM, lt_pck__index ); //Stack: r,buf,idx,res,_call,__index
-				lua_pushvalue( luaVM, -6 );          //Stack: r,buf,idx,res,__call,__index,r
-				lua_pushinteger( luaVM, n );         //Stack: r,buf,idx,res,__call,__index,r,i
-				lua_call( luaVM, 2, 1 );             //Stack: r,buf,idx,res,__call,value
-				lua_pushvalue( luaVM, -5 );          //Stack: r,buf,idx,res,__call,value,buf
-				lua_call( luaVM, 2, 1 );             //Stack: r,buf,idx,res,value
-				lua_rawseti( luaVM, -2, n );         //Stack: r,buf,idx,res
-			}
-			lua_remove( luaVM, -2 );                //Stack: r,buf,res
-			return 1;
-		}
-		if (pc->t == T_PCK_STR)       // handle Struct, return table
-		{
-			lua_rawgeti( luaVM, LUA_REGISTRYINDEX, pc->m ); // get index table
-			lua_createtable( luaVM, 0, pc->s );      //Stack: r,buf,idx,res
-			for (n=1; n <= pc->s; n++)
-			{
-				lua_pushcfunction( luaVM, lt_pcr__call );  //Stack: r,buf,idx,res,__call
-				lua_pushcfunction( luaVM, lt_pck__index ); //Stack: r,buf,idx,res,_call,__index
-				lua_pushvalue( luaVM, -6 );          //Stack: r,buf,idx,res,__call,__index,r
-				lua_rawgeti( luaVM, -5, 2*pc->s + n );//Stack: r,buf,idx,res,__call,__index,r,name
-				lua_pushvalue( luaVM, -1 );          //Stack: r,buf,idx,res,__call,__index,r,name,name
-				lua_insert( luaVM, -5 );             //Stack: r,buf,idx,res,name,__call,__index,r,name
-				lua_call( luaVM, 2, 1 );             //Stack: r,buf,idx,res,name,__call,value
-				lua_pushvalue( luaVM, -6 );          //Stack: r,buf,idx,res,name,__call,value,buf
-				lua_call( luaVM, 2, 1 );             //Stack: r,buf,idx,res,name,value
-				lua_rawset( luaVM, -3 );             //Stack: r,buf,idx,res
-			}
-			lua_remove( luaVM, -2 );                //Stack: r,buf,res
-			return 1;
-		}
+		return t_pcr__callread( luaVM, pc, b );
 	}
 	else                              // write to input
 	{
