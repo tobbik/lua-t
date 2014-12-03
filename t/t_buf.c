@@ -279,7 +279,7 @@ static int lt_buf__len (lua_State *luaVM)
 static int lt_buf__tostring (lua_State *luaVM)
 {
 	struct t_buf *buf = t_buf_check_ud( luaVM, 1, 1 );
-	lua_pushfstring( luaVM, "T.Buffer{%d}: %p", buf->len, buf );
+	lua_pushfstring( luaVM, "T.Buffer[%d]: %p", buf->len, buf );
 	return 1;
 }
 

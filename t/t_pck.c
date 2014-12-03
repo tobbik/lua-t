@@ -309,7 +309,7 @@ t_pck_format( lua_State *luaVM, enum t_pck_t t, size_t s, int m )
 			lua_pushfstring( luaVM, "%d", s );
 			break;
 		case T_PCK_BIT:
-			lua_pushfstring( luaVM, "%d_%d",  s, m );
+			lua_pushfstring( luaVM, "%d:%d",  s, m );
 			break;
 		case T_PCK_RAW:
 			lua_pushfstring( luaVM, "%d", s );
@@ -772,7 +772,6 @@ lt_pck_New( lua_State *luaVM )
 }
 
 
-
 /** -------------------------------------------------------------------------
  * Creates the Packer from the Constructor.
  * Behaves differently based on arguments.
@@ -787,58 +786,6 @@ static int lt_pck__Call (lua_State *luaVM)
 	lua_remove( luaVM, 1 );    // remove the T.Buffer Class table
 	return lt_pck_New( luaVM );
 }
-
-
-/**--------------------------------------------------------------------------
- * reads a value, unpacks it and pushes it onto the Lua stack.
- * \param   luaVM  lua Virtual Machine.
- * \lparam  struct t_pack.
- * \lreturn value  unpacked value according to packer format.
- * \return  integer number of values left on the stack.
- *  -------------------------------------------------------------------------*/
-//static int
-//lt_pck_unpack( lua_State *luaVM )
-//{
-//	struct t_pck *p   = t_pck_check_ud( luaVM, 1, 1);
-//	size_t        sL;
-//	const char   *buf = luaL_checklstring( luaVM, 2, &sL );
-//	if (sL != p->s)
-//		return t_push_error( luaVM, "Can only unpack data of the size suitable for this packers size" );
-//
-//	return t_pck_read( luaVM, p, (const unsigned char *) buf );
-//}
-
-
-/**--------------------------------------------------------------------------
- * reads in a Lua value and packs it according to packer format. Return str to Lua Stack
- * \param   luaVM lua Virtual Machine.
- * \lparam  struct t_pack.
- * \lparam  Lua value.
- * \lreturn string packed value according to packer format.
- * \return integer number of values left on the stack.
- *  -------------------------------------------------------------------------*/
-//static int
-//lt_pck_pack( lua_State *luaVM )
-//{
-//	struct t_pck *p      = t_pck_check_ud( luaVM, 1, 1 );
-//	luaL_Buffer   lB;
-//	char         *buffer;
-//	int           retVal; ///< return value to evaluate the succes of write operation
-//
-//	luaL_buffinit( luaVM, &lB );
-//	buffer = luaL_prepbuffsize( &lB, p->s );
-//	memset( buffer, 0, p->s * sizeof( char ) );
-//
-//	if ((retVal = t_pck_write( luaVM, p, (unsigned char *) buffer )) != 0)
-//	{
-//		return retVal;
-//	}
-//	else
-//	{
-//		luaL_pushresultsize( &lB, p->s );
-//		return 1;
-//	}
-//}
 
 
 //###########################################################################
