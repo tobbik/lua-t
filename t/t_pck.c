@@ -31,7 +31,7 @@
 
 
 // Declaration because it is needed before implementation
-static struct t_pck *t_pck_mksequence( lua_State *luaVM, int sp, int ep, int *bo );
+static struct t_pck *t_pck_mksequence( lua_State *luaVM, int sp, int ep, size_t *bo );
 
 /**--------------------------------------------------------------------------
  * Get T.Pack from a stack element.
@@ -489,7 +489,7 @@ get_num( const char **fmt, int df )
  *       - Dtect if fmt switched back to byte style and ERROR
  *  -------------------------------------------------------------------------*/
 struct t_pck
-*t_pck_getoption( lua_State *luaVM, const char **f, int *e, int *o )
+*t_pck_getoption( lua_State *luaVM, const char **f, int *e, size_t *bo )
 {
 	int           opt;
 	int           m;
@@ -518,8 +518,8 @@ struct t_pck
 			case 'i': t = T_PCK_INT; s = get_num( f, sizeof( int ) ); m = (1==*e); break;
 			case 'I': t = T_PCK_UNT; s = get_num( f, sizeof( int ) ); m = (1==*e); break;
 			case 'c': t = T_PCK_RAW; s = get_num( f, 1 )      ; m = 0;       break;
-			case 'r': t = T_PCK_BIT; s =                     1; m = 1+(*o%8); break;
-			case 'R': t = T_PCK_BIT; s = get_num( f, 1 )      ; m = 1+(*o%8); break;
+			case 'r': t = T_PCK_BIT; s =                     1; m = 1+(*bo%8); break;
+			case 'R': t = T_PCK_BIT; s = get_num( f, 1 )      ; m = 1+(*bo%8); break;
 
 			case '<': *e = 1; continue; break;
 			case '>': *e = 0; continue; break;
@@ -529,8 +529,8 @@ struct t_pck
 				return NULL;
 		}
 		// TODO: check if 0==offset%8 if byte type, else error
-		p   = t_pck_create_ud( luaVM, t, s, m );
-		*o  = *o + ((T_PCK_BIT==t) ? s : s*8);
+		p    = t_pck_create_ud( luaVM, t, s, m );
+		*bo += ((T_PCK_BIT==t) ? s : s*8);
 	}
 	return p;
 }
@@ -549,7 +549,7 @@ struct t_pck
  * \return  struct t_pck* pointer.
  * --------------------------------------------------------------------------*/
 struct t_pck
-*t_pck_getpck( lua_State *luaVM, int pos, int *bo )
+*t_pck_getpck( lua_State *luaVM, int pos, size_t *bo )
 {
 	struct t_pck *p = NULL; ///< packer
 	int           l = IS_LITTLE_ENDIAN;
@@ -602,7 +602,7 @@ static struct t_pck
 *t_pck_mkarray( lua_State *luaVM )
 {
 	//t_stackDump( luaVM );
-	int               bo = 0;
+	size_t            bo = 0;
 	struct t_pck  __attribute__ ((unused))   *p  = t_pck_getpck( luaVM, -2, &bo );  ///< packer
 	struct t_pck     *ap;     ///< array userdata to be created
 
@@ -629,7 +629,7 @@ static struct t_pck
  * \return  struct t_pck* pointer.
  * --------------------------------------------------------------------------*/
 static struct t_pck
-*t_pck_mksequence( lua_State *luaVM, int sp, int ep, int *bo )
+*t_pck_mksequence( lua_State *luaVM, int sp, int ep, size_t *bo )
 {
 	size_t        n=1;    ///< iterator for going through the arguments
 	size_t        o=0;    ///< byte offset within the sequence
@@ -673,11 +673,11 @@ static struct t_pck
 static struct t_pck
 *t_pck_mkstruct( lua_State *luaVM, int sp, int ep )
 {
-	size_t        n =1;    ///< iterator for going through the arguments
-	size_t        o =0;    ///< byte offset within the sequence
-	int           bo=0;    ///< bit  offset within the sequence
-	struct t_pck *p;      ///< temporary packer/struct for iteration
-	struct t_pck *st;     ///< the userdata this constructor creates
+	size_t        n  = 1;  ///< iterator for going through the arguments
+	size_t        o  = 0;  ///< byte offset within the sequence
+	size_t        bo = 0;  ///< bit  offset within the sequence
+	struct t_pck *p;       ///< temporary packer/struct for iteration
+	struct t_pck *st;      ///< the userdata this constructor creates
 
 	st     = (struct t_pck *) lua_newuserdata( luaVM, sizeof( struct t_pck ) );
 	st->t  = T_PCK_STR;
@@ -741,7 +741,7 @@ static int
 lt_pck_New( lua_State *luaVM )
 {
 	struct t_pck  __attribute__ ((unused)) *p;
-	int                                     bo = 0;
+	size_t                                  bo = 0;
 
 	// Handle single packer types -> returns single packer or sequence
 	if (1==lua_gettop( luaVM ))
