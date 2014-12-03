@@ -189,7 +189,7 @@ t_pck_wbits( uint64_t val, size_t len, size_t ofs, unsigned char * buf )
  * \return  integer number of values left on the stack.
  * -------------------------------------------------------------------------- */
 int
-t_pck_read( lua_State *luaVM, struct t_pck *p, const unsigned char *b)
+t_pck_read( lua_State *luaVM, struct t_pck *p, const unsigned char *b )
 {
 	switch( p->t )
 	{

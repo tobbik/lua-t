@@ -30,17 +30,6 @@ b:write(3, t.Pack.IntL6, 0x0000998877665544)
 print( b:toHex() )
 
 
-print( "READING ACCESS by BITS" )
-b = t.Buffer( string.char( 0x00, 0x00,0x00, 0x0F, 0xF0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 ) )
-print( b:toHex() )
--- pos 4, ofs 1, length 10
---print( 4, 1, 10, b:readBits( 4, 1, 10 ) )
---print( 4, 3, 9, b:readBits( 4, 3, 9 ) )
---print( 4, 8, 8, b:readBits( 4, 6, 8 ) )
-print( 4, 1, 10, b:read( 4, t.Pack.Bits(10,1)) )
-print( 4, 3, 9,  b:read( 4, t.Pack.Bits(9, 3)) )
-print( 4, 8, 8,  b:read( 4, t.Pack.Bits(8, 6)) )
-
 print( "WRITING ACCESS by BITS" )
 b:write( 7, t.Pack.Bits(8,6), 128)
 print( b:toHex() )
@@ -48,19 +37,30 @@ b:write( 9, t.Pack.Int1, 255)
 print( b:toHex() )
 b:write( 8, t.Pack.Bits(8,6), 128)
 print( b:toHex() )
+--]]
+
+
+print( "READING ACCESS by BITS" )
+b = t.Buffer( string.char( 0x00, 0x00,0x00, 0x0F, 0xF0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 ) )
+print( b:toHex() )
+-- pos 4, ofs 1, length 10
+print( 4, 1, 10, b:unpack( 'R10', 4) )  -- t.Pack.Bits(10,1))
+print( 4, 3, 9,  b:unpack( t.Pack('R2R9R4')[2], 4 ) )  -- t.Pack.Bits(9, 3))
+print( 4, 8, 8,  b:unpack( t.Pack('R7R8r')[2], 4 ) )   -- t.Pack.Bits(8, 6))
 
 
 print( "READING ACCESS by BITS AGAIN" )
 l = t.Buffer( string.char( 0x80, 0x40, 0x20, 0x10, 0x08, 0x04, 0x02, 0x01) )
 io.write( 'bits   ')
-for k=1,8 do io.write( fmt("%02X       ", l:read( k, t.Pack.Byte ) ) ) end
+for k=1,8 do io.write( fmt("%02X       ", l:unpack( 'B', k ) ) ) end
 print()
 for i=1,8 do
 	io.write( i..'      ' )
-	for k=1,8 do io.write( l:read( i, t.Pack.Bits(1,k)) .. '        ' ) end
+	for k=1,8 do io.write( fmt( '%9s', l:unpack( t.Pack('rrrrrrrr')[k], i ) ) ) end
 	io.write( '\n' )
 end
 
+--[[
 for i=1,8 do
 	io.write( i )
 	for k=1,8 do io.write( fmt( '%9s', l:read( i, t.Pack[fmt('Bit%d',k)] ) ) ) end

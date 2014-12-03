@@ -154,7 +154,7 @@ static int lt_buf_unpack( lua_State *luaVM )
 	int           pos;                               ///< starting byte  b->b[pos]
 	struct t_buf *buf;
 	struct t_pck *pc;
-	size_t        n,j;
+	size_t        n = 0,j;
 
 	buf = t_buf_getbuffer( luaVM, 1 , 3, &pos );
 	pc  = t_pck_getpck( luaVM, 2, &n );

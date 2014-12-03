@@ -101,4 +101,4 @@ int t_pck_write( lua_State *luaVM, struct t_pck *p, unsigned char *buffer );
 
 // helpers for the Packers
 struct t_pck *t_pck_getpck( lua_State *luaVM, int pos, size_t *bo );
-int           t_pcr__callread ( lua_State *luaVM, struct t_pck *pc, unsigned char *b );
+int           t_pcr__callread ( lua_State *luaVM, struct t_pck *pc, const unsigned char *b );
