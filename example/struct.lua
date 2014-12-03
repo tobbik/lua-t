@@ -15,6 +15,8 @@ ts = t.Pack(
 ss = t.Pack (
 	p,
 	p,
+	p,
+	p,
 	'rrrrrrrr',
 	--t.Pack.Sequence (
 	--	t.Pack.Bit1,  -- is the train set healthy?
