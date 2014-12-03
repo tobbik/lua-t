@@ -260,10 +260,19 @@ t_pck_write( lua_State *luaVM, struct t_pck *p, unsigned char *b )
 		case T_PCK_BIT:
 			if (p->s == 1)
 				*b = BIT_SET( *b, p->m - 1, lua_toboolean( luaVM, -1 ) );
+			else if (4 == p->s  && (1==p->m || 5==p->m))
+			{
+				intVal = luaL_checkinteger( luaVM, -1 );
+				luaL_argcheck( luaVM,  0 == (intVal >> 4) , -1,
+				   "value to pack must be smaller than the maximum value for the packer size");
+				*b = (5==p->m)
+					? LO_NIBBLE_SET( *b, (char) intVal )
+					: HI_NIBBLE_SET( *b, (char) intVal );
+			}
 			else
 			{
 				intVal = luaL_checkinteger( luaVM, -1 );
-				luaL_argcheck( luaVM,  0 == (intVal >> (p->s)) , -1,
+				luaL_argcheck( luaVM,  0 == (intVal >> p->s) , -1,
 				   "value to pack must be smaller than the maximum value for the packer size");
 				t_pck_wbits( (uint64_t) intVal, p->s, p->m - 1, b );
 			}
