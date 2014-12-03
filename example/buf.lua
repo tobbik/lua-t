@@ -2,26 +2,23 @@
 t = require("t")
 fmt= string.format
 
-rbyte = function( pos,len,endian )
-	local lb = b:read( pos, t.Pack[fmt('Int%s%d', endian:upper(), len)])
-	local ft = (endian=="l") and "<" or ">"
-	ft       = ft..'i'..len
-	print(ft)
-	local ls = string.unpack( ft, s, pos)
-	print( pos,len,endian,lb, string.format("%016X", lb), ls, string.format("%016X", ls)  )
-end
-
 s = 'Alles wird irgendwann wieder gut!'
 b = t.Buffer(s)
+rbyte = function( fmt, pos )
+	local lb = b:unpack( fmt, pos )
+	local ls = string.unpack( fmt, s, pos)
+	print( fmt, pos, lb, string.format("%016X", lb), ls, string.format("%016X", ls)  )
+end
+
 print("\t\t\tBUFFER ACCESS");
 print( "READING ACCESS by BYTES" )
 print( b:toHex() )
-rbyte( 4, 4, 'b' )
-rbyte( 4, 4, 'l' )
-rbyte( 9, 6, 'b' )
-rbyte( 9, 6, 'l' )
+rbyte( '>i4', 4)
+rbyte( '<i4', 4)
+rbyte( '>i6', 9)
+rbyte( '<i6', 9)
 
-
+--[[
 print( "WRITING ACCESS by BYTES" )
 b = t.Buffer(20)
 print( b:toHex() )
@@ -69,4 +66,4 @@ for i=1,8 do
 	for k=1,8 do io.write( fmt( '%9s', l:read( i, t.Pack[fmt('Bit%d',k)] ) ) ) end
 	io.write( '\n' )
 end
-
+--]]

@@ -34,11 +34,11 @@ struct t_buf * t_buf_getbuffer( lua_State *luaVM, int pB, int pP, int *pos )
 {
 	struct t_buf *buf = t_buf_check_ud( luaVM, pB, 1 );
 
-	*pos = (lua_isnone( luaVM, pB ))
-		? 0
+	*pos = (lua_isnone( luaVM, pP ))
+		? 1
 		: luaL_checkinteger( luaVM, pP );   ///< starting byte  b->b[pos]
 
-	luaL_argcheck( luaVM,  1 <= *pos && *pos <= (int) buf->len, 2,
+	luaL_argcheck( luaVM,  1 <= *pos && *pos <= (int) buf->len, pP,
 		                 "T.Buffer position must be >= 1 or <= #buffer" );
 	*pos = *pos-1;     /// account for char array access being 0 based
 	return buf;
@@ -144,6 +144,8 @@ struct t_buf *t_buf_check_ud( lua_State *luaVM, int pos, int check )
 
 /**--------------------------------------------------------------------------
  * reads a value, unpacks it and pushes it onto the Lua stack.
+ * By creating a reader instead of just passing the Packer an offset can be 
+ * passed on to the __call method.
  * \param   luaVM  lua Virtual Machine.
  * \lparam  struct t_pack.
  * \lreturn value  unpacked value according to packer format.
@@ -154,17 +156,29 @@ static int lt_buf_unpack( lua_State *luaVM )
 	int           pos;                               ///< starting byte  b->b[pos]
 	struct t_pcr *pr;
 	struct t_pck *pc;
+	int           n,j;
 
-	t_buf_getbuffer( luaVM, 1 , 3, &pos);
+	t_buf_getbuffer( luaVM, 1 , 3, &pos );
 	lua_pushcfunction( luaVM, lt_pcr__call );
 	pr = (struct t_pcr *) lua_newuserdata( luaVM, sizeof( struct t_pcr ));
 	pc =  t_pck_getpck( luaVM, 2, &(pr->o) );
+	pr->o = pos;
+	lua_pushvalue( luaVM, 2 );             //Stack: buf,pack,ofs?,__call,rd,pack,buf
 	pr->r = luaL_ref( luaVM, LUA_REGISTRYINDEX );
+	luaL_getmetatable( luaVM, "T.Pack.Reader" );
+	lua_setmetatable( luaVM, -2 );
 	lua_pushvalue( luaVM, 1 );             //Stack: buf,pack,ofs?,__call,rd,buf
 	lua_call( luaVM, 2, 1 );
 
 	if (T_PCK_SEQ == pc->t)
-		return 1;
+	{
+		n = lua_rawlen( luaVM, -1 );
+		for (j=1; j<=n; j++)
+		{
+			lua_rawgeti( luaVM, 0-j, j );
+		}
+		return n;
+	}
 	else
 		return 1;
 }
