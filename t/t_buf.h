@@ -99,3 +99,6 @@ struct t_pck *t_pck_create_ud( lua_State *luaVM, enum t_pck_t t, size_t s, int m
 int t_pck_read ( lua_State *luaVM, struct t_pck *p, const unsigned char *buffer);
 int t_pck_write( lua_State *luaVM, struct t_pck *p, unsigned char *buffer );
 
+// helpers for the Packers
+struct t_pck *t_pck_getpck( lua_State *luaVM, int pos, int *bo );
+int           lt_pcr__call( lua_State *luaVM );

@@ -33,6 +33,14 @@
 // Declaration because it is needed before implementation
 static struct t_pck *t_pck_mksequence( lua_State *luaVM, int sp, int ep, int *bo );
 
+/**--------------------------------------------------------------------------
+ * Get T.Pack from a stack element.
+ * Return Reader Pointer if requested.
+ * \param  luaVM lua Virtual Machine.
+ * \param  position on Lua stack.
+ * \param  pointer to reader pointer.
+ * \return pointer to t_pck struct*.
+ * --------------------------------------------------------------------------*/
 static inline struct t_pck
 *t_pck_getpckreader( lua_State * luaVM, int pos, struct t_pcr **prp )
 {
@@ -532,7 +540,7 @@ struct t_pck
  * Decides if the element on pos is a packer kind of type.
  * It decides between the following options:
  *     - T.Pack type              : just return it
- *     - T.Pack.Reader            : return reader->p
+ *     - T.Pack.Reader            : return reference packer
  *     - fmt string of single item: fetch from cache or create
  *     - fmt string of mult items : let Sequence constructor handle and return result
  * \param   luaVM  The lua state.
@@ -540,7 +548,7 @@ struct t_pck
  * \param   atom   boolean atomic packers only.
  * \return  struct t_pck* pointer.
  * --------------------------------------------------------------------------*/
-static struct t_pck
+struct t_pck
 *t_pck_getpck( lua_State *luaVM, int pos, int *bo )
 {
 	struct t_pck *p = NULL; ///< packer
@@ -1110,7 +1118,7 @@ lt_pck__len( lua_State *luaVM )
  * \lreturn value     read from Buffer/String according to T.Pack.Reader.
  * \return  int    # of values left on te stack.
  * -------------------------------------------------------------------------*/
-static int
+int
 lt_pcr__call( lua_State *luaVM )
 {
 	struct t_pcr  *pr = NULL;
