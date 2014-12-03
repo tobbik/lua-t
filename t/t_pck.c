@@ -210,6 +210,7 @@ t_pck_read( lua_State *luaVM, struct t_pck *p, const unsigned char *b)
 				lua_pushinteger( luaVM, (5==p->m) ? LO_NIBBLE_GET( *b ) : HI_NIBBLE_GET( *b ) );
 			else
 				lua_pushinteger( luaVM, (lua_Integer) t_pck_rbits( p->s, p->m - 1 , b ) );
+			break;
 		case T_PCK_RAW:
 			lua_pushlstring( luaVM, (const char*) b, p->s );
 			break;
