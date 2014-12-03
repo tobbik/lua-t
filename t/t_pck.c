@@ -1136,7 +1136,7 @@ lt_pcr__call( lua_State *luaVM )
 	else
 	{
 		b   = (unsigned char *) luaL_checklstring( luaVM, 2, &l );
-		luaL_argcheck( luaVM,  l > o+t_pck_getsize( luaVM, pc, 0 ), 2,
+		luaL_argcheck( luaVM,  l >= o+t_pck_getsize( luaVM, pc, 0 ), 2,
 			"The length of the Buffer must be longer than Pack offset plus Pack length." );
 		luaL_argcheck( luaVM,  2 == lua_gettop( luaVM ), 2,
 			"Can't write to a Lua String since they are immutable." );
