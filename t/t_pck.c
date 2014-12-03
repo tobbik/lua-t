@@ -382,12 +382,14 @@ struct t_pck
 /**--------------------------------------------------------------------------
  * Get the size of a packer of any type in bytes.
  * This will mainly be needed to calculate offsets when reading.
+ * \param   luaVM    The lua state.
  * \param   struct t_pck.
+ * \param   int    bits - boolean if bit resolution is needed.
  * \return  size in bytes.
  * TODO: return 0 no matter if even one item is of unknown length.
  * --------------------------------------------------------------------------*/
 static size_t 
-t_pck_getsize( lua_State *luaVM,  struct t_pck *p )
+t_pck_getsize( lua_State *luaVM,  struct t_pck *p, int bits )
 {
 	size_t        s = 0;
 	size_t        n;       ///< iterator over accumulated
@@ -397,14 +399,20 @@ t_pck_getsize( lua_State *luaVM,  struct t_pck *p )
 		case T_PCK_UNT:
 		case T_PCK_FLT:
 		case T_PCK_RAW:
-			return p->s;
+			return ((bits)
+					? 8*p->s
+					: p->s);
 			break;
 		case T_PCK_BIT:
-			return ((p->s + p->m -2)/8) + 1;
+			return ((bits)
+					? p->s
+					: ((p->s + p->m -2)/8) + 1);
 			break;
 		case T_PCK_ARR:
 			lua_rawgeti( luaVM, LUA_REGISTRYINDEX, p->m ); // get packer
-			return p->s * t_pck_getsize( luaVM, t_pck_check_ud( luaVM, -1, 1 ) );
+			return ((bits)
+					? 8 * p->s * t_pck_getsize( luaVM, t_pck_check_ud( luaVM, -1, 1 ), 1 )
+					: p->s * t_pck_getsize( luaVM, t_pck_check_ud( luaVM, -1, 1 ), 1 ) );
 			break;
 		case T_PCK_SEQ:
 		case T_PCK_STR:
@@ -412,11 +420,13 @@ t_pck_getsize( lua_State *luaVM,  struct t_pck *p )
 			for (n = 1; n <= p->s; n++)
 			{
 				lua_rawgeti( luaVM, -1, n );
-				s += t_pck_getsize( luaVM, t_pck_check_ud( luaVM, -1, 1 ) );
+				s += t_pck_getsize( luaVM, t_pck_check_ud( luaVM, -1, 1 ), 1 );
 				lua_pop( luaVM, 1 );
 			}
 			lua_pop( luaVM, 1 );
-			return s;
+			return ((bits)
+					? s
+					: s/8);
 			break;
 		default:
 			return 0;
@@ -544,7 +554,8 @@ static struct t_pck
 
 	if (lua_isuserdata( luaVM, pos ))
 	{
-		p = t_pck_getpckreader( luaVM, pos, NULL );
+		p    = t_pck_getpckreader( luaVM, pos, NULL );
+		*bo += t_pck_getsize( luaVM, p, 1 );
 	}
 	else
 	{
@@ -627,10 +638,10 @@ static struct t_pck
 	{
 		p = t_pck_getpck( luaVM, sp, bo );
 		lua_pushvalue( luaVM, sp );          // Stack: fmt,Seq,idx,Pack
-		lua_pushinteger( luaVM, o );         // Stack: fmt,Seq,idx,Pack,ofs
+		lua_pushinteger( luaVM, o/8 );       // Stack: fmt,Seq,idx,Pack,ofs
 		lua_rawseti( luaVM, -3, n + sq->s ); // Stack: fmt,Seq,idx,Pack     idx[n+i] = offset
 		lua_rawseti( luaVM, -2, n );         // Stack: fmt,Seq,idx,         idx[i]   = Pack
-		o += t_pck_getsize( luaVM, p );
+		o += t_pck_getsize( luaVM, p, 1 );
 		n++;
 		lua_remove( luaVM, sp );
 	}
@@ -682,14 +693,14 @@ static struct t_pck
 		lua_pop( luaVM, 1 );                 // Stack: ...,Struct,idx,name,Pack
 		p = t_pck_getpck( luaVM, -1, &bo );  // allow T.Pack or T.Pack.Struct
 		// populate idx table
-		lua_pushinteger( luaVM, o );         // Stack: ...,Seq,idx,name,Pack,ofs
+		lua_pushinteger( luaVM, o/8 );       // Stack: ...,Seq,idx,name,Pack,ofs
 		lua_rawseti( luaVM, -4, n + st->s ); // Stack: ...,Seq,idx,name,Pack        idx[n+i] = offset
 		lua_rawseti( luaVM, -3, n );         // Stack: ...,Seq,idx,name             idx[i] = Pack
 		lua_pushvalue( luaVM, -1 );          // Stack: ...,Seq,idx,name,name
 		lua_rawseti( luaVM, -3, st->s*2+n ); // Stack: ...,Seq,idx,name             idx[2n+i] = name
 		lua_pushinteger( luaVM, n);          // Stack: ...,Seq,idx,name,i
 		lua_rawset( luaVM, -3 );             // Stack: ...,Seq,idx                  idx[name] = i
-		o += t_pck_getsize( luaVM, p );
+		o += t_pck_getsize( luaVM, p, 1 );
 		n++;
 		lua_remove( luaVM, sp );
 	}
@@ -839,7 +850,7 @@ static int
 lt_pck_size( lua_State *luaVM )
 {
 	struct t_pck *p = t_pck_getpckreader( luaVM, 1, NULL );
-	lua_pushinteger( luaVM, t_pck_getsize( luaVM, p ) );
+	lua_pushinteger( luaVM, t_pck_getsize( luaVM, p, 0 ) );
 	return 1;
 }
 
@@ -909,7 +920,7 @@ lt_pck__index( lua_State *luaVM )
 	if (LUA_TUSERDATA == lua_type( luaVM, -1 ))        // T.Array
 	{
 		p     = t_pck_check_ud( luaVM, -1, 1 );
-		r->o += ((t_pck_getsize( luaVM, p )) * (luaL_checkinteger( luaVM, -3 )-1));
+		r->o += (((t_pck_getsize( luaVM, p, 1 )) * (luaL_checkinteger( luaVM, -3 )-1)) / 8);
 	}
 	else                                               // T.Struct/Sequence
 	{
@@ -1118,14 +1129,14 @@ lt_pcr__call( lua_State *luaVM )
 	if (lua_isuserdata( luaVM, 2 ))      // T.Buffer
 	{
 		buf = t_buf_check_ud ( luaVM, 2, 1 );
-		luaL_argcheck( luaVM,  buf->len >= o+t_pck_getsize( luaVM, pc ), 2,
+		luaL_argcheck( luaVM,  buf->len >= o+t_pck_getsize( luaVM, pc, 0 ), 2,
 			"The length of the Buffer must be longer than Pack offset plus Pack length." );
 		b   =  &(buf->b[ o ]);
 	}
 	else
 	{
 		b   = (unsigned char *) luaL_checklstring( luaVM, 2, &l );
-		luaL_argcheck( luaVM,  l > o+t_pck_getsize( luaVM, pc ), 2,
+		luaL_argcheck( luaVM,  l > o+t_pck_getsize( luaVM, pc, 0 ), 2,
 			"The length of the Buffer must be longer than Pack offset plus Pack length." );
 		luaL_argcheck( luaVM,  2 == lua_gettop( luaVM ), 2,
 			"Can't write to a Lua String since they are immutable." );
