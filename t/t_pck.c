@@ -29,41 +29,8 @@
 	 ((b) | (  (0x01) << (7-(n))))    : \
 	 ((b) & (~((0x01) << (7-(n))))) )
 
-
-// Declaration because it is needed before implementation
+// Declaration because of circular dependency
 static struct t_pck *t_pck_mksequence( lua_State *luaVM, int sp, int ep, size_t *bo );
-
-/**--------------------------------------------------------------------------
- * Get T.Pack from a stack element.
- * Return Reader Pointer if requested.
- * \param  luaVM lua Virtual Machine.
- * \param  position on Lua stack.
- * \param  pointer to reader pointer.
- * \return pointer to t_pck struct*.
- * --------------------------------------------------------------------------*/
-static inline struct t_pck
-*t_pck_getpckreader( lua_State * luaVM, int pos, struct t_pcr **prp )
-{
-	void         *ud = luaL_testudata( luaVM, pos, "T.Pack.Reader" );
-	struct t_pcr *pr = (NULL == ud) ? NULL : (struct t_pcr *) ud;
-	struct t_pck *pc;
-	// get absolute stack position
-	pos = (pos < 0) ? lua_gettop( luaVM ) + pos + 1 : pos;
-
-	//printf("%p\n", pr);
-	if (NULL == pr)
-		return t_pck_check_ud( luaVM, pos, 1 );
-	else
-	{
-		if (NULL != prp)
-			//*prp = *(&pr);
-			*prp = pr;
-		lua_rawgeti( luaVM, LUA_REGISTRYINDEX, pr->r );
-		pc = t_pck_check_ud( luaVM, -1, 1 );
-		lua_replace( luaVM, pos );
-		return pc;
-	}
-}
 
 
 // Function helpers
@@ -561,6 +528,39 @@ struct t_pck
 		*bo += ((T_PCK_BIT==t || T_PCK_BOL == t) ? s : s*8);
 	}
 	return p;
+}
+
+
+/**--------------------------------------------------------------------------
+ * Get T.Pack from a stack element.
+ * Return Reader Pointer if requested.
+ * \param  luaVM lua Virtual Machine.
+ * \param  position on Lua stack.
+ * \param  pointer to reader pointer.
+ * \return pointer to t_pck struct*.
+ * --------------------------------------------------------------------------*/
+static inline struct t_pck
+*t_pck_getpckreader( lua_State * luaVM, int pos, struct t_pcr **prp )
+{
+	void         *ud = luaL_testudata( luaVM, pos, "T.Pack.Reader" );
+	struct t_pcr *pr = (NULL == ud) ? NULL : (struct t_pcr *) ud;
+	struct t_pck *pc;
+	// get absolute stack position
+	pos = (pos < 0) ? lua_gettop( luaVM ) + pos + 1 : pos;
+
+	//printf("%p\n", pr);
+	if (NULL == pr)
+		return t_pck_check_ud( luaVM, pos, 1 );
+	else
+	{
+		if (NULL != prp)
+			//*prp = *(&pr);
+			*prp = pr;
+		lua_rawgeti( luaVM, LUA_REGISTRYINDEX, pr->r );
+		pc = t_pck_check_ud( luaVM, -1, 1 );
+		lua_replace( luaVM, pos );
+		return pc;
+	}
 }
 
 
