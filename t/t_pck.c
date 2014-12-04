@@ -468,13 +468,13 @@ is_digit( int c ) { return '0' <= c && c<='9'; }
 
 
 /** -------------------------------------------------------------------------
- * reads from string until input5 is not numeric any more.
+ * reads from string until input is not numeric any more.
  * \param     char** format string
  * \param     int    default value
  * \return    int    read numeric value
  *  -------------------------------------------------------------------------*/
 static int
-get_num( const char **fmt, int df )
+gn( const char **fmt, int df )
 {
 	if (! is_digit(** fmt))    // no number
 		return df;
@@ -490,20 +490,34 @@ get_num( const char **fmt, int df )
 }
 
 
+/*
+** Read an integer numeral and raises an error if it is larger
+** than the maximum size for integers.
+*/
+static int
+gnl( lua_State *luaVM, const char **fmt, int df, int max )
+{
+	int sz = gn( fmt, df );
+	if (sz > max || sz <= 0)
+		luaL_error( luaVM, "size (%d) out of limits [1,%d]", sz, max );
+	return sz;
+}
+
+
 /** -------------------------------------------------------------------------
  * Determines type of Packer from format string.
  * Returns the Packer, or NULL if unsuccessful.
  * \param     luaVM  lua state.
  * \param     char*  format string pointer. moved by this function.
  * \param     int*   e pointer to current endianess.
- * \param     int*   o pointer to current offset within fmt.
+ * \param     int*   bo pointer to current bit offset within byte.
  * \return    struct t_pck* pointer.
  * TODO: Deal with bit sized Packers:
  *			- Detect if we are in Bit sized type(o%8 !=0)
- *       - Dtect if fmt switched back to byte style and ERROR
+ *       - Detect if fmt switched back to byte style and ERROR
  *  -------------------------------------------------------------------------*/
 struct t_pck
-*t_pck_getoption( lua_State *luaVM, const char **f, int *e, size_t *bo )
+*t_pck_getoption( lua_State *L, const char **f, int *e, size_t *bo )
 {
 	int           opt;
 	int           m;
@@ -529,21 +543,21 @@ struct t_pck
 			case 'f': t = T_PCK_FLT; m = (1==*e);                 s = sizeof( float );       break;
 			case 'd': t = T_PCK_FLT; m = (1==*e);                 s = sizeof( double );      break;
 			case 'n': t = T_PCK_FLT; m = (1==*e);                 s = sizeof( lua_Number );  break;
-			case 'i': t = T_PCK_INT; m = (1==*e);                 s = get_num( f, sizeof( int ) ); break;
-			case 'I': t = T_PCK_UNT; m = (1==*e);                 s = get_num( f, sizeof( int ) ); break;
-			case 'c': t = T_PCK_RAW; m = 0;                       s = get_num( f, 1 );       break;
-			case 'r': t = T_PCK_BOL; m = get_num( f, 1+(*bo%8) ); s = 1;                     break;
-			case 'R': t = T_PCK_BIT; m = 1+(*bo%8);               s = get_num( f, 1 );       break;
+			case 'i': t = T_PCK_INT; m = (1==*e);                 s = gnl(L, f, sizeof( int ), 8 ); break;
+			case 'I': t = T_PCK_UNT; m = (1==*e);                 s = gnl(L, f, sizeof( int ), 8 ); break;
+			case 'c': t = T_PCK_RAW; m = 0;                       s = gn( f, 1 );            break;
+			case 'r': t = T_PCK_BOL; m = gnl(L, f, 1+(*bo%8), 8); s = 1;                     break;
+			case 'R': t = T_PCK_BIT; m = 1+(*bo%8);               s = gnl(L, f, 1, 64 );     break;
 
 			case '<': *e = 1; continue; break;
 			case '>': *e = 0; continue; break;
 			case '\0': return NULL; break;
 			default:
-				luaL_error( luaVM, "can't do that bro" );
+				luaL_error( L, "invalid format option '%c'", opt );
 				return NULL;
 		}
 		// TODO: check if 0==offset%8 if byte type, else error
-		p    = t_pck_create_ud( luaVM, t, s, m );
+		p    = t_pck_create_ud( L, t, s, m );
 		*bo += ((T_PCK_BIT==t || T_PCK_BOL == t) ? s : s*8);
 	}
 	return p;
