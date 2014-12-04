@@ -60,11 +60,10 @@ static struct t_pck *t_pck_mksequence( lua_State *luaVM, int sp, int ep, size_t 
  * \return  val        integer value.
  * --------------------------------------------------------------------------*/
 static lua_Unsigned
-t_pck_rbytes( size_t sz, int islittle, int issigned, const unsigned char * buf )
+t_pck_rbytes( size_t sz, int islittle, const unsigned char * buf )
 {
 	size_t         i;
 	lua_Unsigned   val = 0;                     ///< value for the read access
-	lua_Unsigned   msk;                         ///< mask for signed integer
 	unsigned char *set = (unsigned char*) &val; ///< char array to read bytewise into val
 #ifndef IS_LITTLE_ENDIAN
 	size_t         sz_l = sizeof( *val );       ///< size of the value in bytes
@@ -74,12 +73,6 @@ t_pck_rbytes( size_t sz, int islittle, int issigned, const unsigned char * buf )
 	for (i=0 ; i<sz; i++)
 #endif
 		set[ i ] = buf[ (islittle) ? i :  sz-1-i ];
-	if (issigned)
-	{
-		msk = (lua_Unsigned) 1  << (sz*NB - 1);
-		//printf("%16llX  %16llX  %16llX  %16llX\n", msk, val, val^msk, (val^msk) - msk);
-		return ((val ^ msk) - msk); 
-	}
 
 	return val;
 }
@@ -117,11 +110,9 @@ t_pck_wbytes( lua_Unsigned val, size_t sz, int islittle, unsigned char * buf )
  * \return  val        integer value.
  * --------------------------------------------------------------------------*/
 static lua_Unsigned
-t_pck_rbits( size_t len, size_t ofs, int issigned, const unsigned char * buf )
+t_pck_rbits( size_t len, size_t ofs, const unsigned char * buf )
 {
-	lua_Unsigned val = t_pck_rbytes( (len+ofs-1)/8 +1, 0, 0, buf );
-	lua_Unsigned msk;
-	val = (val << (MXBIT- ((len/8+1)*8) + ofs ) ) >> (MXBIT - len);
+	lua_Unsigned val = t_pck_rbytes( (len+ofs-1)/8 +1, 0, buf );
 #if PRINT_DEBUGS == 1
 	printf("Read Val:    %016llX (%d)\nShift Left:  %016llX\nShift right: %016llX\n%d      %d\n",
 			val, (len+ofs-1)/8 +1,
@@ -129,13 +120,7 @@ t_pck_rbits( size_t len, size_t ofs, int issigned, const unsigned char * buf )
 			(val << (MXBIT- ((len/8+1)*8) + ofs ) ) >> (MXBIT - len),
 			(MXBIT- ((len/8+1)*8) + ofs ), (MXBIT-len));
 #endif
-	if (issigned)
-	{
-		msk = (lua_Unsigned) 1  << (len - 1);
-		//printf("%16llX  %16llX  %16llX  %16llX\n", msk, val, val^msk, (val^msk) - msk);
-		return ((val ^ msk) - msk); 
-	}
-	return val;
+	return (val << (MXBIT- ((len/8+1)*8) + ofs ) ) >> (MXBIT - len);
 }
 
 
@@ -155,7 +140,7 @@ t_pck_wbits( lua_Unsigned val, size_t len, size_t ofs, unsigned char * buf )
 	size_t     abit = (((len+ofs-1)/8)+1) * 8;
 
 	msk = (0xFFFFFFFFFFFFFFFF << (MXBIT-len)) >> (MXBIT-abit+ofs);
-	set = t_pck_rbytes( abit/8, 0, 0, buf );
+	set = t_pck_rbytes( abit/8, 0, buf );
 	set = (val << (abit-ofs-len)) | (set & ~msk);
 	t_pck_wbytes( set, abit/8, 0, buf);
 
@@ -190,15 +175,19 @@ t_pck_wbits( lua_Unsigned val, size_t len, size_t ofs, unsigned char * buf )
 int
 t_pck_read( lua_State *luaVM, struct t_pck *p, const unsigned char *b )
 {
+	lua_Unsigned msk, val;
 	switch( p->t )
 	{
 		case T_PCK_INT:
-			lua_pushinteger( luaVM, (lua_Integer) t_pck_rbytes( p->s, p->m, 1, b ) );
+			msk = (lua_Unsigned) 1  << (p->s*NB - 1);
+			val = t_pck_rbytes( p->s, p->m, b );
+			//printf("%16llX  %16llX  %16llX  %16llX\n", msk, val, val^msk, (val^msk) - msk);
+			lua_pushinteger( luaVM, (lua_Integer) ((val ^ msk) - msk) );
 			break;
 		case T_PCK_UNT:
 			lua_pushinteger( luaVM, (1 == p->s)
 				? (lua_Integer) *b
-				: (lua_Integer) t_pck_rbytes( p->s, p->m, 0, b ) );
+				: (lua_Integer) t_pck_rbytes( p->s, p->m, b ) );
 			break;
 		case T_PCK_BOL:
 			lua_pushboolean( luaVM, BIT_GET( *b, p->m - 1 ) );
@@ -207,7 +196,12 @@ t_pck_read( lua_State *luaVM, struct t_pck *p, const unsigned char *b )
 			if (p->s == 1)
 				lua_pushinteger( luaVM, BIT_GET( *b, p->m - 1 ) );
 			else
-				lua_pushinteger( luaVM, (lua_Integer) t_pck_rbits( p->s, p->m - 1, 1, b ) );
+			{
+				msk = (lua_Unsigned) 1  << (p->s - 1);
+				val = t_pck_rbits( p->s, p->m - 1, b );
+				//printf("%16llX  %16llX  %16llX  %16llX\n", msk, val, val^msk, (val^msk) - msk);
+				lua_pushinteger( luaVM, (lua_Integer) ((val ^ msk) - msk) );
+			}
 			break;
 		case T_PCK_BTU:
 			if (p->s == 1)
@@ -217,7 +211,7 @@ t_pck_read( lua_State *luaVM, struct t_pck *p, const unsigned char *b )
 					? LO_NIBBLE_GET( *b )
 					: HI_NIBBLE_GET( *b ) );
 			else
-				lua_pushinteger( luaVM, (lua_Integer) t_pck_rbits( p->s, p->m - 1, 0,  b ) );
+				lua_pushinteger( luaVM, (lua_Integer) t_pck_rbits( p->s, p->m - 1, b ) );
 			break;
 		case T_PCK_RAW:
 			lua_pushlstring( luaVM, (const char*) b, p->s );
