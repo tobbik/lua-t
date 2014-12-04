@@ -210,7 +210,9 @@ t_pck_read( lua_State *luaVM, struct t_pck *p, const unsigned char *b )
 			if (p->s == 1)
 				lua_pushinteger( luaVM, BIT_GET( *b, p->m - 1 ) );
 			else if (4 == p->s  && (1==p->m || 5==p->m))
-				lua_pushinteger( luaVM, (5==p->m) ? LO_NIBBLE_GET( *b ) : HI_NIBBLE_GET( *b ) );
+				lua_pushinteger( luaVM, (5==p->m)
+					? LO_NIBBLE_GET( *b )
+					: HI_NIBBLE_GET( *b ) );
 			else
 				lua_pushinteger( luaVM, (lua_Integer) t_pck_rbits( p->s, p->m - 1 , b ) );
 			break;
@@ -266,15 +268,11 @@ t_pck_write( lua_State *luaVM, struct t_pck *p, unsigned char *b )
 			if (p->s == 1)
 				*b = BIT_SET( *b, p->m - 1, lua_toboolean( luaVM, -1 ) );
 			else if (4 == p->s  && (1==p->m || 5==p->m))
-			{
 				*b = (5==p->m)
 					? LO_NIBBLE_SET( *b, (char) intVal )
 					: HI_NIBBLE_SET( *b, (char) intVal );
-			}
 			else
-			{
 				t_pck_wbits( (uint64_t) intVal, p->s, p->m - 1, b );
-			}
 			break;
 		case T_PCK_RAW:
 			strVal = luaL_checklstring( luaVM, -1, &sL );
@@ -336,7 +334,7 @@ t_pck_format( lua_State *luaVM, enum t_pck_t t, size_t s, int m )
 
 
 /**--------------------------------------------------------------------------
- * See if requested type exists in t.Pack. otherwise create and register.
+ * See if requested type exists in T.Pack. otherwise create and register.
  * the format for a particular definition will never change. Hence, no need to
  * create them over and over again.  This approach saves memory.
  * \param     luaVM  lua state.
@@ -432,9 +430,11 @@ t_pck_getsize( lua_State *luaVM,  struct t_pck *p, int bits )
 			break;
 		case T_PCK_ARR:
 			lua_rawgeti( luaVM, LUA_REGISTRYINDEX, p->m ); // get packer
+			s = p->s * t_pck_getsize( luaVM, t_pck_check_ud( luaVM, -1, 1 ), 1 );
+			lua_pop( luaVM, 1 );
 			return ((bits)
-					? 8 * p->s * t_pck_getsize( luaVM, t_pck_check_ud( luaVM, -1, 1 ), 1 )
-					: p->s * t_pck_getsize( luaVM, t_pck_check_ud( luaVM, -1, 1 ), 1 ) );
+					? s
+					: s/8);
 			break;
 		case T_PCK_SEQ:
 		case T_PCK_STR:
@@ -889,6 +889,12 @@ lt_pck__index( lua_State *luaVM )
 	if (LUA_TUSERDATA == lua_type( luaVM, -1 ))        // T.Array
 	{
 		p     = t_pck_check_ud( luaVM, -1, 1 );
+		if (T_PCK_BOL == p->t  || T_PCK_BIT == p->t)
+		{
+			lua_pop( luaVM, 1 );
+			p = t_pck_create_ud( luaVM, p->t, p->s,
+				((p->s * (luaL_checkinteger( luaVM, -2 )-1)) % 8 ) + 1 );
+		}
 		r->o += (((t_pck_getsize( luaVM, p, 1 )) * (luaL_checkinteger( luaVM, -3 )-1)) / 8);
 	}
 	else                                               // T.Struct/Sequence
@@ -1093,13 +1099,19 @@ t_pcr__callread( lua_State *luaVM, struct t_pck *pc, const unsigned char *b )
 	if (pc->t == T_PCK_ARR)        // handle Array; return table
 	{
 		p = t_pck_check_ud( luaVM, -1, 1 );
-		lua_pop( luaVM, 1 );
 		sz = t_pck_getsize( luaVM, p, 1 );       // size in bits!
 		for (n=1; n <= pc->s; n++)
 		{
-			t_pcr__callread( luaVM, p, b + ((sz * (n-1)) /8) );       // Stack: ...,res,val
-			lua_rawseti( luaVM, -2, n );
+			if (T_PCK_BOL == p->t  || T_PCK_BIT == p->t)
+			{
+				lua_pop( luaVM, 1 );
+				p = t_pck_create_ud( luaVM, p->t, p->s,
+					((p->s * (n-1)) % 8 ) + 1 );
+			}
+			t_pcr__callread( luaVM, p, b + ((sz * (n-1)) /8) );       // Stack: ...,res,typ,val
+			lua_rawseti( luaVM, -3, n );
 		}
+		lua_pop( luaVM, 1 );
 		return 1;
 	}
 	if (pc->t == T_PCK_SEQ)       // handle Sequence, return table
@@ -1172,7 +1184,7 @@ lt_pcr__call( lua_State *luaVM )
 	else
 	{
 		b   = (unsigned char *) luaL_checklstring( luaVM, 2, &l );
-		luaL_argcheck( luaVM,  l >= o+t_pck_getsize( luaVM, pc, 0 ), 2,
+		luaL_argcheck( luaVM,  l >= o + t_pck_getsize( luaVM, pc, 0 ), 2,
 			"The length of the Buffer must be longer than Pack offset plus Pack length." );
 		luaL_argcheck( luaVM,  2 == lua_gettop( luaVM ), 2,
 			"Can't write to a Lua String since they are immutable." );
@@ -1234,7 +1246,7 @@ luaopen_t_pckr( lua_State *luaVM )
 {
 	// T.Pack.Struct instance metatable
 	luaL_newmetatable( luaVM, "T.Pack.Reader" );   // stack: functions meta
-	lua_pushcfunction( luaVM, lt_pck__index);
+	lua_pushcfunction( luaVM, lt_pck__index );
 	lua_setfield( luaVM, -2, "__index" );
 	lua_pushcfunction( luaVM, lt_pck__newindex );
 	lua_setfield( luaVM, -2, "__newindex" );
@@ -1265,7 +1277,7 @@ luaopen_t_pck( lua_State *luaVM )
 {
 	// T.Pack.Struct instance metatable
 	luaL_newmetatable( luaVM, "T.Pack" );   // stack: functions meta
-	lua_pushcfunction( luaVM, lt_pck__index);
+	lua_pushcfunction( luaVM, lt_pck__index );
 	lua_setfield( luaVM, -2, "__index" );
 	lua_pushcfunction( luaVM, lt_pck__newindex );
 	lua_setfield( luaVM, -2, "__newindex" );
