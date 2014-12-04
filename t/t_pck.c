@@ -30,9 +30,6 @@
 	 ((b) & (~((0x01) << (7-(n))))) )
 
 
-/* maximum size for the binary representation of an integer */
-#define MAXINTSIZE         16
-
 /* number of bits in a character */
 #define NB                 CHAR_BIT
 
@@ -40,13 +37,13 @@
 #define MC                 ((1 << NB) - 1)
 
 /* size of a lua_Integer */
-#define SZINT              ((int)sizeof(lua_Integer))
+#define MXINT              ((int)sizeof(lua_Integer))
 
 // Maximum bits that can be read or written
-#define MXBIT              SZINT * NB
+#define MXBIT              MXINT * NB
 
 /* mask for all ones in last byte in a lua Integer */
-#define HIGHERBYTE         ((lua_Unsigned)MC << (NB * (SZINT - 1)))
+#define HIGHERBYTE         ((lua_Unsigned)MC << (NB * (MXINT - 1)))
 
 
 // Declaration because of circular dependency
@@ -120,11 +117,11 @@ t_pck_wbytes( lua_Unsigned val, size_t sz, int islittle, unsigned char * buf )
  * \return  val        integer value.
  * --------------------------------------------------------------------------*/
 static lua_Unsigned
-t_pck_rbits( size_t len, size_t ofs, const unsigned char * buf )
+t_pck_rbits( size_t len, size_t ofs, int issigned, const unsigned char * buf )
 {
 	lua_Unsigned val = t_pck_rbytes( (len+ofs-1)/8 +1, 0, 0, buf );
-	// lua_Unsigned res = (val << (64- ((len/8+1)*8) + ofs ) ) >> (64 - len)
-
+	lua_Unsigned msk;
+	val = (val << (MXBIT- ((len/8+1)*8) + ofs ) ) >> (MXBIT - len);
 #if PRINT_DEBUGS == 1
 	printf("Read Val:    %016llX (%d)\nShift Left:  %016llX\nShift right: %016llX\n%d      %d\n",
 			val, (len+ofs-1)/8 +1,
@@ -132,7 +129,13 @@ t_pck_rbits( size_t len, size_t ofs, const unsigned char * buf )
 			(val << (MXBIT- ((len/8+1)*8) + ofs ) ) >> (MXBIT - len),
 			(MXBIT- ((len/8+1)*8) + ofs ), (MXBIT-len));
 #endif
-	return  (val << (MXBIT- ((len/8+1)*8) + ofs ) ) >> (MXBIT - len);
+	if (issigned)
+	{
+		msk = (lua_Unsigned) 1  << (len - 1);
+		//printf("%16llX  %16llX  %16llX  %16llX\n", msk, val, val^msk, (val^msk) - msk);
+		return ((val ^ msk) - msk); 
+	}
+	return val;
 }
 
 
@@ -200,7 +203,13 @@ t_pck_read( lua_State *luaVM, struct t_pck *p, const unsigned char *b )
 		case T_PCK_BOL:
 			lua_pushboolean( luaVM, BIT_GET( *b, p->m - 1 ) );
 			break;
-		case T_PCK_BIT:
+		case T_PCK_BTS:
+			if (p->s == 1)
+				lua_pushinteger( luaVM, BIT_GET( *b, p->m - 1 ) );
+			else
+				lua_pushinteger( luaVM, (lua_Integer) t_pck_rbits( p->s, p->m - 1, 1, b ) );
+			break;
+		case T_PCK_BTU:
 			if (p->s == 1)
 				lua_pushinteger( luaVM, BIT_GET( *b, p->m - 1 ) );
 			else if (4 == p->s  && (1==p->m || 5==p->m))
@@ -208,7 +217,7 @@ t_pck_read( lua_State *luaVM, struct t_pck *p, const unsigned char *b )
 					? LO_NIBBLE_GET( *b )
 					: HI_NIBBLE_GET( *b ) );
 			else
-				lua_pushinteger( luaVM, (lua_Integer) t_pck_rbits( p->s, p->m - 1 , b ) );
+				lua_pushinteger( luaVM, (lua_Integer) t_pck_rbits( p->s, p->m - 1, 0,  b ) );
 			break;
 		case T_PCK_RAW:
 			lua_pushlstring( luaVM, (const char*) b, p->s );
@@ -255,7 +264,8 @@ t_pck_write( lua_State *luaVM, struct t_pck *p, unsigned char *b )
 			   "value to pack must be boolean type" );
 			*b = BIT_SET( *b, p->m - 1, lua_toboolean( luaVM, -1 ) );
 			break;
-		case T_PCK_BIT:
+		case T_PCK_BTS:
+		case T_PCK_BTU:
 			intVal = luaL_checkinteger( luaVM, -1 );
 			luaL_argcheck( luaVM,  0 == (intVal >> p->s) , -1,
 			   "value to pack must be smaller than the maximum value for the packer size" );
@@ -310,7 +320,8 @@ t_pck_format( lua_State *luaVM, enum t_pck_t t, size_t s, int m )
 		case T_PCK_BOL:
 			lua_pushfstring( luaVM, "%d", m );
 			break;
-		case T_PCK_BIT:
+		case T_PCK_BTS:
+		case T_PCK_BTU:
 			lua_pushfstring( luaVM, "%d:%d", s, m );
 			break;
 		case T_PCK_RAW:
@@ -417,7 +428,8 @@ t_pck_getsize( lua_State *luaVM,  struct t_pck *p, int bits )
 		case T_PCK_BOL:
 			return 1;
 			break;
-		case T_PCK_BIT:
+		case T_PCK_BTS:
+		case T_PCK_BTU:
 			return ((bits)
 					? p->s
 					: ((p->s + p->m -2)/8) + 1);
@@ -525,34 +537,56 @@ struct t_pck
 		//printf("'%c'   %02X\n", opt, opt);
 		switch (opt)
 		{
-			case 'b': t = T_PCK_INT; m = (1==*e);                 s = 1;                     break;
-			case 'B': t = T_PCK_UNT; m = (1==*e);                 s = 1;                     break;
-			case 'h': t = T_PCK_INT; m = (1==*e);                 s = sizeof( short );       break;
-			case 'H': t = T_PCK_UNT; m = (1==*e);                 s = sizeof( short );       break;
-			case 'l': t = T_PCK_INT; m = (1==*e);                 s = sizeof( long );        break;
-			case 'L': t = T_PCK_UNT; m = (1==*e);                 s = sizeof( long );        break;
-			case 'j': t = T_PCK_INT; m = (1==*e);                 s = sizeof( lua_Integer ); break;
-			case 'J': t = T_PCK_UNT; m = (1==*e);                 s = sizeof( lua_Integer ); break;
-			case 'T': t = T_PCK_INT; m = (1==*e);                 s = sizeof( size_t );      break;
-			case 'f': t = T_PCK_FLT; m = (1==*e);                 s = sizeof( float );       break;
-			case 'd': t = T_PCK_FLT; m = (1==*e);                 s = sizeof( double );      break;
-			case 'n': t = T_PCK_FLT; m = (1==*e);                 s = sizeof( lua_Number );  break;
-			case 'i': t = T_PCK_INT; m = (1==*e);                 s = gnl(L, f, sizeof( int ), 8 ); break;
-			case 'I': t = T_PCK_UNT; m = (1==*e);                 s = gnl(L, f, sizeof( int ), 8 ); break;
-			case 'c': t = T_PCK_RAW; m = 0;                       s = gn( f, 1 );            break;
-			case 'r': t = T_PCK_BOL; m = gnl(L, f, 1+(*bo%8), 8); s = 1;                     break;
-			case 'R': t = T_PCK_BIT; m = 1+(*bo%8);               s = gnl(L, f, 1, 64 );     break;
+			// Integer types
+			case 'b': t = T_PCK_INT;   m = (1==*e);   s = 1;                                 break;
+			case 'B': t = T_PCK_UNT;   m = (1==*e);   s = 1;                                 break;
+			case 'h': t = T_PCK_INT;   m = (1==*e);   s = sizeof( short );                   break;
+			case 'H': t = T_PCK_UNT;   m = (1==*e);   s = sizeof( short );                   break;
+			case 'l': t = T_PCK_INT;   m = (1==*e);   s = sizeof( long );                    break;
+			case 'L': t = T_PCK_UNT;   m = (1==*e);   s = sizeof( long );                    break;
+			case 'j': t = T_PCK_INT;   m = (1==*e);   s = sizeof( lua_Integer );             break;
+			case 'J': t = T_PCK_UNT;   m = (1==*e);   s = sizeof( lua_Integer );             break;
+			case 'T': t = T_PCK_INT;   m = (1==*e);   s = sizeof( size_t );                  break;
+			case 'i': t = T_PCK_INT;   m = (1==*e);   s = gnl( L, f, sizeof( int ), MXINT ); break;
+			case 'I': t = T_PCK_UNT;   m = (1==*e);   s = gnl( L, f, sizeof( int ), MXINT ); break;
 
-			case '<': *e = 1; continue; break;
-			case '>': *e = 0; continue; break;
-			case '\0': return NULL; break;
+			// Float types
+			case 'f': t = T_PCK_FLT;   m = (1==*e);   s = sizeof( float );                   break;
+			case 'd': t = T_PCK_FLT;   m = (1==*e);   s = sizeof( double );                  break;
+			case 'n': t = T_PCK_FLT;   m = (1==*e);   s = sizeof( lua_Number );              break;
+
+			// String type
+			case 'c': t = T_PCK_RAW;   m = 0;         s = gnl( L, f, 1, 0x1 << NB );         break;
+
+			// Bit types
+			case 'v':
+				t = T_PCK_BOL;
+				m = gnl(L, f, 1+(*bo%8), 8);
+				s = 1;
+				break;
+			case 'r':
+				t = T_PCK_BTS;
+				m = 1+(*bo%8);
+				s = gnl(L, f, 1, MXBIT );
+				break;
+			case 'R':
+				t = T_PCK_BTU;
+				m = 1+(*bo%8);
+				s = gnl(L, f, 1, MXBIT );
+				break;
+
+			// modifier types
+			case '<': *e = 1; continue;                                                      break;
+			case '>': *e = 0; continue;                                                      break;
+			case '\0': return NULL;                                                          break;
 			default:
 				luaL_error( L, "invalid format option '%c'", opt );
 				return NULL;
 		}
 		// TODO: check if 0==offset%8 if byte type, else error
 		p    = t_pck_create_ud( L, t, s, m );
-		*bo += ((T_PCK_BIT==t || T_PCK_BOL == t) ? s : s*8);
+		// forward the Bit offset
+		*bo += ((T_PCK_BTU==t || T_PCK_BTS==t || T_PCK_BOL == t) ? s : s*8);
 	}
 	return p;
 }
@@ -930,7 +964,7 @@ lt_pck__index( lua_State *luaVM )
 	if (LUA_TUSERDATA == lua_type( luaVM, -1 ))        // T.Array
 	{
 		p     = t_pck_check_ud( luaVM, -1, 1 );
-		if (T_PCK_BOL == p->t  || T_PCK_BIT == p->t)
+		if (T_PCK_BOL == p->t  || T_PCK_BTS == p->t  || T_PCK_BTU == p->t)
 		{
 			lua_pop( luaVM, 1 );
 			p = t_pck_create_ud( luaVM, p->t, p->s,
@@ -1143,7 +1177,7 @@ t_pcr__callread( lua_State *luaVM, struct t_pck *pc, const unsigned char *b )
 		sz = t_pck_getsize( luaVM, p, 1 );       // size in bits!
 		for (n=1; n <= pc->s; n++)
 		{
-			if (T_PCK_BOL == p->t  || T_PCK_BIT == p->t)
+			if (T_PCK_BOL == p->t  || T_PCK_BTS == p->t  || T_PCK_BTU == p->t)
 			{
 				lua_pop( luaVM, 1 );
 				p = t_pck_create_ud( luaVM, p->t, p->s,

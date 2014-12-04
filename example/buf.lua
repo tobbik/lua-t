@@ -71,6 +71,22 @@ print()
 -- for single boolean bits the following number is interpreted as offset
 for i=1,8 do
 	io.write( i..'   ' )
+	for k=1,8 do io.write( fmt( '%8s', l:unpack( t.Pack('v'..k), i ) ) ) end
+	io.write( '\n' )
+end
+
+print()
+-- for single boolean bits the following number is interpreted as offset
+for i=1,8 do
+	io.write( i..'   ' )
+	for k=1,8 do io.write( fmt( '%8s', l:unpack( t.Pack('R'..k), i ) ) ) end
+	io.write( '\n' )
+end
+
+print()
+-- for single boolean bits the following number is interpreted as offset
+for i=1,8 do
+	io.write( i..'   ' )
 	for k=1,8 do io.write( fmt( '%8s', l:unpack( t.Pack('r'..k), i ) ) ) end
 	io.write( '\n' )
 end
