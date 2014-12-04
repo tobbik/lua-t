@@ -24,3 +24,9 @@ print()
 -- the result of st(s) is a table -> iteration not ordered!
 for k,v in pairs( st(s) ) do print( k,v ) end
 
+p=T.Pack(">i2")
+P=T.Pack(">I2")
+for i=0x00,0xFF do  for j=0x00,0xFF do
+	s=string.char(i,j)
+	print( string.unpack(">i2",s), string.unpack(">I2", s), p(s), P(s) )
+end end

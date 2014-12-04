@@ -29,6 +29,26 @@
 	 ((b) | (  (0x01) << (7-(n))))    : \
 	 ((b) & (~((0x01) << (7-(n))))) )
 
+
+/* maximum size for the binary representation of an integer */
+#define MAXINTSIZE         16
+
+/* number of bits in a character */
+#define NB                 CHAR_BIT
+
+/* mask for one character (NB 1's) */
+#define MC                 ((1 << NB) - 1)
+
+/* size of a lua_Integer */
+#define SZINT              ((int)sizeof(lua_Integer))
+
+// Maximum bits that can be read or written
+#define MXBIT              SZINT * NB
+
+/* mask for all ones in last byte in a lua Integer */
+#define HIGHERBYTE         ((lua_Unsigned)MC << (NB * (SZINT - 1)))
+
+
 // Declaration because of circular dependency
 static struct t_pck *t_pck_mksequence( lua_State *luaVM, int sp, int ep, size_t *bo );
 
@@ -42,11 +62,12 @@ static struct t_pck *t_pck_mksequence( lua_State *luaVM, int sp, int ep, size_t 
  * \param   buf        pointer to char array to read from.
  * \return  val        integer value.
  * --------------------------------------------------------------------------*/
-static inline uint64_t
-t_pck_rbytes( size_t sz, int islittle, const unsigned char * buf )
+static lua_Unsigned
+t_pck_rbytes( size_t sz, int islittle, int issigned, const unsigned char * buf )
 {
 	size_t         i;
-	uint64_t       val = 0;                     ///< value for the read access
+	lua_Unsigned   val = 0;                     ///< value for the read access
+	lua_Unsigned   msk;                         ///< mask for signed integer
 	unsigned char *set = (unsigned char*) &val; ///< char array to read bytewise into val
 #ifndef IS_LITTLE_ENDIAN
 	size_t         sz_l = sizeof( *val );       ///< size of the value in bytes
@@ -56,6 +77,13 @@ t_pck_rbytes( size_t sz, int islittle, const unsigned char * buf )
 	for (i=0 ; i<sz; i++)
 #endif
 		set[ i ] = buf[ (islittle) ? i :  sz-1-i ];
+	if (issigned)
+	{
+		msk = (lua_Unsigned) 1  << (sz*NB - 1);
+		//printf("%16llX  %16llX  %16llX  %16llX\n", msk, val, val^msk, (val^msk) - msk);
+		return ((val ^ msk) - msk); 
+	}
+
 	return val;
 }
 
@@ -68,8 +96,8 @@ t_pck_rbytes( size_t sz, int islittle, const unsigned char * buf )
  * \param   islittle   treat input as little endian?
  * \param   buf        pointer to char array to write to.
  * --------------------------------------------------------------------------*/
-static inline void
-t_pck_wbytes( uint64_t val, size_t sz, int islittle, unsigned char * buf )
+static void
+t_pck_wbytes( lua_Unsigned val, size_t sz, int islittle, unsigned char * buf )
 {
 	size_t         i;
 	unsigned char *set  = (unsigned char*) &val;  ///< char array to read bytewise into val
@@ -91,39 +119,40 @@ t_pck_wbytes( uint64_t val, size_t sz, int islittle, unsigned char * buf )
  * \param  *buf  char buffer already on proper position
  * \return  val        integer value.
  * --------------------------------------------------------------------------*/
-static inline uint64_t
+static lua_Unsigned
 t_pck_rbits( size_t len, size_t ofs, const unsigned char * buf )
 {
-	uint64_t val = t_pck_rbytes( (len+ofs-1)/8 +1, 0, buf );
+	lua_Unsigned val = t_pck_rbytes( (len+ofs-1)/8 +1, 0, 0, buf );
+	// lua_Unsigned res = (val << (64- ((len/8+1)*8) + ofs ) ) >> (64 - len)
 
 #if PRINT_DEBUGS == 1
 	printf("Read Val:    %016llX (%d)\nShift Left:  %016llX\nShift right: %016llX\n%d      %d\n",
 			val, (len+ofs-1)/8 +1,
-			(val << (64- ((len/8+1)*8) + ofs ) ),
-			(val << (64- ((len/8+1)*8) + ofs ) ) >> (64 - len),
-			(64- ((len/8+1)*8) + ofs ), (64-len));
+			(val << (MXBIT- ((len/8+1)*8) + ofs ) ),
+			(val << (MXBIT- ((len/8+1)*8) + ofs ) ) >> (MXBIT - len),
+			(MXBIT- ((len/8+1)*8) + ofs ), (MXBIT-len));
 #endif
-	return  (val << (64- ((len/8+1)*8) + ofs ) ) >> (64 - len);
+	return  (val << (MXBIT- ((len/8+1)*8) + ofs ) ) >> (MXBIT - len);
 }
 
 
 /**--------------------------------------------------------------------------
- * Write an integer of y bits from ta char buffer with offset ofs.
+ * Write an integer of y bits from to char buffer with offset ofs.
  * \param   val  the val gets written to.
  * \param   len  size in bits (1-64).
  * \param   ofs  offset   in bits (0-7).
  * \param  *buf  char buffer already on proper position
  * --------------------------------------------------------------------------*/
-static inline void
-t_pck_wbits( uint64_t val, size_t len, size_t ofs, unsigned char * buf )
+static void
+t_pck_wbits( lua_Unsigned val, size_t len, size_t ofs, unsigned char * buf )
 {
-	uint64_t   set = 0;                           ///< value for the read access
-	uint64_t   msk = 0;                           ///< mask
+	lua_Unsigned   set = 0;                           ///< value for the read access
+	lua_Unsigned   msk = 0;                           ///< mask
 	/// how many bit are in all the bytes needed for the conversion
 	size_t     abit = (((len+ofs-1)/8)+1) * 8;
 
-	msk = (0xFFFFFFFFFFFFFFFF  << (64-len)) >> (64-abit+ofs);
-	set = t_pck_rbytes( abit/8, 0, buf );
+	msk = (0xFFFFFFFFFFFFFFFF << (MXBIT-len)) >> (MXBIT-abit+ofs);
+	set = t_pck_rbytes( abit/8, 0, 0, buf );
 	set = (val << (abit-ofs-len)) | (set & ~msk);
 	t_pck_wbytes( set, abit/8, 0, buf);
 
@@ -132,8 +161,8 @@ t_pck_wbits( uint64_t val, size_t len, size_t ofs, unsigned char * buf )
 	       "Nmsk: %016llX       \nval:  %016llX         \n"
 	       "Sval: %016llX    %ld\nRslt: %016llX         \n",
 			val,
-			 0xFFFFFFFFFFFFFFFF <<   (64-len), (64-len),  /// Mask after left shift
-			(0xFFFFFFFFFFFFFFFF <<	 (64-len)) >> (64-abit+ofs), (64-abit+ofs),
+			 0xFFFFFFFFFFFFFFFF <<   (MXBIT-len), (MXBIT-len),  /// Mask after left shift
+			(0xFFFFFFFFFFFFFFFF <<	 (MXBIT-len)) >> (MXBIT-abit+ofs), (MXBIT-abit+ofs),
 			set & ~msk,
 			val,
 			 val << (abit-ofs-len),  abit-ofs-len,
@@ -161,14 +190,12 @@ t_pck_read( lua_State *luaVM, struct t_pck *p, const unsigned char *b )
 	switch( p->t )
 	{
 		case T_PCK_INT:
-			lua_pushinteger( luaVM, (1 == p->s)
-				? (lua_Integer)  *b
-				: (lua_Integer)   t_pck_rbytes( p->s, p->m, b ) );
+			lua_pushinteger( luaVM, (lua_Integer) t_pck_rbytes( p->s, p->m, 1, b ) );
 			break;
 		case T_PCK_UNT:
 			lua_pushinteger( luaVM, (1 == p->s)
-				? (lua_Unsigned) *b
-				: (lua_Unsigned)  t_pck_rbytes( p->s, p->m, b ) );
+				? (lua_Integer) *b
+				: (lua_Integer) t_pck_rbytes( p->s, p->m, 0, b ) );
 			break;
 		case T_PCK_BOL:
 			lua_pushboolean( luaVM, BIT_GET( *b, p->m - 1 ) );
@@ -221,7 +248,7 @@ t_pck_write( lua_State *luaVM, struct t_pck *p, unsigned char *b )
 			if (1==p->s)
 				*b = (char) intVal;
 			else
-				t_pck_wbytes( (uint64_t) intVal, p->s, p->m, b );
+				t_pck_wbytes( intVal, p->s, p->m, b );
 			break;
 		case T_PCK_BOL:
 			luaL_argcheck( luaVM,  lua_isboolean( luaVM, -1 ) , -1,
@@ -239,7 +266,7 @@ t_pck_write( lua_State *luaVM, struct t_pck *p, unsigned char *b )
 					? LO_NIBBLE_SET( *b, (char) intVal )
 					: HI_NIBBLE_SET( *b, (char) intVal );
 			else
-				t_pck_wbits( (uint64_t) intVal, p->s, p->m - 1, b );
+				t_pck_wbits( (lua_Unsigned) intVal, p->s, p->m - 1, b );
 			break;
 		case T_PCK_RAW:
 			strVal = luaL_checklstring( luaVM, -1, &sL );
