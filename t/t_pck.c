@@ -135,7 +135,7 @@ t_pck_read( lua_State *luaVM, struct t_pck *p, const unsigned char *b )
 			   (unsigned char *) &val + ((IS_BIG_ENDIAN) ? sizeof( lua_Unsigned) - p->s : 0),
 			   b,
 				p->s,
-				p->m == IS_BIG_ENDIAN );
+				IS_BIG_ENDIAN == p->m );
 			msk = (lua_Unsigned) 1  << (p->s*NB - 1);
 			lua_pushinteger( luaVM, (lua_Integer) ((val ^ msk) - msk) );
 			break;
@@ -148,16 +148,16 @@ t_pck_read( lua_State *luaVM, struct t_pck *p, const unsigned char *b )
 				   (unsigned char *) &val + ((IS_BIG_ENDIAN) ? sizeof( lua_Unsigned) - p->s : 0),
 				   b,
 					p->s,
-					p->m == IS_BIG_ENDIAN );
+					IS_BIG_ENDIAN == p->m );
 				lua_pushinteger( luaVM, (lua_Integer) val );
 			}
 			break;
 		case T_PCK_BOL:
-			lua_pushboolean( luaVM, BIT_GET( *b, p->m - 1 ) );
+			lua_pushboolean( luaVM, BIT_GET( *b, p->m ) );
 			break;
 		case T_PCK_BTS:
 			if (p->s == 1)
-				lua_pushinteger( luaVM, BIT_GET( *b, p->m - 1 ) );
+				lua_pushinteger( luaVM, BIT_GET( *b, p->m ) );
 			else
 			{
 				msk = (lua_Unsigned) 1  << (p->s - 1);
@@ -165,30 +165,30 @@ t_pck_read( lua_State *luaVM, struct t_pck *p, const unsigned char *b )
 				t_pck_cbytes( 
 				   (unsigned char *) &val + (
 						(IS_BIG_ENDIAN)
-							? sizeof( lua_Unsigned) - (p->s+p->m-2)/8 + 1
+							? sizeof( lua_Unsigned) - (p->s+p->m-1)/8 + 1
 							: 0),
 				   b,
-					(p->s+p->m-2)/8 + 1,
+					(p->s+p->m-1)/8 + 1,
 					1 == IS_LITTLE_ENDIAN );
-				val = (val << (MXBIT- ((p->s/NB+1)*NB) + p->m-1 ) ) >> (MXBIT - p->s);
+				val = (val << (MXBIT- ((p->s/NB+1)*NB) + p->m ) ) >> (MXBIT - p->s);
 				lua_pushinteger( luaVM, (lua_Integer) ((val ^ msk) - msk) );
 			}
 			break;
 		case T_PCK_BTU:
 			if (p->s == 1)
-				lua_pushinteger( luaVM, BIT_GET( *b, p->m - 1 ) );
+				lua_pushinteger( luaVM, BIT_GET( *b, p->m ) );
 			else
 			{
 				// copy as many bytes as needed
 				t_pck_cbytes( 
 				   (unsigned char *) &val + (
 						(IS_BIG_ENDIAN)
-							? sizeof( lua_Unsigned) - (p->s+p->m-2)/8 + 1
+							? sizeof( lua_Unsigned) - (p->s+p->m-1)/8 + 1
 							: 0),
 				   b,
-					(p->s+p->m-2)/8 + 1,
+					(p->s+p->m-1)/8 + 1,
 					1 == IS_LITTLE_ENDIAN );
-				val = (val << (MXBIT- ((p->s/NB+1)*NB) + p->m-1 ) ) >> (MXBIT - p->s);
+				val = (val << (MXBIT- ((p->s/NB+1)*NB) + p->m ) ) >> (MXBIT - p->s);
 				lua_pushinteger( luaVM, (lua_Integer) val );
 			}
 			break;
@@ -246,7 +246,7 @@ t_pck_write( lua_State *luaVM, struct t_pck *p, unsigned char *b )
 				   b,
 				   (unsigned char *) &val + ((IS_BIG_ENDIAN) ? sizeof( lua_Unsigned) - p->s : 0),
 				   p->s,
-				   p->m == IS_BIG_ENDIAN );
+				   IS_BIG_ENDIAN == p->m );
 				//t_pck_wbytes( val, p->s, p->m, b );
 			break;
 		case T_PCK_UNT:
@@ -261,13 +261,13 @@ t_pck_write( lua_State *luaVM, struct t_pck *p, unsigned char *b )
 				   b,
 				   (unsigned char *) &val + ((IS_BIG_ENDIAN) ? sizeof( lua_Unsigned) - p->s : 0),
 				   p->s,
-				   p->m == IS_BIG_ENDIAN );
+				   IS_BIG_ENDIAN == p->m );
 				//t_pck_wbytes( (lua_Unsigned) intVal, p->s, p->m, b );
 			break;
 		case T_PCK_BOL:
 			luaL_argcheck( luaVM,  lua_isboolean( luaVM, -1 ) , -1,
 			   "value to pack must be boolean type" );
-			*b = BIT_SET( *b, p->m - 1, lua_toboolean( luaVM, -1 ) );
+			*b = BIT_SET( *b, p->m, lua_toboolean( luaVM, -1 ) );
 			break;
 		case T_PCK_BTS:
 			//TODO: proper boundary checking!
@@ -276,18 +276,18 @@ t_pck_write( lua_State *luaVM, struct t_pck *p, unsigned char *b )
 			luaL_argcheck( luaVM,  0 == (val >> p->s) , -1,
 			   "value to pack must be smaller than the maximum value for the packer size" );
 			if (p->s == 1)
-				*b = BIT_SET( *b, p->m - 1, lua_toboolean( luaVM, -1 ) );
+				*b = BIT_SET( *b, p->m, lua_toboolean( luaVM, -1 ) );
 			else
-				t_pck_wbits( val, p->s, p->m - 1, b );
+				t_pck_wbits( val, p->s, p->m, b );
 			break;
 		case T_PCK_BTU:
 			intVal = luaL_checkinteger( luaVM, -1 );
 			luaL_argcheck( luaVM,  0 == (intVal >> p->s) , -1,
 			   "value to pack must be smaller than the maximum value for the packer size" );
 			if (p->s == 1)
-				*b = BIT_SET( *b, p->m - 1, lua_toboolean( luaVM, -1 ) );
+				*b = BIT_SET( *b, p->m, lua_toboolean( luaVM, -1 ) );
 			else
-				t_pck_wbits( (lua_Unsigned) intVal, p->s, p->m - 1, b );
+				t_pck_wbits( (lua_Unsigned) intVal, p->s, p->m, b );
 			break;
 		case T_PCK_FLT:
 			if      (sizeof( u.f ) == p->s) u.f = (float)  luaL_checknumber( luaVM, -1 );
@@ -335,11 +335,11 @@ t_pck_format( lua_State *luaVM, enum t_pck_t t, size_t s, int m )
 			lua_pushfstring( luaVM, "%d", s );
 			break;
 		case T_PCK_BOL:
-			lua_pushfstring( luaVM, "%d", m );
+			lua_pushfstring( luaVM, "%d", m+1 );
 			break;
 		case T_PCK_BTS:
 		case T_PCK_BTU:
-			lua_pushfstring( luaVM, "%d:%d", s, m );
+			lua_pushfstring( luaVM, "%d:%d", s, m+1 );
 			break;
 		case T_PCK_RAW:
 			lua_pushfstring( luaVM, "%d", s );
@@ -449,7 +449,7 @@ t_pck_getsize( lua_State *luaVM,  struct t_pck *p, int bits )
 		case T_PCK_BTU:
 			return ((bits)
 					? p->s
-					: ((p->s + p->m -2)/8) + 1);
+					: ((p->s + p->m - 1)/NB) + 1);
 			break;
 		case T_PCK_ARR:
 			lua_rawgeti( luaVM, LUA_REGISTRYINDEX, p->m ); // get packer
@@ -457,7 +457,7 @@ t_pck_getsize( lua_State *luaVM,  struct t_pck *p, int bits )
 			lua_pop( luaVM, 1 );
 			return ((bits)
 					? s
-					: s/8);
+					: s/NB);
 			break;
 		case T_PCK_SEQ:
 		case T_PCK_STR:
@@ -471,7 +471,7 @@ t_pck_getsize( lua_State *luaVM,  struct t_pck *p, int bits )
 			lua_pop( luaVM, 1 );
 			return ((bits)
 					? s
-					: s/8);
+					: s/NB);
 			break;
 		default:
 			return 0;
@@ -578,17 +578,17 @@ struct t_pck
 			// Bit types
 			case 'v':
 				t = T_PCK_BOL;
-				m = gnl(L, f, 1+(*bo%8), 8);
+				m = gnl(L, f, *bo%NB, NB);
 				s = 1;
 				break;
 			case 'r':
 				t = T_PCK_BTS;
-				m = 1+(*bo%8);
+				m = *bo % NB;
 				s = gnl(L, f, 1, MXBIT );
 				break;
 			case 'R':
 				t = T_PCK_BTU;
-				m = 1+(*bo%8);
+				m = *bo % NB;
 				s = gnl(L, f, 1, MXBIT );
 				break;
 
@@ -603,7 +603,7 @@ struct t_pck
 		// TODO: check if 0==offset%8 if byte type, else error
 		p    = t_pck_create_ud( L, t, s, m );
 		// forward the Bit offset
-		*bo += ((T_PCK_BTU==t || T_PCK_BTS==t || T_PCK_BOL == t) ? s : s*8);
+		*bo += ((T_PCK_BTU==t || T_PCK_BTS==t || T_PCK_BOL == t) ? s : s*NB);
 	}
 	return p;
 }
@@ -985,9 +985,9 @@ lt_pck__index( lua_State *luaVM )
 		{
 			lua_pop( luaVM, 1 );
 			p = t_pck_create_ud( luaVM, p->t, p->s,
-				((p->s * (luaL_checkinteger( luaVM, -2 )-1)) % 8 ) + 1 );
+				((p->s * (luaL_checkinteger( luaVM, -2 )-1)) % NB ) + 1 );
 		}
-		r->o += (((t_pck_getsize( luaVM, p, 1 )) * (luaL_checkinteger( luaVM, -3 )-1)) / 8);
+		r->o += (((t_pck_getsize( luaVM, p, 1 )) * (luaL_checkinteger( luaVM, -3 )-1)) / NB);
 	}
 	else                                               // T.Struct/Sequence
 	{
