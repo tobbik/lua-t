@@ -236,6 +236,7 @@ int
 t_pck_write( lua_State *luaVM, struct t_pck *p, unsigned char *b )
 {
 	lua_Integer     intVal;
+	lua_Unsigned    msk, val;
 	//lua_Number      fltVal;
 	const char     *strVal;
 	size_t          sL;
@@ -244,6 +245,21 @@ t_pck_write( lua_State *luaVM, struct t_pck *p, unsigned char *b )
 	switch( p->t )
 	{
 		case T_PCK_INT:
+			intVal = luaL_checkinteger( luaVM, -1 );
+			val    = (lua_Unsigned) intVal;
+			if (0>intVal && p->s != MXINT)
+			{
+				val = (lua_Unsigned) intVal;
+				msk = (lua_Unsigned) 1  << (p->s*NB - 1);
+				val = ((val ^ msk) - msk);
+			}
+			luaL_argcheck( luaVM,  0 == (val >> (p->s*8)) , -1,
+			   "value to pack must be smaller than the maximum value for the packer size" );
+			if (1==p->s)
+				*b = (char) val;
+			else
+				t_pck_wbytes( val, p->s, p->m, b );
+			break;
 		case T_PCK_UNT:
 			intVal = luaL_checkinteger( luaVM, -1 );
 			luaL_argcheck( luaVM,  0 == (intVal >> (p->s*8)) , -1,
@@ -251,7 +267,7 @@ t_pck_write( lua_State *luaVM, struct t_pck *p, unsigned char *b )
 			if (1==p->s)
 				*b = (char) intVal;
 			else
-				t_pck_wbytes( intVal, p->s, p->m, b );
+				t_pck_wbytes( (lua_Unsigned) intVal, p->s, p->m, b );
 			break;
 		case T_PCK_BOL:
 			luaL_argcheck( luaVM,  lua_isboolean( luaVM, -1 ) , -1,
@@ -259,6 +275,20 @@ t_pck_write( lua_State *luaVM, struct t_pck *p, unsigned char *b )
 			*b = BIT_SET( *b, p->m - 1, lua_toboolean( luaVM, -1 ) );
 			break;
 		case T_PCK_BTS:
+			//TODO: proper boundary checking!
+			intVal = luaL_checkinteger( luaVM, -1 );
+			val    = (lua_Unsigned) intVal << (MXBIT- p->s) >> (MXBIT-p->s);
+			luaL_argcheck( luaVM,  0 == (val >> p->s) , -1,
+			   "value to pack must be smaller than the maximum value for the packer size" );
+			if (p->s == 1)
+				*b = BIT_SET( *b, p->m - 1, lua_toboolean( luaVM, -1 ) );
+			else if (4 == p->s  && (1==p->m || 5==p->m))
+				*b = (5==p->m)
+					? LO_NIBBLE_SET( *b, (char) val )
+					: HI_NIBBLE_SET( *b, (char) val );
+			else
+				t_pck_wbits( val, p->s, p->m - 1, b );
+			break;
 		case T_PCK_BTU:
 			intVal = luaL_checkinteger( luaVM, -1 );
 			luaL_argcheck( luaVM,  0 == (intVal >> p->s) , -1,

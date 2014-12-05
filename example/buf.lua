@@ -91,3 +91,7 @@ for i=1,8 do
 	io.write( '\n' )
 end
 
+p = t.Pack('R3r5')[2]
+b = t.Buffer(1)
+p(b,-5)
+
