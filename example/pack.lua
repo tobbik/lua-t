@@ -42,7 +42,7 @@ end
 --	s=string.char(i,j)
 --	print( string.unpack(">i2",s), string.unpack(">I2", s), p(s), P(s) )
 --end end
---[[
+--
 p = T.Pack('R3r5')[2]
 for c=0,31 do
 	print( c, p(string.char(c)) )
@@ -55,6 +55,5 @@ for c=-16,15 do
 	p(b,c)
 	print( c, sfmt("%02X", c), b:toHex() )
 end
---]]
 
 
