@@ -16,19 +16,6 @@
 #include "t_buf.h"
 
 // ========== Buffer accessor Helpers
-// Macro helpers
-#define HI_NIBBLE_GET(b)   (((b) >> 4) & 0xF)
-#define LO_NIBBLE_GET(b)   ((b)  & 0xF)
-
-#define HI_NIBBLE_SET(b,v) ( ((b) & 0x0F) | (((v)<<4) & 0xF0 ) )
-#define LO_NIBBLE_SET(b,v) ( ((b) & 0xF0) | ( (v)     & 0x0F ) )
-
-#define BIT_GET(b,n)       ( ((b) >> (7-(n))) & 0x01 )
-#define BIT_SET(b,n,v)     \
-	( (1==v)              ? \
-	 ((b) | (  (0x01) << (7-(n))))    : \
-	 ((b) & (~((0x01) << (7-(n))))) )
-
 
 /* number of bits in a character */
 #define NB                 CHAR_BIT
@@ -42,8 +29,12 @@
 // Maximum bits that can be read or written
 #define MXBIT              MXINT * NB
 
-/* mask for all ones in last byte in a lua Integer */
-#define HIGHERBYTE         ((lua_Unsigned)MC << (NB * (MXINT - 1)))
+// Macro helpers
+#define BIT_GET(b,n)       ( ((b) >> (NB-(n))) & 0x01 )
+#define BIT_SET(b,n,v)     \
+	( (1==v)              ? \
+	 ((b) | (  (0x01) << (NB-(n))))    : \
+	 ((b) & (~((0x01) << (NB-(n))))) )
 
 
 // Declaration because of circular dependency
@@ -209,10 +200,6 @@ t_pck_read( lua_State *luaVM, struct t_pck *p, const unsigned char *b )
 		case T_PCK_BTU:
 			if (p->s == 1)
 				lua_pushinteger( luaVM, BIT_GET( *b, p->m - 1 ) );
-			else if (4 == p->s  && (1==p->m || 5==p->m))
-				lua_pushinteger( luaVM, (5==p->m)
-					? LO_NIBBLE_GET( *b )
-					: HI_NIBBLE_GET( *b ) );
 			else
 				lua_pushinteger( luaVM, (lua_Integer) t_pck_rbits( p->s, p->m - 1, b ) );
 			break;
@@ -256,7 +243,7 @@ t_pck_write( lua_State *luaVM, struct t_pck *p, unsigned char *b )
 				msk = (lua_Unsigned) 1  << (p->s*NB - 1);
 				val = ((val ^ msk) - msk);
 			}
-			luaL_argcheck( luaVM,  0 == (val >> (p->s*8)) , -1,
+			luaL_argcheck( luaVM,  0 == (val >> (p->s*NB)) , -1,
 			   "value to pack must be smaller than the maximum value for the packer size" );
 			if (1==p->s)
 				*b = (char) val;
@@ -265,7 +252,7 @@ t_pck_write( lua_State *luaVM, struct t_pck *p, unsigned char *b )
 			break;
 		case T_PCK_UNT:
 			intVal = luaL_checkinteger( luaVM, -1 );
-			luaL_argcheck( luaVM,  0 == (intVal >> (p->s*8)) , -1,
+			luaL_argcheck( luaVM,  0 == (intVal >> (p->s*NB)) , -1,
 			   "value to pack must be smaller than the maximum value for the packer size" );
 			if (1==p->s)
 				*b = (char) intVal;
@@ -285,10 +272,6 @@ t_pck_write( lua_State *luaVM, struct t_pck *p, unsigned char *b )
 			   "value to pack must be smaller than the maximum value for the packer size" );
 			if (p->s == 1)
 				*b = BIT_SET( *b, p->m - 1, lua_toboolean( luaVM, -1 ) );
-			else if (4 == p->s  && (1==p->m || 5==p->m))
-				*b = (5==p->m)
-					? LO_NIBBLE_SET( *b, (char) val )
-					: HI_NIBBLE_SET( *b, (char) val );
 			else
 				t_pck_wbits( val, p->s, p->m - 1, b );
 			break;
@@ -298,10 +281,6 @@ t_pck_write( lua_State *luaVM, struct t_pck *p, unsigned char *b )
 			   "value to pack must be smaller than the maximum value for the packer size" );
 			if (p->s == 1)
 				*b = BIT_SET( *b, p->m - 1, lua_toboolean( luaVM, -1 ) );
-			else if (4 == p->s  && (1==p->m || 5==p->m))
-				*b = (5==p->m)
-					? LO_NIBBLE_SET( *b, (char) intVal )
-					: HI_NIBBLE_SET( *b, (char) intVal );
 			else
 				t_pck_wbits( (lua_Unsigned) intVal, p->s, p->m - 1, b );
 			break;
