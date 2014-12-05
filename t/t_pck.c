@@ -43,7 +43,7 @@ static struct t_pck *t_pck_mksequence( lua_State *luaVM, int sp, int ep, size_t 
 
 // Function helpers
 /**--------------------------------------------------------------------------
- * Copy byte by byte from one string to another. Honours endianess
+ * Copy byte by byte from one string to another. Honours endianess.
  * \param   dst       pointer to char array to write to.
  * \param   src       pointer to char array to read from.
  * \param   sz        how many bytes to copy.
@@ -52,10 +52,14 @@ static struct t_pck *t_pck_mksequence( lua_State *luaVM, int sp, int ep, size_t 
 static void
 t_pck_cbytes( unsigned char * dst, const unsigned char* src, size_t sz, int islittle )
 {
-	while (sz-- != 0)
+	if (IS_LITTLE_ENDIAN == islittle)
+		while (sz-- != 0)
+			*(dst++) = *(src+sz);
+	else
 	{
-		printf( "%02X ",  (IS_LITTLE_ENDIAN == islittle) ? *(src+sz) : *(src-sz) );
-		*(dst++) = (IS_LITTLE_ENDIAN == islittle) ? *(src+sz) : *(src-sz);
+		src = src+sz-1;
+		while (sz-- != 0)
+			*(dst++) = *(src-sz);
 	}
 }
 
@@ -186,7 +190,7 @@ int
 t_pck_read( lua_State *luaVM, struct t_pck *p, const unsigned char *b )
 {
 	lua_Unsigned msk, val;
-	union Ftypes u;
+	volatile union Ftypes u;
 	//unsigned char *rd;       /// char buffer to do bit by bit copying
 	switch( p->t )
 	{
@@ -224,11 +228,7 @@ t_pck_read( lua_State *luaVM, struct t_pck *p, const unsigned char *b )
 				lua_pushinteger( luaVM, (lua_Integer) t_pck_rbits( p->s, p->m - 1, b ) );
 			break;
 		case T_PCK_FLT:
-			t_pck_cbytes( (unsigned char*) &(u), b, p->s, 1 );
-			printf("\n" );
-			//printf("%02X %02X %02X %02X %02X %02X %02X %02X\n",
-			//	*(u.buff),   *(u.buff+1), *(u.buff+2), *(u.buff+3),
-			//	*(u.buff)+4, *(u.buff+5), *(u.buff+6), *(u.buff+7));
+			t_pck_cbytes( (unsigned char*) &(u), b, p->s, 0 );
 			if      (sizeof( u.f ) == p->s) lua_pushnumber( luaVM, (lua_Number) u.f );
 			else if (sizeof( u.d ) == p->s) lua_pushnumber( luaVM, (lua_Number) u.d );
 			else                            lua_pushnumber( luaVM, u.n );
@@ -255,11 +255,11 @@ t_pck_read( lua_State *luaVM, struct t_pck *p, const unsigned char *b )
 int
 t_pck_write( lua_State *luaVM, struct t_pck *p, unsigned char *b )
 {
-	lua_Integer     intVal;
-	lua_Unsigned    msk, val;
-	//lua_Number      fltVal;
-	const char     *strVal;
-	size_t          sL;
+	lua_Integer            intVal;
+	lua_Unsigned           msk, val;
+	volatile union Ftypes  u;
+	const char            *strVal;
+	size_t                 sL;
 
 	// TODO: size check values if they fit the packer size
 	switch( p->t )
@@ -313,6 +313,12 @@ t_pck_write( lua_State *luaVM, struct t_pck *p, unsigned char *b )
 				*b = BIT_SET( *b, p->m - 1, lua_toboolean( luaVM, -1 ) );
 			else
 				t_pck_wbits( (lua_Unsigned) intVal, p->s, p->m - 1, b );
+			break;
+		case T_PCK_FLT:
+			if      (sizeof( u.f ) == p->s) u.f = (float)  luaL_checknumber( luaVM, -1 );
+			else if (sizeof( u.d ) == p->s) u.d = (double) luaL_checknumber( luaVM, -1 );
+			else                            u.n = luaL_checknumber( luaVM, -1 );
+			t_pck_cbytes( b, (unsigned char*) &(u), p->s, 0 );
 			break;
 		case T_PCK_RAW:
 			strVal = luaL_checklstring( luaVM, -1, &sL );
