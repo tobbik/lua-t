@@ -50,7 +50,7 @@ static struct t_pck *t_pck_mksequence( lua_State *luaVM, int sp, int ep, size_t 
  * \param   islittle   treat input as little endian?
  * --------------------------------------------------------------------------*/
 static void
-t_pck_cbytes( unsigned char * dst, const unsigned char* src, size_t sz, int islittle )
+t_pck_cbytes( unsigned char * dst, const unsigned char * src, size_t sz, int islittle )
 {
 	if (IS_LITTLE_ENDIAN == islittle)
 		while (sz-- != 0)
@@ -63,6 +63,12 @@ t_pck_cbytes( unsigned char * dst, const unsigned char* src, size_t sz, int isli
 	}
 }
 
+static void pp( const unsigned char * p )
+{
+	for (int i=0; i<NB; i++)
+		printf( "%02X ", *(p+i) );
+	printf("\n");
+}
 
 /**--------------------------------------------------------------------------
  * Read an integer of y bytes from a char buffer pointer
@@ -100,7 +106,7 @@ t_pck_rbytes( size_t sz, int islittle, const unsigned char * buf )
  * \param   buf        pointer to char array to write to.
  * --------------------------------------------------------------------------*/
 static void
-t_pck_wbytes( lua_Unsigned val, size_t sz, int islittle, unsigned char *buf )
+t_pck_wbytes( lua_Unsigned val, size_t sz, int islittle, unsigned char * buf )
 {
 	size_t         i;
 	unsigned char *set  = (unsigned char*) &val;  ///< char array to read bytewise into val
@@ -189,9 +195,9 @@ t_pck_wbits( lua_Unsigned val, size_t len, size_t ofs, unsigned char * buf )
 int
 t_pck_read( lua_State *luaVM, struct t_pck *p, const unsigned char *b )
 {
-	lua_Unsigned msk, val;
-	volatile union Ftypes u;
-	//unsigned char *rd;       /// char buffer to do bit by bit copying
+	lua_Unsigned           msk=0, val=0;
+	volatile union Ftypes  u;
+	unsigned char         *rd;
 	switch( p->t )
 	{
 		case T_PCK_INT:
@@ -203,9 +209,16 @@ t_pck_read( lua_State *luaVM, struct t_pck *p, const unsigned char *b )
 				: (lua_Integer) t_pck_rbytes( p->s, p->m, b ) );
 			break;
 		case T_PCK_UNT:
-			lua_pushinteger( luaVM, (1 == p->s)
-				? (lua_Integer) *b
-				: (lua_Integer) t_pck_rbytes( p->s, p->m, b ) );
+			if (1 == p->s)
+				lua_pushinteger( luaVM, (lua_Integer) *b );
+			else
+			{
+				rd = (unsigned char *) &val + ((IS_BIG_ENDIAN) ? sizeof( lua_Unsigned) - p->s : 0);
+				t_pck_cbytes( rd, b, p->s, p->m == IS_BIG_ENDIAN );
+			//	val = t_pck_rbytes( p->s, p->m, b );
+			//	pp( (const unsigned char *) &val );
+				lua_pushinteger( luaVM, (lua_Integer) val );
+			}
 			break;
 		case T_PCK_BOL:
 			lua_pushboolean( luaVM, BIT_GET( *b, p->m - 1 ) );
