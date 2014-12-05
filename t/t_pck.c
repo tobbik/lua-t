@@ -87,7 +87,7 @@ t_pck_rbytes( size_t sz, int islittle, const unsigned char * buf )
  * \param   buf        pointer to char array to write to.
  * --------------------------------------------------------------------------*/
 static void
-t_pck_wbytes( lua_Unsigned val, size_t sz, int islittle, unsigned char * buf )
+t_pck_wbytes( lua_Unsigned val, size_t sz, int islittle, unsigned char *buf )
 {
 	size_t         i;
 	unsigned char *set  = (unsigned char*) &val;  ///< char array to read bytewise into val
@@ -112,7 +112,8 @@ t_pck_wbytes( lua_Unsigned val, size_t sz, int islittle, unsigned char * buf )
 static lua_Unsigned
 t_pck_rbits( size_t len, size_t ofs, const unsigned char * buf )
 {
-	lua_Unsigned val = t_pck_rbytes( (len+ofs-1)/8 +1, 0, buf );
+	// read enough bytes to cover offset + length
+	lua_Unsigned val = t_pck_rbytes( (len+ofs-1)/8 + 1, 0, buf );
 #if PRINT_DEBUGS == 1
 	printf("Read Val:    %016llX (%d)\nShift Left:  %016llX\nShift right: %016llX\n%d      %d\n",
 			val, (len+ofs-1)/8 +1,
@@ -120,7 +121,7 @@ t_pck_rbits( size_t len, size_t ofs, const unsigned char * buf )
 			(val << (MXBIT- ((len/8+1)*8) + ofs ) ) >> (MXBIT - len),
 			(MXBIT- ((len/8+1)*8) + ofs ), (MXBIT-len));
 #endif
-	return (val << (MXBIT- ((len/8+1)*8) + ofs ) ) >> (MXBIT - len);
+	return (val << (MXBIT- ((len/NB+1)*NB) + ofs ) ) >> (MXBIT - len);
 }
 
 
@@ -137,20 +138,20 @@ t_pck_wbits( lua_Unsigned val, size_t len, size_t ofs, unsigned char * buf )
 	lua_Unsigned   set = 0;                           ///< value for the read access
 	lua_Unsigned   msk = 0;                           ///< mask
 	/// how many bit are in all the bytes needed for the conversion
-	size_t     abit = (((len+ofs-1)/8)+1) * 8;
+	size_t     abit = (((len+ofs-1)/NB)+1) * 8;
 
-	msk = (0xFFFFFFFFFFFFFFFF << (MXBIT-len)) >> (MXBIT-abit+ofs);
-	set = t_pck_rbytes( abit/8, 0, buf );
+	msk = (-1 << (MXBIT-len)) >> (MXBIT-abit+ofs);
+	set = t_pck_rbytes( abit/NB, 0, buf );
 	set = (val << (abit-ofs-len)) | (set & ~msk);
-	t_pck_wbytes( set, abit/8, 0, buf);
+	t_pck_wbytes( set, abit/NB, 0, buf);
 
 #if PRINT_DEBUGS == 1
 	printf("Read: %016llX       \nLft:  %016lX       %d \nMsk:  %016lX       %ld\n"
 	       "Nmsk: %016llX       \nval:  %016llX         \n"
 	       "Sval: %016llX    %ld\nRslt: %016llX         \n",
 			val,
-			 0xFFFFFFFFFFFFFFFF <<   (MXBIT-len), (MXBIT-len),  /// Mask after left shift
-			(0xFFFFFFFFFFFFFFFF <<	 (MXBIT-len)) >> (MXBIT-abit+ofs), (MXBIT-abit+ofs),
+			 -1 << (MXBIT-len), (MXBIT-len),  /// Mask after left shift
+			(-1 << (MXBIT-len)) >> (MXBIT-abit+ofs), (MXBIT-abit+ofs),
 			set & ~msk,
 			val,
 			 val << (abit-ofs-len),  abit-ofs-len,
@@ -182,7 +183,9 @@ t_pck_read( lua_State *luaVM, struct t_pck *p, const unsigned char *b )
 			msk = (lua_Unsigned) 1  << (p->s*NB - 1);
 			val = t_pck_rbytes( p->s, p->m, b );
 			//printf("%16llX  %16llX  %16llX  %16llX\n", msk, val, val^msk, (val^msk) - msk);
-			lua_pushinteger( luaVM, (lua_Integer) ((val ^ msk) - msk) );
+			lua_pushinteger( luaVM, (1 == p->s)
+				? (lua_Integer) *b
+				: (lua_Integer) t_pck_rbytes( p->s, p->m, b ) );
 			break;
 		case T_PCK_UNT:
 			lua_pushinteger( luaVM, (1 == p->s)

@@ -1,4 +1,5 @@
-T = require't'
+T    = require't'
+sfmt = string.format
 
 p   = { 24898, 17507, 101, 70 }
 fmt = '>i2<i2bb'
@@ -24,9 +25,23 @@ print()
 -- the result of st(s) is a table -> iteration not ordered!
 for k,v in pairs( st(s) ) do print( k,v ) end
 
-p=T.Pack(">i2")
-P=T.Pack(">I2")
-for i=0x00,0xFF do  for j=0x00,0xFF do
-	s=string.char(i,j)
-	print( string.unpack(">i2",s), string.unpack(">I2", s), p(s), P(s) )
-end end
+--p=T.Pack(">i2")
+--P=T.Pack(">I2")
+--for i=0x00,0xFF do  for j=0x00,0xFF do
+--	s=string.char(i,j)
+--	print( string.unpack(">i2",s), string.unpack(">I2", s), p(s), P(s) )
+--end end
+--
+p = T.Pack('R3r5')[2]
+for c=0,31 do
+	print( c, p(string.char(c)) )
+end
+--P= T.Pack('B')
+--p= T.Pack('b')
+b= T.Buffer(1)
+b:toHex()
+for c=-16,15 do
+	p(b,c)
+	print( c, sfmt("%02X", c), b:toHex() )
+end
+
