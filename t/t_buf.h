@@ -63,14 +63,23 @@ struct t_pck {
 	///  -- for raw                  = ???
 	///  -- for Arr                  = lua registry Reference for packer
 	///  -- for Seq                  = lua registry Reference for the table
-	///                                         idx[i]    = Pack
-	///                                         idx[s+i]  = ofs
+	///        idx[ i ]    = Pack
+	///        idx[ s+i ]  = ofs
 	///  -- for Struct               = lua registry Reference for the table
-	///                                         idx[i]    = Pack
-	///                                         idx[s+i]  = ofs
-	///                                         idx[2s+i] = name
-	///                                         idx[name] = i
+	///        idx[ i ]    = Pack
+	///        idx[ s+i ]  = ofs
+	///        idx[ 2s+i ] = name
+	///        idx[ name ] = i
 	int            m;
+};
+
+
+/// Union for serializing floats (taken from Lua 5.3)
+union Ftypes {
+	float       f;
+	double      d;
+	lua_Number  n;
+	char buff[ 5 * sizeof( lua_Number ) ];  // enough for any float type
 };
 
 

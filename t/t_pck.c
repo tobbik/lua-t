@@ -43,6 +43,24 @@ static struct t_pck *t_pck_mksequence( lua_State *luaVM, int sp, int ep, size_t 
 
 // Function helpers
 /**--------------------------------------------------------------------------
+ * Copy byte by byte from one string to another. Honours endianess
+ * \param   dst       pointer to char array to write to.
+ * \param   src       pointer to char array to read from.
+ * \param   sz        how many bytes to copy.
+ * \param   islittle   treat input as little endian?
+ * --------------------------------------------------------------------------*/
+static void
+t_pck_cbytes( unsigned char * dst, const unsigned char* src, size_t sz, int islittle )
+{
+	while (sz-- != 0)
+	{
+		printf( "%02X ",  (IS_LITTLE_ENDIAN == islittle) ? *(src+sz) : *(src-sz) );
+		*(dst++) = (IS_LITTLE_ENDIAN == islittle) ? *(src+sz) : *(src-sz);
+	}
+}
+
+
+/**--------------------------------------------------------------------------
  * Read an integer of y bytes from a char buffer pointer
  * General helper function to read the value of an 64 bit integer from a char array
  * \param   sz         how many bytes to read.
@@ -168,6 +186,8 @@ int
 t_pck_read( lua_State *luaVM, struct t_pck *p, const unsigned char *b )
 {
 	lua_Unsigned msk, val;
+	union Ftypes u;
+	//unsigned char *rd;       /// char buffer to do bit by bit copying
 	switch( p->t )
 	{
 		case T_PCK_INT:
@@ -202,6 +222,16 @@ t_pck_read( lua_State *luaVM, struct t_pck *p, const unsigned char *b )
 				lua_pushinteger( luaVM, BIT_GET( *b, p->m - 1 ) );
 			else
 				lua_pushinteger( luaVM, (lua_Integer) t_pck_rbits( p->s, p->m - 1, b ) );
+			break;
+		case T_PCK_FLT:
+			t_pck_cbytes( (unsigned char*) &(u), b, p->s, 1 );
+			printf("\n" );
+			//printf("%02X %02X %02X %02X %02X %02X %02X %02X\n",
+			//	*(u.buff),   *(u.buff+1), *(u.buff+2), *(u.buff+3),
+			//	*(u.buff)+4, *(u.buff+5), *(u.buff+6), *(u.buff+7));
+			if      (sizeof( u.f ) == p->s) lua_pushnumber( luaVM, (lua_Number) u.f );
+			else if (sizeof( u.d ) == p->s) lua_pushnumber( luaVM, (lua_Number) u.d );
+			else                            lua_pushnumber( luaVM, u.n );
 			break;
 		case T_PCK_RAW:
 			lua_pushlstring( luaVM, (const char*) b, p->s );
@@ -1474,7 +1504,7 @@ static int undumpfloat_l (lua_State *L) {
     memcpy(&f, s + pos - 1, size); 
     correctendianness(L, (char*)&f, size, 4);
     res = (lua_Number)f;
-  }  
+  }
   else {  // native lua_Number may be neither float nor double
     double d;
     lua_assert(size == sizeof(double));
@@ -1485,7 +1515,5 @@ static int undumpfloat_l (lua_State *L) {
   lua_pushnumber(L, res);
   return 1;
 }
+
 */
-
-
-
