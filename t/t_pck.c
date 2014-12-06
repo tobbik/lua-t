@@ -37,6 +37,7 @@
 	 ((b) & (~((0x01) << (NB-(n))))) )
 
 
+
 // Declaration because of circular dependency
 static struct t_pck *t_pck_mksequence( lua_State *luaVM, int sp, int ep, size_t *bo );
 
@@ -81,19 +82,26 @@ t_pck_wbits( lua_Unsigned val, size_t len, size_t ofs, unsigned char * buf )
 	size_t     abit = abyt* 8;
 
 	msk = (-1 << (MXBIT-len)) >> (MXBIT-abit+ofs);
+#ifdef IS_LITTLE_ENDIAN
+	t_pck_cbytes( (unsigned char *) &set, buf, abyt, 1);
+#else
 	t_pck_cbytes( 
-	   (unsigned char *) &set + (
-			(IS_BIG_ENDIAN) ? sizeof( lua_Unsigned) - abyt : 0),
+	   (unsigned char *) &set + sizeof( lua_Unsigned) - abyt,
 	   buf,
 		abyt,
-		1 == IS_LITTLE_ENDIAN );
+		0 );
+#endif
+	// isolate the value and merge with pre-existing bits
 	set = (val << (abit-ofs-len)) | (set & ~msk);
+#ifdef IS_LITTLE_ENDIAN
+	t_pck_cbytes( buf, (unsigned char *) &set, abyt, 1);
+#else
 	t_pck_cbytes( 
 	   buf,
-	   (unsigned char *) &set + (
-			(IS_BIG_ENDIAN) ? sizeof( lua_Unsigned) - abyt : 0),
+	   (unsigned char *) &set + sizeof( lua_Unsigned) - abyt,
 		abyt,
-		1 == IS_LITTLE_ENDIAN );
+		0 );
+#endif
 
 #if PRINT_DEBUGS == 1
 	printf("Read: %016llX       \nLft:  %016lX       %d \nMsk:  %016lX       %ld\n"
@@ -131,11 +139,15 @@ t_pck_read( lua_State *luaVM, struct t_pck *p, const unsigned char *b )
 	switch( p->t )
 	{
 		case T_PCK_INT:
+#ifdef IS_LITTLE_ENDIAN
+			t_pck_cbytes( (unsigned char *) &val, b, p->s, ! p->m );
+#else
 			t_pck_cbytes( 
-			   (unsigned char *) &val + ((IS_BIG_ENDIAN) ? sizeof( lua_Unsigned) - p->s : 0),
+			   (unsigned char *) &val + sizeof( lua_Unsigned) - p->s,
 			   b,
 				p->s,
-				IS_BIG_ENDIAN == p->m );
+				p->m );
+#endif
 			msk = (lua_Unsigned) 1  << (p->s*NB - 1);
 			lua_pushinteger( luaVM, (lua_Integer) ((val ^ msk) - msk) );
 			break;
@@ -144,11 +156,15 @@ t_pck_read( lua_State *luaVM, struct t_pck *p, const unsigned char *b )
 				lua_pushinteger( luaVM, (lua_Integer) *b );
 			else
 			{
+#ifdef IS_LITTLE_ENDIAN
+				t_pck_cbytes( (unsigned char *) &val, b, p->s, ! p->m );
+#else
 				t_pck_cbytes( 
-				   (unsigned char *) &val + ((IS_BIG_ENDIAN) ? sizeof( lua_Unsigned) - p->s : 0),
+				   (unsigned char *) &val + sizeof( lua_Unsigned) - p->s,
 				   b,
 					p->s,
-					IS_BIG_ENDIAN == p->m );
+					p->m );
+#endif
 				lua_pushinteger( luaVM, (lua_Integer) val );
 			}
 			break;
@@ -162,14 +178,15 @@ t_pck_read( lua_State *luaVM, struct t_pck *p, const unsigned char *b )
 			{
 				msk = (lua_Unsigned) 1  << (p->s - 1);
 				// copy as many bytes as needed
+#ifdef IS_LITTLE_ENDIAN
+				t_pck_cbytes( (unsigned char *) &val, b, (p->s+p->m-1)/8 + 1, 1 );
+#else
 				t_pck_cbytes( 
-				   (unsigned char *) &val + (
-						(IS_BIG_ENDIAN)
-							? sizeof( lua_Unsigned) - (p->s+p->m-1)/8 + 1
-							: 0),
+				   (unsigned char *) &val + sizeof( lua_Unsigned) - (p->s+p->m-1)/8 + 1,
 				   b,
 					(p->s+p->m-1)/8 + 1,
-					1 == IS_LITTLE_ENDIAN );
+					0 );
+#endif
 				val = (val << (MXBIT- ((p->s/NB+1)*NB) + p->m ) ) >> (MXBIT - p->s);
 				lua_pushinteger( luaVM, (lua_Integer) ((val ^ msk) - msk) );
 			}
@@ -180,14 +197,15 @@ t_pck_read( lua_State *luaVM, struct t_pck *p, const unsigned char *b )
 			else
 			{
 				// copy as many bytes as needed
+#ifdef IS_LITTLE_ENDIAN
+				t_pck_cbytes( (unsigned char *) &val, b, (p->s+p->m-1)/8 + 1, 1 );
+#else
 				t_pck_cbytes( 
-				   (unsigned char *) &val + (
-						(IS_BIG_ENDIAN)
-							? sizeof( lua_Unsigned) - (p->s+p->m-1)/8 + 1
-							: 0),
+				   (unsigned char *) &val + sizeof( lua_Unsigned) - (p->s+p->m-1)/8 + 1,
 				   b,
 					(p->s+p->m-1)/8 + 1,
-					1 == IS_LITTLE_ENDIAN );
+					0 );
+#endif
 				val = (val << (MXBIT- ((p->s/NB+1)*NB) + p->m ) ) >> (MXBIT - p->s);
 				lua_pushinteger( luaVM, (lua_Integer) val );
 			}
@@ -242,11 +260,15 @@ t_pck_write( lua_State *luaVM, struct t_pck *p, unsigned char *b )
 			if (1==p->s)
 				*b = (char) val;
 			else
+#ifdef IS_LITTLE_ENDIAN
+				t_pck_cbytes( b, (unsigned char *) &val, p->s, ! p->m );
+#else
 				t_pck_cbytes(
 				   b,
-				   (unsigned char *) &val + ((IS_BIG_ENDIAN) ? sizeof( lua_Unsigned) - p->s : 0),
+				   (unsigned char *) &val + sizeof( lua_Unsigned) - p->s ,
 				   p->s,
-				   IS_BIG_ENDIAN == p->m );
+				   p->m );
+#endif
 				//t_pck_wbytes( val, p->s, p->m, b );
 			break;
 		case T_PCK_UNT:
@@ -257,11 +279,15 @@ t_pck_write( lua_State *luaVM, struct t_pck *p, unsigned char *b )
 			if (1==p->s)
 				*b = (char) val;
 			else
+#ifdef IS_LITTLE_ENDIAN
+				t_pck_cbytes( b, (unsigned char *) &val, p->s, ! p->m );
+#else
 				t_pck_cbytes(
 				   b,
-				   (unsigned char *) &val + ((IS_BIG_ENDIAN) ? sizeof( lua_Unsigned) - p->s : 0),
+				   (unsigned char *) &val + sizeof( lua_Unsigned) - p->s ,
 				   p->s,
-				   IS_BIG_ENDIAN == p->m );
+				   p->m );
+#endif
 				//t_pck_wbytes( (lua_Unsigned) intVal, p->s, p->m, b );
 			break;
 		case T_PCK_BOL:
