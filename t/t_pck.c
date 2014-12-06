@@ -702,6 +702,12 @@ struct t_pck
 	if (lua_isuserdata( luaVM, pos ))
 	{
 		p    = t_pck_getpckreader( luaVM, pos, NULL );
+		// This fixes Bitwise offsets
+		if (T_PCK_BOL == p->t  || T_PCK_BTS == p->t  || T_PCK_BTU == p->t)
+		{
+			p = t_pck_create_ud( luaVM, p->t, p->s, *bo );
+			lua_replace( luaVM, pos );
+		}
 		*bo += t_pck_getsize( luaVM, p, 1 );
 	}
 	else
@@ -1041,7 +1047,7 @@ lt_pck__index( lua_State *luaVM )
 		{
 			lua_pop( luaVM, 1 );
 			p = t_pck_create_ud( luaVM, p->t, p->s,
-				((p->s * (luaL_checkinteger( luaVM, -2 )-1)) % NB ) + 1 );
+				((p->s * (luaL_checkinteger( luaVM, -2 )-1)) % NB ) );
 		}
 		r->o += (((t_pck_getsize( luaVM, p, 1 )) * (luaL_checkinteger( luaVM, -3 )-1)) / NB);
 	}
@@ -1254,7 +1260,7 @@ t_pcr__callread( lua_State *luaVM, struct t_pck *pc, const unsigned char *b )
 			{
 				lua_pop( luaVM, 1 );
 				p = t_pck_create_ud( luaVM, p->t, p->s,
-					((p->s * (n-1)) % 8 ) + 1 );
+					((p->s * (n-1)) % NB ) );
 			}
 			t_pcr__callread( luaVM, p, b + ((sz * (n-1)) /8) );       // Stack: ...,res,typ,val
 			lua_rawseti( luaVM, -3, n );
