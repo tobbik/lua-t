@@ -38,6 +38,13 @@
 
 
 
+// global default for T.Pack, can be flipped
+#ifdef IS_LITTLE_ENDIAN
+static int _default_endian = 1;
+#else
+static int _default_endian = 0;
+#endif
+
 // Declaration because of circular dependency
 static struct t_pck *t_pck_mksequence( lua_State *luaVM, int sp, int ep, size_t *bo );
 
@@ -684,7 +691,7 @@ struct t_pck
 *t_pck_getpck( lua_State *luaVM, int pos, size_t *bo )
 {
 	struct t_pck *p = NULL; ///< packer
-	int           l = IS_LITTLE_ENDIAN;
+	int           l = _default_endian;
 	int           n = 0;  ///< counter for packers created from fmt string
 	int           t = lua_gettop( luaVM );  ///< top of stack before operations
 	const char   *fmt;
@@ -714,7 +721,7 @@ struct t_pck
 			//t_stackDump( luaVM );
 		}
 		else
-			p = t_pck_check_ud( luaVM, -1, 1);
+			p = t_pck_check_ud( luaVM, -1, 1 );
 		lua_replace( luaVM, pos );
 	}
 	//t_stackDump( luaVM );
@@ -941,6 +948,29 @@ lt_pck_size( lua_State *luaVM )
 	return 1;
 }
 
+/**--------------------------------------------------------------------------
+ * Set the default endian style of the T.Pack Constructor for fmt.
+ * \param   luaVM  The lua state.
+ * \lparam  ud     T.Pack.* instance.
+ * \lreturn int    size in bytes.
+ * \return  int    The # of items pushed to the stack.
+ * --------------------------------------------------------------------------*/
+static int
+lt_pck_defaultendian( lua_State *luaVM )
+{
+	const char *endian = luaL_checkstring( luaVM, -1 );
+	if (*endian == 'n') /* native? */
+	{
+		_default_endian = IS_LITTLE_ENDIAN;
+		return 0;
+	}
+	luaL_argcheck( luaVM,
+		*endian == 'l' || *endian == 'b',
+		-1,
+		"endianness must be 'l'/'b'/'n'" );
+	_default_endian =  (*endian == 'l');
+	return 0;
+}
 
 /**--------------------------------------------------------------------------
  * DEBUG: Get internal reference table from a Struct/Packer.
@@ -1346,6 +1376,7 @@ static const struct luaL_Reg t_pck_cf [] = {
 	{"new",       lt_pck_New},
 	{"size",      lt_pck_size},
 	{"get_ref",   lt_pck_getir},
+	{"setendian", lt_pck_defaultendian},
 	{NULL,    NULL}
 };
 
@@ -1419,4 +1450,3 @@ luaopen_t_pck( lua_State *luaVM )
 	luaopen_t_pckr( luaVM );
 	return 1;
 }
-
