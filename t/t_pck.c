@@ -611,7 +611,7 @@ struct t_pck
 			// Bit types
 			case 'v':
 				t = T_PCK_BOL;
-				m = gnl(L, f, *bo%NB, NB);
+				m = gnl(L, f, 1+(*bo%NB), NB) - 1;
 				s = 1;
 				break;
 			case 'r':
