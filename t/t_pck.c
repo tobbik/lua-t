@@ -330,7 +330,7 @@ t_pck_write( lua_State *luaVM, struct t_pck *p, unsigned char *b )
 			break;
 		case T_PCK_RAW:
 			strVal = luaL_checklstring( luaVM, -1, &sL );
-			luaL_argcheck( luaVM,  p->s < sL, -1, "String is to big for the field" );
+			luaL_argcheck( luaVM,  p->s > sL, -1, "String is to big for the field" );
 			memcpy( b, strVal, sL );
 			break;
 		default:
@@ -497,6 +497,7 @@ t_pck_getsize( lua_State *luaVM,  struct t_pck *p, int bits )
 			lua_rawgeti( luaVM, LUA_REGISTRYINDEX, p->m ); // get table
 			for (n = 1; n <= p->s; n++)
 			{
+				t_stackDump(luaVM);
 				lua_rawgeti( luaVM, -1, n );
 				s += t_pck_getsize( luaVM, t_pck_check_ud( luaVM, -1, 1 ), 1 );
 				lua_pop( luaVM, 1 );
