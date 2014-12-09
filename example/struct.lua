@@ -15,19 +15,19 @@ ts = t.Pack(
 ss = t.Pack (
 	p,
 	p,
+	t.Pack(
+		t.Pack('v'),  -- is the train set healthy?
+		t.Pack('v'),  -- is the train set stationary?
+		t.Pack('v'),  -- is the train set in maint mode?
+		t.Pack('v'),  -- is a passenger request active?
+		t.Pack('v'),  -- is a file waiting for download (RTDM ready)
+		t.Pack('v'),  -- is the connection to the vmds lost?
+		t.Pack('v'),  -- is the train set in shop mode?
+		t.Pack('v')   -- padding
+	),
 	p,
 	p,
 	'rrrrrrrr',
-	--t.Pack.Sequence (
-	--	t.Pack.Bit1,  -- is the train set healthy?
-	--	t.Pack.Bit2,  -- is the train set stationary?
-	--	t.Pack.Bit3,  -- is the train set in maint mode?
-	--	t.Pack.Bit4,  -- is a passenger request active?
-	--	t.Pack.Bit5,  -- is a file waiting for download (RTDM ready)
-	--	t.Pack.Bit6,  -- is the connection to the vmds lost?
-	--	t.Pack.Bit7,  -- is the train set in shop mode?
-	--	t.Pack.Bit8   -- padding
-	--),
 	t.Pack('i1'),
 	t.Pack('i1')
 )
@@ -42,14 +42,14 @@ s = t.Pack (
 sN= t.Pack('i2i2i1i1')
 
 sbits   = t.Pack (
-	{isHealthy   = 'r'},  -- is the train set healthy?
-	{isZeroSpeed = 'r'},  -- is the train set stationary?
-	{isMaintMode = 'r'},  -- is the train set in maint mode?
-	{isPassReq   = 'r'},  -- is a passenger request active?
-	{isFileForDl = 'r'},  -- is a file waiting for download (RTDM ready)
-	{isVmdsConnd = 'r'},  -- is the connection to the vmds lost?
-	{isShopMode  = 'r'},  -- is the train set in shop mode?
-	{paddingBit  = 'r'}   -- padding
+	{isHealthy   = 'v'},  -- is the train set healthy?
+	{isZeroSpeed = 'v'},  -- is the train set stationary?
+	{isMaintMode = 'v'},  -- is the train set in maint mode?
+	{isPassReq   = 'v'},  -- is a passenger request active?
+	{isFileForDl = 'v'},  -- is a file waiting for download (RTDM ready)
+	{isVmdsConnd = 'v'},  -- is the connection to the vmds lost?
+	{isShopMode  = 'v'},  -- is the train set in shop mode?
+	{paddingBit  = 'v'}   -- padding
 )
 
 
