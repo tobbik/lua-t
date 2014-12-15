@@ -251,12 +251,12 @@ lt_elp_addhandle( lua_State *luaVM )
 	if (0 == fd)
 		return t_push_error( luaVM, "Argument to addHandle must be file or socket" );
 
-	elp->fd_set[ fd ] = (struct t_elp_fd *) malloc( sizeof( struct t_elp_tm ) );
+	elp->fd_set[ fd ] = (struct t_elp_fd *) malloc( sizeof( struct t_elp_fd ) );
 	t_elp_addhandle_impl( elp, fd, lua_toboolean( luaVM, 3 ) );
 
 	lua_createtable( luaVM, n-4, 0 );  // create function/parameter table
 	lua_insert( luaVM, 4 );
-	//Stack: elp,tv,read/write,TABLE,func,...
+	//Stack: elp,fd,read/write,TABLE,func,...
 	while (n > 4)
 		lua_rawseti( luaVM, 4, (n--)-4 );   // add arguments and function (pops each item)
 	elp->fd_set[ fd ]->fR = luaL_ref( luaVM, LUA_REGISTRYINDEX );      // pop the function/parameter table
