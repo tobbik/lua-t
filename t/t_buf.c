@@ -319,7 +319,7 @@ static const luaL_Reg t_buf_m [] = {
 
 
 /**--------------------------------------------------------------------------
- * \brief   pushes the BufferBuffer library onto the stack
+ * \brief   pushes this library onto the stack
  *          - creates Metatable with functions
  *          - creates metatable with methods
  * \param   luaVM     The lua state.
