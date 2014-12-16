@@ -242,6 +242,28 @@ lt_sck_connect( lua_State *luaVM )
 /** -------------------------------------------------------------------------
  * Accept a (TCP) socket connection.
  * \param   luaVM   The lua state.
+ * \param   t_sck   Server.
+ * \param   sockaddr_in*  Client Address pointer.
+ * \return  t_sck*  Client pointer.  Leaves sock and IP on stack.
+ *-------------------------------------------------------------------------*/
+struct t_sck
+*t_sck_accept( lua_State *luaVM, struct t_sck *srv, struct sockaddr_in *si_cli )
+{
+	struct t_sck *cli;   // accepted connection socket
+	socklen_t     cli_sz = sizeof( struct sockaddr_in );
+
+	luaL_argcheck( luaVM, (T_SCK_TCP == srv->t), 1, "Must be an TCP socket" );
+	cli    = t_sck_create_ud( luaVM, T_SCK_TCP );
+	si_cli = t_ipx_create_ud( luaVM );
+
+	cli->fd = accept( srv->fd, (struct sockaddr *) &(*si_cli), &cli_sz );
+	return cli;
+}
+
+
+/** -------------------------------------------------------------------------
+ * Accept a (TCP) socket connection.
+ * \param   luaVM   The lua state.
  * \lparam  socket  socket userdata.
  * \lreturn socket  socket userdata for new connection.
  * \lreturn ip      sockaddr userdata.
@@ -250,17 +272,12 @@ lt_sck_connect( lua_State *luaVM )
 static int
 lt_sck_accept( lua_State *luaVM )
 {
-	struct t_sck       *lsck;   // listening socket
-	struct t_sck       *asck;   // accepted connection socket
-	struct sockaddr_in *si_cli;
-	socklen_t           their_addr_size = sizeof( struct sockaddr_in );
+	struct t_sck       *lsck;            // listening socket
+	struct t_sck       *asck   = NULL;   // accepted connection socket
+	struct sockaddr_in *si_cli = NULL;
 
 	lsck = t_sck_check_ud( luaVM, 1 );
-	luaL_argcheck( luaVM, (T_SCK_TCP == lsck->t), 1, "Must be an TCP socket" );
-	asck = t_sck_create_ud( luaVM, T_SCK_TCP );
-
-	si_cli = t_ipx_create_ud( luaVM );
-	asck->fd = accept( lsck->fd, (struct sockaddr *) &(*si_cli), &their_addr_size );
+	asck = t_sck_accept( luaVM, lsck, si_cli );
 
 	return 2;
 }

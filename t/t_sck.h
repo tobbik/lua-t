@@ -34,6 +34,7 @@ int           luaopen_t_sck    ( lua_State *luaVM );
 struct t_sck *t_sck_check_ud   ( lua_State *luaVM, int pos );
 struct t_sck *t_sck_create_ud  ( lua_State *luaVM, enum t_sck_t type );
 
-int t_sck_recv_tdp( lua_State *luaVM, struct t_sck *sck, char* buff, size_t sz );
-int lt_sck_bind   ( lua_State *luaVM );
-int lt_sck_listen ( lua_State *luaVM );
+int           t_sck_recv_tdp( lua_State *luaVM, struct t_sck *sck, char* buff, size_t sz );
+int           lt_sck_bind   ( lua_State *luaVM );
+int           lt_sck_listen ( lua_State *luaVM );
+struct t_sck *t_sck_accept( lua_State *luaVM, struct t_sck *srv, struct sockaddr_in *si_cli );
