@@ -124,33 +124,34 @@ struct t_sck
  * \return  struct t_sck*  pointer to the struct t_sck.
  * --------------------------------------------------------------------------*/
 static int inline
-t_sck_options( lua_State *luaVM, struct t_sck *sck, struct sockaddr_in *ip, enum t_sck_t *type )
+t_sck_options( lua_State *luaVM, struct t_sck **sck, struct sockaddr_in **ip )
 {
 	int ret = 0;
+	enum t_sck_t type;
 
 	if (lua_isuserdata( luaVM, 1 ))
 	{ // handle sock:whatever()
-		sck = t_sck_check_ud( luaVM, 1 );
+		*sck = t_sck_check_ud( luaVM, 1 );
 		ret = 0;
 	}
 	else
-	{                            // handle T.Socket.connect()
-		*type = (enum t_sck_t) luaL_checkoption( luaVM, 1, "TCP", t_sck_t_lst );
-		sck = t_sck_create_ud( luaVM, *type);
+	{                            // handle T.Socket.whatever()
+		type = (enum t_sck_t) luaL_checkoption( luaVM, 1, "TCP", t_sck_t_lst );
+		*sck = t_sck_create_ud( luaVM, type );
 		ret = 1;
 	}
 
 	if (lua_isuserdata( luaVM, 2 ))
 	{
 		// it's assumed that IP/port et cetera are assigned
-		ip = t_ipx_check_ud( luaVM, 2, 1 );
+		*ip = t_ipx_check_ud( luaVM, 2, 1 );
 		lua_pushvalue( luaVM, 1 );
 		ret = 0;
 	}
 	else
 	{
-		ip = t_ipx_create_ud( luaVM );
-		t_ipx_set( luaVM, 2, ip );
+		*ip = t_ipx_create_ud( luaVM );
+		t_ipx_set( luaVM, 2, *ip );
 		ret = 1;
 	}
 	return ret;
@@ -169,23 +170,32 @@ lt_sck_listen( lua_State *luaVM )
 {
 	struct t_sck       *sck = NULL;
 	struct sockaddr_in *ip  = NULL;
-	enum   t_sck_t      type;
+
 	int                 backlog = luaL_checkinteger( luaVM, 3 );
 
 	lua_remove( luaVM, 3 );
+	if (! lua_isuserdata( luaVM, 1 ))
+	{
+		sck = t_sck_create_ud( luaVM, T_SCK_TCP );
+		lua_insert( luaVM, 1 );
+	}
 
-	if (1 == t_sck_options( luaVM, sck, ip, &type ))
+	if (1 == t_sck_options( luaVM, &sck, &ip ))
+	{
 		if (bind( sck->fd , (struct sockaddr*) &(*ip), sizeof( struct sockaddr ) ) == -1)
+		{
 			return t_push_error( luaVM, "ERROR binding socket to %s:%d",
 					 inet_ntoa( ip->sin_addr ),
 					 ntohs( ip->sin_port ) );
+		}
+	}
 
 	luaL_argcheck( luaVM, (T_SCK_TCP == sck->t), 1, "Must be an TCP socket" );
 
 	if (listen( sck->fd , backlog ) == -1)
 		return t_push_error( luaVM, "ERROR listen to socket" );
 
-	return 2;
+	return 2;  // socket, ip
 }
 
 
@@ -201,9 +211,8 @@ lt_sck_bind( lua_State *luaVM )
 {
 	struct t_sck       *sck = NULL;
 	struct sockaddr_in *ip  = NULL;
-	enum   t_sck_t      type;
 
-	t_sck_options( luaVM, sck, ip, &type );
+	t_sck_options( luaVM, &sck, &ip );
 
 	if (bind( sck->fd , (struct sockaddr*) &(*ip), sizeof( struct sockaddr ) ) == -1)
 		return t_push_error( luaVM, "ERROR binding socket to %s:%d",
@@ -221,14 +230,13 @@ lt_sck_bind( lua_State *luaVM )
  * \lparam  ip     sockaddr userdata.
  * \return  The number of results to be passed back to the calling Lua script.
  *-------------------------------------------------------------------------*/
-static int
+int
 lt_sck_connect( lua_State *luaVM )
 {
 	struct t_sck       *sck = NULL;
 	struct sockaddr_in *ip  = NULL;
-	enum   t_sck_t      type;
 
-	t_sck_options( luaVM, sck, ip, &type );
+	t_sck_options( luaVM, &sck, &ip );
 
 	if (connect( sck->fd , (struct sockaddr*) &(*ip), sizeof( struct sockaddr ) ) == -1)
 		return t_push_error( luaVM, "ERROR connecting socket to %s:%d",
@@ -244,7 +252,7 @@ lt_sck_connect( lua_State *luaVM )
  * \param   luaVM   The lua state.
  * \param   t_sck   Server.
  * \param   sockaddr_in*  Client Address pointer.
- * \return  t_sck*  Client pointer.  Leaves sock and IP on stack.
+ * \return  t_sck*  Client pointer.  Leaves cli_sock and cli_IP on stack.
  *-------------------------------------------------------------------------*/
 struct t_sck
 *t_sck_accept( lua_State *luaVM, struct t_sck *srv, struct sockaddr_in *si_cli )
@@ -269,7 +277,7 @@ struct t_sck
  * \lreturn ip      sockaddr userdata.
  * \return  The number of results to be passed back to the calling Lua script.
  *-------------------------------------------------------------------------*/
-static int
+int
 lt_sck_accept( lua_State *luaVM )
 {
 	struct t_sck       *lsck;            // listening socket
@@ -600,6 +608,7 @@ static const luaL_Reg t_sck_cf [] =
 	{"new",       lt_sck_New},
 	{"bind",      lt_sck_bind},
 	{"connect",   lt_sck_connect},
+	{"listen",    lt_sck_listen},
 	{NULL,        NULL}
 };
 

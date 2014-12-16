@@ -92,6 +92,7 @@ t_ipx_set( lua_State *luaVM, int pos, struct sockaddr_in *ip )
 		luaL_argcheck( luaVM, 1 <= port && port <= 65536, 2,
 		                 "port number out of range" );
 		ip->sin_port   = htons( port );
+		lua_remove( luaVM, pos + 0 );
 	}
 	else if (LUA_TSTRING == lua_type( luaVM, pos+0 ))
 	{
@@ -103,12 +104,14 @@ t_ipx_set( lua_State *luaVM, int pos, struct sockaddr_in *ip )
 		if ( inet_pton( AF_INET, ips, &(ip->sin_addr) )==0)
 			return t_push_error( luaVM, "inet_aton() of %s failed", ips );
 #endif
-		if (lua_isnumber( luaVM, pos+1 ))
+		lua_remove( luaVM, pos + 0 );
+		if (lua_isnumber( luaVM, pos+0 ))   // pos+0 because we removed the previous string
 		{
-			port = luaL_checkinteger( luaVM, pos+1 );
-			luaL_argcheck( luaVM, 1 <= port && port <= 65536, 3,
+			port = luaL_checkinteger( luaVM, pos+0 );
+			luaL_argcheck( luaVM, 1 <= port && port <= 65536, pos+1,
 								  "port number out of range" );
 			ip->sin_port   = htons( port );
+			lua_remove( luaVM, pos + 0 );
 		}
 	}
 	else if (lua_isnil( luaVM, pos+0 ))

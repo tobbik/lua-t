@@ -5,9 +5,9 @@ local ipadd,port='192.168.0.219',8888
 --tcpsock = t.Socket('TCP')
 --ip      = t.IpEndpoint(ipadd, port)
 --tcpsock:bind(ip)
-tcpsock,ip = t.Socket.bind('TCP',ipadd,port)
-print(tcpsock, ip)
-tcpsock:listen(5)
+--tcpsock,ip = t.Socket.bind('TCP',ipadd,port)
+--print(tcpsock, ip)
+tcpsock, ip = t.Socket.listen( ipadd, port, 5 )
 consock,cip = tcpsock:accept()
 length = 0
 len    = 2
