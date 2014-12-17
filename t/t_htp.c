@@ -15,6 +15,9 @@
 #include "t_buf.h"
 
 
+static int t_htpcon_read( lua_State *luaVM );
+
+
 /** ---------------------------------------------------------------------------
  * Creates an T.Http.Server.
  * \param    luaVM    lua state.
@@ -113,43 +116,24 @@ lt_htpsrv_accept( lua_State *luaVM )
 	lt_sck_accept( luaVM );  //S: ssck,csck,cip
 	c_sck  = t_sck_check_ud( luaVM, -2, 1 );
 	si_cli = t_ipx_check_ud( luaVM, -1, 1 );
+
+	lua_pushcfunction( luaVM, lt_elp_addhandle ); //S: ssck,csck,cip,addhandle
+	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, s->lR );
+	t_elp_check_ud( luaVM, -1, 1 );
+	lua_pushvalue( luaVM, -3 );
+	lua_pushboolean( luaVM, 1 );                 // yepp, that's for reading
+	lua_pushcfunction( luaVM, t_htpcon_read );   //S: ssck,csck,cip,addhandle,csck,true
 	c      = (struct t_htpcon *) lua_newuserdata( luaVM, sizeof( struct t_htpcon ) );
 	c->aR  = luaL_ref( luaVM, LUA_REGISTRYINDEX );
 	c->sR  = luaL_ref( luaVM, LUA_REGISTRYINDEX );
 	c->rR  = s->rR;                // copy function reference
-	c->fd  = c_sck->fd;
+	c->fd  = c_sck->fd;   //S: ssck,csck,cip,read,csck,true,con
 
 	luaL_getmetatable( luaVM, "T.Http.Connection" );
 	lua_setmetatable( luaVM, -2 );
+	lua_call( luaVM, 5, 0 );
+	//TODO: Check if that returns tru or false; if false resize loop
 	return 1;
-}
-
-
-/**--------------------------------------------------------------------------
- * Reads a chunk from socket.  Called anytime socket returns from read.
- * \param   luaVM     lua Virtual Machine.
- * \lparam  userdata  struct t_htpsrv.
- * \param   pointer to the buffer to read from(already positioned).
- * \lreturn value from the buffer a packers position according to packer format.
- * \return  integer number of values left on the stack.
- *  -------------------------------------------------------------------------*/
-static int
-t_htpcon_read( lua_State *luaVM )
-{
-	struct t_htpcon *c = (struct t_htpcon *) luaL_checkudata( luaVM, 1, "T.http.Connection" );
-	char             buffer[ BUFSIZ ];
-	int              rcvd;
-	struct t_sck    *c_sck;
-
-	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, c->sR );
-	c_sck = t_sck_check_ud( luaVM, -1, 1 );
-
-	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, c->rR );
-	// TODO: Idea
-	// WS is in a state -> empty, receiving, sending
-	// negotiate to read into the buffer initially or into the luaL_Buffer
-	rcvd = t_sck_recv_tdp( luaVM, c_sck, &(buffer[ 0 ]), BUFSIZ );
-	return rcvd;
 }
 
 
@@ -157,7 +141,6 @@ t_htpcon_read( lua_State *luaVM )
  * Puts the http server on a T.Loop to listen to incoming requests.
  * \param   luaVM     lua Virtual Machine.
  * \lparam  userdata  struct t_htpsrv.
- * \param   pointer to the buffer to read from(already positioned).
  * \lreturn value from the buffer a packers position according to packer format.
  * \return  integer number of values left on the stack.
  *  -------------------------------------------------------------------------*/
@@ -165,25 +148,28 @@ static int
 lt_htpsrv_listen( lua_State *luaVM )
 {
 	struct t_htpsrv    *s   = t_htpsrv_check_ud( luaVM, 1, 1 );
-	struct t_elp       *elp;
 	struct t_sck       *sc  = NULL;
 	struct sockaddr_in *ip  = NULL;
 
-	// reuse socket:bind()
+	// reuse socket:listen()
 	lua_remove( luaVM, 1 );    // remove http server instance from stack
 	lt_sck_listen( luaVM );
 
 	sc = t_sck_check_ud( luaVM, -2, 1 );
 	ip = t_ipx_check_ud( luaVM, -1, 1 );
 
+	lua_createtable( luaVM, 0, 0 );
+	// TODO: cheaper to reimplement functionality -> less overhead?
 	lua_pushcfunction( luaVM, lt_elp_addhandle ); //S: sc,ip,addhandle
 	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, s->lR );
-	elp= t_elp_check_ud( luaVM, -1, 1 );
+	t_elp_check_ud( luaVM, -1, 1 );
 	lua_pushvalue( luaVM, -4 );                  /// push socket
 	lua_pushboolean( luaVM, 1 );                 /// yepp, that's for reading
 	lua_pushcfunction( luaVM, lt_htpsrv_accept );
+	lua_pushvalue( luaVM, 1 );                  /// push server instance
 
-	lua_call( luaVM, 4, 0 );
+	lua_call( luaVM, 5, 0 );
+	//TODO: Check if that returns tru or false; if false resize loop
 	return  0;
 }
 
@@ -220,6 +206,36 @@ static int lt_htpsrv__len( lua_State *luaVM )
 }
 
 
+
+/**--------------------------------------------------------------------------
+ * Reads a chunk from socket.  Called anytime socket returns from read.
+ * \param   luaVM     lua Virtual Machine.
+ * \lparam  userdata  struct t_htpsrv.
+ * \param   pointer to the buffer to read from(already positioned).
+ * \lreturn value from the buffer a packers position according to packer format.
+ * \return  integer number of values left on the stack.
+ *  -------------------------------------------------------------------------*/
+static int
+t_htpcon_read( lua_State *luaVM )
+{
+	struct t_htpcon *c = (struct t_htpcon *) luaL_checkudata( luaVM, 1, "T.Http.Connection" );
+	char             buffer[ BUFSIZ ];
+	int              rcvd;
+	struct t_sck    *c_sck;
+
+	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, c->sR );
+	c_sck = t_sck_check_ud( luaVM, -1, 1 );
+
+	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, c->rR );
+	// TODO: Idea
+	// WS is in a state -> empty, receiving, sending
+	// negotiate to read into the buffer initially or into the luaL_Buffer
+	rcvd = t_sck_recv_tdp( luaVM, c_sck, &(buffer[ 0 ]), BUFSIZ );
+	return rcvd;
+}
+
+
+
 /**--------------------------------------------------------------------------
  * \brief    the metatble for the module
  * --------------------------------------------------------------------------*/
@@ -243,6 +259,7 @@ static const struct luaL_Reg t_htpsrv_cf [] = {
  *             assigns Lua available names to C-functions
  * --------------------------------------------------------------------------*/
 static const luaL_Reg t_htpsrv_m [] = {
+	{"listen",        lt_htpsrv_listen},
 	{NULL,    NULL}
 };
 
