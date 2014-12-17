@@ -230,7 +230,7 @@ struct t_elp
  * \lparam  ...    parameters to function when executed.
  * \return  #stack items returned by function call.
  * --------------------------------------------------------------------------*/
-static int
+int
 lt_elp_addhandle( lua_State *luaVM )
 {
 	luaL_Stream   *lS;
