@@ -47,7 +47,7 @@ struct t_elp {
 
 
 // t_elp.c
-struct t_elp *t_elp_check_ud ( lua_State *luaVM, int pos );
+struct t_elp *t_elp_check_ud ( lua_State *luaVM, int pos, int check );
 struct t_elp *t_elp_create_ud( lua_State *luaVM, size_t sz );
 
 void t_elp_executetimer     ( lua_State *luaVM, struct t_elp *elp, struct timeval *rt );

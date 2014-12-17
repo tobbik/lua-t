@@ -149,8 +149,8 @@ struct sockaddr_in
 struct sockaddr_in
 *t_ipx_check_ud( lua_State *luaVM, int pos, int check )
 {
-	void *ud = luaL_testudata(luaVM, pos, "T.Ip");
-	luaL_argcheck( luaVM, (ud != NULL  || !check), pos, "`T.Ip` expected");
+	void *ud = luaL_testudata( luaVM, pos, "T.Ip" );
+	luaL_argcheck( luaVM, (ud != NULL  || !check), pos, "`T.Ip` expected" );
 	return (NULL==ud) ? NULL : (struct sockaddr_in *) ud;
 }
 

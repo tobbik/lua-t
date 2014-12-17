@@ -212,11 +212,11 @@ struct t_elp
  * \return  struct t_elp*  pointer to userdata on stack
  * --------------------------------------------------------------------------*/
 struct t_elp
-*t_elp_check_ud( lua_State *luaVM, int pos )
+*t_elp_check_ud ( lua_State *luaVM, int pos, int check )
 {
 	void *ud = luaL_checkudata( luaVM, pos, "T.Loop" );
-	luaL_argcheck( luaVM, ud != NULL, pos, "`T.Loop` expected" );
-	return (struct t_elp *) ud;
+	luaL_argcheck( luaVM, (ud != NULL  || !check), pos, "`T.Loop` expected" );
+	return (NULL==ud) ? NULL : (struct t_elp *) ud;
 }
 
 
@@ -237,7 +237,7 @@ lt_elp_addhandle( lua_State *luaVM )
 	struct t_sck  *sc;
 	int            fd  = 0;
 	int            n   = lua_gettop( luaVM ) + 1;    ///< iterator for arguments
-	struct t_elp  *elp = t_elp_check_ud( luaVM, 1);
+	struct t_elp  *elp = t_elp_check_ud( luaVM, 1, 1 );
 
 	luaL_checktype( luaVM, 4, LUA_TFUNCTION );
 	lS = (luaL_Stream *) luaL_testudata( luaVM, 2, LUA_FILEHANDLE );
@@ -281,7 +281,7 @@ lt_elp_removehandle( lua_State *luaVM )
 	luaL_Stream    *lS;
 	struct t_sck   *sc;
 	int             fd  = 0;
-	struct t_elp   *elp = t_elp_check_ud( luaVM, 1 );
+	struct t_elp   *elp = t_elp_check_ud( luaVM, 1, 1 );
 
 	lS = (luaL_Stream *) luaL_testudata( luaVM, 2, LUA_FILEHANDLE );
 	if (NULL != lS)
@@ -313,7 +313,7 @@ lt_elp_removehandle( lua_State *luaVM )
 static int
 lt_elp_addtimer( lua_State *luaVM )
 {
-	struct t_elp    *elp = t_elp_check_ud( luaVM, 1 );
+	struct t_elp    *elp = t_elp_check_ud( luaVM, 1, 1 );
 	struct timeval  *tv  = t_tim_check_ud( luaVM, 2 );
 	int              n   = lua_gettop( luaVM ) + 1;    ///< iterator for arguments
 	struct t_elp_tm *te;
@@ -349,7 +349,7 @@ lt_elp_addtimer( lua_State *luaVM )
 static int
 lt_elp_removetimer( lua_State *luaVM )
 {
-	struct t_elp    *elp = t_elp_check_ud( luaVM, 1 );
+	struct t_elp    *elp = t_elp_check_ud( luaVM, 1, 1 );
 	struct timeval  *tv  = t_tim_check_ud( luaVM, 2 );
 	struct t_elp_tm *tp  = elp->tm_head;
 	struct t_elp_tm *te  = tp->nxt;       ///< previous Timer event
@@ -390,7 +390,7 @@ lt_elp_removetimer( lua_State *luaVM )
 static int
 lt_elp__gc( lua_State *luaVM )
 {
-	struct t_elp    *elp     = t_elp_check_ud( luaVM, 1 );
+	struct t_elp    *elp     = t_elp_check_ud( luaVM, 1, 1 );
 	struct t_elp_tm *tf, *tr = elp->tm_head;
 	size_t           i;       ///< the iterator for all fields
 
@@ -431,7 +431,7 @@ lt_elp__gc( lua_State *luaVM )
 static int
 lt_elp_run( lua_State *luaVM )
 {
-	struct t_elp    *elp = t_elp_check_ud( luaVM, 1 );
+	struct t_elp    *elp = t_elp_check_ud( luaVM, 1, 1 );
 	elp->run = 1;
 
 	while (elp->run)
@@ -455,7 +455,7 @@ lt_elp_run( lua_State *luaVM )
 static int
 lt_elp_stop( lua_State *luaVM )
 {
-	struct t_elp    *elp = t_elp_check_ud( luaVM, 1 );
+	struct t_elp    *elp = t_elp_check_ud( luaVM, 1, 1 );
 	elp->run = 0;
 	return 0;
 }
@@ -470,7 +470,7 @@ lt_elp_stop( lua_State *luaVM )
 static int
 lt_elp__tostring( lua_State *luaVM )
 {
-	struct t_elp *elp = t_elp_check_ud( luaVM, 1 );
+	struct t_elp *elp = t_elp_check_ud( luaVM, 1, 1 );
 	lua_pushfstring( luaVM, "T.Loop(select){%d}: %p", elp->mxfd, elp );
 	return 1;
 }
@@ -484,7 +484,7 @@ lt_elp__tostring( lua_State *luaVM )
 static int
 lt_elp_showloop( lua_State *luaVM )
 {
-	struct t_elp    *elp = t_elp_check_ud( luaVM, 1 );
+	struct t_elp    *elp = t_elp_check_ud( luaVM, 1, 1 );
 	struct t_elp_tm *tr  = elp->tm_head;
 	int              i   = 0;
 	int              n   = lua_gettop( luaVM );

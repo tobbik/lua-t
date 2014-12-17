@@ -31,7 +31,7 @@ int                 t_ipx_set       ( lua_State *luaVM, int pos, struct sockaddr
 
 // t_sck.c
 int           luaopen_t_sck    ( lua_State *luaVM );
-struct t_sck *t_sck_check_ud   ( lua_State *luaVM, int pos );
+struct t_sck *t_sck_check_ud   ( lua_State *luaVM, int pos, int check );
 struct t_sck *t_sck_create_ud  ( lua_State *luaVM, enum t_sck_t type );
 
 int           t_sck_recv_tdp( lua_State *luaVM, struct t_sck *sck, char* buff, size_t sz );

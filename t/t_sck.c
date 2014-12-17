@@ -109,11 +109,11 @@ struct t_sck
  * \return  struct t_sck*  pointer to the struct t_sck.
  * --------------------------------------------------------------------------*/
 struct t_sck
-*t_sck_check_ud( lua_State *luaVM, int pos )
+*t_sck_check_ud( lua_State *luaVM, int pos, int check )
 {
-	void *ud = luaL_checkudata( luaVM, pos, "T.Socket" );
-	luaL_argcheck( luaVM, ud != NULL, pos, "`T.Socket` expected" );
-	return (struct t_sck *) ud;
+	void *ud = luaL_testudata( luaVM, pos, "T.Socket" );
+	luaL_argcheck( luaVM, (ud != NULL || !check), pos, "`T.Socket` expected" );
+	return (NULL==ud) ? NULL : (struct t_sck *) ud;
 }
 
 
@@ -131,7 +131,7 @@ t_sck_options( lua_State *luaVM, struct t_sck **sck, struct sockaddr_in **ip )
 
 	if (lua_isuserdata( luaVM, 1 ))
 	{ // handle sock:whatever()
-		*sck = t_sck_check_ud( luaVM, 1 );
+		*sck = t_sck_check_ud( luaVM, 1, 1 );
 		ret = 0;
 	}
 	else
@@ -284,7 +284,7 @@ lt_sck_accept( lua_State *luaVM )
 	struct t_sck       *asck   = NULL;   // accepted connection socket
 	struct sockaddr_in *si_cli = NULL;
 
-	lsck = t_sck_check_ud( luaVM, 1 );
+	lsck = t_sck_check_ud( luaVM, 1, 1 );
 	asck = t_sck_accept( luaVM, lsck, si_cli );
 
 	return 2;
@@ -300,7 +300,7 @@ lt_sck_accept( lua_State *luaVM )
 static int
 lt_sck_close( lua_State *luaVM )
 {
-	struct t_sck *sck = t_sck_check_ud( luaVM, 1 );
+	struct t_sck *sck = t_sck_check_ud( luaVM, 1, 1 );
 
 	if (-1 == close( sck->fd ))
 		return t_push_error( luaVM, "ERROR closing socket" );
@@ -328,7 +328,7 @@ lt_sck_send_to( lua_State *luaVM )
 	int                 len;
 	const char         *msg;
 
-	sck = t_sck_check_ud( luaVM, 1 );
+	sck = t_sck_check_ud( luaVM, 1, 1 );
 	luaL_argcheck( luaVM, (T_SCK_UDP == sck->t), 1, "Must be an UDP socket" );
 	ip   = t_ipx_check_ud( luaVM, 2, 1 );
 	if (lua_isstring( luaVM, 3 ))
@@ -380,7 +380,7 @@ lt_sck_recv_from( lua_State *luaVM )
 
 	unsigned int        slen = sizeof( si_cli );
 
-	sck = t_sck_check_ud( luaVM, 1 );
+	sck = t_sck_check_ud( luaVM, 1, 1 );
 	luaL_argcheck( luaVM, (T_SCK_UDP == sck->t), 1, "Must be an UDP socket" );
 	if (lua_isuserdata( luaVM, 2 )) {
 		buf  = t_buf_check_ud ( luaVM, 2, 1 );
@@ -421,7 +421,7 @@ lt_sck_send_strm( lua_State *luaVM )
 	const char   *msg;
 	size_t        into_msg=0;   // where in the message to start sending from
 
-	sck = t_sck_check_ud( luaVM, 1 );
+	sck = t_sck_check_ud( luaVM, 1, 1 );
 	luaL_argcheck( luaVM, (T_SCK_TCP == sck->t), 1, "Must be an TCP socket" );
 	if (lua_isstring( luaVM, 2 ))
 		msg   = lua_tolstring( luaVM, 2, &to_send );
@@ -486,7 +486,7 @@ lt_sck_recv_strm( lua_State *luaVM )
 	char         *rcv = &(buffer[0]);
 	int           len = sizeof (buffer)-1;
 
-	sck = t_sck_check_ud( luaVM, 1 );
+	sck = t_sck_check_ud( luaVM, 1, 1 );
 	luaL_argcheck( luaVM, (T_SCK_TCP == sck->t), 1, "Must be an TCP socket" );
 	if (lua_isuserdata( luaVM, 2 )) {
 		buf  = t_buf_check_ud( luaVM, 2, 1 );
@@ -520,7 +520,7 @@ lt_sck_getsockname( lua_State *luaVM )
 	struct sockaddr_in *ip;
 	socklen_t           ip_len = sizeof( struct sockaddr_in );
 
-	sck = t_sck_check_ud( luaVM, 1 );
+	sck = t_sck_check_ud( luaVM, 1, 1 );
 	luaL_argcheck( luaVM, (T_SCK_TCP == sck->t), 1, "Must be an TCP socket" );
 
 	if (lua_isuserdata( luaVM, 2 ))  ip = t_ipx_check_ud( luaVM, 2, 1 );
@@ -541,7 +541,7 @@ lt_sck_getsockname( lua_State *luaVM )
 static int
 lt_sck__tostring( lua_State *luaVM )
 {
-	struct t_sck *sck = t_sck_check_ud( luaVM, 1 );
+	struct t_sck *sck = t_sck_check_ud( luaVM, 1, 1 );
 	lua_pushfstring( luaVM, "T.Socket{%s:%d}: %p",
 			(T_SCK_TCP == sck->t) ? "TCP" : "UDP",
 			sck->fd,
@@ -562,7 +562,7 @@ lt_sck_getfdid( lua_State *luaVM )
 {
 	struct t_sck      *sck;
 
-	sck = t_sck_check_ud( luaVM, 1 );
+	sck = t_sck_check_ud( luaVM, 1, 1 );
 	lua_pushinteger( luaVM, sck->fd );
 	return 1;
 }
