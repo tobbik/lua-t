@@ -143,7 +143,9 @@ t_sck_options( lua_State *luaVM, int pos, struct t_sck **sck, struct sockaddr_in
 	{
 		type = (enum t_sck_t) luaL_checkoption( luaVM, pos+0, NULL, t_sck_t_lst );
 		*sck = t_sck_create_ud( luaVM, type );
+		lua_replace( luaVM, pos+0 );
 	}
+	t_stackDump(luaVM);
 
 	if (NULL == *ip)
 	{
@@ -151,6 +153,7 @@ t_sck_options( lua_State *luaVM, int pos, struct t_sck **sck, struct sockaddr_in
 		t_ipx_set( luaVM, pos+1, *ip );
 		lua_insert( luaVM, pos+1 );
 	}
+	t_stackDump(luaVM);
 }
 
 
@@ -220,6 +223,7 @@ lt_sck_bind( lua_State *luaVM )
 	struct sockaddr_in *ip  = NULL;
 
 	t_sck_options( luaVM, 1, &sck, &ip );
+	t_stackDump(luaVM);
 
 	if (bind( sck->fd , (struct sockaddr*) &(*ip), sizeof( struct sockaddr ) ) == -1)
 		return t_push_error( luaVM, "ERROR binding socket to %s:%d",
@@ -261,18 +265,20 @@ lt_sck_connect( lua_State *luaVM )
  * \param   sockaddr_in*  Client Address pointer.
  * \return  t_sck*  Client pointer.  Leaves cli_sock and cli_IP on stack.
  *-------------------------------------------------------------------------*/
-struct t_sck
-*t_sck_accept( lua_State *luaVM, struct t_sck *srv, struct sockaddr_in *si_cli )
+int
+t_sck_accept( lua_State *luaVM, int pos )
 {
-	struct t_sck *cli;   // accepted connection socket
+	struct t_sck       *srv = t_sck_check_ud( luaVM, pos+0, 1 ); // listening socket
+	struct t_sck       *cli;                                     // accepted socket
+	struct sockaddr_in *si_cli;                                  // peer address
 	socklen_t     cli_sz = sizeof( struct sockaddr_in );
 
-	luaL_argcheck( luaVM, (T_SCK_TCP == srv->t), 1, "Must be an TCP socket" );
+	luaL_argcheck( luaVM, (T_SCK_TCP == srv->t), pos+0, "Must be an TCP socket" );
 	cli    = t_sck_create_ud( luaVM, T_SCK_TCP );
 	si_cli = t_ipx_create_ud( luaVM );
 
 	cli->fd = accept( srv->fd, (struct sockaddr *) &(*si_cli), &cli_sz );
-	return cli;
+	return 2;
 }
 
 
@@ -287,14 +293,7 @@ struct t_sck
 int
 lt_sck_accept( lua_State *luaVM )
 {
-	struct t_sck       *lsck;            // listening socket
-	struct t_sck       *asck   = NULL;   // accepted connection socket
-	struct sockaddr_in *si_cli = NULL;
-
-	lsck = t_sck_check_ud( luaVM, 1, 1 );
-	asck = t_sck_accept( luaVM, lsck, si_cli );
-
-	return 2;
+	return t_sck_accept( luaVM, 1 );
 }
 
 
