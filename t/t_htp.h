@@ -13,6 +13,7 @@
 struct t_htp_srv {
 	struct t_sck *sck;    ///< t_sck socket (must be tcp)
 	int           sR;     ///< Lua registry reference for t.Socket instance
+	int           aR;     ///< Lua registry reference for t.Ip     instance (struct sockaddr_in)
 	int           lR;     ///< Lua registry reference for t.Loop instance
 	int           rR;     ///< Lua registry reference to request handler
 };

@@ -7,5 +7,6 @@ x=function(req)
 end
 
 h=t.Http.Server( l, x )
-sc,ip = h:listen( 8000, 10)
---h:listen('192.168.0.219', 8000, 10)
+sc,ip = h:listen( 8000, 10 )  -- listen on 0.0.0.0 INADDR_ANY
+
+l:run()

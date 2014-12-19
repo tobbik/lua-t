@@ -110,8 +110,8 @@ lt_htp_srv_accept( lua_State *luaVM )
 	struct t_sck       *s_sck;
 	struct t_htp_con   *c;      // new connection userdata
 
-	lua_remove( luaVM, 1 );                 // remove http server instance
 	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, s->sR );
+	t_stackDump( luaVM );
 	s_sck = t_sck_check_ud( luaVM, -1, 1 );
 
 	lt_sck_accept( luaVM );  //S: ssck,csck,cip
@@ -157,13 +157,16 @@ lt_htp_srv_listen( lua_State *luaVM )
 
 	sc = t_sck_check_ud( luaVM, -2, 1 );
 	ip = t_ipx_check_ud( luaVM, -1, 1 );
+	s->aR = luaL_ref( luaVM, LUA_REGISTRYINDEX );
+	lua_pushvalue( luaVM, -1 );
+	s->sR = luaL_ref( luaVM, LUA_REGISTRYINDEX );
 
 	// TODO: cheaper to reimplement functionality -> less overhead?
-	lua_pushcfunction( luaVM, lt_elp_addhandle ); //S: srv,sc,ip,addhandle
+	lua_pushcfunction( luaVM, lt_elp_addhandle ); //S: srv,sc,addhandle
 	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, s->lR );
 	t_elp_check_ud( luaVM, -1, 1 );
-	lua_pushvalue( luaVM, -4 );                  /// push socket
-	lua_pushboolean( luaVM, 1 );                 //S: srv,sc,ip,addhandle,loop,sck,true
+	lua_pushvalue( luaVM, -3 );                  /// push socket
+	lua_pushboolean( luaVM, 1 );                 //S: srv,sc,addhandle,loop,sck,true
 	lua_pushcfunction( luaVM, lt_htp_srv_accept );
 	lua_pushvalue( luaVM, 1 );                  /// push server instance
 
