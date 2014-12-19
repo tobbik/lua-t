@@ -29,6 +29,8 @@ T_SRC=t.c \
 	 t_buf.c \
 	 t_pck.c \
 	 t_htp.c \
+	 t_htp_srv.c \
+	 t_htp_msg.c \
 	 t_wsk.c \
 	 t_tst.c
 

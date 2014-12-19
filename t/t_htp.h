@@ -43,6 +43,17 @@ struct t_htp_srv   *t_htp_srv_check_ud ( lua_State *luaVM, int pos, int check );
 struct t_htp_srv   *t_htp_srv_create_ud( lua_State *luaVM );
 
 
+
+// library exporters
+LUAMOD_API int luaopen_t_htp_msg( lua_State *luaVM );
+LUAMOD_API int luaopen_t_htp_srv( lua_State *luaVM );
+
+
+// Message specific methods
+int lt_htp_msg_read ( lua_State *luaVM );
+int lt_htp_msg_write( lua_State *luaVM );
+
+
 // __        __   _    ____             _        _
 // \ \      / /__| |__/ ___|  ___   ___| | _____| |_
 //  \ \ /\ / / _ \ '_ \___ \ / _ \ / __| |/ / _ \ __|
