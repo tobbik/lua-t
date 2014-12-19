@@ -73,10 +73,9 @@ lt_ipx__Call( lua_State *luaVM )
  * \param   struct sockaddr_in*  pointer to ip where values will be set
  * \lparam  ip    the IP address for the socket.
  * \lparam  port  the port for the socket.
- * \lreturn int error number .
  * TODO:  allow for empty endpoints if it makes sense
  * --------------------------------------------------------------------------*/
-int
+void
 t_ipx_set( lua_State *luaVM, int pos, struct sockaddr_in *ip )
 {
 	int           port;
@@ -85,40 +84,36 @@ t_ipx_set( lua_State *luaVM, int pos, struct sockaddr_in *ip )
 	memset( (char *) &(*ip), 0, sizeof(ip) );
 	ip->sin_family = AF_INET;
 
-	if (LUA_TNUMBER == lua_type( luaVM, pos+0 ))
+   // First element is nil assign 0.0.0.0 and no port
+	if (lua_isnoneornil( luaVM, pos+0 ))
 	{
 		ip->sin_addr.s_addr = htonl( INADDR_ANY );
-		port = luaL_checkinteger( luaVM, pos+0 );
-		luaL_argcheck( luaVM, 1 <= port && port <= 65536, 2,
-		                 "port number out of range" );
-		ip->sin_port   = htons( port );
-		lua_remove( luaVM, pos + 0 );
+		return;
 	}
-	else if (LUA_TSTRING == lua_type( luaVM, pos+0 ))
+	// First element is string -> Assume this is an IP address
+	if (LUA_TSTRING == lua_type( luaVM, pos+0 ))
 	{
 		ips = luaL_checkstring( luaVM, pos+0 );
 #ifdef _WIN32
 		if ( InetPton (AF_INET, ips, &(ip->sin_addr))==0)
-			return t_push_error( luaVM, "InetPton() of %s failed", ips );
+			t_push_error( luaVM, "InetPton() of %s failed", ips );
 #else
 		if ( inet_pton( AF_INET, ips, &(ip->sin_addr) )==0)
-			return t_push_error( luaVM, "inet_aton() of %s failed", ips );
+			t_push_error( luaVM, "inet_aton() of %s failed", ips );
 #endif
-		lua_remove( luaVM, pos + 0 );
-		if (lua_isnumber( luaVM, pos+0 ))   // pos+0 because we removed the previous string
-		{
-			port = luaL_checkinteger( luaVM, pos+0 );
-			luaL_argcheck( luaVM, 1 <= port && port <= 65536, pos+1,
-								  "port number out of range" );
-			ip->sin_port   = htons( port );
-			lua_remove( luaVM, pos + 0 );
-		}
+		lua_remove( luaVM, pos+0 );
 	}
-	else if (lua_isnil( luaVM, pos+0 ))
-	{
+	else
 		ip->sin_addr.s_addr = htonl( INADDR_ANY );
+
+	if (lua_isnumber( luaVM, pos+0 ))   // pos+0 because we removed the previous string
+	{
+		port = luaL_checkinteger( luaVM, pos+0 );
+		luaL_argcheck( luaVM, 1 <= port && port <= 65536, pos+1,  // +1 because first was removed
+							  "port number out of range" );
+		ip->sin_port   = htons( port );
+		lua_remove( luaVM, pos+0 );
 	}
-	return 0;
 }
 
 

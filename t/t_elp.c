@@ -471,7 +471,7 @@ static int
 lt_elp__tostring( lua_State *luaVM )
 {
 	struct t_elp *elp = t_elp_check_ud( luaVM, 1, 1 );
-	lua_pushfstring( luaVM, "T.Loop(select){%d}: %p", elp->mxfd, elp );
+	lua_pushfstring( luaVM, "T.Loop(select){%d:%d}: %p", elp->fd_sz, elp->mxfd, elp );
 	return 1;
 }
 

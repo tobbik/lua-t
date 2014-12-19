@@ -120,6 +120,12 @@ struct t_sck
 /**--------------------------------------------------------------------------
  * Evaluate elements on stack to be definitions or instances of sock and ip.
  * possible combinations:
+ *  - ...(sck,ip)
+ *  - ...("TCP/UDP", ip)
+ *  - ...(sck,'ipString', port)
+ *  - ...(sck, port)           -- IP will be 0.0.0.0
+ *  - ...(sck, 'ipstring')     -- Port unassigned
+ *  - ...(sck)                 -- Port unassigned, IP 0.0.0.0
  *
  * \param   luaVM    The lua state.
  * \param   int      position on the stack.

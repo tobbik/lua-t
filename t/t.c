@@ -339,6 +339,8 @@ LUAMOD_API int luaopen_t( lua_State *luaVM )
 	lua_setfield( luaVM, -2, "Test" );
 	luaopen_t_wsk( luaVM );
 	lua_setfield( luaVM, -2, "Websocket" );
+	luaopen_t_htp( luaVM );
+	lua_setfield( luaVM, -2, "Http" );
 	return 1;
 }
 

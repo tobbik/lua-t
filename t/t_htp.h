@@ -10,7 +10,7 @@
 #include "t_elp.h"
 
 /// The userdata struct for T.Http.Server
-struct t_htpsrv {
+struct t_htp_srv {
 	struct t_sck *sck;    ///< t_sck socket (must be tcp)
 	int           sR;     ///< Lua registry reference for t.Socket instance
 	int           lR;     ///< Lua registry reference for t.Loop instance
@@ -19,23 +19,23 @@ struct t_htpsrv {
 
 
 /// The userdata struct for T.Http.Connection ( Server:accept() )
-struct t_htpcon {
+struct t_htp_con {
 	int           fd;     ///< the socket for direct access
 	int           sR;     ///< Lua registry reference for t.Socket instance
 	int           aR;     ///< Lua registry reference for t.Ip     instance (struct sockaddr_in)
 	int           rR;     ///< Lua registry reference to request handler
 };
 
-struct t_htpreq {
-	struct t_htpsrv   *srv;  ///< reference to server
+struct t_htp_req {
+	struct t_htp_srv   *srv;  ///< reference to server
 	
 };
 
 
 // t_htp.c
 // Constructors
-struct t_htpsrv   *t_htpsrv_check_ud ( lua_State *luaVM, int pos, int check );
-struct t_htpsrv   *t_htpsrv_create_ud( lua_State *luaVM );
+struct t_htp_srv   *t_htp_srv_check_ud ( lua_State *luaVM, int pos, int check );
+struct t_htp_srv   *t_htp_srv_create_ud( lua_State *luaVM );
 
 
 // __        __   _    ____             _        _
