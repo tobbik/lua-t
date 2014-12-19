@@ -19,13 +19,17 @@ struct t_htp_srv {
 };
 
 
-/// The userdata struct for T.Http.Connection ( Server:accept() )
-struct t_htp_con {
+/// The userdata struct for T.Http.Message ( Server:accept() )
+struct t_htp_msg {
 	int           fd;     ///< the socket for direct access
 	int           sR;     ///< Lua registry reference for t.Socket instance
 	int           aR;     ///< Lua registry reference for t.Ip     instance (struct sockaddr_in)
 	int           rR;     ///< Lua registry reference to request handler
+	int           hR;     ///< Lua registry reference to header table
+	int           status; ///< HTTP Status Code
+	int           sz;     ///< HTTP Message Size
 };
+
 
 struct t_htp_req {
 	struct t_htp_srv   *srv;  ///< reference to server

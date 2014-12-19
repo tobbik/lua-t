@@ -15,7 +15,7 @@
 #include "t_buf.h"
 
 
-static int lt_htp_con_read( lua_State *luaVM );
+static int lt_htp_msg_read( lua_State *luaVM );
 
 
 /** ---------------------------------------------------------------------------
@@ -108,29 +108,32 @@ lt_htp_srv_accept( lua_State *luaVM )
 	struct sockaddr_in *si_cli;
 	struct t_sck       *c_sck;
 	struct t_sck       *s_sck;
-	struct t_htp_con   *c;      // new connection userdata
+	struct t_htp_msg   *c;      // new connection userdata
 
 	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, s->sR );
 	s_sck = t_sck_check_ud( luaVM, -1, 1 );
 
-	lua_pushcfunction( luaVM, lt_elp_addhandle ); //S: srv,csck,cip,addhandle
-	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, s->lR );
-	t_elp_check_ud( luaVM, -1, 1 );
-	lua_pushvalue( luaVM, -3 );
-	lua_pushboolean( luaVM, 1 );                  // yepp, that's for reading
-	lua_pushcfunction( luaVM, lt_htp_con_read );  //S: srv,csck,cip,addhandle,csck,true
-	c      = (struct t_htp_con *) lua_newuserdata( luaVM, sizeof( struct t_htp_con ) );
 	t_sck_accept( luaVM, 2 );   //S: srv,ssck,csck,cip
 	c_sck  = t_sck_check_ud( luaVM, -2, 1 );
 	si_cli = t_ipx_check_ud( luaVM, -1, 1 );
+
+	lua_pushcfunction( luaVM, lt_elp_addhandle );
+	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, s->lR );
+	t_elp_check_ud( luaVM, -1, 1 );               //S: srv,ssck,csck,cip,addhandle,elp
+	lua_pushvalue( luaVM, -4 );                   // push client socket
+	lua_pushboolean( luaVM, 1 );                  // yepp, that's for reading
+	lua_pushcfunction( luaVM, lt_htp_msg_read );  //S: srv,ssck,csck,cip,addhandle,elp,csck,true,read
+	c      = (struct t_htp_msg *) lua_newuserdata( luaVM, sizeof( struct t_htp_msg ) );
+	lua_pushvalue( luaVM, -8);   // repush csck and cip
+	lua_pushvalue( luaVM, -8);   //S: srv,ssck,csck,cip,addhandle,elp,csck,true,read,cli,csk,cip
 	c->aR  = luaL_ref( luaVM, LUA_REGISTRYINDEX );
 	c->sR  = luaL_ref( luaVM, LUA_REGISTRYINDEX );
 	c->rR  = s->rR;       // copy function reference
-	c->fd  = c_sck->fd;   //S: ssck,csck,cip,read,csck,true,con
+	c->fd  = c_sck->fd;
+	c->hR  = LUA_NOREF;   // header is not received/parsed
 
-	luaL_getmetatable( luaVM, "T.Http.Connection" );
+	luaL_getmetatable( luaVM, "T.Http.Message" );
 	lua_setmetatable( luaVM, -2 );
-	t_stackDump( luaVM );
 	lua_call( luaVM, 5, 0 );
 	//TODO: Check if that returns true or false; if false resize loop
 	return 0;
@@ -209,17 +212,17 @@ static int lt_htp_srv__len( lua_State *luaVM )
 
 
 /**--------------------------------------------------------------------------
- * __tostring (print) representation of a T.Http.Connection instance.
+ * __tostring (print) representation of a T.Http.Message instance.
  * \param   luaVM      The lua state.
- * \lparam  xt_pack    the Connection instance user_data.
- * \lreturn string     formatted string representing Connection.
+ * \lparam  t_htp_msg  The Message instance user_data.
+ * \lreturn string     formatted string representing T.Http.Message.
  * \return  The number of results to be passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
-static int lt_htp_con__tostring( lua_State *luaVM )
+static int lt_htp_msg__tostring( lua_State *luaVM )
 {
-	struct t_htp_con *c = (struct t_htp_con *) luaL_checkudata( luaVM, 1, "T.Http.Connection" );
+	struct t_htp_msg *c = (struct t_htp_msg *) luaL_checkudata( luaVM, 1, "T.Http.Message" );
 
-	lua_pushfstring( luaVM, "T.Http.Connection: %p", c );
+	lua_pushfstring( luaVM, "T.Http.Message: %p", c );
 	return 1;
 }
 
@@ -231,7 +234,7 @@ static int lt_htp_con__tostring( lua_State *luaVM )
  * \lreturn string     formatted string representing the instance.
  * \return  The number of results to be passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
-static int lt_htp_con__len( lua_State *luaVM )
+static int lt_htp_msg__len( lua_State *luaVM )
 {
 	//struct t_wsk *wsk = t_wsk_check_ud( luaVM, 1, 1 );
 	//TODO: something meaningful here?
@@ -241,25 +244,24 @@ static int lt_htp_con__len( lua_State *luaVM )
 
 
 /**--------------------------------------------------------------------------
- * Reads a chunk from socket.  Called anytime socket returns from read.
+ * Handle incoming chunks from T.Http.Message socket.
+ * Called if socket comes back from accept and anytime it returns from read.
  * \param   luaVM     lua Virtual Machine.
- * \lparam  userdata  struct t_htp_srv.
+ * \lparam  userdata  struct t_htp_msg.
  * \param   pointer to the buffer to read from(already positioned).
  * \lreturn value from the buffer a packers position according to packer format.
  * \return  integer number of values left on the stack.
  *  -------------------------------------------------------------------------*/
 static int
-lt_htp_con_read( lua_State *luaVM )
+lt_htp_msg_read( lua_State *luaVM )
 {
-	struct t_htp_con *c = (struct t_htp_con *) luaL_checkudata( luaVM, 1, "T.Http.Connection" );
+	struct t_htp_msg *c = (struct t_htp_msg *) luaL_checkudata( luaVM, 1, "T.Http.Message" );
 	char              buffer[ BUFSIZ ];
 	int               rcvd;
 	struct t_sck     *c_sck;
 
 	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, c->sR );
 	c_sck = t_sck_check_ud( luaVM, -1, 1 );
-	t_stackDump( luaVM );
-	printf("SOCK: %d\n", c_sck->fd);
 
 	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, c->rR );
 	// TODO: Idea
@@ -269,7 +271,6 @@ lt_htp_con_read( lua_State *luaVM )
 	printf( "%s\n", buffer );
 	return rcvd;
 }
-
 
 
 /**--------------------------------------------------------------------------
@@ -332,8 +333,8 @@ LUAMOD_API int luaopen_t_htp_srv( lua_State *luaVM )
  * \brief      the buffer library definition
  *             assigns Lua available names to C-functions
  * --------------------------------------------------------------------------*/
-static const luaL_Reg t_htp_con_m [] = {
-	{"read",        lt_htp_con_read},
+static const luaL_Reg t_htp_msg_m [] = {
+	{"read",        lt_htp_msg_read},
 	{NULL,    NULL}
 };
 
@@ -345,15 +346,15 @@ static const luaL_Reg t_htp_con_m [] = {
  * \lreturn string    the library
  * \return  The number of results to be passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
-LUAMOD_API int luaopen_t_htp_con( lua_State *luaVM )
+LUAMOD_API int luaopen_t_htp_msg( lua_State *luaVM )
 {
 	// T.Http.Server instance metatable
 	luaL_newmetatable( luaVM, "T.Http.Connection" );
-	luaL_newlib( luaVM, t_htp_con_m );
+	luaL_newlib( luaVM, t_htp_msg_m );
 	lua_setfield( luaVM, -2, "__index" );
-	lua_pushcfunction( luaVM, lt_htp_con__len );
+	lua_pushcfunction( luaVM, lt_htp_msg__len );
 	lua_setfield( luaVM, -2, "__len");
-	lua_pushcfunction( luaVM, lt_htp_con__tostring );
+	lua_pushcfunction( luaVM, lt_htp_msg__tostring );
 	lua_setfield( luaVM, -2, "__tostring");
 	lua_pop( luaVM, 1 );        // remove metatable from stack
 	return 0;
@@ -382,7 +383,7 @@ luaopen_t_htp( lua_State *luaVM )
 	luaL_newlib( luaVM, t_htp_lib );
 	luaopen_t_htp_srv( luaVM );
 	lua_setfield( luaVM, -2, "Server" );
-	luaopen_t_htp_con( luaVM );
+	luaopen_t_htp_msg( luaVM );
 	return 1;
 }
 
