@@ -19,15 +19,51 @@ struct t_htp_srv {
 };
 
 
+
+// _   _ _____ _____ ____
+//| | | |_   _|_   _|  _ \   _ __   __ _ _ __ ___  ___ _ __
+//| |_| | | |   | | | |_) | | '_ \ / _` | '__/ __|/ _ \ '__|
+//|  _  | | |   | | |  __/  | |_) | (_| | |  \__ \  __/ |
+//|_| |_| |_|   |_| |_|     | .__/ \__,_|_|  |___/\___|_|
+//                          |_|
+
+enum req_states {
+	REQSTATE_READ_HEAD,  // ready to read from the socket
+	REQSTATE_SEND_HEAD,  // ready to send HTTP header
+	REQSTATE_BUFF_FILE,  // ready to read chunk of static file into buffer
+	REQSTATE_SEND_FILE,  // ready to send buffer back to client
+};
+
+enum t_htp_mth {
+	T_HTP_MTH_GET,
+	T_HTP_MTH_HEAD,
+	T_HTP_MTH_POST,
+	T_HTP_MTH_PUT,
+	T_HTP_MTH_OPTION,
+	T_HTP_MTH_DELETE,
+	T_HTP_MTH_UNLOCK,
+	T_HTP_MTH_ILLEGAL
+};
+
+enum t_htp_ver {
+	HTTP_09,
+	HTTP_10,
+	HTTP_11
+};
+
+
+
 /// The userdata struct for T.Http.Message ( Server:accept() )
 struct t_htp_msg {
-	int           fd;     ///< the socket for direct access
-	int           sR;     ///< Lua registry reference for t.Socket instance
-	int           aR;     ///< Lua registry reference for t.Ip     instance (struct sockaddr_in)
-	int           rR;     ///< Lua registry reference to request handler
-	int           hR;     ///< Lua registry reference to header table
-	int           status; ///< HTTP Status Code
-	int           sz;     ///< HTTP Message Size
+	int             fd;     ///< the socket for direct access
+	int             sR;     ///< Lua registry reference for t.Socket instance
+	int             aR;     ///< Lua registry reference for t.Ip     instance (struct sockaddr_in)
+	int             rR;     ///< Lua registry reference to request handler
+	int             hR;     ///< Lua registry reference to header table
+	int             status; ///< HTTP Status Code
+	int             sz;     ///< HTTP Message Size
+	enum t_htp_mth  mth;    ///< HTTP Method
+	enum t_htp_ver  ver;    ///< HTTP version
 };
 
 
@@ -89,3 +125,4 @@ struct t_wsk {
 
 struct t_wsk  *t_wsk_create_ud( lua_State *luaVM );
 struct t_wsk  *t_wsk_check_ud ( lua_State *luaVM, int pos, int check );
+
