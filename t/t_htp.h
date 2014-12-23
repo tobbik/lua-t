@@ -86,13 +86,11 @@ enum t_htp_ver {
 
 /// The userdata struct for T.Http.Message ( Server:accept() )
 struct t_htp_msg {
-	int             fd;     ///< the socket for direct access
-	int             sR;     ///< Lua registry reference for t.Socket instance
-	int             aR;     ///< Lua registry reference for t.Ip     instance (struct sockaddr_in)
+	int             pR;     ///< Lua registry reference for proxy table
+	struct t_sck   *sck;    ///< pointer to the actual socket
 	int             lR;     ///< Lua registry reference to loop
 	int             rR;     ///< Lua registry reference to request handler function
-	int             hR;     ///< Lua registry reference to header table
-	int             uR;     ///< Lua registry reference to URL string
+
 	int             status; ///< HTTP Status Code
 	int             sz;     ///< HTTP Message Size
 	int             kpAlv;  ///< keepalive value in seconds -> 0==no Keepalive
@@ -125,8 +123,8 @@ LUAMOD_API int luaopen_t_htp_srv( lua_State *luaVM );
 struct t_htp_msg   *t_htp_msg_check_ud ( lua_State *luaVM, int pos, int check );
 struct t_htp_msg   *t_htp_msg_create_ud( lua_State *luaVM );
 // Message specific methods
-int lt_htp_msg_read ( lua_State *luaVM );
-int lt_htp_msg_write( lua_State *luaVM );
+int t_htp_msg_read ( lua_State *luaVM );
+int t_htp_msg_write( lua_State *luaVM );
 
 
 // __        __   _    ____             _        _

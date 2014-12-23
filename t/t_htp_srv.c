@@ -104,7 +104,7 @@ lt_htp_srv_accept( lua_State *luaVM )
 	struct sockaddr_in *si_cli;
 	struct t_sck       *c_sck;
 	struct t_sck       *s_sck;
-	struct t_htp_msg   *c;      // new connection userdata
+	struct t_htp_msg   *m;      // new message userdata
 
 	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, s->sR );
 	s_sck = t_sck_check_ud( luaVM, -1, 1 );
@@ -118,16 +118,19 @@ lt_htp_srv_accept( lua_State *luaVM )
 	t_elp_check_ud( luaVM, -1, 1 );               //S: srv,ssck,csck,cip,addhandle,elp
 	lua_pushvalue( luaVM, -4 );                   // push client socket
 	lua_pushboolean( luaVM, 1 );                  // yepp, that's for reading
-	lua_pushcfunction( luaVM, lt_htp_msg_read );  //S: srv,ssck,csck,cip,addhandle,elp,csck,true,read
-	c      = t_htp_msg_create_ud( luaVM );
-	lua_pushvalue( luaVM, -8);   // repush csck and cip
-	lua_pushvalue( luaVM, -8);   //S: srv,ssck,csck,cip,addhandle,elp,csck,true,read,cli,csk,cip
-	c->aR  = luaL_ref( luaVM, LUA_REGISTRYINDEX );
-	c->sR  = luaL_ref( luaVM, LUA_REGISTRYINDEX );
-	c->lR  = s->lR;       // copy loop reference
-	c->rR  = s->rR;       // copy function reference
-	c->fd  = c_sck->fd;
-	c->hR  = LUA_NOREF;   // header is not received/parsed
+	lua_pushcfunction( luaVM, t_htp_msg_read );   //S: srv,ssck,csck,cip,addhandle,elp,csck,true,read
+	m      = t_htp_msg_create_ud( luaVM );
+	lua_newtable( luaVM );
+	lua_pushstring( luaVM, "socket" );
+	lua_pushvalue( luaVM, -10);  //S: srv,ssck,csck,cip,addhandle,elp,csck,true,read,cli,header,"socket",csck
+	lua_rawset( luaVM, -3 );
+	lua_pushstring( luaVM, "ip" );
+	lua_pushvalue( luaVM, -9);   //S: srv,ssck,csck,cip,addhandle,elp,csck,true,read,cli,header,"ip",si_cli
+	lua_rawset( luaVM, -3 );
+	m->pR  = luaL_ref( luaVM, LUA_REGISTRYINDEX );
+	m->lR  = s->lR;       // copy loop reference
+	m->rR  = s->rR;       // copy function reference
+	m->sck = c_sck;
 
 	luaL_getmetatable( luaVM, "T.Http.Message" );
 	lua_setmetatable( luaVM, -2 );
