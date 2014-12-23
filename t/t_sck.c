@@ -145,7 +145,6 @@ t_sck_options( lua_State *luaVM, int pos, struct t_sck **sck, struct sockaddr_in
 		*sck = t_sck_create_ud( luaVM, type );
 		lua_replace( luaVM, pos+0 );
 	}
-	t_stackDump(luaVM);
 
 	if (NULL == *ip)
 	{
@@ -153,7 +152,6 @@ t_sck_options( lua_State *luaVM, int pos, struct t_sck **sck, struct sockaddr_in
 		t_ipx_set( luaVM, pos+1, *ip );
 		lua_insert( luaVM, pos+1 );
 	}
-	t_stackDump(luaVM);
 }
 
 
@@ -223,7 +221,6 @@ lt_sck_bind( lua_State *luaVM )
 	struct sockaddr_in *ip  = NULL;
 
 	t_sck_options( luaVM, 1, &sck, &ip );
-	t_stackDump(luaVM);
 
 	if (bind( sck->fd , (struct sockaddr*) &(*ip), sizeof( struct sockaddr ) ) == -1)
 		return t_push_error( luaVM, "ERROR binding socket to %s:%d",
