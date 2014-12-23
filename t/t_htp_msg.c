@@ -13,6 +13,245 @@
 #include "t.h"
 #include "t_htp.h"
 
+const char *eat_lws( const char *s )
+{
+	while( ' ' == *s ||  '\r' == *s ||   '\n' == *s)
+		s++;
+	return s;
+};
+
+
+static inline char
+*t_htp_msg_pMethod( lua_State *luaVM, struct t_htp_msg *m, const char *b )
+{
+	const char *d  = b;
+	size_t      i;
+
+	d = strchr( b, ' ' );
+	i = d-b;
+	if (i>13)
+		luaL_error( luaVM, "Illegal HTTP header: HTTP Method is too long" );
+	switch (*b)
+	{
+		case 'C': {
+			if (7==i && 'O'==*(b+1))
+				m->mth=T_HTP_MTH_CONNECT;
+			else if (8==i && 'H'==*(b+1))
+				m->mth=T_HTP_MTH_CHECKOUT;
+			else if (4==i && 'O'==*(b+1))
+				m->mth=T_HTP_MTH_COPY;
+			else
+				luaL_error( luaVM, "Illegal HTTP header: Unknown HTTP Method" );
+			break;
+		}
+		case 'D': m->mth=T_HTP_MTH_DELETE; break;
+		case 'G': m->mth=T_HTP_MTH_GET; break;
+		case 'H': m->mth=T_HTP_MTH_HEAD; break;
+		case 'L': m->mth=T_HTP_MTH_LOCK; break;
+		case 'M': {
+			if (5==i && 'K'==*(b+1))
+				m->mth=T_HTP_MTH_MKCOL;
+			else if (10==i && 'K'==*(b+1))
+				m->mth=T_HTP_MTH_MKACTIVITY;
+			else if (10==i && 'C'==*(b+2))
+				m->mth=T_HTP_MTH_MKCALENDAR;
+			else if (8==i && '-'==*(b+1))
+				m->mth=T_HTP_MTH_MSEARCH;
+			else if (5==i && 'E'==*(b+1))
+				m->mth=T_HTP_MTH_MERGE;
+			else if (4==i && 'O'==*(b+1))
+				m->mth=T_HTP_MTH_MOVE;
+			else
+				luaL_error( luaVM, "Illegal HTTP header: Unknown HTTP Method" );
+			break;
+		}
+		case 'N': m->mth=T_HTP_MTH_NOTIFY; break;
+		case 'O': m->mth=T_HTP_MTH_OPTIONS; break;
+		case 'P': {
+			if (4==i && 'O'==*(b+1))
+				m->mth=T_HTP_MTH_POST;
+			else if (3==i && 'U'==*(b+1))
+				m->mth=T_HTP_MTH_PUT;
+			else if (5==i && 'A'==*(b+1))
+				m->mth=T_HTP_MTH_PATCH;
+			else if (5==i && 'U'==*(b+1))
+				m->mth=T_HTP_MTH_PURGE;
+			else if (8==i && 'R'==*(b+1))
+				m->mth=T_HTP_MTH_PROPFIND;
+			else if (9==i && 'R'==*(b+1))
+				m->mth=T_HTP_MTH_PROPPATCH;
+			else
+				luaL_error( luaVM, "Illegal HTTP header: Unknown HTTP Method" );
+			break;
+		}
+		case 'R': m->mth=T_HTP_MTH_REPORT; break;
+		case 'S': {
+			if (9==i && 'U'==*(b+1))
+				m->mth=T_HTP_MTH_SUBSCRIBE;
+			else if (6==i && 'E'==*(b+1))
+				m->mth=T_HTP_MTH_SEARCH;
+			else
+				luaL_error( luaVM, "Illegal HTTP header: Unknown HTTP Method" );
+			break;
+		}
+		case 'T': m->mth=T_HTP_MTH_TRACE; break;
+		case 'U': {
+			if (6==i && 'N'==*(b+1))
+				m->mth=T_HTP_MTH_UNLOCK;
+			else if (11==i && 'N'==*(b+1))
+				m->mth=T_HTP_MTH_UNSUBSCRIBE;
+			else
+				luaL_error( luaVM, "Illegal HTTP header: Unknown HTTP Method" );
+			break;
+		}
+		default:
+			luaL_error( luaVM, "Illegal HTTP header: Unknown HTTP Method" );
+	}
+	d = eat_lws( d );
+	m->bRead += d-b;
+	m->pS     = T_HTP_PRS_URL;
+	return (char *) d;
+}
+
+
+static inline char
+*t_htp_msg_pUrl( lua_State *luaVM, struct t_htp_msg *m, const char *b )
+{
+	const char *d  = b;
+	size_t      i;
+
+	d = strchr( b, ' ' );
+	i = d-b;
+	if (i>2000)
+		luaL_error( luaVM, "illegal URL" );
+	lua_pushlstring( luaVM, b, i );
+	m->uR = luaL_ref( luaVM, LUA_REGISTRYINDEX );
+	d = eat_lws( d );
+	m->bRead += d-b;
+	m->pS     = T_HTP_PRS_VERSION;
+	return (char *) d;
+}
+
+
+static inline char
+*t_htp_msg_pVersion( lua_State *luaVM, struct t_htp_msg *m, const char *b )
+{
+	const char *d  = b;
+	size_t      i;
+
+	d = strchr( b, '\r' );
+	i = d-b;
+	if (8 != i)
+		luaL_error( luaVM, "ILLEGAL HTTP version in HTTP message" );
+	switch (*(b+7))
+	{
+		case '1': m->ver=T_HTP_VER_11; break;
+		case '0': m->ver=T_HTP_VER_10; break;
+		case '9': m->ver=T_HTP_VER_09; break;
+		default: luaL_error( luaVM, "ILLEGAL HTTP version in message" ); break;
+	}
+	d = eat_lws( d );
+	m->bRead += d-b;
+	m->pS     = T_HTP_PRS_HEADER;
+	return (char *) d;
+}
+
+
+static inline char
+*t_htp_msg_pHeader( lua_State *luaVM, struct t_htp_msg *m, const char *b )
+{
+	const char *v  = b;
+	const char *k  = b;
+	const char *ke = b;
+	const char *r  = b;
+	size_t      run= 200;
+	size_t      is_key = 1;
+
+	if (LUA_NOREF == m->hR)
+		lua_newtable( luaVM );
+	else
+		lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->hR );
+
+	while (run>0)
+	{
+		//printf("%c   %c   %c   %c   %zu\n", *r, *k, *ke, *v, run-- );
+		switch (*r)
+		{
+			case '\0':
+				run=0; break;
+			case ':':
+				if (is_key)
+				{
+					ke = r;
+					r++;
+					r = eat_lws( r );
+					v  = r;
+					is_key = 0;
+				}
+				else
+					r++;
+				break;
+			case '\r':
+			case '\n':
+				if (' ' == *(r+1))
+				{
+					r++;
+				}
+				else
+				{
+					//printf("Got an R   %lu    %lu \n",    ke-k, r-v);
+					lua_pushlstring( luaVM, k, ke-k );   // push key
+					lua_pushlstring( luaVM, v, r -v );   // push value
+					//t_stackDump( luaVM );
+					lua_rawset( luaVM, -3 );
+					while( '\r' == *r ||   '\n' == *r) r++;
+					k=r;
+					is_key=1;
+					m->bRead += k-b;
+				}
+				break;
+			default: r++; break;
+		}
+			//m->pS = T_HTP_PRS_DONE;
+	}
+
+	m->pS = T_HTP_PRS_DONE;
+	if (LUA_NOREF == m->hR)
+		m->hR = luaL_ref( luaVM, LUA_REGISTRYINDEX );
+	else
+		lua_pop( luaVM, 1 );
+	return (char *) r;
+}
+
+
+static int
+t_htp_msg_parse( lua_State *luaVM, struct t_htp_msg *m, const char *buf )
+{
+	char *nxt = (char *) buf;
+
+	while (NULL != nxt)
+	{
+		switch(m->pS)
+		{
+			case T_HTP_PRS_ZERO:
+				nxt = t_htp_msg_pMethod( luaVM, m, nxt );
+				break;
+			case T_HTP_PRS_URL:
+				nxt = t_htp_msg_pUrl( luaVM, m, nxt );
+				break;
+			case T_HTP_PRS_VERSION:
+				nxt = t_htp_msg_pVersion( luaVM, m, nxt );
+				break;
+			case T_HTP_PRS_HEADER:
+				nxt = t_htp_msg_pHeader( luaVM, m, nxt );
+				break;
+			case T_HTP_PRS_DONE:
+				return 1;
+		}
+	}
+	return (NULL == nxt) ? 0 : 1;
+}
+
 
 /**--------------------------------------------------------------------------
  * create a t_htp_msg and push to LuaStack.
@@ -23,12 +262,14 @@
 struct t_htp_msg
 *t_htp_msg_create_ud( lua_State *luaVM )
 {
-	struct t_htp_msg *s;
-	s = (struct t_htp_msg *) lua_newuserdata( luaVM, sizeof( struct t_htp_msg ));
+	struct t_htp_msg *m;
+	m = (struct t_htp_msg *) lua_newuserdata( luaVM, sizeof( struct t_htp_msg ));
+	m->bRead = 0;
+	m->pS    = T_HTP_PRS_ZERO;
 
 	luaL_getmetatable( luaVM, "T.Http.Message" );
 	lua_setmetatable( luaVM, -2 );
-	return s;
+	return m;
 }
 
 
@@ -83,6 +324,34 @@ lt_htp_msg__len( lua_State *luaVM )
 
 
 /**--------------------------------------------------------------------------
+ * Print everything we have on a Http.Message
+ * \param   luaVM     lua Virtual Machine.
+ * \lparam  userdata  struct t_htp_msg.
+ * \param   pointer to the buffer to read from(already positioned).
+ * \lreturn value from the buffer a packers position according to packer format.
+ * \return  integer number of values left on the stack.
+ *  -------------------------------------------------------------------------*/
+int
+lt_htp_msg_print( lua_State *luaVM )
+{
+	struct t_htp_msg *m = (struct t_htp_msg *) luaL_checkudata( luaVM, 1, "T.Http.Message" );
+
+	lua_newtable( luaVM );
+	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->uR );
+	lua_rawseti( luaVM, -2, 1 );
+	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->hR );
+	lua_rawseti( luaVM, -2, 2 );
+	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->sR );    // get socket from msg
+	lua_rawseti( luaVM, -2, 3 );
+	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->aR );
+	lua_rawseti( luaVM, -2, 4 );
+
+
+	return 1;
+}
+
+
+/**--------------------------------------------------------------------------
  * Handle incoming chunks from T.Http.Message socket.
  * Called if socket comes back from accept and anytime it returns from read.
  * \param   luaVM     lua Virtual Machine.
@@ -94,22 +363,33 @@ lt_htp_msg__len( lua_State *luaVM )
 int
 lt_htp_msg_read( lua_State *luaVM )
 {
-	struct t_htp_msg *c = (struct t_htp_msg *) luaL_checkudata( luaVM, 1, "T.Http.Message" );
-	char              buffer[ BUFSIZ ];
+	struct t_htp_msg *m = (struct t_htp_msg *) luaL_checkudata( luaVM, 1, "T.Http.Message" );
 	int               rcvd;
 	struct t_sck     *c_sck;
 
-	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, c->sR );
+	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->sR );    // get socket from msg
 	c_sck = t_sck_check_ud( luaVM, -1, 1 );
 
-	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, c->rR );
-	// TODO: Idea
-	// WS is in a state -> empty, receiving, sending
-	// negotiate to read into the buffer initially or into the luaL_Buffer
-	rcvd = t_sck_recv_tdp( luaVM, c_sck, &(buffer[ 0 ]), BUFSIZ );
-	printf( "%s\n", buffer );
+	// read
+	rcvd = t_sck_recv_tdp( luaVM, c_sck, &(m->buf[ m->bRead ]), BUFSIZ - m->bRead );
+	printf( "%d   %s\n", rcvd, &(m->buf[ m->bRead ]) );
+	if (t_htp_msg_parse( luaVM, m, &(m->buf[ m->bRead ]) ))
+	{
+		lua_pushcfunction( luaVM, lt_elp_removehandle );
+		lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->lR );
+		t_elp_check_ud( luaVM, -1, 1);
+		lua_pushvalue( luaVM, -3 );
+		lua_call( luaVM, 2, 0 );
+		t_stackDump( luaVM );
+	}
+
+	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->rR );    // get function from msg
+	lua_pushvalue( luaVM, 1 );
+	lua_call( luaVM, 1,0 );
+
 	return rcvd;
 }
+
 
 
 /**--------------------------------------------------------------------------
@@ -117,7 +397,7 @@ lt_htp_msg_read( lua_State *luaVM )
  *             assigns Lua available names to C-functions
  * --------------------------------------------------------------------------*/
 static const luaL_Reg t_htp_msg_m [] = {
-	{"read",        lt_htp_msg_read},
+	{"print",        lt_htp_msg_print},
 	{NULL,    NULL}
 };
 

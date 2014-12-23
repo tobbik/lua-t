@@ -275,7 +275,7 @@ lt_elp_addhandle( lua_State *luaVM )
  * \return  #stack items returned by function call.
  * TODO: optimize!
  * --------------------------------------------------------------------------*/
-static int
+int
 lt_elp_removehandle( lua_State *luaVM )
 {
 	luaL_Stream    *lS;

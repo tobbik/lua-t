@@ -2,9 +2,16 @@
 t=require't'
 l=t.Loop(50)
 s=t.Socket.bind( 'UDP',  8888 )
+o='./theFile'
 
-x=function(req)
-	print('REQ:', req)
+x=function( msg )
+	local t = msg:print()
+	print( t[1] )
+	for k,v in pairs( t[2]) do print (k,v) end
+	print( t[3] )
+	print( t[4] )
+	-- msg:sink('./theFile')
+	print( 'REQ:', msg )
 end
 
 

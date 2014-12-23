@@ -119,11 +119,12 @@ lt_htp_srv_accept( lua_State *luaVM )
 	lua_pushvalue( luaVM, -4 );                   // push client socket
 	lua_pushboolean( luaVM, 1 );                  // yepp, that's for reading
 	lua_pushcfunction( luaVM, lt_htp_msg_read );  //S: srv,ssck,csck,cip,addhandle,elp,csck,true,read
-	c      = (struct t_htp_msg *) lua_newuserdata( luaVM, sizeof( struct t_htp_msg ) );
+	c      = t_htp_msg_create_ud( luaVM );
 	lua_pushvalue( luaVM, -8);   // repush csck and cip
 	lua_pushvalue( luaVM, -8);   //S: srv,ssck,csck,cip,addhandle,elp,csck,true,read,cli,csk,cip
 	c->aR  = luaL_ref( luaVM, LUA_REGISTRYINDEX );
 	c->sR  = luaL_ref( luaVM, LUA_REGISTRYINDEX );
+	c->lR  = s->lR;       // copy loop reference
 	c->rR  = s->rR;       // copy function reference
 	c->fd  = c_sck->fd;
 	c->hR  = LUA_NOREF;   // header is not received/parsed

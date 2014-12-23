@@ -34,23 +34,54 @@ enum req_states {
 	REQSTATE_SEND_FILE,  // ready to send buffer back to client
 };
 
+
+/// Recognized HTTP Methods
 enum t_htp_mth {
+	T_HTP_MTH_CONNECT,
+	T_HTP_MTH_CHECKOUT,
+	T_HTP_MTH_COPY,
+	T_HTP_MTH_DELETE,
 	T_HTP_MTH_GET,
 	T_HTP_MTH_HEAD,
+	T_HTP_MTH_LOCK,
+	T_HTP_MTH_MKACTIVITY,
+	T_HTP_MTH_MKCALENDAR,
+	T_HTP_MTH_MKCOL,
+	T_HTP_MTH_MERGE,
+	T_HTP_MTH_MSEARCH,
+	T_HTP_MTH_MOVE,
+	T_HTP_MTH_NOTIFY,
+	T_HTP_MTH_OPTIONS,
 	T_HTP_MTH_POST,
 	T_HTP_MTH_PUT,
-	T_HTP_MTH_OPTION,
-	T_HTP_MTH_DELETE,
+	T_HTP_MTH_PATCH,
+	T_HTP_MTH_PURGE,
+	T_HTP_MTH_PROPFIND,
+	T_HTP_MTH_PROPPATCH,
+	T_HTP_MTH_REPORT,
+	T_HTP_MTH_SEARCH,
+	T_HTP_MTH_SUBSCRIBE,
+	T_HTP_MTH_TRACE,
 	T_HTP_MTH_UNLOCK,
-	T_HTP_MTH_ILLEGAL
+	T_HTP_MTH_UNSUBSCRIBE,
 };
 
+
+/// State of the HTTP parser
+enum t_htp_prs {
+	T_HTP_PRS_ZERO,
+	T_HTP_PRS_URL,
+	T_HTP_PRS_VERSION,
+	T_HTP_PRS_HEADER,
+	T_HTP_PRS_DONE,
+};
+
+// Available HTTP versions
 enum t_htp_ver {
-	HTTP_09,
-	HTTP_10,
-	HTTP_11
+	T_HTP_VER_09,
+	T_HTP_VER_10,
+	T_HTP_VER_11
 };
-
 
 
 /// The userdata struct for T.Http.Message ( Server:accept() )
@@ -58,14 +89,19 @@ struct t_htp_msg {
 	int             fd;     ///< the socket for direct access
 	int             sR;     ///< Lua registry reference for t.Socket instance
 	int             aR;     ///< Lua registry reference for t.Ip     instance (struct sockaddr_in)
-	int             rR;     ///< Lua registry reference to request handler
+	int             lR;     ///< Lua registry reference to loop
+	int             rR;     ///< Lua registry reference to request handler function
 	int             hR;     ///< Lua registry reference to header table
+	int             uR;     ///< Lua registry reference to URL string
 	int             status; ///< HTTP Status Code
 	int             sz;     ///< HTTP Message Size
+	int             kpAlv;  ///< keepalive value in seconds -> 0==no Keepalive
+	enum t_htp_prs  pS;     ///< HTTP parser state
 	enum t_htp_mth  mth;    ///< HTTP Method
 	enum t_htp_ver  ver;    ///< HTTP version
+	int             bRead;  ///< How many byte processed
+	char            buf[ BUFSIZ ];   ///< Initial Buffer
 };
-
 
 struct t_htp_req {
 	struct t_htp_srv   *srv;  ///< reference to server
@@ -85,6 +121,9 @@ LUAMOD_API int luaopen_t_htp_msg( lua_State *luaVM );
 LUAMOD_API int luaopen_t_htp_srv( lua_State *luaVM );
 
 
+// Constructors
+struct t_htp_msg   *t_htp_msg_check_ud ( lua_State *luaVM, int pos, int check );
+struct t_htp_msg   *t_htp_msg_create_ud( lua_State *luaVM );
 // Message specific methods
 int lt_htp_msg_read ( lua_State *luaVM );
 int lt_htp_msg_write( lua_State *luaVM );
