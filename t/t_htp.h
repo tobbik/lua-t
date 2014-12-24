@@ -96,7 +96,8 @@ struct t_htp_msg {
 	enum t_htp_sta  pS;     ///< HTTP parser state
 	enum t_htp_mth  mth;    ///< HTTP Method
 	enum t_htp_ver  ver;    ///< HTTP version
-	int             bRead;  ///< How many byte processed
+	size_t          bRead;  ///< How many byte processed
+	size_t          sent;   ///< How many byte sent out
 	char           *bufr;   ///< Pointer to buffers current position
 	char            buf[ BUFSIZ ];   ///< Initial Buffer
 };
@@ -111,7 +112,7 @@ struct t_htp_req {
 // Constructors
 struct t_htp_srv   *t_htp_srv_check_ud ( lua_State *luaVM, int pos, int check );
 struct t_htp_srv   *t_htp_srv_create_ud( lua_State *luaVM );
-void                t_htp_srv_setnow( struct t_htp_srv *s );
+void                t_htp_srv_setnow( struct t_htp_srv *s, int force );
 
 
 

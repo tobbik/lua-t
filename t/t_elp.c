@@ -482,7 +482,7 @@ lt_elp__tostring( lua_State *luaVM )
  * \param   t_elp    Loop Struct.
  * \return  int #elements returned to function call(Stack)
  * --------------------------------------------------------------------------*/
-static int
+int
 lt_elp_showloop( lua_State *luaVM )
 {
 	struct t_elp    *elp = t_elp_check_ud( luaVM, 1, 1 );

@@ -51,6 +51,7 @@ struct t_elp *t_elp_check_ud ( lua_State *luaVM, int pos, int check );
 struct t_elp *t_elp_create_ud( lua_State *luaVM, size_t sz );
 int   lt_elp_addhandle       ( lua_State *luaVM );
 int   lt_elp_removehandle    ( lua_State *luaVM );
+int   lt_elp_showloop        ( lua_State *luaVM );
 
 void t_elp_executetimer     ( lua_State *luaVM, struct t_elp *elp, struct timeval *rt );
 void t_elp_executehandle    ( lua_State *luaVM, struct t_elp *elp, int fd );

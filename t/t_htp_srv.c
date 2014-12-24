@@ -67,6 +67,7 @@ struct t_htp_srv
 	struct t_htp_srv *s;
 	s = (struct t_htp_srv *) lua_newuserdata( luaVM, sizeof( struct t_htp_srv ));
 	s->nw = time( NULL );
+	t_htp_srv_setnow( s, 1 );
 
 	luaL_getmetatable( luaVM, "T.Http.Server" );
 	lua_setmetatable( luaVM, -2 );
@@ -98,12 +99,12 @@ struct t_htp_srv
  * \return  struct t_htp_srv*  pointer to the struct.
  * --------------------------------------------------------------------------*/
 void
-t_htp_srv_setnow( struct t_htp_srv *s )
+t_htp_srv_setnow( struct t_htp_srv *s, int force )
 {
 	time_t     nw = time( NULL );
 	struct tm *tm_struct;
 
-	if ((nw - s->nw) > 0)
+	if ((nw - s->nw) > 0 || force )
 	{
 		s->nw = nw;
 		tm_struct = gmtime( &(s->nw) );

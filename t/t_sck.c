@@ -300,15 +300,19 @@ lt_sck_accept( lua_State *luaVM )
  * \lparam  socket socket userdata.
  * \return  The number of results to be passed back to the calling Lua script.
  *-------------------------------------------------------------------------*/
-static int
-lt_sck_close( lua_State *luaVM )
+int
+t_sck_close( lua_State *luaVM, struct t_sck *sck )
 {
-	struct t_sck *sck = t_sck_check_ud( luaVM, 1, 1 );
-
 	if (-1 == close( sck->fd ))
 		return t_push_error( luaVM, "ERROR closing socket" );
 
 	return 0;
+}
+static int
+lt_sck_close( lua_State *luaVM )
+{
+	struct t_sck *sck = t_sck_check_ud( luaVM, 1, 1 );
+	return t_sck_close( luaVM, sck );
 }
 
 

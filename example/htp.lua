@@ -12,7 +12,7 @@ x=function( msg )
 	-- msg:sink('./theFile')
 	print( 'REQ:', msg )
 	msg:write("This is my answer")
-	msg:finish("This is my answer")
+	msg:finish()
 end
 
 

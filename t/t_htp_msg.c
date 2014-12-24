@@ -341,17 +341,6 @@ lt_htp_msg__len( lua_State *luaVM )
 	return 1;
 }
 
-static void
-t_htp_msg_prepresp( struct t_htp_msg *m )
-{
-	t_htp_srv_setnow( m->srv );            // update server time
-	m->bRead = (size_t) snprintf(m->buf, BUFSIZ,
-		"HTTP1.1 200 OK\r\n"
-		"Date: %s\r\n",
-			m->srv->fnow
-	);
-}
-
 
 /**--------------------------------------------------------------------------
  * Handle incoming chunks from T.Http.Message socket.
@@ -383,7 +372,6 @@ t_htp_msg_rcv( lua_State *luaVM )
 	lua_call( luaVM, 1,0 );
 
 
-	printf("STATE: %d\n", m->pS);
 	// TODO: depending on T_HTP_STA state / parse body or deal with incoming data
 	if (m->pS > T_HTP_STA_HEADER)
 	{
@@ -398,12 +386,10 @@ t_htp_msg_rcv( lua_State *luaVM )
 		lua_pushvalue( luaVM, 1 );
 		lua_rawseti( luaVM, -2, 2 );
 		elp->fd_set[ m->sck->fd ]->fR = luaL_ref( luaVM, LUA_REGISTRYINDEX );
-		t_stackDump(luaVM);
 		lua_pop( luaVM, 1 );             // pop the event loop
-		memset( m->buf, 0, BUFSIZ );
 	}
 
-
+	lua_pop( luaVM, 1 );             // pop the proxy table
 	return rcvd;
 }
 
@@ -421,18 +407,12 @@ t_htp_msg_rsp( lua_State *luaVM )
 {
 	struct t_htp_msg *m   = t_htp_msg_check_ud( luaVM, 1, 1 );
 	struct t_elp     *elp;
-	int               sent;
 
-	// read
-	//if ( T_HTP_STA_BUFFER == m->pS )
-	//	t_elp_removehandle_impl( elp, m->sck->fd );
-	//if ( T_HTP_STA_SEND == m->pS )
-	//{
-	// t_elp_addhandle_impl( elp, m->sck->fd, 0 );
+	m->sent += t_sck_send_tcp( luaVM, m->sck, &(m->buf[ m->sent ]), m->bRead );
 
-	printf("RESPONSE:           %s\n", m->buf);
-	sent = t_sck_send_tcp( luaVM, m->sck, &(m->buf[ m->bRead ]), BUFSIZ - m->bRead );
-	if (T_HTP_STA_DONE == m->pS)
+	printf("RESPONSE:  %zu    %zu      %s\n", m->bRead, m->sent,  m->buf);
+	//if (T_HTP_STA_DONE == m->pS)
+	if (m->sent >= m->bRead)
 	{
 		lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->lR );
 		elp = t_elp_check_ud( luaVM, -1, 1);
@@ -440,9 +420,23 @@ t_htp_msg_rsp( lua_State *luaVM )
 		luaL_unref( luaVM, LUA_REGISTRYINDEX, elp->fd_set[ m->sck->fd ]->hR );
 		free( elp->fd_set[ m->sck->fd ] );
 		elp->fd_set[ m->sck->fd ] = NULL;
+		t_sck_close( luaVM, m->sck );
 	}
 
 	return 1;
+}
+
+
+
+static void
+t_htp_msg_prepresp( struct t_htp_msg *m )
+{
+	t_htp_srv_setnow( m->srv, 0 );            // update server time
+	m->bRead = (size_t) snprintf(m->buf, BUFSIZ,
+		"HTTP1.1 200 OK\r\n"
+		"Date: %s\r\n\r\n",
+			m->srv->fnow
+	);
 }
 
 
@@ -461,7 +455,11 @@ lt_htp_msg_write( lua_State *luaVM )
 	const char       *v = luaL_checklstring( luaVM, 2, &s );
 
 	if (T_HTP_STA_BODY != m->pS)
+	{
+		memset( &(m->buf[0]), 0, BUFSIZ );
+		m->sent  =0;
 		t_htp_msg_prepresp( m );
+	}
 	memcpy( &(m->buf[ m->bRead ]), v, s );
 	m->bRead += s;
 
