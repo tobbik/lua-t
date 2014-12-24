@@ -438,7 +438,9 @@ lt_elp_run( lua_State *luaVM )
 	while (elp->run)
 	{
 		if (t_elp_poll_impl( luaVM, elp ) < 0)
-			return 0;
+		{
+			return t_push_error( luaVM, "Failed to continue" );
+		}
 		// if there are no events left in the loop stop processing
 		elp->run =  (NULL==elp->tm_head && elp->mxfd<1) ? 0 : elp->run;
 	}

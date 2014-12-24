@@ -416,6 +416,7 @@ t_htp_msg_rsp( lua_State *luaVM )
 	{
 		lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->lR );
 		elp = t_elp_check_ud( luaVM, -1, 1);
+		t_elp_removehandle_impl( elp, m->sck->fd );
 		luaL_unref( luaVM, LUA_REGISTRYINDEX, elp->fd_set[ m->sck->fd ]->fR );
 		luaL_unref( luaVM, LUA_REGISTRYINDEX, elp->fd_set[ m->sck->fd ]->hR );
 		free( elp->fd_set[ m->sck->fd ] );

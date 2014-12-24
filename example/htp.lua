@@ -1,5 +1,6 @@
 #!../out/bin/lua -i
 t=require't'
+fmt=string.format
 l=t.Loop(50)
 s=t.Socket.bind( 'UDP',  8888 )
 o='./theFile'

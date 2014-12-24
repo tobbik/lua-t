@@ -21,7 +21,6 @@
  */
 static const luaL_Reg t_htp_lib [] =
 {
-	//{"crypt",     t_enc_crypt},
 	{NULL,        NULL}
 };
 
