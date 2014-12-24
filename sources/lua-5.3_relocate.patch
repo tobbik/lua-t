@@ -56,7 +56,7 @@ diff -ru LUA53_org/src/lua.c LUA53/src/lua.c
 diff -ru LUA53_org/src/luaconf.h LUA53/src/luaconf.h
 --- LUA53_org/src/luaconf.h	2014-07-24 12:33:29.000000000 -0700
 +++ LUA53/src/luaconf.h	2014-09-29 10:15:00.715459099 -0700
-@@ -176,7 +176,7 @@
+@@ -175,7 +175,7 @@
  
  #else			/* }{ */
  
