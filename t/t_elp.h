@@ -19,13 +19,13 @@ enum t_elp_t {
 struct t_elp_fd {
 	enum t_elp_t       t;
 	int                fd;    ///< descriptor
-	int                fR;    ///< function reference in LUA_REGISTRYINDEX
+	int                fR;    ///< func/arg table reference in LUA_REGISTRYINDEX
 	int                hR;    ///< handle   reference in LUA_REGISTRYINDEX (T.Socket or Lua file)
 };
 
 
 struct t_elp_tm {
-	int                fR;    ///< function reference in LUA_REGISTRYINDEX
+	int                fR;    ///< func/arg table reference in LUA_REGISTRYINDEX
 	int                tR;    ///< T.Time  reference in LUA_REGISTRYINDEX
 	struct timeval    *tv;    ///< time to elapse until fire (timval to work with)
 	struct t_elp_tm   *nxt;   ///< next pointer for linked list
@@ -59,6 +59,7 @@ void t_elp_executehandle    ( lua_State *luaVM, struct t_elp *elp, int fd );
 // t_elp_(impl).c   (Implementation specific functions) INTERFACE
 void t_elp_create_ud_impl   ( struct t_elp *elp );
 void t_elp_addhandle_impl   ( struct t_elp *elp, int fd, int read );
+void t_elp_removehandle_impl( struct t_elp *elp, int fd );
 void t_elp_addtimer_impl    ( struct t_elp *elp, struct timeval *tv );
 int  t_elp_poll_impl        ( lua_State *luaVM, struct t_elp *elp );
 

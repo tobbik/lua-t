@@ -38,7 +38,7 @@ t_elp_create_ud_impl( struct t_elp *elp )
 
 
 /**--------------------------------------------------------------------------
- * Add an File/Socket event handler to the T.Loop.
+ * Add a File/Socket event handler to the T.Loop.
  * \param   struct t_elp*.
  * \param   int       fd.
  * \param   int(bool) for reading on handle.
@@ -57,6 +57,22 @@ t_elp_addhandle_impl( struct t_elp *elp, int fd, int read )
 		FD_SET( fd, &elp->wfds );
 	}
 	elp->mxfd = (fd > elp->mxfd) ? fd : elp->mxfd;
+}
+
+
+/**--------------------------------------------------------------------------
+ * Remove a File/Socket event handler to the T.Loop.
+ * \param   struct t_elp*.
+ * \param   int       fd.
+ * \param   int(bool) for reading on handle.
+ * --------------------------------------------------------------------------*/
+void
+t_elp_removehandle_impl( struct t_elp *elp, int fd )
+{
+	if (t_elp_READ == elp->fd_set[ fd ]->t)
+		FD_CLR( fd, &elp->rfds );
+	if (t_elp_WRIT == elp->fd_set[ fd ]->t)
+		FD_CLR( fd, &elp->wfds );
 }
 
 

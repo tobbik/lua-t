@@ -408,6 +408,29 @@ lt_sck_recv_from( lua_State *luaVM )
 
 
 /** -------------------------------------------------------------------------
+ * \brief   send some data to a TCP socket.
+ * \param   luaVM  The lua state.
+ * \param   t_sck  userdata.
+ * \param   buff   char buffer.
+ * \param   sz     size of char buffer.
+ * \return  number of bytes received.
+ *-------------------------------------------------------------------------*/
+int
+t_sck_send_tcp( lua_State *luaVM, struct t_sck *sck, const char* buff, size_t sz )
+{
+	int     rslt;
+
+	if ((rslt = send(
+	  sck->fd,
+	  buff, sz, 0)
+	  ) == -1)
+		return t_push_error( luaVM, "Failed to send TCP message" ) ;
+
+	return rslt;
+}
+
+
+/** -------------------------------------------------------------------------
  * \brief   send a message over a TCP socket.
  * \param   luaVM  The lua state.
  * \lparam  socket socket userdata.
@@ -419,7 +442,6 @@ static int
 lt_sck_send_strm( lua_State *luaVM )
 {
 	struct t_sck *sck;
-	ssize_t       sent;         // How much did get sent out
 	size_t        to_send;      // How much should get send out maximally
 	const char   *msg;
 	size_t        into_msg=0;   // where in the message to start sending from
@@ -436,13 +458,8 @@ lt_sck_send_strm( lua_State *luaVM )
 	msg      = msg + into_msg;
 	to_send -= into_msg;
 
-	if ((sent = send(
-	  sck->fd,
-	  msg, to_send, 0)
-	  ) == -1)
-		return t_push_error( luaVM, "Failed to send TCP message" ) ;
+	lua_pushinteger( luaVM, t_sck_send_tcp( luaVM, sck, msg, to_send ) );
 
-	lua_pushinteger( luaVM, sent );
 	return 1;
 }
 
@@ -456,17 +473,17 @@ lt_sck_send_strm( lua_State *luaVM )
  * \return  number of bytes received.
  *-------------------------------------------------------------------------*/
 int
-t_sck_recv_tdp( lua_State *luaVM, struct t_sck *sck, char* buff, size_t sz )
+t_sck_recv_tcp( lua_State *luaVM, struct t_sck *sck, char* buff, size_t sz )
 {
-	int     rcvd;
+	int     rslt;
 
-	if ((rcvd = recv(
+	if ((rslt = recv(
 	  sck->fd,
 	  buff, sz, 0)
 	  ) == -1)
 		t_push_error( luaVM, "Failed to recieve TCP packet" );
 
-	return rcvd;
+	return rslt;
 }
 
 
@@ -497,7 +514,7 @@ lt_sck_recv_strm( lua_State *luaVM )
 		len  = buf->len;
 	}
 
-	rcvd = t_sck_recv_tdp( luaVM, sck, rcv, len );
+	rcvd = t_sck_recv_tcp( luaVM, sck, rcv, len );
 
 	// return buffer, length
 	lua_pushlstring( luaVM, buffer, rcvd );

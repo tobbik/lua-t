@@ -9,6 +9,7 @@
 
 
 #include <string.h>               // memset
+#include <time.h>                 // gmtime
 
 #include "t.h"
 #include "t_htp.h"
@@ -65,6 +66,7 @@ struct t_htp_srv
 {
 	struct t_htp_srv *s;
 	s = (struct t_htp_srv *) lua_newuserdata( luaVM, sizeof( struct t_htp_srv ));
+	s->nw = time( NULL );
 
 	luaL_getmetatable( luaVM, "T.Http.Server" );
 	lua_setmetatable( luaVM, -2 );
@@ -85,6 +87,29 @@ struct t_htp_srv
 	void *ud = luaL_checkudata( luaVM, pos, "T.Http.Server" );
 	luaL_argcheck( luaVM, (ud != NULL || !check), pos, "`T.Http.Server` expected" );
 	return (struct t_htp_srv *) ud;
+}
+
+
+/**--------------------------------------------------------------------------
+ * Check if the item on stack position pos is an t_htp_srv struct and return it
+ * \param  luaVM    the Lua State
+ * \param  pos      position on the stack
+ *
+ * \return  struct t_htp_srv*  pointer to the struct.
+ * --------------------------------------------------------------------------*/
+void
+t_htp_srv_setnow( struct t_htp_srv *s )
+{
+	time_t     nw = time( NULL );
+	struct tm *tm_struct;
+
+	if ((nw - s->nw) > 0)
+	{
+		s->nw = nw;
+		tm_struct = gmtime( &(s->nw) );
+		/* Sun, 06 Nov 1994 08:49:37 GMT */
+		strftime( s->fnow, 30, "%a, %d %b %Y %H:%M:%S %Z", tm_struct );
+	}
 }
 
 
@@ -118,8 +143,8 @@ lt_htp_srv_accept( lua_State *luaVM )
 	t_elp_check_ud( luaVM, -1, 1 );               //S: srv,ssck,csck,cip,addhandle,elp
 	lua_pushvalue( luaVM, -4 );                   // push client socket
 	lua_pushboolean( luaVM, 1 );                  // yepp, that's for reading
-	lua_pushcfunction( luaVM, t_htp_msg_read );   //S: srv,ssck,csck,cip,addhandle,elp,csck,true,read
-	m      = t_htp_msg_create_ud( luaVM );
+	lua_pushcfunction( luaVM, t_htp_msg_rcv );   //S: srv,ssck,csck,cip,addhandle,elp,csck,true,read
+	m      = t_htp_msg_create_ud( luaVM, s );
 	lua_newtable( luaVM );
 	lua_pushstring( luaVM, "socket" );
 	lua_pushvalue( luaVM, -10);  //S: srv,ssck,csck,cip,addhandle,elp,csck,true,read,cli,header,"socket",csck

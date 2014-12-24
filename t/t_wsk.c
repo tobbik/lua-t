@@ -95,7 +95,7 @@ int t_wsk_rmsg( lua_State *luaVM, struct t_wsk *ws )
 	// TODO: Idea
 	// WS is in a state -> empty, receiving, sending
 	// negotiate to read into the buffer initially or into the luaL_Buffer
-	rcvd = t_sck_recv_tdp( luaVM, ws->sck, &(buffer[ 0 ]), BUFSIZ );
+	rcvd = t_sck_recv_tcp( luaVM, ws->sck, &(buffer[ 0 ]), BUFSIZ );
 	return rcvd;
 }
 

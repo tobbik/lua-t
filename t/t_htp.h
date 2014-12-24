@@ -16,6 +16,8 @@ struct t_htp_srv {
 	int           aR;     ///< Lua registry reference for t.Ip     instance (struct sockaddr_in)
 	int           lR;     ///< Lua registry reference for t.Loop instance
 	int           rR;     ///< Lua registry reference to request handler
+	time_t        nw;     ///< Current time on the server
+	char    fnow[30];     ///< Formatted Date time in HTTP format
 };
 
 
@@ -26,14 +28,6 @@ struct t_htp_srv {
 //|  _  | | |   | | |  __/  | |_) | (_| | |  \__ \  __/ |
 //|_| |_| |_|   |_| |_|     | .__/ \__,_|_|  |___/\___|_|
 //                          |_|
-
-enum req_states {
-	REQSTATE_READ_HEAD,  // ready to read from the socket
-	REQSTATE_SEND_HEAD,  // ready to send HTTP header
-	REQSTATE_BUFF_FILE,  // ready to read chunk of static file into buffer
-	REQSTATE_SEND_FILE,  // ready to send buffer back to client
-};
-
 
 /// Recognized HTTP Methods
 enum t_htp_mth {
@@ -67,13 +61,17 @@ enum t_htp_mth {
 };
 
 
-/// State of the HTTP parser
-enum t_htp_prs {
-	T_HTP_PRS_ZERO,
-	T_HTP_PRS_URL,
-	T_HTP_PRS_VERSION,
-	T_HTP_PRS_HEADER,
-	T_HTP_PRS_DONE,
+/// State of the HTTP message
+enum t_htp_sta {
+	T_HTP_STA_ZERO,         ///< Nothing done yet
+	T_HTP_STA_URL,          ///< Parsing Url
+	T_HTP_STA_VERSION,      ///< Parsing HTTP version
+	T_HTP_STA_HEADER,       ///< Parsing Headers
+	T_HTP_STA_BODY,         ///< Parsing Body
+	T_HTP_STA_NOBODY,       ///< Header done, No body expected
+	T_HTP_STA_BUFFER,       ///< Fill buffer with data
+	T_HTP_STA_SEND,         ///< Send data from buffer
+	T_HTP_STA_DONE,         ///< Finished
 };
 
 // Available HTTP versions
@@ -88,16 +86,18 @@ enum t_htp_ver {
 struct t_htp_msg {
 	int             pR;     ///< Lua registry reference for proxy table
 	struct t_sck   *sck;    ///< pointer to the actual socket
+	struct t_htp_srv   *srv;    ///< pointer to the HTTP-Server
 	int             lR;     ///< Lua registry reference to loop
 	int             rR;     ///< Lua registry reference to request handler function
 
 	int             status; ///< HTTP Status Code
 	int             sz;     ///< HTTP Message Size
 	int             kpAlv;  ///< keepalive value in seconds -> 0==no Keepalive
-	enum t_htp_prs  pS;     ///< HTTP parser state
+	enum t_htp_sta  pS;     ///< HTTP parser state
 	enum t_htp_mth  mth;    ///< HTTP Method
 	enum t_htp_ver  ver;    ///< HTTP version
 	int             bRead;  ///< How many byte processed
+	char           *bufr;   ///< Pointer to buffers current position
 	char            buf[ BUFSIZ ];   ///< Initial Buffer
 };
 
@@ -111,6 +111,7 @@ struct t_htp_req {
 // Constructors
 struct t_htp_srv   *t_htp_srv_check_ud ( lua_State *luaVM, int pos, int check );
 struct t_htp_srv   *t_htp_srv_create_ud( lua_State *luaVM );
+void                t_htp_srv_setnow( struct t_htp_srv *s );
 
 
 
@@ -121,10 +122,11 @@ LUAMOD_API int luaopen_t_htp_srv( lua_State *luaVM );
 
 // Constructors
 struct t_htp_msg   *t_htp_msg_check_ud ( lua_State *luaVM, int pos, int check );
-struct t_htp_msg   *t_htp_msg_create_ud( lua_State *luaVM );
+struct t_htp_msg   *t_htp_msg_create_ud( lua_State *luaVM, struct t_htp_srv *srv );
 // Message specific methods
-int t_htp_msg_read ( lua_State *luaVM );
-int t_htp_msg_write( lua_State *luaVM );
+int                 t_htp_msg_rcv ( lua_State *luaVM );
+int                 t_htp_msg_rsp ( lua_State *luaVM );
+
 
 
 // __        __   _    ____             _        _

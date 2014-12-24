@@ -295,6 +295,7 @@ lt_elp_removehandle( lua_State *luaVM )
 		return t_push_error( luaVM, "Argument to addHandle must be file or socket" );
 	luaL_unref( luaVM, LUA_REGISTRYINDEX, elp->fd_set[ fd ]->fR );
 	luaL_unref( luaVM, LUA_REGISTRYINDEX, elp->fd_set[ fd ]->hR );
+	t_elp_removehandle_impl( elp, fd );
 	free( elp->fd_set[ fd ] );
 	elp->fd_set[ fd ] = NULL;
 
