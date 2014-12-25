@@ -18,6 +18,7 @@
 /** ---------------------------------------------------------------------------
  * Creates an T.Http.Server.
  * \param    luaVM    lua state.
+ * \lparam   Loop for the Server.
  * \lparam   function WSAPI style request handler.
  * \return integer # of elements pushed to stack.
  *  -------------------------------------------------------------------------*/
@@ -33,6 +34,8 @@ lt_htp_srv_New( lua_State *luaVM )
 		lua_insert( luaVM, -3 );
 		s->rR = luaL_ref( luaVM, LUA_REGISTRYINDEX );
 		s->lR = luaL_ref( luaVM, LUA_REGISTRYINDEX );
+		lua_newtable( luaVM );
+		s->cR = luaL_ref( luaVM, LUA_REGISTRYINDEX );
 	}
 	else
 		return t_push_error( luaVM, "T.Http.Server( func ) requires a function as parameter" );
@@ -160,6 +163,12 @@ lt_htp_srv_accept( lua_State *luaVM )
 
 	luaL_getmetatable( luaVM, "T.Http.Message" );
 	lua_setmetatable( luaVM, -2 );
+	// add the connection to the connection table
+	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, s->cR );   // get connection reference
+	lua_pushvalue( luaVM, -2 );    // repush the new client
+	lua_rawseti( luaVM, -2, c_sck->fd );
+	lua_pop( luaVM, 1 );
+	// actually put it onto the loop
 	lua_call( luaVM, 5, 0 );
 	//TODO: Check if that returns true or false; if false resize loop
 	return 0;
@@ -236,6 +245,29 @@ static int lt_htp_srv__len( lua_State *luaVM )
 	return 1;
 }
 
+/**--------------------------------------------------------------------------
+ * __gc of a T.Http.Server instance.
+ * \param   luaVM      The lua state.
+ * \lparam  t_htp_srv  The Server instance user_data.
+ * \return  The number of results to be passed back to the calling Lua script.
+ * --------------------------------------------------------------------------*/
+static int
+lt_htp_srv__gc( lua_State *luaVM )
+{
+	struct t_htp_srv *s = (struct t_htp_srv *) luaL_checkudata( luaVM, 1, "T.Http.Server" );
+
+	// t_sck_close( luaVM, s->sck );     // segfaults???
+	luaL_unref( luaVM, LUA_REGISTRYINDEX, s->cR );
+	luaL_unref( luaVM, LUA_REGISTRYINDEX, s->sR );
+	luaL_unref( luaVM, LUA_REGISTRYINDEX, s->aR );
+	luaL_unref( luaVM, LUA_REGISTRYINDEX, s->lR );
+	luaL_unref( luaVM, LUA_REGISTRYINDEX, s->rR );
+
+	printf("GC'ed HTTP Server...\n");
+
+	return 0;
+}
+
 
 /**--------------------------------------------------------------------------
  * \brief    the metatble for the module
@@ -282,6 +314,8 @@ luaopen_t_htp_srv( lua_State *luaVM )
 	lua_setfield( luaVM, -2, "__index" );
 	lua_pushcfunction( luaVM, lt_htp_srv__len );
 	lua_setfield( luaVM, -2, "__len");
+	lua_pushcfunction( luaVM, lt_htp_srv__gc );
+	lua_setfield( luaVM, -2, "__gc");
 	lua_pushcfunction( luaVM, lt_htp_srv__tostring );
 	lua_setfield( luaVM, -2, "__tostring");
 	lua_pop( luaVM, 1 );        // remove metatable from stack

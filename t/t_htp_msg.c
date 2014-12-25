@@ -309,40 +309,6 @@ struct t_htp_msg
 
 
 /**--------------------------------------------------------------------------
- * __tostring (print) representation of a T.Http.Message instance.
- * \param   luaVM      The lua state.
- * \lparam  t_htp_msg  The Message instance user_data.
- * \lreturn string     formatted string representing T.Http.Message.
- * \return  The number of results to be passed back to the calling Lua script.
- * --------------------------------------------------------------------------*/
-static int
-lt_htp_msg__tostring( lua_State *luaVM )
-{
-	struct t_htp_msg *c = (struct t_htp_msg *) luaL_checkudata( luaVM, 1, "T.Http.Message" );
-
-	lua_pushfstring( luaVM, "T.Http.Message: %p", c );
-	return 1;
-}
-
-
-/**--------------------------------------------------------------------------
- * __len (#) representation of an instance.
- * \param   luaVM      The lua state.
- * \lparam  userdata   the instance user_data.
- * \lreturn string     formatted string representing the instance.
- * \return  The number of results to be passed back to the calling Lua script.
- * --------------------------------------------------------------------------*/
-static int
-lt_htp_msg__len( lua_State *luaVM )
-{
-	//struct t_wsk *wsk = t_wsk_check_ud( luaVM, 1, 1 );
-	//TODO: something meaningful here?
-	lua_pushinteger( luaVM, 5 );
-	return 1;
-}
-
-
-/**--------------------------------------------------------------------------
  * Handle incoming chunks from T.Http.Message socket.
  * Called if socket comes back from accept and anytime it returns from read.
  * \param   luaVM     lua Virtual Machine.
@@ -529,6 +495,65 @@ lt_htp_msg__newindex( lua_State *luaVM )
 
 
 /**--------------------------------------------------------------------------
+ * __tostring (print) representation of a T.Http.Message instance.
+ * \param   luaVM      The lua state.
+ * \lparam  t_htp_msg  The Message instance user_data.
+ * \lreturn string     formatted string representing T.Http.Message.
+ * \return  The number of results to be passed back to the calling Lua script.
+ * --------------------------------------------------------------------------*/
+static int
+lt_htp_msg__tostring( lua_State *luaVM )
+{
+	struct t_htp_msg *m = (struct t_htp_msg *) luaL_checkudata( luaVM, 1, "T.Http.Message" );
+
+	lua_pushfstring( luaVM, "T.Http.Message: %p", m );
+	return 1;
+}
+
+
+/**--------------------------------------------------------------------------
+ * __len (#) representation of an instance.
+ * \param   luaVM      The lua state.
+ * \lparam  userdata   the instance user_data.
+ * \lreturn string     formatted string representing the instance.
+ * \return  The number of results to be passed back to the calling Lua script.
+ * --------------------------------------------------------------------------*/
+static int
+lt_htp_msg__len( lua_State *luaVM )
+{
+	//struct t_wsk *wsk = t_wsk_check_ud( luaVM, 1, 1 );
+	//TODO: something meaningful here?
+	lua_pushinteger( luaVM, 5 );
+	return 1;
+}
+
+
+/**--------------------------------------------------------------------------
+ * __gc of a T.Http.Message instance.
+ * \param   luaVM      The lua state.
+ * \lparam  t_htp_msg  The Message instance user_data.
+ * \return  The number of results to be passed back to the calling Lua script.
+ * --------------------------------------------------------------------------*/
+static int
+lt_htp_msg__gc( lua_State *luaVM )
+{
+	struct t_htp_msg *m = (struct t_htp_msg *) luaL_checkudata( luaVM, 1, "T.Http.Message" );
+
+	luaL_unref( luaVM, LUA_REGISTRYINDEX, m->pR );
+
+	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->srv->cR );
+	lua_pushnil( luaVM );
+	lua_rawseti( luaVM, -2, m->sck->fd );
+
+	printf("GC'ed HTTP connection\n");
+
+	return 0;
+}
+
+
+
+
+/**--------------------------------------------------------------------------
  * \brief      the buffer library definition
  *             assigns Lua available names to C-functions
  * --------------------------------------------------------------------------*/
@@ -562,6 +587,8 @@ luaopen_t_htp_msg( lua_State *luaVM )
 	lua_setfield( luaVM, -2, "__newindex" );
 	lua_pushcfunction( luaVM, lt_htp_msg__len );
 	lua_setfield( luaVM, -2, "__len");
+	lua_pushcfunction( luaVM, lt_htp_msg__gc );
+	lua_setfield( luaVM, -2, "__gc");
 	lua_pushcfunction( luaVM, lt_htp_msg__tostring );
 	lua_setfield( luaVM, -2, "__tostring");
 	lua_pop( luaVM, 1 );        // remove metatable from stack
