@@ -400,7 +400,7 @@ t_htp_msg_prepresp( struct t_htp_msg *m )
 {
 	t_htp_srv_setnow( m->srv, 0 );            // update server time
 	m->bRead = (size_t) snprintf(m->buf, BUFSIZ,
-		"HTTP1.1 200 OK\r\n"
+		"HTTP/1.1 200 OK\r\n"
 		"Date: %s\r\n\r\n",
 			m->srv->fnow
 	);
