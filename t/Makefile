@@ -19,8 +19,8 @@ VER= 5.2
 T_SRC=t.c \
 	 t_sck.c \
 	 t_ipx.c \
-	 t_elp.c \
-	 t_elp_sel.c \
+	 t_ael.c \
+	 t_ael_sel.c \
 	 t_tim.c \
 	 t_enc.c \
 	 t_enc_arc4.c \

@@ -321,7 +321,7 @@ int
 t_htp_msg_rcv( lua_State *luaVM )
 {
 	struct t_htp_msg *m   = t_htp_msg_check_ud( luaVM, 1, 1 );
-	struct t_elp     *elp;
+	struct t_ael     *ael;
 	int               rcvd;
 
 	// get the proxy on the stack
@@ -342,16 +342,16 @@ t_htp_msg_rcv( lua_State *luaVM )
 	if (m->pS > T_HTP_STA_HEADER)
 	{
 		lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->lR );
-		elp = t_elp_check_ud( luaVM, -1, 1);
-		t_elp_removehandle_impl( elp, m->sck->fd );
-		t_elp_addhandle_impl( elp, m->sck->fd, 0 );
-		luaL_unref( luaVM, LUA_REGISTRYINDEX, elp->fd_set[ m->sck->fd ]->fR );
+		ael = t_ael_check_ud( luaVM, -1, 1);
+		t_ael_removehandle_impl( ael, m->sck->fd );
+		t_ael_addhandle_impl( ael, m->sck->fd, 0 );
+		luaL_unref( luaVM, LUA_REGISTRYINDEX, ael->fd_set[ m->sck->fd ]->fR );
 		lua_createtable( luaVM, 2, 0 );  // create function/parameter table
 		lua_pushcfunction( luaVM, t_htp_msg_rsp );
 		lua_rawseti( luaVM, -2, 1 );
 		lua_pushvalue( luaVM, 1 );
 		lua_rawseti( luaVM, -2, 2 );
-		elp->fd_set[ m->sck->fd ]->fR = luaL_ref( luaVM, LUA_REGISTRYINDEX );
+		ael->fd_set[ m->sck->fd ]->fR = luaL_ref( luaVM, LUA_REGISTRYINDEX );
 		lua_pop( luaVM, 1 );             // pop the event loop
 	}
 
@@ -372,7 +372,7 @@ int
 t_htp_msg_rsp( lua_State *luaVM )
 {
 	struct t_htp_msg *m   = t_htp_msg_check_ud( luaVM, 1, 1 );
-	struct t_elp     *elp;
+	struct t_ael     *ael;
 
 	m->sent += t_sck_send_tcp( luaVM, m->sck, &(m->buf[ m->sent ]), m->bRead );
 
@@ -381,12 +381,12 @@ t_htp_msg_rsp( lua_State *luaVM )
 	if (m->sent >= m->bRead)
 	{
 		lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->lR );
-		elp = t_elp_check_ud( luaVM, -1, 1);
-		t_elp_removehandle_impl( elp, m->sck->fd );
-		luaL_unref( luaVM, LUA_REGISTRYINDEX, elp->fd_set[ m->sck->fd ]->fR );
-		luaL_unref( luaVM, LUA_REGISTRYINDEX, elp->fd_set[ m->sck->fd ]->hR );
-		free( elp->fd_set[ m->sck->fd ] );
-		elp->fd_set[ m->sck->fd ] = NULL;
+		ael = t_ael_check_ud( luaVM, -1, 1);
+		t_ael_removehandle_impl( ael, m->sck->fd );
+		luaL_unref( luaVM, LUA_REGISTRYINDEX, ael->fd_set[ m->sck->fd ]->fR );
+		luaL_unref( luaVM, LUA_REGISTRYINDEX, ael->fd_set[ m->sck->fd ]->hR );
+		free( ael->fd_set[ m->sck->fd ] );
+		ael->fd_set[ m->sck->fd ] = NULL;
 		t_sck_close( luaVM, m->sck );
 	}
 

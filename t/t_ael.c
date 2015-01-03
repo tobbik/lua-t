@@ -1,8 +1,8 @@
 /* vim: ts=3 sw=3 sts=3 tw=80 sta noet list
 */
 /**
- * \file      t_elp.c
- * \brief     OOP wrapper for an asyncronous eventloop (T.Loop)
+ * \file      t_ael.c
+ * \brief     OOP wrapper for an asyncronous event loop (T.Loop)
  *            This covers the generic functions which are usable accross
  *            specific implementations
  *            They mainly handle the creation of data structures, their
@@ -15,35 +15,35 @@
 #include "t.h"
 #include <stdlib.h>               // malloc, free
 #include <string.h>               // memset
-#include "t_elp.h"
+#include "t_ael.h"
 #include "t_tim.h"
 
 
 /**--------------------------------------------------------------------------
  * Slot in a timer event into the loops timer event list.
- * \param   t_elp    Loop Struct.
- * \lreturn t_elp_tm Timer event struct.
+ * \param   t_ael    Loop Struct.
+ * \lreturn t_ael_tm Timer event struct.
  * \return  void.
  * --------------------------------------------------------------------------*/
 static inline void
-t_elp_instimer( struct t_elp *elp, struct t_elp_tm *te )
+t_ael_instimer( struct t_ael *ael, struct t_ael_tm *te )
 {
-	struct t_elp_tm *tr;
+	struct t_ael_tm *tr;
 
-	if (NULL == elp->tm_head || t_tim_cmp( elp->tm_head->tv, te->tv, > ))
+	if (NULL == ael->tm_head || t_tim_cmp( ael->tm_head->tv, te->tv, > ))
 	{
 #if PRINT_DEBUGS == 1
 		printf( "Make HEAD   {%2ld:%6ld}\t PRE{%2ld:%6ld}\n",
 			te->tv->tv_sec,  te->tv->tv_usec,
-			(NULL != elp->tm_head) ? elp->tm_head->tv->tv_sec  : 0,
-			(NULL != elp->tm_head) ? elp->tm_head->tv->tv_usec : 0);
+			(NULL != ael->tm_head) ? ael->tm_head->tv->tv_sec  : 0,
+			(NULL != ael->tm_head) ? ael->tm_head->tv->tv_usec : 0);
 #endif
-		te->nxt     = elp->tm_head;
-		elp->tm_head = te;
+		te->nxt     = ael->tm_head;
+		ael->tm_head = te;
 	}
 	else
 	{
-		tr = elp->tm_head;
+		tr = ael->tm_head;
 		while (NULL != tr->nxt && t_tim_cmp( tr->nxt->tv, te->tv, < ))
 			tr = tr->nxt;
 #if PRINT_DEBUGS == 1
@@ -60,14 +60,14 @@ t_elp_instimer( struct t_elp *elp, struct t_elp_tm *te )
 /**--------------------------------------------------------------------------
  * Adjust amount of time in the loops timer event list.
  *          substract ta from each timer in the list.
- * \param   t_elp    Loop Struct.
- * \lreturn t_elp_tm Timer event struct.
+ * \param   t_ael    Loop Struct.
+ * \lreturn t_ael_tm Timer event struct.
  * \return  void.
  * --------------------------------------------------------------------------*/
 static inline void
-t_elp_adjusttimer( struct t_elp *elp, struct timeval *ta )
+t_ael_adjusttimer( struct t_ael *ael, struct timeval *ta )
 {
-	struct t_elp_tm *tr = elp->tm_head;
+	struct t_ael_tm *tr = ael->tm_head;
 	while (NULL != tr)
 	{
 		t_tim_sub( tr->tv, ta, tr->tv );
@@ -86,7 +86,7 @@ t_elp_adjusttimer( struct t_elp *elp, struct timeval *ta )
  * \return  int           Number of arguments to be called by f
  * --------------------------------------------------------------------------*/
 static inline int
-t_elp_getfunc( lua_State *luaVM, int refPos )
+t_ael_getfunc( lua_State *luaVM, int refPos )
 {
 	int n;      ///< number of arguments+1(function)
 	int j;
@@ -105,18 +105,18 @@ t_elp_getfunc( lua_State *luaVM, int refPos )
  * \lparam  userdata      T.Loop.
  * \return  void.
  * --------------------------------------------------------------------------*/
-void 
-t_elp_executetimer( lua_State *luaVM, struct t_elp *elp, struct timeval *rt )
+void
+t_ael_executetimer( lua_State *luaVM, struct t_ael *ael, struct timeval *rt )
 {
 	struct timeval  *tv;                  ///< timer returned by execution -> if there is
 	
-	struct t_elp_tm *te = elp->tm_head;   ///< timer to execute is tm_head, ALWAYS
+	struct t_ael_tm *te = ael->tm_head;   ///< timer to execute is tm_head, ALWAYS
 	int    l;                             ///< length of arguments to call 
-	elp->tm_head = elp->tm_head->nxt;
-	l = t_elp_getfunc( luaVM, te->fR );
+	ael->tm_head = ael->tm_head->nxt;
+	l = t_ael_getfunc( luaVM, te->fR );
 	lua_call( luaVM, l, 1 );
 	t_tim_since( rt );
-	t_elp_adjusttimer( elp, rt );
+	t_ael_adjusttimer( ael, rt );
 	tv = (struct timeval *) luaL_testudata( luaVM, -1, "T.Time" );
 	// reorganize linked timer list
 	if (NULL == tv)
@@ -128,7 +128,7 @@ t_elp_executetimer( lua_State *luaVM, struct t_elp *elp, struct timeval *rt )
 	else
 	{
 		*te->tv = *tv;
-		t_elp_instimer( elp, te );
+		t_ael_instimer( ael, te );
 	}
 	lua_pop( luaVM, 2 );   // pop the one value that lua_call allows to be
 	                       // returned and the original reference table
@@ -143,9 +143,9 @@ t_elp_executetimer( lua_State *luaVM, struct t_elp *elp, struct timeval *rt )
  * \return  void.
  * --------------------------------------------------------------------------*/
 void
-t_elp_executehandle( lua_State *luaVM, struct t_elp *elp, int fd )
+t_ael_executehandle( lua_State *luaVM, struct t_ael *ael, int fd )
 {
-	int n = t_elp_getfunc( luaVM, elp->fd_set[ fd ]->fR );
+	int n = t_ael_getfunc( luaVM, ael->fd_set[ fd ]->fR );
 	lua_call( luaVM, n , 0 );
 	lua_pop( luaVM, 1 );             // remove the table
 }
@@ -155,14 +155,14 @@ t_elp_executehandle( lua_State *luaVM, struct t_elp *elp, int fd )
  * Create a new t.Loop and return it.
  * \param   luaVM  The lua state.
  * \lparam  int    initial size of fd_event slots in the Loop.
- * \lreturn struct t_elp userdata.
+ * \lreturn struct t_ael userdata.
  * \return  #stack items returned by function call.
  * --------------------------------------------------------------------------*/
 static int
-lt_elp_New( lua_State *luaVM )
+lt_ael_New( lua_State *luaVM )
 {
 	size_t                                 sz  = luaL_checkinteger( luaVM, 1 );
-	struct t_elp __attribute__ ((unused)) *elp = t_elp_create_ud( luaVM, sz );
+	struct t_ael __attribute__ ((unused)) *ael = t_ael_create_ud( luaVM, sz );
 	return 1;
 }
 
@@ -171,52 +171,52 @@ lt_elp_New( lua_State *luaVM )
  * Construct a t.Loop and return it.
  * \param   luaVM  The lua state.
  * \lparam  CLASS table t.Loop.
- * \lreturn struct t_elp userdata.
+ * \lreturn struct t_ael userdata.
  * \return  #stack items returned by function call.
  * --------------------------------------------------------------------------*/
-static int lt_elp__Call( lua_State *luaVM )
+static int lt_ael__Call( lua_State *luaVM )
 {
 	lua_remove( luaVM, 1 );
-	return lt_elp_New( luaVM );
+	return lt_ael_New( luaVM );
 }
 
 
 /**--------------------------------------------------------------------------
- * Create a new t_elp userdata and push to LuaStack.
+ * Create a new t_ael userdata and push to LuaStack.
  * \param   luaVM  The lua state.
  * \param   size_t  how many slots for file/socket events to be created.
- * \return  struct t_elp * pointer to new userdata on Lua Stack
+ * \return  struct t_ael * pointer to new userdata on Lua Stack
  * --------------------------------------------------------------------------*/
-struct t_elp
-*t_elp_create_ud( lua_State *luaVM, size_t sz )
+struct t_ael
+*t_ael_create_ud( lua_State *luaVM, size_t sz )
 {
-	struct t_elp    *elp;
+	struct t_ael    *ael;
 
-	elp = (struct t_elp *) lua_newuserdata( luaVM, sizeof( struct t_elp ) );
-	elp->fd_sz   = sz;
-	elp->mxfd    = 0;
-	elp->tm_head = NULL;
-	elp->fd_set  = (struct t_elp_fd **) malloc( elp->fd_sz * sizeof( struct t_elp_fd * ) );
-	memset( elp->fd_set, 0, elp->fd_sz * sizeof( struct t_elp_fd * ) );
-	t_elp_create_ud_impl( elp );
+	ael = (struct t_ael *) lua_newuserdata( luaVM, sizeof( struct t_ael ) );
+	ael->fd_sz   = sz;
+	ael->mxfd    = 0;
+	ael->tm_head = NULL;
+	ael->fd_set  = (struct t_ael_fd **) malloc( ael->fd_sz * sizeof( struct t_ael_fd * ) );
+	memset( ael->fd_set, 0, ael->fd_sz * sizeof( struct t_ael_fd * ) );
+	t_ael_create_ud_impl( ael );
 	luaL_getmetatable( luaVM, "T.Loop" );
 	lua_setmetatable( luaVM, -2 );
-	return elp;
+	return ael;
 }
 
 
 /**--------------------------------------------------------------------------
- * Check a value on the stack for being a struct t_elp
+ * Check a value on the stack for being a struct t_ael
  * \param   luaVM    The lua state.
  * \param   int      position on the stack
- * \return  struct t_elp*  pointer to userdata on stack
+ * \return  struct t_ael*  pointer to userdata on stack
  * --------------------------------------------------------------------------*/
-struct t_elp
-*t_elp_check_ud ( lua_State *luaVM, int pos, int check )
+struct t_ael
+*t_ael_check_ud ( lua_State *luaVM, int pos, int check )
 {
 	void *ud = luaL_checkudata( luaVM, pos, "T.Loop" );
 	luaL_argcheck( luaVM, (ud != NULL  || !check), pos, "`T.Loop` expected" );
-	return (NULL==ud) ? NULL : (struct t_elp *) ud;
+	return (NULL==ud) ? NULL : (struct t_ael *) ud;
 }
 
 
@@ -231,13 +231,13 @@ struct t_elp
  * \return  #stack items returned by function call.
  * --------------------------------------------------------------------------*/
 int
-lt_elp_addhandle( lua_State *luaVM )
+lt_ael_addhandle( lua_State *luaVM )
 {
 	luaL_Stream   *lS;
 	struct t_sck  *sc;
 	int            fd  = 0;
 	int            n   = lua_gettop( luaVM ) + 1;    ///< iterator for arguments
-	struct t_elp  *elp = t_elp_check_ud( luaVM, 1, 1 );
+	struct t_ael  *ael = t_ael_check_ud( luaVM, 1, 1 );
 
 	luaL_checktype( luaVM, 4, LUA_TFUNCTION );
 	lS = (luaL_Stream *) luaL_testudata( luaVM, 2, LUA_FILEHANDLE );
@@ -251,17 +251,17 @@ lt_elp_addhandle( lua_State *luaVM )
 	if (0 == fd)
 		return t_push_error( luaVM, "Argument to addHandle must be file or socket" );
 
-	elp->fd_set[ fd ] = (struct t_elp_fd *) malloc( sizeof( struct t_elp_fd ) );
-	t_elp_addhandle_impl( elp, fd, lua_toboolean( luaVM, 3 ) );
+	ael->fd_set[ fd ] = (struct t_ael_fd *) malloc( sizeof( struct t_ael_fd ) );
+	t_ael_addhandle_impl( ael, fd, lua_toboolean( luaVM, 3 ) );
 
 	lua_createtable( luaVM, n-4, 0 );  // create function/parameter table
 	lua_insert( luaVM, 4 );
-	//Stack: elp,fd,read/write,TABLE,func,...
+	//Stack: ael,fd,read/write,TABLE,func,...
 	while (n > 4)
 		lua_rawseti( luaVM, 4, (n--)-4 );   // add arguments and function (pops each item)
-	elp->fd_set[ fd ]->fR = luaL_ref( luaVM, LUA_REGISTRYINDEX );      // pop the function/parameter table
+	ael->fd_set[ fd ]->fR = luaL_ref( luaVM, LUA_REGISTRYINDEX );      // pop the function/parameter table
 	lua_pop( luaVM, 1 ); // pop the read write boolean
-	elp->fd_set[ fd ]->hR = luaL_ref( luaVM, LUA_REGISTRYINDEX );      // keep ref to handle so it doesnt gc
+	ael->fd_set[ fd ]->hR = luaL_ref( luaVM, LUA_REGISTRYINDEX );      // keep ref to handle so it doesnt gc
 
 	return  0;
 }
@@ -276,12 +276,12 @@ lt_elp_addhandle( lua_State *luaVM )
  * TODO: optimize!
  * --------------------------------------------------------------------------*/
 int
-lt_elp_removehandle( lua_State *luaVM )
+lt_ael_removehandle( lua_State *luaVM )
 {
 	luaL_Stream    *lS;
 	struct t_sck   *sc;
 	int             fd  = 0;
-	struct t_elp   *elp = t_elp_check_ud( luaVM, 1, 1 );
+	struct t_ael   *ael = t_ael_check_ud( luaVM, 1, 1 );
 
 	lS = (luaL_Stream *) luaL_testudata( luaVM, 2, LUA_FILEHANDLE );
 	if (NULL != lS)
@@ -293,14 +293,15 @@ lt_elp_removehandle( lua_State *luaVM )
 
 	if (0 == fd)
 		return t_push_error( luaVM, "Argument to addHandle must be file or socket" );
-	luaL_unref( luaVM, LUA_REGISTRYINDEX, elp->fd_set[ fd ]->fR );
-	luaL_unref( luaVM, LUA_REGISTRYINDEX, elp->fd_set[ fd ]->hR );
-	t_elp_removehandle_impl( elp, fd );
-	free( elp->fd_set[ fd ] );
-	elp->fd_set[ fd ] = NULL;
+	luaL_unref( luaVM, LUA_REGISTRYINDEX, ael->fd_set[ fd ]->fR );
+	luaL_unref( luaVM, LUA_REGISTRYINDEX, ael->fd_set[ fd ]->hR );
+	t_ael_removehandle_impl( ael, fd );
+	free( ael->fd_set[ fd ] );
+	ael->fd_set[ fd ] = NULL;
 
 	return 0;
 }
+
 
 /**--------------------------------------------------------------------------
  * Add a Timer event handler to the T.Loop.
@@ -312,28 +313,28 @@ lt_elp_removehandle( lua_State *luaVM )
  * \return  #stack items returned by function call.
  * --------------------------------------------------------------------------*/
 static int
-lt_elp_addtimer( lua_State *luaVM )
+lt_ael_addtimer( lua_State *luaVM )
 {
-	struct t_elp    *elp = t_elp_check_ud( luaVM, 1, 1 );
+	struct t_ael    *ael = t_ael_check_ud( luaVM, 1, 1 );
 	struct timeval  *tv  = t_tim_check_ud( luaVM, 2 );
 	int              n   = lua_gettop( luaVM ) + 1;    ///< iterator for arguments
-	struct t_elp_tm *te;
+	struct t_ael_tm *te;
 
 	luaL_checktype( luaVM, 3, LUA_TFUNCTION );
 	// Build up the timer element
-	te = (struct t_elp_tm *) malloc( sizeof( struct t_elp_tm ) );
+	te = (struct t_ael_tm *) malloc( sizeof( struct t_ael_tm ) );
 	te->tv =  tv;
-	//t_elp_addtimer_impl( elp, tv );
+	//t_ael_addtimer_impl( ael, tv );
 	lua_createtable( luaVM, n-3, 0 );  // create function/parameter table
 	lua_insert( luaVM, 3 );
-	// Stack: elp,tv,TABLE,func,...
+	// Stack: ael,tv,TABLE,func,...
 	while (n > 3)
 		lua_rawseti( luaVM, 3, (n--)-3 );            // add arguments and function (pops each item)
 	te->fR = luaL_ref( luaVM, LUA_REGISTRYINDEX );  // pop the function/parameter table
 	// making the time val part of lua registry guarantees the gc can't destroy it
 	te->tR = luaL_ref( luaVM, LUA_REGISTRYINDEX );  // pop the timeval
 	// insert into ordered linked list of time events
-	t_elp_instimer( elp, te );
+	t_ael_instimer( ael, te );
 
 	return 1;
 }
@@ -348,17 +349,17 @@ lt_elp_addtimer( lua_State *luaVM )
  * TODO: optimize!
  * --------------------------------------------------------------------------*/
 static int
-lt_elp_removetimer( lua_State *luaVM )
+lt_ael_removetimer( lua_State *luaVM )
 {
-	struct t_elp    *elp = t_elp_check_ud( luaVM, 1, 1 );
+	struct t_ael    *ael = t_ael_check_ud( luaVM, 1, 1 );
 	struct timeval  *tv  = t_tim_check_ud( luaVM, 2 );
-	struct t_elp_tm *tp  = elp->tm_head;
-	struct t_elp_tm *te  = tp->nxt;       ///< previous Timer event
+	struct t_ael_tm *tp  = ael->tm_head;
+	struct t_ael_tm *te  = tp->nxt;       ///< previous Timer event
 
 	// if head is node in question
 	if (NULL != tp  &&  tp->tv == tv)
 	{
-		elp->tm_head = te;
+		ael->tm_head = te;
 		luaL_unref( luaVM,LUA_REGISTRYINDEX, tp->fR );
 		luaL_unref( luaVM,LUA_REGISTRYINDEX, tp->tR );
 		free( tp );
@@ -389,10 +390,10 @@ lt_elp_removetimer( lua_State *luaVM )
  * \return integer number of values left on te stack.
  * -------------------------------------------------------------------------*/
 static int
-lt_elp__gc( lua_State *luaVM )
+lt_ael__gc( lua_State *luaVM )
 {
-	struct t_elp    *elp     = t_elp_check_ud( luaVM, 1, 1 );
-	struct t_elp_tm *tf, *tr = elp->tm_head;
+	struct t_ael    *ael     = t_ael_check_ud( luaVM, 1, 1 );
+	struct t_ael_tm *tf, *tr = ael->tm_head;
 	size_t           i;       ///< the iterator for all fields
 
 	while (NULL != tr)
@@ -406,13 +407,13 @@ lt_elp__gc( lua_State *luaVM )
 		free( tf );
 	}
 	//printf("---------");
-	for (i=0; i < elp->fd_sz; i++)
+	for (i=0; i < ael->fd_sz; i++)
 	{
-		if (NULL != elp->fd_set[ i ])
+		if (NULL != ael->fd_set[ i ])
 		{
-			luaL_unref( luaVM, LUA_REGISTRYINDEX, elp->fd_set[ i ]->fR );
-			luaL_unref( luaVM, LUA_REGISTRYINDEX, elp->fd_set[ i ]->hR );
-			free( elp->fd_set[ i ] );
+			luaL_unref( luaVM, LUA_REGISTRYINDEX, ael->fd_set[ i ]->fR );
+			luaL_unref( luaVM, LUA_REGISTRYINDEX, ael->fd_set[ i ]->hR );
+			free( ael->fd_set[ i ] );
 		}
 	}
 	return 0;
@@ -430,19 +431,19 @@ lt_elp__gc( lua_State *luaVM )
  * \return  #stack items returned by function call.
  * --------------------------------------------------------------------------*/
 static int
-lt_elp_run( lua_State *luaVM )
+lt_ael_run( lua_State *luaVM )
 {
-	struct t_elp    *elp = t_elp_check_ud( luaVM, 1, 1 );
-	elp->run = 1;
+	struct t_ael    *ael = t_ael_check_ud( luaVM, 1, 1 );
+	ael->run = 1;
 
-	while (elp->run)
+	while (ael->run)
 	{
-		if (t_elp_poll_impl( luaVM, elp ) < 0)
+		if (t_ael_poll_impl( luaVM, ael ) < 0)
 		{
 			return t_push_error( luaVM, "Failed to continue" );
 		}
 		// if there are no events left in the loop stop processing
-		elp->run =  (NULL==elp->tm_head && elp->mxfd<1) ? 0 : elp->run;
+		ael->run =  (NULL==ael->tm_head && ael->mxfd<1) ? 0 : ael->run;
 	}
 
 	return 0;
@@ -456,12 +457,13 @@ lt_elp_run( lua_State *luaVM )
  * \return  #stack items returned by function call.
  * --------------------------------------------------------------------------*/
 static int
-lt_elp_stop( lua_State *luaVM )
+lt_ael_stop( lua_State *luaVM )
 {
-	struct t_elp    *elp = t_elp_check_ud( luaVM, 1, 1 );
-	elp->run = 0;
+	struct t_ael    *ael = t_ael_check_ud( luaVM, 1, 1 );
+	ael->run = 0;
 	return 0;
 }
+
 
 /**--------------------------------------------------------------------------
  * Prints out the Loop.
@@ -471,46 +473,46 @@ lt_elp_stop( lua_State *luaVM )
  * \return  The number of results to be passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
 static int
-lt_elp__tostring( lua_State *luaVM )
+lt_ael__tostring( lua_State *luaVM )
 {
-	struct t_elp *elp = t_elp_check_ud( luaVM, 1, 1 );
-	lua_pushfstring( luaVM, "T.Loop(select){%d:%d}: %p", elp->fd_sz, elp->mxfd, elp );
+	struct t_ael *ael = t_ael_check_ud( luaVM, 1, 1 );
+	lua_pushfstring( luaVM, "T.Loop(select){%d:%d}: %p", ael->fd_sz, ael->mxfd, ael );
 	return 1;
 }
 
 
 /**--------------------------------------------------------------------------
  * Debug print for loops.
- * \param   t_elp    Loop Struct.
+ * \param   t_ael    Loop Struct.
  * \return  int #elements returned to function call(Stack)
  * --------------------------------------------------------------------------*/
 int
-lt_elp_showloop( lua_State *luaVM )
+lt_ael_showloop( lua_State *luaVM )
 {
-	struct t_elp    *elp = t_elp_check_ud( luaVM, 1, 1 );
-	struct t_elp_tm *tr  = elp->tm_head;
+	struct t_ael    *ael = t_ael_check_ud( luaVM, 1, 1 );
+	struct t_ael_tm *tr  = ael->tm_head;
 	int              i   = 0;
 	int              n   = lua_gettop( luaVM );
-	printf( "LOOP %p TIMER LIST:\n", elp );
+	printf( "LOOP %p TIMER LIST:\n", ael );
 	while (NULL != tr)
 	{
 		printf("\t%d\t{%2ld:%6ld}\t%p   ", ++i,
 			tr->tv->tv_sec,  tr->tv->tv_usec,
 			tr->tv);
-		t_elp_getfunc( luaVM, tr->fR );
+		t_ael_getfunc( luaVM, tr->fR );
 		t_stackPrint( luaVM, n+1, lua_gettop( luaVM ) );
 		lua_pop( luaVM, lua_gettop( luaVM ) - n );
 		printf("\n");
 		tr = tr->nxt;
 	}
-	printf( "LOOP %p HANDLE LIST:\n", elp );
-	for( i=0; i<elp->mxfd+1; i++)
+	printf( "LOOP %p HANDLE LIST:\n", ael );
+	for( i=0; i<ael->mxfd+1; i++)
 	{
-		if (NULL==elp->fd_set[ i ])
+		if (NULL==ael->fd_set[ i ])
 			continue;
 		printf("\t%d\t%s   ", i,
-			(t_elp_READ == elp->fd_set[i]->t) ? "READER" : "WRITER");
-		t_elp_getfunc( luaVM, elp->fd_set[i]->fR );
+			(t_ael_READ == ael->fd_set[i]->t) ? "READER" : "WRITER");
+		t_ael_getfunc( luaVM, ael->fd_set[i]->fR );
 		t_stackPrint( luaVM, n+1, lua_gettop( luaVM ) );
 		lua_pop( luaVM, lua_gettop( luaVM ) - n );
 		printf("\n");
@@ -522,9 +524,9 @@ lt_elp_showloop( lua_State *luaVM )
 /**
  * \brief    the metatble for the module
  */
-static const struct luaL_Reg t_elp_fm [] =
+static const struct luaL_Reg t_ael_fm [] =
 {
-	{"__call",    lt_elp__Call},
+	{"__call",    lt_ael__Call},
 	{NULL,   NULL}
 };
 
@@ -532,9 +534,9 @@ static const struct luaL_Reg t_elp_fm [] =
  * \brief      the Time library class functions definition
  *             assigns Lua available names to C-functions
  */
-static const luaL_Reg t_elp_cf [] =
+static const luaL_Reg t_ael_cf [] =
 {
-	{"new",       lt_elp_New},
+	{"new",       lt_ael_New},
 	{NULL,        NULL}
 };
 
@@ -543,15 +545,15 @@ static const luaL_Reg t_elp_cf [] =
  * \brief      the Timer library definition
  *             assigns Lua available names to C-functions
  */
-static const struct luaL_Reg t_elp_m [] =
+static const struct luaL_Reg t_ael_m [] =
 {
-	{"addTimer",       lt_elp_addtimer},
-	{"removeTimer",    lt_elp_removetimer},
-	{"addHandle",      lt_elp_addhandle},
-	{"removeHandle",   lt_elp_removehandle},
-	{"run",            lt_elp_run},
-	{"stop",           lt_elp_stop},
-	{"show",           lt_elp_showloop},
+	{"addTimer",       lt_ael_addtimer},
+	{"removeTimer",    lt_ael_removetimer},
+	{"addHandle",      lt_ael_addhandle},
+	{"removeHandle",   lt_ael_removehandle},
+	{"run",            lt_ael_run},
+	{"stop",           lt_ael_stop},
+	{"show",           lt_ael_showloop},
 	{NULL,   NULL}
 };
 
@@ -565,23 +567,23 @@ static const struct luaL_Reg t_elp_m [] =
  * \return  The number of results to be passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
 LUA_API int
-luaopen_t_elp( lua_State *luaVM )
+luaopen_t_ael( lua_State *luaVM )
 {
 	// just make metatable known to be able to register and check userdata
 	luaL_newmetatable( luaVM, "T.Loop" );   // stack: functions meta
-	luaL_newlib( luaVM, t_elp_m );
+	luaL_newlib( luaVM, t_ael_m );
 	lua_setfield( luaVM, -2, "__index" );
-	lua_pushcfunction( luaVM, lt_elp__tostring );
+	lua_pushcfunction( luaVM, lt_ael__tostring );
 	lua_setfield( luaVM, -2, "__tostring" );
-	lua_pushcfunction( luaVM, lt_elp__gc );
+	lua_pushcfunction( luaVM, lt_ael__gc );
 	lua_setfield( luaVM, -2, "__gc" );
 	lua_pop( luaVM, 1 );        // remove metatable from stack
 
 	// Push the class onto the stack
-	luaL_newlib( luaVM, t_elp_cf );
+	luaL_newlib( luaVM, t_ael_cf );
 	// set the methods as metatable
 	// this is only avalable a <instance>:func()
-	luaL_newlib( luaVM, t_elp_fm );
+	luaL_newlib( luaVM, t_ael_fm );
 	lua_setmetatable( luaVM, -2 );
 	return 1;
 }

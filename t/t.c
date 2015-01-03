@@ -321,7 +321,7 @@ static const luaL_Reg l_t_lib [] =
 LUAMOD_API int luaopen_t( lua_State *luaVM )
 {
 	luaL_newlib( luaVM, l_t_lib );
-	luaopen_t_elp( luaVM );
+	luaopen_t_ael( luaVM );
 	lua_setfield( luaVM, -2, "Loop" );
 	luaopen_t_tim( luaVM );
 	lua_setfield( luaVM, -2, "Time" );

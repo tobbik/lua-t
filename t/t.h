@@ -50,7 +50,7 @@ uint16_t get_crc16(const unsigned char *data, size_t size);
 
 
 // global sub classes registration
-LUAMOD_API int luaopen_t_elp( lua_State *luaVM );
+LUAMOD_API int luaopen_t_ael( lua_State *luaVM );
 LUAMOD_API int luaopen_t_tim( lua_State *luaVM );
 LUAMOD_API int luaopen_t_ipx( lua_State *luaVM );
 LUAMOD_API int luaopen_t_sck( lua_State *luaVM );

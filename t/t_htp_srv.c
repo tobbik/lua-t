@@ -26,9 +26,9 @@ static int
 lt_htp_srv_New( lua_State *luaVM )
 {
 	struct t_htp_srv *s;
-	struct t_elp     *l;
+	struct t_ael     *l;
 
-	if (lua_isfunction( luaVM, -1 ) && (l = t_elp_check_ud( luaVM, -2, 1 )))
+	if (lua_isfunction( luaVM, -1 ) && (l = t_ael_check_ud( luaVM, -2, 1 )))
 	{
 		s     = t_htp_srv_create_ud( luaVM );
 		lua_insert( luaVM, -3 );
@@ -142,19 +142,19 @@ lt_htp_srv_accept( lua_State *luaVM )
 	c_sck  = t_sck_check_ud( luaVM, -2, 1 );
 	si_cli = t_ipx_check_ud( luaVM, -1, 1 );
 
-	lua_pushcfunction( luaVM, lt_elp_addhandle );
+	lua_pushcfunction( luaVM, lt_ael_addhandle );
 	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, s->lR );
-	t_elp_check_ud( luaVM, -1, 1 );               //S: srv,ssck,csck,cip,addhandle,elp
+	t_ael_check_ud( luaVM, -1, 1 );               //S: srv,ssck,csck,cip,addhandle,ael
 	lua_pushvalue( luaVM, -4 );                   // push client socket
 	lua_pushboolean( luaVM, 1 );                  // yepp, that's for reading
-	lua_pushcfunction( luaVM, t_htp_msg_rcv );   //S: srv,ssck,csck,cip,addhandle,elp,csck,true,read
+	lua_pushcfunction( luaVM, t_htp_msg_rcv );   //S: srv,ssck,csck,cip,addhandle,ael,csck,true,read
 	m      = t_htp_msg_create_ud( luaVM, s );
 	lua_newtable( luaVM );
 	lua_pushstring( luaVM, "socket" );
-	lua_pushvalue( luaVM, -10);  //S: srv,ssck,csck,cip,addhandle,elp,csck,true,read,cli,header,"socket",csck
+	lua_pushvalue( luaVM, -10);  //S: srv,ssck,csck,cip,addhandle,ael,csck,true,read,cli,header,"socket",csck
 	lua_rawset( luaVM, -3 );
 	lua_pushstring( luaVM, "ip" );
-	lua_pushvalue( luaVM, -9);   //S: srv,ssck,csck,cip,addhandle,elp,csck,true,read,cli,header,"ip",si_cli
+	lua_pushvalue( luaVM, -9);   //S: srv,ssck,csck,cip,addhandle,ael,csck,true,read,cli,header,"ip",si_cli
 	lua_rawset( luaVM, -3 );
 	m->pR  = luaL_ref( luaVM, LUA_REGISTRYINDEX );
 	m->lR  = s->lR;       // copy loop reference
@@ -199,9 +199,9 @@ lt_htp_srv_listen( lua_State *luaVM )
 	s->sR = luaL_ref( luaVM, LUA_REGISTRYINDEX );
 
 	// TODO: cheaper to reimplement functionality -> less overhead?
-	lua_pushcfunction( luaVM, lt_elp_addhandle ); //S: srv,sc,addhandle
+	lua_pushcfunction( luaVM, lt_ael_addhandle ); //S: srv,sc,addhandle
 	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, s->lR );
-	t_elp_check_ud( luaVM, -1, 1 );
+	t_ael_check_ud( luaVM, -1, 1 );
 	lua_pushvalue( luaVM, -3 );                  /// push socket
 	lua_pushboolean( luaVM, 1 );                 //S: srv,sc,addhandle,loop,sck,true
 	lua_pushcfunction( luaVM, lt_htp_srv_accept );
