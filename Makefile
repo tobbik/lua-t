@@ -1,7 +1,7 @@
 VER=5.3
 ifeq ($(VER), 5.3)
-	LUASRC=lua-5.3.0-rc3.tar.gz
-	DLPATH=http://www.lua.org/work
+	LUASRC=lua-5.3.0.tar.gz
+	DLPATH=http://www.lua.org/ftp
 else
 	LUASRC=lua-5.2.3.tar.gz
 	DLPATH=http://www.lua.org/ftp
