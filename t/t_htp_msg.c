@@ -233,6 +233,7 @@ static inline char
 	}
 
 	m->pS = (0 == m->sz) ? T_HTP_STA_NOBODY : T_HTP_STA_BODY;
+	m->kpAlv = 0;          // TODO: set smarter
 	lua_pop( luaVM, 1 );   // pop the header table
 	return (char *) r;
 }
@@ -333,15 +334,14 @@ t_htp_msg_rcv( lua_State *luaVM )
 
 	t_htp_msg_parse( luaVM, m, &(m->buf[ m->bRead ]) );
 
-	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->rR );    // get function from msg
+	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->srv->rR );    // get function from msg
 	lua_pushvalue( luaVM, 1 );
 	lua_call( luaVM, 1,0 );
-
 
 	// TODO: depending on T_HTP_STA state / parse body or deal with incoming data
 	if (m->pS > T_HTP_STA_HEADER)
 	{
-		lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->lR );
+		lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->srv->lR );
 		ael = t_ael_check_ud( luaVM, -1, 1);
 		t_ael_removehandle_impl( ael, m->sck->fd );
 		t_ael_addhandle_impl( ael, m->sck->fd, 0 );
@@ -377,17 +377,27 @@ t_htp_msg_rsp( lua_State *luaVM )
 	m->sent += t_sck_send_tcp( luaVM, m->sck, &(m->buf[ m->sent ]), m->bRead );
 
 	printf("RESPONSE:  %zu    %zu      %s\n", m->bRead, m->sent,  m->buf);
-	//if (T_HTP_STA_DONE == m->pS)
+	// if (T_HTP_STA_DONE == m->pS)
 	if (m->sent >= m->bRead)
 	{
-		lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->lR );
+		lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->srv->lR );
 		ael = t_ael_check_ud( luaVM, -1, 1);
 		t_ael_removehandle_impl( ael, m->sck->fd );
 		luaL_unref( luaVM, LUA_REGISTRYINDEX, ael->fd_set[ m->sck->fd ]->fR );
 		luaL_unref( luaVM, LUA_REGISTRYINDEX, ael->fd_set[ m->sck->fd ]->hR );
 		free( ael->fd_set[ m->sck->fd ] );
 		ael->fd_set[ m->sck->fd ] = NULL;
-		t_sck_close( luaVM, m->sck );
+		// if keepalive reverse socket again and create timeout function
+		if (! m->kpAlv)
+		{
+			luaL_unref( luaVM, LUA_REGISTRYINDEX, m->pR );
+			m->pR = LUA_NOREF;
+			t_sck_close( luaVM, m->sck );
+			lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->srv->cR );
+			lua_pushnil( luaVM );
+			lua_rawseti( luaVM, -2, m->sck->fd );
+			lua_pop( luaVM, 1 );   // pop the connection table
+		}
 	}
 
 	return 1;
@@ -399,8 +409,9 @@ static void
 t_htp_msg_prepresp( struct t_htp_msg *m )
 {
 	t_htp_srv_setnow( m->srv, 0 );            // update server time
-	m->bRead = (size_t) snprintf(m->buf, BUFSIZ,
+	m->bRead = (size_t) snprintf( m->buf, BUFSIZ,
 		"HTTP/1.1 200 OK\r\n"
+		"Content-Length: 17 \r\n"
 		"Date: %s\r\n\r\n",
 			m->srv->fnow
 	);
@@ -539,18 +550,13 @@ lt_htp_msg__gc( lua_State *luaVM )
 {
 	struct t_htp_msg *m = (struct t_htp_msg *) luaL_checkudata( luaVM, 1, "T.Http.Message" );
 
-	luaL_unref( luaVM, LUA_REGISTRYINDEX, m->pR );
-
-	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->srv->cR );
-	lua_pushnil( luaVM );
-	lua_rawseti( luaVM, -2, m->sck->fd );
+	if (LUA_NOREF != m->pR)
+		luaL_unref( luaVM, LUA_REGISTRYINDEX, m->pR );
 
 	printf("GC'ed HTTP connection\n");
 
 	return 0;
 }
-
-
 
 
 /**--------------------------------------------------------------------------

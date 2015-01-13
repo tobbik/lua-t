@@ -303,11 +303,14 @@ lt_sck_accept( lua_State *luaVM )
 int
 t_sck_close( lua_State *luaVM, struct t_sck *sck )
 {
+	printf( "closing socket: %d\n", sck->fd );
 	if (-1 == close( sck->fd ))
 		return t_push_error( luaVM, "ERROR closing socket" );
 
 	return 0;
 }
+
+
 static int
 lt_sck_close( lua_State *luaVM )
 {

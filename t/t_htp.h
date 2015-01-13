@@ -87,9 +87,7 @@ enum t_htp_ver {
 struct t_htp_msg {
 	int             pR;     ///< Lua registry reference for proxy table
 	struct t_sck   *sck;    ///< pointer to the actual socket
-	struct t_htp_srv   *srv;    ///< pointer to the HTTP-Server
-	int             lR;     ///< Lua registry reference to loop
-	int             rR;     ///< Lua registry reference to request handler function
+	struct t_htp_srv *srv;    ///< pointer to the HTTP-Server
 
 	int             status; ///< HTTP Status Code
 	int             sz;     ///< HTTP Message Size
@@ -102,6 +100,7 @@ struct t_htp_msg {
 	char           *bufr;   ///< Pointer to buffers current position
 	char            buf[ BUFSIZ ];   ///< Initial Buffer
 };
+
 
 struct t_htp_req {
 	struct t_htp_srv   *srv;  ///< reference to server

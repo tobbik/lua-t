@@ -16,6 +16,10 @@ x=function( msg )
 	msg:finish()
 end
 
+d=function()
+	local t=debug.getregistry()
+	for i,v in ipairs( t ) do print( i,v ) end
+end
 
 cmd = function( sck )
 	local msg, len, ip_cli = sck:recvFrom()

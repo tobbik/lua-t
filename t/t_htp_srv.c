@@ -129,7 +129,7 @@ t_htp_srv_setnow( struct t_htp_srv *s, int force )
 static int
 lt_htp_srv_accept( lua_State *luaVM )
 {
-	struct t_htp_srv   *s     = lua_touserdata( luaVM, 1 );
+	struct t_htp_srv   *s     = (struct t_htp_srv *) lua_touserdata( luaVM, 1 );
 	struct sockaddr_in *si_cli;
 	struct t_sck       *c_sck;
 	struct t_sck       *s_sck;
@@ -147,7 +147,7 @@ lt_htp_srv_accept( lua_State *luaVM )
 	t_ael_check_ud( luaVM, -1, 1 );               //S: srv,ssck,csck,cip,addhandle,ael
 	lua_pushvalue( luaVM, -4 );                   // push client socket
 	lua_pushboolean( luaVM, 1 );                  // yepp, that's for reading
-	lua_pushcfunction( luaVM, t_htp_msg_rcv );   //S: srv,ssck,csck,cip,addhandle,ael,csck,true,read
+	lua_pushcfunction( luaVM, t_htp_msg_rcv );    //S: srv,ssck,csck,cip,addhandle,ael,csck,true,read
 	m      = t_htp_msg_create_ud( luaVM, s );
 	lua_newtable( luaVM );
 	lua_pushstring( luaVM, "socket" );
@@ -157,15 +157,13 @@ lt_htp_srv_accept( lua_State *luaVM )
 	lua_pushvalue( luaVM, -9);   //S: srv,ssck,csck,cip,addhandle,ael,csck,true,read,cli,header,"ip",si_cli
 	lua_rawset( luaVM, -3 );
 	m->pR  = luaL_ref( luaVM, LUA_REGISTRYINDEX );
-	m->lR  = s->lR;       // copy loop reference
-	m->rR  = s->rR;       // copy function reference
 	m->sck = c_sck;
 
 	luaL_getmetatable( luaVM, "T.Http.Message" );
 	lua_setmetatable( luaVM, -2 );
 	// add the connection to the connection table
 	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, s->cR );   // get connection reference
-	lua_pushvalue( luaVM, -2 );    // repush the new client
+	lua_pushvalue( luaVM, -2 );                       // repush the new HTTP Message
 	lua_rawseti( luaVM, -2, c_sck->fd );
 	lua_pop( luaVM, 1 );
 	// actually put it onto the loop
