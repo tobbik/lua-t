@@ -361,7 +361,7 @@ t_htp_msg_rcv( lua_State *luaVM )
 
 
 /**--------------------------------------------------------------------------
- * Handle outgoing message to T.Http.Message socket.
+ * Handle outgoing T.Http.Messageinto it's socket.
  * \param   luaVM     lua Virtual Machine.
  * \lparam  userdata  struct t_htp_msg.
  * \param   pointer to the buffer to read from(already positioned).
@@ -381,7 +381,7 @@ t_htp_msg_rsp( lua_State *luaVM )
 	if (m->sent >= m->bRead)
 	{
 		lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->srv->lR );
-		ael = t_ael_check_ud( luaVM, -1, 1);
+		ael = t_ael_check_ud( luaVM, -1, 1 );
 		t_ael_removehandle_impl( ael, m->sck->fd );
 		luaL_unref( luaVM, LUA_REGISTRYINDEX, ael->fd_set[ m->sck->fd ]->fR );
 		luaL_unref( luaVM, LUA_REGISTRYINDEX, ael->fd_set[ m->sck->fd ]->hR );

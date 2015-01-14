@@ -12,14 +12,16 @@ x=function( msg )
 	for k,v in pairs( msg.header ) do print (k,v) end
 	-- msg:sink('./theFile')
 	print( 'REQ:', msg )
-	msg:write("This is my answer")
-	msg:finish()
+	msg:write( "This is my answer" )
+	msg:finish( )
 end
+
 
 d=function()
 	local t=debug.getregistry()
 	for i,v in ipairs( t ) do print( i,v ) end
 end
+
 
 cmd = function( sck )
 	local msg, len, ip_cli = sck:recvFrom()
