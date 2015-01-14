@@ -6,10 +6,10 @@ s=t.Socket.bind( 'UDP',  8888 )
 o='./theFile'
 
 x=function( msg )
-	print ("Socket:",  msg:getSocket() )
-	print ("Address:", msg:getIp() )
-	print ("URL:",     msg:getUrl() )
-	for k,v in pairs( msg:getHeader() ) do print (k,v) end
+	print ("Socket:",  msg.socket )
+	print ("Address:", msg.ip )
+	print ("URL:",     msg.url )
+	for k,v in pairs( msg.header ) do print (k,v) end
 	-- msg:sink('./theFile')
 	print( 'REQ:', msg )
 	msg:write("This is my answer")

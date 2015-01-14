@@ -125,8 +125,8 @@ LUAMOD_API int luaopen_t_htp_srv( lua_State *luaVM );
 struct t_htp_msg   *t_htp_msg_check_ud ( lua_State *luaVM, int pos, int check );
 struct t_htp_msg   *t_htp_msg_create_ud( lua_State *luaVM, struct t_htp_srv *srv );
 // Message specific methods
-int                 t_htp_msg_rcv ( lua_State *luaVM );
-int                 t_htp_msg_rsp ( lua_State *luaVM );
+int                 t_htp_msg_rcv    ( lua_State *luaVM );
+int                 t_htp_msg_rsp    ( lua_State *luaVM );
 
 
 

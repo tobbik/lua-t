@@ -458,7 +458,7 @@ lt_htp_msg_finish( lua_State *luaVM )
 	struct t_htp_msg *m = t_htp_msg_check_ud( luaVM, 1, 1 );
 	m->pS = T_HTP_STA_DONE;
 
-	return 1;
+	return 0;
 }
 
 
@@ -470,22 +470,31 @@ lt_htp_msg_finish( lua_State *luaVM )
  * \lparam  value LuaType
  * \return  The # of items pushed to the stack.
  * --------------------------------------------------------------------------*/
-static inline int
-t_htp_msg_get( lua_State *luaVM, char *val )
+static int
+lt_htp_msg__index( lua_State *luaVM )
 {
-	struct t_htp_msg *m = t_htp_msg_check_ud( luaVM, -1, 1 );
+	struct t_htp_msg *m = t_htp_msg_check_ud( luaVM, -2, 1 );
+	const char       *k = luaL_checkstring( luaVM, -1 );
 
-	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->pR );  // fetch the proxy table
-	lua_pushstring( luaVM, val );                    // repush the key
-	lua_rawget( luaVM, -2 );
+	if (0 == strncmp( k, "write", 5 ))
+	{
+		lua_pushcfunction( luaVM, lt_htp_msg_write );
+		return 1;
+	}
+	else if (0 == strncmp( k, "finish", 6 ))
+	{
+		lua_pushcfunction( luaVM, lt_htp_msg_finish );
+		return 1;
+	}
+	else
+	{
+		lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->pR );  // fetch the proxy table
+		lua_pushvalue( luaVM, -2 );                      // repush the key
+		lua_rawget( luaVM, -2 );
 
-	return 1;
+		return 1;
+	}
 }
-
-static int lt_htp_msg_geturl   ( lua_State *luaVM ) { return t_htp_msg_get( luaVM, "url" ); }
-static int lt_htp_msg_getheader( lua_State *luaVM ) { return t_htp_msg_get( luaVM, "header" ); }
-static int lt_htp_msg_getsocket( lua_State *luaVM ) { return t_htp_msg_get( luaVM, "socket" ); }
-static int lt_htp_msg_getip    ( lua_State *luaVM ) { return t_htp_msg_get( luaVM, "ip" ); }
 
 
 /**--------------------------------------------------------------------------
@@ -560,21 +569,6 @@ lt_htp_msg__gc( lua_State *luaVM )
 
 
 /**--------------------------------------------------------------------------
- * \brief      the buffer library definition
- *             assigns Lua available names to C-functions
- * --------------------------------------------------------------------------*/
-static const luaL_Reg t_htp_msg_m [] = {
-	{"getHeader",     lt_htp_msg_getheader},
-	{"getUrl",        lt_htp_msg_geturl},
-	{"getSocket",     lt_htp_msg_getsocket},
-	{"getIp",         lt_htp_msg_getip},
-	{"write",         lt_htp_msg_write},
-	{"finish",        lt_htp_msg_finish},
-	{NULL,    NULL}
-};
-
-
-/**--------------------------------------------------------------------------
  * \brief   pushes this library onto the stack
  *          - creates Metatable with functions
  *          - creates metatable with methods
@@ -587,7 +581,7 @@ luaopen_t_htp_msg( lua_State *luaVM )
 {
 	// T.Http.Server instance metatable
 	luaL_newmetatable( luaVM, "T.Http.Message" );
-	luaL_newlib( luaVM, t_htp_msg_m );
+	lua_pushcfunction( luaVM, lt_htp_msg__index );
 	lua_setfield( luaVM, -2, "__index" );
 	lua_pushcfunction( luaVM, lt_htp_msg__newindex );
 	lua_setfield( luaVM, -2, "__newindex" );
@@ -598,6 +592,7 @@ luaopen_t_htp_msg( lua_State *luaVM )
 	lua_pushcfunction( luaVM, lt_htp_msg__tostring );
 	lua_setfield( luaVM, -2, "__tostring");
 	lua_pop( luaVM, 1 );        // remove metatable from stack
+
 	return 0;
 }
 

@@ -151,10 +151,10 @@ lt_htp_srv_accept( lua_State *luaVM )
 	m      = t_htp_msg_create_ud( luaVM, s );
 	lua_newtable( luaVM );
 	lua_pushstring( luaVM, "socket" );
-	lua_pushvalue( luaVM, -10);  //S: srv,ssck,csck,cip,addhandle,ael,csck,true,read,cli,header,"socket",csck
+	lua_pushvalue( luaVM, -10 );  //S: srv,ssck,csck,cip,addhandle,ael,csck,true,read,cli,header,"socket",csck
 	lua_rawset( luaVM, -3 );
 	lua_pushstring( luaVM, "ip" );
-	lua_pushvalue( luaVM, -9);   //S: srv,ssck,csck,cip,addhandle,ael,csck,true,read,cli,header,"ip",si_cli
+	lua_pushvalue( luaVM, -9 );   //S: srv,ssck,csck,cip,addhandle,ael,csck,true,read,cli,header,"ip",si_cli
 	lua_rawset( luaVM, -3 );
 	m->pR  = luaL_ref( luaVM, LUA_REGISTRYINDEX );
 	m->sck = c_sck;
