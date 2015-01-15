@@ -14,6 +14,10 @@
 #include "t.h"
 #include "t_htp.h"
 
+
+/**
+ * Eat Linear White Space
+ */
 const char *eat_lws( const char *s )
 {
 	while( ' ' == *s ||  '\r' == *s ||   '\n' == *s)
@@ -148,6 +152,7 @@ static inline char
 	i = d-b;
 	if (8 != i)
 		luaL_error( luaVM, "ILLEGAL HTTP version in HTTP message" );
+	//TODO: set values based on version default behaviour (eg, KeepAlive for 1.1 etc)
 	switch (*(b+7))
 	{
 		case '1': m->ver=T_HTP_VER_11; break;
@@ -232,42 +237,10 @@ static inline char
 		}
 	}
 
-	m->pS = (0 == m->sz) ? T_HTP_STA_NOBODY : T_HTP_STA_BODY;
+	m->pS = (0 == m->sz) ? T_HTP_STA_RECEIVED : T_HTP_STA_BODY;
 	m->kpAlv = 0;          // TODO: set smarter
 	lua_pop( luaVM, 1 );   // pop the header table
 	return (char *) r;
-}
-
-
-static int
-t_htp_msg_parse( lua_State *luaVM, struct t_htp_msg *m, const char *buf )
-{
-	char *nxt = (char *) buf;
-
-	while (NULL != nxt)
-	{
-		switch(m->pS)
-		{
-			case T_HTP_STA_ZERO:
-				nxt = t_htp_msg_pMethod( luaVM, m, nxt );
-				break;
-			case T_HTP_STA_URL:
-				nxt = t_htp_msg_pUrl( luaVM, m, nxt );
-				break;
-			case T_HTP_STA_VERSION:
-				nxt = t_htp_msg_pVersion( luaVM, m, nxt );
-				break;
-			case T_HTP_STA_HEADER:
-				nxt = t_htp_msg_pHeader( luaVM, m, nxt );
-				break;
-			case T_HTP_STA_BODY:
-			case T_HTP_STA_NOBODY:
-				return 1;
-			default:
-				luaL_error( luaVM, "Illegal state for T.Http.Message" );
-		}
-	}
-	return (NULL == nxt) ? 0 : 1;
 }
 
 
@@ -324,6 +297,7 @@ t_htp_msg_rcv( lua_State *luaVM )
 	struct t_htp_msg *m   = t_htp_msg_check_ud( luaVM, 1, 1 );
 	struct t_ael     *ael;
 	int               rcvd;
+	char             *nxt;
 
 	// get the proxy on the stack
 	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->pR ); //S:m,P
@@ -332,14 +306,38 @@ t_htp_msg_rcv( lua_State *luaVM )
 	rcvd = t_sck_recv_tcp( luaVM, m->sck, &(m->buf[ m->bRead ]), BUFSIZ - m->bRead );
 	printf( "%d   %s\n", rcvd, &(m->buf[ m->bRead ]) );
 
-	t_htp_msg_parse( luaVM, m, &(m->buf[ m->bRead ]) );
+	nxt = &(m->buf[ m->bRead ]);
+	while (NULL != nxt)
+	{
+		switch(m->pS)
+		{
+			case T_HTP_STA_ZERO:
+				nxt = t_htp_msg_pMethod( luaVM, m, nxt );
+				break;
+			case T_HTP_STA_URL:
+				nxt = t_htp_msg_pUrl( luaVM, m, nxt );
+				break;
+			case T_HTP_STA_VERSION:
+				nxt = t_htp_msg_pVersion( luaVM, m, nxt );
+				break;
+			case T_HTP_STA_HEADER:
+				nxt = t_htp_msg_pHeader( luaVM, m, nxt );
+				break;
+			case T_HTP_STA_BODY:
+			case T_HTP_STA_RECEIVED:
+				nxt = NULL;
+				break;
+			default:
+				luaL_error( luaVM, "Illegal state for T.Http.Message %d", (int) m->pS );
+		}
+	}
 
-	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->srv->rR );    // get function from msg
+	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->srv->rR );    // get function from server
 	lua_pushvalue( luaVM, 1 );
 	lua_call( luaVM, 1,0 );
 
-	// TODO: depending on T_HTP_STA state / parse body or deal with incoming data
-	if (m->pS > T_HTP_STA_HEADER)
+	// TODO: depending on T_HTP_STA state, parse body or deal with incoming data
+	if (m->pS > T_HTP_STA_HEADER)         // reverse the socket to outgoing
 	{
 		lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->srv->lR );
 		ael = t_ael_check_ud( luaVM, -1, 1);

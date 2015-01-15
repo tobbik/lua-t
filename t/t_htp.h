@@ -68,8 +68,8 @@ enum t_htp_sta {
 	T_HTP_STA_URL,          ///< Parsing Url
 	T_HTP_STA_VERSION,      ///< Parsing HTTP version
 	T_HTP_STA_HEADER,       ///< Parsing Headers
-	T_HTP_STA_BODY,         ///< Parsing Body
-	T_HTP_STA_NOBODY,       ///< Header done, No body expected
+	T_HTP_STA_BODY,         ///< Recieving body
+	T_HTP_STA_RECEIVED,     ///< Request received
 	T_HTP_STA_BUFFER,       ///< Fill buffer with data
 	T_HTP_STA_SEND,         ///< Send data from buffer
 	T_HTP_STA_DONE,         ///< Finished
