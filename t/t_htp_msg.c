@@ -18,7 +18,8 @@
 /**
  * Eat Linear White Space
  */
-const char *eat_lws( const char *s )
+static inline const char
+*eat_lws( const char *s )
 {
 	while( ' ' == *s ||  '\r' == *s ||   '\n' == *s)
 		s++;
@@ -26,7 +27,7 @@ const char *eat_lws( const char *s )
 };
 
 
-static inline char
+static inline const char
 *t_htp_msg_pMethod( lua_State *luaVM, struct t_htp_msg *m, const char *b )
 {
 	const char *d  = b;
@@ -118,11 +119,11 @@ static inline char
 	d = eat_lws( d );
 	m->bRead += d-b;
 	m->pS     = T_HTP_STA_URL;
-	return (char *) d;
+	return d;
 }
 
 
-static inline char
+static inline const char
 *t_htp_msg_pUrl( lua_State *luaVM, struct t_htp_msg *m, const char *b )
 {
 	const char *d  = b;
@@ -138,11 +139,11 @@ static inline char
 	d = eat_lws( d );
 	m->bRead += d-b;
 	m->pS     = T_HTP_STA_VERSION;
-	return (char *) d;
+	return d;
 }
 
 
-static inline char
+static inline const char
 *t_htp_msg_pVersion( lua_State *luaVM, struct t_htp_msg *m, const char *b )
 {
 	const char *d  = b;
@@ -166,11 +167,11 @@ static inline char
 	d = eat_lws( d );
 	m->bRead += d-b;
 	m->pS     = T_HTP_STA_HEADER;
-	return (char *) d;
+	return d;
 }
 
 
-static inline char
+static inline const char
 *t_htp_msg_pHeader( lua_State *luaVM, struct t_htp_msg *m, const char *b )
 {
 	const char *v  = b;
@@ -240,7 +241,7 @@ static inline char
 	m->pS = (0 == m->sz) ? T_HTP_STA_RECEIVED : T_HTP_STA_BODY;
 	m->kpAlv = 0;          // TODO: set smarter
 	lua_pop( luaVM, 1 );   // pop the header table
-	return (char *) r;
+	return r;
 }
 
 
@@ -297,7 +298,7 @@ t_htp_msg_rcv( lua_State *luaVM )
 	struct t_htp_msg *m   = t_htp_msg_check_ud( luaVM, 1, 1 );
 	struct t_ael     *ael;
 	int               rcvd;
-	char             *nxt;
+	const char       *nxt;
 
 	// get the proxy on the stack
 	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->pR ); //S:m,P
