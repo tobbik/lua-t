@@ -11,8 +11,8 @@
 #include "t_sck.h"
 
 enum t_ael_t {
-	t_ael_READ,               ///< Reader event on socket
-	t_ael_WRIT,               ///< Reader event on socket
+	t_ael_READ,               ///< Read  ready event on socket
+	t_ael_WRIT,               ///< Write ready event on socket
 };
 
 
@@ -63,6 +63,5 @@ void t_ael_addhandle_impl   ( struct t_ael *ael, int fd, int read );
 void t_ael_removehandle_impl( struct t_ael *ael, int fd );
 void t_ael_addtimer_impl    ( struct t_ael *ael, struct timeval *tv );
 int  t_ael_poll_impl        ( lua_State *luaVM, struct t_ael *ael );
-
 
 

@@ -19,10 +19,11 @@
 #include "t_tim.h"
 
 
-/**--------------------------------------------------------------------------
+/**----------------------------------------------------------------------------
  * Slot in a timer event into the loops timer event list.
+ * \detail  Ordered insert; walks down linked list and inserts before the next
+ *          bigger * timer
  * \param   t_ael    Loop Struct.
- * \lreturn t_ael_tm Timer event struct.
  * \return  void.
  * --------------------------------------------------------------------------*/
 static inline void
@@ -61,7 +62,6 @@ t_ael_instimer( struct t_ael *ael, struct t_ael_tm *te )
  * Adjust amount of time in the loops timer event list.
  *          substract ta from each timer in the list.
  * \param   t_ael    Loop Struct.
- * \lreturn t_ael_tm Timer event struct.
  * \return  void.
  * --------------------------------------------------------------------------*/
 static inline void
@@ -76,9 +76,9 @@ t_ael_adjusttimer( struct t_ael *ael, struct timeval *ta )
 }
 
 
-/**--------------------------------------------------------------------------
+/**----------------------------------------------------------------------------
  * Unfolds a lua function and parameters from a table in LUA_REGISTRYINDEX
- *          takes refPosition and gets table onto the stack. The puts function
+ * \detail  Takes refPosition and gets table onto the stack. The puts function
  *          and paramters onto stack ready to be executed.
  *          LEAVES TABLE ON STACK -> POP after call!
  * \param   luaVM         The lua state.
@@ -111,13 +111,14 @@ t_ael_executetimer( lua_State *luaVM, struct t_ael *ael, struct timeval *rt )
 	struct timeval  *tv;                  ///< timer returned by execution -> if there is
 	
 	struct t_ael_tm *te = ael->tm_head;   ///< timer to execute is tm_head, ALWAYS
-	int    l;                             ///< length of arguments to call 
+	int    n;                             ///< length of arguments to call
+
 	ael->tm_head = ael->tm_head->nxt;
-	l = t_ael_getfunc( luaVM, te->fR );
-	lua_call( luaVM, l, 1 );
+	n = t_ael_getfunc( luaVM, te->fR );
+	lua_call( luaVM, n, 1 );
 	t_tim_since( rt );
 	t_ael_adjusttimer( ael, rt );
-	tv = (struct timeval *) luaL_testudata( luaVM, -1, "T.Time" );
+	tv = t_tim_check_ud( luaVM, -1, 0 );
 	// reorganize linked timer list
 	if (NULL == tv)
 	{
@@ -209,6 +210,7 @@ struct t_ael
  * Check a value on the stack for being a struct t_ael
  * \param   luaVM    The lua state.
  * \param   int      position on the stack
+ * \param   int      check(boolean): if true error out on fail
  * \return  struct t_ael*  pointer to userdata on stack
  * --------------------------------------------------------------------------*/
 struct t_ael
@@ -316,7 +318,7 @@ static int
 lt_ael_addtimer( lua_State *luaVM )
 {
 	struct t_ael    *ael = t_ael_check_ud( luaVM, 1, 1 );
-	struct timeval  *tv  = t_tim_check_ud( luaVM, 2 );
+	struct timeval  *tv  = t_tim_check_ud( luaVM, 2, 1 );
 	int              n   = lua_gettop( luaVM ) + 1;    ///< iterator for arguments
 	struct t_ael_tm *te;
 
@@ -352,7 +354,7 @@ static int
 lt_ael_removetimer( lua_State *luaVM )
 {
 	struct t_ael    *ael = t_ael_check_ud( luaVM, 1, 1 );
-	struct timeval  *tv  = t_tim_check_ud( luaVM, 2 );
+	struct timeval  *tv  = t_tim_check_ud( luaVM, 2, 1 );
 	struct t_ael_tm *tp  = ael->tm_head;
 	struct t_ael_tm *te  = tp->nxt;       ///< previous Timer event
 

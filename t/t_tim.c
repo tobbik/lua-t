@@ -95,10 +95,10 @@ long t_tim_getms (struct timeval *tA)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-//  _                        _    ____ ___ 
+//  _                        _    ____ ___
 // | |   _   _  __ _        / \  |  _ \_ _|
-// | |  | | | |/ _` |_____ / _ \ | |_) | | 
-// | |__| |_| | (_| |_____/ ___ \|  __/| | 
+// | |  | | | |/ _` |_____ / _ \ | |_) | |
+// | |__| |_| | (_| |_____/ ___ \|  __/| |
 // |_____\__,_|\__,_|    /_/   \_\_|  |___|
 /////////////////////////////////////////////////////////////////////////////
 
@@ -164,14 +164,15 @@ struct timeval
  * \brief   check a value on the stack for being a struct sockaddr_in
  * \param   luaVM    The lua state.
  * \param   int      position on the stack
+ * \param   int      check(boolean): if true error out on fail
  * \return  struct timeval*  pointer to userdata at Stack position.
  * --------------------------------------------------------------------------*/
 struct timeval
-*t_tim_check_ud( lua_State *luaVM, int pos )
+*t_tim_check_ud( lua_State *luaVM, int pos, int check )
 {
 	void *ud = luaL_checkudata( luaVM, pos, "T.Time" );
-	luaL_argcheck( luaVM, ud != NULL, pos, "`T.Time` expected" );
-	return (struct timeval *) ud;
+	luaL_argcheck( luaVM, (ud != NULL  || !check), pos, "`T.Time` expected" );
+	return (NULL==ud) ? NULL : (struct timeval *) ud;
 }
 
 
@@ -185,7 +186,7 @@ struct timeval
 static int
 lt_tim_set( lua_State *luaVM )
 {
-	struct timeval *tv = t_tim_check_ud( luaVM, 1 );
+	struct timeval *tv = t_tim_check_ud( luaVM, 1, 1 );
 	int             ms;
 
 	if (lua_isnumber( luaVM, 2 ))
@@ -213,7 +214,7 @@ lt_tim_set( lua_State *luaVM )
 static int
 lt_tim_get( lua_State *luaVM )
 {
-	struct timeval *tv = t_tim_check_ud( luaVM, 1 );
+	struct timeval *tv = t_tim_check_ud( luaVM, 1, 1 );
 	lua_pushinteger( luaVM, t_tim_getms( tv ) );
 	return 1;
 }
@@ -229,7 +230,7 @@ lt_tim_get( lua_State *luaVM )
 static int
 lt_tim__tostring( lua_State *luaVM )
 {
-	struct timeval *tv = t_tim_check_ud( luaVM, 1 );
+	struct timeval *tv = t_tim_check_ud( luaVM, 1, 1 );
 	lua_pushfstring( luaVM,
 			"T.Time{%d:%d}: %p",
 			//tv->tv_sec*1000 + tv->tv_usec/1000,
@@ -251,8 +252,8 @@ lt_tim__tostring( lua_State *luaVM )
 static int
 lt_tim__eq( lua_State *luaVM )
 {
-	struct timeval *tA = t_tim_check_ud( luaVM, 1 );
-	struct timeval *tB = t_tim_check_ud( luaVM, 2 );
+	struct timeval *tA = t_tim_check_ud( luaVM, 1, 1 );
+	struct timeval *tB = t_tim_check_ud( luaVM, 2, 1 );
 	if (tA->tv_sec == tB->tv_sec && tA->tv_usec == tB->tv_usec)
 		lua_pushboolean( luaVM, 1 );
 	else
@@ -272,8 +273,8 @@ lt_tim__eq( lua_State *luaVM )
 static int
 lt_tim__add( lua_State *luaVM )
 {
-	struct timeval *tA = t_tim_check_ud( luaVM, 1 );
-	struct timeval *tB = t_tim_check_ud( luaVM, 2 );
+	struct timeval *tA = t_tim_check_ud( luaVM, 1, 1 );
+	struct timeval *tB = t_tim_check_ud( luaVM, 2, 1 );
 	struct timeval *tC = t_tim_create_ud( luaVM );
 
 	t_tim_add( tA, tB, tC );
@@ -292,8 +293,8 @@ lt_tim__add( lua_State *luaVM )
 static int
 lt_tim__sub( lua_State *luaVM )
 {
-	struct timeval *tA = t_tim_check_ud( luaVM, 1 );
-	struct timeval *tB = t_tim_check_ud( luaVM, 2 );
+	struct timeval *tA = t_tim_check_ud( luaVM, 1, 1 );
+	struct timeval *tB = t_tim_check_ud( luaVM, 2, 1 );
 	struct timeval *tC = t_tim_create_ud( luaVM );
 
 	t_tim_sub( tA, tB, tC );
@@ -318,7 +319,7 @@ lt_tim_sleep( lua_State *luaVM )
 	struct timeval *tv;
 	long  sec, usec;
 	if (lua_isnumber( luaVM, -1 ))  lt_tim_New( luaVM );
-	tv  = t_tim_check_ud( luaVM, -1 );
+	tv  = t_tim_check_ud( luaVM, -1, 1 );
 	sec = tv->tv_sec; usec=tv->tv_usec;
 #ifdef _WIN32
 	s = socket( PF_INET, SOCK_STREAM, IPPROTO_TCP );
