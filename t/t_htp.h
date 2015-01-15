@@ -9,19 +9,6 @@
 
 #include "t_ael.h"
 
-/// The userdata struct for T.Http.Server
-struct t_htp_srv {
-	struct t_sck *sck;    ///< t_sck socket (must be tcp)
-	int           cR;     ///< Lua registry reference for connection table
-	int           sR;     ///< Lua registry reference for t.Socket instance
-	int           aR;     ///< Lua registry reference for t.Ip     instance (struct sockaddr_in)
-	int           lR;     ///< Lua registry reference for t.Loop instance
-	int           rR;     ///< Lua registry reference to request handler
-	time_t        nw;     ///< Current time on the server
-	char    fnow[30];     ///< Formatted Date time in HTTP format
-};
-
-
 
 // _   _ _____ _____ ____
 //| | | |_   _|_   _|  _ \   _ __   __ _ _ __ ___  ___ _ __
@@ -83,6 +70,24 @@ enum t_htp_ver {
 };
 
 
+// ____        _          ____  _                   _
+//|  _ \  __ _| |_ __ _  / ___|| |_ _ __ _   _  ___| |_ _   _ _ __ ___  ___
+//| | | |/ _` | __/ _` | \___ \| __| '__| | | |/ __| __| | | | '__/ _ \/ __|
+//| |_| | (_| | || (_| |  ___) | |_| |  | |_| | (__| |_| |_| | | |  __/\__ \
+//|____/ \__,_|\__\__,_| |____/ \__|_|   \__,_|\___|\__|\__,_|_|  \___||___/
+/// The userdata struct for T.Http.Server
+struct t_htp_srv {
+	struct t_sck *sck;    ///< t_sck socket (must be tcp)
+	int           cR;     ///< Lua registry reference for connection table
+	int           sR;     ///< Lua registry reference for t.Socket instance
+	int           aR;     ///< Lua registry reference for t.Ip     instance (struct sockaddr_in)
+	int           lR;     ///< Lua registry reference for t.Loop instance
+	int           rR;     ///< Lua registry reference to request handler
+	time_t        nw;     ///< Current time on the server
+	char    fnow[30];     ///< Formatted Date time in HTTP format
+};
+
+
 /// The userdata struct for T.Http.Message ( Server:accept() )
 struct t_htp_msg {
 	int             pR;     ///< Lua registry reference for proxy table
@@ -102,12 +107,11 @@ struct t_htp_msg {
 };
 
 
-struct t_htp_req {
-	struct t_htp_srv   *srv;  ///< reference to server
-	
-};
-
-
+//  __  __      _   _               _
+// |  \/  | ___| |_| |__   ___   __| |___
+// | |\/| |/ _ \ __| '_ \ / _ \ / _` / __|
+// | |  | |  __/ |_| | | | (_) | (_| \__ \
+// |_|  |_|\___|\__|_| |_|\___/ \__,_|___/
 // t_htp.c
 // Constructors
 struct t_htp_srv   *t_htp_srv_check_ud ( lua_State *luaVM, int pos, int check );
