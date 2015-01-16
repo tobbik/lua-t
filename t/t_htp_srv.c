@@ -148,7 +148,7 @@ lt_htp_srv_accept( lua_State *luaVM )
 	lua_pushvalue( luaVM, -4 );                   // push client socket
 	lua_pushboolean( luaVM, 1 );                  // yepp, that's for reading
 	lua_pushcfunction( luaVM, t_htp_msg_rcv );    //S: srv,ssck,csck,cip,addhandle,ael,csck,true,read
-	m      = t_htp_msg_create_ud( luaVM, s );
+	m = t_htp_msg_create_ud( luaVM, s );
 	lua_newtable( luaVM );
 	lua_pushstring( luaVM, "socket" );
 	lua_pushvalue( luaVM, -10 );  //S: srv,ssck,csck,cip,addhandle,ael,csck,true,read,cli,header,"socket",csck

@@ -215,7 +215,7 @@ static inline const char
 			case '\n':
 				if (' ' == *(r+1))
 				{
-					r++;
+					r = eat_lws( r );
 				}
 				else
 				{
@@ -285,7 +285,7 @@ struct t_htp_msg
 
 /**--------------------------------------------------------------------------
  * Handle incoming chunks from T.Http.Message socket.
- * Called if socket comes back from accept and anytime it returns from read.
+ * Called anytime the client socket returns from the poll for read.
  * \param   luaVM     lua Virtual Machine.
  * \lparam  userdata  struct t_htp_msg.
  * \param   pointer to the buffer to read from(already positioned).
@@ -300,7 +300,7 @@ t_htp_msg_rcv( lua_State *luaVM )
 	int               rcvd;
 	const char       *nxt;
 
-	// get the proxy on the stack
+	// get the proxy on the stack to fill out verb/url/version/headers ...
 	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->pR ); //S:m,P
 
 	// read
@@ -308,6 +308,7 @@ t_htp_msg_rcv( lua_State *luaVM )
 	printf( "%d   %s\n", rcvd, &(m->buf[ m->bRead ]) );
 
 	nxt = &(m->buf[ m->bRead ]);
+
 	while (NULL != nxt)
 	{
 		switch(m->pS)
@@ -324,33 +325,39 @@ t_htp_msg_rcv( lua_State *luaVM )
 			case T_HTP_STA_HEADER:
 				nxt = t_htp_msg_pHeader( luaVM, m, nxt );
 				break;
-			case T_HTP_STA_BODY:
-			case T_HTP_STA_RECEIVED:
+			case T_HTP_STA_BODY:        // now we can process the function and start writing back
+			case T_HTP_STA_RECEIVED:    // done receiving -> remove handle from loop
+				lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->srv->lR );
+				ael = t_ael_check_ud( luaVM, -1, 1);
+				t_ael_removehandle_impl( ael, m->sck->fd, T_AEL_RD );
+				luaL_unref( luaVM, LUA_REGISTRYINDEX, ael->fd_set[ m->sck->fd ]->rR );
+
+
 				nxt = NULL;
+				lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->srv->rR );    // get function from server
+				lua_pushvalue( luaVM, 1 );
+				lua_call( luaVM, 1,0 );
 				break;
 			default:
 				luaL_error( luaVM, "Illegal state for T.Http.Message %d", (int) m->pS );
 		}
 	}
 
-	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->srv->rR );    // get function from server
-	lua_pushvalue( luaVM, 1 );
-	lua_call( luaVM, 1,0 );
 
 	// TODO: depending on T_HTP_STA state, parse body or deal with incoming data
 	if (m->pS > T_HTP_STA_HEADER)         // reverse the socket to outgoing
 	{
 		lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->srv->lR );
 		ael = t_ael_check_ud( luaVM, -1, 1);
-		t_ael_removehandle_impl( ael, m->sck->fd );
+		t_ael_removehandle_impl( ael, m->sck->fd, T_AEL_RD );
 		t_ael_addhandle_impl( ael, m->sck->fd, 0 );
-		luaL_unref( luaVM, LUA_REGISTRYINDEX, ael->fd_set[ m->sck->fd ]->fR );
+		luaL_unref( luaVM, LUA_REGISTRYINDEX, ael->fd_set[ m->sck->fd ]->rR );
 		lua_createtable( luaVM, 2, 0 );  // create function/parameter table
 		lua_pushcfunction( luaVM, t_htp_msg_rsp );
 		lua_rawseti( luaVM, -2, 1 );
 		lua_pushvalue( luaVM, 1 );
 		lua_rawseti( luaVM, -2, 2 );
-		ael->fd_set[ m->sck->fd ]->fR = luaL_ref( luaVM, LUA_REGISTRYINDEX );
+		ael->fd_set[ m->sck->fd ]->wR = luaL_ref( luaVM, LUA_REGISTRYINDEX );
 		lua_pop( luaVM, 1 );             // pop the event loop
 	}
 
@@ -381,8 +388,8 @@ t_htp_msg_rsp( lua_State *luaVM )
 	{
 		lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->srv->lR );
 		ael = t_ael_check_ud( luaVM, -1, 1 );
-		t_ael_removehandle_impl( ael, m->sck->fd );
-		luaL_unref( luaVM, LUA_REGISTRYINDEX, ael->fd_set[ m->sck->fd ]->fR );
+		t_ael_removehandle_impl( ael, m->sck->fd, T_AEL_RD );
+		luaL_unref( luaVM, LUA_REGISTRYINDEX, ael->fd_set[ m->sck->fd ]->rR );
 		luaL_unref( luaVM, LUA_REGISTRYINDEX, ael->fd_set[ m->sck->fd ]->hR );
 		free( ael->fd_set[ m->sck->fd ] );
 		ael->fd_set[ m->sck->fd ] = NULL;
