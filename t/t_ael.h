@@ -46,7 +46,7 @@ struct t_ael {
 	fd_set             rfds_w;   ///<
 	fd_set             wfds_w;   ///<
 	int                run;      ///< boolean indicator to start/stop the loop
-	int                mxfd;     ///< max fd
+	int                max_fd;   ///< max fd
 	size_t             fd_sz;    ///< how many fd to handle
 	struct t_ael_tm   *tm_head;
 	struct t_ael_fd  **fd_set;   ///< array with pointers to fd_events indexed by fd

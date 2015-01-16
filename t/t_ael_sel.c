@@ -100,7 +100,7 @@ t_ael_poll_impl( lua_State *luaVM, struct t_ael *ael )
 	memcpy( &ael->rfds_w, &ael->rfds, sizeof( fd_set ) );
 	memcpy( &ael->wfds_w, &ael->wfds, sizeof( fd_set ) );
 
-	r = select( ael->mxfd+1, &ael->rfds_w, &ael->wfds_w, NULL, tv );
+	r = select( ael->max_fd+1, &ael->rfds_w, &ael->wfds_w, NULL, tv );
 	//printf("RESULT: %d\n",r);
 	if (r<0)
 		return r;
@@ -108,7 +108,7 @@ t_ael_poll_impl( lua_State *luaVM, struct t_ael *ael )
 	if (0==r) // deal with timer
 		t_ael_executetimer( luaVM, ael, &rt );
 	else      // deal with sockets/file handles
-		for( i=0; r>0 && i <= ael->mxfd; i++ )
+		for( i=0; r>0 && i <= ael->max_fd; i++ )
 		{
 			if (NULL == ael->fd_set[ i ])
 				continue;
@@ -116,8 +116,11 @@ t_ael_poll_impl( lua_State *luaVM, struct t_ael *ael )
 				t |= T_AEL_RD;
 			if (ael->fd_set[ i ]->t & T_AEL_WR  &&  FD_ISSET( i, &ael->wfds_w ))
 				t |= T_AEL_WR;
-			t_ael_executehandle( luaVM, ael, i, t );
-			r--;
+			if (T_AEL_NO != t)
+			{
+				t_ael_executehandle( luaVM, ael, i, t );
+				r--;
+			}
 		}
 
 	return r;

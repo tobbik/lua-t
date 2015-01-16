@@ -207,7 +207,7 @@ struct t_ael
 
 	ael = (struct t_ael *) lua_newuserdata( luaVM, sizeof( struct t_ael ) );
 	ael->fd_sz   = sz;
-	ael->mxfd    = 0;
+	ael->max_fd  = 0;
 	ael->tm_head = NULL;
 	ael->fd_set  = (struct t_ael_fd **) malloc( (ael->fd_sz+1) * sizeof( struct t_ael_fd * ) );
 	for (n=0; n<=ael->fd_sz; n++) ael->fd_set[ n ] = NULL;
@@ -274,7 +274,7 @@ lt_ael_addhandle( lua_State *luaVM )
 
 	ael->fd_set[ fd ]->t |= t;
 
-	ael->mxfd = (fd > ael->mxfd) ? fd : ael->mxfd;
+	ael->max_fd = (fd > ael->max_fd) ? fd : ael->max_fd;
 	t_ael_addhandle_impl( ael, fd, t );
 
 	lua_createtable( luaVM, n-4, 0 );  // create function/parameter table
@@ -483,7 +483,7 @@ lt_ael_run( lua_State *luaVM )
 			return t_push_error( luaVM, "Failed to continue" );
 		}
 		// if there are no events left in the loop stop processing
-		ael->run =  (NULL==ael->tm_head && ael->mxfd<1) ? 0 : ael->run;
+		ael->run =  (NULL==ael->tm_head && ael->max_fd<1) ? 0 : ael->run;
 	}
 
 	return 0;
@@ -516,7 +516,7 @@ static int
 lt_ael__tostring( lua_State *luaVM )
 {
 	struct t_ael *ael = t_ael_check_ud( luaVM, 1, 1 );
-	lua_pushfstring( luaVM, "T.Loop(select){%d:%d}: %p", ael->fd_sz, ael->mxfd, ael );
+	lua_pushfstring( luaVM, "T.Loop(select){%d:%d}: %p", ael->fd_sz, ael->max_fd, ael );
 	return 1;
 }
 
@@ -546,7 +546,7 @@ lt_ael_showloop( lua_State *luaVM )
 		tr = tr->nxt;
 	}
 	printf( "LOOP %p HANDLE LIST:\n", ael );
-	for( i=0; i<ael->mxfd+1; i++)
+	for( i=0; i<ael->max_fd+1; i++)
 	{
 		if (NULL==ael->fd_set[ i ])
 			continue;

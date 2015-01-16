@@ -42,4 +42,6 @@ h=t.Http.Server( l, x )
 sc,ip = h:listen( 8000, 10 )  -- listen on 0.0.0.0 INADDR_ANY
 print( sc, ip, s )
 
+l:show()
+
 l:run()
