@@ -243,14 +243,15 @@ static int lt_buf_tohexstring (lua_State *luaVM)
 	char         *sbuf;
 	struct t_buf *buf = t_buf_check_ud( luaVM, 1, 1 );
 
-	sbuf = malloc( 3 * buf->len * sizeof( char ) );
+	sbuf = malloc( 3 * buf->len * sizeof( char ) + 1 );
 	memset( sbuf, 0, 3 * buf->len * sizeof( char ) );
 
 	c = 0;
 	for (l=0; l < (int) buf->len; l++) {
 		c += snprintf( sbuf+c, 4, "%02X ", buf->b[l] );
 	}
-	lua_pushstring( luaVM, sbuf );
+	lua_pushlstring( luaVM, sbuf, c );
+	free( sbuf );
 	return 1;
 }
 
