@@ -10,20 +10,8 @@
 
 
 #ifdef _WIN32
-#include <WinSock2.h>
-#include <winsock.h>
 #include <time.h>
-#include <stdint.h>
-#include <WS2tcpip.h>
-#include <Windows.h>
 #else
-#include <string.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <arpa/inet.h>
-#include <netinet/in.h>
-#include <sys/socket.h>
-#include <sys/select.h>
 #include <sys/time.h>    // gettimeofday()
 #endif
 
@@ -170,7 +158,7 @@ struct timeval
 struct timeval
 *t_tim_check_ud( lua_State *luaVM, int pos, int check )
 {
-	void *ud = luaL_checkudata( luaVM, pos, "T.Time" );
+	void *ud = luaL_testudata( luaVM, pos, "T.Time" );
 	luaL_argcheck( luaVM, (ud != NULL  || !check), pos, "`T.Time` expected" );
 	return (NULL==ud) ? NULL : (struct timeval *) ud;
 }

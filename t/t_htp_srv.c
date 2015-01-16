@@ -88,7 +88,7 @@ struct t_htp_srv
 struct t_htp_srv
 *t_htp_srv_check_ud( lua_State *luaVM, int pos, int check )
 {
-	void *ud = luaL_checkudata( luaVM, pos, "T.Http.Server" );
+	void *ud = luaL_testudata( luaVM, pos, "T.Http.Server" );
 	luaL_argcheck( luaVM, (ud != NULL || !check), pos, "`T.Http.Server` expected" );
 	return (struct t_htp_srv *) ud;
 }

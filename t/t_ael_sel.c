@@ -40,39 +40,28 @@ t_ael_create_ud_impl( struct t_ael *ael )
 /**--------------------------------------------------------------------------
  * Add a File/Socket event handler to the T.Loop.
  * \param   struct t_ael*.
- * \param   int       fd.
- * \param   int(bool) for reading on handle.
+ * \param   int          fd.
+ * \param   enum t_ael_t t - direction of socket to be observed.
  * --------------------------------------------------------------------------*/
 void
-t_ael_addhandle_impl( struct t_ael *ael, int fd, int read )
+t_ael_addhandle_impl( struct t_ael *ael, int fd, enum t_ael_t t )
 {
-	if (read)
-	{
-		ael->fd_set[ fd ]->t = t_ael_READ;
-		FD_SET( fd, &ael->rfds );
-	}
-	else
-	{
-		ael->fd_set[ fd ]->t = t_ael_WRIT;
-		FD_SET( fd, &ael->wfds );
-	}
-	ael->mxfd = (fd > ael->mxfd) ? fd : ael->mxfd;
+	if (t & T_AEL_RD)    FD_SET( fd, &ael->rfds );
+	if (t & T_AEL_WR)    FD_SET( fd, &ael->wfds );
 }
 
 
 /**--------------------------------------------------------------------------
  * Remove a File/Socket event handler to the T.Loop.
  * \param   struct t_ael*.
- * \param   int       fd.
- * \param   int(bool) for reading on handle.
+ * \param   int          fd.
+ * \param   enum t_ael_t t - direction of socket to be observed.
  * --------------------------------------------------------------------------*/
 void
-t_ael_removehandle_impl( struct t_ael *ael, int fd )
+t_ael_removehandle_impl( struct t_ael *ael, int fd, enum t_ael_t t )
 {
-	if (t_ael_READ == ael->fd_set[ fd ]->t)
-		FD_CLR( fd, &ael->rfds );
-	if (t_ael_WRIT == ael->fd_set[ fd ]->t)
-		FD_CLR( fd, &ael->wfds );
+	if (t & T_AEL_RD)    FD_CLR( fd, &ael->rfds );
+	if (t & T_AEL_WR)    FD_CLR( fd, &ael->wfds );
 }
 
 
@@ -102,7 +91,8 @@ t_ael_poll_impl( lua_State *luaVM, struct t_ael *ael )
 {
 	int              i,r;
 	struct timeval  *tv;
-	struct timeval   rt;      ///< timer to calculate runtime over this poll
+	struct timeval   rt;           ///< timer to calculate runtime over this poll
+	enum t_ael_t     t = T_AEL_NO; ///< handle action (read/write/either)
 
 	gettimeofday( &rt, 0 );
 	tv  = (NULL != ael->tm_head) ? ael->tm_head->tv : NULL;
@@ -116,23 +106,20 @@ t_ael_poll_impl( lua_State *luaVM, struct t_ael *ael )
 		return r;
 
 	if (0==r) // deal with timer
-	{
-		// get, unpack and execute func/parm table
 		t_ael_executetimer( luaVM, ael, &rt );
-	}
 	else      // deal with sockets/file handles
-	{
 		for( i=0; r>0 && i <= ael->mxfd; i++ )
 		{
-			if (NULL==ael->fd_set[ i ])
+			if (NULL == ael->fd_set[ i ])
 				continue;
-			if (FD_ISSET( i, &ael->rfds_w ) || FD_ISSET( i, &ael->wfds_w ))
-			{
-				r--;
-				t_ael_executehandle( luaVM, ael, i );
-			}
+			if (ael->fd_set[ i ]->t & T_AEL_RD  &&  FD_ISSET( i, &ael->rfds_w ))
+				t |= T_AEL_RD;
+			if (ael->fd_set[ i ]->t & T_AEL_WR  &&  FD_ISSET( i, &ael->wfds_w ))
+				t |= T_AEL_WR;
+			t_ael_executehandle( luaVM, ael, i, t );
+			r--;
 		}
-	}
+
 	return r;
 }
 

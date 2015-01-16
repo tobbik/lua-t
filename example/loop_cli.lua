@@ -14,7 +14,7 @@ printhelp = function()
 end
 
 s  = t.Socket('UDP')
-ip = t.Ip( xt.Ip.localhost, 8888 )
+ip = t.Ip( t.Ip.localhost, 8888 )
 print( s, ip )
 while true do
 	io.write( "Enter command and type enter ('help' for command list': ")

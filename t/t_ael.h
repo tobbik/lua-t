@@ -11,15 +11,22 @@
 #include "t_sck.h"
 
 enum t_ael_t {
-	t_ael_READ,               ///< Read  ready event on socket
-	t_ael_WRIT,               ///< Write ready event on socket
+	// 00000000
+	T_AEL_NO = 0x00,        ///< not set
+	// 00000001
+	T_AEL_RD = 0x01,        ///< Read  ready event on handle
+	// 00000010
+	T_AEL_WR = 0x02,        ///< Write ready event on handle
+	// 00000011
+	T_AEL_RW = 0x03,        ///< Read and Write on handle
 };
 
 
 struct t_ael_fd {
-	enum t_ael_t       t;
+	enum t_ael_t       t;     ///< mask, for unset, readable, writable
 	int                fd;    ///< descriptor
-	int                fR;    ///< func/arg table reference in LUA_REGISTRYINDEX
+	int                rR;    ///< func/arg table reference for read  event in LUA_REGISTRYINDEX
+	int                wR;    ///< func/arg table reference for write event in LUA_REGISTRYINDEX
 	int                hR;    ///< handle   reference in LUA_REGISTRYINDEX (T.Socket or Lua file)
 };
 
@@ -54,13 +61,13 @@ int   lt_ael_removehandle    ( lua_State *luaVM );
 int   lt_ael_showloop        ( lua_State *luaVM );
 
 void t_ael_executetimer     ( lua_State *luaVM, struct t_ael *ael, struct timeval *rt );
-void t_ael_executehandle    ( lua_State *luaVM, struct t_ael *ael, int fd );
+void t_ael_executehandle    ( lua_State *luaVM, struct t_ael *ael, int fd, enum t_ael_t t );
 
 
 // t_ael_(impl).c   (Implementation specific functions) INTERFACE
 void t_ael_create_ud_impl   ( struct t_ael *ael );
-void t_ael_addhandle_impl   ( struct t_ael *ael, int fd, int read );
-void t_ael_removehandle_impl( struct t_ael *ael, int fd );
+void t_ael_addhandle_impl   ( struct t_ael *ael, int fd, enum t_ael_t t );
+void t_ael_removehandle_impl( struct t_ael *ael, int fd, enum t_ael_t t );
 void t_ael_addtimer_impl    ( struct t_ael *ael, struct timeval *tv );
 int  t_ael_poll_impl        ( lua_State *luaVM, struct t_ael *ael );
 

@@ -144,11 +144,22 @@ t_ael_executetimer( lua_State *luaVM, struct t_ael *ael, struct timeval *rt )
  * \return  void.
  * --------------------------------------------------------------------------*/
 void
-t_ael_executehandle( lua_State *luaVM, struct t_ael *ael, int fd )
+t_ael_executehandle( lua_State *luaVM, struct t_ael *ael, int fd, enum t_ael_t t )
 {
-	int n = t_ael_getfunc( luaVM, ael->fd_set[ fd ]->fR );
-	lua_call( luaVM, n , 0 );
-	lua_pop( luaVM, 1 );             // remove the table
+	int n;
+
+	if( t & T_AEL_RD)
+	{
+		n = t_ael_getfunc( luaVM, ael->fd_set[ fd ]->rR );
+		lua_call( luaVM, n , 0 );
+		lua_pop( luaVM, 1 );             // remove the table
+	}
+	if( t & T_AEL_WR)
+	{
+		n = t_ael_getfunc( luaVM, ael->fd_set[ fd ]->wR );
+		lua_call( luaVM, n , 0 );
+		lua_pop( luaVM, 1 );             // remove the table
+	}
 }
 
 
@@ -192,13 +203,14 @@ struct t_ael
 *t_ael_create_ud( lua_State *luaVM, size_t sz )
 {
 	struct t_ael    *ael;
+	size_t           n;
 
 	ael = (struct t_ael *) lua_newuserdata( luaVM, sizeof( struct t_ael ) );
 	ael->fd_sz   = sz;
 	ael->mxfd    = 0;
 	ael->tm_head = NULL;
-	ael->fd_set  = (struct t_ael_fd **) malloc( ael->fd_sz * sizeof( struct t_ael_fd * ) );
-	memset( ael->fd_set, 0, ael->fd_sz * sizeof( struct t_ael_fd * ) );
+	ael->fd_set  = (struct t_ael_fd **) malloc( (ael->fd_sz+1) * sizeof( struct t_ael_fd * ) );
+	for (n=0; n<=ael->fd_sz; n++) ael->fd_set[ n ] = NULL;
 	t_ael_create_ud_impl( ael );
 	luaL_getmetatable( luaVM, "T.Loop" );
 	lua_setmetatable( luaVM, -2 );
@@ -240,6 +252,7 @@ lt_ael_addhandle( lua_State *luaVM )
 	int            fd  = 0;
 	int            n   = lua_gettop( luaVM ) + 1;    ///< iterator for arguments
 	struct t_ael  *ael = t_ael_check_ud( luaVM, 1, 1 );
+	enum t_ael_t   t   = lua_toboolean( luaVM, 3 ) ? T_AEL_RD :T_AEL_WR;
 
 	luaL_checktype( luaVM, 4, LUA_TFUNCTION );
 	lS = (luaL_Stream *) luaL_testudata( luaVM, 2, LUA_FILEHANDLE );
@@ -253,15 +266,27 @@ lt_ael_addhandle( lua_State *luaVM )
 	if (0 == fd)
 		return t_push_error( luaVM, "Argument to addHandle must be file or socket" );
 
-	ael->fd_set[ fd ] = (struct t_ael_fd *) malloc( sizeof( struct t_ael_fd ) );
-	t_ael_addhandle_impl( ael, fd, lua_toboolean( luaVM, 3 ) );
+	if (NULL == ael->fd_set[ fd ])
+	{
+		ael->fd_set[ fd ] = (struct t_ael_fd *) malloc( sizeof( struct t_ael_fd ) );
+		ael->fd_set[ fd ]->t = T_AEL_NO;
+	}
+
+	ael->fd_set[ fd ]->t |= t;
+
+	ael->mxfd = (fd > ael->mxfd) ? fd : ael->mxfd;
+	t_ael_addhandle_impl( ael, fd, t );
 
 	lua_createtable( luaVM, n-4, 0 );  // create function/parameter table
 	lua_insert( luaVM, 4 );
 	//Stack: ael,fd,read/write,TABLE,func,...
 	while (n > 4)
 		lua_rawseti( luaVM, 4, (n--)-4 );   // add arguments and function (pops each item)
-	ael->fd_set[ fd ]->fR = luaL_ref( luaVM, LUA_REGISTRYINDEX );      // pop the function/parameter table
+	// pop the function reference table and assign as read or write function
+	if (T_AEL_RD & t)
+		ael->fd_set[ fd ]->rR = luaL_ref( luaVM, LUA_REGISTRYINDEX );
+	else
+		ael->fd_set[ fd ]->wR = luaL_ref( luaVM, LUA_REGISTRYINDEX );
 	lua_pop( luaVM, 1 ); // pop the read write boolean
 	ael->fd_set[ fd ]->hR = luaL_ref( luaVM, LUA_REGISTRYINDEX );      // keep ref to handle so it doesnt gc
 
@@ -273,17 +298,19 @@ lt_ael_addhandle( lua_State *luaVM )
  * Remove a Handle event handler from the T.Loop.
  * \param   luaVM    The lua state.
  * \lparam  userdata T.Loop.                                    // 1
- * \lparam  userdata socket or file.                             // 2
+ * \lparam  userdata socket or file.                            // 2
+ * \lparam  bool     remove read event trigger?                 // 3
  * \return  #stack items returned by function call.
  * TODO: optimize!
  * --------------------------------------------------------------------------*/
 int
 lt_ael_removehandle( lua_State *luaVM )
 {
-	luaL_Stream    *lS;
-	struct t_sck   *sc;
-	int             fd  = 0;
-	struct t_ael   *ael = t_ael_check_ud( luaVM, 1, 1 );
+	luaL_Stream   *lS;
+	struct t_sck  *sc;
+	int            fd  = 0;
+	struct t_ael  *ael = t_ael_check_ud( luaVM, 1, 1 );
+	enum t_ael_t   t   = lua_toboolean( luaVM, 3 ) ? T_AEL_RD :T_AEL_WR;
 
 	lS = (luaL_Stream *) luaL_testudata( luaVM, 2, LUA_FILEHANDLE );
 	if (NULL != lS)
@@ -295,11 +322,21 @@ lt_ael_removehandle( lua_State *luaVM )
 
 	if (0 == fd)
 		return t_push_error( luaVM, "Argument to addHandle must be file or socket" );
-	luaL_unref( luaVM, LUA_REGISTRYINDEX, ael->fd_set[ fd ]->fR );
-	luaL_unref( luaVM, LUA_REGISTRYINDEX, ael->fd_set[ fd ]->hR );
-	t_ael_removehandle_impl( ael, fd );
-	free( ael->fd_set[ fd ] );
-	ael->fd_set[ fd ] = NULL;
+	// remove function
+	if (T_AEL_RD & t)
+		luaL_unref( luaVM, LUA_REGISTRYINDEX, ael->fd_set[ fd ]->rR );
+	else
+		luaL_unref( luaVM, LUA_REGISTRYINDEX, ael->fd_set[ fd ]->wR );
+	t_ael_removehandle_impl( ael, fd, t );
+	// remove from mask
+	ael->fd_set[ fd ]->t = ael->fd_set[ fd ]-> t & (~t);
+	// remove from loop if empty
+	if (T_AEL_NO == ael->fd_set[ fd ]->t )
+	{
+		luaL_unref( luaVM, LUA_REGISTRYINDEX, ael->fd_set[ fd ]->hR );
+		free( ael->fd_set[ fd ] );
+		ael->fd_set[ fd ] = NULL;
+	}
 
 	return 0;
 }
@@ -308,7 +345,7 @@ lt_ael_removehandle( lua_State *luaVM )
 /**--------------------------------------------------------------------------
  * Add a Timer event handler to the T.Loop.
  * \param   luaVM  The lua state.
- * \lparam  userdata T.Loop.                                    // 1
+ * \lparam  userdata T.Loop.                                     // 1
  * \lparam  userdata timeval.                                    // 2
  * \lparam  function to be executed when event handler fires.    // 3
  * \lparam  ...    parameters to function when executed.
@@ -345,7 +382,7 @@ lt_ael_addtimer( lua_State *luaVM )
 /**--------------------------------------------------------------------------
  * Remove a Timer event handler from the T.Loop.
  * \param   luaVM    The lua state.
- * \lparam  userdata T.Loop.                                    // 1
+ * \lparam  userdata T.Loop.                                     // 1
  * \lparam  userdata timeval.                                    // 2
  * \return  #stack items returned by function call.
  * TODO: optimize!
@@ -413,7 +450,8 @@ lt_ael__gc( lua_State *luaVM )
 	{
 		if (NULL != ael->fd_set[ i ])
 		{
-			luaL_unref( luaVM, LUA_REGISTRYINDEX, ael->fd_set[ i ]->fR );
+			luaL_unref( luaVM, LUA_REGISTRYINDEX, ael->fd_set[ i ]->rR );
+			luaL_unref( luaVM, LUA_REGISTRYINDEX, ael->fd_set[ i ]->wR );
 			luaL_unref( luaVM, LUA_REGISTRYINDEX, ael->fd_set[ i ]->hR );
 			free( ael->fd_set[ i ] );
 		}
@@ -512,9 +550,16 @@ lt_ael_showloop( lua_State *luaVM )
 	{
 		if (NULL==ael->fd_set[ i ])
 			continue;
-		printf("\t%d\t%s   ", i,
-			(t_ael_READ == ael->fd_set[i]->t) ? "READER" : "WRITER");
-		t_ael_getfunc( luaVM, ael->fd_set[i]->fR );
+		if (T_AEL_RD == ael->fd_set[i]->t)
+		{
+			printf( "\t%d\t%s   ", i, "READER" );
+			t_ael_getfunc( luaVM, ael->fd_set[i]->rR );
+		}
+		else
+		{
+			printf( "\t%d\t%s   ", i, "WRITER" );
+			t_ael_getfunc( luaVM, ael->fd_set[i]->wR );
+		}
 		t_stackPrint( luaVM, n+1, lua_gettop( luaVM ) );
 		lua_pop( luaVM, lua_gettop( luaVM ) - n );
 		printf("\n");
