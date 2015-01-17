@@ -19,6 +19,7 @@
 
 /// Recognized HTTP Methods
 enum t_htp_mth {
+	T_HTP_MTH_ILLEGAL,
 	T_HTP_MTH_CONNECT,
 	T_HTP_MTH_CHECKOUT,
 	T_HTP_MTH_COPY,
@@ -48,6 +49,19 @@ enum t_htp_mth {
 	T_HTP_MTH_UNSUBSCRIBE,
 };
 
+/// State of the HTTP reader; defines the current read situation apart from
+/// content
+enum t_htp_rs {
+	T_HTP_RS_NL,         ///< NULL, end of read or end of buffer
+	T_HTP_RS_CR,         ///< Carriage return, expect LF next
+	T_HTP_RS_LF,         ///< Line Feed, guaranteed end of line
+	T_HTP_RS_LB,         ///< Line Feed, guaranteed end of line
+	T_HTP_RS_EL,         ///< Empty line (\r\n\r\n) -> end of headers
+	T_HTP_RS_RV,         ///< Read value
+	T_HTP_RS_ES,         ///< Eat space
+};
+
+
 
 /// State of the HTTP message
 enum t_htp_sta {
@@ -55,6 +69,7 @@ enum t_htp_sta {
 	T_HTP_STA_URL,          ///< Parsing Url
 	T_HTP_STA_VERSION,      ///< Parsing HTTP version
 	T_HTP_STA_HEADER,       ///< Parsing Headers
+	T_HTP_STA_HEADDONE,     ///< Parsing Headers finished
 	T_HTP_STA_BODY,         ///< Recieving body
 	T_HTP_STA_RECEIVED,     ///< Request received
 	T_HTP_STA_BUFFER,       ///< Fill buffer with data
