@@ -97,6 +97,7 @@ static inline const char
 		default:
 			luaL_error( luaVM, "Illegal HTTP header: Unknown HTTP Method" );
 	}
+	// That means no verb was recognize and the switch fell entirely through
 	if (T_HTP_MTH_ILLEGAL == m->mth)
 	{
 		luaL_error( luaVM, "Illegal HTTP header: Unknown HTTP Method" );
@@ -123,22 +124,38 @@ static inline const char
 static inline const char
 *t_htp_msg_pUrl( lua_State *luaVM, struct t_htp_msg *m, const char *b )
 {
-	const char *d        = b;
-	const char *q,*k,*v  = NULL;   // query, key, value
+	const char *d     = b;
+	const char *q,*v  = NULL;   // query, value (query reused as key)
 	while (' ' != *d)
 	{
 		switch (*d)
 		{
 			case '/':          break;
-			case '?': q=d;     break; // TODO: create proxy.query table
-			case '&': k=d;     break;
-			case '=': v=d+1;   break;
+			case '?':
+				lua_pushstring( luaVM, "query" );
+				lua_newtable( luaVM );
+				q = d+1;
+				break; // TODO: create proxy.query table
+			case '=':
+				lua_pushlstring( luaVM, q, d-q ); // push key
+				//TODO: if key exists, create table
+				v = d+1;
+				break;
+			case '&':
+				lua_pushlstring( luaVM, v, d-v ); // push value
+				lua_rawset( luaVM, -3 );
+				q = d+1;
+				break;
 			default:           break;
 		}
 		d++;
 	}
 	if (NULL != q)
-		lua_pop( luaVM, 1 ); // pop the query table
+	{
+		lua_pushlstring( luaVM, v, d-v ); // push last value
+		lua_rawset( luaVM, -3 );          // set last key
+		lua_rawset( luaVM, -3 );          // set proxy.query
+	}
 	lua_pushstring( luaVM, "url" );
 	lua_pushlstring( luaVM, b, d-b );
 	lua_rawset( luaVM, -3 );
@@ -182,27 +199,28 @@ static inline const char
 	m->bRead += d-b;
 	m->pS     = T_HTP_STA_HEADER;
 	// prepare for the header to be parsed by creating the header table on stack
-	lua_newtable( luaVM );                       //S:P,nil,h
-	lua_replace( luaVM, -2);                     //S:P,h
+	lua_newtable( luaVM );                       //S:P,h
 	lua_pushstring( luaVM, "header" );           //S:P,h,"header"
 	lua_pushvalue( luaVM, -2 );                  //S:P,h,"header",h
 	lua_rawset( luaVM, -4 );                     //S:P,h
 	return d;
 }
 
-static inline void
-*t_htp_msg_rHeaderKey(
-	lua_State *luaVM, struct t_htp_msg *m,
-	const char *k, size_t lk )
-	const char *v, size_t lv )
-{
-	lua_pushlstring( luaVM, k, l );   // push key
-	if (0==m->sz && memcmp( k,"Content-Length", ke-k ))
-		m->sz = (size_t) atoi( v );
-	else
-		m->sz = 0;
+//static inline void
+//*t_htp_msg_rHeaderKey(
+//	lua_State *luaVM, struct t_htp_msg *m,
+//	const char *k, size_t lk,
+//	const char *v, size_t lv )
+//{
+//	lua_pushlstring( luaVM, k, lk );   // push key
+//	lua_pushlstring( luaVM, v, lv );   // push value
+//	if (0==m->sz && memcmp( k,"Content-Length", lk ))
+//		m->sz = (size_t) atoi( v );
+//	else
+//		m->sz = 0;
+//
+//}
 
-}
 
 /**--------------------------------------------------------------------------
  * Process HTTP Headers for this request.
@@ -215,27 +233,24 @@ static inline void
 static inline const char
 *t_htp_msg_pHeader( lua_State *luaVM, struct t_htp_msg *m, const char *b )
 {
-	enum t_htp_rs rs = T_HTP_RS_RV;
-	const char *v  = b;      ///< marks start of value string
-	const char *k  = b;      ///< marks start of key string
-	const char *ke = b;      ///< marks end of key string
-	const char *r  = b;      ///< runner
-	size_t      run= 200;
-	size_t      s_key = 1;   ///< state: parsing key
-	size_t      s_val = 0;   ///< state: parsing value
-	size_t      s_eol = 0;   ///< state: parsing end of line
+	enum t_htp_rs rs = T_HTP_RS_RK;
+	const char *v    = b;      ///< marks start of value string
+	const char *k    = b;      ///< marks start of key string
+	const char *ke   = b;      ///< marks end of key string
+	const char *r    = b;      ///< runner
+	//size_t      run  = 200;
 
-	while (rs != T_HTP_RS_NL)
+	while (rs && rs < T_HTP_RS_EL)
 	{
 		//printf("%c   %c   %c   %c   %zu\n", *r, *k, *ke, *v, run-- );
 		switch (*r)
 		{
 			case '\0':
-				rs=T_HTP_RS_NL;
+				rs=T_HTP_RS_XX;
 				break;
 			case '\r':
 				if (T_HTP_RS_LB == rs) rs=T_HTP_RS_LB;
-				else             rs=T_HTP_RS_CR;
+				else                   rs=T_HTP_RS_CR;
 				break;
 			case '\n':
 				if (T_HTP_RS_CR == rs)
@@ -243,49 +258,23 @@ static inline const char
 					lua_pushlstring( luaVM, k, ke-k );   // push key
 					lua_pushlstring( luaVM, v, r -v );   // push value
 					lua_rawset( luaVM, -3 );
-					rs=T_HTP_RS_LB;
+					rs=T_HTP_RS_RK;                      // TODO: peek for ' '
+					                                     // and keep reading value
 				}
-				if (T_HTP_RS_LB ==rs) rs=T_HTP_RS_EL;   // End of Header
+				if (T_HTP_RS_LB == rs) rs=T_HTP_RS_EL;   // End of Header
 				break;
 			case  ':':                   // KeyEnd marker -> write to header table
-				ke=r; r=eat_lws( ++r ); v=r; break;
-			case ':':
-				if (is_key)
+				if (T_HTP_RS_RK == rs)
 				{
-					ke = r;
-					r++;
-					r = eat_lws( r );
-					v  = r;
-					is_key = 0;
-				}
-				else
-					r++;
-				break;
-			case '\r':
-				if (' ' == *(r+1)) s_eol=0; s
-				break;
-			case '\n':
-				if (' ' == *(r+1))
-					r = eat_lws( r );
-				else
-				{
-					//printf("Got an R   %lu    %lu \n",    ke-k, r-v);
-					lua_pushlstring( luaVM, k, ke-k );   // push key
-					lua_pushlstring( luaVM, v, r -v );   // push value
-					//t_stackDump( luaVM );
-					lua_rawset( luaVM, -3 );
-					if (0==m->sz && memcmp( k,"Content-Length", ke-k ))
-						m->sz = (size_t) atoi( v );
-					else
-						m->sz = 0;
-					while( '\r' == *r ||   '\n' == *r) r++;
-					k=r;
-					is_key=1;
-					m->bRead += k-b;
+					ke=r;
+					r=eat_lws( ++r );
+					v=r;
+					rs=T_HTP_RS_RV;
 				}
 				break;
-			default: r++; break;
+			default: break;
 		}
+		r++;
 	}
 
 	m->pS = (0 == m->sz) ? T_HTP_STA_RECEIVED : T_HTP_STA_BODY;

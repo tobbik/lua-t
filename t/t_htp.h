@@ -52,13 +52,15 @@ enum t_htp_mth {
 /// State of the HTTP reader; defines the current read situation apart from
 /// content
 enum t_htp_rs {
-	T_HTP_RS_NL,         ///< NULL, end of read or end of buffer
+	T_HTP_RS_XX,         ///< End of read or end of buffer
 	T_HTP_RS_CR,         ///< Carriage return, expect LF next
 	T_HTP_RS_LF,         ///< Line Feed, guaranteed end of line
 	T_HTP_RS_LB,         ///< Line Feed, guaranteed end of line
-	T_HTP_RS_EL,         ///< Empty line (\r\n\r\n) -> end of headers
-	T_HTP_RS_RV,         ///< Read value
+	T_HTP_RS_RV,         ///< Read Key
+	T_HTP_RS_RK,         ///< Read value
 	T_HTP_RS_ES,         ///< Eat space
+	// exit state from here
+	T_HTP_RS_EL,         ///< Empty line (\r\n\r\n) -> end of headers
 };
 
 
