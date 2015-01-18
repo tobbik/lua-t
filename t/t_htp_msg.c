@@ -97,7 +97,7 @@ static inline const char
 		default:
 			luaL_error( luaVM, "Illegal HTTP header: Unknown HTTP Method" );
 	}
-	// That means no verb was recognize and the switch fell entirely through
+	// That means no verb was recognized and the switch fell entirely through
 	if (T_HTP_MTH_ILLEGAL == m->mth)
 	{
 		luaL_error( luaVM, "Illegal HTTP header: Unknown HTTP Method" );
@@ -114,7 +114,7 @@ static inline const char
 
 
 /**--------------------------------------------------------------------------
- * Process URI String for this request.
+ * Process URI String for this request. Parse Query if present.
  * \param  luaVM              the Lua State
  * \param  struct t_htp_msg*  pointer to t_htp_msg.
  * \param  const char*        pointer to buffer to process.
@@ -249,21 +249,25 @@ static inline const char
 				rs=T_HTP_RS_XX;
 				break;
 			case '\r':
-				if (T_HTP_RS_LB == rs) rs=T_HTP_RS_LB;
-				else                   rs=T_HTP_RS_CR;
+				if (T_HTP_RS_LB != rs) rs=T_HTP_RS_CR;
 				break;
 			case '\n':
-				if (T_HTP_RS_CR == rs)
+				if (' ' == *(r+1))
+					;// Handle continous value
+				else
 				{
 					lua_pushlstring( luaVM, k, ke-k );   // push key
-					lua_pushlstring( luaVM, v, r -v );   // push value
+					lua_pushlstring( luaVM, v, (rs==T_HTP_RS_EL)? r-v : r-v-1 );   // push value
 					lua_rawset( luaVM, -3 );
-					rs=T_HTP_RS_RK;                      // TODO: peek for ' '
-					                                     // and keep reading value
+					k=r+1;
+					rs=T_HTP_RS_RK;
 				}
-				if (T_HTP_RS_LB == rs) rs=T_HTP_RS_EL;   // End of Header
+				if ('\r' == *(r+1) || '\n' == *(r+1))
+				{
+					rs=T_HTP_RS_EL;   // End of Header
+				}
 				break;
-			case  ':':                   // KeyEnd marker -> write to header table
+			case  ':':
 				if (T_HTP_RS_RK == rs)
 				{
 					ke=r;
