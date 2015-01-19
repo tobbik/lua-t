@@ -156,7 +156,7 @@ lt_htp_srv_accept( lua_State *luaVM )
 	lua_pushcfunction( luaVM, t_htp_msg_rcv ); //S: s,ss,cs,ip,rt,add(),ael,cs,true,rcv
 	m = t_htp_msg_create_ud( luaVM, s );
 	lua_pushvalue( luaVM, -1 );                // preserve to put onto rsp function
-	lua_rawseti( luaVM, -8, 1 );
+	lua_rawseti( luaVM, -8, 2 );
 	lua_newtable( luaVM );                     // create msg proxy table
 	lua_pushstring( luaVM, "socket" );
 	lua_pushvalue( luaVM, -11 ); //S: s,ss,cs,ip,rt,add(),ael,cs,true,rcv,msg,proxy,"socket",cs

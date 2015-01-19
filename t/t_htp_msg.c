@@ -390,6 +390,7 @@ t_htp_msg_rcv( lua_State *luaVM )
 					lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->srv->lR );
 					ael = t_ael_check_ud( luaVM, -1, 1 );
 					t_ael_removehandle_impl( ael, m->sck->fd, T_AEL_RD );
+					ael->fd_set[ m->sck->fd ]->t = ael->fd_set[ m->sck->fd ]-> t & (~T_AEL_RD);
 					lua_pop( luaVM, 1 );             // pop the event loop
 					nxt = NULL;
 				}
@@ -399,6 +400,7 @@ t_htp_msg_rcv( lua_State *luaVM )
 				lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->srv->lR );
 				ael = t_ael_check_ud( luaVM, -1, 1);
 				t_ael_removehandle_impl( ael, m->sck->fd, T_AEL_RD );
+				ael->fd_set[ m->sck->fd ]->t = ael->fd_set[ m->sck->fd ]-> t & (~T_AEL_RD);
 				lua_pop( luaVM, 1 );             // pop the event loop
 				nxt = NULL;
 			default:
@@ -446,6 +448,7 @@ t_htp_msg_rsp( lua_State *luaVM )
 				lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->srv->lR );
 				ael = t_ael_check_ud( luaVM, -1, 1 );
 				t_ael_removehandle_impl( ael, m->sck->fd, T_AEL_WR );
+				ael->fd_set[ m->sck->fd ]->t = ael->fd_set[ m->sck->fd ]-> t & (~T_AEL_WR);
 				lua_pop( luaVM, 1 );
 			}
 		}
@@ -454,6 +457,7 @@ t_htp_msg_rsp( lua_State *luaVM )
 			lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->srv->lR );
 			ael = t_ael_check_ud( luaVM, -1, 1 );
 			t_ael_removehandle_impl( ael, m->sck->fd, T_AEL_WR );
+			ael->fd_set[ m->sck->fd ]->t = ael->fd_set[ m->sck->fd ]-> t & (~T_AEL_WR);
 			lua_pop( luaVM, 1 );
 		}
 	}
@@ -493,7 +497,6 @@ lt_htp_msg_write( lua_State *luaVM )
 
 	if (T_HTP_STA_SEND != m->pS)
 	{
-		m->pS = T_HTP_STA_SEND;
 		memset( &(m->buf[0]), 0, BUFSIZ );
 		m->sent  = 0;
 		t_htp_msg_prepresp( m );
@@ -504,9 +507,11 @@ lt_htp_msg_write( lua_State *luaVM )
 
 	if (T_HTP_STA_SEND != m->pS)
 	{
+		m->pS = T_HTP_STA_SEND;
 		lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->srv->lR );
 		ael = t_ael_check_ud( luaVM, -1, 1 );
 		t_ael_addhandle_impl( ael, m->sck->fd, T_AEL_WR );
+		ael->fd_set[ m->sck->fd ]->t = T_AEL_WR;
 		lua_pop( luaVM, 1 );             // pop the event loop
 	}
 
@@ -640,17 +645,21 @@ lt_htp_msg__gc( lua_State *luaVM )
 		lua_pushnil( luaVM );
 		lua_rawseti( luaVM, -2, m->sck->fd );
 		lua_pop( luaVM, 1 );   // pop the connection table
+
+		lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->srv->lR );
 		ael = t_ael_check_ud( luaVM, -1, 1 );
 		t_ael_removehandle_impl( ael, m->sck->fd, T_AEL_RD );
 		t_ael_removehandle_impl( ael, m->sck->fd, T_AEL_WR );
+		ael->fd_set[ m->sck->fd ]->t = T_AEL_NO;
 		luaL_unref( luaVM, LUA_REGISTRYINDEX, ael->fd_set[ m->sck->fd ]->rR );
 		luaL_unref( luaVM, LUA_REGISTRYINDEX, ael->fd_set[ m->sck->fd ]->wR );
 		luaL_unref( luaVM, LUA_REGISTRYINDEX, ael->fd_set[ m->sck->fd ]->hR );
+		free( ael->fd_set[ m->sck->fd ] );
+		ael->fd_set[ m->sck->fd ] = NULL;
+
 		t_sck_close( luaVM, m->sck );
 		m->sck = NULL;
 		lua_pop( luaVM, 1 );             // pop the event loop
-		free( ael->fd_set[ m->sck->fd ] );
-		ael->fd_set[ m->sck->fd ] = NULL;
 	}
 
 	printf("GC'ed HTTP connection\n");
