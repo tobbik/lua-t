@@ -242,6 +242,7 @@ static inline const char
 
 	while (rs && rs < T_HTP_RS_EL)
 	{
+		// check here that r+1 exists
 		//printf("%c   %c   %c   %c   %zu\n", *r, *k, *ke, *v, run-- );
 		switch (*r)
 		{
@@ -265,6 +266,7 @@ static inline const char
 				if ('\r' == *(r+1) || '\n' == *(r+1))
 				{
 					rs=T_HTP_RS_EL;   // End of Header
+					m->pS = T_HTP_STA_HEADDONE;
 				}
 				break;
 			case  ':':
@@ -281,8 +283,8 @@ static inline const char
 		r++;
 	}
 
-	m->pS = (0 == m->sz) ? T_HTP_STA_RECEIVED : T_HTP_STA_BODY;
 	m->kpAlv = 0;          // TODO: set smarter
+	m->sz    = 0;          // TODO: set smarter
 	lua_pop( luaVM, 1 );   // pop the header table
 	return r;
 }
@@ -368,6 +370,20 @@ t_htp_msg_rcv( lua_State *luaVM )
 				break;
 			case T_HTP_STA_HEADER:
 				nxt = t_htp_msg_pHeader( luaVM, m, nxt );
+				break;
+			case T_HTP_STA_HEADDONE:
+				if (m->sz > 0)
+				{
+					// read body
+				}
+				else
+				{  // remove this function from the loop as we are done reading
+					lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->srv->lR );
+					ael = t_ael_check_ud( luaVM, -1, 1 );
+					t_ael_removehandle_impl( ael, m->sck->fd, T_AEL_RD );
+					ael->fd_set[ m->sck->fd ]->rR = LUA_NOREF;
+					t_ael_addhandle_impl( ael, m->sck->fd, T_AEL_WR );
+				}
 				break;
 			case T_HTP_STA_BODY:        // now we can process the function and start writing back
 			case T_HTP_STA_RECEIVED:    // done receiving -> remove handle from loop
