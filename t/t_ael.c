@@ -554,15 +554,18 @@ lt_ael_showloop( lua_State *luaVM )
 		{
 			printf( "\t%d\t%s   ", i, "READER" );
 			t_ael_getfunc( luaVM, ael->fd_set[i]->rR );
+			t_stackPrint( luaVM, n+1, lua_gettop( luaVM ) );
+			lua_pop( luaVM, lua_gettop( luaVM ) - n );
+			printf("\n");
 		}
-		else
+		if (T_AEL_WR == ael->fd_set[i]->t)
 		{
 			printf( "\t%d\t%s   ", i, "WRITER" );
 			t_ael_getfunc( luaVM, ael->fd_set[i]->wR );
+			t_stackPrint( luaVM, n+1, lua_gettop( luaVM ) );
+			lua_pop( luaVM, lua_gettop( luaVM ) - n );
+			printf("\n");
 		}
-		t_stackPrint( luaVM, n+1, lua_gettop( luaVM ) );
-		lua_pop( luaVM, lua_gettop( luaVM ) - n );
-		printf("\n");
 	}
 	return 0;
 }

@@ -133,6 +133,7 @@ lt_htp_srv_accept( lua_State *luaVM )
 	struct sockaddr_in *si_cli;
 	struct t_sck       *c_sck;
 	struct t_sck       *s_sck;
+	struct t_ael       *ael;    // AELoop
 	struct t_htp_msg   *m;      // new message userdata
 
 	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, s->sR );
@@ -142,33 +143,45 @@ lt_htp_srv_accept( lua_State *luaVM )
 	c_sck  = t_sck_check_ud( luaVM, -2, 1 );
 	si_cli = t_ipx_check_ud( luaVM, -1, 1 );
 
+	//prepare the ael_fd->wR table on stack
+	lua_newtable( luaVM );
+	lua_pushcfunction( luaVM, t_htp_msg_rsp );    //S: s,ss,cs,ip,rt,rsp
+	lua_rawseti( luaVM, -2, 1 );
+
 	lua_pushcfunction( luaVM, lt_ael_addhandle );
 	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, s->lR );
-	t_ael_check_ud( luaVM, -1, 1 );               //S: srv,ssck,csck,cip,addhandle,ael
-	lua_pushvalue( luaVM, -4 );                   // push client socket
-	lua_pushboolean( luaVM, 1 );                  // yepp, that's for reading
-	lua_pushcfunction( luaVM, t_htp_msg_rcv );    //S: srv,ssck,csck,cip,addhandle,ael,csck,true,read
+	ael = t_ael_check_ud( luaVM, -1, 1 );      //S: s,ss,cs,ip,rt,add(),ael
+	lua_pushvalue( luaVM, -5 );                // push client socket
+	lua_pushboolean( luaVM, 1 );               // yepp, that's for reading
+	lua_pushcfunction( luaVM, t_htp_msg_rcv ); //S: s,ss,cs,ip,rt,add(),ael,cs,true,rcv
 	m = t_htp_msg_create_ud( luaVM, s );
-	lua_newtable( luaVM );
+	lua_pushvalue( luaVM, -1 );                // preserve to put onto rsp function
+	lua_rawseti( luaVM, -8, 1 );
+	lua_newtable( luaVM );                     // create msg proxy table
 	lua_pushstring( luaVM, "socket" );
-	lua_pushvalue( luaVM, -10 );  //S: srv,ssck,csck,cip,addhandle,ael,csck,true,read,cli,header,"socket",csck
+	lua_pushvalue( luaVM, -11 ); //S: s,ss,cs,ip,rt,add(),ael,cs,true,rcv,msg,proxy,"socket",cs
 	lua_rawset( luaVM, -3 );
 	lua_pushstring( luaVM, "ip" );
-	lua_pushvalue( luaVM, -9 );   //S: srv,ssck,csck,cip,addhandle,ael,csck,true,read,cli,header,"ip",si_cli
+	lua_pushvalue( luaVM, -10 );  //S: s,ss,cs,ip,rt,add(),ael,cs,true,rcv,msg,proxy,"ip",ip
 	lua_rawset( luaVM, -3 );
 	m->pR  = luaL_ref( luaVM, LUA_REGISTRYINDEX );
 	m->sck = c_sck;
 
-	luaL_getmetatable( luaVM, "T.Http.Message" );
-	lua_setmetatable( luaVM, -2 );
 	// add the connection to the connection table
 	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, s->cR );   // get connection reference
 	lua_pushvalue( luaVM, -2 );                       // repush the new HTTP Message
 	lua_rawseti( luaVM, -2, c_sck->fd );
-	lua_pop( luaVM, 1 );
-	// actually put it onto the loop
-	lua_call( luaVM, 5, 0 );
-	//TODO: Check if that returns true or false; if false resize loop
+	lua_pop( luaVM, 1 );                              // pop connection table
+	// actually put it onto the loop  //S: s,ss,cs,ip,rt,add(),ael,cs,true,rcv,msg
+	t_stackDump(luaVM);
+	lua_call( luaVM, 5, 0 );          // execute ael:addhandle(cli,tread,rcv,msg)
+	t_stackDump(luaVM);
+	// Here the t_ael_fd is all allocated and set up for reading.  This will put
+	// the response writer method on the ->wR reference for faster processing
+	// since an HTTP msg will bounce back and forth between reading and writing.
+	//S: s,ss,cs,ip,rt,(true/false)
+	//lua_pop( luaVM, 1 );                           // TODO: pop true or false
+	ael->fd_set[ m->sck->fd ]->wR = luaL_ref( luaVM, LUA_REGISTRYINDEX );
 	return 0;
 }
 

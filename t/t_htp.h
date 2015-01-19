@@ -76,6 +76,7 @@ enum t_htp_sta {
 	T_HTP_STA_RECEIVED,     ///< Request received
 	T_HTP_STA_BUFFER,       ///< Fill buffer with data
 	T_HTP_STA_SEND,         ///< Send data from buffer
+	T_HTP_STA_FINISH,       ///< The last chunk was written into the buffer
 	T_HTP_STA_DONE,         ///< Finished
 };
 
