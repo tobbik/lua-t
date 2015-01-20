@@ -167,9 +167,7 @@ lt_htp_srv_accept( lua_State *luaVM )
 	m->sck = c_sck;
 
 	// actually put it onto the loop  //S: s,ss,cs,ip,rt,add(),ael,cs,true,rcv,msg
-	t_stackDump(luaVM);
 	lua_call( luaVM, 5, 0 );          // execute ael:addhandle(cli,tread,rcv,msg)
-	t_stackDump(luaVM);
 	// Here the t_ael_fd is all allocated and set up for reading.  This will put
 	// the response writer method on the ->wR reference for faster processing
 	// since an HTTP msg will bounce back and forth between reading and writing.

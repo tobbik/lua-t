@@ -9,6 +9,7 @@
  */
 
 
+#include "t.h"
 #ifdef _WIN32
 #include <WinSock2.h>
 #include <winsock.h>
@@ -17,7 +18,6 @@
 #include <WS2tcpip.h>
 #include <Windows.h>
 #else
-#define _DEFAULT_SOURCE
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -27,13 +27,14 @@
 #include <sys/socket.h>
 #include <sys/select.h>
 #endif
-#include "t.h"
 #include "t_sck.h"
 #include "t_buf.h"         // the ability to send and recv buffers
 
 
+#ifndef _WIN32
 int lt_sck_ShowFdInfo( lua_State *luaVM )
 {
+	UNUSED( luaVM );
 	char buf[256];
 	int numFd  = getdtablesize();
 	int  fd;
@@ -88,7 +89,9 @@ int lt_sck_ShowFdInfo( lua_State *luaVM )
 		}
 		printf("\n");
 	}
+	return 0;
 }
+#endif
 
 
 /** -------------------------------------------------------------------------
@@ -134,7 +137,6 @@ lt_sck__Call( lua_State *luaVM )
 struct t_sck
 *t_sck_create_ud( lua_State *luaVM, enum t_sck_t type )
 {
-	int            on  = 1;
 	struct t_sck  *sck = (struct t_sck*) lua_newuserdata( luaVM, sizeof( struct t_sck ) );
 
 	switch (type)
@@ -149,8 +151,6 @@ struct t_sck
 			if ( (sck->fd  =  socket(AF_INET, SOCK_STREAM, 0)) == -1 ) {
 				return NULL;
 			}
-			// Enable address reuse
-			setsockopt( sck->fd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on) );
 			break;
 		default:
 			return NULL;
@@ -361,6 +361,7 @@ lt_sck_accept( lua_State *luaVM )
  * \param   luaVM  The lua state.
  * \lparam  socket socket userdata.
  * \return  The number of results to be passed back to the calling Lua script.
+ * TODO: Actually do option settings with multiple options etc here...
  *-------------------------------------------------------------------------*/
 int
 t_sck_reuseaddr( lua_State *luaVM, struct t_sck *sck )
@@ -370,7 +371,6 @@ t_sck_reuseaddr( lua_State *luaVM, struct t_sck *sck )
 
 	if (-1 != sck->fd)
 	{
-		printf( "closing socket: %d\n", sck->fd );
 		if (-1 == setsockopt( sck->fd, SOL_SOCKET, SO_REUSEADDR, (void*)&one, sizeof(one) ) )
 			return t_push_error( luaVM, "ERROR setting option" );
 		flag = fcntl( sck->fd, F_GETFL, 0 );           /* Get socket flags */
@@ -735,7 +735,9 @@ static const luaL_Reg t_sck_m [] =
 static const luaL_Reg t_sck_cf [] =
 {
 	{"new",       lt_sck_New},
+#ifndef _WIN32
 	{"showSelfFd", lt_sck_ShowFdInfo},
+#endif
 	{"bind",      lt_sck_bind},
 	{"connect",   lt_sck_connect},
 	{"listen",    lt_sck_listen},

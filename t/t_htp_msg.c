@@ -123,22 +123,25 @@ static inline const char
  * \return const char*        pointer to buffer after processing the URI.
  *
  * TODO: URL decode key and value
+ * TODO: Validate proper key/value pairs
  * --------------------------------------------------------------------------*/
 static inline const char
 *t_htp_msg_pUrl( lua_State *luaVM, struct t_htp_msg *m, const char *b )
 {
-	const char *d     = b;
-	const char *q,*v  = NULL;   // query, value (query reused as key)
+	const char *d  = b;
+	const char *q  = NULL,
+	           *v  = NULL;   // query, value (query reused as key)
 	while (' ' != *d)
 	{
 		switch (*d)
 		{
-			case '/':          break;
+			case '/':
+				break;
 			case '?':
 				lua_pushstring( luaVM, "query" );
 				lua_newtable( luaVM );
 				q = d+1;
-				break; // TODO: create proxy.query table
+				break;
 			case '=':
 				lua_pushlstring( luaVM, q, d-q ); // push key
 				//TODO: if key exists, create table

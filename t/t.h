@@ -11,7 +11,9 @@
 #ifdef _WIN32
 #include <Windows.h>
 #else
-//#define _POSIX_C_SOURCE 1
+#define _POSIX_SOURCE   1
+#define _POSIX_C_SOURCE 200809L
+#define _DEFAULT_SOURCE 1
 #endif
 
 #include <sys/select.h>
@@ -25,6 +27,8 @@
 #define MAX_PKT_BYTES     1500
 
 #define PRINT_DEBUGS      0
+
+#define UNUSED(...)   (void)(__VA_ARGS__)
 
 
 // http://stackoverflow.com/questions/2100331/c-macro-definition-to-determine-big-endian-or-little-endian-machine
