@@ -138,19 +138,20 @@ struct t_sck
 *t_sck_create_ud( lua_State *luaVM, enum t_sck_t type )
 {
 	struct t_sck  *sck = (struct t_sck*) lua_newuserdata( luaVM, sizeof( struct t_sck ) );
+	size_t         one = 1;
 
 	switch (type)
 	{
 		case T_SCK_UDP:
-			if ( (sck->fd  =  socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1 ) {
+			if ( (sck->fd  =  socket( AF_INET, SOCK_DGRAM, IPPROTO_UDP )) == -1 )
 				return NULL;
-			}
 			break;
 
 		case T_SCK_TCP:
-			if ( (sck->fd  =  socket(AF_INET, SOCK_STREAM, 0)) == -1 ) {
+			if ( (sck->fd  =  socket( AF_INET, SOCK_STREAM, 0 )) == -1 )
 				return NULL;
-			}
+			if (-1 == setsockopt( sck->fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one) ) )
+				return NULL;
 			break;
 		default:
 			return NULL;
@@ -194,7 +195,7 @@ struct t_sck
  * \return  struct t_sck*  pointer to the struct t_sck.
  * --------------------------------------------------------------------------*/
 static void inline
-t_sck_options( lua_State *luaVM, int pos, struct t_sck **sck, struct sockaddr_in **ip )
+t_sck_getdef( lua_State *luaVM, int pos, struct t_sck **sck, struct sockaddr_in **ip )
 {
 	enum t_sck_t type;
 
@@ -236,7 +237,7 @@ t_sck_listen( lua_State *luaVM, int pos )
 		sck = t_sck_create_ud( luaVM, T_SCK_TCP );
 		lua_insert( luaVM, pos+0 );
 
-		t_sck_options( luaVM, pos+0, &sck, &ip );
+		t_sck_getdef( luaVM, pos+0, &sck, &ip );
 		//S: t_sck,t_ip
 		if (bind( sck->fd , (struct sockaddr*) &(*ip), sizeof( struct sockaddr ) ) == -1)
 			return t_push_error( luaVM, "ERROR binding socket to %s:%d",
@@ -282,7 +283,7 @@ lt_sck_bind( lua_State *luaVM )
 	struct t_sck       *sck = NULL;
 	struct sockaddr_in *ip  = NULL;
 
-	t_sck_options( luaVM, 1, &sck, &ip );
+	t_sck_getdef( luaVM, 1, &sck, &ip );
 
 	if (bind( sck->fd , (struct sockaddr*) &(*ip), sizeof( struct sockaddr ) ) == -1)
 		return t_push_error( luaVM, "ERROR binding socket to %s:%d",
@@ -306,7 +307,7 @@ lt_sck_connect( lua_State *luaVM )
 	struct t_sck       *sck = NULL;
 	struct sockaddr_in *ip  = NULL;
 
-	t_sck_options( luaVM, 1, &sck, &ip );
+	t_sck_getdef( luaVM, 1, &sck, &ip );
 
 	if (connect( sck->fd , (struct sockaddr*) &(*ip), sizeof( struct sockaddr ) ) == -1)
 		return t_push_error( luaVM, "ERROR connecting socket to %s:%d",
@@ -327,16 +328,20 @@ lt_sck_connect( lua_State *luaVM )
 int
 t_sck_accept( lua_State *luaVM, int pos )
 {
-	struct t_sck       *srv = t_sck_check_ud( luaVM, pos+0, 1 ); // listening socket
-	struct t_sck       *cli;                                     // accepted socket
-	struct sockaddr_in *si_cli;                                  // peer address
-	socklen_t     cli_sz = sizeof( struct sockaddr_in );
+	struct t_sck       *srv    = t_sck_check_ud( luaVM, pos+0, 1 ); // listening socket
+	struct t_sck       *cli;                                        // accepted socket
+	struct sockaddr_in *si_cli;                                     // peer address
+	socklen_t           cli_sz = sizeof( struct sockaddr_in );
+	size_t              one    = 1;
 
 	luaL_argcheck( luaVM, (T_SCK_TCP == srv->t), pos+0, "Must be an TCP socket" );
 	cli    = t_sck_create_ud( luaVM, T_SCK_TCP );
 	si_cli = t_ipx_create_ud( luaVM );
 
-	cli->fd = accept( srv->fd, (struct sockaddr *) &(*si_cli), &cli_sz );
+	if ( (cli->fd  =  accept( srv->fd, (struct sockaddr *) &(*si_cli), &cli_sz )) == -1 )
+		return t_push_error( luaVM, "couldn't accept from socket" );
+	if (-1 == setsockopt( cli->fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one) ) )
+		return t_push_error( luaVM, "couldn't make client socket reusable" );
 	return 2;
 }
 
@@ -371,7 +376,7 @@ t_sck_reuseaddr( lua_State *luaVM, struct t_sck *sck )
 
 	if (-1 != sck->fd)
 	{
-		if (-1 == setsockopt( sck->fd, SOL_SOCKET, SO_REUSEADDR, (void*)&one, sizeof(one) ) )
+		if (-1 == setsockopt( sck->fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one) ) )
 			return t_push_error( luaVM, "ERROR setting option" );
 		flag = fcntl( sck->fd, F_GETFL, 0 );           /* Get socket flags */
 		fcntl( sck->fd, F_SETFL, flag | O_NONBLOCK );     /* Add non-blocking flag */

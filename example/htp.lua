@@ -1,7 +1,7 @@
 #!../out/bin/lua -i
 t=require't'
 fmt=string.format
-l=t.Loop(50)
+l=t.Loop(1200)
 s=t.Socket.bind( 'UDP',  8888 )
 o='./theFile'
 
@@ -16,8 +16,8 @@ x=function( msg )
 	-- msg:sink('./theFile')
 	print( 'REQ:', msg )
 	msg:write( "This is my answer" )
-	l:show()
-	d()
+	--l:show()
+	--d()
 	msg:finish( )
 end
 
@@ -45,6 +45,7 @@ end
 l:addHandle( s, true, cmd, s )
 h=t.Http.Server( l, x )
 sc,ip = h:listen( 8000, 10 )  -- listen on 0.0.0.0 INADDR_ANY
+sc:setOption()
 print( sc, ip, s )
 
 l:show()
