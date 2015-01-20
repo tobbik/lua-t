@@ -17,6 +17,7 @@
 #include <WS2tcpip.h>
 #include <Windows.h>
 #else
+#define _DEFAULT_SOURCE
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -29,6 +30,66 @@
 #include "t.h"
 #include "t_sck.h"
 #include "t_buf.h"         // the ability to send and recv buffers
+
+
+int lt_sck_ShowFdInfo( lua_State *luaVM )
+{
+	char buf[256];
+	int numFd  = getdtablesize();
+	int  fd;
+	for (fd=0; fd<numFd; fd++)
+	{
+		int fd_flags = fcntl( fd, F_GETFD );
+		if ( fd_flags == -1 ) return 0;
+
+		int fl_flags = fcntl( fd, F_GETFL );
+		if ( fl_flags == -1 ) return 0;
+
+		char path[256];
+		sprintf( path, "/proc/self/fd/%d", fd );
+
+		memset( &buf[0], 0, 256 );
+		ssize_t s = readlink( path, &buf[0], 256 );
+		if ( s == -1 )
+		{
+			printf( " (%s): not available", path);
+			return 0;
+		}
+		printf( " (%s): ", path);
+		
+		if ( fd_flags & FD_CLOEXEC )  printf( "cloexec " );
+		
+		// file status
+		if ( fl_flags & O_APPEND   )  printf( "append " );
+		if ( fl_flags & O_NONBLOCK )  printf( "nonblock " );
+		
+		// acc mode
+		if ( fl_flags & O_RDONLY   )  printf( "read-only " );
+		if ( fl_flags & O_RDWR     )  printf( "read-write " );
+		if ( fl_flags & O_WRONLY   )  printf( "write-only " );
+		
+		if ( fl_flags & O_DSYNC    )  printf( "dsync " );
+		if ( fl_flags & O_RSYNC    )  printf( "rsync " );
+		if ( fl_flags & O_SYNC     )  printf( "sync " );
+		
+		struct flock fl;
+		fl.l_type   = F_WRLCK;
+		fl.l_whence = 0;
+		fl.l_start  = 0;
+		fl.l_len    = 0;
+		fcntl( fd, F_GETLK, &fl );
+		if ( fl.l_type != F_UNLCK )
+		{
+			if ( fl.l_type == F_WRLCK )
+				printf( "write-locked" );
+			else
+				printf( "read-locked" );
+			printf( "(pid: %d)", fl.l_pid );
+		}
+		printf("\n");
+	}
+}
+
 
 /** -------------------------------------------------------------------------
  * \brief   create a socket and return it.
@@ -674,6 +735,7 @@ static const luaL_Reg t_sck_m [] =
 static const luaL_Reg t_sck_cf [] =
 {
 	{"new",       lt_sck_New},
+	{"showSelfFd", lt_sck_ShowFdInfo},
 	{"bind",      lt_sck_bind},
 	{"connect",   lt_sck_connect},
 	{"listen",    lt_sck_listen},
