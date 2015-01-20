@@ -17,6 +17,7 @@ x=function( msg )
 	print( 'REQ:', msg )
 	msg:write( "This is my answer" )
 	l:show()
+	d()
 	msg:finish( )
 end
 

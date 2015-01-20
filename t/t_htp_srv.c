@@ -34,8 +34,6 @@ lt_htp_srv_New( lua_State *luaVM )
 		lua_insert( luaVM, -3 );
 		s->rR = luaL_ref( luaVM, LUA_REGISTRYINDEX );
 		s->lR = luaL_ref( luaVM, LUA_REGISTRYINDEX );
-		lua_newtable( luaVM );
-		s->cR = luaL_ref( luaVM, LUA_REGISTRYINDEX );
 	}
 	else
 		return t_push_error( luaVM, "T.Http.Server( func ) requires a function as parameter" );
@@ -142,6 +140,7 @@ lt_htp_srv_accept( lua_State *luaVM )
 	t_sck_accept( luaVM, 2 );   //S: srv,ssck,csck,cip
 	c_sck  = t_sck_check_ud( luaVM, -2, 1 );
 	si_cli = t_ipx_check_ud( luaVM, -1, 1 );
+	t_sck_reuseaddr( luaVM, c_sck );
 
 	//prepare the ael_fd->wR table on stack
 	lua_newtable( luaVM );
@@ -167,11 +166,6 @@ lt_htp_srv_accept( lua_State *luaVM )
 	m->pR  = luaL_ref( luaVM, LUA_REGISTRYINDEX );
 	m->sck = c_sck;
 
-	// add the connection to the connection table
-	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, s->cR );   // get connection reference
-	lua_pushvalue( luaVM, -2 );                       // repush the new HTTP Message
-	lua_rawseti( luaVM, -2, c_sck->fd );
-	lua_pop( luaVM, 1 );                              // pop connection table
 	// actually put it onto the loop  //S: s,ss,cs,ip,rt,add(),ael,cs,true,rcv,msg
 	t_stackDump(luaVM);
 	lua_call( luaVM, 5, 0 );          // execute ael:addhandle(cli,tread,rcv,msg)
@@ -268,7 +262,6 @@ lt_htp_srv__gc( lua_State *luaVM )
 	struct t_htp_srv *s = (struct t_htp_srv *) luaL_checkudata( luaVM, 1, "T.Http.Server" );
 
 	// t_sck_close( luaVM, s->sck );     // segfaults???
-	luaL_unref( luaVM, LUA_REGISTRYINDEX, s->cR );
 	luaL_unref( luaVM, LUA_REGISTRYINDEX, s->sR );
 	luaL_unref( luaVM, LUA_REGISTRYINDEX, s->aR );
 	luaL_unref( luaVM, LUA_REGISTRYINDEX, s->lR );

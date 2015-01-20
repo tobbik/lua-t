@@ -20,6 +20,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <fcntl.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
@@ -295,6 +296,40 @@ lt_sck_accept( lua_State *luaVM )
 
 
 /** -------------------------------------------------------------------------
+ * Set a socket option.
+ * \param   luaVM  The lua state.
+ * \lparam  socket socket userdata.
+ * \return  The number of results to be passed back to the calling Lua script.
+ *-------------------------------------------------------------------------*/
+int
+t_sck_reuseaddr( lua_State *luaVM, struct t_sck *sck )
+{
+	size_t one           = 1;
+	int flag             = 0;
+
+	if (-1 != sck->fd)
+	{
+		printf( "closing socket: %d\n", sck->fd );
+		if (-1 == setsockopt( sck->fd, SOL_SOCKET, SO_REUSEADDR, (void*)&one, sizeof(one) ) )
+			return t_push_error( luaVM, "ERROR setting option" );
+		flag = fcntl( sck->fd, F_GETFL, 0 );           /* Get socket flags */
+		fcntl( sck->fd, F_SETFL, flag | O_NONBLOCK );     /* Add non-blocking flag */
+	}
+
+	return 0;
+}
+
+
+static int
+lt_sck_setoption( lua_State *luaVM )
+{
+	struct t_sck *sck = t_sck_check_ud( luaVM, 1, 1 );
+	return t_sck_reuseaddr( luaVM, sck );
+}
+
+
+
+/** -------------------------------------------------------------------------
  * Close a socket.
  * \param   luaVM  The lua state.
  * \lparam  socket socket userdata.
@@ -303,9 +338,14 @@ lt_sck_accept( lua_State *luaVM )
 int
 t_sck_close( lua_State *luaVM, struct t_sck *sck )
 {
-	printf( "closing socket: %d\n", sck->fd );
-	if (-1 == close( sck->fd ))
-		return t_push_error( luaVM, "ERROR closing socket" );
+	if (-1 != sck->fd)
+	{
+		printf( "closing socket: %d\n", sck->fd );
+		if (-1 == close( sck->fd ))
+			return t_push_error( luaVM, "ERROR closing socket" );
+		else
+			sck->fd = -1;         // invalidate socket
+	}
 
 	return 0;
 }
@@ -622,6 +662,7 @@ static const luaL_Reg t_sck_m [] =
 	{"recv",      lt_sck_recv_strm},
 	{"getId",     lt_sck_getfdid},
 	{"getIp",     lt_sck_getsockname},
+	{"setOption", lt_sck_setoption},
 	{NULL,        NULL}
 };
 
@@ -671,4 +712,3 @@ luaopen_t_sck( lua_State *luaVM )
 	lua_setmetatable( luaVM, -2 );
 	return 1;
 }
-

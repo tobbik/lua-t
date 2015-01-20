@@ -148,13 +148,13 @@ t_ael_executehandle( lua_State *luaVM, struct t_ael *ael, int fd, enum t_ael_t t
 {
 	int n;
 
-	if( t & T_AEL_RD)
+	if( t & T_AEL_RD )
 	{
 		n = t_ael_getfunc( luaVM, ael->fd_set[ fd ]->rR );
 		lua_call( luaVM, n , 0 );
 		lua_pop( luaVM, 1 );             // remove the table
 	}
-	if( t & T_AEL_WR)
+	if( t & T_AEL_WR )
 	{
 		n = t_ael_getfunc( luaVM, ael->fd_set[ fd ]->wR );
 		lua_call( luaVM, n , 0 );

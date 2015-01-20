@@ -641,11 +641,6 @@ lt_htp_msg__gc( lua_State *luaVM )
 	}
 	if (NULL != m->sck)
 	{
-		lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->srv->cR );
-		lua_pushnil( luaVM );
-		lua_rawseti( luaVM, -2, m->sck->fd );
-		lua_pop( luaVM, 1 );   // pop the connection table
-
 		lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->srv->lR );
 		ael = t_ael_check_ud( luaVM, -1, 1 );
 		t_ael_removehandle_impl( ael, m->sck->fd, T_AEL_RD );
