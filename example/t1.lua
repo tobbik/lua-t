@@ -14,13 +14,13 @@ payload= 'HTTP/1.1 200 OK\r\r' ..
 while true do
 	local cli, a   =  srv:accept()
 	local msg, len = cli:recv()
+	t.Socket.showAllFd()
 	print('FROM ' ..tostring( cli ).. " RECEIVED:  "..msg )
 	while not msg:find('\r\n\r\n') do
 		msg, len = cli:recv()
 	end
 	len = cli:send( payload )
 	print('\tsend : ' ..len.. " BYTES VIA:  "..tostring( cli ) )
-	t.Socket.showAllFd()
 	cli:close()
 	collectgarbage()
 	x = x+1

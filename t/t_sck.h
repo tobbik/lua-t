@@ -8,11 +8,13 @@
  */
 
 enum t_sck_t {
+	T_SCK_NONE,
 	T_SCK_UDP,
 	T_SCK_TCP,
 };
 
 static const char *const t_sck_t_lst[] = {
+	"NONE",
 	"UDP",
 	"TCP",
 	NULL
@@ -32,7 +34,7 @@ void                t_ipx_set       ( lua_State *luaVM, int pos, struct sockaddr
 // t_sck.c
 int           luaopen_t_sck    ( lua_State *luaVM );
 struct t_sck *t_sck_check_ud   ( lua_State *luaVM, int pos, int check );
-struct t_sck *t_sck_create_ud  ( lua_State *luaVM, enum t_sck_t type );
+struct t_sck *t_sck_create_ud  ( lua_State *luaVM, enum t_sck_t type, int create );
 
 int           t_sck_recv    ( lua_State *luaVM, struct t_sck *sck, char* buff, size_t sz );
 int           t_sck_send    ( lua_State *luaVM, struct t_sck *sck, const char* buff, size_t sz );

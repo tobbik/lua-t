@@ -32,6 +32,11 @@
 
 
 #ifndef _WIN32
+/** -------------------------------------------------------------------------
+ * check the set parameters of a particular Socket/Filedescriptor
+ * \param   int  The File/Socket descriptor ident.
+ * \return  bool/int  1 if found; 0 if not.
+ *-------------------------------------------------------------------------*/
 int t_sck_getfdinfo( int fd )
 {
 	char buf[256];
@@ -130,7 +135,8 @@ lt_sck_New( lua_State *luaVM )
 	struct t_sck   __attribute__ ((unused)) *sck;
 
 	sck = t_sck_create_ud( luaVM,
-			(enum t_sck_t) luaL_checkoption (luaVM, 1, "TCP", t_sck_t_lst) );
+	   (enum t_sck_t) luaL_checkoption (luaVM, 1, "TCP", t_sck_t_lst),
+	   1 );
 	return 1 ;
 }
 
@@ -153,30 +159,36 @@ lt_sck__Call( lua_State *luaVM )
 
 /**--------------------------------------------------------------------------
  * \brief   create a socket and push to LuaStack.
- * \param   luaVM  The lua state.
- * \return  struct t_sck*  pointer to the socket struct
+ * \param   luaVM         The lua state.
+ * \param   enum t_sck_t  Type of socket.
+ * \param   bool/int      Should socket be created.
+ * \return  struct t_sck* pointer to the socket struct.
  * --------------------------------------------------------------------------*/
 struct t_sck
-*t_sck_create_ud( lua_State *luaVM, enum t_sck_t type )
+*t_sck_create_ud( lua_State *luaVM, enum t_sck_t type, int create )
 {
 	struct t_sck  *sck = (struct t_sck*) lua_newuserdata( luaVM, sizeof( struct t_sck ) );
 	size_t         one = 1;
 
-	switch (type)
+	if (create)
 	{
-		case T_SCK_UDP:
-			if ( (sck->fd  =  socket( AF_INET, SOCK_DGRAM, IPPROTO_UDP )) == -1 )
-				return NULL;
-			break;
+		switch (type)
+		{
+			case T_SCK_UDP:
+				if ( (sck->fd  =  socket( AF_INET, SOCK_DGRAM, IPPROTO_UDP )) == -1 )
+					return NULL;
+				break;
 
-		case T_SCK_TCP:
-			if ( (sck->fd  =  socket( AF_INET, SOCK_STREAM, 0 )) == -1 )
+			case T_SCK_TCP:
+				if ( (sck->fd  =  socket( AF_INET, SOCK_STREAM, 0 )) == -1 )
+					return NULL;
+				if (-1 == setsockopt( sck->fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one) ) )
+					return NULL;
+				break;
+
+			default:
 				return NULL;
-			if (-1 == setsockopt( sck->fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one) ) )
-				return NULL;
-			break;
-		default:
-			return NULL;
+		}
 	}
 
 	sck->t = type;
@@ -227,7 +239,7 @@ t_sck_getdef( lua_State *luaVM, int pos, struct t_sck **sck, struct sockaddr_in 
 	if (NULL == *sck)     // handle T.Socket.whatever(), default to TCP
 	{
 		type = (enum t_sck_t) luaL_checkoption( luaVM, pos+0, NULL, t_sck_t_lst );
-		*sck = t_sck_create_ud( luaVM, type );
+		*sck = t_sck_create_ud( luaVM, type, 1 );
 		lua_replace( luaVM, pos+0 );
 	}
 
@@ -256,7 +268,7 @@ t_sck_listen( lua_State *luaVM, int pos )
 
 	if (NULL == sck)
 	{
-		sck = t_sck_create_ud( luaVM, T_SCK_TCP );
+		sck = t_sck_create_ud( luaVM, T_SCK_TCP, 1 );
 		lua_insert( luaVM, pos+0 );
 
 		t_sck_getdef( luaVM, pos+0, &sck, &ip );
@@ -357,11 +369,12 @@ t_sck_accept( lua_State *luaVM, int pos )
 	size_t              one    = 1;
 
 	luaL_argcheck( luaVM, (T_SCK_TCP == srv->t), pos+0, "Must be an TCP socket" );
-	cli    = t_sck_create_ud( luaVM, T_SCK_TCP );
-	si_cli = t_ipx_create_ud( luaVM );
+	cli     = t_sck_create_ud( luaVM, T_SCK_TCP, 0 );
+	si_cli  = t_ipx_create_ud( luaVM );
 
 	if ( (cli->fd  =  accept( srv->fd, (struct sockaddr *) &(*si_cli), &cli_sz )) == -1 )
 		return t_push_error( luaVM, "couldn't accept from socket" );
+
 	if (-1 == setsockopt( cli->fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one) ) )
 		return t_push_error( luaVM, "couldn't make client socket reusable" );
 	return 2;
@@ -429,14 +442,11 @@ t_sck_close( lua_State *luaVM, struct t_sck *sck )
 	if (-1 != sck->fd)
 	{
 		printf( "closing socket: %d\n", sck->fd );
-		t_sck_getfdinfo( sck->fd );
 		if (-1 == close( sck->fd ))
 			return t_push_error( luaVM, "ERROR closing socket" );
 		else
 		{
-			t_sck_getfdinfo( sck->fd );
 			sck->fd = -1;         // invalidate socket
-			printf("NOW -1\n");
 		}
 	}
 
