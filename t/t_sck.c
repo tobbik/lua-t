@@ -36,60 +36,62 @@ int t_sck_getfdinfo( int fd )
 {
 	char buf[256];
 	char path[256];
-
-	int fd_flags = fcntl( fd, F_GETFD );
-	if ( fd_flags == -1 ) {
-		printf("no FD Flags");
-		return 0;
-	}
-
-	int fl_flags = fcntl( fd, F_GETFL );
-	if ( fl_flags == -1 ) {
-		printf("no FL Flags");
-		return 0;
-	}
+	int fd_flags;
+	int fl_flags;
+	ssize_t s;
 
 	sprintf( path, "/proc/self/fd/%d", fd );
-
-	memset( &buf[0], 0, 256 );
-	ssize_t s = readlink( path, &buf[0], 256 );
+	s = readlink( path, &buf[0], 256 );
 	if ( s == -1 )
 	{
-		printf( " (%s): not available", path);
+		//printf( " (%s): not available", path);
 		return 0;
 	}
-	printf( " (%s): ", path);
-	
-	if ( fd_flags & FD_CLOEXEC )  printf( "cloexec " );
-	
-	// file status
-	if ( fl_flags & O_APPEND   )  printf( "append " );
-	if ( fl_flags & O_NONBLOCK )  printf( "nonblock " );
-	
-	// acc mode
-	if ( fl_flags & O_RDONLY   )  printf( "read-only " );
-	if ( fl_flags & O_RDWR     )  printf( "read-write " );
-	if ( fl_flags & O_WRONLY   )  printf( "write-only " );
-	
-	if ( fl_flags & O_DSYNC    )  printf( "dsync " );
-	if ( fl_flags & O_RSYNC    )  printf( "rsync " );
-	if ( fl_flags & O_SYNC     )  printf( "sync " );
-	
-	struct flock fl;
-	fl.l_type   = F_WRLCK;
-	fl.l_whence = 0;
-	fl.l_start  = 0;
-	fl.l_len    = 0;
-	fcntl( fd, F_GETLK, &fl );
-	if ( fl.l_type != F_UNLCK )
+	else
 	{
-		if ( fl.l_type == F_WRLCK )
-			printf( "write-locked" );
-		else
-			printf( "read-locked" );
-		printf( "(pid: %d)", fl.l_pid );
+		fd_flags = fcntl( fd, F_GETFD );
+		if ( fd_flags == -1 )
+			return 0;
+
+		fl_flags = fcntl( fd, F_GETFL );
+		if ( fl_flags == -1 )
+			return 0;
+
+		printf( " (%s): ", path);
+		memset( &buf[0], 0, 256 );
+
+		if ( fd_flags & FD_CLOEXEC )  printf( "cloexec " );
+
+		// file status
+		if ( fl_flags & O_APPEND   )  printf( "append " );
+		if ( fl_flags & O_NONBLOCK )  printf( "nonblock " );
+
+		// acc mode
+		if ( fl_flags & O_RDONLY   )  printf( "read-only " );
+		if ( fl_flags & O_RDWR     )  printf( "read-write " );
+		if ( fl_flags & O_WRONLY   )  printf( "write-only " );
+
+		if ( fl_flags & O_DSYNC    )  printf( "dsync " );
+		if ( fl_flags & O_RSYNC    )  printf( "rsync " );
+		if ( fl_flags & O_SYNC     )  printf( "sync " );
+
+		struct flock fl;
+		fl.l_type   = F_WRLCK;
+		fl.l_whence = 0;
+		fl.l_start  = 0;
+		fl.l_len    = 0;
+		fcntl( fd, F_GETLK, &fl );
+		if ( fl.l_type != F_UNLCK )
+		{
+			if ( fl.l_type == F_WRLCK )
+				printf( "write-locked" );
+			else
+				printf( "read-locked" );
+			printf( "(pid: %d)", fl.l_pid );
+		}
+		printf("\n");
+		return 1;
 	}
-	printf("\n");
 	return 0;
 }
 
@@ -108,9 +110,7 @@ int lt_sck_getfdsinfo( lua_State *luaVM )
 	int numFd  = getdtablesize();
 	int fd;
 	for (fd=0; fd<numFd; fd++)
-	{
 		t_sck_getfdinfo( fd );
-	}
 	return 0;
 }
 #endif
