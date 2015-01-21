@@ -205,7 +205,7 @@ static int l_select_handle( lua_State *luaVM )
 	fd_set          rfds, wfds;
 	struct t_sck   *hndl;
 	int             rnum, wnum, readsocks, i/*, rp*/;
-	int             rset=1;//, wset=1;
+	int             rset=1, wset=1;
 
 	wnum = -1;
 	rnum = -1;
@@ -221,6 +221,7 @@ static int l_select_handle( lua_State *luaVM )
 	);
 
 	lua_createtable( luaVM, 0, 0 );     // create result table
+	lua_createtable( luaVM, 0, 0 );     // create result table
 	//TODO: check if readsocks hit 0 and break cuz we are done
 	for ( i=1 ; ; i++ )
 	{
@@ -234,7 +235,7 @@ static int l_select_handle( lua_State *luaVM )
 		hndl = (struct t_sck *) lua_touserdata( luaVM, -1 );
 		if FD_ISSET( hndl->fd, &rfds )
 		{
-			lua_rawseti( luaVM, -2, rset++ );
+			lua_rawseti( luaVM, -3, rset++ );
 			readsocks--;
 			if (0 == readsocks) {
 				break;
@@ -244,7 +245,29 @@ static int l_select_handle( lua_State *luaVM )
 			lua_pop( luaVM, 1 );
 		}
 	}
-	return 1;
+	for ( i=1 ; ; i++ )
+	{
+		lua_rawgeti( luaVM, 2, i );
+		// in table this is when the last index is found
+		if (lua_isnil( luaVM, -1 ))
+		{
+			lua_pop( luaVM, 1 );
+			break;
+		}
+		hndl = (struct t_sck *) lua_touserdata( luaVM, -1 );
+		if FD_ISSET( hndl->fd, &wfds )
+		{
+			lua_rawseti( luaVM, -2, wset++ );
+			readsocks--;
+			if (0 == readsocks) {
+				break;
+			}
+		}
+		else {
+			lua_pop( luaVM, 1 );
+		}
+	}
+	return 2;
 }
 
 

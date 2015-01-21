@@ -10,7 +10,7 @@ x=function( msg )
 	print ("Address:", msg.ip )
 	print ("URL:",     msg.url )
 	print ("QUERY:")
-	for k,v in pairs( msg.query ) do print ('',k,v) end
+	--for k,v in pairs( msg.query ) do print ('',k,v) end
 	print ("HEADERS:")
 	for k,v in pairs( msg.header ) do print ('',k,'--------',v) end
 	-- msg:sink('./theFile')
