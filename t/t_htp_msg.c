@@ -356,7 +356,7 @@ t_htp_msg_rcv( lua_State *luaVM )
 	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->pR ); //S:m,P
 
 	// read
-	rcvd = t_sck_recv_tcp( luaVM, m->sck, &(m->buf[ m->bRead ]), BUFSIZ - m->bRead );
+	rcvd = t_sck_recv( luaVM, m->sck, &(m->buf[ m->bRead ]), BUFSIZ - m->bRead );
 	printf( "%d   %s\n", rcvd, &(m->buf[ m->bRead ]) );
 
 	nxt = &(m->buf[ m->bRead ]);
@@ -431,7 +431,7 @@ t_htp_msg_rsp( lua_State *luaVM )
 	struct t_htp_msg *m   = t_htp_msg_check_ud( luaVM, 1, 1 );
 	struct t_ael     *ael;
 
-	m->sent += t_sck_send_tcp( luaVM, m->sck, &(m->buf[ m->sent ]), m->bRead );
+	m->sent += t_sck_send( luaVM, m->sck, &(m->buf[ m->sent ]), m->bRead );
 
 	printf("RESPONSE:  %zu    %zu      %s\n", m->bRead, m->sent,  m->buf);
 	// if (T_HTP_STA_DONE == m->pS)

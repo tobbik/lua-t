@@ -435,7 +435,7 @@ lt_sck_close( lua_State *luaVM )
  * \return  The number of results to be passed back to the calling Lua script.
  *-------------------------------------------------------------------------*/
 static int
-lt_sck_send_to( lua_State *luaVM )
+lt_sck_sendto( lua_State *luaVM )
 {
 	struct t_sck       *sck;
 	struct sockaddr_in *ip;
@@ -484,7 +484,7 @@ lt_sck_send_to( lua_State *luaVM )
  * \return  The number of results to be passed back to the calling Lua script.
  *-------------------------------------------------------------------------*/
 static int
-lt_sck_recv_from( lua_State *luaVM )
+lt_sck_recvfrom( lua_State *luaVM )
 {
 	struct t_sck       *sck;
 	struct t_buf       *buf;
@@ -529,7 +529,7 @@ lt_sck_recv_from( lua_State *luaVM )
  * \return  number of bytes received.
  *-------------------------------------------------------------------------*/
 int
-t_sck_send_tcp( lua_State *luaVM, struct t_sck *sck, const char* buff, size_t sz )
+t_sck_send( lua_State *luaVM, struct t_sck *sck, const char* buff, size_t sz )
 {
 	int     rslt;
 
@@ -552,7 +552,7 @@ t_sck_send_tcp( lua_State *luaVM, struct t_sck *sck, const char* buff, size_t sz
  * \return  The number of results to be passed back to the calling Lua script.
  *-------------------------------------------------------------------------*/
 static int
-lt_sck_send_strm( lua_State *luaVM )
+lt_sck_send( lua_State *luaVM )
 {
 	struct t_sck *sck;
 	size_t        to_send;      // How much should get send out maximally
@@ -571,7 +571,7 @@ lt_sck_send_strm( lua_State *luaVM )
 	msg      = msg + into_msg;
 	to_send -= into_msg;
 
-	lua_pushinteger( luaVM, t_sck_send_tcp( luaVM, sck, msg, to_send ) );
+	lua_pushinteger( luaVM, t_sck_send( luaVM, sck, msg, to_send ) );
 
 	return 1;
 }
@@ -586,7 +586,7 @@ lt_sck_send_strm( lua_State *luaVM )
  * \return  number of bytes received.
  *-------------------------------------------------------------------------*/
 int
-t_sck_recv_tcp( lua_State *luaVM, struct t_sck *sck, char* buff, size_t sz )
+t_sck_recv( lua_State *luaVM, struct t_sck *sck, char* buff, size_t sz )
 {
 	int     rslt;
 
@@ -610,7 +610,7 @@ t_sck_recv_tcp( lua_State *luaVM, struct t_sck *sck, char* buff, size_t sz )
  * TODO:  If no Buffer is passed for receiving, use a LuaL_Buffer instead
  *-------------------------------------------------------------------------*/
 static int
-lt_sck_recv_strm( lua_State *luaVM )
+lt_sck_recv( lua_State *luaVM )
 {
 	struct t_sck *sck;
 	struct t_buf *buf;
@@ -627,7 +627,7 @@ lt_sck_recv_strm( lua_State *luaVM )
 		len  = buf->len;
 	}
 
-	rcvd = t_sck_recv_tcp( luaVM, sck, rcv, len );
+	rcvd = t_sck_recv( luaVM, sck, rcv, len );
 
 	// return buffer, length
 	lua_pushlstring( luaVM, buffer, rcvd );
@@ -722,10 +722,10 @@ static const luaL_Reg t_sck_m [] =
 	{"connect",   lt_sck_connect},
 	{"accept",    lt_sck_accept},
 	{"close",     lt_sck_close},
-	{"sendTo",    lt_sck_send_to},
-	{"recvFrom",  lt_sck_recv_from},
-	{"send",      lt_sck_send_strm},
-	{"recv",      lt_sck_recv_strm},
+	{"sendTo",    lt_sck_sendto},
+	{"recvFrom",  lt_sck_recvfrom},
+	{"send",      lt_sck_send},
+	{"recv",      lt_sck_recv},
 	{"getId",     lt_sck_getfdid},
 	{"getIp",     lt_sck_getsockname},
 	{"setOption", lt_sck_setoption},
