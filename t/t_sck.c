@@ -32,62 +32,84 @@
 
 
 #ifndef _WIN32
-int lt_sck_ShowFdInfo( lua_State *luaVM )
+int t_sck_getfdinfo( int fd )
+{
+	char buf[256];
+	char path[256];
+
+	int fd_flags = fcntl( fd, F_GETFD );
+	if ( fd_flags == -1 ) {
+		printf("no FD Flags");
+		return 0;
+	}
+
+	int fl_flags = fcntl( fd, F_GETFL );
+	if ( fl_flags == -1 ) {
+		printf("no FL Flags");
+		return 0;
+	}
+
+	sprintf( path, "/proc/self/fd/%d", fd );
+
+	memset( &buf[0], 0, 256 );
+	ssize_t s = readlink( path, &buf[0], 256 );
+	if ( s == -1 )
+	{
+		printf( " (%s): not available", path);
+		return 0;
+	}
+	printf( " (%s): ", path);
+	
+	if ( fd_flags & FD_CLOEXEC )  printf( "cloexec " );
+	
+	// file status
+	if ( fl_flags & O_APPEND   )  printf( "append " );
+	if ( fl_flags & O_NONBLOCK )  printf( "nonblock " );
+	
+	// acc mode
+	if ( fl_flags & O_RDONLY   )  printf( "read-only " );
+	if ( fl_flags & O_RDWR     )  printf( "read-write " );
+	if ( fl_flags & O_WRONLY   )  printf( "write-only " );
+	
+	if ( fl_flags & O_DSYNC    )  printf( "dsync " );
+	if ( fl_flags & O_RSYNC    )  printf( "rsync " );
+	if ( fl_flags & O_SYNC     )  printf( "sync " );
+	
+	struct flock fl;
+	fl.l_type   = F_WRLCK;
+	fl.l_whence = 0;
+	fl.l_start  = 0;
+	fl.l_len    = 0;
+	fcntl( fd, F_GETLK, &fl );
+	if ( fl.l_type != F_UNLCK )
+	{
+		if ( fl.l_type == F_WRLCK )
+			printf( "write-locked" );
+		else
+			printf( "read-locked" );
+		printf( "(pid: %d)", fl.l_pid );
+	}
+	printf("\n");
+	return 0;
+}
+
+
+int lt_sck_getfdinfo( lua_State *luaVM )
+{
+	struct t_sck      *sck = t_sck_check_ud( luaVM, 1, 1 );
+	t_sck_getfdinfo( sck->fd );
+	return 0;
+}
+
+
+int lt_sck_getfdsinfo( lua_State *luaVM )
 {
 	UNUSED( luaVM );
-	char buf[256];
 	int numFd  = getdtablesize();
-	int  fd;
+	int fd;
 	for (fd=0; fd<numFd; fd++)
 	{
-		int fd_flags = fcntl( fd, F_GETFD );
-		if ( fd_flags == -1 ) return 0;
-
-		int fl_flags = fcntl( fd, F_GETFL );
-		if ( fl_flags == -1 ) return 0;
-
-		char path[256];
-		sprintf( path, "/proc/self/fd/%d", fd );
-
-		memset( &buf[0], 0, 256 );
-		ssize_t s = readlink( path, &buf[0], 256 );
-		if ( s == -1 )
-		{
-			printf( " (%s): not available", path);
-			return 0;
-		}
-		printf( " (%s): ", path);
-		
-		if ( fd_flags & FD_CLOEXEC )  printf( "cloexec " );
-		
-		// file status
-		if ( fl_flags & O_APPEND   )  printf( "append " );
-		if ( fl_flags & O_NONBLOCK )  printf( "nonblock " );
-		
-		// acc mode
-		if ( fl_flags & O_RDONLY   )  printf( "read-only " );
-		if ( fl_flags & O_RDWR     )  printf( "read-write " );
-		if ( fl_flags & O_WRONLY   )  printf( "write-only " );
-		
-		if ( fl_flags & O_DSYNC    )  printf( "dsync " );
-		if ( fl_flags & O_RSYNC    )  printf( "rsync " );
-		if ( fl_flags & O_SYNC     )  printf( "sync " );
-		
-		struct flock fl;
-		fl.l_type   = F_WRLCK;
-		fl.l_whence = 0;
-		fl.l_start  = 0;
-		fl.l_len    = 0;
-		fcntl( fd, F_GETLK, &fl );
-		if ( fl.l_type != F_UNLCK )
-		{
-			if ( fl.l_type == F_WRLCK )
-				printf( "write-locked" );
-			else
-				printf( "read-locked" );
-			printf( "(pid: %d)", fl.l_pid );
-		}
-		printf("\n");
+		t_sck_getfdinfo( fd );
 	}
 	return 0;
 }
@@ -407,10 +429,15 @@ t_sck_close( lua_State *luaVM, struct t_sck *sck )
 	if (-1 != sck->fd)
 	{
 		printf( "closing socket: %d\n", sck->fd );
+		t_sck_getfdinfo( sck->fd );
 		if (-1 == close( sck->fd ))
 			return t_push_error( luaVM, "ERROR closing socket" );
 		else
+		{
+			t_sck_getfdinfo( sck->fd );
 			sck->fd = -1;         // invalidate socket
+			printf("NOW -1\n");
+		}
 	}
 
 	return 0;
@@ -693,9 +720,7 @@ lt_sck__tostring( lua_State *luaVM )
 static int
 lt_sck_getfdid( lua_State *luaVM )
 {
-	struct t_sck      *sck;
-
-	sck = t_sck_check_ud( luaVM, 1, 1 );
+	struct t_sck      *sck = t_sck_check_ud( luaVM, 1, 1 );
 	lua_pushinteger( luaVM, sck->fd );
 	return 1;
 }
@@ -727,6 +752,7 @@ static const luaL_Reg t_sck_m [] =
 	{"send",      lt_sck_send},
 	{"recv",      lt_sck_recv},
 	{"getId",     lt_sck_getfdid},
+	{"getFdInfo", lt_sck_getfdinfo},
 	{"getIp",     lt_sck_getsockname},
 	{"setOption", lt_sck_setoption},
 	{NULL,        NULL}
@@ -741,7 +767,7 @@ static const luaL_Reg t_sck_cf [] =
 {
 	{"new",       lt_sck_New},
 #ifndef _WIN32
-	{"showSelfFd", lt_sck_ShowFdInfo},
+	{"showAllFd", lt_sck_getfdsinfo},
 #endif
 	{"bind",      lt_sck_bind},
 	{"connect",   lt_sck_connect},

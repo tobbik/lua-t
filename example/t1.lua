@@ -20,6 +20,7 @@ while true do
 	end
 	len = cli:send( payload )
 	print('\tsend : ' ..len.. " BYTES VIA:  "..tostring( cli ) )
+	t.Socket.showAllFd()
 	cli:close()
 	collectgarbage()
 	x = x+1
