@@ -1,58 +1,53 @@
-#!../out/bin/lua
-local t=require('t')
-local sport=8000
+#!../out/bin/lua -i
+t=require't'
+fmt=string.format
+l=t.Loop(1200)
+s=t.Socket.bind( 'UDP',  8888 )
+o='./theFile'
 
---srv,ip = t.Socket.bind('TCP', sport)
---srv:listen(5)
-srv,ip = t.Socket.listen(sport, 5)
-print( srv, ip )
-x=0
-
-conns = {}      -- hold all receiving sending information
-
-while true do
-	local rconns,wconns  = { srv }, { }
-	for i,c in pairs( conns ) do
-		if c.rcv then table.insert( rconns, c.sck )
-		else          table.insert( wconns, c.sck )
-		end
-	end
-
-	local rds,wrs = t.select( rconns, wconns )
-	print( #rds,#wrs, #rconns, #wconns )
-
-	for n,cli in ipairs( rds ) do
-		-- new connection
-		if cli == srv then
-			local s,a =  srv:accept()
-			conns[ s:getId() ] = {
-				sck = s,
-				ip  = a,
-				rcv = true
-			}
-			print('\tCONNECT: ' ..tostring(s).. " FROM:  "..tostring(a) )
-		else
-			local msg, len = cli:recv()
-			print( msg )
-			if msg:find('\n\r\n') then
-				local cn = conns[ cli:getId() ]
-				cn.rcv = false
-				cn.payload = 'HTTP/1.1 200 OK\r\r' ..
-                         'Content-Length: 17\r\n' ..
-                         'Date: Tue, 20 Jan 2015 20:56:55 GMT\r\n\r\n' ..
-
-                         'This is my answer'
-			end
-		end
-	end
-
-	for n,cli in ipairs( wrs ) do
-		local cn = conns[ cli:getId() ]
-		local len = cn.sck:send( cn.payload )
-		print('\tsend : ' ..len.. " BYTES FROM:  "..tostring(cn.sck) )
-		conns[ cli:getId() ] = nil
-		cn.sck:close()
-	end
-	x = x+1
+x=function( msg )
+	--print ("Socket:",  msg.socket )
+	--print ("Address:", msg.ip )
+	--print ("URL:",     msg.url )
+	--print ("QUERY:")
+	--for k,v in pairs( msg.query ) do print ('',k,v) end
+	--print ("HEADERS:")
+	--for k,v in pairs( msg.header ) do print ('',k,'--------',v) end
+	-- msg:sink('./theFile')
+	--print( 'REQ:', msg )
+	msg:write( "This is my answer" )
+	--l:show()
+	--d()
+	msg:finish( )
 end
-srv:close()
+
+
+d=function()
+	local t=debug.getregistry()
+	for i,v in ipairs( t ) do print( i,v ) end
+end
+
+
+cmd = function( sck )
+	local msg, len, ip_cli = sck:recvFrom()
+	local chunk = load( msg )
+	if chunk then
+		local done, msg = pcall( chunk )
+		if not done then
+			print( fmt('Execution failed: %s', msg ) )
+		end
+	else
+		print( "Illegal code: syntax error" )
+	end
+end
+
+
+l:addHandle( s, true, cmd, s )
+h=t.Http.Server( l, x )
+sc,ip = h:listen( 8000, 10 )  -- listen on 0.0.0.0 INADDR_ANY
+sc:setOption()
+print( sc, ip, s )
+
+l:show()
+
+l:run()
