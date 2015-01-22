@@ -1,6 +1,6 @@
 #!../out/bin/lua
 local t=require('t')
-local sport=8000
+local sport=8003
 
 srv,ip = t.Socket.listen(sport, 5)
 print( srv, ip )
@@ -14,7 +14,6 @@ payload= 'HTTP/1.1 200 OK\r\r' ..
 while true do
 	local cli, a   =  srv:accept()
 	local msg, len = cli:recv()
-	t.Socket.showAllFd()
 	print('FROM ' ..tostring( cli ).. " RECEIVED:  "..msg )
 	while not msg:find('\r\n\r\n') do
 		msg, len = cli:recv()

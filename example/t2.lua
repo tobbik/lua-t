@@ -1,8 +1,8 @@
 #!/usr/bin/lua
 local socket=require('socket')
 
-host = host or "*"
-port = port or 8000
+host = "*"
+port = 8004
 print("Binding to host '" ..host.. "' and port " ..port.. "...")
 srv = assert(socket.bind(host, port))
 i, p   = srv:getsockname()
@@ -21,14 +21,13 @@ while true do
 	local msg, len = cli:receive()
 	print('FROM ' ..tostring( cli ).. " RECEIVED:  "..msg )
 	while msg~='' do
-		print( len, msg, string.byte(msg) )
+		--print( len, msg, string.byte(msg) )
 		msg, len = cli:receive()
 	end
-	print('SENDIN?' )
 	len = cli:send( payload )
 	print('\tsend : ' ..len.. " BYTES VIA:  "..tostring( cli ) .. "["..cli:getfd().."]")
 	cli:close()
-	collectgarbage()
+	--collectgarbage()
 	x = x+1
 	if 0==x%10 then print("CC");collectgarbage() end
 end
