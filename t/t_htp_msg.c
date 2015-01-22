@@ -240,16 +240,15 @@ static inline const char
 *t_htp_msg_pHeader( lua_State *luaVM, struct t_htp_msg *m, const char *b )
 {
 	enum t_htp_rs rs = T_HTP_RS_RK;
-	const char *v    = b;      ///< marks start of value string
-	const char *k    = b;      ///< marks start of key string
-	const char *ke   = b;      ///< marks end of key string
-	const char *r    = b;      ///< runner
+	const char *v    = b;             ///< marks start of value string
+	      char *k    = (char *) b;    ///< marks start of key string
+	const char *ke   = b;             ///< marks end of key string
+	const char *r    = b;             ///< runner
 	//size_t      run  = 200;
 
-	while (rs && rs < T_HTP_RS_EL)
+	while (rs && rs < T_HTP_RS_BD)
 	{
-		// check here that r+1 exists
-		//printf("%c   %c   %c   %c   %zu\n", *r, *k, *ke, *v, run-- );
+		// TODO: check here that r+1 exists
 		switch (*r)
 		{
 			case '\0':
@@ -264,14 +263,14 @@ static inline const char
 				else
 				{
 					lua_pushlstring( luaVM, k, ke-k );   // push key
-					lua_pushlstring( luaVM, v, (rs==T_HTP_RS_EL)? r-v : r-v-1 );   // push value
+					lua_pushlstring( luaVM, v, (rs==T_HTP_RS_BD)? r-v : r-v-1 );   // push value
 					lua_rawset( luaVM, -3 );
-					k=r+1;
+					k= (char *) (r+1);
 					rs=T_HTP_RS_RK;
 				}
 				if ('\r' == *(r+1) || '\n' == *(r+1))
 				{
-					rs=T_HTP_RS_EL;   // End of Header
+					rs=T_HTP_RS_BD;   // End of Header
 					m->pS = T_HTP_STA_HEADDONE;
 				}
 				break;
@@ -284,7 +283,17 @@ static inline const char
 					rs=T_HTP_RS_RV;
 				}
 				break;
-			default: break;
+			default:
+				// manipulate Headers -> case insensitive
+				if (T_HTP_RS_RK == rs)
+				{
+					ke=r;
+					r=eat_lws( ++r );
+					v=r;
+					rs=T_HTP_RS_RV;
+				}
+				
+				break;
 		}
 		r++;
 	}

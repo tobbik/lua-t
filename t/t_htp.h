@@ -60,7 +60,7 @@ enum t_htp_rs {
 	T_HTP_RS_RK,         ///< Read value
 	T_HTP_RS_ES,         ///< Eat space
 	// exit state from here
-	T_HTP_RS_EL,         ///< Empty line (\r\n\r\n) -> end of headers
+	T_HTP_RS_BD,         ///< Empty line (\r\n\r\n) -> end of headers
 };
 
 
