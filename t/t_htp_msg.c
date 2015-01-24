@@ -14,6 +14,41 @@
 #include "t.h"
 #include "t_htp.h"
 
+static const char tokens[256] = {
+/*   0 nul    1 soh    2 stx    3 etx    4 eot    5 enq    6 ack    7 bel  */
+        0,       0,       0,       0,       0,       0,       0,       0,
+/*   8 bs     9 ht    10 nl    11 vt    12 np    13 cr    14 so    15 si   */
+        0,       0,       0,       0,       0,       0,       0,       0,
+/*  16 dle   17 dc1   18 dc2   19 dc3   20 dc4   21 nak   22 syn   23 etb */
+        0,       0,       0,       0,       0,       0,       0,       0,
+/*  24 can   25 em    26 sub   27 esc   28 fs    29 gs    30 rs    31 us  */
+        0,       0,       0,       0,       0,       0,       0,       0,
+/*  32 sp    33  !    34  "    35  #    36  $    37  %    38  &    39  '  */
+        0,      '!',      0,      '#',     '$',     '%',     '&',    '\'',
+/*  40  (    41  )    42  *    43  +    44  ,    45  -    46  .    47  /  */
+        0,       0,      '*',     '+',      0,      '-',     '.',      0,
+/*  48  0    49  1    50  2    51  3    52  4    53  5    54  6    55  7  */
+       '0',     '1',     '2',     '3',     '4',     '5',     '6',     '7',
+/*  56  8    57  9    58  :    59  ;    60  <    61  =    62  >    63  ?  */
+       '8',     '9',      0,       0,       0,       0,       0,       0,
+/*  64  @    65  A    66  B    67  C    68  D    69  E    70  F    71  G  */
+        0,      'a',     'b',     'c',     'd',     'e',     'f',     'g',
+/*  72  H    73  I    74  J    75  K    76  L    77  M    78  N    79  O  */
+       'h',     'i',     'j',     'k',     'l',     'm',     'n',     'o',
+/*  80  P    81  Q    82  R    83  S    84  T    85  U    86  V    87  W  */
+       'p',     'q',     'r',     's',     't',     'u',     'v',     'w',
+/*  88  X    89  Y    90  Z    91  [    92  \    93  ]    94  ^    95  _  */
+       'x',     'y',     'z',      0,       0,       0,      '^',     '_',
+/*  96  `    97  a    98  b    99  c   100  d   101  e   102  f   103  g  */
+       '`',     'a',     'b',     'c',     'd',     'e',     'f',     'g',
+/* 104  h   105  i   106  j   107  k   108  l   109  m   110  n   111  o  */
+       'h',     'i',     'j',     'k',     'l',     'm',     'n',     'o',
+/* 112  p   113  q   114  r   115  s   116  t   117  u   118  v   119  w  */
+       'p',     'q',     'r',     's',     't',     'u',     'v',     'w',
+/* 120  x   121  y   122  z   123  {   124  |   125  }   126  ~   127 del */
+       'x',     'y',     'z',      0,      '|',      0,      '~',       0 };
+
+
 
 static int lt_htp_msg__gc( lua_State *luaVM );
 /**
@@ -212,20 +247,20 @@ static inline const char
 	return d;
 }
 
-//static inline void
-//*t_htp_msg_rHeaderKey(
-//	lua_State *luaVM, struct t_htp_msg *m,
-//	const char *k, size_t lk,
-//	const char *v, size_t lv )
-//{
-//	lua_pushlstring( luaVM, k, lk );   // push key
-//	lua_pushlstring( luaVM, v, lv );   // push value
-//	if (0==m->sz && memcmp( k,"Content-Length", lk ))
-//		m->sz = (size_t) atoi( v );
-//	else
-//		m->sz = 0;
-//
-//}
+
+/** --------------------------------------------------------------------------
+ * Analyze the header for an T_HTP_CON relevant information.
+ * HTTP defines a lot of headers. This fishes only for the ones immediately
+ * affecting the connection strategy.  Looking for:
+ *      - Expect
+ *      - Content-Length
+ *      - Host
+ *      - Range
+ *      - Upgrade
+ * \param  lua_State          luaVM the Lua State.
+ * \param  struct t_htp_msg*  pointer to t_htp_msg.
+ * \param  char *             pointer to the buffer.
+ * --------------------------------------------------------------------------*/
 
 
 /**--------------------------------------------------------------------------
@@ -239,23 +274,23 @@ static inline const char
 static inline const char
 *t_htp_msg_pHeader( lua_State *luaVM, struct t_htp_msg *m, const char *b )
 {
-	enum t_htp_rs rs = T_HTP_RS_RK;
+	enum t_htp_rs rs = T_HTP_R_KS;
 	const char *v    = b;             ///< marks start of value string
-	      char *k    = (char *) b;    ///< marks start of key string
+	const char *k    = b;    ///< marks start of key string
 	const char *ke   = b;             ///< marks end of key string
 	const char *r    = b;             ///< runner
 	//size_t      run  = 200;
 
-	while (rs && rs < T_HTP_RS_BD)
+	while (rs && rs < T_HTP_R_BD)
 	{
-		// TODO: check here that r+1 exists
+		// TODO: check that r+1 exists
 		switch (*r)
 		{
 			case '\0':
-				rs=T_HTP_RS_XX;
+				rs=T_HTP_R_XX;
 				break;
 			case '\r':
-				if (T_HTP_RS_LB != rs) rs=T_HTP_RS_CR;
+				if (T_HTP_R_LB != rs) rs=T_HTP_R_CR;
 				break;
 			case '\n':
 				if (' ' == *(r+1))
@@ -263,43 +298,90 @@ static inline const char
 				else
 				{
 					lua_pushlstring( luaVM, k, ke-k );   // push key
-					lua_pushlstring( luaVM, v, (rs==T_HTP_RS_BD)? r-v : r-v-1 );   // push value
+					lua_pushlstring( luaVM, v, (rs==T_HTP_R_LB)? r-v : r-v-1 );   // push value
 					lua_rawset( luaVM, -3 );
-					k= (char *) (r+1);
-					rs=T_HTP_RS_RK;
+					k  = r+1;
+					rs = T_HTP_R_KS;         // Set Key to be Capitalized
 				}
 				if ('\r' == *(r+1) || '\n' == *(r+1))
 				{
-					rs=T_HTP_RS_BD;   // End of Header
+					rs = T_HTP_R_BD;   // End of Header
 					m->pS = T_HTP_STA_HEADDONE;
 				}
 				break;
 			case  ':':
-				if (T_HTP_RS_RK == rs)
+				if (T_HTP_R_KY == rs)
 				{
-					ke=r;
-					r=eat_lws( ++r );
-					v=r;
-					rs=T_HTP_RS_RV;
+					ke = r;
+					r  = eat_lws( ++r );
+					v  = r;
+					rs = T_HTP_R_VL;
 				}
 				break;
 			default:
-				// manipulate Headers -> case insensitive
-				if (T_HTP_RS_RK == rs)
+				if (T_HTP_R_KS == rs)
 				{
-					ke=r;
-					r=eat_lws( ++r );
-					v=r;
-					rs=T_HTP_RS_RV;
-				}
-				
+					switch ((size_t) tokens[ (size_t) *r ])
+					{
+						// Content-Length, Connection
+						case 'c':
+							// Content-Length
+							if (':'==*(b+15))
+							{
+								v = eat_lws( b+16 );
+								r=v;
+								while ('\n' != *r && '\r' != *r)
+								{
+									m->length = m->length*10 + (*r - '0');
+									r++;
+								}
+								rs = T_HTP_R_VL;
+								break;
+							}
+							// Connection: Keep-alive, Close, Upgrade
+							if (':'==*(b+11))
+							{
+								v = eat_lws( b+12 );
+								r = v;
+								if ('k' == tokens[ (size_t) *v ] && 'e' == tokens[ (size_t) *(v+9) ] ) m->kpAlv   = 200;
+								if ('c' == tokens[ (size_t) *v ] && 'e' == tokens[ (size_t) *(v+4) ] ) m->kpAlv   = 0;
+								if ('u' == tokens[ (size_t) *v ] && 'e' == tokens[ (size_t) *(v+6) ] ) m->upgrade = 1;
+								rs = T_HTP_R_VL;
+								break;
+							}
+							break;
+						// Expect
+						case 'e':
+							if (':'==*(b+7))
+							{
+								v = eat_lws( b+8 );
+								r = v;
+								m->expect = 1;
+								rs = T_HTP_R_VL;
+								break;
+							}
+							break;
+							// Upgrade
+						case 'u':
+							if (':'==*(b+8))
+							{
+								v = eat_lws( b+9 );
+								r = v;
+								m->upgrade = 1;
+								rs = T_HTP_R_VL;
+								break;
+							}
+							break;
+						default:
+							rs = T_HTP_R_KY;
+							break;
+					}  // END SWITCH on First character
+				}  // End test for T_HTP_R_KS
 				break;
 		}
 		r++;
 	}
 
-	m->kpAlv = 0;          // TODO: set smarter
-	m->sz    = 0;          // TODO: set smarter
 	lua_pop( luaVM, 1 );   // pop the header table
 	return r;
 }
@@ -316,11 +398,12 @@ struct t_htp_msg
 {
 	struct t_htp_msg *m;
 	m = (struct t_htp_msg *) lua_newuserdata( luaVM, sizeof( struct t_htp_msg ));
-	m->bRead = 0;
-	m->pS    = T_HTP_STA_ZERO;
-	m->mth   = T_HTP_MTH_ILLEGAL;
-	m->srv   = srv;
-	m->sz    = 0;
+	m->bRead  = 0;
+	m->pS     = T_HTP_STA_ZERO;
+	m->mth    = T_HTP_MTH_ILLEGAL;
+	m->srv    = srv;
+	m->length = 0;
+	m->expect = 0;
 
 	luaL_getmetatable( luaVM, "T.Http.Message" );
 	lua_setmetatable( luaVM, -2 );
@@ -392,7 +475,7 @@ t_htp_msg_rcv( lua_State *luaVM )
 				lua_pushvalue( luaVM, 1 );
 				lua_call( luaVM, 1,0 );
 				// keep reading if body, else stop reading
-				if (m->sz > 0)
+				if (m->length > 0)
 				{
 					m->pS = T_HTP_STA_BODY;
 					// read body
@@ -627,9 +710,8 @@ lt_htp_msg__tostring( lua_State *luaVM )
 static int
 lt_htp_msg__len( lua_State *luaVM )
 {
-	//struct t_wsk *wsk = t_wsk_check_ud( luaVM, 1, 1 );
-	//TODO: something meaningful here?
-	lua_pushinteger( luaVM, 5 );
+	struct t_htp_msg *m = (struct t_htp_msg *) luaL_checkudata( luaVM, 1, "T.Http.Message" );
+	lua_pushinteger( luaVM, m->length );
 	return 1;
 }
 

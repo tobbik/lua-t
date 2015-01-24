@@ -52,15 +52,16 @@ enum t_htp_mth {
 /// State of the HTTP reader; defines the current read situation apart from
 /// content
 enum t_htp_rs {
-	T_HTP_RS_XX,         ///< End of read or end of buffer
-	T_HTP_RS_CR,         ///< Carriage return, expect LF next
-	T_HTP_RS_LF,         ///< Line Feed, guaranteed end of line
-	T_HTP_RS_LB,         ///< Line Feed, guaranteed end of line
-	T_HTP_RS_RV,         ///< Read Key
-	T_HTP_RS_RK,         ///< Read value
-	T_HTP_RS_ES,         ///< Eat space
+	T_HTP_R_XX,         ///< End of read or end of buffer
+	T_HTP_R_CR,         ///< Carriage return, expect LF next
+	T_HTP_R_LF,         ///< Line Feed, guaranteed end of line
+	T_HTP_R_LB,         ///< Line Feed, guaranteed end of line
+	T_HTP_R_KS,         ///< Reading Key Start
+	T_HTP_R_KY,         ///< Read Key
+	T_HTP_R_VL,         ///< Read value
+	T_HTP_R_ES,         ///< Eat space
 	// exit state from here
-	T_HTP_RS_BD,         ///< Empty line (\r\n\r\n) -> end of headers
+	T_HTP_R_BD,         ///< Empty line (\r\n\r\n) -> end of headers
 };
 
 
@@ -71,6 +72,8 @@ enum t_htp_sta {
 	T_HTP_STA_URL,          ///< Parsing Url
 	T_HTP_STA_VERSION,      ///< Parsing HTTP version
 	T_HTP_STA_HEADER,       ///< Parsing Headers
+	T_HTP_STA_CONTLNGTH,    ///< Content-Length: 12345
+	T_HTP_STA_UPGRADE,      ///< Content-Length: 12345
 	T_HTP_STA_HEADDONE,     ///< Parsing Headers finished
 	T_HTP_STA_BODY,         ///< Recieving body
 	T_HTP_STA_RECEIVED,     ///< Request received
@@ -112,14 +115,16 @@ struct t_htp_msg {
 	struct t_htp_srv *srv;    ///< pointer to the HTTP-Server
 
 	int             status; ///< HTTP Status Code
-	int             sz;     ///< HTTP Message Size
+	int             length; ///< HTTP Message Size ("Content-Length")
 	int             kpAlv;  ///< keepalive value in seconds -> 0==no Keepalive
+
+	int             upgrade;///< shall the connection be upgraded?
+	int             expect; ///< shall the connection return an expected thingy?
 	enum t_htp_sta  pS;     ///< HTTP parser state
 	enum t_htp_mth  mth;    ///< HTTP Method
 	enum t_htp_ver  ver;    ///< HTTP version
 	size_t          bRead;  ///< How many byte processed
 	size_t          sent;   ///< How many byte sent out
-	char           *bufr;   ///< Pointer to buffers current position
 	char            buf[ BUFSIZ ];   ///< Initial Buffer
 };
 
