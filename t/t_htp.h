@@ -135,11 +135,13 @@ struct t_htp_msg {
 // | |  | |  __/ |_| | | | (_) | (_| \__ \
 // |_|  |_|\___|\__|_| |_|\___/ \__,_|___/
 // t_htp.c
+const char         *t_htp_pHeaderLine( lua_State *luaVM, struct t_htp_msg *m, const char *b );
+const char         *t_htp_pReqFirstLine( lua_State *luaVM, struct t_htp_msg *m, const char *b );
+// t_htp_srv.c
 // Constructors
 struct t_htp_srv   *t_htp_srv_check_ud ( lua_State *luaVM, int pos, int check );
 struct t_htp_srv   *t_htp_srv_create_ud( lua_State *luaVM );
 void                t_htp_srv_setnow( struct t_htp_srv *s, int force );
-
 
 
 // library exporters

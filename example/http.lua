@@ -7,10 +7,14 @@ s=t.Socket.bind( 'UDP',  8888 )
 x=function( msg )
 	print ("Socket:",  msg.socket )
 	print ("Address:", msg.ip )
+	print ("Method:",  msg.method )
 	print ("URL:",     msg.url )
+	print ("VERSION:", msg.version )
 	print ("Content-Length:",     #msg )
-	print ("QUERY:")
-	for k,v in pairs( msg.query ) do print ('',k,v) end
+	if msg.query then
+		print ("QUERY:")
+		for k,v in pairs( msg.query ) do print ('',k,v) end
+	end
 	print ("HEADERS:")
 	for k,v in pairs( msg.header ) do print ('',k,'--------',v) end
 	-- msg:sink('./theFile')
