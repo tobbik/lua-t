@@ -75,12 +75,14 @@ t_htp_msg_rcv( lua_State *luaVM )
 	int               rcvd;
 	const char       *nxt;   // pointer to the buffer where processing must continue
 
-	// get the proxy on the stack to fill out verb/url/version/headers ...
-	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->pR ); //S:m,P
-
 	// read
 	rcvd = t_sck_recv( luaVM, m->sck, &(m->buf[ m->bRead ]), BUFSIZ - m->bRead );
-	printf( "%d   %s\n", rcvd, &(m->buf[ m->bRead ]) );
+	if (!rcvd)     // peer has closed
+		return lt_htp_msg__gc( luaVM );
+	else           // get the proxy on the stack to fill out verb/url/version/headers ...
+		lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->pR ); //S:m,P
+
+	//printf( "Received %d  \n'%s'\n", rcvd, &(m->buf[ m->bRead ]) );
 
 	nxt = &(m->buf[ m->bRead ]);
 
@@ -165,11 +167,14 @@ t_htp_msg_rsp( lua_State *luaVM )
 			}
 			else     // start reading again
 			{
+				printf("Rewert Socket: Keeep-Alibve: %d\n", m->kpAlv);
 				lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->srv->lR );
+				m->sent = 0; m->bRead = 0; m->pS=T_HTP_STA_ZERO;
 				ael = t_ael_check_ud( luaVM, -1, 1 );
 				t_ael_removehandle_impl( ael, m->sck->fd, T_AEL_WR );
-				ael->fd_set[ m->sck->fd ]->t = ael->fd_set[ m->sck->fd ]-> t & (~T_AEL_WR);
-				lua_pop( luaVM, 1 );
+				t_ael_addhandle_impl( ael, m->sck->fd, T_AEL_RD );
+				ael->fd_set[ m->sck->fd ]->t = T_AEL_RD;
+				lua_pop( luaVM, 1 );        // pop the loop
 			}
 		}
 		else
@@ -178,7 +183,7 @@ t_htp_msg_rsp( lua_State *luaVM )
 			ael = t_ael_check_ud( luaVM, -1, 1 );
 			t_ael_removehandle_impl( ael, m->sck->fd, T_AEL_WR );
 			ael->fd_set[ m->sck->fd ]->t = ael->fd_set[ m->sck->fd ]-> t & (~T_AEL_WR);
-			lua_pop( luaVM, 1 );
+			lua_pop( luaVM, 1 );        // pop the loop
 		}
 	}
 

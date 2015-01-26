@@ -205,9 +205,9 @@ const char
 	//TODO: set values based on version default behaviour (eg, KeepAlive for 1.1 etc)
 	switch (*(r+7))
 	{
-		case '1': m->ver=T_HTP_VER_11; break;
-		case '0': m->ver=T_HTP_VER_10; break;
-		case '9': m->ver=T_HTP_VER_09; break;
+		case '1': m->ver=T_HTP_VER_11; m->kpAlv=200; break;
+		case '0': m->ver=T_HTP_VER_10; m->kpAlv=0  ; break;
+		case '9': m->ver=T_HTP_VER_09; m->kpAlv=0  ; break;
 		default: luaL_error( luaVM, "ILLEGAL HTTP version in message" ); break;
 	}
 	lua_pushstring( luaVM, "version" );
