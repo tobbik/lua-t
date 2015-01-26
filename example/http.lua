@@ -3,18 +3,18 @@ t=require't'
 fmt=string.format
 l=t.Loop(1200)
 s=t.Socket.bind( 'UDP',  8888 )
-o='./theFile'
 
 x=function( msg )
-	--print ("Socket:",  msg.socket )
-	--print ("Address:", msg.ip )
-	--print ("URL:",     msg.url )
-	--print ("QUERY:")
-	--for k,v in pairs( msg.query ) do print ('',k,v) end
-	--print ("HEADERS:")
-	--for k,v in pairs( msg.header ) do print ('',k,'--------',v) end
+	print ("Socket:",  msg.socket )
+	print ("Address:", msg.ip )
+	print ("URL:",     msg.url )
+	print ("Content-Length:",     #msg )
+	print ("QUERY:")
+	for k,v in pairs( msg.query ) do print ('',k,v) end
+	print ("HEADERS:")
+	for k,v in pairs( msg.header ) do print ('',k,'--------',v) end
 	-- msg:sink('./theFile')
-	--print( 'REQ:', msg )
+	print( 'REQ:', msg )
 	msg:write( "This is my answer" )
 	--l:show()
 	--d()

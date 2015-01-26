@@ -248,21 +248,6 @@ static inline const char
 }
 
 
-/** --------------------------------------------------------------------------
- * Analyze the header for an T_HTP_CON relevant information.
- * HTTP defines a lot of headers. This fishes only for the ones immediately
- * affecting the connection strategy.  Looking for:
- *      - Expect
- *      - Content-Length
- *      - Host
- *      - Range
- *      - Upgrade
- * \param  lua_State          luaVM the Lua State.
- * \param  struct t_htp_msg*  pointer to t_htp_msg.
- * \param  char *             pointer to the buffer.
- * --------------------------------------------------------------------------*/
-
-
 /**--------------------------------------------------------------------------
  * Process HTTP Headers for this request.
  * \param  luaVM              the Lua State
@@ -297,6 +282,11 @@ static inline const char
 					;// Handle continous value
 				else
 				{
+					printf( "Key: " );
+					fwrite(k, 1, ke-k, stdout);
+					printf( "Value: " );
+					fwrite(v, 1, r-v-1, stdout);
+					printf( "\n" );
 					lua_pushlstring( luaVM, k, ke-k );   // push key
 					lua_pushlstring( luaVM, v, (rs==T_HTP_R_LB)? r-v : r-v-1 );   // push value
 					lua_rawset( luaVM, -3 );
@@ -321,30 +311,38 @@ static inline const char
 			default:
 				if (T_HTP_R_KS == rs)
 				{
-					switch ((size_t) tokens[ (size_t) *r ])
+					rs = T_HTP_R_KY;
+					switch (tokens[ (size_t) *r ])
 					{
 						// Content-Length, Connection
 						case 'c':
 							// Content-Length
-							if (':'==*(b+15))
+							if (':' == *(r+14))
 							{
-								v = eat_lws( b+16 );
-								r=v;
+								v  = eat_lws( r+15 );
+								r  = v;
+								ke = r+13;
 								while ('\n' != *r && '\r' != *r)
 								{
 									m->length = m->length*10 + (*r - '0');
 									r++;
 								}
+								r--;
+								printf( "%s ---- %s ---- %s\n", k,v,r );
 								rs = T_HTP_R_VL;
 								break;
 							}
 							// Connection: Keep-alive, Close, Upgrade
-							if (':'==*(b+11))
+							else if (':' == *(r+10))
 							{
-								v = eat_lws( b+12 );
-								r = v;
+								v  = eat_lws( r+11 );
+								r  = v;
+								ke = r+9;
+								// Keep-Alive
 								if ('k' == tokens[ (size_t) *v ] && 'e' == tokens[ (size_t) *(v+9) ] ) m->kpAlv   = 200;
+								// Close
 								if ('c' == tokens[ (size_t) *v ] && 'e' == tokens[ (size_t) *(v+4) ] ) m->kpAlv   = 0;
+								// Upgrade
 								if ('u' == tokens[ (size_t) *v ] && 'e' == tokens[ (size_t) *(v+6) ] ) m->upgrade = 1;
 								rs = T_HTP_R_VL;
 								break;
@@ -352,10 +350,11 @@ static inline const char
 							break;
 						// Expect
 						case 'e':
-							if (':'==*(b+7))
+							if (':' == *(r+6))
 							{
-								v = eat_lws( b+8 );
-								r = v;
+								v  = eat_lws( r+7 );
+								r  = v;
+								ke = r+5;
 								m->expect = 1;
 								rs = T_HTP_R_VL;
 								break;
@@ -363,10 +362,11 @@ static inline const char
 							break;
 							// Upgrade
 						case 'u':
-							if (':'==*(b+8))
+							if (':' == *(r+7))
 							{
-								v = eat_lws( b+9 );
-								r = v;
+								v  = eat_lws( r+8 );
+								r  = v;
+								ke = r+6;
 								m->upgrade = 1;
 								rs = T_HTP_R_VL;
 								break;
