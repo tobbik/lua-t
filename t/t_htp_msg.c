@@ -282,16 +282,11 @@ static inline const char
 					;// Handle continous value
 				else
 				{
-					printf( "Key: " );
-					fwrite(k, 1, ke-k, stdout);
-					printf( "Value: " );
-					fwrite(v, 1, r-v-1, stdout);
-					printf( "\n" );
-					lua_pushlstring( luaVM, k, ke-k );   // push key
+					lua_pushlstring( luaVM, k, ke-k );                            // push key
 					lua_pushlstring( luaVM, v, (rs==T_HTP_R_LB)? r-v : r-v-1 );   // push value
 					lua_rawset( luaVM, -3 );
 					k  = r+1;
-					rs = T_HTP_R_KS;         // Set Key to be Capitalized
+					rs = T_HTP_R_KS;         // Set Start of key processing
 				}
 				if ('\r' == *(r+1) || '\n' == *(r+1))
 				{
@@ -309,6 +304,7 @@ static inline const char
 				}
 				break;
 			default:
+				// look for special Headers
 				if (T_HTP_R_KS == rs)
 				{
 					rs = T_HTP_R_KY;
@@ -319,25 +315,24 @@ static inline const char
 							// Content-Length
 							if (':' == *(r+14))
 							{
+								ke = r+14;
 								v  = eat_lws( r+15 );
 								r  = v;
-								ke = r+13;
 								while ('\n' != *r && '\r' != *r)
 								{
 									m->length = m->length*10 + (*r - '0');
 									r++;
 								}
 								r--;
-								printf( "%s ---- %s ---- %s\n", k,v,r );
 								rs = T_HTP_R_VL;
 								break;
 							}
 							// Connection: Keep-alive, Close, Upgrade
 							else if (':' == *(r+10))
 							{
+								ke = r+10;
 								v  = eat_lws( r+11 );
 								r  = v;
-								ke = r+9;
 								// Keep-Alive
 								if ('k' == tokens[ (size_t) *v ] && 'e' == tokens[ (size_t) *(v+9) ] ) m->kpAlv   = 200;
 								// Close
@@ -352,9 +347,9 @@ static inline const char
 						case 'e':
 							if (':' == *(r+6))
 							{
+								ke = r+6;
 								v  = eat_lws( r+7 );
 								r  = v;
-								ke = r+5;
 								m->expect = 1;
 								rs = T_HTP_R_VL;
 								break;
@@ -364,9 +359,9 @@ static inline const char
 						case 'u':
 							if (':' == *(r+7))
 							{
+								ke = r+7;
 								v  = eat_lws( r+8 );
 								r  = v;
-								ke = r+6;
 								m->upgrade = 1;
 								rs = T_HTP_R_VL;
 								break;
@@ -498,6 +493,7 @@ t_htp_msg_rcv( lua_State *luaVM )
 				ael->fd_set[ m->sck->fd ]->t = ael->fd_set[ m->sck->fd ]-> t & (~T_AEL_RD);
 				lua_pop( luaVM, 1 );             // pop the event loop
 				nxt = NULL;
+				break;
 			default:
 				luaL_error( luaVM, "Illegal state for T.Http.Message %d", (int) m->pS );
 		}
