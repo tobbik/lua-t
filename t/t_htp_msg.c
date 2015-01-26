@@ -191,12 +191,21 @@ static void
 t_htp_msg_prepresp( struct t_htp_msg *m )
 {
 	t_htp_srv_setnow( m->srv, 0 );            // update server time
-	m->bRead = (size_t) snprintf( m->buf, BUFSIZ,
-		"HTTP/1.1 200 OK\r\n"
-		"Content-Length: 17 \r\n"
-		"Date: %s\r\n\r\n",
-			m->srv->fnow
-	);
+	if (m->kpAlv)
+		m->bRead = (size_t) snprintf( m->buf, BUFSIZ,
+			"HTTP/1.1 200 OK\r\n"
+			"Content-Length: 17\r\n"
+			"Connection: Keep-Alive\r\n"
+			"Date: %s\r\n\r\n",
+				m->srv->fnow
+		);
+	else
+		m->bRead = (size_t) snprintf( m->buf, BUFSIZ,
+			"HTTP/1.1 200 OK\r\n"
+			"Content-Length: 17\r\n"
+			"Date: %s\r\n\r\n",
+				m->srv->fnow
+		);
 }
 
 
