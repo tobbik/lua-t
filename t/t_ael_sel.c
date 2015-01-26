@@ -101,7 +101,7 @@ t_ael_poll_impl( lua_State *luaVM, struct t_ael *ael )
 	memcpy( &ael->wfds_w, &ael->wfds, sizeof( fd_set ) );
 
 	r = select( ael->max_fd+1, &ael->rfds_w, &ael->wfds_w, NULL, tv );
-	//printf("RESULT: %d\n",r);
+	printf("RESULT: %d\n",r);
 	if (r<0)
 		return r;
 
@@ -114,10 +114,13 @@ t_ael_poll_impl( lua_State *luaVM, struct t_ael *ael )
 				continue;
 			if (ael->fd_set[ i ]->t & T_AEL_RD  &&  FD_ISSET( i, &ael->rfds_w ))
 				t |= T_AEL_RD;
+			printf( "T(RD) %d   ", t );
 			if (ael->fd_set[ i ]->t & T_AEL_WR  &&  FD_ISSET( i, &ael->wfds_w ))
 				t |= T_AEL_WR;
+			printf( "T(WR) %d   ", t );
 			if (T_AEL_NO != t)
 			{
+				printf( "%d   %d\n", t, ael->fd_set[ i ]->t );
 				t_ael_executehandle( luaVM, ael, i, t );
 				r--;
 			}

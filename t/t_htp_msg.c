@@ -71,7 +71,7 @@ int
 t_htp_msg_rcv( lua_State *luaVM )
 {
 	struct t_htp_msg *m   = t_htp_msg_check_ud( luaVM, 1, 1 );
-	struct t_ael     *ael;
+	// struct t_ael     *ael;
 	int               rcvd;
 	const char       *nxt;   // pointer to the buffer where processing must continue
 
@@ -82,12 +82,15 @@ t_htp_msg_rcv( lua_State *luaVM )
 	else           // get the proxy on the stack to fill out verb/url/version/headers ...
 		lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->pR ); //S:m,P
 
-	//printf( "Received %d  \n'%s'\n", rcvd, &(m->buf[ m->bRead ]) );
+	printf( "Received %d  \n'%s'\n", rcvd, &(m->buf[ m->bRead ]) );
 
 	nxt = &(m->buf[ m->bRead ]);
 
 	while (NULL != nxt)
 	{
+		// TODO: switching should be done on state and function execution
+		// never remove reading handle. Eithe keepAlive takes over or the
+		// connection gets destroyed on a read of 0 bytes
 		switch (m->pS)
 		{
 			case T_HTP_STA_ZERO:
@@ -107,22 +110,14 @@ t_htp_msg_rcv( lua_State *luaVM )
 					// read body
 				}
 				else
-				{  // Don't test this socket for reading any more
-					lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->srv->lR );
-					ael = t_ael_check_ud( luaVM, -1, 1 );
-					t_ael_removehandle_impl( ael, m->sck->fd, T_AEL_RD );
-					ael->fd_set[ m->sck->fd ]->t = ael->fd_set[ m->sck->fd ]-> t & (~T_AEL_RD);
-					lua_pop( luaVM, 1 );             // pop the event loop
-					nxt = NULL;
-				}
+					nxt = NULL;     // signal while loop to be done
 				break;
-			case T_HTP_STA_BODY:        // now we can process the function and start writing back
-				// TODO: if all of Content-Length is read, stop reading on socket
-				lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->srv->lR );
-				ael = t_ael_check_ud( luaVM, -1, 1);
-				t_ael_removehandle_impl( ael, m->sck->fd, T_AEL_RD );
-				ael->fd_set[ m->sck->fd ]->t = ael->fd_set[ m->sck->fd ]-> t & (~T_AEL_RD);
-				lua_pop( luaVM, 1 );             // pop the event loop
+			case T_HTP_STA_BODY:
+				// execute req.onData
+				nxt = NULL;
+				break;
+			case T_HTP_STA_FINISH:
+				// ignore
 				nxt = NULL;
 				break;
 			default:
@@ -167,7 +162,7 @@ t_htp_msg_rsp( lua_State *luaVM )
 			}
 			else     // start reading again
 			{
-				printf("Rewert Socket: Keeep-Alibve: %d\n", m->kpAlv);
+				printf("Revert Socket: Keep-Alive: %d\n", m->kpAlv);
 				lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->srv->lR );
 				m->sent = 0; m->bRead = 0; m->pS=T_HTP_STA_ZERO;
 				ael = t_ael_check_ud( luaVM, -1, 1 );
