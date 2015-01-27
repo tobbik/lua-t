@@ -266,8 +266,9 @@ const char
 				}
 				if ('\r' == *(r+1) || '\n' == *(r+1))
 				{
-					rs = T_HTP_R_BD;   // End of Header
+					rs    = T_HTP_R_BD;   // End of Header; leave while loop
 					m->pS = T_HTP_STA_HEADDONE;
+					r     = eat_lws( r );
 				}
 				break;
 			case  ':':

@@ -58,6 +58,13 @@ struct t_htp_msg
 }
 
 
+static void t_htp_msg_adjustbuffer( struct t_htp_msg *m, size_t read, const char* rpos )
+{
+	memcpy( &(m->buf), rpos, (const char*) &(m->buf) + read - rpos );
+}
+
+
+
 /**--------------------------------------------------------------------------
  * Handle incoming chunks from T.Http.Message socket.
  * Called anytime the client socket returns from the poll for read.
@@ -104,9 +111,10 @@ t_htp_msg_rcv( lua_State *luaVM )
 				lua_pushvalue( luaVM, 1 );
 				lua_call( luaVM, 1,0 );
 				// keep reading if body, else stop reading
-				if (m->length > 0)
+				if (m->length > 0 )
 				{
 					m->pS = T_HTP_STA_BODY;
+					t_htp_msg_adjustbuffer( m, rcvd, nxt );
 					// read body
 				}
 				else
@@ -186,7 +194,6 @@ t_htp_msg_rsp( lua_State *luaVM )
 }
 
 
-
 static void
 t_htp_msg_prepresp( struct t_htp_msg *m )
 {
@@ -197,14 +204,14 @@ t_htp_msg_prepresp( struct t_htp_msg *m )
 			"Content-Length: 17\r\n"
 			"Connection: Keep-Alive\r\n"
 			"Date: %s\r\n\r\n",
-				m->srv->fnow
+				m->srv->fnw
 		);
 	else
 		m->bRead = (size_t) snprintf( m->buf, BUFSIZ,
 			"HTTP/1.1 200 OK\r\n"
 			"Content-Length: 17\r\n"
 			"Date: %s\r\n\r\n",
-				m->srv->fnow
+				m->srv->fnw
 		);
 }
 
@@ -264,6 +271,33 @@ lt_htp_msg_finish( lua_State *luaVM )
 	m->pS = T_HTP_STA_FINISH;
 
 	return 0;
+}
+
+
+/**--------------------------------------------------------------------------
+ * Sets the onData method in T.Http.Message.
+ * \param   luaVM    The lua state.
+ * \lparam  Http.Message instance.
+ * \lparam  function to be executed when body data arrives on connection.
+ * \return  The # of items pushed to the stack.
+ * --------------------------------------------------------------------------*/
+static int
+lt_htp_msg_onbody( lua_State *luaVM )
+{
+	struct t_htp_msg *m = t_htp_msg_check_ud( luaVM, 1, 1 );
+	
+	if (lua_isfunction( luaVM, 2 ))
+	{
+		m->bR = luaL_ref( luaVM, LUA_REGISTRYINDEX );
+		return 0;
+	}
+	if (lua_isnoneornil( luaVM, 2 ))
+	{
+		m->bR = LUA_NOREF;
+		return 0;
+	}
+	else
+		return t_push_error( luaVM, "Argument must be function or nil" );
 }
 
 
@@ -386,6 +420,7 @@ lt_htp_msg__gc( lua_State *luaVM )
 static const luaL_Reg t_htp_msg_prx_m [] = {
 	{"write",        lt_htp_msg_write},
 	{"finish",       lt_htp_msg_finish},
+	{"onBody",       lt_htp_msg_onbody},
 	{NULL,    NULL}
 };
 

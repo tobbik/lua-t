@@ -98,34 +98,37 @@ enum t_htp_ver {
 //|____/ \__,_|\__\__,_| |____/ \__|_|   \__,_|\___|\__|\__,_|_|  \___||___/
 /// The userdata struct for T.Http.Server
 struct t_htp_srv {
-	struct t_sck *sck;    ///< t_sck socket (must be tcp)
-	int           sR;     ///< Lua registry reference for t.Socket instance
-	int           aR;     ///< Lua registry reference for t.Ip     instance (struct sockaddr_in)
-	int           lR;     ///< Lua registry reference for t.Loop instance
-	int           rR;     ///< Lua registry reference to request handler
-	time_t        nw;     ///< Current time on the server
-	char    fnow[30];     ///< Formatted Date time in HTTP format
+	struct t_sck     *sck;    ///< t_sck socket (must be tcp)
+	int               sR;     ///< Lua registry reference for t.Socket instance
+	int               aR;     ///< Lua registry reference for t.Ip     instance (struct sockaddr_in)
+	int               lR;     ///< Lua registry reference for t.Loop instance
+	int               rR;     ///< Lua registry reference to request handler function
+	time_t            nw;     ///< Current time on the server
+	char              fnw[30];///< Formatted Date time in HTTP format
 };
 
 
 /// The userdata struct for T.Http.Message ( Server:accept() )
 struct t_htp_msg {
-	int             pR;     ///< Lua registry reference for proxy table
-	struct t_sck   *sck;    ///< pointer to the actual socket
+	int               pR;     ///< Lua registry reference for proxy table
+	// onBody() handler; anytime a read-event is fired AFTER the header was
+	// received this gets executed; Can be LUA_NOREF which discards incoming data
+	int               bR;     ///< Lua registry reference to data handler function
+	struct t_sck     *sck;    ///< pointer to the actual socket
 	struct t_htp_srv *srv;    ///< pointer to the HTTP-Server
 
-	int             status; ///< HTTP Status Code
-	int             length; ///< HTTP Message Size ("Content-Length")
-	int             kpAlv;  ///< keepalive value in seconds -> 0==no Keepalive
+	int               status; ///< HTTP Status Code
+	int               length; ///< HTTP Message Size ("Content-Length")
+	int               kpAlv;  ///< keepalive value in seconds -> 0==no Keepalive
 
-	int             upgrade;///< shall the connection be upgraded?
-	int             expect; ///< shall the connection return an expected thingy?
-	enum t_htp_sta  pS;     ///< HTTP parser state
-	enum t_htp_mth  mth;    ///< HTTP Method
-	enum t_htp_ver  ver;    ///< HTTP version
-	size_t          bRead;  ///< How many byte processed
-	size_t          sent;   ///< How many byte sent out
-	char            buf[ BUFSIZ ];   ///< Initial Buffer
+	int               upgrade;///< shall the connection be upgraded?
+	int               expect; ///< shall the connection return an expected thingy?
+	enum t_htp_sta    pS;     ///< HTTP parser state
+	enum t_htp_mth    mth;    ///< HTTP Method
+	enum t_htp_ver    ver;    ///< HTTP version
+	size_t            bRead;  ///< How many byte processed
+	size_t            sent;   ///< How many byte sent out
+	char              buf[ BUFSIZ ];   ///< reading buffer
 };
 
 

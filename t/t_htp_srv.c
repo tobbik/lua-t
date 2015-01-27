@@ -110,7 +110,7 @@ t_htp_srv_setnow( struct t_htp_srv *s, int force )
 		s->nw = nw;
 		tm_struct = gmtime( &(s->nw) );
 		/* Sun, 06 Nov 1994 08:49:37 GMT */
-		strftime( s->fnow, 30, "%a, %d %b %Y %H:%M:%S %Z", tm_struct );
+		strftime( s->fnw, 30, "%a, %d %b %Y %H:%M:%S %Z", tm_struct );
 	}
 }
 
