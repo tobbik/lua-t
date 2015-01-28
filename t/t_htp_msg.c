@@ -152,41 +152,68 @@ t_htp_msg_rsp( lua_State *luaVM )
 {
 	struct t_htp_msg *m   = t_htp_msg_check_ud( luaVM, 1, 1 );
 	struct t_ael     *ael;
+	size_t            len;
+	size_t            row, chr;
+	const char       *buf;
 
-	m->sent += t_sck_send( luaVM, m->sck, &(m->buf[ m->sent ]), m->bRead );
+	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->pR );  // get the proxy on the stack
+	lua_pushstring( luaVM, "oBuffer"  );
+	lua_rawget( luaVM, -2 );
+	lua_pushstring( luaVM, "sendRow"  );
+	lua_rawget( luaVM, -3 );
+	row = luaL_checkinteger( luaVM, -1 );
+	lua_pushstring( luaVM, "sendChar" );
+	lua_rawget( luaVM, -4 );
+	chr = luaL_checkinteger( luaVM, -1 );
+	lua_pop( luaVM, 2 );
+	lua_rawgeti( luaVM, -3, row );   // get current buffer
+	buf = luaL_checklstring( luaVM, -1, &len );
 
-	printf("RESPONSE:  %zu    %zu      %s\n", m->bRead, m->sent,  m->buf);
-	// if (T_HTP_STA_DONE == m->pS)
-	if (m->sent >= m->bRead)      // if current buffer is empty
+	chr += t_sck_send( luaVM, m->sck, &(buf[ chr ]), len );
+
+	// S:msg,prx,oBuffer,buf
+	if (chr == len ) // if current buffer row didn't get sens completely
 	{
-		if (T_HTP_STA_FINISH==m->pS)
+		lua_pushstring( luaVM, "sendChar" );
+		lua_pushinteger( luaVM, chr );
+		lua_rawset( luaVM, -3 );
+	}
+	else
+	{
+		if (row == lua_rawlen( luaVM, -2 ) ) // if current buffer was final buffer
 		{
-			// if keepalive reverse socket again and create timeout function
-			if (! m->kpAlv)
+			if (T_HTP_STA_FINISH == m->pS)
 			{
-				lua_pushcfunction( luaVM, lt_htp_msg__gc );
-				lua_pushvalue( luaVM, 1 );
-				lua_call( luaVM, 1, 0 );
+				// if keepalive reverse socket again and create timeout function
+				if (! m->kpAlv)
+				{
+					lua_pushcfunction( luaVM, lt_htp_msg__gc );
+					lua_pushvalue( luaVM, 1 );
+					lua_call( luaVM, 1, 0 );
+				}
+				else     // start reading again
+				{
+					printf("Revert Socket: Keep-Alive: %d\n", m->kpAlv);
+					lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->srv->lR );
+					m->sent = 0; m->bRead = 0; m->pS=T_HTP_STA_ZERO;
+					ael = t_ael_check_ud( luaVM, -1, 1 );
+					t_ael_removehandle_impl( ael, m->sck->fd, T_AEL_WR );
+					t_ael_addhandle_impl( ael, m->sck->fd, T_AEL_RD );
+					ael->fd_set[ m->sck->fd ]->t = T_AEL_RD;
+					lua_pop( luaVM, 1 );        // pop the loop
+				}
 			}
-			else     // start reading again
+			else
 			{
-				printf("Revert Socket: Keep-Alive: %d\n", m->kpAlv);
 				lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->srv->lR );
-				m->sent = 0; m->bRead = 0; m->pS=T_HTP_STA_ZERO;
 				ael = t_ael_check_ud( luaVM, -1, 1 );
 				t_ael_removehandle_impl( ael, m->sck->fd, T_AEL_WR );
-				t_ael_addhandle_impl( ael, m->sck->fd, T_AEL_RD );
-				ael->fd_set[ m->sck->fd ]->t = T_AEL_RD;
+				ael->fd_set[ m->sck->fd ]->t = ael->fd_set[ m->sck->fd ]-> t & (~T_AEL_WR);
 				lua_pop( luaVM, 1 );        // pop the loop
 			}
 		}
 		else
 		{
-			lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->srv->lR );
-			ael = t_ael_check_ud( luaVM, -1, 1 );
-			t_ael_removehandle_impl( ael, m->sck->fd, T_AEL_WR );
-			ael->fd_set[ m->sck->fd ]->t = ael->fd_set[ m->sck->fd ]-> t & (~T_AEL_WR);
-			lua_pop( luaVM, 1 );        // pop the loop
 		}
 	}
 
@@ -195,24 +222,40 @@ t_htp_msg_rsp( lua_State *luaVM )
 
 
 static void
-t_htp_msg_prepresp( struct t_htp_msg *m )
+t_htp_msg_prepresp( lua_State *luaVM, struct t_htp_msg *m )
 {
+	//S: msg,prx,buffer
+	lua_pushstring( luaVM, "ResCode" );
+	lua_rawget( luaVM, -3 );
+	lua_pushstring( luaVM, "ResLength" );
+	lua_rawget( luaVM, -4 );
+	//S: msg,prx,buffer,code,length
+
 	t_htp_srv_setnow( m->srv, 0 );            // update server time
-	if (m->kpAlv)
-		m->bRead = (size_t) snprintf( m->buf, BUFSIZ,
-			"HTTP/1.1 200 OK\r\n"
-			"Content-Length: 17\r\n"
-			"Connection: Keep-Alive\r\n"
-			"Date: %s\r\n\r\n",
-				m->srv->fnw
+
+	lua_pushfstring( luaVM,
+		"HTTP/1.1 %d OK\r\n"
+		"Connection: %s\r\n"
+		"Date: %s\r\n",
+		lua_tointeger( luaVM, -2 ),
+		(m->kpAlv) ? "Keep-Alive" : "Close",
+		m->srv->fnw
+	);
+	//S: msg,prx,buffer,code,length,str1
+	if (lua_isnumber( luaVM, -3 ) )
+		lua_pushfstring( luaVM,
+			"Content-Length: %d\r\n",
+			luaL_checkinteger( luaVM, -3 )
 		);
 	else
-		m->bRead = (size_t) snprintf( m->buf, BUFSIZ,
-			"HTTP/1.1 200 OK\r\n"
-			"Content-Length: 17\r\n"
-			"Date: %s\r\n\r\n",
-				m->srv->fnw
+		lua_pushfstring( luaVM,
+			"Transfer-Encoding: chunked\r\n"
 		);
+	lua_pushfstring( luaVM, "\r\n" );
+	lua_concat( luaVM, 3 );
+	//S: msg,prx,buffer,code,length,str1
+	lua_rawseti( luaVM, -4, 1 );     // set result as first element of oBuffer
+	lua_pop( luaVM, 2 );
 }
 
 
@@ -228,18 +271,26 @@ lt_htp_msg_write( lua_State *luaVM )
 {
 	struct t_htp_msg *m = t_htp_msg_check_ud( luaVM, 1, 1 );
 	struct t_ael     *ael;
-	size_t            s;
-	const char       *v = luaL_checklstring( luaVM, 2, &s );
+	size_t            sz;
+	luaL_checklstring( luaVM, 2, &sz );
 
+	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->pR );  // get the proxy on the stack
+	lua_pushstring( luaVM, "oBuffer" );
 	if (T_HTP_STA_SEND != m->pS)
 	{
-		memset( &(m->buf[0]), 0, BUFSIZ );
 		m->sent  = 0;
-		t_htp_msg_prepresp( m );
+		t_htp_msg_prepresp( luaVM, m );
+		lua_newtable( luaVM );
+		lua_pushvalue( luaVM, -1 );
+		lua_insert( luaVM, -3 );
+		//S: msg,string,prx,buffer,'oBuffer',buffer
+		lua_rawset( luaVM, -4 );
 	}
+	else
+		lua_rawget( luaVM, -2 );
 
-	memcpy( &(m->buf[ m->bRead ]), v, s );
-	m->bRead += s;
+	lua_pushvalue( luaVM, 2 );
+	lua_rawseti( luaVM, -2, lua_rawlen( luaVM, -2 ) );
 
 	if (T_HTP_STA_SEND != m->pS)
 	{
@@ -298,6 +349,29 @@ lt_htp_msg_onbody( lua_State *luaVM )
 	}
 	else
 		return t_push_error( luaVM, "Argument must be function or nil" );
+}
+
+
+/**--------------------------------------------------------------------------
+ * Sets the content-length of Response
+ * \param   luaVM    The lua state.
+ * \lparam  Http.Message instance.
+ * \lparam  length
+ * \return  The # of items pushed to the stack.
+ * --------------------------------------------------------------------------*/
+static int
+lt_htp_msg_setlength( lua_State *luaVM )
+{
+	struct t_htp_msg *m = t_htp_msg_check_ud( luaVM, 1, 1 );
+
+	if (lua_isnumber( luaVM, 2 ))
+	{
+		lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->pR );  // get the proxy on the stack
+		lua_pushstring( luaVM, "ResLength" );
+		lua_pushvalue( luaVM, 2 );
+		lua_rawset( luaVM, -3 );
+	}
+	return 0;
 }
 
 
@@ -421,6 +495,7 @@ static const luaL_Reg t_htp_msg_prx_m [] = {
 	{"write",        lt_htp_msg_write},
 	{"finish",       lt_htp_msg_finish},
 	{"onBody",       lt_htp_msg_onbody},
+	{"setLength",    lt_htp_msg_setlength},
 	{NULL,    NULL}
 };
 

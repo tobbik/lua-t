@@ -49,6 +49,7 @@ enum t_htp_mth {
 	T_HTP_MTH_UNSUBSCRIBE,
 };
 
+
 /// State of the HTTP reader; defines the current read situation apart from
 /// content
 enum t_htp_rs {
@@ -113,7 +114,7 @@ struct t_htp_msg {
 	int               pR;     ///< Lua registry reference for proxy table
 	// onBody() handler; anytime a read-event is fired AFTER the header was
 	// received this gets executed; Can be LUA_NOREF which discards incoming data
-	int               bR;     ///< Lua registry reference to data handler function
+	int               bR;     ///< Lua registry reference to body handler function
 	struct t_sck     *sck;    ///< pointer to the actual socket
 	struct t_htp_srv *srv;    ///< pointer to the HTTP-Server
 
@@ -129,6 +130,19 @@ struct t_htp_msg {
 	size_t            bRead;  ///< How many byte processed
 	size_t            sent;   ///< How many byte sent out
 	char              buf[ BUFSIZ ];   ///< reading buffer
+};
+
+
+/// userdata for a single request-response
+struct t_htp_rsq {
+	int               pR;     ///< Lua registry reference for proxy table
+	int               bR;     ///< Lua registry reference for resp buffer table
+	int               oRow;   ///< current row  in resp buffer table
+	int               oChr;   ///< current char in resp buffer table[ oRow ]
+	int               rqLen;  ///< HTTP Message Size ("Content-Length")
+	int               rsLen;  ///< HTTP Message Size ("Content-Length")
+	int               expect; ///< shall the connection return an expected thingy?
+	struct t_sck_msg *msg;    ///< pointer to the actual socket
 };
 
 
