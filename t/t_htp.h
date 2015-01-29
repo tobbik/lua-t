@@ -122,6 +122,10 @@ struct t_htp_msg {
 	int               length; ///< HTTP Message Size ("Content-Length")
 	int               kpAlv;  ///< keepalive value in seconds -> 0==no Keepalive
 
+
+	int               resStatus; ///< HTTP Status Code
+	int               resLength; ///< HTTP Message Size ("Content-Length")
+
 	int               upgrade;///< shall the connection be upgraded?
 	int               expect; ///< shall the connection return an expected thingy?
 	enum t_htp_sta    pS;     ///< HTTP parser state
@@ -139,6 +143,8 @@ struct t_htp_rsq {
 	int               bR;     ///< Lua registry reference for resp buffer table
 	int               oRow;   ///< current row  in resp buffer table
 	int               oChr;   ///< current char in resp buffer table[ oRow ]
+	int               rqHtp;  ///< HTTP Message Status Code
+	int               rsHtp;  ///< HTTP Message Status Code
 	int               rqLen;  ///< HTTP Message Size ("Content-Length")
 	int               rsLen;  ///< HTTP Message Size ("Content-Length")
 	int               expect; ///< shall the connection return an expected thingy?
@@ -154,6 +160,9 @@ struct t_htp_rsq {
 // t_htp.c
 const char         *t_htp_pHeaderLine( lua_State *luaVM, struct t_htp_msg *m, const char *b );
 const char         *t_htp_pReqFirstLine( lua_State *luaVM, struct t_htp_msg *m, const char *b );
+const char         *t_htp_status( int status );
+
+
 // t_htp_srv.c
 // Constructors
 struct t_htp_srv   *t_htp_srv_check_ud ( lua_State *luaVM, int pos, int check );

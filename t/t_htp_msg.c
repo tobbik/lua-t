@@ -224,12 +224,12 @@ t_htp_msg_rsp( lua_State *luaVM )
 static void
 t_htp_msg_prepresp( lua_State *luaVM, struct t_htp_msg *m )
 {
-	//S: msg,prx,buffer
+	//S: msg,string,prx,buffer
 	lua_pushstring( luaVM, "ResCode" );
 	lua_rawget( luaVM, -3 );
 	lua_pushstring( luaVM, "ResLength" );
 	lua_rawget( luaVM, -4 );
-	//S: msg,prx,buffer,code,length
+	//S: msg,string,prx,buffer,code,length
 
 	t_htp_srv_setnow( m->srv, 0 );            // update server time
 
@@ -241,7 +241,7 @@ t_htp_msg_prepresp( lua_State *luaVM, struct t_htp_msg *m )
 		(m->kpAlv) ? "Keep-Alive" : "Close",
 		m->srv->fnw
 	);
-	//S: msg,prx,buffer,code,length,str1
+	//S: msg,string,prx,buffer,code,length,str1
 	if (lua_isnumber( luaVM, -3 ) )
 		lua_pushfstring( luaVM,
 			"Content-Length: %d\r\n",
@@ -253,7 +253,7 @@ t_htp_msg_prepresp( lua_State *luaVM, struct t_htp_msg *m )
 		);
 	lua_pushfstring( luaVM, "\r\n" );
 	lua_concat( luaVM, 3 );
-	//S: msg,prx,buffer,code,length,str1
+	//S: msg,string,prx,buffer,code,length,str1
 	lua_rawseti( luaVM, -4, 1 );     // set result as first element of oBuffer
 	lua_pop( luaVM, 2 );
 }
@@ -353,19 +353,85 @@ lt_htp_msg_onbody( lua_State *luaVM )
 
 
 /**--------------------------------------------------------------------------
- * Sets the content-length of Response
+ * Sets main values for HTTP response.
  * \param   luaVM    The lua state.
  * \lparam  Http.Message instance.
+ * \lparam  int      HTTP status code.
  * \lparam  length
  * \return  The # of items pushed to the stack.
  * --------------------------------------------------------------------------*/
 static int
-lt_htp_msg_setlength( lua_State *luaVM )
+lt_htp_msg_setResponse( lua_State *luaVM )
 {
-	struct t_htp_msg *m = t_htp_msg_check_ud( luaVM, 1, 1 );
+	struct t_htp_msg *m    = t_htp_msg_check_ud( luaVM, 1, 1 );
+	size_t            n    = 0;
+	int               t    = (LUA_TTABLE = lua_type( luaVM, -1 )); // processing headers
 
-	if (lua_isnumber( luaVM, 2 ))
+	if (LUA_TNUMBER == lua_type( luaVM, 3 ) || LUA_TNUMBER == lua_type( luaVM, 4))
 	{
+		lua_pushfstring( luaVM,
+			"HTTP/1.1 %d %s\r\n"
+			"Connection: %s\r\n"
+			"Date: %s\r\n",
+			"Content-Length: %d\r\n",
+			luaL_checkinteger( luaVM, 2 ),         // HTTP Status code
+			(LUA_TSTRING == lua_type( luaVM, 3))   // HTTP Status message
+				? lua_tostring( luaVM, 3 ),
+				: t_htp_status( luaL_checkinteger( luaVM, 2 ) )
+			(m->kpAlv) ? "Keep-Alive" : "Close",   // Keep-Alive or close
+			m->srv->fnw,                           // Formatted Date
+			(LUA_TNUMBER == lua_type( luaVM, 3))   // Content-Length
+				?  luaL_checkinteger( luaVM, 3 )
+				:  luaL_checkinteger( luaVM, 4 )
+		);
+	}
+	switch  (lua_type( luaVM, 3 ))
+	{
+		case LUA_TNUMBER:
+			lua_pushfstring( luaVM,
+				"HTTP/1.1 %d %s\r\n"
+				"Connection: %s\r\n"
+				"Date: %s\r\n",
+				"Content-Length: %d\r\n",
+				luaL_checkinteger( luaVM, 2 ),         // HTTP Status code
+				(LUA_TNUMBER == lua_type( luaVM, 3))   // HTTP Status message
+					? t_htp_status( luaL_checkinteger( luaVM, 2 ) )
+					: lua_tostring( luaVM, 3 ),
+				(m->kpAlv) ? "Keep-Alive" : "Close",   // Keep-Alive or close
+				m->srv->fnw,                           // Formatted Date
+				luaL_checkinteger( luaVM, 3 );
+			);
+			break;
+		case LUA_TSTRING:
+			if (LUA_TNUMBER = lua_type( luaVM, 4 ))
+				lua_pushfstring( luaVM,
+					"HTTP/1.1 %d %s\r\n"
+					"Connection: %s\r\n"
+					"Date: %s\r\n",
+					"Content-Length: %d\r\n",
+					luaL_checkinteger( luaVM, 2 ), t_htp_status( luaL_checkinteger( luaVM, 2 ) ),
+					(m->kpAlv) ? "Keep-Alive" : "Close",
+					m->srv->fnw,
+					luaL_checkinteger( luaVM, 3 );
+				);
+			else
+				lua_pushfstring( luaVM,
+					"HTTP/1.1 %d %s\r\n"
+					"Connection: %s\r\n"
+					"Date: %s\r\n",
+					"Content-Length: %d\r\n",
+					luaL_checkinteger( luaVM, 2 ), t_htp_status( luaL_checkinteger( luaVM, 2 ) ),
+					(m->kpAlv) ? "Keep-Alive" : "Close",
+					m->srv->fnw,
+					luaL_checkinteger( luaVM, 3 );
+				);
+			break;
+		case LUA_TTABLE:
+			msg = luaL_checkstring( luaVM, 3 );
+			break;
+	else if (lua_isstring( luaVM, 3 ))
+	{
+		msg = luaL_checkstring( luaVM, 3 );
 		lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->pR );  // get the proxy on the stack
 		lua_pushstring( luaVM, "ResLength" );
 		lua_pushvalue( luaVM, 2 );
