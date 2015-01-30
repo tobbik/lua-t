@@ -433,5 +433,6 @@ const char
 		case 504: return "Gateway Timeout";               break;
 		case 505: return "HTTP Version Not Supported";    break;
 	}
+	return NULL;
 }
 

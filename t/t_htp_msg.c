@@ -151,7 +151,6 @@ t_htp_msg_rsp( lua_State *luaVM )
 	struct t_htp_msg *m   = t_htp_msg_check_ud( luaVM, 1, 1 );
 	struct t_ael     *ael;
 	size_t            len;
-	size_t            row, chr;
 	const char       *buf;
 
 	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->orR );     // fetch current buffer row
@@ -189,8 +188,8 @@ t_htp_msg_rsp( lua_State *luaVM )
 			luaL_unref( luaVM, LUA_REGISTRYINDEX, m->obR );    // release buffer, allow gc
 			lua_newtable( luaVM );
 			m->obR = luaL_ref( luaVM, LUA_REGISTRYINDEX );   // new buffer
-			m->orc = 1;
-			m->ori = 1;
+			m->orc = 0;
+			m->ori = 0;
 		}
 		else   //forward to next row
 		{
@@ -226,7 +225,7 @@ lt_htp_msg_writeHead( lua_State *luaVM )
 	struct t_htp_msg *m = t_htp_msg_check_ud( luaVM, 1, 1 );
 	int               i = lua_gettop( luaVM );
 	int               t = (LUA_TTABLE == lua_type( luaVM, i )); // processing headers
-	const char        b =;
+	char             *b;
 	size_t            c = 0;
 	luaL_Buffer       lB;
 
@@ -237,18 +236,18 @@ lt_htp_msg_writeHead( lua_State *luaVM )
 		c += sprintf( b,
 			"HTTP/1.1 %d %s\r\n"
 			"Connection: %s\r\n"
-			"Date: %s\r\n",
+			"Date: %s\r\n"
 			"Content-Length: %d\r\n"
 			"%s",
-			luaL_checkinteger( luaVM, 2 ),         // HTTP Status code
+			(int) luaL_checkinteger( luaVM, 2 ),   // HTTP Status code
 			(LUA_TSTRING == lua_type( luaVM, 3))   // HTTP Status message
 				? lua_tostring( luaVM, 3 )
-				: t_htp_status( luaL_checkinteger( luaVM, 2 ) )
+				: t_htp_status( luaL_checkinteger( luaVM, 2 ) ),
 			(m->kpAlv) ? "Keep-Alive" : "Close",   // Keep-Alive or close
 			m->srv->fnw,                           // Formatted Date
 			(LUA_TNUMBER == lua_type( luaVM, 3))   // Content-Length
-				?  luaL_checkinteger( luaVM, 3 )
-				:  luaL_checkinteger( luaVM, 4 ),
+				?  (int) luaL_checkinteger( luaVM, 3 )
+				:  (int) luaL_checkinteger( luaVM, 4 ),
 			(t) ? "" : "\r\n"
 			);
 	}
@@ -257,13 +256,13 @@ lt_htp_msg_writeHead( lua_State *luaVM )
 		c += sprintf( b,
 			"HTTP/1.1 %d %s\r\n"
 			"Connection: %s\r\n"
-			"Date: %s\r\n",
+			"Date: %s\r\n"
 			"Transfer-Encoding: chunked\r\n"
 			"%s",
-			luaL_checkinteger( luaVM, 2 ),         // HTTP Status code
+			(int) luaL_checkinteger( luaVM, 2 ),   // HTTP Status code
 			(LUA_TSTRING == lua_type( luaVM, 3))   // HTTP Status message
 				? lua_tostring( luaVM, 3 )
-				: t_htp_status( luaL_checkinteger( luaVM, 2 ) )
+				: t_htp_status( luaL_checkinteger( luaVM, 2 ) ),
 			(m->kpAlv) ? "Keep-Alive" : "Close",   // Keep-Alive or close
 			m->srv->fnw,                           // Formatted Date
 			(t) ? "" : "\r\n"
@@ -282,11 +281,12 @@ lt_htp_msg_writeHead( lua_State *luaVM )
 				);
 			lua_pop( luaVM, 1 );      //FIXME:  this can't pop, it must remove
 		}
-		c += ( b, "\r\r" );
+		c += sprintf( b, "\r\r" );
 	}
-	luaL_addsize( &lB, c );
 	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->obR );
-	lua_rawseti( luaVM, -1, m->orc++ );
+	luaL_pushresultsize( &lB, c );
+	t_stackDump( luaVM );
+	lua_rawseti( luaVM, -2, ++m->orc );
 	lua_pop( luaVM, 1);
 	return 0;
 }
@@ -305,25 +305,21 @@ lt_htp_msg_write( lua_State *luaVM )
 	struct t_htp_msg *m = t_htp_msg_check_ud( luaVM, 1, 1 );
 	struct t_ael     *ael;
 	size_t            sz;
-	luaL_checklstring( luaVM, 2, &sz );
 
+	luaL_checklstring( luaVM, 2, &sz );
 	if (T_HTP_STA_SEND != m->pS)
 	{
 		lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->obR );
-		m->sent = 0;
+		lua_rawseti( luaVM, -1, ++(m->orc) );
+		lua_pop( luaVM, 1 );
 		lua_pushinteger( luaVM, 200 );
 		lt_htp_msg_writeHead( luaVM );
-
-
-		lua_rawgeti( luaVM, -2 );
-		lua_newtable( luaVM );
-		lua_pushvalue( luaVM, -1 );
-		lua_insert( luaVM, -3 );
-		//S: msg,string,prx,buffer,'oBuffer',buffer
-		lua_rawset( luaVM, -4 );
 	}
 	else
-		lua_rawget( luaVM, -2 );
+	{
+		lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->obR );
+		lua_rawseti( luaVM, -1, m->orc++ );
+	}
 
 	lua_pushvalue( luaVM, 2 );
 	lua_rawseti( luaVM, -2, lua_rawlen( luaVM, -2 ) );
@@ -334,7 +330,7 @@ lt_htp_msg_write( lua_State *luaVM )
 		lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->srv->lR );
 		ael = t_ael_check_ud( luaVM, -1, 1 );
 		t_ael_addhandle_impl( ael, m->sck->fd, T_AEL_WR );
-		ael->fd_set[ m->sck->fd ]->t = T_AEL_WR;
+		ael->fd_set[ m->sck->fd ]->t = T_AEL_RW;
 		lua_pop( luaVM, 1 );             // pop the event loop
 	}
 
@@ -353,8 +349,50 @@ static int
 lt_htp_msg_finish( lua_State *luaVM )
 {
 	struct t_htp_msg *m = t_htp_msg_check_ud( luaVM, 1, 1 );
-	if (lua_gettop( luaVM ) > 1)
-		lt_htp_msg_write( luaVM );
+	struct t_ael     *ael;
+	size_t            sz;
+
+	if (T_HTP_STA_SEND != m->pS)
+	{
+		luaL_checklstring( luaVM, 2, &sz );
+		lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->obR );
+		lua_pushvalue( luaVM, 2 );
+		lua_rawseti( luaVM, -2, ++(m->orc) );
+		lua_pop( luaVM, 2 );  // remove obR and string
+		lua_pushinteger( luaVM, 200 );
+		lua_pushinteger( luaVM, sz );
+		lt_htp_msg_writeHead( luaVM );
+		lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->obR );
+		lua_rawgeti( luaVM, -1, 1 );
+		lua_rawgeti( luaVM, -2, 2 );
+		lua_concat( luaVM, 2 );
+		lua_rawseti( luaVM, -2, 2 );
+		m->ori = m->orc;
+		lua_pop( luaVM, 3 );
+	}
+	else
+	{
+		if (LUA_TSTRING == lua_type( luaVM, 2 ))
+		{
+			luaL_checklstring( luaVM, 2, &sz );
+			lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->obR );
+			lua_rawseti( luaVM, -1, ++(m->orc) );
+		}
+	}
+
+	//lua_pushvalue( luaVM, 2 );
+	//lua_rawseti( luaVM, -2, lua_rawlen( luaVM, -2 ) );
+
+	if (T_HTP_STA_SEND != m->pS)
+	{
+		m->pS = T_HTP_STA_SEND;
+		lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->srv->lR );
+		ael = t_ael_check_ud( luaVM, -1, 1 );
+		t_ael_addhandle_impl( ael, m->sck->fd, T_AEL_WR );
+		ael->fd_set[ m->sck->fd ]->t = T_AEL_RW;
+		lua_pop( luaVM, 1 );             // pop the event loop
+	}
+
 	m->pS = T_HTP_STA_FINISH;
 
 	return 0;

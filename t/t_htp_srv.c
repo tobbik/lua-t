@@ -166,6 +166,8 @@ lt_htp_srv_accept( lua_State *luaVM )
 	luaL_getmetatable( luaVM, "T.Http.Message.Proxy" );
 	lua_setmetatable( luaVM, -2 );
 	m->pR  = luaL_ref( luaVM, LUA_REGISTRYINDEX );
+	lua_newtable( luaVM );
+	m->obR  = luaL_ref( luaVM, LUA_REGISTRYINDEX );
 	m->sck = c_sck;
 
 	// actually put it onto the loop  //S: s,ss,cs,ip,rt,add(),ael,cs,true,rcv,msg
