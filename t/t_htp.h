@@ -132,8 +132,14 @@ struct t_htp_msg {
 	enum t_htp_mth    mth;    ///< HTTP Method
 	enum t_htp_ver    ver;    ///< HTTP version
 	size_t            bRead;  ///< How many byte processed
-	size_t            sent;   ///< How many byte sent out
 	char              buf[ BUFSIZ ];   ///< reading buffer
+
+	// output buffer handling
+	int               obR;    ///< Lua registry reference to output buffer table
+	int               ori;    ///< index of current row in output buffer table
+	int               orR;    ///< Lua registry reference to string current row
+	int               orc;    ///< How many rows of the current buffer have been processed
+	size_t            sent;   ///< How many byte sent out on current row
 };
 
 
