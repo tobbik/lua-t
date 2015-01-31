@@ -123,6 +123,7 @@ struct t_htp_msg {
 	int               kpAlv;  ///< keepalive value in seconds -> 0==no Keepalive
 	int               upgrade;///< shall the connection be upgraded?
 	int               expect; ///< shall the connection return an expected thingy?
+	int               chunked;///< shall the buffer be chunked on transmission?
 	enum t_htp_sta    pS;     ///< HTTP parser state
 	enum t_htp_mth    mth;    ///< HTTP Method
 	enum t_htp_ver    ver;    ///< HTTP version

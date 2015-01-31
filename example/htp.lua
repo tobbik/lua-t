@@ -4,7 +4,7 @@ fmt=string.format
 l=t.Loop(10)
 
 x=function( msg )
-	--msg:write( "This is my answer" )
+	msg:write( "The first part before we finish" )
 	msg:finish( "This is my naswer" )
 end
 

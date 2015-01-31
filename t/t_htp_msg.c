@@ -30,17 +30,18 @@ struct t_htp_msg
 	struct t_htp_msg *m;
 	m = (struct t_htp_msg *) lua_newuserdata( luaVM, sizeof( struct t_htp_msg ));
 	lua_newtable( luaVM );
-	m->obR    = luaL_ref( luaVM, LUA_REGISTRYINDEX );
-	m->obi    = 0;
-	m->obc    = 0;
-	m->sent   = 0;
-	m->read   = 0;
-	m->sent   = 0;
-	m->pS     = T_HTP_STA_ZERO;
-	m->mth    = T_HTP_MTH_ILLEGAL;
-	m->srv    = srv;
-	m->length = 0;
-	m->expect = 0;
+	m->obR     = luaL_ref( luaVM, LUA_REGISTRYINDEX );
+	m->obi     = 0;
+	m->obc     = 0;
+	m->sent    = 0;
+	m->read    = 0;
+	m->sent    = 0;
+	m->pS      = T_HTP_STA_ZERO;
+	m->mth     = T_HTP_MTH_ILLEGAL;
+	m->srv     = srv;
+	m->length  = 0;
+	m->expect  = 0;
+	m->chunked = 0;
 
 	luaL_getmetatable( luaVM, "T.Http.Message" );
 	lua_setmetatable( luaVM, -2 );
@@ -168,7 +169,6 @@ t_htp_msg_rsp( lua_State *luaVM )
 	// S:msg, cRow
 	if (m->sent == len) // if current buffer row got sent completely
 	{
-
 		// done with current buffer row
 		m->sent = 0;
 		// done with sending
@@ -198,6 +198,7 @@ t_htp_msg_rsp( lua_State *luaVM )
 			m->obR = luaL_ref( luaVM, LUA_REGISTRYINDEX );   // new buffer
 			m->obc = 0;
 			m->obi = 0;
+			m->chunked = 0;
 		}
 		else   //forward to next row
 		{
@@ -358,29 +359,36 @@ lt_htp_msg_write( lua_State *luaVM )
 	luaL_checklstring( luaVM, 2, &sz );
 	if (T_HTP_STA_SEND != m->pS)
 	{
+		m->chunked = 1;
 		lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->obR );
-		lua_rawseti( luaVM, -1, ++(m->obc) );
-		lua_pop( luaVM, 1 );
-		lua_pushinteger( luaVM, 200 );
-		lt_htp_msg_writeHead( luaVM );
-	}
-	else
-	{
-		lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->obR );
-		lua_rawseti( luaVM, -1, m->obc++ );
-	}
+		t_htp_msg_formHeader( luaVM, m, 200, t_htp_status( 200 ), 0, 0 );
+		lua_pushfstring( luaVM, "%x\r\n", sz );
+		lua_pushvalue( luaVM, 2 );
+		lua_pushfstring( luaVM, "\r\n" );
+		lua_concat( luaVM, 4 );
+		lua_rawseti( luaVM, -2, ++(m->obc) );
+		m->obi = m->obc;
 
-	lua_pushvalue( luaVM, 2 );
-	lua_rawseti( luaVM, -2, lua_rawlen( luaVM, -2 ) );
-
-	if (T_HTP_STA_SEND != m->pS)
-	{
 		m->pS = T_HTP_STA_SEND;
 		lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->srv->lR );
 		ael = t_ael_check_ud( luaVM, -1, 1 );
 		t_ael_addhandle_impl( ael, m->sck->fd, T_AEL_WR );
 		ael->fd_set[ m->sck->fd ]->t = T_AEL_RW;
-		lua_pop( luaVM, 1 );             // pop the event loop
+		lua_pop( luaVM, 2 );                    // pop buffer table and loop
+	}
+	else
+	{
+		lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->obR );
+		if (m->chunked)
+		{
+			lua_pushfstring( luaVM, "%x\r\n", sz );
+			lua_pushvalue( luaVM, 2 );
+			lua_pushfstring( luaVM, "\r\n" );
+			lua_concat( luaVM, 3 );
+		}
+		else
+			lua_pushvalue( luaVM, 2 );
+		lua_rawseti( luaVM, -1, ++(m->obc) );
 	}
 
 	return 0;
@@ -403,6 +411,7 @@ lt_htp_msg_finish( lua_State *luaVM )
 
 	if (T_HTP_STA_SEND != m->pS)
 	{
+		m->chunked = 0;
 		luaL_checklstring( luaVM, 2, &sz );
 		lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->obR );
 		t_htp_msg_formHeader( luaVM, m, 200, t_htp_status( 200 ), (int) sz, 0 );
@@ -410,9 +419,13 @@ lt_htp_msg_finish( lua_State *luaVM )
 		//t_stackDump( luaVM );
 		lua_concat( luaVM, 2 );
 		lua_rawseti( luaVM, -2, ++(m->obc) );
-		lua_rawgeti( luaVM, -1, m->obc );
 		m->obi = m->obc;
-		lua_pop( luaVM, 2 );  // pop buffer table, size and HTTP code
+
+		lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->srv->lR );
+		ael = t_ael_check_ud( luaVM, -1, 1 );
+		t_ael_addhandle_impl( ael, m->sck->fd, T_AEL_WR );
+		ael->fd_set[ m->sck->fd ]->t = T_AEL_RW;
+		lua_pop( luaVM, 2 );  // pop buffer table and loop
 	}
 	else
 	{
@@ -420,21 +433,17 @@ lt_htp_msg_finish( lua_State *luaVM )
 		{
 			luaL_checklstring( luaVM, 2, &sz );
 			lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->obR );
+			if (m->chunked)
+			{
+				lua_pushfstring( luaVM, "%x\r\n", sz );
+				lua_pushvalue( luaVM, 2 );
+				lua_pushfstring( luaVM, "\r\n" );
+				lua_concat( luaVM, 3 );
+			}
+			else
+				lua_pushvalue( luaVM, 2 );
 			lua_rawseti( luaVM, -1, ++(m->obc) );
 		}
-	}
-
-	//lua_pushvalue( luaVM, 2 );
-	//lua_rawseti( luaVM, -2, lua_rawlen( luaVM, -2 ) );
-
-	if (T_HTP_STA_SEND != m->pS)
-	{
-		m->pS = T_HTP_STA_SEND;
-		lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->srv->lR );
-		ael = t_ael_check_ud( luaVM, -1, 1 );
-		t_ael_addhandle_impl( ael, m->sck->fd, T_AEL_WR );
-		ael->fd_set[ m->sck->fd ]->t = T_AEL_RW;
-		lua_pop( luaVM, 1 );             // pop the event loop
 	}
 
 	m->pS = T_HTP_STA_FINISH;
