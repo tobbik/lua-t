@@ -136,7 +136,7 @@ struct t_htp_msg {
 
 	// output buffer handling
 	int               obR;    ///< Lua registry reference to output buffer table
-	int               orR;    ///< Lua registry reference to string current row
+	//int               orR;    ///< Lua registry reference to string current row
 	size_t            ori;    ///< index of current row in output buffer table
 	size_t            orc;    ///< How many rows of the current buffer have been processed
 	size_t            sent;   ///< How many byte sent out on current row

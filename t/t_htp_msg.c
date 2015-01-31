@@ -153,9 +153,11 @@ t_htp_msg_rsp( lua_State *luaVM )
 	size_t            len;
 	const char       *buf;
 
-	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->orR );     // fetch current buffer row
+	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->obR );     // fetch current buffer row
+	lua_rawgeti( luaVM, -1, m->ori );
 	buf      = luaL_checklstring( luaVM, -1, &len );
 	m->sent += t_sck_send( luaVM, m->sck, buf, len );
+	printf( "%zu   %zu   %zu   %zu   %zu\n", lua_rawlen( luaVM, -2), m->orc, m->ori, len, m->sent );
 
 	// S:msg, cRow
 	if (m->sent == len) // if current buffer row got sent completely
@@ -163,10 +165,8 @@ t_htp_msg_rsp( lua_State *luaVM )
 
 		// done with current buffer row
 		m->sent = 0;
-		luaL_unref( luaVM, LUA_REGISTRYINDEX, m->orR );    // release current row, allow gc
-		lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->obR );
 		// done with sending
-		if (lua_rawlen( luaVM, -1 ) == m->orc)
+		if (lua_rawlen( luaVM, -2 ) == m->orc)
 		{
 			if (T_HTP_STA_FINISH == m->pS)
 			{
@@ -195,8 +195,8 @@ t_htp_msg_rsp( lua_State *luaVM )
 		}
 		else   //forward to next row
 		{
-			lua_rawgeti( luaVM, -1, ++(m->ori) );
-			m->orR = luaL_ref( luaVM, LUA_REGISTRYINDEX );
+			lua_pushstring( luaVM, "" );       // help gc
+			lua_rawseti( luaVM, -3, (m->ori)++ );
 		}
 	}
 	return 1;
@@ -397,11 +397,10 @@ lt_htp_msg_finish( lua_State *luaVM )
 		lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->obR );
 		t_htp_msg_formHeader( luaVM, m, 200, t_htp_status( 200 ), (int) sz, 0 );
 		lua_pushvalue( luaVM, 2 );
-		t_stackDump( luaVM );
+		//t_stackDump( luaVM );
 		lua_concat( luaVM, 2 );
 		lua_rawseti( luaVM, -2, m->orc );
 		lua_rawgeti( luaVM, -1, m->orc );
-		m->orR = luaL_ref( luaVM, LUA_REGISTRYINDEX );     // set current buffer row
 		m->ori = m->orc;
 		lua_pop( luaVM, 2 );  // pop buffer table, size and HTTP code
 	}
