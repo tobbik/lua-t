@@ -172,7 +172,7 @@ t_htp_msg_rsp( lua_State *luaVM )
 		// done with current buffer row
 		m->sent = 0;
 		// done with sending
-		if (lua_rawlen( luaVM, -2 ) == m->obc)
+		if (lua_rawlen( luaVM, -2 ) == m->obi)
 		{
 			if (T_HTP_STA_FINISH == m->pS)
 			{
@@ -202,10 +202,10 @@ t_htp_msg_rsp( lua_State *luaVM )
 		}
 		else   //forward to next row
 		{
-			lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->srv->lR );
-			ael   = t_ael_check_ud( luaVM, -1, 1 );
-			t_ael_removehandle_impl( ael, m->sck->fd, T_AEL_WR );
-			ael->run=0;
+			// lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->srv->lR );
+			// ael   = t_ael_check_ud( luaVM, -1, 1 );
+			// t_ael_removehandle_impl( ael, m->sck->fd, T_AEL_WR );
+			// ael->run=0;
 			lua_pushstring( luaVM, "" );       // help gc
 			lua_rawseti( luaVM, -3, (m->obi)++ );
 		}
@@ -226,15 +226,13 @@ t_htp_msg_rsp( lua_State *luaVM )
  * \return  The # of items pushed to the stack.
  * ---------------------------------------------------------------------------*/
 static int
-t_htp_msg_formHeader( lua_State *luaVM, struct t_htp_msg *m, int code,
-	const char *msg, int len, int t )
+t_htp_msg_formHeader( lua_State *luaVM, luaL_Buffer *lB,
+	struct t_htp_msg *m, int code, const char *msg, int len, int t )
 {
 	char             *b;
 	size_t            c = 0;
-	luaL_Buffer       lB;
 
-	luaL_buffinit( luaVM, &lB );
-	b = luaL_prepbuffer( &lB );
+	b = luaL_prepbuffer( lB );
 	if (len)
 	{
 		c += sprintf( b,
@@ -271,7 +269,6 @@ t_htp_msg_formHeader( lua_State *luaVM, struct t_htp_msg *m, int code,
 		lua_pushnil( luaVM );
 		while (lua_next( luaVM, t ))
 		{
-			// lua_pushfstring( luaVM,
 			c += sprintf( b,
 				"%s: %s\r\r",
 				lua_tostring( luaVM, -2 ),
@@ -281,8 +278,8 @@ t_htp_msg_formHeader( lua_State *luaVM, struct t_htp_msg *m, int code,
 		}
 		c += sprintf( b, "\r\r" );
 	}
-	luaL_pushresultsize( &lB, c );
-	return 0;
+	luaL_addsize( lB, c );
+	return 1;
 }
 
 
@@ -310,11 +307,14 @@ lt_htp_msg_writeHead( lua_State *luaVM )
 	struct t_htp_msg *m = t_htp_msg_check_ud( luaVM, 1, 1 );
 	int               i = lua_gettop( luaVM );
 	int               t = (LUA_TTABLE == lua_type( luaVM, i )); // processing headers
+	luaL_Buffer       lB;
+
+	luaL_buffinit( luaVM, &lB );
 
 	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->obR );
 	if (LUA_TNUMBER == lua_type( luaVM, 3 ) || LUA_TNUMBER == lua_type( luaVM, 4 ))
 	{
-		t_htp_msg_formHeader( luaVM, m,
+		t_htp_msg_formHeader( luaVM, &lB, m,
 			(int) luaL_checkinteger( luaVM, 2 ),   // HTTP Status code
 			(LUA_TSTRING == lua_type( luaVM, 3))   // HTTP Status message
 				? lua_tostring( luaVM, 3 )
@@ -327,15 +327,16 @@ lt_htp_msg_writeHead( lua_State *luaVM )
 	}
 	else
 	{
-		t_htp_msg_formHeader( luaVM, m,
+		t_htp_msg_formHeader( luaVM, &lB, m,
 			(int) luaL_checkinteger( luaVM, 2 ),   // HTTP Status code
 			(LUA_TSTRING == lua_type( luaVM, 3))   // HTTP Status message
 				? lua_tostring( luaVM, 3 )
 				: t_htp_status( luaL_checkinteger( luaVM, 2 ) ),
-			0,   // Content-Length
+			0,                                     // Content-Length 0 -> chunked
 			(t) ? i : 0
 			);
 	}
+	luaL_pushresult( &lB );
 	lua_rawseti( luaVM, -2, ++m->obc );
 	lua_pop( luaVM, 1 );
 	return 0;
@@ -352,20 +353,24 @@ lt_htp_msg_writeHead( lua_State *luaVM )
 static int
 lt_htp_msg_write( lua_State *luaVM )
 {
-	struct t_htp_msg *m = t_htp_msg_check_ud( luaVM, 1, 1 );
+	struct t_htp_msg *m   = t_htp_msg_check_ud( luaVM, 1, 1 );
 	struct t_ael     *ael;
 	size_t            sz;
+	char             *b;
+	size_t            c   = 0;
+	luaL_Buffer       lB;
+
+	luaL_buffinit( luaVM, &lB );
 
 	luaL_checklstring( luaVM, 2, &sz );
 	if (T_HTP_STA_SEND != m->pS)
 	{
 		m->chunked = 1;
 		lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->obR );
-		t_htp_msg_formHeader( luaVM, m, 200, t_htp_status( 200 ), 0, 0 );
-		lua_pushfstring( luaVM, "%x\r\n", sz );
-		lua_pushvalue( luaVM, 2 );
-		lua_pushfstring( luaVM, "\r\n" );
-		lua_concat( luaVM, 4 );
+		t_htp_msg_formHeader( luaVM, &lB, m, 200, t_htp_status( 200 ), 0, 0 );
+		b  = luaL_prepbuffer( &lB );
+		c += sprintf( b, "%zx\r\n%s\r\n", sz, lua_tostring( luaVM, 2 ) );
+		luaL_pushresultsize( &lB, c );
 		lua_rawseti( luaVM, -2, ++(m->obc) );
 		m->obi = m->obc;
 
@@ -381,14 +386,13 @@ lt_htp_msg_write( lua_State *luaVM )
 		lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->obR );
 		if (m->chunked)
 		{
-			lua_pushfstring( luaVM, "%x\r\n", sz );
-			lua_pushvalue( luaVM, 2 );
-			lua_pushfstring( luaVM, "\r\n" );
-			lua_concat( luaVM, 3 );
+			b  = luaL_prepbuffer( &lB );
+			c += sprintf( b, "%zx\r\n%s\r\n", sz, lua_tostring( luaVM, 2 ) );
+			luaL_pushresultsize( &lB, c );
 		}
 		else
 			lua_pushvalue( luaVM, 2 );
-		lua_rawseti( luaVM, -1, ++(m->obc) );
+		lua_rawseti( luaVM, -2, ++(m->obc) );
 	}
 
 	return 0;
@@ -408,16 +412,21 @@ lt_htp_msg_finish( lua_State *luaVM )
 	struct t_htp_msg *m = t_htp_msg_check_ud( luaVM, 1, 1 );
 	struct t_ael     *ael;
 	size_t            sz;
+	char             *b;
+	size_t            c   = 0;
+	luaL_Buffer       lB;
+
+	luaL_buffinit( luaVM, &lB );
 
 	if (T_HTP_STA_SEND != m->pS)
 	{
 		m->chunked = 0;
 		luaL_checklstring( luaVM, 2, &sz );
 		lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->obR );
-		t_htp_msg_formHeader( luaVM, m, 200, t_htp_status( 200 ), (int) sz, 0 );
-		lua_pushvalue( luaVM, 2 );
-		//t_stackDump( luaVM );
-		lua_concat( luaVM, 2 );
+		t_htp_msg_formHeader( luaVM, &lB, m, 200, t_htp_status( 200 ), (int) sz, 0 );
+		b  = luaL_prepbuffer( &lB );
+		c += sprintf( b, "%s", lua_tostring( luaVM, 2 ) );
+		luaL_pushresultsize( &lB, c );
 		lua_rawseti( luaVM, -2, ++(m->obc) );
 		m->obi = m->obc;
 
@@ -435,14 +444,14 @@ lt_htp_msg_finish( lua_State *luaVM )
 			lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->obR );
 			if (m->chunked)
 			{
-				lua_pushfstring( luaVM, "%x\r\n", sz );
-				lua_pushvalue( luaVM, 2 );
-				lua_pushfstring( luaVM, "\r\n" );
-				lua_concat( luaVM, 3 );
+				b  = luaL_prepbuffer( &lB );
+				c += sprintf( b, "%zx\r\n%s\r\n0\r\n\r\n", sz, lua_tostring( luaVM, 2 ) );
+				luaL_pushresultsize( &lB, c );
 			}
 			else
 				lua_pushvalue( luaVM, 2 );
-			lua_rawseti( luaVM, -1, ++(m->obc) );
+			t_stackDump( luaVM );
+			lua_rawseti( luaVM, -2, ++(m->obc) );
 		}
 	}
 

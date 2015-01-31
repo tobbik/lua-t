@@ -10,6 +10,7 @@ var server = http.createServer(function(req, res) {
 	//res.write('Almost Done with Http');
 	//res.write('Be Done with Http');
 	//setTimeout( e, 5000 );
+	res.write('The first Part before we finish');
 	res.end('Be Done with Http');
 });
 
