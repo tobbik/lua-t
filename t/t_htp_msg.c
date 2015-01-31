@@ -195,6 +195,10 @@ t_htp_msg_rsp( lua_State *luaVM )
 		}
 		else   //forward to next row
 		{
+			lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->srv->lR );
+			ael   = t_ael_check_ud( luaVM, -1, 1 );
+			t_ael_removehandle_impl( ael, m->sck->fd, T_AEL_WR );
+			ael->run=0;
 			lua_pushstring( luaVM, "" );       // help gc
 			lua_rawseti( luaVM, -3, (m->ori)++ );
 		}
@@ -399,7 +403,7 @@ lt_htp_msg_finish( lua_State *luaVM )
 		lua_pushvalue( luaVM, 2 );
 		//t_stackDump( luaVM );
 		lua_concat( luaVM, 2 );
-		lua_rawseti( luaVM, -2, m->orc );
+		lua_rawseti( luaVM, -2, ++(m->orc) );
 		lua_rawgeti( luaVM, -1, m->orc );
 		m->ori = m->orc;
 		lua_pop( luaVM, 2 );  // pop buffer table, size and HTTP code

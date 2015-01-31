@@ -168,6 +168,9 @@ lt_htp_srv_accept( lua_State *luaVM )
 	m->pR  = luaL_ref( luaVM, LUA_REGISTRYINDEX );
 	lua_newtable( luaVM );
 	m->obR  = luaL_ref( luaVM, LUA_REGISTRYINDEX );
+	m->ori  = 0;
+	m->orc  = 0;
+	m->sent = 0;
 	m->sck = c_sck;
 
 	// actually put it onto the loop  //S: s,ss,cs,ip,rt,add(),ael,cs,true,rcv,msg
