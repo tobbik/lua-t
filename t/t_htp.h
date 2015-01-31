@@ -118,27 +118,22 @@ struct t_htp_msg {
 	struct t_sck     *sck;    ///< pointer to the actual socket
 	struct t_htp_srv *srv;    ///< pointer to the HTTP-Server
 
-	int               status; ///< HTTP Status Code
 	int               length; ///< HTTP Message Size ("Content-Length")
+
 	int               kpAlv;  ///< keepalive value in seconds -> 0==no Keepalive
-
-
-	int               resStatus; ///< HTTP Status Code
-	int               resLength; ///< HTTP Message Size ("Content-Length")
-
 	int               upgrade;///< shall the connection be upgraded?
 	int               expect; ///< shall the connection return an expected thingy?
 	enum t_htp_sta    pS;     ///< HTTP parser state
 	enum t_htp_mth    mth;    ///< HTTP Method
 	enum t_htp_ver    ver;    ///< HTTP version
-	size_t            bRead;  ///< How many byte processed
+
+	size_t            read;  ///< How many byte processed
 	char              buf[ BUFSIZ ];   ///< reading buffer
 
 	// output buffer handling
 	int               obR;    ///< Lua registry reference to output buffer table
-	//int               orR;    ///< Lua registry reference to string current row
-	size_t            ori;    ///< index of current row in output buffer table
-	size_t            orc;    ///< How many rows of the current buffer have been processed
+	size_t            obi;    ///< index of current row in output buffer table
+	size_t            obc;    ///< How many rows of the current buffer have been processed
 	size_t            sent;   ///< How many byte sent out on current row
 };
 

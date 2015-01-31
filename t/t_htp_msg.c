@@ -29,7 +29,13 @@ struct t_htp_msg
 {
 	struct t_htp_msg *m;
 	m = (struct t_htp_msg *) lua_newuserdata( luaVM, sizeof( struct t_htp_msg ));
-	m->bRead  = 0;
+	lua_newtable( luaVM );
+	m->obR    = luaL_ref( luaVM, LUA_REGISTRYINDEX );
+	m->obi    = 0;
+	m->obc    = 0;
+	m->sent   = 0;
+	m->read   = 0;
+	m->sent   = 0;
 	m->pS     = T_HTP_STA_ZERO;
 	m->mth    = T_HTP_MTH_ILLEGAL;
 	m->srv    = srv;
@@ -82,15 +88,15 @@ t_htp_msg_rcv( lua_State *luaVM )
 	const char       *nxt;   // pointer to the buffer where processing must continue
 
 	// read
-	rcvd = t_sck_recv( luaVM, m->sck, &(m->buf[ m->bRead ]), BUFSIZ - m->bRead );
+	rcvd = t_sck_recv( luaVM, m->sck, &(m->buf[ m->read ]), BUFSIZ - m->read );
 	if (!rcvd)     // peer has closed
 		return lt_htp_msg__gc( luaVM );
 	else           // get the proxy on the stack to fill out verb/url/version/headers ...
 		lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->pR ); //S:m,P
 
-	printf( "Received %d  \n'%s'\n", rcvd, &(m->buf[ m->bRead ]) );
+	printf( "Received %d  \n'%s'\n", rcvd, &(m->buf[ m->read ]) );
 
-	nxt = &(m->buf[ m->bRead ]);
+	nxt = &(m->buf[ m->read ]);
 
 	while (NULL != nxt)
 	{
@@ -154,10 +160,10 @@ t_htp_msg_rsp( lua_State *luaVM )
 	const char       *buf;
 
 	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->obR );     // fetch current buffer row
-	lua_rawgeti( luaVM, -1, m->ori );
+	lua_rawgeti( luaVM, -1, m->obi );
 	buf      = luaL_checklstring( luaVM, -1, &len );
 	m->sent += t_sck_send( luaVM, m->sck, buf, len );
-	printf( "%zu   %zu   %zu   %zu   %zu\n", lua_rawlen( luaVM, -2), m->orc, m->ori, len, m->sent );
+	printf( "%zu   %zu   %zu   %zu   %zu\n", lua_rawlen( luaVM, -2), m->obc, m->obi, len, m->sent );
 
 	// S:msg, cRow
 	if (m->sent == len) // if current buffer row got sent completely
@@ -166,7 +172,7 @@ t_htp_msg_rsp( lua_State *luaVM )
 		// done with current buffer row
 		m->sent = 0;
 		// done with sending
-		if (lua_rawlen( luaVM, -2 ) == m->orc)
+		if (lua_rawlen( luaVM, -2 ) == m->obc)
 		{
 			if (T_HTP_STA_FINISH == m->pS)
 			{
@@ -190,8 +196,8 @@ t_htp_msg_rsp( lua_State *luaVM )
 			luaL_unref( luaVM, LUA_REGISTRYINDEX, m->obR );    // release buffer, allow gc
 			lua_newtable( luaVM );
 			m->obR = luaL_ref( luaVM, LUA_REGISTRYINDEX );   // new buffer
-			m->orc = 0;
-			m->ori = 0;
+			m->obc = 0;
+			m->obi = 0;
 		}
 		else   //forward to next row
 		{
@@ -200,7 +206,7 @@ t_htp_msg_rsp( lua_State *luaVM )
 			t_ael_removehandle_impl( ael, m->sck->fd, T_AEL_WR );
 			ael->run=0;
 			lua_pushstring( luaVM, "" );       // help gc
-			lua_rawseti( luaVM, -3, (m->ori)++ );
+			lua_rawseti( luaVM, -3, (m->obi)++ );
 		}
 	}
 	return 1;
@@ -329,7 +335,7 @@ lt_htp_msg_writeHead( lua_State *luaVM )
 			(t) ? i : 0
 			);
 	}
-	lua_rawseti( luaVM, -2, ++m->orc );
+	lua_rawseti( luaVM, -2, ++m->obc );
 	lua_pop( luaVM, 1 );
 	return 0;
 }
@@ -353,7 +359,7 @@ lt_htp_msg_write( lua_State *luaVM )
 	if (T_HTP_STA_SEND != m->pS)
 	{
 		lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->obR );
-		lua_rawseti( luaVM, -1, ++(m->orc) );
+		lua_rawseti( luaVM, -1, ++(m->obc) );
 		lua_pop( luaVM, 1 );
 		lua_pushinteger( luaVM, 200 );
 		lt_htp_msg_writeHead( luaVM );
@@ -361,7 +367,7 @@ lt_htp_msg_write( lua_State *luaVM )
 	else
 	{
 		lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->obR );
-		lua_rawseti( luaVM, -1, m->orc++ );
+		lua_rawseti( luaVM, -1, m->obc++ );
 	}
 
 	lua_pushvalue( luaVM, 2 );
@@ -403,9 +409,9 @@ lt_htp_msg_finish( lua_State *luaVM )
 		lua_pushvalue( luaVM, 2 );
 		//t_stackDump( luaVM );
 		lua_concat( luaVM, 2 );
-		lua_rawseti( luaVM, -2, ++(m->orc) );
-		lua_rawgeti( luaVM, -1, m->orc );
-		m->ori = m->orc;
+		lua_rawseti( luaVM, -2, ++(m->obc) );
+		lua_rawgeti( luaVM, -1, m->obc );
+		m->obi = m->obc;
 		lua_pop( luaVM, 2 );  // pop buffer table, size and HTTP code
 	}
 	else
@@ -414,7 +420,7 @@ lt_htp_msg_finish( lua_State *luaVM )
 		{
 			luaL_checklstring( luaVM, 2, &sz );
 			lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->obR );
-			lua_rawseti( luaVM, -1, ++(m->orc) );
+			lua_rawseti( luaVM, -1, ++(m->obc) );
 		}
 	}
 
