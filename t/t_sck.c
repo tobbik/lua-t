@@ -441,7 +441,7 @@ t_sck_close( lua_State *luaVM, struct t_sck *sck )
 {
 	if (-1 != sck->fd)
 	{
-		printf( "closing socket: %d\n", sck->fd );
+		//printf( "closing socket: %d\n", sck->fd );
 		if (-1 == close( sck->fd ))
 			return t_push_error( luaVM, "ERROR closing socket" );
 		else

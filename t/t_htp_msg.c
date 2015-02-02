@@ -64,7 +64,8 @@ struct t_htp_msg
 	return (struct t_htp_msg *) ud;
 }
 
-
+// TODO: use this to adjust large incoming chnks for headers upto BUFSIZ per
+// line
 static void t_htp_msg_adjustbuffer( struct t_htp_msg *m, size_t read, const char* rpos )
 {
 	memcpy( &(m->buf), rpos, (const char*) &(m->buf) + read - rpos );
@@ -95,7 +96,7 @@ t_htp_msg_rcv( lua_State *luaVM )
 	else           // get the proxy on the stack to fill out verb/url/version/headers ...
 		lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->pR ); //S:m,P
 
-	printf( "Received %d  \n'%s'\n", rcvd, &(m->buf[ m->read ]) );
+	//printf( "Received %d  \n'%s'\n", rcvd, &(m->buf[ m->read ]) );
 
 	nxt = &(m->buf[ m->read ]);
 
@@ -164,7 +165,7 @@ t_htp_msg_rsp( lua_State *luaVM )
 	lua_rawgeti( luaVM, -1, m->obi );
 	buf      = luaL_checklstring( luaVM, -1, &len );
 	m->sent += t_sck_send( luaVM, m->sck, buf, len );
-	printf( "%zu   %zu   %zu   %zu   %zu\n", lua_rawlen( luaVM, -2), m->obc, m->obi, len, m->sent );
+	//printf( "%zu   %zu   %zu   %zu   %zu\n", lua_rawlen( luaVM, -2), m->obc, m->obi, len, m->sent );
 
 	// S:msg, cRow
 	if (m->sent == len) // if current buffer row got sent completely
@@ -206,8 +207,8 @@ t_htp_msg_rsp( lua_State *luaVM )
 			// ael   = t_ael_check_ud( luaVM, -1, 1 );
 			// t_ael_removehandle_impl( ael, m->sck->fd, T_AEL_WR );
 			// ael->run=0;
-			lua_pushstring( luaVM, "" );       // help gc
-			lua_rawseti( luaVM, -3, (m->obi)++ );
+			lua_pushstring( luaVM, "" );           // help gc
+			lua_rawseti( luaVM, -3, (m->obi)++ );  // set current line as empty string and forward
 		}
 	}
 	return 1;
@@ -225,17 +226,15 @@ t_htp_msg_rsp( lua_State *luaVM )
  * \lparam  table    key:value pairs of HTTP headers.
  * \return  The # of items pushed to the stack.
  * ---------------------------------------------------------------------------*/
-static int
-t_htp_msg_formHeader( lua_State *luaVM, luaL_Buffer *lB,
-	struct t_htp_msg *m, int code, const char *msg, int len, int t )
+static size_t
+t_htp_msg_formHeader( lua_State *luaVM, char *b, struct t_htp_msg *m,
+	int code, const char *msg, int len, int t )
 {
-	char             *b;
-	size_t            c = 0;
+	size_t            c;
 
-	b = luaL_prepbuffer( lB );
 	if (len)
 	{
-		c += sprintf( b,
+		c = sprintf( b,
 			"HTTP/1.1 %d %s\r\n"
 			"Connection: %s\r\n"
 			"Date: %s\r\n"
@@ -251,7 +250,7 @@ t_htp_msg_formHeader( lua_State *luaVM, luaL_Buffer *lB,
 	}
 	else
 	{
-		c += sprintf( b,
+		c = sprintf( b,
 			"HTTP/1.1 %d %s\r\n"
 			"Connection: %s\r\n"
 			"Date: %s\r\n"
@@ -278,8 +277,7 @@ t_htp_msg_formHeader( lua_State *luaVM, luaL_Buffer *lB,
 		}
 		c += sprintf( b, "\r\r" );
 	}
-	luaL_addsize( lB, c );
-	return 1;
+	return c;
 }
 
 
@@ -308,14 +306,17 @@ lt_htp_msg_writeHead( lua_State *luaVM )
 	int               i = lua_gettop( luaVM );
 	int               t = (LUA_TTABLE == lua_type( luaVM, i )); // processing headers
 	struct t_ael     *ael;
+	char             *b;
+	size_t            c = 0;
 	luaL_Buffer       lB;
 
 	luaL_buffinit( luaVM, &lB );
+	b = luaL_prepbuffer( &lB );
 
 	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->obR );
 	if (LUA_TNUMBER == lua_type( luaVM, 3 ) || LUA_TNUMBER == lua_type( luaVM, 4 ))
 	{
-		t_htp_msg_formHeader( luaVM, &lB, m,
+		c = t_htp_msg_formHeader( luaVM, b, m,
 			(int) luaL_checkinteger( luaVM, 2 ),   // HTTP Status code
 			(LUA_TSTRING == lua_type( luaVM, 3))   // HTTP Status message
 				? lua_tostring( luaVM, 3 )
@@ -329,7 +330,7 @@ lt_htp_msg_writeHead( lua_State *luaVM )
 	}
 	else
 	{
-		t_htp_msg_formHeader( luaVM, &lB, m,
+		c = t_htp_msg_formHeader( luaVM, b, m,
 			(int) luaL_checkinteger( luaVM, 2 ),   // HTTP Status code
 			(LUA_TSTRING == lua_type( luaVM, 3))   // HTTP Status message
 				? lua_tostring( luaVM, 3 )
@@ -339,7 +340,7 @@ lt_htp_msg_writeHead( lua_State *luaVM )
 			);
 		m->chunked = 1;
 	}
-	luaL_pushresult( &lB );
+	luaL_pushresultsize( &lB, c );
 	lua_rawseti( luaVM, -2, ++(m->obc) );
 	m->obi = m->obc;
 
@@ -370,14 +371,15 @@ lt_htp_msg_write( lua_State *luaVM )
 	size_t            c   = 0;
 	luaL_Buffer       lB;
 
-	luaL_buffinit( luaVM, &lB );
 	luaL_checklstring( luaVM, 2, &sz );
 	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->obR );
 
+	// this assumes first ever call is write -> chunked
 	if (T_HTP_STA_SEND != m->pS)
 	{
-		t_htp_msg_formHeader( luaVM, &lB, m, 200, t_htp_status( 200 ), 0, 0 );
-		b  = luaL_prepbuffer( &lB );
+		luaL_buffinit( luaVM, &lB );
+		b = luaL_prepbuffer( &lB );
+		c = t_htp_msg_formHeader( luaVM, b, m, 200, t_htp_status( 200 ), 0, 0 );
 		c += sprintf( b, "%zx\r\n%s\r\n", sz, lua_tostring( luaVM, 2 ) );
 		luaL_pushresultsize( &lB, c );
 		lua_rawseti( luaVM, -2, ++(m->obc) );
@@ -394,8 +396,9 @@ lt_htp_msg_write( lua_State *luaVM )
 	{
 		if (m->chunked)
 		{
-			b  = luaL_prepbuffer( &lB );
-			c += sprintf( b, "%zx\r\n%s\r\n", sz, lua_tostring( luaVM, 2 ) );
+			luaL_buffinit( luaVM, &lB );
+			b = luaL_prepbuffer( &lB );
+			c = sprintf( b, "%zx\r\n%s\r\n", sz, lua_tostring( luaVM, 2 ) );
 			luaL_pushresultsize( &lB, c );
 		}
 		else
@@ -424,14 +427,13 @@ lt_htp_msg_finish( lua_State *luaVM )
 	size_t            c   = 0;
 	luaL_Buffer       lB;
 
-	luaL_buffinit( luaVM, &lB );
-
 	if (T_HTP_STA_SEND != m->pS)
 	{
 		luaL_checklstring( luaVM, 2, &sz );
 		lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->obR );
-		t_htp_msg_formHeader( luaVM, &lB, m, 200, t_htp_status( 200 ), (int) sz, 0 );
-		b  = luaL_prepbuffer( &lB );
+		luaL_buffinit( luaVM, &lB );
+		b = luaL_prepbuffer( &lB );
+		c = t_htp_msg_formHeader( luaVM, b, m, 200, t_htp_status( 200 ), (int) sz, 0 );
 		c += sprintf( b, "%s", lua_tostring( luaVM, 2 ) );
 		luaL_pushresultsize( &lB, c );
 		lua_rawseti( luaVM, -2, ++(m->obc) );
@@ -452,6 +454,7 @@ lt_htp_msg_finish( lua_State *luaVM )
 			lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->obR );
 			if (m->chunked)
 			{
+				luaL_buffinit( luaVM, &lB );
 				b  = luaL_prepbuffer( &lB );
 				c += sprintf( b, "%zx\r\n%s\r\n0\r\n\r\n", sz, lua_tostring( luaVM, 2 ) );
 				luaL_pushresultsize( &lB, c );
@@ -605,7 +608,7 @@ lt_htp_msg__gc( lua_State *luaVM )
 		lua_pop( luaVM, 1 );             // pop the event loop
 	}
 
-	printf("GC'ed HTTP connection\n");
+	//printf("GC'ed HTTP connection\n");
 
 	return 0;
 }

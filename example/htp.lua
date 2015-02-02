@@ -2,11 +2,11 @@
 t=require't'
 fmt=string.format
 l=t.Loop(10)
-l1="The first part before we finish"
+l1="This is the first part before we finish"
 l2="This is my answer"
 
 x=function( msg )
-	--msg:writeHead( 200, #l2 )
+	msg:writeHead( 200, #l2+#l1 )
 	msg:write( l1 )
 	msg:finish( l2 )
 end
