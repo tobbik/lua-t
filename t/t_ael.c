@@ -550,19 +550,19 @@ lt_ael_showloop( lua_State *luaVM )
 	{
 		if (NULL==ael->fd_set[ i ])
 			continue;
-		if (T_AEL_RD == ael->fd_set[i]->t)
+		if (T_AEL_RD & ael->fd_set[i]->t)
 		{
-			printf( "\t%d\t%s   ", i, "READER" );
+			printf( "%5d  [R]  ", i );
 			t_ael_getfunc( luaVM, ael->fd_set[i]->rR );
-			t_stackPrint( luaVM, n+1, lua_gettop( luaVM ) );
+			t_stackPrint( luaVM, n+2, lua_gettop( luaVM ) );
 			lua_pop( luaVM, lua_gettop( luaVM ) - n );
 			printf("\n");
 		}
-		if (T_AEL_WR == ael->fd_set[i]->t)
+		if (T_AEL_WR & ael->fd_set[i]->t)
 		{
-			printf( "\t%d\t%s   ", i, "WRITER" );
+			printf( "%5d  [W]  ", i );
 			t_ael_getfunc( luaVM, ael->fd_set[i]->wR );
-			t_stackPrint( luaVM, n+1, lua_gettop( luaVM ) );
+			t_stackPrint( luaVM, n+2, lua_gettop( luaVM ) );
 			lua_pop( luaVM, lua_gettop( luaVM ) - n );
 			printf("\n");
 		}
