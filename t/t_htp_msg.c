@@ -184,7 +184,7 @@ t_htp_msg_rsp( lua_State *luaVM )
 					lua_call( luaVM, 1, 0 );
 					return 1;
 				}
-				else       // ready connection read again
+				else       // remove writability of socket
 				{
 					m->pS = T_HTP_STA_ZERO;
 					lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->srv->lR );
@@ -247,6 +247,7 @@ t_htp_msg_formHeader( lua_State *luaVM, char *b, struct t_htp_msg *m,
 			len,                                   // Content-Length
 			(t) ? "" : "\r\n"
 			);
+		m->chunked = 0;
 	}
 	else
 	{
@@ -262,6 +263,7 @@ t_htp_msg_formHeader( lua_State *luaVM, char *b, struct t_htp_msg *m,
 			m->srv->fnw,                           // Formatted Date
 			(t) ? "" : "\r\n"
 			);
+		m->chunked = 1;
 	}
 	if (t)
 	{
@@ -326,7 +328,6 @@ lt_htp_msg_writeHead( lua_State *luaVM )
 				:  (int) luaL_checkinteger( luaVM, 4 ),
 			(t) ? i : 0
 			);
-		m->chunked = 0;
 	}
 	else
 	{
@@ -338,7 +339,6 @@ lt_htp_msg_writeHead( lua_State *luaVM )
 			0,                                     // Content-Length 0 -> chunked
 			(t) ? i : 0
 			);
-		m->chunked = 1;
 	}
 	luaL_pushresultsize( &lB, c );
 	lua_rawseti( luaVM, -2, ++(m->obc) );
@@ -380,7 +380,7 @@ lt_htp_msg_write( lua_State *luaVM )
 		luaL_buffinit( luaVM, &lB );
 		b = luaL_prepbuffer( &lB );
 		c = t_htp_msg_formHeader( luaVM, b, m, 200, t_htp_status( 200 ), 0, 0 );
-		c += sprintf( b, "%zx\r\n%s\r\n", sz, lua_tostring( luaVM, 2 ) );
+		c += sprintf( b+c, "%zx\r\n%s\r\n", sz, lua_tostring( luaVM, 2 ) );
 		luaL_pushresultsize( &lB, c );
 		lua_rawseti( luaVM, -2, ++(m->obc) );
 		m->obi = m->obc;
@@ -434,12 +434,11 @@ lt_htp_msg_finish( lua_State *luaVM )
 		luaL_buffinit( luaVM, &lB );
 		b = luaL_prepbuffer( &lB );
 		c = t_htp_msg_formHeader( luaVM, b, m, 200, t_htp_status( 200 ), (int) sz, 0 );
-		c += sprintf( b, "%s", lua_tostring( luaVM, 2 ) );
+		c += sprintf( b+c, "%s", lua_tostring( luaVM, 2 ) );
 		luaL_pushresultsize( &lB, c );
 		lua_rawseti( luaVM, -2, ++(m->obc) );
 		m->obi = m->obc;
 
-		m->pS = T_HTP_STA_SEND;
 		lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->srv->lR );
 		ael = t_ael_check_ud( luaVM, -1, 1 );
 		t_ael_addhandle_impl( ael, m->sck->fd, T_AEL_WR );
