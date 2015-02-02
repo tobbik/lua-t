@@ -2,10 +2,13 @@
 t=require't'
 fmt=string.format
 l=t.Loop(10)
+l1="The first part before we finish"
+l2="This is my answer"
 
 x=function( msg )
-	msg:write( "The first part before we finish" )
-	msg:finish( "This is my naswer" )
+	--msg:writeHead( 200, #l2 )
+	msg:write( l1 )
+	msg:finish( l2 )
 end
 
 h=t.Http.Server( l, x )

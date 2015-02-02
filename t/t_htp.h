@@ -128,7 +128,7 @@ struct t_htp_msg {
 	enum t_htp_mth    mth;    ///< HTTP Method
 	enum t_htp_ver    ver;    ///< HTTP version
 
-	size_t            read;  ///< How many byte processed
+	size_t            read;   ///< How many byte processed
 	char              buf[ BUFSIZ ];   ///< reading buffer
 
 	// output buffer handling
