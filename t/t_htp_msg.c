@@ -164,7 +164,7 @@ t_htp_msg_rsp( lua_State *luaVM )
 	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->obR );     // fetch current buffer row
 	lua_rawgeti( luaVM, -1, m->obi );
 	buf      = luaL_checklstring( luaVM, -1, &len );
-	m->sent += t_sck_send( luaVM, m->sck, buf, len );
+	m->sent += t_sck_send( luaVM, m->sck, buf + m->sent, len - m->sent );
 	//printf( "%zu   %zu   %zu   %zu   %zu\n", lua_rawlen( luaVM, -2), m->obc, m->obi, len, m->sent );
 
 	// S:msg, cRow
@@ -175,6 +175,7 @@ t_htp_msg_rsp( lua_State *luaVM )
 		// done with sending
 		if (lua_rawlen( luaVM, -2 ) == m->obi)
 		{
+			//printf( "%zu   %zu   %zu   %d  DONE\n", lua_rawlen( luaVM, -2), m->obc, m->obi, m->pS );
 			if (T_HTP_STA_FINISH == m->pS)
 			{
 				if (! m->kpAlv)
@@ -207,6 +208,7 @@ t_htp_msg_rsp( lua_State *luaVM )
 			// ael   = t_ael_check_ud( luaVM, -1, 1 );
 			// t_ael_removehandle_impl( ael, m->sck->fd, T_AEL_WR );
 			// ael->run=0;
+			//printf( "%zu   %zu   %zu   %d\n", lua_rawlen( luaVM, -2), m->obc, m->obi, m->pS );
 			lua_pushstring( luaVM, "" );           // help gc
 			lua_rawseti( luaVM, -3, (m->obi)++ );  // set current line as empty string and forward
 		}
@@ -380,8 +382,17 @@ lt_htp_msg_write( lua_State *luaVM )
 		luaL_buffinit( luaVM, &lB );
 		b = luaL_prepbuffer( &lB );
 		c = t_htp_msg_formHeader( luaVM, b, m, 200, t_htp_status( 200 ), 0, 0 );
-		c += sprintf( b+c, "%zx\r\n%s\r\n", sz, lua_tostring( luaVM, 2 ) );
-		luaL_pushresultsize( &lB, c );
+		if (LUAL_BUFFERSIZE < c+sz)
+		{
+			luaL_pushresultsize( &lB, c );
+			lua_pushvalue( luaVM, 2 );
+			lua_concat( luaVM, 2 );
+		}
+		else
+		{
+			c += sprintf( b+c, "%s", lua_tostring( luaVM, 2 ) );
+			luaL_pushresultsize( &lB, c );
+		}
 		lua_rawseti( luaVM, -2, ++(m->obc) );
 		m->obi = m->obc;
 
@@ -434,8 +445,17 @@ lt_htp_msg_finish( lua_State *luaVM )
 		luaL_buffinit( luaVM, &lB );
 		b = luaL_prepbuffer( &lB );
 		c = t_htp_msg_formHeader( luaVM, b, m, 200, t_htp_status( 200 ), (int) sz, 0 );
-		c += sprintf( b+c, "%s", lua_tostring( luaVM, 2 ) );
-		luaL_pushresultsize( &lB, c );
+		if (LUAL_BUFFERSIZE < c+sz)
+		{
+			luaL_pushresultsize( &lB, c );
+			lua_pushvalue( luaVM, 2 );
+			lua_concat( luaVM, 2 );
+		}
+		else
+		{
+			c += sprintf( b+c, "%s", lua_tostring( luaVM, 2 ) );
+			luaL_pushresultsize( &lB, c );
+		}
 		lua_rawseti( luaVM, -2, ++(m->obc) );
 		m->obi = m->obc;
 
@@ -607,7 +627,7 @@ lt_htp_msg__gc( lua_State *luaVM )
 		lua_pop( luaVM, 1 );             // pop the event loop
 	}
 
-	//printf("GC'ed HTTP connection\n");
+	printf("GC'ed HTTP connection: %p\n", m);
 
 	return 0;
 }
