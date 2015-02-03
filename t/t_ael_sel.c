@@ -92,7 +92,7 @@ t_ael_poll_impl( lua_State *luaVM, struct t_ael *ael )
 	int              i,r;
 	struct timeval  *tv;
 	struct timeval   rt;           ///< timer to calculate runtime over this poll
-	enum t_ael_t     t = T_AEL_NO; ///< handle action (read/write/either)
+	enum t_ael_t     t;            ///< handle action per fd (read/write/either)
 
 	gettimeofday( &rt, 0 );
 	tv  = (NULL != ael->tm_head) ? ael->tm_head->tv : NULL;
@@ -112,6 +112,7 @@ t_ael_poll_impl( lua_State *luaVM, struct t_ael *ael )
 		{
 			if (NULL == ael->fd_set[ i ])
 				continue;
+			t = T_AEL_NO;
 			if (ael->fd_set[ i ]->t & T_AEL_RD  &&  FD_ISSET( i, &ael->rfds_w ))
 				t |= T_AEL_RD;
 			if (ael->fd_set[ i ]->t & T_AEL_WR  &&  FD_ISSET( i, &ael->wfds_w ))

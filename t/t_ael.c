@@ -148,15 +148,16 @@ t_ael_executehandle( lua_State *luaVM, struct t_ael *ael, int fd, enum t_ael_t t
 {
 	int n;
 
-	if( t & T_AEL_WR )
-	{
-		n = t_ael_getfunc( luaVM, ael->fd_set[ fd ]->wR );
-		lua_call( luaVM, n , 0 );
-		lua_pop( luaVM, 1 );             // remove the table
-	}
+	//printf( "%d    %d    %d    %d\n", fd,  ael->fd_set[ fd ]->rR ,  ael->fd_set[ fd ]->wR, t );
 	if( t & T_AEL_RD )
 	{
 		n = t_ael_getfunc( luaVM, ael->fd_set[ fd ]->rR );
+		lua_call( luaVM, n , 0 );
+		lua_pop( luaVM, 1 );             // remove the table
+	}
+	if( t & T_AEL_WR )
+	{
+		n = t_ael_getfunc( luaVM, ael->fd_set[ fd ]->wR );
 		lua_call( luaVM, n , 0 );
 		lua_pop( luaVM, 1 );             // remove the table
 	}
@@ -310,6 +311,7 @@ lt_ael_removehandle( lua_State *luaVM )
 	struct t_sck  *sc;
 	int            fd  = 0;
 	struct t_ael  *ael = t_ael_check_ud( luaVM, 1, 1 );
+	luaL_checktype( luaVM, 3, LUA_TBOOLEAN );
 	enum t_ael_t   t   = lua_toboolean( luaVM, 3 ) ? T_AEL_RD :T_AEL_WR;
 
 	lS = (luaL_Stream *) luaL_testudata( luaVM, 2, LUA_FILEHANDLE );
@@ -324,7 +326,9 @@ lt_ael_removehandle( lua_State *luaVM )
 		return t_push_error( luaVM, "Argument to addHandle must be file or socket" );
 	// remove function
 	if (T_AEL_RD & t)
+	{
 		luaL_unref( luaVM, LUA_REGISTRYINDEX, ael->fd_set[ fd ]->rR );
+	}
 	else
 		luaL_unref( luaVM, LUA_REGISTRYINDEX, ael->fd_set[ fd ]->wR );
 	t_ael_removehandle_impl( ael, fd, t );
