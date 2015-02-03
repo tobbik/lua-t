@@ -382,17 +382,12 @@ lt_htp_msg_write( lua_State *luaVM )
 		luaL_buffinit( luaVM, &lB );
 		b = luaL_prepbuffer( &lB );
 		c = t_htp_msg_formHeader( luaVM, b, m, 200, t_htp_status( 200 ), 0, 0 );
-		if (LUAL_BUFFERSIZE < c+sz)
-		{
-			luaL_pushresultsize( &lB, c );
-			lua_pushvalue( luaVM, 2 );
-			lua_concat( luaVM, 2 );
-		}
-		else
-		{
-			c += sprintf( b+c, "%s", lua_tostring( luaVM, 2 ) );
-			luaL_pushresultsize( &lB, c );
-		}
+		c += sprintf( b+c, "%zx\r\n", sz );
+		luaL_addsize( &lB, c );
+		lua_pushvalue( luaVM, 2 );
+		luaL_addvalue( &lB );
+		luaL_addlstring( &lB, "\r\n", 2 );
+		luaL_pushresult( &lB );
 		lua_rawseti( luaVM, -2, ++(m->obc) );
 		m->obi = m->obc;
 
@@ -409,8 +404,12 @@ lt_htp_msg_write( lua_State *luaVM )
 		{
 			luaL_buffinit( luaVM, &lB );
 			b = luaL_prepbuffer( &lB );
-			c = sprintf( b, "%zx\r\n%s\r\n", sz, lua_tostring( luaVM, 2 ) );
-			luaL_pushresultsize( &lB, c );
+			c = sprintf( b, "%zx\r\n", sz );
+			luaL_addsize( &lB, c );
+			lua_pushvalue( luaVM, 2 );
+			luaL_addvalue( &lB );
+			luaL_addlstring( &lB, "\r\n", 2 );
+			luaL_pushresult( &lB );
 		}
 		else
 			lua_pushvalue( luaVM, 2 );
@@ -445,17 +444,10 @@ lt_htp_msg_finish( lua_State *luaVM )
 		luaL_buffinit( luaVM, &lB );
 		b = luaL_prepbuffer( &lB );
 		c = t_htp_msg_formHeader( luaVM, b, m, 200, t_htp_status( 200 ), (int) sz, 0 );
-		if (LUAL_BUFFERSIZE < c+sz)
-		{
-			luaL_pushresultsize( &lB, c );
-			lua_pushvalue( luaVM, 2 );
-			lua_concat( luaVM, 2 );
-		}
-		else
-		{
-			c += sprintf( b+c, "%s", lua_tostring( luaVM, 2 ) );
-			luaL_pushresultsize( &lB, c );
-		}
+		luaL_addsize( &lB, c );
+		lua_pushvalue( luaVM, 2 );
+		luaL_addvalue( &lB );
+		luaL_pushresult( &lB );
 		lua_rawseti( luaVM, -2, ++(m->obc) );
 		m->obi = m->obc;
 
@@ -474,9 +466,13 @@ lt_htp_msg_finish( lua_State *luaVM )
 			if (m->chunked)
 			{
 				luaL_buffinit( luaVM, &lB );
-				b  = luaL_prepbuffer( &lB );
-				c += sprintf( b, "%zx\r\n%s\r\n0\r\n\r\n", sz, lua_tostring( luaVM, 2 ) );
-				luaL_pushresultsize( &lB, c );
+				b = luaL_prepbuffer( &lB );
+				c = sprintf( b, "%zx\r\n", sz );
+				luaL_addsize( &lB, c );
+				lua_pushvalue( luaVM, 2 );
+				luaL_addvalue( &lB );
+				luaL_addlstring( &lB, "\r\n0\r\n\r\n", 7 );
+				luaL_pushresult( &lB );
 			}
 			else
 				lua_pushvalue( luaVM, 2 );
