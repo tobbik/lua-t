@@ -163,9 +163,10 @@ t_htp_msg_rsp( lua_State *luaVM )
 
 	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->obR );     // fetch current buffer row
 	lua_rawgeti( luaVM, -1, m->obi );
+	printf( "%zu   %zu   %zu   ", lua_rawlen( luaVM, -2), m->obc, m->obi );
 	buf      = luaL_checklstring( luaVM, -1, &len );
 	m->sent += t_sck_send( luaVM, m->sck, buf + m->sent, len - m->sent );
-	//printf( "%zu   %zu   %zu   %zu   %zu\n", lua_rawlen( luaVM, -2), m->obc, m->obi, len, m->sent );
+	printf( "%zu   %zu\n", len, m->sent );
 
 	// S:msg, cRow
 	if (m->sent == len) // if current buffer row got sent completely
@@ -194,6 +195,14 @@ t_htp_msg_rsp( lua_State *luaVM )
 					ael->fd_set[ m->sck->fd ]->t = T_AEL_RD;
 					lua_pop( luaVM, 1 );        // pop the loop
 				}
+			}
+			else
+			{
+				lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->srv->lR );
+				ael   = t_ael_check_ud( luaVM, -1, 1 );
+				t_ael_removehandle_impl( ael, m->sck->fd, T_AEL_WR );
+				ael->fd_set[ m->sck->fd ]->t = T_AEL_RD;
+				lua_pop( luaVM, 1 );        // pop the loop
 			}
 			luaL_unref( luaVM, LUA_REGISTRYINDEX, m->obR );    // release buffer, allow gc
 			lua_newtable( luaVM );
