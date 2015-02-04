@@ -31,7 +31,7 @@ var h00= http.createServer( function(req, res) {
 
 var s01 = repeat( l1, rp*rc )
 var h01= http.createServer( function(req, res) {
-	// res.writeHead( 200 , {'Content-Length': s01.length + l2.length} );
+	res.writeHead( 200 , {'Content-Length': s01.length + l2.length} );
 	res.end( s01 + l2 );
 });
 
@@ -41,16 +41,19 @@ var fileName = 'buf.lua';
 var stats    = fs.statSync( fileName );
 var fSz      = stats.size;
 var h02 = http.createServer( function( req, res ) {
-	fs.readFile( fileName, "binary", function( err, data ) {
-		if(err) {
-			res.writeHead(500, {"Content-Type": "text/plain"});
-			res.write(err + "\n");
-			res.end();
-			return;
-		}
-		res.writeHead( 200, {"Content-Length": stats.size} );
-		res.end( data );
-	} );
+	res.writeHead( 200, {"Content-Length": stats.size} );
+	var file = fs.createReadStream( fileName );
+	file.on('error', function(err) {
+		res.writeHead(500, {"Content-Type": "text/plain"});
+		res.end(err + "\n");
+		return;
+	});
+	file.on('data', function( data ) {
+		res.write( data );
+	});
+	file.on('end', function(){
+		res.end()
+	});
 });
 
 h00.listen(9000);

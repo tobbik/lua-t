@@ -41,7 +41,9 @@ struct t_htp_msg
 	m->srv     = srv;
 	m->length  = 0;
 	m->expect  = 0;
-	m->chunked = 0;
+	m->ocl     = 0;
+	m->osl     = 0;
+	m->obl     = 0;
 
 	luaL_getmetatable( luaVM, "T.Http.Message" );
 	lua_setmetatable( luaVM, -2 );
@@ -158,14 +160,17 @@ t_htp_msg_rsp( lua_State *luaVM )
 {
 	struct t_htp_msg *m   = t_htp_msg_check_ud( luaVM, 1, 1 );
 	size_t            len;
+	size_t            sent;
 	const char       *buf;
 
 	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->obR );     // fetch current buffer row
 	lua_rawgeti( luaVM, -1, m->obi );
 	printf( "%zu   %zu   %zu   ", lua_rawlen( luaVM, -2), m->obc, m->obi );
 	buf      = luaL_checklstring( luaVM, -1, &len );
-	m->sent += t_sck_send( luaVM, m->sck, buf + m->sent, len - m->sent );
-	printf( "%zu   %zu\n", len, m->sent );
+	sent     = t_sck_send( luaVM, m->sck, buf + m->sent, len - m->sent );
+	m->osl  += sent;
+	m->sent += sent;
+	printf( "%zu   %zu  -- %zu   %zu   %zu\n", len, m->sent, m->obl, m->osl, sent );
 
 	// S:msg, cRow
 	if (m->sent == len) // if current buffer row got sent completely
@@ -176,8 +181,9 @@ t_htp_msg_rsp( lua_State *luaVM )
 		if (m->obc == m->obi)
 		{
 			//printf( "%zu   %zu   %zu   %d  %d DONE\n", lua_rawlen( luaVM, -2), m->obc, m->obi, m->pS );
-			if (T_HTP_STA_FINISH == m->pS)
+			if (T_HTP_STA_FINISH == m->pS || m->osl == m->obl)
 			{
+				printf( "EndMessage\n" );
 				if (! m->kpAlv)
 				{
 					lua_pushcfunction( luaVM, lt_htp_msg__gc );
@@ -190,6 +196,9 @@ t_htp_msg_rsp( lua_State *luaVM )
 					m->pS = T_HTP_STA_ZERO;
 					t_ael_removehandle_impl( m->srv->ael, m->sck->fd, T_AEL_WR );
 					m->srv->ael->fd_set[ m->sck->fd ]->t = T_AEL_RD;
+					m->ocl = 0;
+					m->obl = 0;
+					m->osl = 0;
 				}
 			}
 			else
@@ -202,7 +211,6 @@ t_htp_msg_rsp( lua_State *luaVM )
 			m->obR = luaL_ref( luaVM, LUA_REGISTRYINDEX );   // new buffer
 			m->obc = 0;
 			m->obi = 0;
-			m->chunked = 0;
 		}
 		else   //forward to next row
 		{
@@ -225,6 +233,7 @@ t_htp_msg_rsp( lua_State *luaVM )
  * \lparam  string   HTTP message corresponding to HTTP status code.
  * \lparam  table    key:value pairs of HTTP headers.
  * \return  The # of items pushed to the stack.
+ * TODO: refactor to accept luaL_Buffer instead of char* buffer
  * ---------------------------------------------------------------------------*/
 static size_t
 t_htp_msg_formHeader( lua_State *luaVM, char *b, struct t_htp_msg *m,
@@ -247,7 +256,7 @@ t_htp_msg_formHeader( lua_State *luaVM, char *b, struct t_htp_msg *m,
 			len,                                   // Content-Length
 			(t) ? "" : "\r\n"
 			);
-		m->chunked = 0;
+		m->ocl = len;
 	}
 	else
 	{
@@ -263,7 +272,7 @@ t_htp_msg_formHeader( lua_State *luaVM, char *b, struct t_htp_msg *m,
 			m->srv->fnw,                           // Formatted Date
 			(t) ? "" : "\r\n"
 			);
-		m->chunked = 1;
+		m->ocl = 0;
 	}
 	if (t)
 	{
@@ -279,6 +288,7 @@ t_htp_msg_formHeader( lua_State *luaVM, char *b, struct t_htp_msg *m,
 		}
 		c += sprintf( b, "\r\r" );
 	}
+	m->obl = (len) ? c + len : 0;
 	return c;
 }
 
@@ -389,7 +399,7 @@ lt_htp_msg_write( lua_State *luaVM )
 	}
 	else
 	{
-		if (m->chunked)
+		if (! m->ocl)
 		{
 			luaL_buffinit( luaVM, &lB );
 			b = luaL_prepbuffer( &lB );
@@ -404,8 +414,8 @@ lt_htp_msg_write( lua_State *luaVM )
 			lua_pushvalue( luaVM, 2 );
 		lua_rawseti( luaVM, -2, ++(m->obc) );
 	}
-	if ( 1 == m->obc )  // wrote the first line to the buffer
-	{
+	if ( 1 == m->obc )  // wrote the first line to the buffer, can also happen if
+	{                   // current buffer is flushed but response is incomplete
 		t_ael_addhandle_impl( m->srv->ael, m->sck->fd, T_AEL_WR );
 		m->srv->ael->fd_set[ m->sck->fd ]->t = T_AEL_RW;
 		m->obi =1;
@@ -432,6 +442,7 @@ lt_htp_msg_finish( lua_State *luaVM )
 	size_t            c   = 0;
 	luaL_Buffer       lB;
 
+
 	if (T_HTP_STA_SEND != m->pS)
 	{
 		luaL_checklstring( luaVM, 2, &sz );
@@ -455,7 +466,7 @@ lt_htp_msg_finish( lua_State *luaVM )
 		{
 			luaL_checklstring( luaVM, 2, &sz );
 			lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->obR );
-			if (m->chunked)
+			if (! m->ocl)   // chunked
 			{
 				luaL_buffinit( luaVM, &lB );
 				b = luaL_prepbuffer( &lB );
@@ -466,7 +477,7 @@ lt_htp_msg_finish( lua_State *luaVM )
 				luaL_addlstring( &lB, "\r\n0\r\n\r\n", 7 );
 				luaL_pushresult( &lB );
 			}
-			else
+			else  // TODO: check that  size + buffer sz does not exceed m->ocl
 				lua_pushvalue( luaVM, 2 );
 			lua_rawseti( luaVM, -2, ++(m->obc) );
 		}

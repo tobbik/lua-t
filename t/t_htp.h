@@ -124,7 +124,6 @@ struct t_htp_msg {
 	int               kpAlv;  ///< keepalive value in seconds -> 0==no Keepalive
 	int               upgrade;///< shall the connection be upgraded?
 	int               expect; ///< shall the connection return an expected thingy?
-	int               chunked;///< shall the buffer be chunked on transmission?
 	enum t_htp_sta    pS;     ///< HTTP parser state
 	enum t_htp_mth    mth;    ///< HTTP Method
 	enum t_htp_ver    ver;    ///< HTTP version
@@ -133,6 +132,9 @@ struct t_htp_msg {
 	char              buf[ BUFSIZ ];   ///< reading buffer
 
 	// output buffer handling
+	size_t            obl;    ///< Outgoing Buffer Length (content+header)
+	size_t            ocl;    ///< Outgoing Content-Length
+	size_t            osl;    ///< Outgoing Sent
 	int               obR;    ///< Lua registry reference to output buffer table
 	size_t            obi;    ///< index of current row in output buffer table
 	size_t            obc;    ///< How many rows of the current buffer have been processed

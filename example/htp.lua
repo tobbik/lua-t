@@ -39,7 +39,7 @@ x02 = function( msg )
 			print( f, "end" )
 			l:removeHandle( f, true )
 			f:close()
-			msg:finish()
+			-- msg:finish()
 		end
 	end )
 	l:show()
