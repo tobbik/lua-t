@@ -33,7 +33,9 @@ lt_htp_srv_New( lua_State *luaVM )
 		s     = t_htp_srv_create_ud( luaVM );
 		lua_insert( luaVM, -3 );
 		s->rR = luaL_ref( luaVM, LUA_REGISTRYINDEX );
-		s->lR = luaL_ref( luaVM, LUA_REGISTRYINDEX );
+
+		s->ael = l;
+		s->lR  = luaL_ref( luaVM, LUA_REGISTRYINDEX );
 	}
 	else
 		return t_push_error( luaVM, "T.Http.Server( func ) requires a function as parameter" );
@@ -200,14 +202,14 @@ lt_htp_srv_listen( lua_State *luaVM )
 	sc = t_sck_check_ud( luaVM, -2, 1 );
 	ip = t_ipx_check_ud( luaVM, -1, 1 );
 	s->aR = luaL_ref( luaVM, LUA_REGISTRYINDEX );
-	lua_pushvalue( luaVM, -1 );
+	s->sck = sc;
 	s->sR = luaL_ref( luaVM, LUA_REGISTRYINDEX );
 
 	// TODO: cheaper to reimplement functionality -> less overhead?
 	lua_pushcfunction( luaVM, lt_ael_addhandle ); //S: srv,sc,addhandle
 	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, s->lR );
 	t_ael_check_ud( luaVM, -1, 1 );
-	lua_pushvalue( luaVM, -3 );                  /// push socket
+	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, s->sR ); // get socket back on stack
 	lua_pushboolean( luaVM, 1 );                 //S: srv,sc,addhandle,loop,sck,true
 	lua_pushcfunction( luaVM, lt_htp_srv_accept );
 	lua_pushvalue( luaVM, 1 );                  /// push server instance

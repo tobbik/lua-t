@@ -14,7 +14,7 @@ function repeat(s, n)
 var l1="This is the first part before we finish. A string te repeated soo man times\n"
 var l2="This is the finish line of the response.\n"
 
-var rp = 300
+var rp = 30
 var rc = 10
 var s00 = repeat( l1, rp )
 

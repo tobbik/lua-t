@@ -85,7 +85,6 @@ int
 t_htp_msg_rcv( lua_State *luaVM )
 {
 	struct t_htp_msg *m   = t_htp_msg_check_ud( luaVM, 1, 1 );
-	// struct t_ael     *ael;
 	int               rcvd;
 	const char       *nxt;   // pointer to the buffer where processing must continue
 
@@ -157,7 +156,6 @@ int
 t_htp_msg_rsp( lua_State *luaVM )
 {
 	struct t_htp_msg *m   = t_htp_msg_check_ud( luaVM, 1, 1 );
-	struct t_ael     *ael;
 	size_t            len;
 	const char       *buf;
 
@@ -189,20 +187,14 @@ t_htp_msg_rsp( lua_State *luaVM )
 				else       // remove writability of socket
 				{
 					m->pS = T_HTP_STA_ZERO;
-					lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->srv->lR );
-					ael   = t_ael_check_ud( luaVM, -1, 1 );
-					t_ael_removehandle_impl( ael, m->sck->fd, T_AEL_WR );
-					ael->fd_set[ m->sck->fd ]->t = T_AEL_RD;
-					lua_pop( luaVM, 1 );        // pop the loop
+					t_ael_removehandle_impl( m->srv->ael, m->sck->fd, T_AEL_WR );
+					m->srv->ael->fd_set[ m->sck->fd ]->t = T_AEL_RD;
 				}
 			}
 			else
 			{
-				lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->srv->lR );
-				ael   = t_ael_check_ud( luaVM, -1, 1 );
-				t_ael_removehandle_impl( ael, m->sck->fd, T_AEL_WR );
-				ael->fd_set[ m->sck->fd ]->t = T_AEL_RD;
-				lua_pop( luaVM, 1 );        // pop the loop
+				t_ael_removehandle_impl( m->srv->ael, m->sck->fd, T_AEL_WR );
+				m->srv->ael->fd_set[ m->sck->fd ]->t = T_AEL_RD;
 			}
 			luaL_unref( luaVM, LUA_REGISTRYINDEX, m->obR );    // release buffer, allow gc
 			lua_newtable( luaVM );
@@ -213,10 +205,6 @@ t_htp_msg_rsp( lua_State *luaVM )
 		}
 		else   //forward to next row
 		{
-			// lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->srv->lR );
-			// ael   = t_ael_check_ud( luaVM, -1, 1 );
-			// t_ael_removehandle_impl( ael, m->sck->fd, T_AEL_WR );
-			// ael->run=0;
 			//printf( "%zu   %zu   %zu   %d\n", lua_rawlen( luaVM, -2), m->obc, m->obi, m->pS );
 			lua_pushstring( luaVM, "" );           // help gc
 			lua_rawseti( luaVM, -3, (m->obi)++ );  // set current line as empty string and forward
@@ -318,7 +306,6 @@ lt_htp_msg_writeHead( lua_State *luaVM )
 	struct t_htp_msg *m = t_htp_msg_check_ud( luaVM, 1, 1 );
 	int               i = lua_gettop( luaVM );
 	int               t = (LUA_TTABLE == lua_type( luaVM, i )); // processing headers
-	struct t_ael     *ael;
 	char             *b;
 	size_t            c = 0;
 	luaL_Buffer       lB;
@@ -356,10 +343,8 @@ lt_htp_msg_writeHead( lua_State *luaVM )
 	m->obi = m->obc;
 
 	m->pS = T_HTP_STA_SEND;
-	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->srv->lR );
-	ael = t_ael_check_ud( luaVM, -1, 1 );
-	t_ael_addhandle_impl( ael, m->sck->fd, T_AEL_WR );
-	ael->fd_set[ m->sck->fd ]->t = T_AEL_RW;
+	t_ael_addhandle_impl( m->srv->ael, m->sck->fd, T_AEL_WR );
+	m->srv->ael->fd_set[ m->sck->fd ]->t = T_AEL_RW;
 	lua_pop( luaVM, 2 );  // pop buffer table and loop
 	return 0;
 }
@@ -376,7 +361,6 @@ static int
 lt_htp_msg_write( lua_State *luaVM )
 {
 	struct t_htp_msg *m   = t_htp_msg_check_ud( luaVM, 1, 1 );
-	struct t_ael     *ael;
 	size_t            sz;
 	char             *b;
 	size_t            c   = 0;
@@ -401,10 +385,8 @@ lt_htp_msg_write( lua_State *luaVM )
 		m->obi = m->obc;
 
 		m->pS = T_HTP_STA_SEND;
-		lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->srv->lR );
-		ael = t_ael_check_ud( luaVM, -1, 1 );
-		t_ael_addhandle_impl( ael, m->sck->fd, T_AEL_WR );
-		ael->fd_set[ m->sck->fd ]->t = T_AEL_RW;
+		t_ael_addhandle_impl( m->srv->ael, m->sck->fd, T_AEL_WR );
+		m->srv->ael->fd_set[ m->sck->fd ]->t = T_AEL_RW;
 		lua_pop( luaVM, 2 );                    // pop buffer table and loop
 	}
 	else
@@ -440,7 +422,6 @@ static int
 lt_htp_msg_finish( lua_State *luaVM )
 {
 	struct t_htp_msg *m = t_htp_msg_check_ud( luaVM, 1, 1 );
-	struct t_ael     *ael;
 	size_t            sz;
 	char             *b;
 	size_t            c   = 0;
@@ -460,11 +441,9 @@ lt_htp_msg_finish( lua_State *luaVM )
 		lua_rawseti( luaVM, -2, ++(m->obc) );
 		m->obi = m->obc;
 
-		lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->srv->lR );
-		ael = t_ael_check_ud( luaVM, -1, 1 );
-		t_ael_addhandle_impl( ael, m->sck->fd, T_AEL_WR );
-		ael->fd_set[ m->sck->fd ]->t = T_AEL_RW;
-		lua_pop( luaVM, 2 );  // pop buffer table and loop
+		t_ael_addhandle_impl( m->srv->ael, m->sck->fd, T_AEL_WR );
+		m->srv->ael->fd_set[ m->sck->fd ]->t = T_AEL_RW;
+		lua_pop( luaVM, 1 );  // pop buffer table
 	}
 	else
 	{
@@ -602,7 +581,6 @@ static int
 lt_htp_msg__gc( lua_State *luaVM )
 {
 	struct t_htp_msg *m = (struct t_htp_msg *) luaL_checkudata( luaVM, 1, "T.Http.Message" );
-	struct t_ael     *ael;
 
 	if (LUA_NOREF != m->pR)
 	{
@@ -616,20 +594,17 @@ lt_htp_msg__gc( lua_State *luaVM )
 	}
 	if (NULL != m->sck)
 	{
-		lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->srv->lR );
-		ael = t_ael_check_ud( luaVM, -1, 1 );
-		t_ael_removehandle_impl( ael, m->sck->fd, T_AEL_RD );
-		t_ael_removehandle_impl( ael, m->sck->fd, T_AEL_WR );
-		ael->fd_set[ m->sck->fd ]->t = T_AEL_NO;
-		luaL_unref( luaVM, LUA_REGISTRYINDEX, ael->fd_set[ m->sck->fd ]->rR );
-		luaL_unref( luaVM, LUA_REGISTRYINDEX, ael->fd_set[ m->sck->fd ]->wR );
-		luaL_unref( luaVM, LUA_REGISTRYINDEX, ael->fd_set[ m->sck->fd ]->hR );
-		free( ael->fd_set[ m->sck->fd ] );
-		ael->fd_set[ m->sck->fd ] = NULL;
+		t_ael_removehandle_impl( m->srv->ael, m->sck->fd, T_AEL_RD );
+		t_ael_removehandle_impl( m->srv->ael, m->sck->fd, T_AEL_WR );
+		m->srv->ael->fd_set[ m->sck->fd ]->t = T_AEL_NO;
+		luaL_unref( luaVM, LUA_REGISTRYINDEX, m->srv->ael->fd_set[ m->sck->fd ]->rR );
+		luaL_unref( luaVM, LUA_REGISTRYINDEX, m->srv->ael->fd_set[ m->sck->fd ]->wR );
+		luaL_unref( luaVM, LUA_REGISTRYINDEX, m->srv->ael->fd_set[ m->sck->fd ]->hR );
+		free( m->srv->ael->fd_set[ m->sck->fd ] );
+		m->srv->ael->fd_set[ m->sck->fd ] = NULL;
 
 		t_sck_close( luaVM, m->sck );
 		m->sck = NULL;
-		lua_pop( luaVM, 1 );             // pop the event loop
 	}
 
 	printf("GC'ed HTTP connection: %p\n", m);

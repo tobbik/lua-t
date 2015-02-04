@@ -4,7 +4,7 @@ fmt=string.format
 l=t.Loop(10)
 l1="This is the first part before we finish. A string te repeated soo man times\n"
 l2="This is the finish line of the response.\n"
-rp  = 300
+rp  = 30
 rc  = 10
 s00 = string.rep( l1, rp )
 
