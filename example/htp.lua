@@ -37,9 +37,9 @@ x02 = function( msg )
 			msg:write( d )
 		else
 			print( f, "end" )
-			msg:finish()
 			l:removeHandle( f, true )
 			f:close()
+			msg:finish()
 		end
 	end )
 	l:show()

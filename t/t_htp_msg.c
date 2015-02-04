@@ -64,6 +64,7 @@ struct t_htp_msg
 	return (struct t_htp_msg *) ud;
 }
 
+
 // TODO: use this to adjust large incoming chnks for headers upto BUFSIZ per
 // line
 static void t_htp_msg_adjustbuffer( struct t_htp_msg *m, size_t read, const char* rpos )
@@ -171,10 +172,10 @@ t_htp_msg_rsp( lua_State *luaVM )
 	{
 		// done with current buffer row
 		m->sent = 0;
-		// done with sending
-		if (lua_rawlen( luaVM, -2 ) == m->obi)
+		// done with sending what the buffer table currently has
+		if (m->obc == m->obi)
 		{
-			//printf( "%zu   %zu   %zu   %d  DONE\n", lua_rawlen( luaVM, -2), m->obc, m->obi, m->pS );
+			//printf( "%zu   %zu   %zu   %d  %d DONE\n", lua_rawlen( luaVM, -2), m->obc, m->obi, m->pS );
 			if (T_HTP_STA_FINISH == m->pS)
 			{
 				if (! m->kpAlv)
@@ -385,9 +386,6 @@ lt_htp_msg_write( lua_State *luaVM )
 		m->obi = m->obc;
 
 		m->pS = T_HTP_STA_SEND;
-		t_ael_addhandle_impl( m->srv->ael, m->sck->fd, T_AEL_WR );
-		m->srv->ael->fd_set[ m->sck->fd ]->t = T_AEL_RW;
-		lua_pop( luaVM, 2 );                    // pop buffer table and loop
 	}
 	else
 	{
@@ -406,6 +404,13 @@ lt_htp_msg_write( lua_State *luaVM )
 			lua_pushvalue( luaVM, 2 );
 		lua_rawseti( luaVM, -2, ++(m->obc) );
 	}
+	if ( 1 == m->obc )  // wrote the first line to the buffer
+	{
+		t_ael_addhandle_impl( m->srv->ael, m->sck->fd, T_AEL_WR );
+		m->srv->ael->fd_set[ m->sck->fd ]->t = T_AEL_RW;
+		m->obi =1;
+	}
+	lua_pop( luaVM, 1 );                    // pop buffer table and loop
 
 	return 0;
 }
@@ -443,7 +448,6 @@ lt_htp_msg_finish( lua_State *luaVM )
 
 		t_ael_addhandle_impl( m->srv->ael, m->sck->fd, T_AEL_WR );
 		m->srv->ael->fd_set[ m->sck->fd ]->t = T_AEL_RW;
-		lua_pop( luaVM, 1 );  // pop buffer table
 	}
 	else
 	{
@@ -467,7 +471,25 @@ lt_htp_msg_finish( lua_State *luaVM )
 			lua_rawseti( luaVM, -2, ++(m->obc) );
 		}
 	}
+	if ( 1 == m->obc )  // wrote the first line to the buffer
+	{
+		t_ael_addhandle_impl( m->srv->ael, m->sck->fd, T_AEL_WR );
+		m->srv->ael->fd_set[ m->sck->fd ]->t = T_AEL_RW;
+		m->obi =1;
+	}
+	if ( 0 == m->obc )
+	{
+		if ( ! m->kpAlv)
+		{
+			lua_pushcfunction( luaVM, lt_htp_msg__gc );
+			lua_pushvalue( luaVM, 1 );
+			lua_call( luaVM, 1, 0 );
+		}
+		else
+			m->pS = T_HTP_STA_ZERO;
+	}
 
+	lua_pop( luaVM, 1 );  // pop buffer table
 	m->pS = T_HTP_STA_FINISH;
 
 	return 0;
