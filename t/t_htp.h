@@ -84,6 +84,22 @@ enum t_htp_sta {
 	T_HTP_STA_DONE,         ///< Finished
 };
 
+
+/// State of the HTTP message
+enum t_htp_msg_s {
+	T_HTP_MSG_S_ZERO,       ///< Nothing done yet
+	T_HTP_MSG_S_URL,        ///< Parsing Url
+	T_HTP_MSG_S_VERSION,    ///< Parsing HTTP version
+	T_HTP_MSG_S_HEADER,     ///< Parsing Headers
+	T_HTP_MSG_S_UPGRADE,    ///< Is this an upgrading connection?
+	T_HTP_MSG_S_HEADDONE,   ///< Parsing Headers finished
+	T_HTP_MSG_S_BODY,       ///< Recieving body
+	T_HTP_MSG_S_RECEIVED,   ///< Request received
+	T_HTP_MSG_S_SEND,       ///< Send data from buffer
+	T_HTP_MSG_S_FINISH,     ///< The last chunk was written into the buffer
+	T_HTP_MSG_S_DONE,       ///< Finished
+};
+
 // Available HTTP versions
 enum t_htp_ver {
 	T_HTP_VER_09,
@@ -109,9 +125,16 @@ struct t_htp_srv {
 	char              fnw[30];///< Formatted Date time in HTTP format
 };
 
-
 /// The userdata struct for T.Http.Message ( Server:accept() )
-struct t_htp_msg {
+struct t_htp_con {
+	///////////////////////////////////////////////////////////////////////////////////
+	int               mR;     ///< Lua registry reference to the message table
+	int               cur_m;  ///< currently active message
+
+
+
+
+	
 	int               pR;     ///< Lua registry reference for proxy table
 	// onBody() handler; anytime a read-event is fired AFTER the header was
 	// received this gets executed; Can be LUA_NOREF which discards incoming data
@@ -143,17 +166,17 @@ struct t_htp_msg {
 
 
 /// userdata for a single request-response
-struct t_htp_rsq {
+struct t_htp_msg {
+	// Proxy contains lua readable items such as headers, length, status code etc
 	int               pR;     ///< Lua registry reference for proxy table
-	int               bR;     ///< Lua registry reference for resp buffer table
-	int               oRow;   ///< current row  in resp buffer table
-	int               oChr;   ///< current char in resp buffer table[ oRow ]
-	int               rqHtp;  ///< HTTP Message Status Code
-	int               rsHtp;  ///< HTTP Message Status Code
-	int               rqLen;  ///< HTTP Message Size ("Content-Length")
-	int               rsLen;  ///< HTTP Message Size ("Content-Length")
+	int               rqCl;   ///< request  content length
+	int               rsCl;   ///< response content length
+	int               rsBl;   ///< response buffer length (header + rscl)
+	int               bR;     ///< Lua registry reference to body handler function
 	int               expect; ///< shall the connection return an expected thingy?
-	struct t_sck_msg *msg;    ///< pointer to the actual socket
+	enum t_htp_msg_s  state;  ///< HTTP Message state
+	enum t_htp_mth    mth;    ///< HTTP Method for this request
+	struct t_sck_con *con;    ///< pointer to the actual socket
 };
 
 
