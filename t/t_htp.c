@@ -15,6 +15,21 @@
 #include "t_htp.h"
 
 
+/// State of the HTTP reader; defines the current read situation apart from
+/// content
+static enum t_htp_rs {
+	T_HTP_R_XX,         ///< End of read or end of buffer
+	T_HTP_R_CR,         ///< Carriage return, expect LF next
+	T_HTP_R_LF,         ///< Line Feed, guaranteed end of line
+	T_HTP_R_LB,         ///< Line Feed, guaranteed end of line
+	T_HTP_R_KS,         ///< Reading Key Start
+	T_HTP_R_KY,         ///< Read Key
+	T_HTP_R_VL,         ///< Read value
+	T_HTP_R_ES,         ///< Eat space
+	// exit state from here
+	T_HTP_R_BD,         ///< Empty line (\r\n\r\n) -> end of headers
+};
+
 
 // taken from Ryan Dahls HTTP parser
 static const char tokens[256] = {
@@ -66,32 +81,32 @@ static inline const char
 /**--------------------------------------------------------------------------
  * Parse the entire first line of the request.
  * \param  luaVM              the Lua State
- * \param  struct t_htp_msg*  pointer to t_htp_msg.
+ * \param  struct t_htp_srm*  pointer to t_htp_srm.
  * \param  const char*        pointer to buffer to process.
  * \param  size_t             How many bytes are safe to be processed?
  *
  * \return const char*        pointer to buffer after processing the first line.
  * --------------------------------------------------------------------------*/
 const char
-*t_htp_pReqFirstLine( lua_State *luaVM, struct t_htp_msg *m, const char *b, size_t n )
+*t_htp_pReqFirstLine( lua_State *luaVM, struct t_htp_srm *s, size_t n )
 {
-	const char *r   = b;      ///< runner char
-	const char *me  = b;      ///< HTTP Method end
-	const char *u   = NULL;   ///< URL start
-	const char *ue  = NULL;   ///< URL end
+	const char *r   = s->con->b;  ///< runner char
+	const char *me  = s->con->b;  ///< HTTP Method end
+	const char *u   = NULL;       ///< URL start
+	const char *ue  = NULL;       ///< URL end
 	const char *q   = NULL,
-	           *v   = NULL;   // query, value (query reused as key)
+	           *v   = NULL;       // query, value (query reused as key)
 	int         run= 1;
 
 	// Determine HTTP Verb
 	if (n<11)
-		return b;             // don't change anything
+		return NULL;             // don't change anything
 	switch (*r)
 	{
 		case 'C':
-			if ('O'==*(r+1) && ' '==*(r+7 )) { m->mth=T_HTP_MTH_CONNECT;     r+=7;  }
-			if ('H'==*(r+1) && ' '==*(r+8 )) { m->mth=T_HTP_MTH_CHECKOUT;    r+=8;  }
-			if ('O'==*(r+1) && ' '==*(r+4 )) { m->mth=T_HTP_MTH_COPY;        r+=4;  }
+			if ('O'==*(r+1) && ' '==*(r+7 )) { m->mth=T_HTP_MTH_CONNECT;     me+=7;  }
+			if ('H'==*(r+1) && ' '==*(r+8 )) { m->mth=T_HTP_MTH_CHECKOUT;    me+=8;  }
+			if ('O'==*(r+1) && ' '==*(r+4 )) { m->mth=T_HTP_MTH_COPY;        me+=4;  }
 			break;
 		case 'D':
 			if ('E'==*(r+1) && ' '==*(r+6 )) { m->mth=T_HTP_MTH_DELETE;      me+=6;  }
@@ -150,8 +165,7 @@ const char
 		luaL_error( luaVM, "Illegal HTTP header: Unknown HTTP Method" );
 		return NULL;
 	}
-	me = r-1;
-	r = eat_lws( r );
+	r = eat_lws( me );
 
 	//  _   _ ____  _                            _
 	// | | | |  _ \| |      _ __   __ _ _ __ ___(_)_ __   __ _
@@ -160,7 +174,8 @@ const char
 	//  \___/|_| \_\_____| | .__/ \__,_|_|  |___/_|_| |_|\__, |
 	//                     |_|                           |___/
 	u = r;
-	while (1 == run && r-b > n)
+	// TODO: create query table only when all of url is received
+	while (1 == run)
 	{
 		switch (*r)
 		{
@@ -188,11 +203,15 @@ const char
 					lua_rawset( luaVM, -3 );
 					lua_rawset( luaVM, -3 );          // set proxy.query
 				}
+				ue = r;
 				run = 0;
 				break;
 			default:           break;
 		}
-		r++;
+		if (r - s->con->b < n) // run out of text before parsing is done
+			return NULL;
+		else
+			r++;
 	}
 	r = eat_lws( r );
 
@@ -204,6 +223,7 @@ const char
 	// |_| |_| |_|   |_| |_|         \_/ \___|_|  |___/_|\___/|_| |_|
 
 	//TODO: set values based on version default behaviour (eg, KeepAlive for 1.1 etc)
+	//TODO: check for n being big enough
 	switch (*(r+7))
 	{
 		case '1': m->ver=T_HTP_VER_11; m->kpAlv=200; break;
@@ -213,44 +233,46 @@ const char
 	}
 
 	lua_pushstring( luaVM, "method" );
-	lua_pushlstring( luaVM, b, me-b );
+	lua_pushlstring( luaVM, s->con->b, me - s->con->b );
 	lua_rawset( luaVM, -3 );
 
 	lua_pushstring( luaVM, "url" );
-	lua_pushlstring( luaVM, u, r-u-1 );
+	lua_pushlstring( luaVM, u, ue-u );
 	lua_rawset( luaVM, -3 );
 
 	lua_pushstring( luaVM, "version" );
 	lua_pushlstring( luaVM, r, 8 );
 	lua_rawset( luaVM, -3 );
-	r = eat_lws( r+8 );
-	m->pS     = T_HTP_STA_HEADER;
+
+	m->pS     = T_HTP_STR_S_FLINE;     // indicate first line is done
 	// prepare for the header to be parsed by creating the header table on stack
 	lua_newtable( luaVM );                       //S:P,h
 	lua_pushstring( luaVM, "header" );           //S:P,h,"header"
-	lua_pushvalue( luaVM, -2 );                  //S:P,h,"header",h
-	lua_rawset( luaVM, -4 );                     //S:P,h
-	return r;
+	lua_rawset( luaVM, -3 );                     //S:P,h
+	s->con->b = eat_lws( r+8 )
+	return s->con->b;
 }
 
 
 /**--------------------------------------------------------------------------
  * Process HTTP Headers for this request.
  * \param  luaVM              the Lua State
- * \param  struct t_htp_msg*  pointer to t_htp_msg.
+ * \param  struct t_htp_srm*  pointer to t_htp_srm.
  * \param  const char*        pointer to buffer to process.
  *
  * \return const char*        pointer to buffer after processing the headers.
  * --------------------------------------------------------------------------*/
 const char
-*t_htp_pHeaderLine( lua_State *luaVM, struct t_htp_msg *m, const char *b )
+*t_htp_pHeaderLine( lua_State *luaVM, struct t_htp_srm *s, const size_t n )
 {
-	enum t_htp_rs rs = T_HTP_R_KS;
-	const char *v    = b;             ///< marks start of value string
-	const char *k    = b;    ///< marks start of key string
-	const char *ke   = b;             ///< marks end of key string
-	const char *r    = b;             ///< runner
+	enum t_htp_rs rs = T_HTP_R_KS;     // local parse state = keystart
+	const char *v    = s->con->b;      ///< marks start of value string
+	const char *k    = s->con->b;      ///< marks start of key string
+	const char *ke   = s->con->b;      ///< marks end of key string
+	const char *r    = s->con->b;      ///< runner char
 	//size_t      run  = 200;
+	lua_pushstring( luaVM, "header" );           //S:P,"header"
+	lua_rawget( luaVM, -2 );                     //S:P,h
 
 	while (rs && rs < T_HTP_R_BD)
 	{
@@ -277,8 +299,8 @@ const char
 				if ('\r' == *(r+1) || '\n' == *(r+1))
 				{
 					rs    = T_HTP_R_BD;   // End of Header; leave while loop
-					m->pS = T_HTP_STA_HEADDONE;
-					r     = eat_lws( r );
+					m->pS = T_HTP_STR_S_HEADDONE;
+					s->con->b = eat_lws( r )
 				}
 				break;
 			case  ':':
@@ -361,11 +383,14 @@ const char
 				}  // End test for T_HTP_R_KS
 				break;
 		}
-		r++;
+		if (r - s->con->b < n) // run out of text before parsing is done
+			return NULL;
+		else
+			r++;
 	}
 
 	lua_pop( luaVM, 1 );   // pop the header table
-	return r;
+	return s->con->b;
 }
 
 
@@ -392,7 +417,7 @@ luaopen_t_htp( lua_State *luaVM )
 	luaL_newlib( luaVM, t_htp_lib );
 	luaopen_t_htp_srv( luaVM );
 	lua_setfield( luaVM, -2, "Server" );
-	luaopen_t_htp_msg( luaVM );
+	luaopen_t_htp_srm( luaVM );
 	return 1;
 }
 
