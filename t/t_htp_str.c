@@ -63,7 +63,7 @@ struct t_htp_str
 
 
 /**--------------------------------------------------------------------------
- * Handle incoming chunks from T.Http.Message socket.
+ * Handle incoming chunks from T.Http.Connection socket.
  * Called anytime the client socket returns from the poll for read.
  * \param  luaVM            lua Virtual Machine.
  * \param  struct t_htp_str struct t_htp_str.

@@ -144,9 +144,9 @@ lt_htp_srv_accept( lua_State *luaVM )
 	si_cli = t_ipx_check_ud( luaVM, -1, 1 );
 	t_sck_reuseaddr( luaVM, c_sck );
 
-	//prepare the ael_fd->wR table on stack
+	// prepare the ael_fd->wR table on stack
 	lua_newtable( luaVM );
-	lua_pushcfunction( luaVM, t_htp_str_rsp );    //S: s,ss,cs,ip,rt,rsp
+	lua_pushcfunction( luaVM, t_htp_con_rsp );    //S: s,ss,cs,ip,rt,rsp
 	lua_rawseti( luaVM, -2, 1 );
 
 	lua_pushcfunction( luaVM, lt_ael_addhandle );

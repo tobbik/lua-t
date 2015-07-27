@@ -417,6 +417,7 @@ luaopen_t_htp( lua_State *luaVM )
 	luaL_newlib( luaVM, t_htp_lib );
 	luaopen_t_htp_srv( luaVM );
 	lua_setfield( luaVM, -2, "Server" );
+	luaopen_t_htp_con( luaVM );
 	luaopen_t_htp_str( luaVM );
 	return 1;
 }
