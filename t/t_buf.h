@@ -3,6 +3,8 @@
 /**
  * \file      t_buf.h
  * \brief     data types for buffer and packers
+ *            Buffer and Packer are so interdependent, the should share the
+ *            interfaces and hence the header file
  * \author    tkieslich
  * \copyright See Copyright notice at the end of t.h
  */
@@ -17,7 +19,7 @@ struct t_buf {
 // T.Pack is designed to work like Lua 5.3 pack/unpack support.  By the same
 // time it shall have more convienience and be more explicit.
 
-// TODO: make the cheack of enums based on Bit Masks to have subtype grouping
+// TODO: make the check of enums based on Bit Masks to have subtype grouping
 enum t_pck_t {
 	// atomic packer types
 	T_PCK_INT,      ///< Packer         Integer
@@ -60,7 +62,7 @@ struct t_pck {
 	/// modifier -> various meanings
 	///  -- for int/uint             = Endian (0=Big, 1=Little)
 	///  -- for bit                  = Offset from beginning of byte (bit numbering: MSB 0)
-	///  -- for raw                  = ???
+	///  -- for raw                  = ??? (unused)
 	///  -- for Arr                  = lua registry Reference for packer
 	///  -- for Seq                  = lua registry Reference for the table
 	///        idx[ i    ] = Pack

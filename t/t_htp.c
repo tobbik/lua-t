@@ -17,7 +17,7 @@
 
 /// State of the HTTP reader; defines the current read situation apart from
 /// content
-static enum t_htp_rs {
+enum t_htp_rs {
 	T_HTP_R_XX,         ///< End of read or end of buffer
 	T_HTP_R_CR,         ///< Carriage return, expect LF next
 	T_HTP_R_LF,         ///< Line Feed, guaranteed end of line
@@ -81,14 +81,14 @@ static inline const char
 /**--------------------------------------------------------------------------
  * Parse the entire first line of the request.
  * \param  luaVM              the Lua State
- * \param  struct t_htp_srm*  pointer to t_htp_srm.
+ * \param  struct t_htp_str*  pointer to t_htp_str.
  * \param  const char*        pointer to buffer to process.
  * \param  size_t             How many bytes are safe to be processed?
  *
  * \return const char*        pointer to buffer after processing the first line.
  * --------------------------------------------------------------------------*/
 const char
-*t_htp_pReqFirstLine( lua_State *luaVM, struct t_htp_srm *s, size_t n )
+*t_htp_pReqFirstLine( lua_State *luaVM, struct t_htp_str *s, size_t n )
 {
 	const char *r   = s->con->b;  ///< runner char
 	const char *me  = s->con->b;  ///< HTTP Method end
@@ -96,7 +96,7 @@ const char
 	const char *ue  = NULL;       ///< URL end
 	const char *q   = NULL,
 	           *v   = NULL;       // query, value (query reused as key)
-	int         run= 1;
+	int         run = 1;
 
 	// Determine HTTP Verb
 	if (n<11)
@@ -104,63 +104,63 @@ const char
 	switch (*r)
 	{
 		case 'C':
-			if ('O'==*(r+1) && ' '==*(r+7 )) { m->mth=T_HTP_MTH_CONNECT;     me+=7;  }
-			if ('H'==*(r+1) && ' '==*(r+8 )) { m->mth=T_HTP_MTH_CHECKOUT;    me+=8;  }
-			if ('O'==*(r+1) && ' '==*(r+4 )) { m->mth=T_HTP_MTH_COPY;        me+=4;  }
+			if ('O'==*(r+1) && ' '==*(r+7 )) { s->mth=T_HTP_MTH_CONNECT;     me+=7;  }
+			if ('H'==*(r+1) && ' '==*(r+8 )) { s->mth=T_HTP_MTH_CHECKOUT;    me+=8;  }
+			if ('O'==*(r+1) && ' '==*(r+4 )) { s->mth=T_HTP_MTH_COPY;        me+=4;  }
 			break;
 		case 'D':
-			if ('E'==*(r+1) && ' '==*(r+6 )) { m->mth=T_HTP_MTH_DELETE;      me+=6;  }
+			if ('E'==*(r+1) && ' '==*(r+6 )) { s->mth=T_HTP_MTH_DELETE;      me+=6;  }
 			break;
 		case 'G':
-			if ('E'==*(r+1) && ' '==*(r+3 )) { m->mth=T_HTP_MTH_GET;         me+=3;  }
+			if ('E'==*(r+1) && ' '==*(r+3 )) { s->mth=T_HTP_MTH_GET;         me+=3;  }
 			break;
 		case 'H':
-			if ('E'==*(r+1) && ' '==*(r+4 )) { m->mth=T_HTP_MTH_HEAD;        me+=4;  }
+			if ('E'==*(r+1) && ' '==*(r+4 )) { s->mth=T_HTP_MTH_HEAD;        me+=4;  }
 			break;
 		case 'L':
-			if ('O'==*(r+1) && ' '==*(r+4 )) { m->mth=T_HTP_MTH_LOCK;        me+=4;  }
+			if ('O'==*(r+1) && ' '==*(r+4 )) { s->mth=T_HTP_MTH_LOCK;        me+=4;  }
 			break;
 		case 'M':
-			if ('K'==*(r+1) && ' '==*(r+5 )) { m->mth=T_HTP_MTH_MKCOL;       me+=5;  }
-			if ('K'==*(r+1) && ' '==*(r+10)) { m->mth=T_HTP_MTH_MKACTIVITY;  me+=10; }
-			if ('C'==*(r+2) && ' '==*(r+10)) { m->mth=T_HTP_MTH_MKCALENDAR;  me+=10; }
-			if ('-'==*(r+1) && ' '==*(r+8 )) { m->mth=T_HTP_MTH_MSEARCH;     me+=8;  }
-			if ('E'==*(r+1) && ' '==*(r+5 )) { m->mth=T_HTP_MTH_MERGE;       me+=5;  }
-			if ('O'==*(r+1) && ' '==*(r+4 )) { m->mth=T_HTP_MTH_MOVE;        me+=4;  }
+			if ('K'==*(r+1) && ' '==*(r+5 )) { s->mth=T_HTP_MTH_MKCOL;       me+=5;  }
+			if ('K'==*(r+1) && ' '==*(r+10)) { s->mth=T_HTP_MTH_MKACTIVITY;  me+=10; }
+			if ('C'==*(r+2) && ' '==*(r+10)) { s->mth=T_HTP_MTH_MKCALENDAR;  me+=10; }
+			if ('-'==*(r+1) && ' '==*(r+8 )) { s->mth=T_HTP_MTH_MSEARCH;     me+=8;  }
+			if ('E'==*(r+1) && ' '==*(r+5 )) { s->mth=T_HTP_MTH_MERGE;       me+=5;  }
+			if ('O'==*(r+1) && ' '==*(r+4 )) { s->mth=T_HTP_MTH_MOVE;        me+=4;  }
 			break;
 		case 'N':
-			if ('O'==*(r+1) && ' '==*(r+6 )) { m->mth=T_HTP_MTH_NOTIFY;      me+=6;  }
+			if ('O'==*(r+1) && ' '==*(r+6 )) { s->mth=T_HTP_MTH_NOTIFY;      me+=6;  }
 			break;
 		case 'O':
-			if ('P'==*(r+1) && ' '==*(r+7 )) { m->mth=T_HTP_MTH_OPTIONS;     me+=7;  }
+			if ('P'==*(r+1) && ' '==*(r+7 )) { s->mth=T_HTP_MTH_OPTIONS;     me+=7;  }
 			break;
 		case 'P':
-			if ('O'==*(r+1) && ' '==*(r+4 )) { m->mth=T_HTP_MTH_POST;        me+=4;  }
-			if ('U'==*(r+1) && ' '==*(r+3 )) { m->mth=T_HTP_MTH_PUT;         me+=3;  }
-			if ('A'==*(r+1) && ' '==*(r+5 )) { m->mth=T_HTP_MTH_PATCH;       me+=5;  }
-			if ('U'==*(r+1) && ' '==*(r+5 )) { m->mth=T_HTP_MTH_PURGE;       me+=5;  }
-			if ('R'==*(r+1) && ' '==*(r+8 )) { m->mth=T_HTP_MTH_PROPFIND;    me+=8;  }
-			if ('R'==*(r+1) && ' '==*(r+9 )) { m->mth=T_HTP_MTH_PROPPATCH;   me+=9;  }
+			if ('O'==*(r+1) && ' '==*(r+4 )) { s->mth=T_HTP_MTH_POST;        me+=4;  }
+			if ('U'==*(r+1) && ' '==*(r+3 )) { s->mth=T_HTP_MTH_PUT;         me+=3;  }
+			if ('A'==*(r+1) && ' '==*(r+5 )) { s->mth=T_HTP_MTH_PATCH;       me+=5;  }
+			if ('U'==*(r+1) && ' '==*(r+5 )) { s->mth=T_HTP_MTH_PURGE;       me+=5;  }
+			if ('R'==*(r+1) && ' '==*(r+8 )) { s->mth=T_HTP_MTH_PROPFIND;    me+=8;  }
+			if ('R'==*(r+1) && ' '==*(r+9 )) { s->mth=T_HTP_MTH_PROPPATCH;   me+=9;  }
 			break;
 		case 'R':
-			if ('E'==*(r+1) && ' '==*(r+6 )) { m->mth=T_HTP_MTH_REPORT;      me+=6;  }
+			if ('E'==*(r+1) && ' '==*(r+6 )) { s->mth=T_HTP_MTH_REPORT;      me+=6;  }
 			break;
 		case 'S':
-			if ('U'==*(r+1) && ' '==*(r+9 )) { m->mth=T_HTP_MTH_SUBSCRIBE;   me+=9;  }
-			if ('E'==*(r+1) && ' '==*(r+6 )) { m->mth=T_HTP_MTH_SEARCH;      me+=6;  }
+			if ('U'==*(r+1) && ' '==*(r+9 )) { s->mth=T_HTP_MTH_SUBSCRIBE;   me+=9;  }
+			if ('E'==*(r+1) && ' '==*(r+6 )) { s->mth=T_HTP_MTH_SEARCH;      me+=6;  }
 			break;
 		case 'T':
-			if ('R'==*(r+1) && ' '==*(r+5 )) { m->mth=T_HTP_MTH_TRACE;       me+=5;  }
+			if ('R'==*(r+1) && ' '==*(r+5 )) { s->mth=T_HTP_MTH_TRACE;       me+=5;  }
 			break;
 		case 'U':
-			if ('N'==*(r+1) && ' '==*(r+6 )) { m->mth=T_HTP_MTH_UNLOCK;      me+=6;  }
-			if ('N'==*(r+2) && ' '==*(r+11)) { m->mth=T_HTP_MTH_UNSUBSCRIBE; me+=11; }
+			if ('N'==*(r+1) && ' '==*(r+6 )) { s->mth=T_HTP_MTH_UNLOCK;      me+=6;  }
+			if ('N'==*(r+2) && ' '==*(r+11)) { s->mth=T_HTP_MTH_UNSUBSCRIBE; me+=11; }
 			break;
 		default:
 			luaL_error( luaVM, "Illegal HTTP header: Unknown HTTP Method" );
 	}
 	// That means no verb was recognized and the switch fell entirely through
-	if (T_HTP_MTH_ILLEGAL == m->mth)
+	if (T_HTP_MTH_ILLEGAL == s->mth)
 	{
 		luaL_error( luaVM, "Illegal HTTP header: Unknown HTTP Method" );
 		return NULL;
@@ -208,7 +208,7 @@ const char
 				break;
 			default:           break;
 		}
-		if (r - s->con->b < n) // run out of text before parsing is done
+		if ((size_t)(r - s->con->b) < n) // run out of text before parsing is done
 			return NULL;
 		else
 			r++;
@@ -226,9 +226,9 @@ const char
 	//TODO: check for n being big enough
 	switch (*(r+7))
 	{
-		case '1': m->ver=T_HTP_VER_11; m->kpAlv=200; break;
-		case '0': m->ver=T_HTP_VER_10; m->kpAlv=0  ; break;
-		case '9': m->ver=T_HTP_VER_09; m->kpAlv=0  ; break;
+		case '1': s->con->ver=T_HTP_VER_11; s->con->kpAlv=200; break;
+		case '0': s->con->ver=T_HTP_VER_10; s->con->kpAlv=0  ; break;
+		case '9': s->con->ver=T_HTP_VER_09; s->con->kpAlv=0  ; break;
 		default: luaL_error( luaVM, "ILLEGAL HTTP version in message" ); break;
 	}
 
@@ -244,12 +244,12 @@ const char
 	lua_pushlstring( luaVM, r, 8 );
 	lua_rawset( luaVM, -3 );
 
-	m->pS     = T_HTP_STR_S_FLINE;     // indicate first line is done
+	s->state = T_HTP_STR_FLINE;     // indicate first line is done
 	// prepare for the header to be parsed by creating the header table on stack
 	lua_newtable( luaVM );                       //S:P,h
 	lua_pushstring( luaVM, "header" );           //S:P,h,"header"
 	lua_rawset( luaVM, -3 );                     //S:P,h
-	s->con->b = eat_lws( r+8 )
+	s->con->b = eat_lws( r+8 );
 	return s->con->b;
 }
 
@@ -257,13 +257,13 @@ const char
 /**--------------------------------------------------------------------------
  * Process HTTP Headers for this request.
  * \param  luaVM              the Lua State
- * \param  struct t_htp_srm*  pointer to t_htp_srm.
+ * \param  struct t_htp_str*  pointer to t_htp_str.
  * \param  const char*        pointer to buffer to process.
  *
  * \return const char*        pointer to buffer after processing the headers.
  * --------------------------------------------------------------------------*/
 const char
-*t_htp_pHeaderLine( lua_State *luaVM, struct t_htp_srm *s, const size_t n )
+*t_htp_pHeaderLine( lua_State *luaVM, struct t_htp_str *s, const size_t n )
 {
 	enum t_htp_rs rs = T_HTP_R_KS;     // local parse state = keystart
 	const char *v    = s->con->b;      ///< marks start of value string
@@ -298,9 +298,9 @@ const char
 				}
 				if ('\r' == *(r+1) || '\n' == *(r+1))
 				{
-					rs    = T_HTP_R_BD;   // End of Header; leave while loop
-					m->pS = T_HTP_STR_S_HEADDONE;
-					s->con->b = eat_lws( r )
+					rs        = T_HTP_R_BD;   // End of Header; leave while loop
+					s->state  = T_HTP_STR_HEADDONE;
+					s->con->b = eat_lws( r );
 				}
 				break;
 			case  ':':
@@ -329,7 +329,7 @@ const char
 								r  = v;
 								while ('\n' != *r && '\r' != *r)
 								{
-									m->length = m->length*10 + (*r - '0');
+									s->rqCl = s->rqCl*10 + (*r - '0');
 									r++;
 								}
 								r--;
@@ -343,11 +343,11 @@ const char
 								v  = eat_lws( r+11 );
 								r  = v;
 								// Keep-Alive
-								if ('k' == tokens[ (size_t) *v ] && 'e' == tokens[ (size_t) *(v+9) ] ) m->kpAlv   = 200;
+								if ('k' == tokens[ (size_t) *v ] && 'e' == tokens[ (size_t) *(v+9) ] ) s->con->kpAlv   = 200;
 								// Close
-								if ('c' == tokens[ (size_t) *v ] && 'e' == tokens[ (size_t) *(v+4) ] ) m->kpAlv   = 0;
+								if ('c' == tokens[ (size_t) *v ] && 'e' == tokens[ (size_t) *(v+4) ] ) s->con->kpAlv   = 0;
 								// Upgrade
-								if ('u' == tokens[ (size_t) *v ] && 'e' == tokens[ (size_t) *(v+6) ] ) m->upgrade = 1;
+								if ('u' == tokens[ (size_t) *v ] && 'e' == tokens[ (size_t) *(v+6) ] ) s->con->upgrade = 1;
 								rs = T_HTP_R_VL;
 								break;
 							}
@@ -359,7 +359,7 @@ const char
 								ke = r+6;
 								v  = eat_lws( r+7 );
 								r  = v;
-								m->expect = 1;
+								s->expect = 1;
 								rs = T_HTP_R_VL;
 								break;
 							}
@@ -371,7 +371,7 @@ const char
 								ke = r+7;
 								v  = eat_lws( r+8 );
 								r  = v;
-								m->upgrade = 1;
+								s->con->upgrade = 1;
 								rs = T_HTP_R_VL;
 								break;
 							}
@@ -383,7 +383,7 @@ const char
 				}  // End test for T_HTP_R_KS
 				break;
 		}
-		if (r - s->con->b < n) // run out of text before parsing is done
+		if ((size_t)(r - s->con->b) < n) // run out of text before parsing is done
 			return NULL;
 		else
 			r++;
@@ -417,7 +417,7 @@ luaopen_t_htp( lua_State *luaVM )
 	luaL_newlib( luaVM, t_htp_lib );
 	luaopen_t_htp_srv( luaVM );
 	lua_setfield( luaVM, -2, "Server" );
-	luaopen_t_htp_srm( luaVM );
+	luaopen_t_htp_str( luaVM );
 	return 1;
 }
 

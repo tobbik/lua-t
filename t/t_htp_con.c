@@ -29,11 +29,8 @@ struct t_htp_con
 {
 	struct t_htp_con *c;
 	c = (struct t_htp_con *) lua_newuserdata( luaVM, sizeof( struct t_htp_con ) );
-	c->obR       = LUA_NOREF;  // reference to current output buffer table
-	c->obidx     = 0;          // current buffer line index
-	c->obcnt     = 0;          // current buffer line count
-	c->obsnt     = 0;          // current buffer sent
-	c->olsnt     = 0;          // current line sent
+	c->buf_head  = NULL;  // reference to current output buffer head
+	c->buf_tail  = NULL;  // reference to current output buffer head
 	c->srv       = srv;
 	c->str       = NULL;
 
@@ -61,7 +58,7 @@ struct t_htp_con
 
 // TODO: use this to adjust large incoming chnks for headers upto BUFSIZ per
 // line
-static void t_htp_con_adjustbuffer( struct t_htp_con *rcm, size_t read, const char* rpos )
+void t_htp_con_adjustbuffer( struct t_htp_con *c, size_t read, const char* rpos )
 {
 	memcpy( &(c->buf), rpos, (const char*) &(c->buf) + read - rpos );
 }
@@ -69,7 +66,7 @@ static void t_htp_con_adjustbuffer( struct t_htp_con *rcm, size_t read, const ch
 
 /**--------------------------------------------------------------------------
  * Handle incoming chunks from T.Http.Connection socket.
- * Called anytime the client socket returns from the poll for read.
+ * Called anytime the client socket returns from the poll for read event.
  * \param   luaVM     lua Virtual Machine.
  * \lparam  userdata  struct t_htp_con.
  * \return  integer number of values left on the stack.
@@ -78,10 +75,8 @@ int
 t_htp_con_rcv( lua_State *luaVM )
 {
 	struct t_htp_con *c    = t_htp_con_check_ud( luaVM, 1, 1 );
-	struct t_htp_srm *s;
 	int               rcvd;
 	int               res;   // return result
-	const char       *nxt;   // pointer to the buffer where parsing must continue
 
 	// read
 	rcvd = t_sck_recv( luaVM, c->sck, &(c->buf[ c->read ]), BUFSIZ - c->read );
@@ -89,27 +84,31 @@ t_htp_con_rcv( lua_State *luaVM )
 	// TODO: if HTTP 2.0 figure out current stream
 
 	// negotiate which stream object is responsible
-	// if http1.0 or http1.1 this is the last, http2.0 hast a stream identifier
+	// if HTTP1.0 or HTTP1.1 this is the last, HTTP2.0 hast a stream identifier
 	if (! rcvd)    // peer has closed
 		return lt_htp_con__gc( luaVM );
 	else           // get the proxy on the stack to fill out verb/url/version/headers ...
 	{
-		if (NULL == c->srv)   // create new stream and put into stream table
+		if (NULL == c->str)   // create new stream and put into stream table
 		{
-			lua_rawgeti( luaVM, LUA_REGISTRYINDEX, c->srm->sR ); // S:c,str
-			c->srm = t_htp_srm_create_ud( luaVM, c );
-			lua_rawseti( luaVM, -2, lua_rawlen( luaVM, -2 )+1 );
+			lua_rawgeti( luaVM, LUA_REGISTRYINDEX, c->sR );        // S:c,sR
+			c->str = t_htp_str_create_ud( luaVM, c );              // S:c,sR,str
+			lua_rawseti( luaVM, -2, lua_rawlen( luaVM, -2 )+1 );   // S:c,sR
 		}
 	}
 
 	//printf( "Received %d  \n'%s'\n", rcvd, &(m->buf[ m->read ]) );
+	// TODO: set or reset c-read
 
-	res = t_htp_str_rcv( luaVM, c->srm, &(c->buf[ c->read ]), c->read + rcvd );
+	res = t_htp_str_rcv( luaVM, c->str, c->read + rcvd );
 	switch (res)
 	{
 		case 0:
-			c->read = 
-		
+			c->read = 0;
+		default:
+			break;
+	}
+
 	return 0;
 }
 
@@ -125,33 +124,40 @@ t_htp_con_rcv( lua_State *luaVM )
 int
 t_htp_con_rsp( lua_State *luaVM )
 {
-	struct t_htp_con *m   = t_htp_con_check_ud( luaVM, 1, 1 );
-	size_t            len;
-	size_t            sent;
-	const char       *buf;
+	struct t_htp_con *c    = t_htp_con_check_ud( luaVM, 1, 1 );
+	size_t            snt;
+	const char       *b;
+	struct t_htp_buf *buf  = c->buf_tail;
+	struct t_htp_str *str  = buf->str;
+	
+	// get tail buffer turn into char * array
+	// TODO: test for NULL
+	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, buf->sR );
+	b = lua_tostring( luaVM, -1 );
 
-	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->obR );     // fetch current buffer row
-	lua_rawgeti( luaVM, -1, m->obi );
-	printf( "%zu   %zu   %zu   ", lua_rawlen( luaVM, -2), m->obc, m->obi );
-	buf      = luaL_checklstring( luaVM, -1, &len );
-	sent     = t_sck_send( luaVM, m->sck, buf + m->sent, len - m->sent );
-	m->osl  += sent;
-	m->sent += sent;
-	printf( "%zu   %zu  -- %zu   %zu   %zu\n", len, m->sent, m->obl, m->osl, sent );
+	snt = t_sck_send( luaVM,
+			c->sck,
+			&(b[ buf->sl ]),
+			buf->bl - buf->sl );
+	buf->sl        += snt;  // How much of current buffer is sent -> adjustment
+	buf->str->rsSl += snt;  // How much of current stream is sent -> adjustment
 
-	// S:stream, cRow
-	if (m->sent == len) // if current buffer row got sent completely
+	printf( "%zu   %zu  -- %u    %u\n", buf->sl, buf->bl, 1, 2 );
+
+	// done with sending everything in the current buffer chunk
+	if (buf->bl == buf->sl) // if tail buffer is all sent
 	{
-		// done with current buffer row
-		m->sent = 0;
-		// done with sending what the buffer table currently has
-		if (m->obc == m->obi)
+		// free current tail and go backwards in linked list
+		luaL_unref( luaVM, LUA_REGISTRYINDEX, buf->sR ); // unref string for gc
+		c->buf_tail = c->buf_tail->prv;
+		free( buf );
+
+		// done with sending what the stream has overall
+		if ( T_HTP_STA_FINISH == str->state || str->rsSl == str->rsBl)
 		{
-			//printf( "%zu   %zu   %zu   %d  %d DONE\n", lua_rawlen( luaVM, -2), m->obc, m->obi, m->pS );
-			if (T_HTP_STA_FINISH == m->pS || m->osl == m->obl)
-			{
-				printf( "EndMessage\n" );
-				if (! m->kpAlv)
+			// TODO: test if this is also the last alive Stream
+				printf( "EndOfStream\n" );
+				if (! c->kpAlv)
 				{
 					lua_pushcfunction( luaVM, lt_htp_con__gc );
 					lua_pushvalue( luaVM, 1 );
@@ -160,31 +166,58 @@ t_htp_con_rsp( lua_State *luaVM )
 				}
 				else       // remove writability of socket
 				{
-					m->pS = T_HTP_STA_ZERO;
-					t_ael_removehandle_impl( m->srv->ael, m->sck->fd, T_AEL_WR );
-					m->srv->ael->fd_set[ m->sck->fd ]->t = T_AEL_RD;
-					m->ocl = 0;
-					m->obl = 0;
-					m->osl = 0;
+					c->pS = T_HTP_STA_ZERO;
+					t_ael_removehandle_impl( c->srv->ael, c->sck->fd, T_AEL_WR );
+					c->srv->ael->fd_set[ c->sck->fd ]->t = T_AEL_RD;
 				}
-			}
-			else
-			{
-				t_ael_removehandle_impl( m->srv->ael, m->sck->fd, T_AEL_WR );
-				m->srv->ael->fd_set[ m->sck->fd ]->t = T_AEL_RD;
-			}
-			luaL_unref( luaVM, LUA_REGISTRYINDEX, m->obR );    // release buffer, allow gc
-			lua_newtable( luaVM );
-			m->obR = luaL_ref( luaVM, LUA_REGISTRYINDEX );   // new buffer
-			m->obc = 0;
-			m->obi = 0;
+			//}
+			//else
+			//{
+			//	t_ael_removehandle_impl( m->srv->ael, m->sck->fd, T_AEL_WR );
+			//	m->srv->ael->fd_set[ m->sck->fd ]->t = T_AEL_RD;
+			//}
 		}
-		else   //forward to next row
-		{
-			//printf( "%zu   %zu   %zu   %d\n", lua_rawlen( luaVM, -2), m->obc, m->obi, m->pS );
-			lua_pushstring( luaVM, "" );           // help gc
-			lua_rawseti( luaVM, -3, (m->obi)++ );  // set current line as empty string and forward
-		}
+	}
+	return 1;
+}
+
+
+/**--------------------------------------------------------------------------
+ * Add a new buffer chunk to the Linked List.
+ * General handling of buffers within the connection.  It does expect a Lua
+ * string on top of the stack which will be wrapped into a linked list element.
+ * If the current buffer head is null, the connections socket must also be
+ * added to the EventLoop for outgoing connections.
+ * \param   luaVM    The lua state.
+ * \param   Http.Connection instance.
+ * \param   integer  The string length of the chunk on stack.
+ * \lparam  value LuaType
+ * \return  The # of items pushed to the stack.
+ * --------------------------------------------------------------------------*/
+int
+t_htp_con_addbuffer( lua_State *luaVM, struct t_htp_con *c, size_t l )
+{
+	struct t_htp_buf *br;
+	struct t_htp_buf *b = malloc( sizeof( struct t_htp_con ) );
+	b->bl = l;
+	b->sl = 0;
+	b->sR = luaL_ref( luaVM, LUA_REGISTRYINDEX );
+
+	if (NULL == c->buf_head)
+	{
+		c->buf_head = b;
+		// wrote the first line to the buffer, can also happen if
+		// current buffer is flushed but response is incomplete
+		t_ael_addhandle_impl( c->srv->ael, c->sck->fd, T_AEL_WR );
+		c->srv->ael->fd_set[ c->sck->fd ]->t = T_AEL_RW;
+	}
+	else
+	{
+		br = c->buf_head;
+		while (NULL != br->nxt)
+			br = br->nxt;
+		br->nxt = b;
+		b->prv  = br;
 	}
 	return 1;
 }
@@ -270,50 +303,54 @@ lt_htp_con__len( lua_State *luaVM )
 static int
 lt_htp_con__gc( lua_State *luaVM )
 {
-	struct t_htp_con *m = (struct t_htp_con *) luaL_checkudata( luaVM, 1, "T.Http.Message" );
+	struct t_htp_con *c = (struct t_htp_con *) luaL_checkudata( luaVM, 1, "T.Http.Connection" );
+	struct t_htp_buf *b;
 
-	if (LUA_NOREF != m->pR)
+	if (LUA_NOREF != c->pR)
 	{
-		luaL_unref( luaVM, LUA_REGISTRYINDEX, m->pR );
-		m->pR = LUA_NOREF;
+		luaL_unref( luaVM, LUA_REGISTRYINDEX, c->pR );
+		c->pR = LUA_NOREF;
 	}
-	if (LUA_NOREF != m->obR)
+	// in normal operarion no buffer should still exist, this is only for 
+	while (NULL != c->buf_head)
 	{
-		luaL_unref( luaVM, LUA_REGISTRYINDEX, m->obR );    // release buffer, allow gc
-		m->obR = LUA_NOREF;
+		b = c->buf_head;
+		luaL_unref( luaVM, LUA_REGISTRYINDEX, b->sR ); // unref string for gc
+		c->buf_head = c->buf_head->nxt;
+		free( b );
 	}
-	if (NULL != m->sck)
+	if (NULL != c->sck)
 	{
-		t_ael_removehandle_impl( m->srv->ael, m->sck->fd, T_AEL_RD );
-		t_ael_removehandle_impl( m->srv->ael, m->sck->fd, T_AEL_WR );
-		m->srv->ael->fd_set[ m->sck->fd ]->t = T_AEL_NO;
-		luaL_unref( luaVM, LUA_REGISTRYINDEX, m->srv->ael->fd_set[ m->sck->fd ]->rR );
-		luaL_unref( luaVM, LUA_REGISTRYINDEX, m->srv->ael->fd_set[ m->sck->fd ]->wR );
-		luaL_unref( luaVM, LUA_REGISTRYINDEX, m->srv->ael->fd_set[ m->sck->fd ]->hR );
-		free( m->srv->ael->fd_set[ m->sck->fd ] );
-		m->srv->ael->fd_set[ m->sck->fd ] = NULL;
+		t_ael_removehandle_impl( c->srv->ael, c->sck->fd, T_AEL_RD );
+		t_ael_removehandle_impl( c->srv->ael, c->sck->fd, T_AEL_WR );
+		c->srv->ael->fd_set[ c->sck->fd ]->t = T_AEL_NO;
+		luaL_unref( luaVM, LUA_REGISTRYINDEX, c->srv->ael->fd_set[ c->sck->fd ]->rR );
+		luaL_unref( luaVM, LUA_REGISTRYINDEX, c->srv->ael->fd_set[ c->sck->fd ]->wR );
+		luaL_unref( luaVM, LUA_REGISTRYINDEX, c->srv->ael->fd_set[ c->sck->fd ]->hR );
+		free( c->srv->ael->fd_set[ c->sck->fd ] );
+		c->srv->ael->fd_set[ c->sck->fd ] = NULL;
 
-		t_sck_close( luaVM, m->sck );
-		m->sck = NULL;
+		t_sck_close( luaVM, c->sck );
+		c->sck = NULL;
 	}
 
-	printf("GC'ed HTTP connection: %p\n", m);
+	printf( "GC'ed HTTP connection: %p\n", c );
 
 	return 0;
 }
 
 
 /**--------------------------------------------------------------------------
- * \brief      the buffer library definition
+ * \brief      the HTTP Connection library definition
  *             assigns Lua available names to C-functions
  * --------------------------------------------------------------------------*/
-static const luaL_Reg t_htp_con_prx_m [] = {
-	{"write",        lt_htp_con_write},
-	{"finish",       lt_htp_con_finish},
-	{"onBody",       lt_htp_con_onbody},
-	{"writeHead",    lt_htp_con_writeHead},
-	{NULL,    NULL}
-};
+// static const luaL_Reg t_htp_con_prx_m [] = {
+// 	{"write",        lt_htp_con_write},
+// 	{"finish",       lt_htp_con_finish},
+// 	{"onBody",       lt_htp_con_onbody},
+// 	{"writeHead",    lt_htp_con_writeHead},
+// 	{NULL,    NULL}
+// };
 
 
 
@@ -342,10 +379,10 @@ luaopen_t_htp_con( lua_State *luaVM )
 	lua_setfield( luaVM, -2, "__tostring");
 	lua_pop( luaVM, 1 );        // remove metatable from stack
 
-	luaL_newmetatable( luaVM, "T.Http.Connection.Proxy" );
-	luaL_newlib( luaVM, t_htp_con_prx_m );
-	lua_setfield( luaVM, -2, "__index" );
-	lua_pop( luaVM, 1 );        // remove metatable from stack
+	// luaL_newmetatable( luaVM, "T.Http.Connection.Proxy" );
+	// luaL_newlib( luaVM, t_htp_con_prx_m );
+	// lua_setfield( luaVM, -2, "__index" );
+	// lua_pop( luaVM, 1 );        // remove metatable from stack
 	return 0;
 }
 

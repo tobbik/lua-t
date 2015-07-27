@@ -513,7 +513,7 @@ t_pck_getsize( lua_State *luaVM,  struct t_pck *p, int bits )
 
 
 // ###########################################################################
-//                                HELPERS from Lua 5.3 Source
+//                                HELPERS adapted from Lua 5.3 Source
 /** -------------------------------------------------------------------------
  * See if int represents a character which is a digit.
  * \param     int c
@@ -546,9 +546,13 @@ gn( const char **fmt, int df )
 }
 
 
-/*
-** Read an integer numeral and raises an error if it is larger
-** than the maximum size for integers.
+/**
+ * Read an integer from the format parser
+ * raises an error if it is larger than the maximum size for integers.
+ * \param  char* format string
+ * \param  int   default value if no number is in the format string
+ * \param  int   max value allowed for int
+ * \return the converted integer value
 */
 static int
 gnl( lua_State *luaVM, const char **fmt, int df, int max )

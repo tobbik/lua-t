@@ -1,8 +1,8 @@
 #!../out/bin/lua
 t=require't'
 
-
-p = t.Pack('<i2')
+-- pack syntax for the format string is based of Lua 5.3 
+p = t.Pack('<i2')                         -- Little endian 2 byt integer
 c = t.Pack('>i2')
 
 ts = t.Pack(

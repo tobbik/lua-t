@@ -15,8 +15,8 @@ st = T.Pack(                -- key/value pairs create Struct
 	{ signedByte     = sq[3] },
 	{ unsignByte     = sq[4] },
 	{ fiveSInt       = sq[5] },
-	{ foursInt       = sq[6] },
-	{ signeShort     = sq[7] }
+	{ fourSInt       = sq[6] },
+	{ signShort      = sq[7] }
 )
 
 print( s, string.unpack( fmt, s ) )

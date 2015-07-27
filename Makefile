@@ -1,6 +1,6 @@
 VER=5.3
 ifeq ($(VER), 5.3)
-	LUASRC=lua-5.3.0.tar.gz
+	LUASRC=lua-5.3.1.tar.gz
 	DLPATH=http://www.lua.org/ftp
 else
 	LUASRC=lua-5.2.3.tar.gz
@@ -37,7 +37,7 @@ endif
 $(COMPDIR)/$(VER)/src/lua: $(COMPDIR)/$(VER)/src
 	cd $(COMPDIR)/$(VER) ; \
 		$(MAKE) -j 4 CC=$(CC) LD=$(LD) \
-		MYCFLAGS=" -g -fPIC "\
+		MYCFLAGS=" -g -fPIC " \
 		linux
 
 $(TDIR)/t.so: $(COMPDIR)/$(VER)/src
@@ -46,7 +46,8 @@ $(TDIR)/t.so: $(COMPDIR)/$(VER)/src
 		MYCFLAGS=' -g' \
 		INCS="$(COMPDIR)/$(VER)/src" t.so
 
-install: $(COMPDIR)/$(VER)/src/lua $(TDIR)/t.so
+#install: $(COMPDIR)/$(VER)/src/lua $(TDIR)/t.so
+install: $(COMPDIR)/$(VER)/src/lua
 	cd $(COMPDIR)/$(VER) ; $(MAKE) CC=$(CC) LD=$(LD) \
 		VER=$(VER) \
 		INSTALL_TOP="$(OUTDIR)" \

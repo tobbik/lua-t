@@ -71,16 +71,16 @@ enum t_htp_sta {
 
 /// State of the HTTP message
 enum t_htp_srm_s {
-	T_HTP_STR_S_ZERO,       ///< Nothing done yet
-	T_HTP_STR_S_FLINE,      ///< Parsing First Line
-	T_HTP_STR_S_HEADER,     ///< Parsing Headers
-	T_HTP_STR_S_UPGRADE,    ///< Is this an upgrading connection?
-	T_HTP_STR_S_HEADDONE,   ///< Parsing Headers finished
-	T_HTP_STR_S_BODY,       ///< Recieving body
-	T_HTP_STR_S_RECEIVED,   ///< Request received
-	T_HTP_STR_S_SEND,       ///< Send data from buffer
-	T_HTP_STR_S_FINISH,     ///< The last chunk was written into the buffer
-	T_HTP_STR_S_DONE,       ///< Finished
+	T_HTP_STR_ZERO,       ///< Nothing done yet
+	T_HTP_STR_FLINE,      ///< Parsing First Line
+	T_HTP_STR_HEADER,     ///< Parsing Headers
+	T_HTP_STR_UPGRADE,    ///< Is this an upgrading connection?
+	T_HTP_STR_HEADDONE,   ///< Parsing Headers finished
+	T_HTP_STR_BODY,       ///< Recieving body
+	T_HTP_STR_RECEIVED,   ///< Request received
+	T_HTP_STR_SEND,       ///< Send data from buffer
+	T_HTP_STR_FINISH,     ///< The last chunk was written into the buffer
+	T_HTP_STR_DONE,       ///< Finished
 };
 
 
@@ -109,15 +109,15 @@ struct t_htp_srv {
 	char              fnw[30];///< Formatted Date time in HTTP format
 };
 
-/// The userdata struct for T.Http.Message ( Server:accept() )
+struct t_htp_str;
+
+
+/// The userdata struct for T.Http.Connection ( Server:accept() )
 struct t_htp_con {
 	///////////////////////////////////////////////////////////////////////////////////
 	int               pR;     ///< Lua registry reference for proxy table
 	int               sR;     ///< Lua registry reference to the stream table
-	int               srm;    ///< currently active stream
-
-
-
+	struct t_htp_str *str;    ///< currently active stream
 
 	// onBody() handler; anytime a read-event is fired AFTER the header was
 	// received this gets executed; Can be LUA_NOREF which discards incoming data
@@ -135,32 +135,42 @@ struct t_htp_con {
 
 	size_t            read;   ///< How many byte processed
 	char              buf[ BUFSIZ ];   ///< reading buffer
-	char             *b;      ///< Current start of buffer to process
+	const char       *b;      ///< Current start of buffer to process
 
-	// output buffer handling
-	size_t            obl;    ///< Outgoing Buffer Length (content+header)
-	size_t            ocl;    ///< Outgoing Content-Length
-	size_t            osl;    ///< Outgoing Sent
-	int               obR;    ///< Lua registry reference to output buffer table
-	size_t            obi;    ///< index of current row in output buffer table
-	size_t            obc;    ///< How many rows of the current buffer have been processed
-	size_t            sent;   ///< How many byte sent out on current row
+	// output buffer handling with linked list (FiFo), this has significant
+	// advantages in HTTP 2.0 because the stream identifiers are atomic to the
+	// linked list chunks
+	struct t_htp_buf *buf_head; ///< Head for the linked list
+	struct t_htp_buf *buf_tail; ///< Tail for the linked list
 };
 
 
 /// userdata for a single request-response (HTTP stream)
-struct t_htp_srm {
+struct t_htp_str {
 	// Proxy contains lua readable items such as headers, length, status code etc
 	int               pR;     ///< Lua registry reference for proxy table
 	int               rqCl;   ///< request  content length
 	int               rsCl;   ///< response content length
 	int               rsBl;   ///< response buffer length (headers + rsCl)
+	int               rsSl;   ///< response buffer sent length (if rsBl==rsSl; stream is done)
 	int               bR;     ///< Lua registry reference to body handler function
 	int               expect; ///< shall the connection return an expected thingy?
 	enum t_htp_srm_s  state;  ///< HTTP Message state
 	enum t_htp_mth    mth;    ///< HTTP Method for this request
 	enum t_htp_ver    ver;    ///< HTTP version
-	struct t_sck_con *con;    ///< pointer to the T.Http.Connection
+	struct t_htp_con *con;    ///< pointer to the T.Http.Connection
+};
+
+
+/// userdata for HTTP connection output buffer chunk
+struct t_htp_buf {
+	int                sR;    ///< string reference within luaState
+	size_t             bl;    ///< Outgoing Buffer Length (content+header)
+	size_t             cl;    ///< Outgoing Content-Length
+	size_t             sl;    ///< Outgoing Sent
+	struct t_htp_str  *str;   ///< stream this buffer is made for
+	struct t_htp_buf  *prv;   ///< previous pointer for linked list
+	struct t_htp_buf  *nxt;   ///< next pointer for linked list
 };
 
 
@@ -170,8 +180,8 @@ struct t_htp_srm {
 // | |  | |  __/ |_| | | | (_) | (_| \__ \
 // |_|  |_|\___|\__|_| |_|\___/ \__,_|___/
 // t_htp.c
-const char         *t_htp_pReqFirstLine( lua_State *luaVM, struct t_htp_str *m, const char *b );
-const char         *t_htp_pHeaderLine  ( lua_State *luaVM, struct t_htp_str *m, const char *b );
+const char         *t_htp_pReqFirstLine( lua_State *luaVM, struct t_htp_str *s, size_t n );
+const char         *t_htp_pHeaderLine  ( lua_State *luaVM, struct t_htp_str *s, size_t n );
 const char         *t_htp_status       ( int status );
 
 
@@ -183,7 +193,7 @@ void                t_htp_srv_setnow( struct t_htp_srv *s, int force );
 
 
 // library exporters
-LUAMOD_API int luaopen_t_htp_srm( lua_State *luaVM );
+LUAMOD_API int luaopen_t_htp_str( lua_State *luaVM );
 LUAMOD_API int luaopen_t_htp_srv( lua_State *luaVM );
 
 // Constructors
@@ -192,12 +202,14 @@ struct t_htp_con   *t_htp_con_create_ud( lua_State *luaVM, struct t_htp_srv *srv
 // Message specific methods
 int                 t_htp_con_rcv    ( lua_State *luaVM );
 int                 t_htp_con_rsp    ( lua_State *luaVM );
+void t_htp_con_adjustbuffer( struct t_htp_con *c, size_t read, const char* rpos );
+int                 t_htp_con_addbuffer( lua_State *luaVM, struct t_htp_con *c, size_t l );
 
 // Constructors
 struct t_htp_str   *t_htp_str_check_ud ( lua_State *luaVM, int pos, int check );
 struct t_htp_str   *t_htp_str_create_ud( lua_State *luaVM, struct t_htp_con *con );
 // Message specific methods
-int                 t_htp_str_rcv    ( lua_State *luaVM );
+int                 t_htp_str_rcv    ( lua_State *luaVM, struct t_htp_str *s, size_t rcvd );
 int                 t_htp_str_rsp    ( lua_State *luaVM );
 
 
