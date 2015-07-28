@@ -80,9 +80,11 @@ t_htp_str_rcv( lua_State *luaVM, struct t_htp_str *s, size_t rcvd )
 		switch (s->state)
 		{
 			case T_HTP_STR_ZERO:
+				lua_rawgeti( luaVM, LUA_REGISTRYINDEX, s->pR );
 				b = t_htp_pReqFirstLine( luaVM, s, rcvd );
 				break;
 			case T_HTP_STR_FLINE:
+				//lua_rawgeti( luaVM, LUA_REGISTRYINDEX, s->pR );
 				b = t_htp_pHeaderLine( luaVM, s, rcvd );
 				break;
 			case T_HTP_STR_HEADDONE:

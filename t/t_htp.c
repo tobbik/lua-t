@@ -101,6 +101,7 @@ const char
 	// Determine HTTP Verb
 	if (n<11)
 		return NULL;             // don't change anything
+	r = s->con->b;
 	switch (*r)
 	{
 		case 'C':
@@ -208,7 +209,7 @@ const char
 				break;
 			default:           break;
 		}
-		if ((size_t)(r - s->con->b) < n) // run out of text before parsing is done
+		if ((size_t) (r - s->con->b) > n) // run out of text before parsing is done
 			return NULL;
 		else
 			r++;
@@ -246,8 +247,8 @@ const char
 
 	s->state = T_HTP_STR_FLINE;     // indicate first line is done
 	// prepare for the header to be parsed by creating the header table on stack
-	lua_newtable( luaVM );                       //S:P,h
 	lua_pushstring( luaVM, "header" );           //S:P,h,"header"
+	lua_newtable( luaVM );                       //S:P,h
 	lua_rawset( luaVM, -3 );                     //S:P,h
 	s->con->b = eat_lws( r+8 );
 	return s->con->b;
@@ -292,6 +293,7 @@ const char
 				{
 					lua_pushlstring( luaVM, k, ke-k );                            // push key
 					lua_pushlstring( luaVM, v, (rs==T_HTP_R_LB)? r-v : r-v-1 );   // push value
+					t_stackDump( luaVM );
 					lua_rawset( luaVM, -3 );
 					k  = r+1;
 					rs = T_HTP_R_KS;         // Set Start of key processing
@@ -383,7 +385,7 @@ const char
 				}  // End test for T_HTP_R_KS
 				break;
 		}
-		if ((size_t)(r - s->con->b) < n) // run out of text before parsing is done
+		if ((size_t)(r - s->con->b) > n) // run out of text before parsing is done
 			return NULL;
 		else
 			r++;

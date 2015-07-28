@@ -29,10 +29,12 @@ struct t_htp_con
 {
 	struct t_htp_con *c;
 	c = (struct t_htp_con *) lua_newuserdata( luaVM, sizeof( struct t_htp_con ) );
-	c->buf_head  = NULL;  // reference to current output buffer head
-	c->buf_tail  = NULL;  // reference to current output buffer head
+	c->buf_head  = NULL;   // reference to current output buffer head
+	c->buf_tail  = NULL;   // reference to current output buffer head
 	c->srv       = srv;
 	c->str       = NULL;
+	lua_newtable( luaVM ); // empty table to hold streams inside
+	c->sR        = luaL_ref( luaVM, LUA_REGISTRYINDEX );
 
 	luaL_getmetatable( luaVM, "T.Http.Connection" );
 	lua_setmetatable( luaVM, -2 );
@@ -87,18 +89,21 @@ t_htp_con_rcv( lua_State *luaVM )
 	// if HTTP1.0 or HTTP1.1 this is the last, HTTP2.0 hast a stream identifier
 	if (! rcvd)    // peer has closed
 		return lt_htp_con__gc( luaVM );
-	else           // get the proxy on the stack to fill out verb/url/version/headers ...
+	else           // pass operations over to stream
 	{
 		if (NULL == c->str)   // create new stream and put into stream table
 		{
 			lua_rawgeti( luaVM, LUA_REGISTRYINDEX, c->sR );        // S:c,sR
 			c->str = t_htp_str_create_ud( luaVM, c );              // S:c,sR,str
 			lua_rawseti( luaVM, -2, lua_rawlen( luaVM, -2 )+1 );   // S:c,sR
+			lua_pop( luaVM, 1 );
 		}
 	}
 
 	//printf( "Received %d  \n'%s'\n", rcvd, &(m->buf[ m->read ]) );
 	// TODO: set or reset c-read
+
+	c->b = &( c->buf[ 0 ] );
 
 	res = t_htp_str_rcv( luaVM, c->str, c->read + rcvd );
 	switch (res)

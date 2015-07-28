@@ -199,11 +199,11 @@ lt_htp_srv_listen( lua_State *luaVM )
 	// reuse socket:listen()
 	t_sck_listen( luaVM, 2 );
 
-	sc = t_sck_check_ud( luaVM, -2, 1 );
-	ip = t_ipx_check_ud( luaVM, -1, 1 );
-	s->aR = luaL_ref( luaVM, LUA_REGISTRYINDEX );
+	sc     = t_sck_check_ud( luaVM, -2, 1 );
+	ip     = t_ipx_check_ud( luaVM, -1, 1 );
+	s->aR  = luaL_ref( luaVM, LUA_REGISTRYINDEX );
 	s->sck = sc;
-	s->sR = luaL_ref( luaVM, LUA_REGISTRYINDEX );
+	s->sR  = luaL_ref( luaVM, LUA_REGISTRYINDEX );
 
 	// TODO: cheaper to reimplement functionality -> less overhead?
 	lua_pushcfunction( luaVM, lt_ael_addhandle ); //S: srv,sc,addhandle
