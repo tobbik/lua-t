@@ -32,8 +32,9 @@ struct t_htp_con
 	c->buf_head  = NULL;   // reference to current output buffer head
 	c->buf_tail  = NULL;   // reference to current output buffer head
 	c->srv       = srv;
-	c->str       = NULL;
+	c->cnt       = 1;
 	lua_newtable( luaVM ); // empty table to hold streams inside
+
 	c->sR        = luaL_ref( luaVM, LUA_REGISTRYINDEX );
 
 	luaL_getmetatable( luaVM, "T.Http.Connection" );
@@ -77,35 +78,43 @@ int
 t_htp_con_rcv( lua_State *luaVM )
 {
 	struct t_htp_con *c    = t_htp_con_check_ud( luaVM, 1, 1 );
+	struct t_htp_str *s;
 	int               rcvd;
 	int               res;   // return result
 
 	// read
 	rcvd = t_sck_recv( luaVM, c->sck, &(c->buf[ c->read ]), BUFSIZ - c->read );
 
-	// TODO: if HTTP 2.0 figure out current stream
-
-	// negotiate which stream object is responsible
-	// if HTTP1.0 or HTTP1.1 this is the last, HTTP2.0 hast a stream identifier
 	if (! rcvd)    // peer has closed
 		return lt_htp_con__gc( luaVM );
-	else           // pass operations over to stream
-	{
-		if (NULL == c->str)   // create new stream and put into stream table
-		{
-			lua_rawgeti( luaVM, LUA_REGISTRYINDEX, c->sR );        // S:c,sR
-			c->str = t_htp_str_create_ud( luaVM, c );              // S:c,sR,str
-			lua_rawseti( luaVM, -2, lua_rawlen( luaVM, -2 )+1 );   // S:c,sR
-			lua_pop( luaVM, 1 );
-		}
+	// negotiate which stream object is responsible
+	// if HTTP1.0 or HTTP1.1 this is the last, HTTP2.0 has a stream identifier
+	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, c->sR );
+	lua_rawgeti( luaVM, -1, c->cnt );         // S:c,sR,s
+	if (lua_isnoneornil( luaVM, -1 ))
+	{          // create new stream and put into stream table
+		lua_pop( luaVM, 1 );                   // pop nil( failed stream )
+		s = t_htp_str_create_ud( luaVM, c );   // S:c,sR,str
+		lua_rawgeti( luaVM, LUA_REGISTRYINDEX, s->pR );
+		lua_pushstring( luaVM, "connection" );
+		lua_pushvalue( luaVM, -1 );            // S:c,sR.str,pR,'connection',c
+		lua_rawset( luaVM, -3 );
+		lua_pop( luaVM, 1 );                   // remove s->pR
+		lua_rawseti( luaVM, -2, c->cnt );      // S:c,sR
+		lua_rawgeti( luaVM, -1, c->cnt );      // S:c,sR,str
 	}
+	else
+	{
+		s = t_htp_str_check_ud( luaVM, -1, 0 );
+	}
+	lua_remove( luaVM, -2 );       // pop the stream table
 
 	//printf( "Received %d  \n'%s'\n", rcvd, &(m->buf[ m->read ]) );
 	// TODO: set or reset c-read
 
 	c->b = &( c->buf[ 0 ] );
 
-	res = t_htp_str_rcv( luaVM, c->str, c->read + rcvd );
+	res = t_htp_str_rcv( luaVM, s, c->read + rcvd );
 	switch (res)
 	{
 		case 0:
@@ -119,7 +128,7 @@ t_htp_con_rcv( lua_State *luaVM )
 
 
 /**--------------------------------------------------------------------------
- * Handle outgoing T.Http.Message into it's socket.
+ * Handle outgoing T.Http.Connection into it's socket.
  * \param   luaVM     lua Virtual Machine.
  * \lparam  userdata  struct t_htp_con.
  * \param   pointer to the buffer to read from(already positioned).
@@ -229,10 +238,10 @@ t_htp_con_addbuffer( lua_State *luaVM, struct t_htp_con *c, size_t l )
 
 
 /**--------------------------------------------------------------------------
- * Access Field Values in T.Http.Message by accessing proxy table.
+ * Access Field Values in T.Http.Connection by accessing proxy table.
  * This allows access to the socket and the address.
  * \param   luaVM    The lua state.
- * \lparam  Http.Message instance.
+ * \lparam  Http.Connection instance.
  * \lparam  key   string/integer
  * \lparam  value LuaType
  * \return  The # of items pushed to the stack.
@@ -252,7 +261,7 @@ lt_htp_con__index( lua_State *luaVM )
 /**--------------------------------------------------------------------------
  * update  NOT ALLOWED.
  * \param   luaVM    The lua state.
- * \lparam  Http.Message instance.
+ * \lparam  Http.Connection instance.
  * \lparam  key   string/integer
  * \lparam  value LuaType
  * \return  The # of items pushed to the stack.
@@ -267,10 +276,10 @@ lt_htp_con__newindex( lua_State *luaVM )
 
 
 /**--------------------------------------------------------------------------
- * __tostring (print) representation of a T.Http.Message instance.
+ * __tostring (print) representation of a T.Http.Connection instance.
  * \param   luaVM      The lua state.
- * \lparam  t_htp_con  The Message instance user_data.
- * \lreturn string     formatted string representing T.Http.Message.
+ * \lparam  t_htp_con  The Connection instance user_data.
+ * \lreturn string     formatted string representing T.Http.Connection.
  * \return  The number of results to be passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
 static int
@@ -294,15 +303,16 @@ static int
 lt_htp_con__len( lua_State *luaVM )
 {
 	struct t_htp_con *c = (struct t_htp_con *) luaL_checkudata( luaVM, 1, "T.Http.Connection" );
-	lua_pushinteger( luaVM, c->length );
+	// TODO: return the length of the stream collection
+	lua_pushinteger( luaVM, c->cnt );
 	return 1;
 }
 
 
 /**--------------------------------------------------------------------------
- * __gc of a T.Http.Message instance.
+ * __gc of a T.Http.Connection instance.
  * \param   luaVM      The lua state.
- * \lparam  t_htp_con  The Message instance user_data.
+ * \lparam  t_htp_con  The Connection instance user_data.
  * \return  The number of results to be passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
 static int

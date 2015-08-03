@@ -275,7 +275,8 @@ const char
 	lua_pushstring( luaVM, "header" );           //S:P,"header"
 	lua_rawget( luaVM, -2 );                     //S:P,h
 
-	while (rs && rs < T_HTP_R_BD)
+	//while (rs && rs < T_HTP_R_BD)
+	while ((size_t)(r - s->con->b) < n) // run out of text before parsing is done
 	{
 		// TODO: check that r+1 exists
 		switch (*r)
@@ -293,7 +294,6 @@ const char
 				{
 					lua_pushlstring( luaVM, k, ke-k );                            // push key
 					lua_pushlstring( luaVM, v, (rs==T_HTP_R_LB)? r-v : r-v-1 );   // push value
-					t_stackDump( luaVM );
 					lua_rawset( luaVM, -3 );
 					k  = r+1;
 					rs = T_HTP_R_KS;         // Set Start of key processing
@@ -385,9 +385,9 @@ const char
 				}  // End test for T_HTP_R_KS
 				break;
 		}
-		if ((size_t)(r - s->con->b) > n) // run out of text before parsing is done
-			return NULL;
-		else
+		//if ((size_t)(r - s->con->b) > n) // run out of text before parsing is done
+		//	return NULL;
+		//else
 			r++;
 	}
 

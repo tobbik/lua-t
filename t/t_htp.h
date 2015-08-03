@@ -117,7 +117,7 @@ struct t_htp_con {
 	///////////////////////////////////////////////////////////////////////////////////
 	int               pR;     ///< Lua registry reference for proxy table
 	int               sR;     ///< Lua registry reference to the stream table
-	struct t_htp_str *str;    ///< currently active stream
+	int               cnt;    ///< count requests (streams) handled in this con
 
 	// onBody() handler; anytime a read-event is fired AFTER the header was
 	// received this gets executed; Can be LUA_NOREF which discards incoming data
@@ -125,11 +125,8 @@ struct t_htp_con {
 	struct t_sck     *sck;    ///< pointer to the actual socket
 	struct t_htp_srv *srv;    ///< pointer to the HTTP-Server
 
-	int               length; ///< HTTP Message Size ("Content-Length")
-
 	int               kpAlv;  ///< keepalive value in seconds -> 0==no Keepalive
 	int               upgrade;///< shall the connection be upgraded?
-	int               expect; ///< shall the connection return an expected thingy?
 	enum t_htp_sta    pS;     ///< HTTP parser state
 	enum t_htp_ver    ver;    ///< HTTP version
 
@@ -159,6 +156,9 @@ struct t_htp_str {
 	enum t_htp_mth    mth;    ///< HTTP Method for this request
 	enum t_htp_ver    ver;    ///< HTTP version
 	struct t_htp_con *con;    ///< pointer to the T.Http.Connection
+	// in HTTP1.1 the connections counter will provide the id, in HTTP2.0
+	// the ID gets provided in the protocol by the client
+	int               cntId;  ///< id inherited from count in connection
 };
 
 

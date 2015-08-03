@@ -38,7 +38,7 @@ struct t_htp_str
 	s->state   = T_HTP_STR_ZERO;    ///< shall the connection return an expected thingy?
 	s->mth     = T_HTP_MTH_ILLEGAL; ///< HTTP Message state
 	s->ver     = T_HTP_VER_09;      ///< HTTP Method for this request
-	s->con     = con;               ///< HTTP version
+	s->con     = con;               ///< connection
 
 	luaL_getmetatable( luaVM, "T.Http.Stream" );
 	lua_setmetatable( luaVM, -2 );
@@ -84,13 +84,17 @@ t_htp_str_rcv( lua_State *luaVM, struct t_htp_str *s, size_t rcvd )
 				b = t_htp_pReqFirstLine( luaVM, s, rcvd );
 				break;
 			case T_HTP_STR_FLINE:
+		t_stackDump( luaVM );
 				//lua_rawgeti( luaVM, LUA_REGISTRYINDEX, s->pR );
 				b = t_htp_pHeaderLine( luaVM, s, rcvd );
 				break;
 			case T_HTP_STR_HEADDONE:
+				s->con->cnt++;
+				lua_pop( luaVM, 1 );      // pop s->pR
 				// execute function from server
 				lua_rawgeti( luaVM, LUA_REGISTRYINDEX, s->con->srv->rR );
-				lua_pushvalue( luaVM, 1 );
+				lua_pushvalue( luaVM, 2 );
+				t_stackDump( luaVM );
 				lua_call( luaVM, 1, 0 );
 				// if request has content length keep reading body, else stop reading
 				if (s->rqCl > 0 )
@@ -426,9 +430,9 @@ lt_htp_str_onbody( lua_State *luaVM )
 static int
 lt_htp_str__index( lua_State *luaVM )
 {
-	struct t_htp_str *m = t_htp_str_check_ud( luaVM, -2, 1 );
+	struct t_htp_str *s = t_htp_str_check_ud( luaVM, -2, 1 );
 
-	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, m->pR );  // fetch the proxy table
+	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, s->pR );  // fetch the proxy table
 	lua_pushvalue( luaVM, -2 );                      // repush the key
 	lua_gettable( luaVM, -2 );
 	return 1;
@@ -448,7 +452,7 @@ lt_htp_str__newindex( lua_State *luaVM )
 {
 	t_htp_str_check_ud( luaVM, -3, 1 );
 
-	return t_push_error( luaVM, "Can't change values in `T.Http.Message`" );
+	return t_push_error( luaVM, "Can't change values in `T.Http.Stream`" );
 }
 
 
@@ -462,9 +466,9 @@ lt_htp_str__newindex( lua_State *luaVM )
 static int
 lt_htp_str__tostring( lua_State *luaVM )
 {
-	struct t_htp_str *m = (struct t_htp_str *) luaL_checkudata( luaVM, 1, "T.Http.Message" );
+	struct t_htp_str *m = (struct t_htp_str *) luaL_checkudata( luaVM, 1, "T.Http.Stream" );
 
-	lua_pushfstring( luaVM, "T.Http.Message: %p", m );
+	lua_pushfstring( luaVM, "T.Http.Stream: %p", m );
 	return 1;
 }
 
@@ -510,7 +514,7 @@ lt_htp_str__gc( lua_State *luaVM )
 
 
 /**--------------------------------------------------------------------------
- * \brief      the buffer library definition
+ * \brief      the stream library definition
  *             assigns Lua available names to C-functions
  * --------------------------------------------------------------------------*/
 static const luaL_Reg t_htp_str_prx_s [] = {
