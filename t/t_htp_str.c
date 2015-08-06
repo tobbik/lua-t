@@ -30,6 +30,8 @@ struct t_htp_str
 	s = (struct t_htp_str *) lua_newuserdata( luaVM, sizeof( struct t_htp_str ));
 	// Proxy contains lua readable items such as headers, length, status code etc
 	lua_newtable( luaVM );
+	luaL_getmetatable( luaVM, "T.Http.Stream.Proxy" );
+	lua_setmetatable( luaVM, -2 );
 	s->pR      = luaL_ref( luaVM, LUA_REGISTRYINDEX );
 	s->rqCl    = 0;                 ///< request  content length
 	s->rsCl    = 0;                 ///< response content length
@@ -550,12 +552,12 @@ luaopen_t_htp_str( lua_State *luaVM )
 	lua_setfield( luaVM, -2, "__gc");
 	lua_pushcfunction( luaVM, lt_htp_str__tostring );
 	lua_setfield( luaVM, -2, "__tostring");
-	lua_pop( luaVM, 1 );        // remove metatable from stack
+	lua_pop( luaVM, 1 );        // remove metatable T.Http.Stream from stack
 
 	luaL_newmetatable( luaVM, "T.Http.Stream.Proxy" );
 	luaL_newlib( luaVM, t_htp_str_prx_s );
 	lua_setfield( luaVM, -2, "__index" );
-	lua_pop( luaVM, 1 );        // remove metatable from stack
+	lua_pop( luaVM, 1 );        // remove metatable T.Http.Stream.Proxy from stack
 	return 0;
 }
 

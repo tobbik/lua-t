@@ -165,8 +165,6 @@ lt_htp_srv_accept( lua_State *luaVM )
 	lua_pushstring( luaVM, "ip" );
 	lua_pushvalue( luaVM, -10 );  //S: s,ss,cs,ip,rt,add(),ael,cs,true,rcv,msg,proxy,"ip",ip
 	lua_rawset( luaVM, -3 );
-	luaL_getmetatable( luaVM, "T.Http.Connection.Proxy" );
-	lua_setmetatable( luaVM, -2 );
 	c->pR  = luaL_ref( luaVM, LUA_REGISTRYINDEX );
 	c->sck = c_sck;
 

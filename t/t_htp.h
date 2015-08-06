@@ -180,34 +180,34 @@ struct t_htp_buf {
 // | |  | |  __/ |_| | | | (_) | (_| \__ \
 // |_|  |_|\___|\__|_| |_|\___/ \__,_|___/
 // t_htp.c
-const char         *t_htp_pReqFirstLine( lua_State *luaVM, struct t_htp_str *s, size_t n );
-const char         *t_htp_pHeaderLine  ( lua_State *luaVM, struct t_htp_str *s, size_t n );
-const char         *t_htp_status       ( int status );
+const char       *t_htp_pReqFirstLine( lua_State *luaVM, struct t_htp_str *s, size_t n );
+const char       *t_htp_pHeaderLine  ( lua_State *luaVM, struct t_htp_str *s, size_t n );
+const char       *t_htp_status       ( int status );
 
 
 // t_htp_srv.c
 // Constructors
-struct t_htp_srv   *t_htp_srv_check_ud ( lua_State *luaVM, int pos, int check );
-struct t_htp_srv   *t_htp_srv_create_ud( lua_State *luaVM );
-void                t_htp_srv_setnow( struct t_htp_srv *s, int force );
+struct t_htp_srv *t_htp_srv_check_ud ( lua_State *luaVM, int pos, int check );
+struct t_htp_srv *t_htp_srv_create_ud( lua_State *luaVM );
+void              t_htp_srv_setnow( struct t_htp_srv *s, int force );
 
 
 // HTTP Connection specific methods
 // Constructors
-struct t_htp_con   *t_htp_con_check_ud ( lua_State *luaVM, int pos, int check );
-struct t_htp_con   *t_htp_con_create_ud( lua_State *luaVM, struct t_htp_srv *srv );
+struct t_htp_con *t_htp_con_check_ud ( lua_State *luaVM, int pos, int check );
+struct t_htp_con *t_htp_con_create_ud( lua_State *luaVM, struct t_htp_srv *srv );
 // methods
-int                 t_htp_con_rcv    ( lua_State *luaVM );
-int                 t_htp_con_rsp    ( lua_State *luaVM );
-void t_htp_con_adjustbuffer( struct t_htp_con *c, size_t read, const char* rpos );
-int                 t_htp_con_addbuffer( lua_State *luaVM, struct t_htp_con *c, size_t l );
+int               t_htp_con_rcv    ( lua_State *luaVM );
+int               t_htp_con_rsp    ( lua_State *luaVM );
+void              t_htp_con_adjustbuffer( struct t_htp_con *c, size_t read, const char* rpos );
+int               t_htp_con_addbuffer( lua_State *luaVM, struct t_htp_con *c, size_t l );
 
 // HTTP Stream specific methods
 // Constructors
-struct t_htp_str   *t_htp_str_check_ud ( lua_State *luaVM, int pos, int check );
-struct t_htp_str   *t_htp_str_create_ud( lua_State *luaVM, struct t_htp_con *con );
+struct t_htp_str *t_htp_str_check_ud ( lua_State *luaVM, int pos, int check );
+struct t_htp_str *t_htp_str_create_ud( lua_State *luaVM, struct t_htp_con *con );
 // methods
-int                 t_htp_str_rcv    ( lua_State *luaVM, struct t_htp_str *s, size_t rcvd );
+int               t_htp_str_rcv    ( lua_State *luaVM, struct t_htp_str *s, size_t rcvd );
 
 
 // library exporters
