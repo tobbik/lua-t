@@ -200,7 +200,7 @@ struct t_htp_con *t_htp_con_create_ud( lua_State *luaVM, struct t_htp_srv *srv )
 int               t_htp_con_rcv    ( lua_State *luaVM );
 int               t_htp_con_rsp    ( lua_State *luaVM );
 void              t_htp_con_adjustbuffer( struct t_htp_con *c, size_t read, const char* rpos );
-int               t_htp_con_addbuffer( lua_State *luaVM, struct t_htp_con *c, size_t l );
+int               t_htp_con_addbuffer( lua_State *luaVM, struct t_htp_str *s, size_t l );
 
 // HTTP Stream specific methods
 // Constructors

@@ -85,7 +85,7 @@ arm:
 	"INCS=-I$(HOME)/BLD/arm/staging/usr/include" \
 	all
 
-install: $(T_SRC) $(T_LIB)
+install: $(T_SRC) $(T_LIB) $(T_LIB_A)
 	cp $(T_LIB)   $(PREFIX)/lib/lua/$(VER)/$(T_LIB)
 
 #%: %.c

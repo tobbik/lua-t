@@ -86,7 +86,6 @@ t_htp_str_rcv( lua_State *luaVM, struct t_htp_str *s, size_t rcvd )
 				b = t_htp_pReqFirstLine( luaVM, s, rcvd );
 				break;
 			case T_HTP_STR_FLINE:
-		t_stackDump( luaVM );
 				//lua_rawgeti( luaVM, LUA_REGISTRYINDEX, s->pR );
 				b = t_htp_pHeaderLine( luaVM, s, rcvd );
 				break;
@@ -96,7 +95,6 @@ t_htp_str_rcv( lua_State *luaVM, struct t_htp_str *s, size_t rcvd )
 				// execute function from server
 				lua_rawgeti( luaVM, LUA_REGISTRYINDEX, s->con->srv->rR );
 				lua_pushvalue( luaVM, 2 );
-				t_stackDump( luaVM );
 				lua_call( luaVM, 1, 0 );
 				// if request has content length keep reading body, else stop reading
 				if (s->rqCl > 0 )
@@ -159,7 +157,7 @@ t_htp_str_formHeader( lua_State *luaVM, luaL_Buffer *lB, struct t_htp_str *s,
 			"Content-Length: %d\r\n"
 			"%s",
 			(int) code,                               // HTTP Status code
-			msg,                                      // HTTP Status Message
+			(NULL == msg) ? t_htp_status( code ) : msg, // HTTP Status Message
 			(s->con->kpAlv) ? "Keep-Alive" : "Close", // Keep-Alive or close
 			s->con->srv->fnw,                         // Formatted Date
 			len,                                      // Content-Length
@@ -176,7 +174,7 @@ t_htp_str_formHeader( lua_State *luaVM, luaL_Buffer *lB, struct t_htp_str *s,
 			"Transfer-Encoding: chunked\r\n"
 			"%s",
 			(int) code,                               // HTTP Status code
-			msg,                                      // HTTP Status Message
+			(NULL == msg) ? t_htp_status( code ) : msg, // HTTP Status Message
 			(s->con->kpAlv) ? "Keep-Alive" : "Close", // Keep-Alive or close
 			s->con->srv->fnw,                         // Formatted Date
 			(t) ? "" : "\r\n"
@@ -200,9 +198,9 @@ t_htp_str_formHeader( lua_State *luaVM, luaL_Buffer *lB, struct t_htp_str *s,
 				);
 			lua_pop( luaVM, 1 );      //FIXME:  this can't pop, it must remove
 		}
-		bs += sprintf( b, "\r\r" );   // finish off the HTTP Headers part
+		bs += sprintf( b, "\r\n" );   // finish off the HTTP Headers part
+		luaL_addsize( lB, bs );
 	}
-	luaL_addsize( lB, bs );
 	c += bs;
 	s->rsBl = (len) ? c + len : 0;
 	return c;
@@ -263,10 +261,11 @@ lt_htp_str_writeHead( lua_State *luaVM )
 			(t) ? i : 0                            // position of optional header table on stack
 			);
 	}
-	luaL_pushresultsize( &lB, c );
-	t_htp_con_addbuffer( luaVM, s->con, c );
+	luaL_pushresult( &lB );
+	t_htp_con_addbuffer( luaVM, s, lB.n );
 	return 0;
 }
+
 
 
 /**--------------------------------------------------------------------------
@@ -292,7 +291,7 @@ lt_htp_str_write( lua_State *luaVM )
 	if (T_HTP_STR_SEND != s->state)
 	{
 		luaL_buffinit( luaVM, &lB );
-		c = t_htp_str_formHeader( luaVM, &lB, s, 200, t_htp_status( 200 ), 0, 0 );
+		c = t_htp_str_formHeader( luaVM, &lB, s, 200, NULL, 0, 0 );
 		b = luaL_prepbuffer( &lB );
 		c = sprintf( b, "%zx\r\n", sz );
 		luaL_addsize( &lB, c );
@@ -300,6 +299,7 @@ lt_htp_str_write( lua_State *luaVM )
 		luaL_addvalue( &lB );
 		luaL_addlstring( &lB, "\r\n", 2 );
 		luaL_pushresult( &lB );
+		printf( "Header size: %zu    ----  %zu \n", c, lB.n );
 		s->state = T_HTP_STR_SEND;
 	}
 	else
@@ -320,8 +320,8 @@ lt_htp_str_write( lua_State *luaVM )
 		else
 			lua_pushvalue( luaVM, 2 );
 	}
-	// TODO: properly aggregate c for length of entire string
-	t_htp_con_addbuffer( luaVM, s->con, c );
+	// TODO: 
+	t_htp_con_addbuffer( luaVM, s, lB.n );
 
 	return 0;
 }
@@ -348,11 +348,11 @@ lt_htp_str_finish( lua_State *luaVM )
 	{
 		luaL_checklstring( luaVM, 2, &sz );
 		luaL_buffinit( luaVM, &lB );
-		c = t_htp_str_formHeader( luaVM, &lB, s, 200, t_htp_status( 200 ), (int) sz, 0 );
-		luaL_addsize( &lB, c );
+		c = t_htp_str_formHeader( luaVM, &lB, s, 200, NULL, (int) sz, 0 );
 		lua_pushvalue( luaVM, 2 );
 		luaL_addvalue( &lB );
 		luaL_pushresult( &lB );
+		t_htp_con_addbuffer( luaVM, s, lB.n );
 	}
 	else
 	{
@@ -369,12 +369,23 @@ lt_htp_str_finish( lua_State *luaVM )
 				luaL_addvalue( &lB );
 				luaL_addlstring( &lB, "\r\n0\r\n\r\n", 7 );
 				luaL_pushresult( &lB );
+				t_htp_con_addbuffer( luaVM, s, lB.n );
 			}
-			else  // TODO: check that  size + buffer sz does not exceed m->ocl
+			else
+			{
 				lua_pushvalue( luaVM, 2 );
+				t_htp_con_addbuffer( luaVM, s, sz );
+			}
+		}
+		else
+		{
+			if (! s->rsCl)   // chunked
+			{
+				lua_pushstring( luaVM, "0\r\n\r\n" );
+				t_htp_con_addbuffer( luaVM, s, 5 );
+			}
 		}
 	}
-	t_htp_con_addbuffer( luaVM, s->con, c );
 	/*if ( 0 == s->obc )
 	{
 		if ( ! s->kpAlv)
