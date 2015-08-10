@@ -151,7 +151,7 @@ t_htp_con_rsp( lua_State *luaVM )
 	// fetch the currently active stream for this buffer
 	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, buf->sR );
 	str = t_htp_str_check_ud( luaVM, -1, 1 );
-	printf( "Send ResponseChunk: %s\n", b );
+	//printf( "Send ResponseChunk: %s\n", b );
 
 	snt = t_sck_send( luaVM,
 			c->sck,
@@ -160,14 +160,14 @@ t_htp_con_rsp( lua_State *luaVM )
 	buf->sl   += snt;  // How much of current buffer is sent -> adjustment
 	str->rsSl += snt;  // How much of current stream is sent -> adjustment
 
-	printf( "%zu   %zu  -- %u    %u\n", buf->sl, buf->bl,
-	   buf->sl==buf->bl, buf->sl!=buf->bl );
+	//printf( "%zu   %zu  -- %u    %u\n", buf->sl, buf->bl,
+	//   buf->sl==buf->bl, buf->sl!=buf->bl );
 
 	if (buf->bl == buf->sl)      // current buffer is sent completly
 	{
-		if ( T_HTP_STR_FINISH ==  str->state )
+		if ( buf->last )
 		{
-			printf( "EndOfStream\n" );
+			//printf( "EndOfStream\n" );
 			lua_pushcfunction( luaVM, lt_htp_str__gc );
 			lua_rawgeti( luaVM, LUA_REGISTRYINDEX, buf->sR );
 			luaL_unref( luaVM, LUA_REGISTRYINDEX, buf->sR ); // unref stream for gc
@@ -183,6 +183,7 @@ t_htp_con_rsp( lua_State *luaVM )
 		//        on kpAlv timeout
 		if (NULL == c->buf_head)       // current connection has no buffers left
 		{
+			printf( "remove Connection from Loop\n" );
 			// remove this connections socket from evLoop
 			t_ael_removehandle_impl( c->srv->ael, c->sck->fd, T_AEL_WR );
 			c->srv->ael->fd_set[ c->sck->fd ]->t = T_AEL_RD;

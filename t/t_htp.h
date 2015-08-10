@@ -145,6 +145,7 @@ struct t_htp_buf {
 	int                sR;    ///< string reference within luaState
 	size_t             bl;    ///< Outgoing Buffer Length (content+header)
 	size_t             sl;    ///< Outgoing Sent
+	char               last;  ///< Boolean to signify the last buffer for a stream
 	struct t_htp_str  *str;   ///< stream this buffer is made for
 	struct t_htp_buf  *prv;   ///< previous pointer for linked list
 	struct t_htp_buf  *nxt;   ///< next pointer for linked list

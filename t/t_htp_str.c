@@ -137,17 +137,19 @@ t_htp_str_rcv( lua_State *luaVM, struct t_htp_str *s, size_t rcvd )
  * \return  The # of items pushed to the stack.
  * --------------------------------------------------------------------------*/
 static int
-t_htp_str_addbuffer( lua_State *luaVM, struct t_htp_str *s, size_t l )
+t_htp_str_addbuffer( lua_State *luaVM, struct t_htp_str *s, size_t l, int last )
 {
 	struct t_htp_con *c = s->con;
 	struct t_htp_buf *b = malloc( sizeof( struct t_htp_buf ) );
-	b->bl  = l;
-	b->sl  = 0;
-	b->bR  = luaL_ref( luaVM, LUA_REGISTRYINDEX );
-	b->nxt = NULL;
-	b->prv = NULL;
+
+	b->bl   = l;
+	b->sl   = 0;
+	b->bR   = luaL_ref( luaVM, LUA_REGISTRYINDEX );
+	b->nxt  = NULL;
+	b->prv  = NULL;
 	lua_pushvalue( luaVM, 1 );
-	b->sR  = luaL_ref( luaVM, LUA_REGISTRYINDEX );
+	b->sR   = luaL_ref( luaVM, LUA_REGISTRYINDEX );
+	b->last = last;
 
 	if (NULL == c->buf_head)
 	{
@@ -301,7 +303,7 @@ lt_htp_str_writeHead( lua_State *luaVM )
 			);
 	}
 	luaL_pushresult( &lB );
-	t_htp_str_addbuffer( luaVM, s, lB.n );
+	t_htp_str_addbuffer( luaVM, s, lB.n, 0 );
 	return 0;
 }
 
@@ -360,7 +362,7 @@ lt_htp_str_write( lua_State *luaVM )
 			lua_pushvalue( luaVM, 2 );
 	}
 	// TODO: 
-	t_htp_str_addbuffer( luaVM, s, lB.n );
+	t_htp_str_addbuffer( luaVM, s, lB.n, 0 );
 
 	return 0;
 }
@@ -391,7 +393,7 @@ lt_htp_str_finish( lua_State *luaVM )
 		lua_pushvalue( luaVM, 2 );
 		luaL_addvalue( &lB );
 		luaL_pushresult( &lB );
-		t_htp_str_addbuffer( luaVM, s, lB.n );
+		t_htp_str_addbuffer( luaVM, s, lB.n, 1 );
 	}
 	else
 	{
@@ -408,12 +410,12 @@ lt_htp_str_finish( lua_State *luaVM )
 				luaL_addvalue( &lB );
 				luaL_addlstring( &lB, "\r\n0\r\n\r\n", 7 );
 				luaL_pushresult( &lB );
-				t_htp_str_addbuffer( luaVM, s, lB.n );
+				t_htp_str_addbuffer( luaVM, s, lB.n, 1 );
 			}
 			else
 			{
 				lua_pushvalue( luaVM, 2 );
-				t_htp_str_addbuffer( luaVM, s, sz );
+				t_htp_str_addbuffer( luaVM, s, sz, 1 );
 			}
 		}
 		else
@@ -421,7 +423,7 @@ lt_htp_str_finish( lua_State *luaVM )
 			if (! s->rsCl)   // chunked
 			{
 				lua_pushstring( luaVM, "0\r\n\r\n" );
-				t_htp_str_addbuffer( luaVM, s, 5 );
+				t_htp_str_addbuffer( luaVM, s, 5, 1 );
 			}
 		}
 	}
