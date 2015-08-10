@@ -14,9 +14,6 @@
 #include "t.h"
 #include "t_htp.h"
 
-// forward declaration so we can call it on
-static int lt_htp_str__gc( lua_State *luaVM );
-
 /**--------------------------------------------------------------------------
  * create a t_htp_str and push to LuaStack.
  * \param   luaVM  The lua state.
@@ -128,6 +125,49 @@ t_htp_str_rcv( lua_State *luaVM, struct t_htp_str *s, size_t rcvd )
 }
 
 
+/**--------------------------------------------------------------------------
+ * Add a new buffer chunk to the Linked List buffer in t_htp_con.
+ * General handling of buffers within the connection.  It does expect a Lua
+ * string on top of the stack which will be wrapped into a linked list element.
+ * It also expects the t_htp_str element on stack position 1. If the current
+ * buffer head is null, the connections socket must also be added to the
+ * EventLoop for outgoing connections.
+ * \param   luaVM        The lua state.
+ * \param   integer      The string length of the chunk on stack.
+ * \return  The # of items pushed to the stack.
+ * --------------------------------------------------------------------------*/
+static int
+t_htp_str_addbuffer( lua_State *luaVM, struct t_htp_str *s, size_t l )
+{
+	struct t_htp_con *c = s->con;
+	struct t_htp_buf *b = malloc( sizeof( struct t_htp_buf ) );
+	b->bl  = l;
+	b->sl  = 0;
+	b->bR  = luaL_ref( luaVM, LUA_REGISTRYINDEX );
+	b->nxt = NULL;
+	b->prv = NULL;
+	lua_pushvalue( luaVM, 1 );
+	b->sR  = luaL_ref( luaVM, LUA_REGISTRYINDEX );
+
+	if (NULL == c->buf_head)
+	{
+		c->buf_head = b;
+		c->buf_tail = b;
+		// wrote the first line to the buffer, can also happen if
+		// current buffer is flushed but response is incomplete
+		t_ael_addhandle_impl( c->srv->ael, c->sck->fd, T_AEL_WR );
+		c->srv->ael->fd_set[ c->sck->fd ]->t = T_AEL_RW;
+	}
+	else
+	{
+		c->buf_tail->nxt = b;
+		b->prv           = c->buf_tail;
+		c->buf_tail      = b;
+	}
+	return 1;
+}
+
+
 /**-----------------------------------------------------------------------------
  * Form HTTP response Header.
  * \param  luaVM        The lua state.
@@ -235,7 +275,6 @@ lt_htp_str_writeHead( lua_State *luaVM )
 	luaL_Buffer       lB;
 
 	luaL_buffinit( luaVM, &lB );
-
 	// indicate the Content-Length was provided
 	if (LUA_TNUMBER == lua_type( luaVM, 3 ) || LUA_TNUMBER == lua_type( luaVM, 4 ))
 	{
@@ -262,7 +301,7 @@ lt_htp_str_writeHead( lua_State *luaVM )
 			);
 	}
 	luaL_pushresult( &lB );
-	t_htp_con_addbuffer( luaVM, s, lB.n );
+	t_htp_str_addbuffer( luaVM, s, lB.n );
 	return 0;
 }
 
@@ -321,7 +360,7 @@ lt_htp_str_write( lua_State *luaVM )
 			lua_pushvalue( luaVM, 2 );
 	}
 	// TODO: 
-	t_htp_con_addbuffer( luaVM, s, lB.n );
+	t_htp_str_addbuffer( luaVM, s, lB.n );
 
 	return 0;
 }
@@ -352,7 +391,7 @@ lt_htp_str_finish( lua_State *luaVM )
 		lua_pushvalue( luaVM, 2 );
 		luaL_addvalue( &lB );
 		luaL_pushresult( &lB );
-		t_htp_con_addbuffer( luaVM, s, lB.n );
+		t_htp_str_addbuffer( luaVM, s, lB.n );
 	}
 	else
 	{
@@ -369,12 +408,12 @@ lt_htp_str_finish( lua_State *luaVM )
 				luaL_addvalue( &lB );
 				luaL_addlstring( &lB, "\r\n0\r\n\r\n", 7 );
 				luaL_pushresult( &lB );
-				t_htp_con_addbuffer( luaVM, s, lB.n );
+				t_htp_str_addbuffer( luaVM, s, lB.n );
 			}
 			else
 			{
 				lua_pushvalue( luaVM, 2 );
-				t_htp_con_addbuffer( luaVM, s, sz );
+				t_htp_str_addbuffer( luaVM, s, sz );
 			}
 		}
 		else
@@ -382,7 +421,7 @@ lt_htp_str_finish( lua_State *luaVM )
 			if (! s->rsCl)   // chunked
 			{
 				lua_pushstring( luaVM, "0\r\n\r\n" );
-				t_htp_con_addbuffer( luaVM, s, 5 );
+				t_htp_str_addbuffer( luaVM, s, 5 );
 			}
 		}
 	}
@@ -508,7 +547,7 @@ lt_htp_str__len( lua_State *luaVM )
  * \lparam  t_htp_str  The Message instance user_data.
  * \return  The number of results to be passed back to the calling Lua script.
  * --------------------------------------------------------------------------*/
-static int
+int
 lt_htp_str__gc( lua_State *luaVM )
 {
 	struct t_htp_str *s = (struct t_htp_str *) luaL_checkudata( luaVM, 1, "T.Http.Stream" );

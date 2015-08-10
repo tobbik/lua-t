@@ -142,32 +142,45 @@ t_htp_con_rsp( lua_State *luaVM )
 	size_t            snt;
 	const char       *b;
 	struct t_htp_buf *buf  = c->buf_head;
-	struct t_htp_str *str  = buf->str;
+	struct t_htp_str *str;
 
-	// get tail buffer turn into char * array
 	// TODO: test for NULL
-	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, buf->sR );
+	// get tail buffer turn into char * array
+	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, buf->bR );
 	b = lua_tostring( luaVM, -1 );
+	// fetch the currently active stream for this buffer
+	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, buf->sR );
+	str = t_htp_str_check_ud( luaVM, -1, 1 );
 	printf( "Send ResponseChunk: %s\n", b );
 
 	snt = t_sck_send( luaVM,
 			c->sck,
 			&(b[ buf->sl ]),
 			buf->bl - buf->sl );
-	buf->sl        += snt;  // How much of current buffer is sent -> adjustment
-	buf->str->rsSl += snt;  // How much of current stream is sent -> adjustment
+	buf->sl   += snt;  // How much of current buffer is sent -> adjustment
+	str->rsSl += snt;  // How much of current stream is sent -> adjustment
 
 	printf( "%zu   %zu  -- %u    %u\n", buf->sl, buf->bl,
 	   buf->sl==buf->bl, buf->sl!=buf->bl );
 
-	if (buf->bl == buf->sl) // current buffer is sent compltely
+	if (buf->bl == buf->sl)      // current buffer is sent completly
 	{
+		if ( T_HTP_STR_FINISH ==  str->state )
+		{
+			printf( "EndOfStream\n" );
+			lua_pushcfunction( luaVM, lt_htp_str__gc );
+			lua_rawgeti( luaVM, LUA_REGISTRYINDEX, buf->sR );
+			luaL_unref( luaVM, LUA_REGISTRYINDEX, buf->sR ); // unref stream for gc
+			lua_call( luaVM, 1, 0 );
+		}
 		// free current buffer and go backwards in linked list
-		luaL_unref( luaVM, LUA_REGISTRYINDEX, buf->sR ); // unref string for gc
+		luaL_unref( luaVM, LUA_REGISTRYINDEX, buf->bR ); // unref string for gc
 		c->buf_head = buf->nxt;
 		free( buf );
-		if ( str->state )
 
+		// TODO:  If there is no kpAlv discard connection
+		//        If kpAlv and the buffers are empty, set up a timer to discard 
+		//        on kpAlv timeout
 		if (NULL == c->buf_head)       // current connection has no buffers left
 		{
 			// remove this connections socket from evLoop
@@ -176,7 +189,6 @@ t_htp_con_rsp( lua_State *luaVM )
 			// done with current the stream has overall
 			if ( T_HTP_STR_FINISH == str->state || str->rsSl == str->rsBl)
 			{
-				printf( "EndOfStream\n" );
 				if (! c->kpAlv)
 				{
 					lua_pushcfunction( luaVM, lt_htp_con__gc );
@@ -187,49 +199,6 @@ t_htp_con_rsp( lua_State *luaVM )
 			}
 		}
 
-	}
-	return 1;
-}
-
-
-/**--------------------------------------------------------------------------
- * Add a new buffer chunk to the Linked List.
- * General handling of buffers within the connection.  It does expect a Lua
- * string on top of the stack which will be wrapped into a linked list element.
- * If the current buffer head is null, the connections socket must also be
- * added to the EventLoop for outgoing connections.
- * \param   luaVM    The lua state.
- * \param   Http.Connection instance.
- * \param   integer  The string length of the chunk on stack.
- * \lparam  value LuaType
- * \return  The # of items pushed to the stack.
- * --------------------------------------------------------------------------*/
-int
-t_htp_con_addbuffer( lua_State *luaVM, struct t_htp_str *s, size_t l )
-{
-	struct t_htp_con *c = s->con;
-	struct t_htp_buf *b = malloc( sizeof( struct t_htp_buf ) );
-	b->bl  = l;
-	b->sl  = 0;
-	b->sR  = luaL_ref( luaVM, LUA_REGISTRYINDEX );
-	b->str = s;
-	b->nxt = NULL;
-	b->prv = NULL;
-
-	if (NULL == c->buf_head)
-	{
-		c->buf_head = b;
-		c->buf_tail = b;
-		// wrote the first line to the buffer, can also happen if
-		// current buffer is flushed but response is incomplete
-		t_ael_addhandle_impl( c->srv->ael, c->sck->fd, T_AEL_WR );
-		c->srv->ael->fd_set[ c->sck->fd ]->t = T_AEL_RW;
-	}
-	else
-	{
-		c->buf_tail->nxt = b;
-		b->prv           = c->buf_tail;
-		c->buf_tail      = b;
 	}
 	return 1;
 }

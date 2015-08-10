@@ -141,6 +141,7 @@ struct t_htp_str {
 
 /// userdata for HTTP connection output buffer chunk
 struct t_htp_buf {
+	int                bR;    ///< string reference within luaState
 	int                sR;    ///< string reference within luaState
 	size_t             bl;    ///< Outgoing Buffer Length (content+header)
 	size_t             sl;    ///< Outgoing Sent
@@ -176,7 +177,6 @@ struct t_htp_con *t_htp_con_create_ud( lua_State *luaVM, struct t_htp_srv *srv )
 int               t_htp_con_rcv    ( lua_State *luaVM );
 int               t_htp_con_rsp    ( lua_State *luaVM );
 void              t_htp_con_adjustbuffer( struct t_htp_con *c, size_t read, const char* rpos );
-int               t_htp_con_addbuffer( lua_State *luaVM, struct t_htp_str *s, size_t l );
 
 // HTTP Stream specific methods
 // Constructors
@@ -184,6 +184,7 @@ struct t_htp_str *t_htp_str_check_ud ( lua_State *luaVM, int pos, int check );
 struct t_htp_str *t_htp_str_create_ud( lua_State *luaVM, struct t_htp_con *con );
 // methods
 int               t_htp_str_rcv    ( lua_State *luaVM, struct t_htp_str *s, size_t rcvd );
+int               lt_htp_str__gc( lua_State *luaVM );
 
 
 // library exporters
