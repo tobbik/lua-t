@@ -158,7 +158,7 @@ t_htp_con_rsp( lua_State *luaVM )
 	buf->str->rsSl += snt;  // How much of current stream is sent -> adjustment
 
 	printf( "%zu   %zu  -- %u    %u\n", buf->sl, buf->bl,
-	buf->sl==buf->bl, buf->sl!=buf->bl );
+	   buf->sl==buf->bl, buf->sl!=buf->bl );
 
 	if (buf->bl == buf->sl) // current buffer is sent compltely
 	{
@@ -166,8 +166,9 @@ t_htp_con_rsp( lua_State *luaVM )
 		luaL_unref( luaVM, LUA_REGISTRYINDEX, buf->sR ); // unref string for gc
 		c->buf_head = buf->nxt;
 		free( buf );
+		if ( str->state )
 
-		if (NULL == c->buf_head) // current connection has no buffers left
+		if (NULL == c->buf_head)       // current connection has no buffers left
 		{
 			// remove this connections socket from evLoop
 			t_ael_removehandle_impl( c->srv->ael, c->sck->fd, T_AEL_WR );
@@ -175,18 +176,14 @@ t_htp_con_rsp( lua_State *luaVM )
 			// done with current the stream has overall
 			if ( T_HTP_STR_FINISH == str->state || str->rsSl == str->rsBl)
 			{
-					printf( "EndOfStream\n" );
-					if (! c->kpAlv)
-					{
-						lua_pushcfunction( luaVM, lt_htp_con__gc );
-						lua_pushvalue( luaVM, 1 );
-						lua_call( luaVM, 1, 0 );
-						return 1;
-					}
-					else       // remove writability of socket
-					{
-						c->pS = T_HTP_STA_ZERO;
-					}
+				printf( "EndOfStream\n" );
+				if (! c->kpAlv)
+				{
+					lua_pushcfunction( luaVM, lt_htp_con__gc );
+					lua_pushvalue( luaVM, 1 );
+					lua_call( luaVM, 1, 0 );
+					return 1;
+				}
 			}
 		}
 

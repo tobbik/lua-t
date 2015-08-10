@@ -50,25 +50,6 @@ enum t_htp_mth {
 };
 
 
-
-/// State of the HTTP message
-enum t_htp_sta {
-	T_HTP_STA_ZERO,         ///< Nothing done yet
-	T_HTP_STA_URL,          ///< Parsing Url
-	T_HTP_STA_VERSION,      ///< Parsing HTTP version
-	T_HTP_STA_HEADER,       ///< Parsing Headers
-	T_HTP_STA_CONTLNGTH,    ///< Content-Length: 12345
-	T_HTP_STA_UPGRADE,      ///< Content-Length: 12345
-	T_HTP_STA_HEADDONE,     ///< Parsing Headers finished
-	T_HTP_STA_BODY,         ///< Recieving body
-	T_HTP_STA_RECEIVED,     ///< Request received
-	T_HTP_STA_BUFFER,       ///< Fill buffer with data
-	T_HTP_STA_SEND,         ///< Send data from buffer
-	T_HTP_STA_FINISH,       ///< The last chunk was written into the buffer
-	T_HTP_STA_DONE,         ///< Finished
-};
-
-
 /// State of the HTTP message
 enum t_htp_srm_s {
 	T_HTP_STR_ZERO,       ///< Nothing done yet
@@ -80,7 +61,6 @@ enum t_htp_srm_s {
 	T_HTP_STR_RECEIVED,   ///< Request received
 	T_HTP_STR_SEND,       ///< Send data from buffer
 	T_HTP_STR_FINISH,     ///< The last chunk was written into the buffer
-	T_HTP_STR_DONE,       ///< Finished
 };
 
 
@@ -109,8 +89,6 @@ struct t_htp_srv {
 	char              fnw[30];///< Formatted Date time in HTTP format
 };
 
-struct t_htp_str;
-
 
 /// The userdata struct for T.Http.Connection ( Server:accept() )
 struct t_htp_con {
@@ -127,7 +105,6 @@ struct t_htp_con {
 
 	int               kpAlv;  ///< keepalive value in seconds -> 0==no Keepalive
 	int               upgrade;///< shall the connection be upgraded?
-	enum t_htp_sta    pS;     ///< HTTP parser state
 	enum t_htp_ver    ver;    ///< HTTP version
 
 	size_t            read;   ///< How many byte processed
@@ -166,7 +143,6 @@ struct t_htp_str {
 struct t_htp_buf {
 	int                sR;    ///< string reference within luaState
 	size_t             bl;    ///< Outgoing Buffer Length (content+header)
-	size_t             cl;    ///< Outgoing Content-Length
 	size_t             sl;    ///< Outgoing Sent
 	struct t_htp_str  *str;   ///< stream this buffer is made for
 	struct t_htp_buf  *prv;   ///< previous pointer for linked list
