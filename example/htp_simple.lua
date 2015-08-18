@@ -3,26 +3,29 @@ t    = require't'
 fmt  = string.format
 l    = t.Loop( 1200 )
 s    = t.Socket.bind( 'UDP',  8888 )
+a    = "This is my Answer"
 
 x=function( stream )
-	print( "STREAM",          stream )
-	print( "Socket:",         stream.connection.socket )
-	print( "Address:",        stream.connection.ip )
-	print( "Method:",         stream.method )
-	print( "URL:",            stream.url )
-	print( "VERSION:",        stream.version )
-	print( "Content-Length:", #stream )
-	if stream.query then
-		print ("QUERY:")
-		for k,v in pairs( stream.query ) do print( '', k, v ) end
-	end
-	print ("HEADERS:")
-	for k,v in pairs( stream.header ) do print( '', k, '--------', v ) end
+	--print( "STREAM",          stream )
+	--print( "Socket:",         stream.connection.socket )
+	--print( "Address:",        stream.connection.ip )
+	--print( "Method:",         stream.method )
+	--print( "URL:",            stream.url )
+	--print( "VERSION:",        stream.version )
+	--print( "Content-Length:", #stream )
+	--if stream.query then
+	--	print ("QUERY:")
+	--	for k,v in pairs( stream.query ) do print( '', k, v ) end
+	--end
+	--print ("HEADERS:")
+	--for k,v in pairs( stream.header ) do print( '', k, '--------', v ) end
 	-- stream:sink('./theFile')
-	stream:write( "This is my answer" )
+	stream:writeHead( 200, #a )
+	--stream:write( a )
+	stream:finish( a )
+	--stream:finish( )
 	--l:show()
 	--d()
-	stream:finish( )
 end
 
 

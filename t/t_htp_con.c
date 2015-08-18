@@ -84,6 +84,7 @@ t_htp_con_rcv( lua_State *luaVM )
 
 	// read
 	rcvd = t_sck_recv( luaVM, c->sck, &(c->buf[ c->read ]), BUFSIZ - c->read );
+	printf( "RCVD: %d bytes\n", rcvd );
 
 	if (! rcvd)    // peer has closed
 		return lt_htp_con__gc( luaVM );
@@ -304,6 +305,7 @@ lt_htp_con__gc( lua_State *luaVM )
 	}
 	if (NULL != c->sck)
 	{
+		printf( "REMOVE Socket %d FROM LOOP ...", c->sck->fd );
 		t_ael_removehandle_impl( c->srv->ael, c->sck->fd, T_AEL_RD );
 		t_ael_removehandle_impl( c->srv->ael, c->sck->fd, T_AEL_WR );
 		c->srv->ael->fd_set[ c->sck->fd ]->t = T_AEL_NO;
@@ -315,6 +317,7 @@ lt_htp_con__gc( lua_State *luaVM )
 
 		t_sck_close( luaVM, c->sck );
 		c->sck = NULL;
+		printf( "  DONE\n" );
 	}
 
 	printf( "GC'ed HTTP connection: %p\n", c );

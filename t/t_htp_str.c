@@ -142,6 +142,7 @@ t_htp_str_addbuffer( lua_State *luaVM, struct t_htp_str *s, size_t l, int last )
 	struct t_htp_con *c = s->con;
 	struct t_htp_buf *b = malloc( sizeof( struct t_htp_buf ) );
 
+	printf( "Add Buffer: %zu bytes\n", l );
 	b->bl   = l;
 	b->sl   = 0;
 	b->bR   = luaL_ref( luaVM, LUA_REGISTRYINDEX );
@@ -303,6 +304,7 @@ lt_htp_str_writeHead( lua_State *luaVM )
 			);
 	}
 	luaL_pushresult( &lB );
+	s->state = T_HTP_STR_SEND;
 	t_htp_str_addbuffer( luaVM, s, lB.n, 0 );
 	return 0;
 }
@@ -340,7 +342,6 @@ lt_htp_str_write( lua_State *luaVM )
 		luaL_addvalue( &lB );
 		luaL_addlstring( &lB, "\r\n", 2 );
 		luaL_pushresult( &lB );
-		printf( "Header size: %zu    ----  %zu \n", c, lB.n );
 		s->state = T_HTP_STR_SEND;
 	}
 	else
