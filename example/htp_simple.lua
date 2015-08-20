@@ -20,7 +20,7 @@ x=function( stream )
 	--print ("HEADERS:")
 	--for k,v in pairs( stream.header ) do print( '', k, '--------', v ) end
 	-- stream:sink('./theFile')
-	stream:writeHead( 200, #a )
+	--stream:writeHead( 200, #a )
 	--stream:write( a )
 	stream:finish( a )
 	--stream:finish( )

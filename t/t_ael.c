@@ -155,7 +155,8 @@ t_ael_executehandle( lua_State *luaVM, struct t_ael *ael, int fd, enum t_ael_t t
 		lua_call( luaVM, n , 0 );
 		lua_pop( luaVM, 1 );             // remove the table
 	}
-	if( t & T_AEL_WR )
+	// since read func can gc the socket, fd_set[fd] can be NULL
+	if( NULL != ael->fd_set[ fd ] && t & T_AEL_WR )
 	{
 		n = t_ael_getfunc( luaVM, ael->fd_set[ fd ]->wR );
 		lua_call( luaVM, n , 0 );

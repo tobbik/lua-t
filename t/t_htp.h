@@ -92,7 +92,7 @@ struct t_htp_srv {
 
 /// The userdata struct for T.Http.Connection ( Server:accept() )
 struct t_htp_con {
-	///////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////
 	int               pR;     ///< Lua registry reference for proxy table
 	int               sR;     ///< Lua registry reference to the stream table
 	int               cnt;    ///< count requests (streams) handled in this con
