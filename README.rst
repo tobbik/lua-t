@@ -36,13 +36,18 @@ Maturity
 
 The core functionality of lua-t was written as a by-product of implementing a
 mocking framework which reads/write packed binary data from and to network
-buffers.  lua-t originally was written in short periods of spare time, making
-my daytime job easier/possible.  Trying to implement it fast using a rigidly
-structured scheme to the code kept the code base organized.  However, it is not
-very well tested overall.  Some parts that were heavily used have been tested
-and optimized, others were implemented as one off convienience functions and are
-literally untested.  lua-t has it's own unit test framework.  ONe of the first
-steps is to put the current code under maximum test coverage.
+buffers.  lua-t originally was written in short periods of spare time, making my
+daytime job easier/possible.  Trying to implement it fast created a code mess I
+couldn't navigate or control anymore.  To regain control, I rewrote the entire
+codebase over a couple of weekends, implementing a rigidly structured scheme
+which organized layout and control flow.  This makes it easier to read and
+understand the code and find bugs faster.  However, it is not very well tested
+overall.  Some parts that were heavily used have been tested and optimized,
+others were implemented as one off convienience functions and are literally
+untested.  Though lua-t has it's own unit test framework it doesn't have any
+test coverage for it's own functionality.  One of the first steps is to put the
+current code under maximum test coverage.  Finishing documentation and examples
+is also very high on the list.
 
 
 Compatability

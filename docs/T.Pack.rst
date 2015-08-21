@@ -116,14 +116,13 @@ reuse of packers
 t.Pack.Struct
 -------------
 
-An ordered and optionally named collection of xt.Pack and/or xt.Pack.Struct. ::
+An ordered and named collection of t.Pack objects. ::
 
    s = t.Pack(
       { length       = 'I2' },
       { ['type']     = 'I2' },
       { ['@status']  = 'B' },
-      { ConsistCount = 'B' },
-      'c17
+      { ConsistCount = 'B' }
    )
 
 Available methods on t.Pack.Struct s are:
@@ -142,7 +141,7 @@ Available methods on t.Pack.Struct s are:
 t.Pack.Array
 ------------
 
-An ordered collection of a single xt.Pack or xt.Pack.Struct of n elements. ::
+An ordered collection of "n" t.Pack objects. ::
 
    s = t.Pack( '<i2', 24 )
 
