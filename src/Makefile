@@ -5,15 +5,19 @@
 # \author    tkieslich
 # \copyright See Copyright notice at the end of t.h
 
+T_LIB_DYN=t.so
+T_LIB_STA=t.a
+
 #
 LVER=5.3
 PREFIX=$(shell pkg-config --variable=prefix lua)
 INCDIR=$(shell pkg-config --variable=includedir lua)
-LDFLAGS=$(shell pkg-config --libs lua)
+#LDFLAGS=$(shell pkg-config --libs lua) -lcrypt
+LDFLAGS:=$(LDFLAGS) -lcrypt
 # clang can be substituted with gcc (command line args compatible)
 CC=clang
 LD=clang
-CFLAGS= -Wall -Wextra -g -O0 -std=c99 -fpic
+CFLAGS:= -Wall -Wextra -O0 -std=c99 -fpic $(MYCFLAGS)
 AR=ar rcu
 RANLIB=ranlib
 
@@ -38,24 +42,21 @@ T_SRC=t.c \
 
 T_OBJ=$(T_SRC:.c=.o)
 
-T_LIB=t.so
-T_LIB_A=t.a
+all: $(T_SRC) $(T_LIB_DYN) $(T_LIB_STA)
 
-all: $(T_SRC) $(T_LIB) $(T_LIB_A)
+$(T_LIB_DYN): $(T_OBJ)
+	$(LD) -O -shared $(T_OBJ) -o $@ $(LDFLAGS) $(LIBS)
 
-$(T_LIB): $(T_OBJ)
-	$(LD) -O -shared $(T_OBJ) -o $@ $(LDFLAGS) $(LIBS) -lcrypt
-
-$(T_LIB_A): $(T_OBJ)
+$(T_LIB_STA): $(T_OBJ)
 	$(AR) $@ $(T_OBJ)
 	$(RANLIB) $@
 
 .c.o:
 	$(CC) $(CFLAGS) $< -o $@
 
-install: $(T_SRC) $(T_LIB) $(T_LIB_A)
-	cp $(T_LIB) $(PREFIX)/lib/lua/$(LVER)/$(T_LIB)
-	cp $(T_LIB_A) $(PREFIX)/lib/lua/$(LVER)/$(T_LIB_A)
+install: $(T_SRC) $(T_LIB_DYN) $(T_LIB_STA)
+	cp $(T_LIB_DYN) $(PREFIX)/lib/lua/$(LVER)/$(T_LIB_DYN)
+	cp $(T_LIB_STA) $(PREFIX)/lib/lua/$(LVER)/$(T_LIB_STA)
 
 
 %: %.o
@@ -71,16 +72,15 @@ echo:
 	@echo "PLAT= $(PLAT)"
 	@echo "LVER= $(LVER)"
 	@echo "PREFIX= $(PREFIX)"
+	@echo "CC= $(CC)"
+	@echo "LD= $(LD)"
 	@echo "INCDIR= $(INCDIR)"
 	@echo "LDFLAGS= $(LDFLAGS)"
-	@echo "PLAT= $(PLAT)"
-	@echo "CC= $(CC)"
 	@echo "CFLAGS= $(CFLAGS)"
-	@echo "LDFLAGS= $(SYSLDFLAGS)"
 	@echo "LIBS= $(LIBS)"
 	@echo "AR= $(AR)"
 	@echo "RANLIB= $(RANLIB)"
 	@echo "RM= $(RM)"
 
 clean:
-	-rm $(T_OBJ) $(T_LIB) $(T_LIB_A)
+	-rm $(T_OBJ) $(T_LIB_DYN) $(T_LIB_STA)

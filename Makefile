@@ -6,38 +6,51 @@
 # \copyright See Copyright notice at the end of t.h
 
 LVER=5.3
+
+T_LIB_DYN=t.so
+T_LIB_STA=t.a
+
 PREFIX=$(shell pkg-config --variable=prefix lua)
 INCDIR=$(shell pkg-config --variable=includedir lua)
-LDFLAGS=$(shell pkg-config --libs lua)
+LDFLAGS=$(shell pkg-config --libs lua) -lcrypt
 PLAT=linux
-#MYFLAGS=" -g "
+MYCFLAGS=" "
 SRCDIR=$(CURDIR)/src
 
 CC=clang
 LD=clang
 
-all:
-	cd $(SRCDIR) ; $(MAKE) CC=$(CC) LD=$(LD) \
-		VER="$(VER)" \
+all: $(SRCDIR)/$(T_LIB_DYN)
+
+$(SRCDIR)/$(T_LIB_DYN):
+	$(MAKE) -C $(SRCDIR) CC=$(CC) LD=$(LD) \
+		T_LIB_DYN="$(T_LIB_DYN)" T_LIB_STA="$(T_LIB_STA)" \
+		LVER="$(LVER)" \
 		MYCFLAGS="$(MYCFLAGS)" \
+		LDFLAGS="$(LDFLAGS)" \
 		INCS="$(INCDIR)" \
 		PREFIX="$(OUTDIR)"
 
-install:
-	cd $(SRCDIR) ; $(MAKE) CC=$(CC) LD=$(LD) \
-		VER=$(VER) \
+install: $(SRCDIR)/$(T_LIB_DYN)
+	$(MAKE) -C $(SRCDIR) CC=$(CC) LD=$(LD) \
+		T_LIB_DYN="$(T_LIB_DYN)" T_LIB_STA="$(T_LIB_STA)" \
+		LVER=$(LVER) \
 		MYCFLAGS=$(MYCFLAGS) \
+		LDFLAGS="$(LDFLAGS)" \
 		INCS=$(INCDIR) \
 		PREFIX="$(PREFIX)" install
 
 # echo config parameters
 echo:
-	@cd src && $(MAKE) -s echo
+	$(MAKE) -C $(SRCDIR) -s echo
 	@echo "PLAT= $(PLAT)"
 	@echo "LVER= $(LVER)"
 	@echo "PREFIX= $(PREFIX)"
 	@echo "INCDIR= $(INCDIR)"
 	@echo "LDFLAGS= $(LDFLAGS)"
+	@echo "MYCFLAGS= $(MYCFLAGS)"
 
 clean:
-	cd $(SRCDIR); make clean
+	$(MAKE) -C $(SRCDIR) \
+		T_LIB_DYN="$(T_LIB_DYN)" T_LIB_STA="$(T_LIB_STA)" \
+		clean
