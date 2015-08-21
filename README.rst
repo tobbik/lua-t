@@ -258,13 +258,15 @@ An ordered collection of a single xt.Pack or xt.Pack.Struct of n elements. ::
 
 Available methods on t.Pack.Pack s are:
 
-   - pairs( s ) => iterator,    returns  name, t.Pack.Reader
-                   returns values in order!
-   - #struct    => length,      returns number of elements in struct
-                   for i=1:#struct do allows numbered iteration (Lua 5.3 style)
-   - tostring   => object name,
-                   print(s) returns "t.Pack.Struct(len,sz}: address
-   - t.Pack.size(s) => returns size of s in bytes
+   - pairs( s )      => iterator
+       returns  name, t.Pack.Reader values in order
+   - #struct         => length
+       returns number of elements in struct
+       for i=1:#struct does allow numbered iteration (Lua 5.3 style)
+   - tostring( )      => object name,
+       print(s) returns "t.Pack.Struct(len,sz}: address
+   - t.Pack.size( s ) => size
+       returns size of s in bytes
 
 
 
@@ -286,7 +288,7 @@ about the offset in the returning context. ::
    for k,v in pairs( s ) do
       print( k, v, v( b ) )
    end
-   one   T.Pack.Reader[0](Raw2): 0xfbc6e8	ZZ
+   one	T.Pack.Reader[0](Raw2): 0xfbc6e8	ZZ
    two	T.Pack.Reader[2](Raw2): 0xfbc6e8	YY
    three	T.Pack.Reader[4](Raw2): 0xfbc6e8	XX
    four	T.Pack.Reader[6](Raw2): 0xfbc6e8	WW
