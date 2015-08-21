@@ -42,7 +42,7 @@ static const char *const t_pck_t_lst[] = {
 	"Float",        ///< Packer         Float
 	"Boolean",      ///< Packer         Boolean (1 Bit)
 	"BitSigned",    ///< Packer         Bit (integer x Bit)
-	"BitUnSigned",  ///< Packer         Bit (integer x Bit)
+	"BitUnsigned",  ///< Packer         Bit (integer x Bit)
 	"Raw",          ///< Packer         Raw  -  string/utf8/binary
 	// complex packer types
 	"Array",        ///< Combinator     Array

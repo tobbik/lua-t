@@ -39,9 +39,9 @@ Coding Standards
 OOP interface
 -------------
 
-lua-t uses a unified OOP type according to Luas own recomendation for objects.
+lua-t uses a unified OOP type according to Lua's own recomendation for objects.
 Class.new() or Class() create new objects.  lua-t is, so far, exclusively
-written in C.  The followng list provides an overview of naming conventions and
+written in C.  The following list provides an overview of naming conventions and
 will help to navigate the source code a lot faster.
 
 
@@ -112,34 +112,124 @@ Documentation:
 ++++++++++++++
 
 t.Pack
----------
+------
 
-A Packer is a simple Data Format definition containing size and type. The
-following types are available:
+A Bit and Byte packer using the same kind of formatting string as Lua 5.3
+string.pack( ) and string.unpack( ) with two notable exceptions:
 
- - xt.Packer.Bit(x,y)  = creates a packer of type Bit with big Endianess and
-                         length x and offset y
- - xt.Packer.Int(x)    = creates a packer of type Int with native Endianess and
-                         length x
- - xt.Packer.IntL(x)   = creates a packer of type Int with little Endianess and
-                         length x
- - xt.Packer.IntB(x)   = creates a packer of type Int with Big Endianess and
-                         length x
- - xt.Packer.Float(x)  = creates a packer of type Float with length x
- - xt.Packer.String(x) = creates a packer of type String with length x
+   # it does not deal with alignment
+   # it can parse and serialize to Bit wide resolution
+
+t.Pack preferably works on t.Buffer objects, because they are mutable.  This way
+for each write the Lua interpreter does not have to create and internalize a new
+string.
+
+t.Pack format strings
+_____________________
+
+For Bit Style packing lua-t introduces the following format strings
+
+   - **v:** a boolean represented as a single bit.
+   - **r:** a signed Integer up to native size.  It can span byte boundaries.
+   - **R:** an unsigned Integer up to native size.  It can span byte boundaries.
 
 
-xt.Pack.Struct
---------------
+t.Pack types
+_________________
+
+t.Pack objects can come in multiple flavours.  There is a main separation
+between atomic packers and packer collections.  The access to packer collections
+follows the same syntax as Lua tables.  Items in packer collections can be
+packer collections themselves (nesting).
+
+atomic
+  A single byteType or a single bitType packer which returns a scalar value
+  such as a boolean, Int, float or string.
+
+sequence
+  Multiple values that are packed in order defined by the format string.
+
+array
+  A collection of same typed packers with a given length.
+
+struct
+  A collection of packers which have named fields.
+
+
+t.Pack identification
+_____________________
+
+t.Pack objects can identify themselves via a string.  The String is composed of
+different elements which vary slightly from type to type.  The general
+composition follows a simple schema:
+
+   Type Length Endianess
+
+Type can be any of the following:
+
+   - Int          (includes byte, short, long, LuaInteger)
+   - UInt         (includes unsigned byte, short, long, LuaInteger)
+   - Float        (includes double and LuaNumber)
+   - Boolean      (includes double and LuaNumber)
+	- BitSigned    Bitfield representing signed integer
+	- BitUnsigned  Bitfield representing unsigned integer
+	- Raw          string/utf8/binary
+	- Array        Array Combinator
+	- Sequence     Sequence Combinator
+	- Struct       Struct Combinator
+
+What kind of a packer is created is controlled by the constructor.  The t.Pack
+constructor takes the following paramters and creates the following datatypes:
+
+atomic
+  The constructor takes a format string which defines a single atomic item.
+  eg. p = t.Pack( '<I3' ) defines a little endian unsigned integer of 3 bytes
+  width (UInt3L)
+
+sequence
+  The constructor takes a format strings which defines a composition of
+  multiple items. eg. p = t.Pack( '>l<H' ) defines a sequence of 2 elements and
+  is 10 bytes long on a 64 bit system.
+   -- p[1]: is an atomic packer of type (Int8B) with a  0 bytes offset
+   -- p[2]: is an atomic packer of type (int2L) with an 8 bytes offset
+
+array
+  The constructor takes a format strings which defines a packer (atomic or
+  combinator) and a number defining how often it gets repeated. 
+  eg. p = t.Pack( '>d<H', 4 ) defines a sequence of 2 elements which is
+  10 bytes long, it will get repeated 4 times, making the packer cover 40 bytes.
+   -- p[1]:    is a packer sequence
+   -- p[2][1]: is an atomic packer of type (float) with an 10 bytes offset
+
+struct
+  The constructor takes a format strings which defines a composition of
+  multiple items. eg. p = t.Pack( '>l<H' ) defines a sequence of 2 elements and
+  is 10 bytes long on a 64 bit system.
+   -- p[1]: is an atomic packer of type (Int8B) with a  0 bytes offset
+   -- p[2]: is an atomic packer of type (int2L) with an 8 bytes offset
+
+reuse of packers
+  Any previously defined packer can be used in plcae of a format string to
+  create a new packer.  Consider the following code::
+
+   p1 = t.Pack( 'f>I4' ) -- sequence of packers
+   -- formulate as struct
+   p2 = t.Pack(
+      { floatie = p[ 1 ] },
+      { Int32   = p[ 2 ] }
+   )
+
+t.Pack.Struct
+-------------
 
 An ordered and optionally named collection of xt.Pack and/or xt.Pack.Struct. ::
 
-   s = xt.Pack.Struct(
-      { length       = xt.Pack.Int( 2 ) },
-      { ['type']     = xt.Pack.Int( 2 ) },
-      { ['@status']  = xt.Pack.Int( 1 ) },
-      { ConsistCount = xt.Pack.Int( 1 ) },
-      xt.Pack.String(17)
+   s = t.Pack(
+      { length       = 'I2' },
+      { ['type']     = 'I2' },
+      { ['@status']  = 'B' },
+      { ConsistCount = 'B' },
+      'c17
    )
 
 Available methods on x.Pack.Struct s are:
@@ -174,27 +264,27 @@ Available methods on x.Pack.Struct s are:
 
 
 
-xt.Pack.Reader
+t.Pack.Reader
 --------------
 
-An xt.Pack or xt.Pack.Struct or xt.Pack.Array element returned by __index
+A t.Pack or t.Pack.Struct or t.Pack.Array element returned by the packers __index
 method.  Additionally to the type of the element it also contains information
 about the offset in the returning context. ::
 
-   a = xt.Pack.String( 2 )
-   s = xt.Pack.Struct (
-      { one       = a},
-      { two       = a},
-      { three     = a},
-      { four      = a}
+   a = t.Pack( 'c2' )     -- string 2 characters long
+   s = t.Pack(
+      { one       = a },
+      { two       = a },
+      { three     = a },
+      { four      = a }
    )
    b = "ZZYYXXWW"
-   for k,v in pairs(s) do
-      print( k, xt.Pack.read( v, b ) )
+   for k,v in pairs( s ) do
+      print( k, v, v( b ) )
    end
-   one        ZZ
-   two        YY
-   three      XX
-   four       WW
+   one   T.Pack.Reader[0](Raw2): 0xfbc6e8	ZZ
+   two	T.Pack.Reader[2](Raw2): 0xfbc6e8	YY
+   three	T.Pack.Reader[4](Raw2): 0xfbc6e8	XX
+   four	T.Pack.Reader[6](Raw2): 0xfbc6e8	WW
 
 
