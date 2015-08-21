@@ -1,6 +1,3 @@
-/sources/lua-5*.tar.gz
-/out/
-/compile/
 *.o
 *.so
 *.a

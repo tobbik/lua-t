@@ -1,20 +1,21 @@
 # vim: ts=3 sw=3 st=3 sts=3 sta noet tw=80 list
 #
-# \file      Makefile
-# \brief     Makefile for the lua-t library
+# \file      src/Makefile
+# \brief     Makefile for the lua-t library source code
 # \author    tkieslich
 # \copyright See Copyright notice at the end of t.h
 
 #
+LVER=5.3
+PREFIX=$(shell pkg-config --variable=prefix lua)
+INCDIR=$(shell pkg-config --variable=includedir lua)
+LDFLAGS=$(shell pkg-config --libs lua)
 # clang can be substituted with gcc (command line args compatible)
-CC= clang
-LD= clang
+CC=clang
+LD=clang
 CFLAGS= -Wall -Wextra -g -O0 -std=c99 -fpic
-#INCS=$(shell pkg-config --cflags lua5.1)
-#LDFLAGS=$(shell pkg-config --libs lua5.1)
-AR= ar rcu
-RANLIB= ranlib
-VER= 5.2
+AR=ar rcu
+RANLIB=ranlib
 
 T_SRC=t.c \
 	 t_sck.c \
@@ -35,10 +36,6 @@ T_SRC=t.c \
 	 t_htp_con.c \
 	 t_htp_str.c
 
-
-#	 t_pcr.c \
-
-
 T_OBJ=$(T_SRC:.c=.o)
 
 T_LIB=t.so
@@ -56,42 +53,10 @@ $(T_LIB_A): $(T_OBJ)
 .c.o:
 	$(CC) $(CFLAGS) $< -o $@
 
-default:
-	$(MAKE) intel
-
-system:
-	$(MAKE) \
-	"CC=$(CC)" \
-	"LD=$(LD)" \
-	"INCS=$(shell pkg-config --cflags lua)" \
-	"LDFLAGS=$(shell pkg-config --libs lua)" \
-	all
-
-local:
-	$(MAKE) \
-	"CC=$(CC)" \
-	"LD=$(LD)" \
-	"INCS=$(INCS)" \
-	"LDFLAGS=$(LIBS)" \
-	all
-
-arm:
-	$(MAKE) \
-	"CC=$(HOME)/BLD/arm/host/usr/bin/arm-linux-gcc" \
-	"LD=$(HOME)/BLD/arm/host/usr/bin/arm-linux-gcc" \
-	"LDFLAGS=-llua -lm -ldl -fPIC" \
-	"CFLAGS=$(CFLAGS) -fPIC" \
-	"LDFLAGS=-L$(HOME)/BLD/arm/staging/usr/lib" \
-	"INCS=-I$(HOME)/BLD/arm/staging/usr/include" \
-	all
-
 install: $(T_SRC) $(T_LIB) $(T_LIB_A)
-	cp $(T_LIB)   $(PREFIX)/lib/lua/$(VER)/$(T_LIB)
+	cp $(T_LIB) $(PREFIX)/lib/lua/$(LVER)/$(T_LIB)
+	cp $(T_LIB_A) $(PREFIX)/lib/lua/$(LVER)/$(T_LIB_A)
 
-#%: %.c
-#	$(CC) -I$(INCS) $(CFLAGS) -c $< -o $@.o
-#	$(CC) $@.o -o $@ $(LDFLAGS) $(LIBS)
-#	rm $@.o
 
 %: %.o
 	$(CC) $< -o $@ $(LDFLAGS) $(LIBS)
@@ -101,6 +66,21 @@ install: $(T_SRC) $(T_LIB) $(T_LIB_A)
 
 %.o: %.c
 	$(CC) -I$(INCS) $(CFLAGS) -c $< -o $@
+
+echo:
+	@echo "PLAT= $(PLAT)"
+	@echo "LVER= $(LVER)"
+	@echo "PREFIX= $(PREFIX)"
+	@echo "INCDIR= $(INCDIR)"
+	@echo "LDFLAGS= $(LDFLAGS)"
+	@echo "PLAT= $(PLAT)"
+	@echo "CC= $(CC)"
+	@echo "CFLAGS= $(CFLAGS)"
+	@echo "LDFLAGS= $(SYSLDFLAGS)"
+	@echo "LIBS= $(LIBS)"
+	@echo "AR= $(AR)"
+	@echo "RANLIB= $(RANLIB)"
+	@echo "RM= $(RM)"
 
 clean:
 	-rm $(T_OBJ) $(T_LIB) $(T_LIB_A)
