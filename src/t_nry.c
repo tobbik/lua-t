@@ -107,7 +107,7 @@ struct t_nry *t_nry_create_ud( lua_State *L, int sz )
 	// size = sizeof(...) -1 because the array has already one member
 	t_sz = sizeof( struct t_nry ) + (sz - 1) * sizeof( int );
 	a    = (struct t_nry *) lua_newuserdata( L, t_sz );
-	memset( a->v, 0, t_sz * sizeof( int ) );
+	memset( a->v, 0, sz+1 * sizeof( int ) );
 
 	a->len = sz;
 	luaL_getmetatable( L, "T.Numarray" );
@@ -144,6 +144,7 @@ struct t_nry *t_nry_check_ud( lua_State *L, int pos, int check )
 static int
 *t_nry_getelem( lua_State *L )
 {
+	t_stackDump( L );
 	struct t_nry *a   = t_nry_check_ud( L, 1, 1 );
 	size_t        idx = luaL_checkinteger( L, 2 );
 
@@ -282,17 +283,28 @@ static const luaL_Reg t_nry_m [] = {
  * --------------------------------------------------------------------------*/
 LUAMOD_API int luaopen_t_nry( lua_State *L )
 {
-	// T.Buffer instance metatable
+	// T.Numarray stance metatable
 	luaL_newmetatable( L, "T.Numarray" );
-	//luaL_newlib( L, t_nry_m );
+
+	// this is the metatables general __index; it is used to find
+	// __len, __tostring, reverse, ...
+	luaL_newlib( L, t_nry_m );
+	// this is the metatables metatable, ised to do the actual array based access
+	lua_newtable( L );
 	lua_pushcfunction( L, lt_nry__index );
 	lua_setfield( L, -2, "__index" );
 	lua_pushcfunction( L, lt_nry__newindex );
-	lua_setfield( L, -2, "__newindex");
+	lua_setfield( L, -2, "__newindex" );
+	t_stackDump( L );
+	lua_setmetatable( L, -2 );
+	// set t_nry_m as __index of Metatable
+	lua_setfield( L, -2, "__index" );
+
 	lua_pushcfunction( L, lt_nry__len );
-	lua_setfield( L, -2, "__len");
+	lua_setfield( L, -2, "__len" );
 	lua_pushcfunction( L, lt_nry__tostring );
-	lua_setfield( L, -2, "__tostring");
+	lua_setfield( L, -2, "__tostring" );
+	t_stackDump( L );
 	lua_pop( L, 1 );        // remove metatable from stack
 
 	// T.Numarray class

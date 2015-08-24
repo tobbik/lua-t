@@ -41,3 +41,64 @@ XZ XZ AB CD RT RT RT RT ...
 
 
 
+
+[userdata]
+	[metatable names]
+		__index = library
+
+
+	// T.Numarray stance metatable
+	luaL_newmetatable( L, "T.Numarray" );
+
+	// this is the metatables general __index; it is used to find
+	// __len, __tostring, reverse, ...
+	luaL_newlib( L, t_nry_m );
+	// this is the metatables metatable, ised to do the actual array based access
+	//lua_newtable( L );
+	lua_pushcfunction( L, lt_nry__index );
+	lua_setfield( L, -2, "__index" );
+	lua_pushcfunction( L, lt_nry__newindex );
+	lua_setfield( L, -2, "__newindex");
+	t_stackDump( L );
+	//lua_setmetatable( L, -2 );
+	// set t_nry_m as __index of Metatable
+	//lua_setfield( L, -2, "__index");
+
+	lua_pushcfunction( L, lt_nry__len );
+	lua_setfield( L, -2, "__len");
+	lua_pushcfunction( L, lt_nry__tostring );
+	lua_setfield( L, -2, "__tostring");
+	lua_pop( L, 1 );        // remove metatable from stack
+
+	// T.Numarray class
+	luaL_newlib( L, t_nry_cf );
+	luaL_newlib( L, t_nry_fm );
+	lua_setmetatable( L, -2 );
+	return 1;
+
+
+
+
+
+
+
+	// T.Buffer instance metatable
+	luaL_newmetatable( L, "T.Numarray" );
+	//luaL_newlib( L, t_nry_m );
+	t_stackDump( L );
+	lua_pushcfunction( L, lt_nry__index );
+	lua_setfield( L, -2, "__index" );
+	lua_pushcfunction( L, lt_nry__newindex );
+	lua_setfield( L, -2, "__newindex" );
+	lua_pushcfunction( L, lt_nry__len );
+	lua_setfield( L, -2, "__len" );
+	lua_pushcfunction( L, lt_nry__tostring );
+	lua_setfield( L, -2, "__tostring" );
+	t_stackDump( L );
+	lua_pop( L, 1 );        // remove metatable from stack
+
+	// T.Numarray class
+	luaL_newlib( L, t_nry_cf );
+	luaL_newlib( L, t_nry_fm );
+	lua_setmetatable( L, -2 );
+	return 1;
