@@ -29,7 +29,7 @@ $(SRCDIR)/$(T_LIB_DYN):
 		MYCFLAGS="$(MYCFLAGS)" \
 		LDFLAGS="$(LDFLAGS)" \
 		INCS="$(INCDIR)" \
-		PREFIX="$(OUTDIR)"
+		PREFIX="$(PREFIX)"
 
 install: $(SRCDIR)/$(T_LIB_DYN)
 	$(MAKE) -C $(SRCDIR) CC=$(CC) LD=$(LD) \

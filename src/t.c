@@ -374,6 +374,10 @@ luaopen_t( lua_State *L )
 	lua_setfield( L, -2, "Websocket" );
 	luaopen_t_htp( L );
 	lua_setfield( L, -2, "Http" );
+#ifdef T_NRY
+	luaopen_t_nry( L );
+	lua_setfield( L, -2, "Numarray" );
+#endif
 	return 1;
 }
 

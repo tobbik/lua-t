@@ -8,19 +8,6 @@
 T_LIB_DYN=t.so
 T_LIB_STA=t.a
 
-#
-LVER=5.3
-PREFIX=$(shell pkg-config --variable=prefix lua)
-INCDIR=$(shell pkg-config --variable=includedir lua)
-#LDFLAGS=$(shell pkg-config --libs lua) -lcrypt
-LDFLAGS:=$(LDFLAGS) -lcrypt
-# clang can be substituted with gcc (command line args compatible)
-CC=clang
-LD=clang
-CFLAGS:= -Wall -Wextra -O0 -std=c99 -fpic $(MYCFLAGS)
-AR=ar rcu
-RANLIB=ranlib
-
 T_SRC=t.c \
 	 t_sck.c \
 	 t_ipx.c \
@@ -39,6 +26,26 @@ T_SRC=t.c \
 	 t_htp_srv.c \
 	 t_htp_con.c \
 	 t_htp_str.c
+
+T_PRE:=""
+
+ifdef BUILD_EXAMPLE
+T_PRE:=$(T_PRE) -D T_NRY=1
+T_SRC:=$(T_SRC) t_nry.c
+endif
+
+#
+LVER=5.3
+PREFIX=$(shell pkg-config --variable=prefix lua)
+INCDIR=$(shell pkg-config --variable=includedir lua)
+#LDFLAGS=$(shell pkg-config --libs lua) -lcrypt
+LDFLAGS:=$(LDFLAGS) -lcrypt
+# clang can be substituted with gcc (command line args compatible)
+CC=clang
+LD=clang
+CFLAGS:= -Wall -Wextra -O0 -std=c99 -fpic $(MYCFLAGS) $(T_PRE)
+AR=ar rcu
+RANLIB=ranlib
 
 T_OBJ=$(T_SRC:.c=.o)
 
