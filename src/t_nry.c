@@ -221,6 +221,41 @@ lt_nry_reverse( lua_State *L )
 
 
 /**--------------------------------------------------------------------------
+ * Compares two Numarrays.
+ * \param   L     The lua state.
+ * \lparam  t_nry   the Numarray userdata.
+ * \lparam  t_nry   Numarray userdata to compare to.
+ * \lreturn boolean   true if equal otherwise false.
+ * \return  int  # of values pushed onto the stack.
+ * --------------------------------------------------------------------------*/
+static int
+lt_nry__eq( lua_State *L )
+{
+	struct t_nry *nA = t_nry_check_ud( L, 1, 1 );
+	struct t_nry *nB = t_nry_check_ud( L, 2, 1 );
+	size_t        i;       ///< runner
+	int           r = 1;   ///< result
+
+	if (nA == nB)
+	{
+		lua_pushboolean( L, r );
+		return 1;
+	}
+	if (nA->len != nB->len)
+		r = 0;
+	else
+		for( i=0; i<nA->len; i++ )
+			if (nA->v[i] !=  nB->v[ i ])
+			{
+				r = 0;
+				break;
+			}
+	lua_pushboolean( L, r );
+	return 1;
+}
+
+
+/**--------------------------------------------------------------------------
  * Length of a T.Numarray instance as seen by Lua.
  * \param   L    The lua state.
  * \lreturn int  length of Numarray Instance.
@@ -249,7 +284,7 @@ static int lt_nry__tostring( lua_State *L )
 
 
 /**--------------------------------------------------------------------------
- * Numarray class metamethods library definition 
+ * Numarray class metamethods library definition
  * --------------------------------------------------------------------------*/
 static const struct luaL_Reg t_nry_fm [] = {
 	{ "__call",        lt_nry__Call},
@@ -275,6 +310,7 @@ static const luaL_Reg t_nry_m [] = {
 	{ "__newindex", lt_nry__newindex },
 	{ "__len",      lt_nry__len },
 	{ "__tostring", lt_nry__tostring },
+	{ "__eq",       lt_nry__eq },
 	// normal methods -> __index will sort out if it tries to get this from here,
 	// or if missed, get it from t_nry->v
 	{ "reverse",    lt_nry_reverse },
