@@ -4,7 +4,8 @@
  * \file      t_nry.c
  * \brief     models an Numarray
  * This an example file as nrylained in the docs/Coding.rst.  It is an
- * implmentation of the 
+ * implmentation of the NumArray example presented in PiL, but made compliant
+ * with the conventions and mechanisms of lua-t
  * \author    tkieslich
  * \copyright See Copyright notice at the end of t.h
  */
@@ -46,8 +47,7 @@ static int lt_nry_New( lua_State *L )
 	if (1 == lua_gettop( L ))
 	{
 		sz = luaL_checkinteger( L, 1 );
-		luaL_argcheck( L, sz>0, 1,
-		                 "size of T.Numarray must be positive");
+		luaL_argcheck( L, sz>0, 1, "size of T.Numarray must be positive" );
 		a  = t_nry_create_ud( L, sz );
 	}
 	else
@@ -144,7 +144,6 @@ struct t_nry *t_nry_check_ud( lua_State *L, int pos, int check )
 static int
 *t_nry_getelem( lua_State *L )
 {
-	t_stackDump( L );
 	struct t_nry *a   = t_nry_check_ud( L, 1, 1 );
 	size_t        idx = luaL_checkinteger( L, 2 );
 
@@ -166,7 +165,14 @@ static int
 static int
 lt_nry__index( lua_State *L )
 {
-	lua_pushinteger( L, *t_nry_getelem( L ) );
+	if (lua_isnumber( L, 2 ))
+		lua_pushinteger( L, *t_nry_getelem( L ) );
+	else
+	{
+		luaL_getmetatable( L, "T.Numarray" );
+		lua_pushvalue( L, 2 );
+		lua_rawget( L, -2 );
+	}
 	return 1;
 }
 
@@ -203,11 +209,11 @@ lt_nry_reverse( lua_State *L )
 	size_t        n;      ///< runner
 	int           t;      ///< temp variable
 
-	for (n=0; n<a->len; n++)
+	for (n=0; n<(a->len/2); n++)
 	{
-		t                  = a->v[ n ];
-		a->v[ n ]          = a->v[ a->len - n ];
-		a->v[ a->len - n ] = t;
+		t                     = a->v[ n ];
+		a->v[ n ]             = a->v[ a->len - n - 1 ];
+		a->v[ a->len - n -1 ] = t;
 	}
 
 	return 0;
@@ -265,10 +271,17 @@ static const struct luaL_Reg t_nry_cf [] = {
  * Assigns Lua available names to C-functions on T.Numarray instances
  * --------------------------------------------------------------------------*/
 static const luaL_Reg t_nry_m [] = {
-	{ "reverse",   lt_nry_reverse },
+	{ "__index",    lt_nry__index },
+	{ "__newindex", lt_nry__newindex },
+	{ "__len",      lt_nry__len },
+	{ "__tostring", lt_nry__tostring },
+	// normal methods -> __index will sort out if it tries to get this from here,
+	// or if missed, get it from t_nry->v
+	{ "reverse",    lt_nry_reverse },
 	// allow metamethods to be accessed in a more traditional OOP style
-	{ "length",    lt_nry__len },
-	{ "toString",  lt_nry__tostring },
+	// since those are function pointers there is very little overhead
+	{ "length",     lt_nry__len },
+	{ "toString",   lt_nry__tostring },
 	{ NULL, NULL }
 };
 
@@ -285,26 +298,7 @@ LUAMOD_API int luaopen_t_nry( lua_State *L )
 {
 	// T.Numarray stance metatable
 	luaL_newmetatable( L, "T.Numarray" );
-
-	// this is the metatables general __index; it is used to find
-	// __len, __tostring, reverse, ...
-	luaL_newlib( L, t_nry_m );
-	// this is the metatables metatable, ised to do the actual array based access
-	lua_newtable( L );
-	lua_pushcfunction( L, lt_nry__index );
-	lua_setfield( L, -2, "__index" );
-	lua_pushcfunction( L, lt_nry__newindex );
-	lua_setfield( L, -2, "__newindex" );
-	t_stackDump( L );
-	lua_setmetatable( L, -2 );
-	// set t_nry_m as __index of Metatable
-	lua_setfield( L, -2, "__index" );
-
-	lua_pushcfunction( L, lt_nry__len );
-	lua_setfield( L, -2, "__len" );
-	lua_pushcfunction( L, lt_nry__tostring );
-	lua_setfield( L, -2, "__tostring" );
-	t_stackDump( L );
+	luaL_setfuncs( L, t_nry_m, 0 );
 	lua_pop( L, 1 );        // remove metatable from stack
 
 	// T.Numarray class
