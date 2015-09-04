@@ -39,8 +39,17 @@ time:sleep( )
 int *x* = time:get( )
   returns the timer instance duration in milliseconds
 
-time:set( int *x* )
+void time:set( int *x* )
   set the timers instance duration to *x* milliseconds
+
+void time:since( )
+  set the timers instance duration to the difference between the previous value
+  and now in reference to epoch.  It interprets the current value on time as
+  duration passed since epoch.  The new value of time will be the difference of
+  the time since epoch to now and the original value in the timer.
+
+void time:now( )
+  set the timers instance duration to the difference between now and epoch.
 
 
 Instance Metamembers
