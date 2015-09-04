@@ -314,13 +314,17 @@ static const struct luaL_Reg t_buf_cf [] = {
  * Objects metamethods library definition
  * --------------------------------------------------------------------------*/
 static const luaL_Reg t_buf_m [] = {
-	{"unpack",   lt_buf_unpack},
-	{"read",     lt_buf_read},
-	{"write",    lt_buf_write},
+	// metamethods
+	{ "__tostring", lt_buf__tostring },
+	{ "__len",      lt_buf__len },
+	// instance methods
+	{"unpack",      lt_buf_unpack},
+	{"read",        lt_buf_read},
+	{"write",       lt_buf_write},
 	// univeral stuff
-	{"toHex",    lt_buf_tohexstring},
-	{"length",   lt_buf__len},
-	{"toString", lt_buf__tostring},
+	{"toHex",       lt_buf_tohexstring},
+	{"length",      lt_buf__len},
+	{"toString",    lt_buf__tostring},
 	{NULL,    NULL}
 };
 
@@ -337,13 +341,8 @@ LUAMOD_API int luaopen_t_buf( lua_State *L )
 {
 	// T.Buffer instance metatable
 	luaL_newmetatable( L, "T.Buffer" );
-	luaL_newlib( L, t_buf_m );
-	lua_setfield( L, -2, "__index" );
-	lua_pushcfunction( L, lt_buf__len );
-	lua_setfield( L, -2, "__len");
-	lua_pushcfunction( L, lt_buf__tostring );
-	lua_setfield( L, -2, "__tostring");
-	lua_pop( L, 1 );        // remove metatable from stack
+	luaL_setfuncs( L, t_buf_m, 0 );
+	lua_setfield( L, -1, "__index" );
 
 	// T.Buffer class
 	luaL_newlib( L, t_buf_cf );

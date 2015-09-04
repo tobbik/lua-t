@@ -1,11 +1,11 @@
 #!../out/bin/lua
-local t = require("t")
+local t = require( 't' )
 
-b=t.Buffer(10, 'ABCDEFGHxx')
-print(b:toHex())
+b=t.Buffer( 'ABCDEFGHxx' )
+print( b:toHex( ) )
 
-b:write16(8, 0x2222)
-print (b:toHex())
+b:write( string.char( 0x22, 0x22) , 8 )
+print( b:toHex( ) )
 
 crc1  = t.Encode.Crc(1, true)    --      1 = CRC16
 crc2  = t.Encode.Crc(1, false)   --      1 = CRC16

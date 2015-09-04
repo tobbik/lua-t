@@ -327,17 +327,16 @@ lt_htp_con__gc( lua_State *L )
 
 
 /**--------------------------------------------------------------------------
- * \brief      the HTTP Connection library definition
- *             assigns Lua available names to C-functions
+ * Objects metamethods library definition
  * --------------------------------------------------------------------------*/
-// static const luaL_Reg t_htp_con_prx_m [] = {
-// 	{"write",        lt_htp_con_write},
-// 	{"finish",       lt_htp_con_finish},
-// 	{"onBody",       lt_htp_con_onbody},
-// 	{"writeHead",    lt_htp_con_writeHead},
-// 	{NULL,    NULL}
-// };
-
+static const luaL_Reg t_htp_con_m [] = {
+	{ "__index",      lt_htp_con__index },
+	{ "__newindex",   lt_htp_con__newindex },
+	{ "__len",        lt_htp_con__len },
+	{ "__gc",         lt_htp_con__gc },
+	{ "__tostring",   lt_htp_con__tostring },
+	{ NULL,    NULL }
+};
 
 
 /**--------------------------------------------------------------------------
@@ -353,22 +352,9 @@ luaopen_t_htp_con( lua_State *L )
 {
 	// T.Http.Server instance metatable
 	luaL_newmetatable( L, "T.Http.Connection" );
-	lua_pushcfunction( L, lt_htp_con__index );
-	lua_setfield( L, -2, "__index" );
-	lua_pushcfunction( L, lt_htp_con__newindex );
-	lua_setfield( L, -2, "__newindex" );
-	lua_pushcfunction( L, lt_htp_con__len );
-	lua_setfield( L, -2, "__len");
-	lua_pushcfunction( L, lt_htp_con__gc );
-	lua_setfield( L, -2, "__gc");
-	lua_pushcfunction( L, lt_htp_con__tostring );
-	lua_setfield( L, -2, "__tostring");
+	luaL_setfuncs( L, t_htp_con_m, 0 );
 	lua_pop( L, 1 );        // remove metatable from stack
 
-	// luaL_newmetatable( L, "T.Http.Connection.Proxy" );
-	// luaL_newlib( L, t_htp_con_prx_m );
-	// lua_setfield( L, -2, "__index" );
-	// lua_pop( L, 1 );        // remove metatable from stack
 	return 0;
 }
 

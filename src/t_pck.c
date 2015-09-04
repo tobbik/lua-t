@@ -1370,8 +1370,8 @@ lt_pcr__call( lua_State *L )
  * Class metamethods library definition
  * --------------------------------------------------------------------------*/
 static const struct luaL_Reg t_pck_fm [] = {
-	{"__call",        lt_pck__Call},
-	{NULL,            NULL}
+	{ "__call",        lt_pck__Call},
+	{ NULL,            NULL }
 };
 
 
@@ -1379,13 +1379,26 @@ static const struct luaL_Reg t_pck_fm [] = {
  * Objects metamethods library definition
  * --------------------------------------------------------------------------*/
 static const struct luaL_Reg t_pck_cf [] = {
-	{"new",       lt_pck_New},
-	{"size",      lt_pck_size},
-	{"get_ref",   lt_pck_getir},
-	{"setendian", lt_pck_defaultendian},
-	{NULL,    NULL}
+	{ "new",       lt_pck_New },
+	{ "size",      lt_pck_size },
+	{ "get_ref",   lt_pck_getir },
+	{ "setendian", lt_pck_defaultendian },
+	{ NULL,    NULL }
 };
 
+/**--------------------------------------------------------------------------
+ * Objects metamethods library definition
+ * --------------------------------------------------------------------------*/
+static const luaL_Reg t_pck_m [] = {
+	{ "__call",          lt_pcr__call },
+	{ "__index",         lt_pck__index },
+	{ "__newindex",      lt_pck__newindex },
+	{ "__pairs",         lt_pck__pairs },
+	{ "__gc",            lt_pck__gc },
+	{ "__len",           lt_pck__len },
+	{ "__tostring",      lt_pck__tostring },
+	{ NULL,    NULL }
+};
 
 /**--------------------------------------------------------------------------
  * pushes the T.Pack.Reader library onto the stack
@@ -1400,20 +1413,7 @@ luaopen_t_pckr( lua_State *L )
 {
 	// T.Pack.Struct instance metatable
 	luaL_newmetatable( L, "T.Pack.Reader" );   // stack: functions meta
-	lua_pushcfunction( L, lt_pck__index );
-	lua_setfield( L, -2, "__index" );
-	lua_pushcfunction( L, lt_pck__newindex );
-	lua_setfield( L, -2, "__newindex" );
-	lua_pushcfunction( L, lt_pck__pairs );
-	lua_setfield( L, -2, "__pairs" );
-	lua_pushcfunction( L, lt_pck__tostring );
-	lua_setfield( L, -2, "__tostring" );
-	lua_pushcfunction( L, lt_pck__len );
-	lua_setfield( L, -2, "__len" );
-	lua_pushcfunction( L, lt_pck__gc );
-	lua_setfield( L, -2, "__gc" );
-	lua_pushcfunction( L, lt_pcr__call );
-	lua_setfield( L, -2, "__call" );
+	luaL_setfuncs( L, t_pck_m, 0 );
 	lua_pop( L, 1 );        // remove metatable from stack
 	return 0;
 }
@@ -1431,20 +1431,8 @@ luaopen_t_pck( lua_State *L )
 {
 	// T.Pack.Struct instance metatable
 	luaL_newmetatable( L, "T.Pack" );   // stack: functions meta
-	lua_pushcfunction( L, lt_pck__index );
-	lua_setfield( L, -2, "__index" );
-	lua_pushcfunction( L, lt_pck__newindex );
-	lua_setfield( L, -2, "__newindex" );
-	lua_pushcfunction( L, lt_pck__pairs );
-	lua_setfield( L, -2, "__pairs" );
-	lua_pushcfunction( L, lt_pck__tostring );
-	lua_setfield( L, -2, "__tostring" );
-	lua_pushcfunction( L, lt_pck__len );
-	lua_setfield( L, -2, "__len" );
-	lua_pushcfunction( L, lt_pck__gc );
-	lua_setfield( L, -2, "__gc" );
-	lua_pushcfunction( L, lt_pcr__call );
-	lua_setfield( L, -2, "__call" );
+	luaL_setfuncs( L, t_pck_m, 0 );
+	lua_pop( L, 1 );        // remove metatable from stack
 	lua_pop( L, 1 );        // remove metatable from stack
 
 	// Push the class onto the stack

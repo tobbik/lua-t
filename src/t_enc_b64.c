@@ -28,7 +28,7 @@ static const uint32_t      mod_table[ ]    = { 0, 2, 1 };
  * Depending on en or decoding returns empty string of right size.
  * \param  size of input
  * \param  encode, if 1 then return string of size need for encoded result
- * \return size_t 
+ * \return size_t
  */
 static size_t
 b64_res_size( size_t len, int for_encode )

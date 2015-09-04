@@ -154,6 +154,8 @@ static const struct luaL_Reg t_wsk_cf [] = {
  * Objects metamethods library definition
  * --------------------------------------------------------------------------*/
 static const luaL_Reg t_wsk_m [] = {
+	{ "__len",           lt_wsk__len },
+	{ "__tostring",      lt_wsk__tostring },
 	{ NULL,    NULL }
 };
 
@@ -170,13 +172,9 @@ LUAMOD_API int luaopen_t_wsk (lua_State *L)
 {
 	// T.Buffer instance metatable
 	luaL_newmetatable( L, "T.Websocket" );
-	luaL_newlib( L, t_wsk_m );
-	lua_setfield( L, -2, "__index" );
-	lua_pushcfunction( L, lt_wsk__len );
-	lua_setfield( L, -2, "__len");
-	lua_pushcfunction( L, lt_wsk__tostring );
-	lua_setfield( L, -2, "__tostring");
-	lua_pop( L, 1 );        // remove metatable from stack
+	luaL_setfuncs( L, t_wsk_m, 0 );
+	lua_setfield( L, -1, "__index" );
+
 	// T.Websocket class
 	luaL_newlib( L, t_wsk_cf );
 	luaL_newlib( L, t_wsk_fm );
