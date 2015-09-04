@@ -576,32 +576,30 @@ lt_ael_showloop( lua_State *L )
 }
 
 
-/**
- * \brief    the metatble for the module
- */
-static const struct luaL_Reg t_ael_fm [] =
-{
-	{ "__call",        lt_ael__Call },
+/**--------------------------------------------------------------------------
+ * Class metamethods library definition
+ * --------------------------------------------------------------------------*/
+static const struct luaL_Reg t_ael_fm [] = {
+	{ "__call",         lt_ael__Call },
 	{ NULL,   NULL}
 };
 
-/**
- * \brief      the Time library class functions definition
- *             assigns Lua available names to C-functions
- */
-static const luaL_Reg t_ael_cf [] =
-{
-	{ "new",           lt_ael_New },
+/**--------------------------------------------------------------------------
+ * Class functions library definition
+ * --------------------------------------------------------------------------*/
+static const luaL_Reg t_ael_cf [] = {
+	{ "new",            lt_ael_New },
 	{ NULL,  NULL }
 };
 
-
-/**
- * \brief      the Timer library definition
- *             assigns Lua available names to C-functions
- */
-static const struct luaL_Reg t_ael_m [] =
-{
+/**--------------------------------------------------------------------------
+ * Objects metamethods library definition
+ * --------------------------------------------------------------------------*/
+static const struct luaL_Reg t_ael_m [] = {
+	// metamethods
+	{ "__tostring",    lt_ael__tostring },
+	{ "__gc",          lt_ael__gc },
+	// instance methods
 	{ "addTimer",       lt_ael_addtimer },
 	{ "removeTimer",    lt_ael_removetimer },
 	{ "addHandle",      lt_ael_addhandle },
@@ -614,7 +612,7 @@ static const struct luaL_Reg t_ael_m [] =
 
 
 /**--------------------------------------------------------------------------
- * \brief   pushes the Loop library onto the stack
+ * Pushes the Loop library onto the stack
  *          - creates Metatable with functions
  *          - creates metatable with methods
  * \param   L     The lua state.
@@ -626,13 +624,8 @@ luaopen_t_ael( lua_State *L )
 {
 	// just make metatable known to be able to register and check userdata
 	luaL_newmetatable( L, "T.Loop" );   // stack: functions meta
-	luaL_newlib( L, t_ael_m );
-	lua_setfield( L, -2, "__index" );
-	lua_pushcfunction( L, lt_ael__tostring );
-	lua_setfield( L, -2, "__tostring" );
-	lua_pushcfunction( L, lt_ael__gc );
-	lua_setfield( L, -2, "__gc" );
-	lua_pop( L, 1 );        // remove metatable from stack
+	luaL_setfuncs( L, t_ael_m, 0 );
+	lua_setfield( L, -1, "__index" );
 
 	// Push the class onto the stack
 	luaL_newlib( L, t_ael_cf );

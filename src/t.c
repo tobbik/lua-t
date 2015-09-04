@@ -344,11 +344,12 @@ static const luaL_Reg l_t_lib [] =
 };
 
 
-/**
- * \brief     Export the t library to Lua
- * \param     The Lua state.
- * \return    1 return value
- */
+/**--------------------------------------------------------------------------
+ * Pushes the T library onto the stack
+ * \param   L      The lua state.
+ * \lreturn table  the library
+ * \return  int    # of values pushed onto the stack.
+ * --------------------------------------------------------------------------*/
 LUAMOD_API int
 luaopen_t( lua_State *L )
 {

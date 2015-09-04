@@ -111,7 +111,8 @@ lt_tim_New( lua_State *L )
 	int              ms;
 
 	tv = t_tim_create_ud( L );
-	if (lua_isnumber( L, 1 )) {
+	if (lua_isnumber( L, 1 ))
+	{
 		ms          = luaL_checkinteger( L, 1 );
 		tv->tv_sec  = ms/1000;
 		tv->tv_usec = (ms % 1000) * 1000;
@@ -202,8 +203,6 @@ lt_tim_set( lua_State *L )
 /**--------------------------------------------------------------------------
  * Get the value of the timer.
  * \param   L        The lua state.
- * \lparam  sockaddr the sockaddr_in userdata.
- * \lreturn string   xxx.xxx.xxx.xxx formatted string representing sockkaddr IP.
  * \return  int  # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int
@@ -212,6 +211,37 @@ lt_tim_get( lua_State *L )
 	struct timeval *tv = t_tim_check_ud( L, 1, 1 );
 	lua_pushinteger( L, t_tim_getms( tv ) );
 	return 1;
+}
+
+
+/**--------------------------------------------------------------------------
+ * Reset the value of a timer to the difference between it's value and now.
+ * It interprets the value of the time object as time passed since epoch and
+ * rewrites it's value as difference between now and the previous value of the
+ * object.  Useful to measure wall clock time in Lua.
+ * \param   L        The lua state.
+ * \return  int  # of values pushed onto the stack.
+ * --------------------------------------------------------------------------*/
+static int
+lt_tim_since( lua_State *L )
+{
+	struct timeval *tv = t_tim_check_ud( L, 1, 1 );
+	t_tim_since( tv );
+	return 0;
+}
+
+
+/**--------------------------------------------------------------------------
+ * Reset the value of a timer to the difference between epoch and now.
+ * \param   L        The lua state.
+ * \return  int  # of values pushed onto the stack.
+ * --------------------------------------------------------------------------*/
+static int
+lt_tim_now( lua_State *L )
+{
+	struct timeval *tv = t_tim_check_ud( L, 1, 1 );
+	gettimeofday( tv, 0 );
+	return 0;
 }
 
 
@@ -332,8 +362,7 @@ lt_tim_sleep( lua_State *L )
 /**--------------------------------------------------------------------------
  * Class metamethods library definition
  * --------------------------------------------------------------------------*/
-static const struct luaL_Reg t_tim_fm [] =
-{
+static const struct luaL_Reg t_tim_fm [] = {
 	{ "__call",    lt_tim__Call },
 	{ NULL,   NULL }
 };
@@ -341,8 +370,7 @@ static const struct luaL_Reg t_tim_fm [] =
 /**--------------------------------------------------------------------------
  * Class functions library definition
  * --------------------------------------------------------------------------*/
-static const luaL_Reg t_tim_cf [] =
-{
+static const luaL_Reg t_tim_cf [] = {
 	{ "new",       lt_tim_New },
 	{ "sleep",     lt_tim_sleep },     // can work on class or instance
 	{ NULL,        NULL }
@@ -351,11 +379,18 @@ static const luaL_Reg t_tim_cf [] =
 /**--------------------------------------------------------------------------
  * Objects metamethods library definition
  * --------------------------------------------------------------------------*/
-static const struct luaL_Reg t_tim_m [] =
-{
-	{ "set",       lt_tim_set },
-	{ "get",       lt_tim_get },
-	{ "sleep",     lt_tim_sleep },
+static const struct luaL_Reg t_tim_m [] = {
+	// metamethods
+	{ "__tostring", lt_tim__tostring },
+	{ "__eq",       lt_tim__eq },
+	{ "__add",      lt_tim__add },
+	{ "__sub",      lt_tim__sub },
+	// instance methods
+	{ "set",        lt_tim_set },
+	{ "get",        lt_tim_get },
+	{ "sleep",      lt_tim_sleep },
+	{ "now",        lt_tim_now },
+	{ "since",      lt_tim_since },
 	{ NULL,   NULL }
 };
 
@@ -372,18 +407,9 @@ LUA_API int
 luaopen_t_tim( lua_State *L )
 {
 	// just make metatable known to be able to register and check userdata
-	luaL_newmetatable( L, "T.Time" );   // stack: functions meta
-	luaL_newlib( L, t_tim_m );
-	lua_setfield( L, -2, "__index" );
-	lua_pushcfunction( L, lt_tim__tostring );
-	lua_setfield( L, -2, "__tostring" );
-	lua_pushcfunction( L, lt_tim__eq );
-	lua_setfield( L, -2, "__eq" );
-	lua_pushcfunction( L, lt_tim__add );
-	lua_setfield( L, -2, "__add" );
-	lua_pushcfunction( L, lt_tim__sub );
-	lua_setfield( L, -2, "__sub" );
-	lua_pop( L, 1 );        // remove metatable from stack
+	luaL_newmetatable( L, "T.Time" );
+	luaL_setfuncs( L, t_tim_m, 0 );
+	lua_setfield( L, -1, "__index" );
 
 	// Push the class onto the stack
 	luaL_newlib( L, t_tim_cf );

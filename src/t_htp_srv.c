@@ -277,16 +277,16 @@ lt_htp_srv__gc( lua_State *L )
  * Class metamethods library definition
  * --------------------------------------------------------------------------*/
 static const struct luaL_Reg t_htp_srv_fm [] = {
-	{"__call",        lt_htp_srv__Call},
-	{NULL,            NULL}
+	{ "__call",        lt_htp_srv__Call },
+	{ NULL,            NULL }
 };
 
 /**--------------------------------------------------------------------------
  * Class functions library definition
  * --------------------------------------------------------------------------*/
 static const struct luaL_Reg t_htp_srv_cf [] = {
-	{"new",           lt_htp_srv_New},
-	{NULL,            NULL}
+	{ "new",           lt_htp_srv_New },
+	{ NULL,   NULL }
 };
 
 
@@ -294,8 +294,11 @@ static const struct luaL_Reg t_htp_srv_cf [] = {
  * Objects metamethods library definition
  * --------------------------------------------------------------------------*/
 static const luaL_Reg t_htp_srv_m [] = {
-	{"listen",        lt_htp_srv_listen},
-	{NULL,    NULL}
+	{ "__len",         lt_htp_srv__len },
+	{ "__gc",          lt_htp_srv__gc },
+	{ "__tostring",    lt_htp_srv__tostring },
+	{ "listen",        lt_htp_srv_listen },
+	{ NULL,    NULL }
 };
 
 
@@ -312,15 +315,9 @@ luaopen_t_htp_srv( lua_State *L )
 {
 	// T.Http.Server instance metatable
 	luaL_newmetatable( L, "T.Http.Server" );
-	luaL_newlib( L, t_htp_srv_m );
-	lua_setfield( L, -2, "__index" );
-	lua_pushcfunction( L, lt_htp_srv__len );
-	lua_setfield( L, -2, "__len");
-	lua_pushcfunction( L, lt_htp_srv__gc );
-	lua_setfield( L, -2, "__gc");
-	lua_pushcfunction( L, lt_htp_srv__tostring );
-	lua_setfield( L, -2, "__tostring");
-	lua_pop( L, 1 );        // remove metatable from stack
+	luaL_setfuncs( L, t_htp_srv_m, 0 );
+	lua_setfield( L, -1, "__index" );
+
 	// T.Http.Server class
 	luaL_newlib( L, t_htp_srv_cf );
 	luaL_newlib( L, t_htp_srv_fm );

@@ -569,12 +569,24 @@ lt_htp_str__gc( lua_State *L )
 /**--------------------------------------------------------------------------
  * Objects metamethods library definition
  * --------------------------------------------------------------------------*/
+static const luaL_Reg t_htp_str_m [] = {
+	{ "__index",      lt_htp_str__index },
+	{ "__newindex",   lt_htp_str__newindex },
+	{ "__len",        lt_htp_str__len },
+	{ "__gc",         lt_htp_str__gc },
+	{ "__tostring",   lt_htp_str__tostring },
+	{ NULL,    NULL }
+};
+
+/**--------------------------------------------------------------------------
+ * Proxytable methods library definition
+ * --------------------------------------------------------------------------*/
 static const luaL_Reg t_htp_str_prx_s [] = {
-	{"write",        lt_htp_str_write},
-	{"finish",       lt_htp_str_finish},
-	{"writeHead",    lt_htp_str_writeHead},
-	{"onBody",       lt_htp_str_onbody},
-	{NULL,    NULL}
+	{ "write",        lt_htp_str_write },
+	{ "finish",       lt_htp_str_finish },
+	{ "writeHead",    lt_htp_str_writeHead },
+	{ "onBody",       lt_htp_str_onbody },
+	{ NULL,    NULL }
 };
 
 
@@ -592,22 +604,12 @@ luaopen_t_htp_str( lua_State *L )
 {
 	// T.Http.Stream instance metatable
 	luaL_newmetatable( L, "T.Http.Stream" );
-	lua_pushcfunction( L, lt_htp_str__index );
-	lua_setfield( L, -2, "__index" );
-	lua_pushcfunction( L, lt_htp_str__newindex );
-	lua_setfield( L, -2, "__newindex" );
-	lua_pushcfunction( L, lt_htp_str__len );
-	lua_setfield( L, -2, "__len");
-	lua_pushcfunction( L, lt_htp_str__gc );
-	lua_setfield( L, -2, "__gc");
-	lua_pushcfunction( L, lt_htp_str__tostring );
-	lua_setfield( L, -2, "__tostring");
+	luaL_setfuncs( L, t_htp_str_m, 0 );
 	lua_pop( L, 1 );        // remove metatable T.Http.Stream from stack
 
 	luaL_newmetatable( L, "T.Http.Stream.Proxy" );
-	luaL_newlib( L, t_htp_str_prx_s );
-	lua_setfield( L, -2, "__index" );
-	lua_pop( L, 1 );        // remove metatable T.Http.Stream.Proxy from stack
+	luaL_setfuncs( L, t_htp_str_prx_s, 0 );
+	lua_setfield( L, -1, "__index" );
 	return 0;
 }
 

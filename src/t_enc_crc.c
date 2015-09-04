@@ -404,9 +404,8 @@ luaopen_t_enc_crc( lua_State *L )
 	// just make metatable known to be able to register and check userdata
 	// this is only avalable a <instance>:func()
 	luaL_newmetatable( L, "T.Encode.Crc" );   // stack: functions meta
-	luaL_newlib( L, t_enc_crc_m );
-	lua_setfield( L, -2, "__index" );
-	lua_pop( L, 1 );        // remove metatable from stack
+	luaL_setfuncs( L, t_enc_crc_m, 0 );
+	lua_setfield( L, -1, "__index" );
 
 	// Push the class onto the stack
 	// this is avalable as Crc.new

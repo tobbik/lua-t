@@ -243,7 +243,7 @@ lt_ipx_get_port( lua_State *L )
  * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int
-lt_ipx___tostring( lua_State *L )
+lt_ipx__tostring( lua_State *L )
 {
 	struct sockaddr_in *ip = t_ipx_check_ud( L, 1, 1 );
 	lua_pushfstring( L, "T.Ip{%s:%d}: %p",
@@ -263,7 +263,7 @@ lt_ipx___tostring( lua_State *L )
  * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int
-lt_ipx___eq( lua_State *L )
+lt_ipx__eq( lua_State *L )
 {
 	struct sockaddr_in *ip    = t_ipx_check_ud( L, 1, 1 );
 	struct sockaddr_in *ipCmp = t_ipx_check_ud( L, 2, 1 );
@@ -358,6 +358,10 @@ static const luaL_Reg t_ipx_cf [] =
  * Objects metamethods library definition
  * --------------------------------------------------------------------------*/
 static const struct luaL_Reg t_ipx_m [] = {
+	// metamethods
+	{ "__tostring",  lt_ipx__tostring },
+	{ "__eq",        lt_ipx__eq },
+	// object methods
 	{ "setIp",       lt_ipx_set_ip },
 	{ "getIp",       lt_ipx_get_ip },
 	{ "setPort",     lt_ipx_set_port },
@@ -378,13 +382,8 @@ luaopen_t_ipx( lua_State *L )
 	// just make metatable known to be able to register and check userdata
 	// this is only avalable a <instance>:func()
 	luaL_newmetatable( L, "T.Ip" );   // stack: functions meta
-	luaL_newlib( L, t_ipx_m );
-	lua_setfield( L, -2, "__index" );
-	lua_pushcfunction( L, lt_ipx___tostring );
-	lua_setfield( L, -2, "__tostring" );
-	lua_pushcfunction( L, lt_ipx___eq );
-	lua_setfield( L, -2, "__eq" );
-	lua_pop( L, 1 );        // remove metatable from stack
+	luaL_setfuncs( L, t_ipx_m, 0 );
+	lua_setfield( L, -1, "__index" );
 
 	// Push the class onto the stack
 	// this is avalable as T.ip.<member>

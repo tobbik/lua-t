@@ -764,19 +764,24 @@ static const luaL_Reg t_sck_cf [] =
  * --------------------------------------------------------------------------*/
 static const luaL_Reg t_sck_m [] =
 {
-	{ "listen",    lt_sck_listen },
-	{ "bind",      lt_sck_bind },
-	{ "connect",   lt_sck_connect },
-	{ "accept",    lt_sck_accept },
-	{ "close",     lt_sck_close },
-	{ "sendTo",    lt_sck_sendto },
-	{ "recvFrom",  lt_sck_recvfrom },
-	{ "send",      lt_sck_send },
-	{ "recv",      lt_sck_recv },
-	{ "getId",     lt_sck_getfdid },
-	{ "getFdInfo", lt_sck_getfdinfo },
-	{ "getIp",     lt_sck_getsockname },
-	{ "setOption", lt_sck_setoption },
+	// metamethods
+	{ "__tostring",  lt_sck__tostring },
+	//{ "__eq",        lt_sck__eq },
+	{ "__gc",        lt_sck_close },  // reuse function
+	// object methods
+	{ "listen",      lt_sck_listen },
+	{ "bind",        lt_sck_bind },
+	{ "connect",     lt_sck_connect },
+	{ "accept",      lt_sck_accept },
+	{ "close",       lt_sck_close },
+	{ "sendTo",      lt_sck_sendto },
+	{ "recvFrom",    lt_sck_recvfrom },
+	{ "send",        lt_sck_send },
+	{ "recv",        lt_sck_recv },
+	{ "getId",       lt_sck_getfdid },
+	{ "getFdInfo",   lt_sck_getfdinfo },
+	{ "getIp",       lt_sck_getsockname },
+	{ "setOption",   lt_sck_setoption },
 	{ NULL,        NULL }
 };
 
@@ -794,13 +799,8 @@ luaopen_t_sck( lua_State *L )
 {
 	// just make metatable known to be able to register and check userdata
 	luaL_newmetatable( L, "T.Socket" );   // stack: functions meta
-	luaL_newlib( L, t_sck_m);
-	lua_setfield( L, -2, "__index" );
-	lua_pushcfunction( L, lt_sck__tostring );
-	lua_setfield( L, -2, "__tostring");
-	lua_pushcfunction( L, lt_sck_close );
-	lua_setfield( L, -2, "__gc");
-	lua_pop( L, 1 );        // remove metatable from stack
+	luaL_setfuncs( L, t_sck_m, 0 );
+	lua_setfield( L, -1, "__index" );
 
 	// Push the class onto the stack
 	// this is avalable as Socket.<member>
