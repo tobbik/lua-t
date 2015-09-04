@@ -93,27 +93,25 @@ struct t_pcr {
 };
 
 
-
 // t_buf.c
 // Constructors
-int              luaopen_t_buf  ( lua_State *luaVM );
-struct t_buf   *t_buf_check_ud ( lua_State *luaVM, int pos, int check );
-struct t_buf   *t_buf_create_ud( lua_State *luaVM, int size );
+int              luaopen_t_buf ( lua_State *L );
+struct t_buf   *t_buf_check_ud ( lua_State *L, int pos, int check );
+struct t_buf   *t_buf_create_ud( lua_State *L, int size );
 
 // helpers to check and verify input on stack
-struct t_buf * t_buf_getbuffer( lua_State *luaVM, int pB, int pP, int *pos );
-
+struct t_buf * t_buf_getbuffer( lua_State *L, int pB, int pP, int *pos );
 
 
 // t_pck.c
 // Constructors
-struct t_pck *t_pck_check_ud ( lua_State *luaVM, int pos, int check );
-struct t_pck *t_pck_create_ud( lua_State *luaVM, enum t_pck_t t, size_t s, int m );
+struct t_pck *t_pck_check_ud ( lua_State *L, int pos, int check );
+struct t_pck *t_pck_create_ud( lua_State *L, enum t_pck_t t, size_t s, int m );
 
 // accessor helpers for the Packers
-int t_pck_read ( lua_State *luaVM, struct t_pck *p, const unsigned char *buffer);
-int t_pck_write( lua_State *luaVM, struct t_pck *p, unsigned char *buffer );
+int t_pck_read ( lua_State *L, struct t_pck *p, const unsigned char *buffer);
+int t_pck_write( lua_State *L, struct t_pck *p, unsigned char *buffer );
 
 // helpers for the Packers
-struct t_pck *t_pck_getpck( lua_State *luaVM, int pos, size_t *bo );
-int           t_pcr__callread ( lua_State *luaVM, struct t_pck *pc, const unsigned char *b );
+struct t_pck *t_pck_getpck( lua_State *L, int pos, size_t *bo );
+int           t_pcr__callread ( lua_State *L, struct t_pck *pc, const unsigned char *b );

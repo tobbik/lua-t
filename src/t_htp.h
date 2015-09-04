@@ -158,40 +158,40 @@ struct t_htp_buf {
 // | |  | |  __/ |_| | | | (_) | (_| \__ \
 // |_|  |_|\___|\__|_| |_|\___/ \__,_|___/
 // t_htp.c
-const char       *t_htp_pReqFirstLine( lua_State *luaVM, struct t_htp_str *s, size_t n );
-const char       *t_htp_pHeaderLine  ( lua_State *luaVM, struct t_htp_str *s, size_t n );
+const char       *t_htp_pReqFirstLine( lua_State *L, struct t_htp_str *s, size_t n );
+const char       *t_htp_pHeaderLine  ( lua_State *L, struct t_htp_str *s, size_t n );
 const char       *t_htp_status       ( int status );
 
 
 // t_htp_srv.c
 // Constructors
-struct t_htp_srv *t_htp_srv_check_ud ( lua_State *luaVM, int pos, int check );
-struct t_htp_srv *t_htp_srv_create_ud( lua_State *luaVM );
+struct t_htp_srv *t_htp_srv_check_ud ( lua_State *L, int pos, int check );
+struct t_htp_srv *t_htp_srv_create_ud( lua_State *L );
 void              t_htp_srv_setnow( struct t_htp_srv *s, int force );
 
 
 // HTTP Connection specific methods
 // Constructors
-struct t_htp_con *t_htp_con_check_ud ( lua_State *luaVM, int pos, int check );
-struct t_htp_con *t_htp_con_create_ud( lua_State *luaVM, struct t_htp_srv *srv );
+struct t_htp_con *t_htp_con_check_ud ( lua_State *L, int pos, int check );
+struct t_htp_con *t_htp_con_create_ud( lua_State *L, struct t_htp_srv *srv );
 // methods
-int               t_htp_con_rcv    ( lua_State *luaVM );
-int               t_htp_con_rsp    ( lua_State *luaVM );
+int               t_htp_con_rcv    ( lua_State *L );
+int               t_htp_con_rsp    ( lua_State *L );
 void              t_htp_con_adjustbuffer( struct t_htp_con *c, size_t read, const char* rpos );
 
 // HTTP Stream specific methods
 // Constructors
-struct t_htp_str *t_htp_str_check_ud ( lua_State *luaVM, int pos, int check );
-struct t_htp_str *t_htp_str_create_ud( lua_State *luaVM, struct t_htp_con *con );
+struct t_htp_str *t_htp_str_check_ud ( lua_State *L, int pos, int check );
+struct t_htp_str *t_htp_str_create_ud( lua_State *L, struct t_htp_con *con );
 // methods
-int               t_htp_str_rcv    ( lua_State *luaVM, struct t_htp_str *s, size_t rcvd );
-int               lt_htp_str__gc( lua_State *luaVM );
+int               t_htp_str_rcv    ( lua_State *L, struct t_htp_str *s, size_t rcvd );
+int               lt_htp_str__gc( lua_State *L );
 
 
 // library exporters
-LUAMOD_API int luaopen_t_htp_str( lua_State *luaVM );
-LUAMOD_API int luaopen_t_htp_con( lua_State *luaVM );
-LUAMOD_API int luaopen_t_htp_srv( lua_State *luaVM );
+LUAMOD_API int luaopen_t_htp_str( lua_State *L );
+LUAMOD_API int luaopen_t_htp_con( lua_State *L );
+LUAMOD_API int luaopen_t_htp_srv( lua_State *L );
 
 
 // __        __   _    ____             _        _
@@ -227,6 +227,6 @@ struct t_wsk {
 };
 
 
-struct t_wsk  *t_wsk_create_ud( lua_State *luaVM );
-struct t_wsk  *t_wsk_check_ud ( lua_State *luaVM, int pos, int check );
+struct t_wsk  *t_wsk_create_ud( lua_State *L );
+struct t_wsk  *t_wsk_check_ud ( lua_State *L, int pos, int check );
 

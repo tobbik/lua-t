@@ -3,7 +3,7 @@
 ---
 -- \file    sampleTest
 -- \brief   basic tests to show xt.Test
-local   T = require ('xt').Test
+local   T = require ('t').Test
 t=T('Test some simple stuff')
 
 
@@ -19,6 +19,7 @@ end
 
 t.test_EqNumbers = function(self)
 	-- #DESC: Test for equality of numeric values
+	self:skip( " Give me one reason" )
 	self._eq (self.b, self.a*2, "Simple Multiplication")
 end
 

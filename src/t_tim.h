@@ -8,13 +8,12 @@
  */
 
 
-//  _____                      
-// |_   _|   _ _ __   ___  ___ 
+//  _____
+// |_   _|   _ _ __   ___  ___
 //   | || | | | '_ \ / _ \/ __|
 //   | || |_| | |_) |  __/\__ \
 //   |_| \__, | .__/ \___||___/
-// 		|___/|_|              
-
+//       |___/|_|
 // there is NO "struct t_tim" type because it is perfectly fine to reuse
 // struct timeval from time.h
 
@@ -22,8 +21,8 @@
 
 // Constructors
 // t_tim.c
-struct timeval *t_tim_check_ud ( lua_State *luaVM, int pos, int check );
-struct timeval *t_tim_create_ud( lua_State *luaVM );
+struct timeval *t_tim_check_ud ( lua_State *L, int pos, int check );
+struct timeval *t_tim_create_ud( lua_State *L );
 
 
 // helpers

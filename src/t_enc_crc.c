@@ -210,29 +210,29 @@ init_32( struct t_enc_crc *crc, uint32_t poly )
 
 // ----------------------------- Lua CRC wrapper functions
 /**--------------------------------------------------------------------------
- * construct a CRC encoder and return it.
- * \param   luaVM  The lua state.
+ * Construct a CRC encoder and return it.
+ * \param   L  The lua state.
  * \lparam  CLASS table CRC
- * \return  The number of results to be passed back to the calling Lua script.
+ * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int
-lt_enc_crc__Call( lua_State *luaVM )
+lt_enc_crc__Call( lua_State *L )
 {
-	lua_remove( luaVM, 1 );
-	return lt_enc_crc_New( luaVM );
+	lua_remove( L, 1 );
+	return lt_enc_crc_New( L );
 }
 
 
 /**--------------------------------------------------------------------------
- * \brief   resets the CRC encoder to it's initial value.
- * \param   luaVM  The lua state.
- * \return  The number of results to be passed back to the calling Lua script.
+ * Resets the CRC encoder to it's initial value.
+ * \param   L  The lua state.
+ * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int
-lt_enc_crc_reset( lua_State *luaVM )
+lt_enc_crc_reset( lua_State *L )
 {
 	struct t_enc_crc  *crc;
-	crc = t_enc_crc_check_ud( luaVM, 1 );
+	crc = t_enc_crc_check_ud( L, 1 );
 	crc->crc32 = crc->init32;
 	return 0;
 }
@@ -240,21 +240,21 @@ lt_enc_crc_reset( lua_State *luaVM )
 
 
 /**--------------------------------------------------------------------------
- * construct a CRC encoder and return it.
- * \param   luaVM The lua state.
+ * Construct a CRC encoder and return it.
+ * \param   L The lua state.
  * \lparam  key   key string (optional)
  * \lparam  kLen  length of key string (if key contains \0 bytes (optional))
  * \lreturn struct T.Encode.Crc userdata.
- * \return  The number of results to be passed back to the calling Lua script.
+ * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 int
-lt_enc_crc_New( lua_State *luaVM )
+lt_enc_crc_New( lua_State *L )
 {
 	struct t_enc_crc    *crc;
 	int                  alg;
 
-	crc = t_enc_crc_create_ud( luaVM );
-	alg = luaL_checkinteger( luaVM, 1 );
+	crc = t_enc_crc_create_ud( L );
+	alg = luaL_checkinteger( L, 1 );
 	switch (alg)
 	{
 		case CRC_ALG_8:
@@ -273,58 +273,58 @@ lt_enc_crc_New( lua_State *luaVM )
 			init_32( crc, POLY_32 );
 			break;
 		default:
-			t_push_error( luaVM, "Unknown CRC algorithm" );
+			t_push_error( L, "Unknown CRC algorithm" );
 	}
-	crc->be = (lua_isboolean( luaVM, 2 )) ? lua_toboolean( luaVM, 2 ) : 1;
+	crc->be = (lua_isboolean( L, 2 )) ? lua_toboolean( L, 2 ) : 1;
 
 	return 1;
 }
 
 
 /**--------------------------------------------------------------------------
- * \brief   create a crc encode userdata and push to LuaStack.
- * \param   luaVM  The lua state.
+ * Create a crc encode userdata and push to LuaStack.
+ * \param   L  The lua state.
  * \return  struct t_enc_crc*  pointer
  * --------------------------------------------------------------------------*/
 struct t_enc_crc
-*t_enc_crc_create_ud( lua_State *luaVM )
+*t_enc_crc_create_ud( lua_State *L )
 {
 	struct t_enc_crc *crc;
 
-	crc = (struct t_enc_crc *) lua_newuserdata( luaVM, sizeof( struct t_enc_crc ) );
-	luaL_getmetatable( luaVM, "T.Encode.Crc" );
-	lua_setmetatable( luaVM, -2 );
+	crc = (struct t_enc_crc *) lua_newuserdata( L, sizeof( struct t_enc_crc ) );
+	luaL_getmetatable( L, "T.Encode.Crc" );
+	lua_setmetatable( L, -2 );
 	return crc;
 }
 
 
 /**--------------------------------------------------------------------------
- * \brief   check a value on the stack for being a struct t_enc_crc
- * \param   luaVM    The lua state.
+ * Check a value on the stack for being a struct t_enc_crc
+ * \param   L    The lua state.
  * \param   int      position on the stack
  * \return  struct t_enc_crc*
  * --------------------------------------------------------------------------*/
 struct t_enc_crc
-*t_enc_crc_check_ud( lua_State *luaVM, int pos )
+*t_enc_crc_check_ud( lua_State *L, int pos )
 {
-	void *ud = luaL_checkudata( luaVM, pos, "T.Encode.Crc" );
-	luaL_argcheck( luaVM, ud != NULL, pos, "`T.Encode.Crc` expected" );
+	void *ud = luaL_checkudata( L, pos, "T.Encode.Crc" );
+	luaL_argcheck( L, ud != NULL, pos, "`T.Encode.Crc` expected" );
 	return (struct t_enc_crc *) ud;
 }
 
 
 /** -------------------------------------------------------------------------
- * \brief   Calculate the CRC checksum over a string or T.Buffer.
- * \param   luaVM  The lua state.
+ * Calculate the CRC checksum over a string or T.Buffer.
+ * \param   L  The lua state.
  * \lparam  t_enc_crc userdata.
  * \lparam  data       luastring or T.Buffer.
  * \lparam  sta        start index in data.
  * \lparam  end        end index in data.
  * \lreturn crc        the CRC checksum.
- * \return  The number of results to be passed back to the calling Lua script.
+ * \return  struct t_enc_crc*
  *-------------------------------------------------------------------------*/
 static int
-lt_enc_crc_calc( lua_State *luaVM )
+lt_enc_crc_calc( lua_State *L )
 {
 	struct t_enc_crc  *crc;
 	struct t_buf      *buf;
@@ -333,61 +333,59 @@ lt_enc_crc_calc( lua_State *luaVM )
 	int                sta;
 	int                res;
 
-	crc = t_enc_crc_check_ud( luaVM, 1 );
-	sta = (lua_isnumber( luaVM, 3 )) ? luaL_checkinteger( luaVM, 3 )     : 0;
+	crc = t_enc_crc_check_ud( L, 1 );
+	sta = (lua_isnumber( L, 3 )) ? luaL_checkinteger( L, 3 )     : 0;
 	// if string
-	if (lua_isstring( luaVM, 2 ))
+	if (lua_isstring( L, 2 ))
 	{
-		msg   = luaL_checklstring( luaVM, 2, &len ) + sta;
+		msg   = luaL_checklstring( L, 2, &len ) + sta;
 	}
 	// if t_buffer
-	else if (lua_isuserdata( luaVM, 2 ))
+	else if (lua_isuserdata( L, 2 ))
 	{
-		buf  = t_buf_check_ud( luaVM, 2, 1 );
+		buf  = t_buf_check_ud( L, 2, 1 );
 		msg  = (const char *) &(buf->b[ sta ]);
 		//msg  =  &(buf->b[ 0 ]);
 		len  = buf->len;
 	}
 	else
-		return t_push_error( luaVM,
+		return t_push_error( L,
 			"ERROR T.Encode.Crc:calc(msg) takes msg argument" );
 
-	len = (lua_isnumber( luaVM, 4 )) ? (size_t) luaL_checkinteger( luaVM, 4 )-sta : len - sta;
+	len = (lua_isnumber( L, 4 )) ? (size_t) luaL_checkinteger( L, 4 )-sta : len - sta;
 
 	res = crc->calc( crc, msg, len );
-	lua_pushinteger( luaVM, res );
+	lua_pushinteger( L, res );
 	return 1;
 }
 
 
-/**
- * \brief    the metatble for the module
- */
+/**--------------------------------------------------------------------------
+ * Class metamethods library definition
+ * --------------------------------------------------------------------------*/
 static const struct luaL_Reg t_enc_crc_fm [] = {
-	{"__call",      lt_enc_crc__Call},
-	{NULL,          NULL}
+	{ "__call",  lt_enc_crc__Call },
+	{ NULL,  NULL }
 };
 
 
-/**
- * \brief      the CRC static class function library definition
- *             assigns Lua available names to C-functions
- */
+/**--------------------------------------------------------------------------
+ * Class functions library definition
+ * --------------------------------------------------------------------------*/
 static const struct luaL_Reg t_enc_crc_cf [] = {
-	{"new",     lt_enc_crc_New},
-	{NULL,      NULL}
+	{ "new",     lt_enc_crc_New },
+	{ NULL,  NULL }
 };
 
 
-/**
- * \brief      the CRC member functions definition
- *             assigns Lua available names to C-functions
- */
+/**--------------------------------------------------------------------------
+ * Objects metamethods library definition
+ * --------------------------------------------------------------------------*/
 static const luaL_Reg t_enc_crc_m [] =
 {
-	{"calc",    lt_enc_crc_calc},
-	{"reset",   lt_enc_crc_reset},
-	{NULL,      NULL}
+	{ "calc",    lt_enc_crc_calc },
+	{ "reset",   lt_enc_crc_reset },
+	{ NULL,  NULL}
 };
 
 
@@ -396,26 +394,26 @@ static const luaL_Reg t_enc_crc_m [] =
  * \brief   pushes the T.Encode.CRC library onto the stack
  *          - creates Metatable with functions
  *          - creates metatable with methods
- * \param   luaVM     The lua state.
- * \lreturn string    the library
- * \return  The number of results to be passed back to the calling Lua script.
+ * \param   L     The lua state.
+ * \lreturn table  the library
+ * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 LUAMOD_API int
-luaopen_t_enc_crc( lua_State *luaVM )
+luaopen_t_enc_crc( lua_State *L )
 {
 	// just make metatable known to be able to register and check userdata
 	// this is only avalable a <instance>:func()
-	luaL_newmetatable( luaVM, "T.Encode.Crc" );   // stack: functions meta
-	luaL_newlib( luaVM, t_enc_crc_m );
-	lua_setfield( luaVM, -2, "__index" );
-	lua_pop( luaVM, 1 );        // remove metatable from stack
+	luaL_newmetatable( L, "T.Encode.Crc" );   // stack: functions meta
+	luaL_newlib( L, t_enc_crc_m );
+	lua_setfield( L, -2, "__index" );
+	lua_pop( L, 1 );        // remove metatable from stack
 
 	// Push the class onto the stack
 	// this is avalable as Crc.new
-	luaL_newlib( luaVM, t_enc_crc_cf );
+	luaL_newlib( L, t_enc_crc_cf );
 	// set the constructor metatable Crc()
-	luaL_newlib( luaVM, t_enc_crc_fm );
-	lua_setmetatable( luaVM, -2 );
+	luaL_newlib( L, t_enc_crc_fm );
+	lua_setmetatable( L, -2 );
 	return 1;
 }
 
