@@ -1,11 +1,11 @@
 /* vim: ts=3 sw=3 sts=3 tw=80 sta noet list
 */
-/**
+/** -------------------------------------------------------------------------
  * \file      t_enc.h
  * \brief     Data Types and global functions for various En?decoders
  * \author    tkieslich
  * \copyright See Copyright notice at the end of t.h
- */
+ *-------------------------------------------------------------------------*/
 
 /// struct to keep track of a Arc4 encoding
 struct t_enc_arc4 {
@@ -42,17 +42,17 @@ struct t_enc_crc {
 
 // Constructors
 // t_enc_arc4.c
-struct t_enc_arc4 *t_enc_arc4_check_ud ( lua_State *luaVM, int pos );
-struct t_enc_arc4 *t_enc_arc4_create_ud( lua_State *luaVM );
-int                lt_enc_arc4_New     ( lua_State *luaVM );
-int                luaopen_t_enc_arc4  ( lua_State *luaVM );
+struct t_enc_arc4 *t_enc_arc4_check_ud ( lua_State *L, int pos );
+struct t_enc_arc4 *t_enc_arc4_create_ud( lua_State *L );
+int                lt_enc_arc4_New     ( lua_State *L );
+int                luaopen_t_enc_arc4  ( lua_State *L );
 
 // t_enc_crc.c
-struct t_enc_crc  *t_enc_crc_check_ud  ( lua_State *luaVM, int pos );
-struct t_enc_crc  *t_enc_crc_create_ud ( lua_State *luaVM );
-int                lt_enc_crc_New      ( lua_State *luaVM );
-int                luaopen_t_enc_crc   ( lua_State *luaVM );
+struct t_enc_crc  *t_enc_crc_check_ud  ( lua_State *L, int pos );
+struct t_enc_crc  *t_enc_crc_create_ud ( lua_State *L );
+int                lt_enc_crc_New      ( lua_State *L );
+int                luaopen_t_enc_crc   ( lua_State *L );
 
 // t_enc_b64.c
-int                luaopen_t_enc_b64   ( lua_State *luaVM );
+int                luaopen_t_enc_b64   ( lua_State *L );
 

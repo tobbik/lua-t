@@ -16,20 +16,20 @@
 
 /**--------------------------------------------------------------------------
  * create a t_htp_str and push to LuaStack.
- * \param   luaVM  The lua state.
+ * \param   L  The lua state.
  *
  * \return  struct t_htp_str*  pointer to the struct.
  * --------------------------------------------------------------------------*/
 struct t_htp_str
-*t_htp_str_create_ud( lua_State *luaVM, struct t_htp_con *con )
+*t_htp_str_create_ud( lua_State *L, struct t_htp_con *con )
 {
 	struct t_htp_str *s;
-	s = (struct t_htp_str *) lua_newuserdata( luaVM, sizeof( struct t_htp_str ));
+	s = (struct t_htp_str *) lua_newuserdata( L, sizeof( struct t_htp_str ));
 	// Proxy contains lua readable items such as headers, length, status code etc
-	lua_newtable( luaVM );
-	luaL_getmetatable( luaVM, "T.Http.Stream.Proxy" );
-	lua_setmetatable( luaVM, -2 );
-	s->pR      = luaL_ref( luaVM, LUA_REGISTRYINDEX );
+	lua_newtable( L );
+	luaL_getmetatable( L, "T.Http.Stream.Proxy" );
+	lua_setmetatable( L, -2 );
+	s->pR      = luaL_ref( L, LUA_REGISTRYINDEX );
 	s->rqCl    = 0;                 ///< request  content length
 	s->rsCl    = 0;                 ///< response content length
 	s->rsBl    = 0;                 ///< response buffer length (headers + rsCl)
@@ -39,24 +39,24 @@ struct t_htp_str
 	s->ver     = T_HTP_VER_09;      ///< HTTP Method for this request
 	s->con     = con;               ///< connection
 
-	luaL_getmetatable( luaVM, "T.Http.Stream" );
-	lua_setmetatable( luaVM, -2 );
+	luaL_getmetatable( L, "T.Http.Stream" );
+	lua_setmetatable( L, -2 );
 	return s;
 }
 
 
 /**--------------------------------------------------------------------------
  * Check if the item on stack position pos is an t_htp_str struct and return it
- * \param  luaVM    the Lua State
+ * \param  L    the Lua State
  * \param  pos      position on the stack
  *
  * \return  struct t_htp_str*  pointer to the struct.
  * --------------------------------------------------------------------------*/
 struct t_htp_str
-*t_htp_str_check_ud( lua_State *luaVM, int pos, int check )
+*t_htp_str_check_ud( lua_State *L, int pos, int check )
 {
-	void *ud = luaL_checkudata( luaVM, pos, "T.Http.Stream" );
-	luaL_argcheck( luaVM, (ud != NULL || !check), pos, "`T.Http.Stream` expected" );
+	void *ud = luaL_checkudata( L, pos, "T.Http.Stream" );
+	luaL_argcheck( L, (ud != NULL || !check), pos, "`T.Http.Stream` expected" );
 	return (struct t_htp_str *) ud;
 }
 
@@ -64,13 +64,13 @@ struct t_htp_str
 /**--------------------------------------------------------------------------
  * Handle incoming chunks from T.Http.Connection socket.
  * Called anytime the client socket returns from the poll for read.
- * \param  luaVM            lua Virtual Machine.
+ * \param  L            lua Virtual Machine.
  * \param  struct t_htp_str struct t_htp_str.
  * \param  const char *     pointer to the buffer (already positioned).
  * \return  integer         success indicator.
  *  -------------------------------------------------------------------------*/
 int
-t_htp_str_rcv( lua_State *luaVM, struct t_htp_str *s, size_t rcvd )
+t_htp_str_rcv( lua_State *L, struct t_htp_str *s, size_t rcvd )
 {
 	const char *b = &(s->con->buf[ s->con->read ]);
 
@@ -79,20 +79,20 @@ t_htp_str_rcv( lua_State *luaVM, struct t_htp_str *s, size_t rcvd )
 		switch (s->state)
 		{
 			case T_HTP_STR_ZERO:
-				lua_rawgeti( luaVM, LUA_REGISTRYINDEX, s->pR );
-				b = t_htp_pReqFirstLine( luaVM, s, rcvd );
+				lua_rawgeti( L, LUA_REGISTRYINDEX, s->pR );
+				b = t_htp_pReqFirstLine( L, s, rcvd );
 				break;
 			case T_HTP_STR_FLINE:
-				//lua_rawgeti( luaVM, LUA_REGISTRYINDEX, s->pR );
-				b = t_htp_pHeaderLine( luaVM, s, rcvd );
+				//lua_rawgeti( L, LUA_REGISTRYINDEX, s->pR );
+				b = t_htp_pHeaderLine( L, s, rcvd );
 				break;
 			case T_HTP_STR_HEADDONE:
 				s->con->cnt++;
-				lua_pop( luaVM, 1 );      // pop s->pR
+				lua_pop( L, 1 );      // pop s->pR
 				// execute function from server
-				lua_rawgeti( luaVM, LUA_REGISTRYINDEX, s->con->srv->rR );
-				lua_pushvalue( luaVM, 2 );
-				lua_call( luaVM, 1, 0 );
+				lua_rawgeti( L, LUA_REGISTRYINDEX, s->con->srv->rR );
+				lua_pushvalue( L, 2 );
+				lua_call( L, 1, 0 );
 				// if request has content length keep reading body, else stop reading
 				if (s->rqCl > 0 )
 				{
@@ -114,7 +114,7 @@ t_htp_str_rcv( lua_State *luaVM, struct t_htp_str *s, size_t rcvd )
 				break;
 		*/
 			default:
-				luaL_error( luaVM, "Illegal state for T.Http.Message %d", (int) s->state );
+				luaL_error( L, "Illegal state for T.Http.Message %d", (int) s->state );
 		}
 		//if (NULL == b)
 		//{
@@ -132,12 +132,12 @@ t_htp_str_rcv( lua_State *luaVM, struct t_htp_str *s, size_t rcvd )
  * It also expects the t_htp_str element on stack position 1. If the current
  * buffer head is null, the connections socket must also be added to the
  * EventLoop for outgoing connections.
- * \param   luaVM        The lua state.
+ * \param   L        The lua state.
  * \param   integer      The string length of the chunk on stack.
- * \return  The # of items pushed to the stack.
+ * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int
-t_htp_str_addbuffer( lua_State *luaVM, struct t_htp_str *s, size_t l, int last )
+t_htp_str_addbuffer( lua_State *L, struct t_htp_str *s, size_t l, int last )
 {
 	struct t_htp_con *c = s->con;
 	struct t_htp_buf *b = malloc( sizeof( struct t_htp_buf ) );
@@ -145,11 +145,11 @@ t_htp_str_addbuffer( lua_State *luaVM, struct t_htp_str *s, size_t l, int last )
 	printf( "Add Buffer: %zu bytes\n", l );
 	b->bl   = l;
 	b->sl   = 0;
-	b->bR   = luaL_ref( luaVM, LUA_REGISTRYINDEX );
+	b->bR   = luaL_ref( L, LUA_REGISTRYINDEX );
 	b->nxt  = NULL;
 	b->prv  = NULL;
-	lua_pushvalue( luaVM, 1 );
-	b->sR   = luaL_ref( luaVM, LUA_REGISTRYINDEX );
+	lua_pushvalue( L, 1 );
+	b->sR   = luaL_ref( L, LUA_REGISTRYINDEX );
 	b->last = last;
 
 	if (NULL == c->buf_head)
@@ -173,7 +173,7 @@ t_htp_str_addbuffer( lua_State *luaVM, struct t_htp_str *s, size_t l, int last )
 
 /**-----------------------------------------------------------------------------
  * Form HTTP response Header.
- * \param  luaVM        The lua state.
+ * \param  L        The lua state.
  * \param  luaL_Buffer  Lua Buffer pointer.
  * \param  struct t_htp_str struct pointer.
  * \param  int          the HTTP Status Code to be returned.
@@ -184,7 +184,7 @@ t_htp_str_addbuffer( lua_State *luaVM, struct t_htp_str *s, size_t l, int last )
  * \return  int         size of string added to the buffer.
  * ---------------------------------------------------------------------------*/
 static size_t
-t_htp_str_formHeader( lua_State *luaVM, luaL_Buffer *lB, struct t_htp_str *s,
+t_htp_str_formHeader( lua_State *L, luaL_Buffer *lB, struct t_htp_str *s,
 	int code, const char *msg, int len, int t )
 {
 	size_t   c;       ///< count all chars added in this method
@@ -231,15 +231,15 @@ t_htp_str_formHeader( lua_State *luaVM, luaL_Buffer *lB, struct t_htp_str *s,
 	bs = 0;
 	if (t)
 	{
-		lua_pushnil( luaVM );
-		while (lua_next( luaVM, t ))
+		lua_pushnil( L );
+		while (lua_next( L, t ))
 		{
 			bs += sprintf( b,
 				"%s: %s\r\n",
-				lua_tostring( luaVM, -2 ),
-				lua_tostring( luaVM, -1 )
+				lua_tostring( L, -2 ),
+				lua_tostring( L, -1 )
 				);
-			lua_pop( luaVM, 1 );      //FIXME:  this can't pop, it must remove
+			lua_pop( L, 1 );      //FIXME:  this can't pop, it must remove
 		}
 		bs += sprintf( b, "\r\n" );   // finish off the HTTP Headers part
 		luaL_addsize( lB, bs );
@@ -259,53 +259,53 @@ t_htp_str_formHeader( lua_State *luaVM, luaL_Buffer *lB, struct t_htp_str *s,
  *     int,int             - HTTP status code, length
  * if there is a last argument being a table, it is treated as unordered key
  * value pair of header: value;
- * \param   luaVM    The lua state.
+ * \param   L    The lua state.
  * \lparam  T.Http.Stream instance.
  * \lparam  int      HTTP status code.     // mandatory!
  * \lparam  int      length
  *           or
  * \lparam  string   HTTP message corresponding to HTTP status code.
  * \lparam  table    key:value pairs of HTTP headers.
- * \return  The # of items pushed to the stack.
+ * \return  int    # of values pushed onto the stack.
  * ---------------------------------------------------------------------------*/
 static int
-lt_htp_str_writeHead( lua_State *luaVM )
+lt_htp_str_writeHead( lua_State *L )
 {
-	struct t_htp_str *s = t_htp_str_check_ud( luaVM, 1, 1 );
-	int               i = lua_gettop( luaVM );
-	int               t = (LUA_TTABLE == lua_type( luaVM, i )); // processing headers
+	struct t_htp_str *s = t_htp_str_check_ud( L, 1, 1 );
+	int               i = lua_gettop( L );
+	int               t = (LUA_TTABLE == lua_type( L, i )); // processing headers
 	size_t            c = 0;
 	luaL_Buffer       lB;
 
-	luaL_buffinit( luaVM, &lB );
+	luaL_buffinit( L, &lB );
 	// indicate the Content-Length was provided
-	if (LUA_TNUMBER == lua_type( luaVM, 3 ) || LUA_TNUMBER == lua_type( luaVM, 4 ))
+	if (LUA_TNUMBER == lua_type( L, 3 ) || LUA_TNUMBER == lua_type( L, 4 ))
 	{
-		c = t_htp_str_formHeader( luaVM, &lB, s,
-			(int) luaL_checkinteger( luaVM, 2 ),   // HTTP Status code
-			(LUA_TSTRING == lua_type( luaVM, 3))   // HTTP Status message
-				? lua_tostring( luaVM, 3 )
-				: t_htp_status( luaL_checkinteger( luaVM, 2 ) ),
-			(LUA_TNUMBER == lua_type( luaVM, 3))   // Content-Length
-				?  (int) luaL_checkinteger( luaVM, 3 )
-				:  (int) luaL_checkinteger( luaVM, 4 ),
+		c = t_htp_str_formHeader( L, &lB, s,
+			(int) luaL_checkinteger( L, 2 ),   // HTTP Status code
+			(LUA_TSTRING == lua_type( L, 3))   // HTTP Status message
+				? lua_tostring( L, 3 )
+				: t_htp_status( luaL_checkinteger( L, 2 ) ),
+			(LUA_TNUMBER == lua_type( L, 3))   // Content-Length
+				?  (int) luaL_checkinteger( L, 3 )
+				:  (int) luaL_checkinteger( L, 4 ),
 			(t) ? i : 0                            // position of optional header table on stack
 			);
 	}
 	else     // Prepare headers for chunked encoding
 	{
-		c = t_htp_str_formHeader( luaVM, &lB, s,
-			(int) luaL_checkinteger( luaVM, 2 ),   // HTTP Status code
-			(LUA_TSTRING == lua_type( luaVM, 3))   // HTTP Status message
-				? lua_tostring( luaVM, 3 )
-				: t_htp_status( luaL_checkinteger( luaVM, 2 ) ),
+		c = t_htp_str_formHeader( L, &lB, s,
+			(int) luaL_checkinteger( L, 2 ),   // HTTP Status code
+			(LUA_TSTRING == lua_type( L, 3))   // HTTP Status message
+				? lua_tostring( L, 3 )
+				: t_htp_status( luaL_checkinteger( L, 2 ) ),
 			0,                                     // Content-Length 0 -> chunked
 			(t) ? i : 0                            // position of optional header table on stack
 			);
 	}
 	luaL_pushresult( &lB );
 	s->state = T_HTP_STR_SEND;
-	t_htp_str_addbuffer( luaVM, s, lB.n, 0 );
+	t_htp_str_addbuffer( L, s, lB.n, 0 );
 	return 0;
 }
 
@@ -313,32 +313,32 @@ lt_htp_str_writeHead( lua_State *luaVM )
 
 /**--------------------------------------------------------------------------
  * Write a response to the T.Http.Message.
- * \param   luaVM    The lua state.
+ * \param   L    The lua state.
  * \lparam  Http.Message instance.
  * \lparam  string.
- * \return  The # of items pushed to the stack.
+ * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int
-lt_htp_str_write( lua_State *luaVM )
+lt_htp_str_write( lua_State *L )
 {
-	struct t_htp_str *s   = t_htp_str_check_ud( luaVM, 1, 1 );
+	struct t_htp_str *s   = t_htp_str_check_ud( L, 1, 1 );
 	size_t            sz;
 	char             *b;
 	size_t            c   = 0;
 	luaL_Buffer       lB;
-	luaL_buffinit( luaVM, &lB );
+	luaL_buffinit( L, &lB );
 
-	luaL_checklstring( luaVM, 2, &sz );
+	luaL_checklstring( L, 2, &sz );
 
 	// this assumes first ever call is write -> chunked
 	if (T_HTP_STR_SEND != s->state)
 	{
-		luaL_buffinit( luaVM, &lB );
-		c = t_htp_str_formHeader( luaVM, &lB, s, 200, NULL, 0, 0 );
+		luaL_buffinit( L, &lB );
+		c = t_htp_str_formHeader( L, &lB, s, 200, NULL, 0, 0 );
 		b = luaL_prepbuffer( &lB );
 		c = sprintf( b, "%zx\r\n", sz );
 		luaL_addsize( &lB, c );
-		lua_pushvalue( luaVM, 2 );
+		lua_pushvalue( L, 2 );
 		luaL_addvalue( &lB );
 		luaL_addlstring( &lB, "\r\n", 2 );
 		luaL_pushresult( &lB );
@@ -350,20 +350,20 @@ lt_htp_str_write( lua_State *luaVM )
 		// the encoding must be chunked
 		if (! s->rsCl)
 		{
-			luaL_buffinit( luaVM, &lB );
+			luaL_buffinit( L, &lB );
 			b = luaL_prepbuffer( &lB );
 			c = sprintf( b, "%zx\r\n", sz );
 			luaL_addsize( &lB, c );
-			lua_pushvalue( luaVM, 2 );
+			lua_pushvalue( L, 2 );
 			luaL_addvalue( &lB );
 			luaL_addlstring( &lB, "\r\n", 2 );
 			luaL_pushresult( &lB );
 		}
 		else
-			lua_pushvalue( luaVM, 2 );
+			lua_pushvalue( L, 2 );
 	}
 	// TODO: 
-	t_htp_str_addbuffer( luaVM, s, lB.n, 0 );
+	t_htp_str_addbuffer( L, s, lB.n, 0 );
 
 	return 0;
 }
@@ -371,15 +371,15 @@ lt_htp_str_write( lua_State *luaVM )
 
 /**--------------------------------------------------------------------------
  * Finish of sending the T.Http.Message response.
- * \param   luaVM    The lua state.
+ * \param   L    The lua state.
  * \lparam  Http.Message instance.
  * \lparam  string.
- * \return  The # of items pushed to the stack.
+ * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int
-lt_htp_str_finish( lua_State *luaVM )
+lt_htp_str_finish( lua_State *L )
 {
-	struct t_htp_str *s = t_htp_str_check_ud( luaVM, 1, 1 );
+	struct t_htp_str *s = t_htp_str_check_ud( L, 1, 1 );
 	size_t            sz;  /// length of optional string handed in
 	char             *b;
 	size_t            c   = 0;
@@ -388,43 +388,43 @@ lt_htp_str_finish( lua_State *luaVM )
 	// the first action ever called on the stream, prep header first
 	if (T_HTP_STR_SEND != s->state)
 	{
-		luaL_checklstring( luaVM, 2, &sz );
-		luaL_buffinit( luaVM, &lB );
-		c = t_htp_str_formHeader( luaVM, &lB, s, 200, NULL, (int) sz, 0 );
-		lua_pushvalue( luaVM, 2 );
+		luaL_checklstring( L, 2, &sz );
+		luaL_buffinit( L, &lB );
+		c = t_htp_str_formHeader( L, &lB, s, 200, NULL, (int) sz, 0 );
+		lua_pushvalue( L, 2 );
 		luaL_addvalue( &lB );
 		luaL_pushresult( &lB );
-		t_htp_str_addbuffer( luaVM, s, lB.n, 1 );
+		t_htp_str_addbuffer( L, s, lB.n, 1 );
 	}
 	else
 	{
-		if (LUA_TSTRING == lua_type( luaVM, 2 ))
+		if (LUA_TSTRING == lua_type( L, 2 ))
 		{
-			luaL_checklstring( luaVM, 2, &sz );
+			luaL_checklstring( L, 2, &sz );
 			if (! s->rsCl)   // chunked
 			{
-				luaL_buffinit( luaVM, &lB );
+				luaL_buffinit( L, &lB );
 				b = luaL_prepbuffer( &lB );
 				c = sprintf( b, "%zx\r\n", sz );
 				luaL_addsize( &lB, c );
-				lua_pushvalue( luaVM, 2 );
+				lua_pushvalue( L, 2 );
 				luaL_addvalue( &lB );
 				luaL_addlstring( &lB, "\r\n0\r\n\r\n", 7 );
 				luaL_pushresult( &lB );
-				t_htp_str_addbuffer( luaVM, s, lB.n, 1 );
+				t_htp_str_addbuffer( L, s, lB.n, 1 );
 			}
 			else
 			{
-				lua_pushvalue( luaVM, 2 );
-				t_htp_str_addbuffer( luaVM, s, sz, 1 );
+				lua_pushvalue( L, 2 );
+				t_htp_str_addbuffer( L, s, sz, 1 );
 			}
 		}
 		else
 		{
 			if (! s->rsCl)   // chunked
 			{
-				lua_pushstring( luaVM, "0\r\n\r\n" );
-				t_htp_str_addbuffer( luaVM, s, 5, 1 );
+				lua_pushstring( L, "0\r\n\r\n" );
+				t_htp_str_addbuffer( L, s, 5, 1 );
 			}
 		}
 	}
@@ -432,9 +432,9 @@ lt_htp_str_finish( lua_State *luaVM )
 	{
 		if ( ! s->kpAlv)
 		{
-			lua_pushcfunction( luaVM, lt_htp_str__gc );
-			lua_pushvalue( luaVM, 1 );
-			lua_call( luaVM, 1, 0 );
+			lua_pushcfunction( L, lt_htp_str__gc );
+			lua_pushvalue( L, 1 );
+			lua_call( L, 1, 0 );
 		}
 		else
 			s->state = T_htp_str_S_ZERO;
@@ -449,115 +449,115 @@ lt_htp_str_finish( lua_State *luaVM )
 
 /**--------------------------------------------------------------------------
  * Sets the onData method in T.Http.Message.
- * \param   luaVM    The lua state.
+ * \param   L    The lua state.
  * \lparam  Http.Message instance.
  * \lparam  function to be executed when body data arrives on connection.
- * \return  The # of items pushed to the stack.
+ * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int
-lt_htp_str_onbody( lua_State *luaVM )
+lt_htp_str_onbody( lua_State *L )
 {
-	struct t_htp_str *m = t_htp_str_check_ud( luaVM, 1, 1 );
+	struct t_htp_str *m = t_htp_str_check_ud( L, 1, 1 );
 	
-	if (lua_isfunction( luaVM, 2 ))
+	if (lua_isfunction( L, 2 ))
 	{
-		m->bR = luaL_ref( luaVM, LUA_REGISTRYINDEX );
+		m->bR = luaL_ref( L, LUA_REGISTRYINDEX );
 		return 0;
 	}
-	if (lua_isnoneornil( luaVM, 2 ))
+	if (lua_isnoneornil( L, 2 ))
 	{
 		m->bR = LUA_NOREF;
 		return 0;
 	}
 	else
-		return t_push_error( luaVM, "Argument must be function or nil" );
+		return t_push_error( L, "Argument must be function or nil" );
 }
 
 
 /**--------------------------------------------------------------------------
  * Access Field Values in T.Http.Message by accessing proxy table.
- * \param   luaVM    The lua state.
+ * \param   L    The lua state.
  * \lparam  Http.Message instance.
  * \lparam  key   string/integer
  * \lparam  value LuaType
- * \return  The # of items pushed to the stack.
+ * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int
-lt_htp_str__index( lua_State *luaVM )
+lt_htp_str__index( lua_State *L )
 {
-	struct t_htp_str *s = t_htp_str_check_ud( luaVM, -2, 1 );
+	struct t_htp_str *s = t_htp_str_check_ud( L, -2, 1 );
 
-	lua_rawgeti( luaVM, LUA_REGISTRYINDEX, s->pR );  // fetch the proxy table
-	lua_pushvalue( luaVM, -2 );                      // repush the key
-	lua_gettable( luaVM, -2 );
+	lua_rawgeti( L, LUA_REGISTRYINDEX, s->pR );  // fetch the proxy table
+	lua_pushvalue( L, -2 );                      // repush the key
+	lua_gettable( L, -2 );
 	return 1;
 }
 
 
 /**--------------------------------------------------------------------------
  * update  NOT ALLOWED.
- * \param   luaVM    The lua state.
+ * \param   L    The lua state.
  * \lparam  Http.Message instance.
  * \lparam  key   string/integer
  * \lparam  value LuaType
- * \return  The # of items pushed to the stack.
+ * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int
-lt_htp_str__newindex( lua_State *luaVM )
+lt_htp_str__newindex( lua_State *L )
 {
-	t_htp_str_check_ud( luaVM, -3, 1 );
+	t_htp_str_check_ud( L, -3, 1 );
 
-	return t_push_error( luaVM, "Can't change values in `T.Http.Stream`" );
+	return t_push_error( L, "Can't change values in `T.Http.Stream`" );
 }
 
 
 /**--------------------------------------------------------------------------
  * __tostring (print) representation of a T.Http.Message instance.
- * \param   luaVM      The lua state.
+ * \param   L      The lua state.
  * \lparam  t_htp_str  The Message instance user_data.
  * \lreturn string     formatted string representing T.Http.Message.
- * \return  The number of results to be passed back to the calling Lua script.
+ * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int
-lt_htp_str__tostring( lua_State *luaVM )
+lt_htp_str__tostring( lua_State *L )
 {
-	struct t_htp_str *m = (struct t_htp_str *) luaL_checkudata( luaVM, 1, "T.Http.Stream" );
+	struct t_htp_str *m = (struct t_htp_str *) luaL_checkudata( L, 1, "T.Http.Stream" );
 
-	lua_pushfstring( luaVM, "T.Http.Stream: %p", m );
+	lua_pushfstring( L, "T.Http.Stream: %p", m );
 	return 1;
 }
 
 
 /**--------------------------------------------------------------------------
  * __len (#) representation of an instance.
- * \param   luaVM      The lua state.
+ * \param   L      The lua state.
  * \lparam  userdata   the instance user_data.
  * \lreturn string     formatted string representing the instance.
- * \return  The number of results to be passed back to the calling Lua script.
+ * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int
-lt_htp_str__len( lua_State *luaVM )
+lt_htp_str__len( lua_State *L )
 {
-	struct t_htp_str *s = (struct t_htp_str *) luaL_checkudata( luaVM, 1, "T.Http.Stream" );
-	lua_pushinteger( luaVM, s->rqCl );
+	struct t_htp_str *s = (struct t_htp_str *) luaL_checkudata( L, 1, "T.Http.Stream" );
+	lua_pushinteger( L, s->rqCl );
 	return 1;
 }
 
 
 /**--------------------------------------------------------------------------
  * __gc of a T.Http.Message instance.
- * \param   luaVM      The lua state.
+ * \param   L      The lua state.
  * \lparam  t_htp_str  The Message instance user_data.
- * \return  The number of results to be passed back to the calling Lua script.
+ * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 int
-lt_htp_str__gc( lua_State *luaVM )
+lt_htp_str__gc( lua_State *L )
 {
-	struct t_htp_str *s = (struct t_htp_str *) luaL_checkudata( luaVM, 1, "T.Http.Stream" );
+	struct t_htp_str *s = (struct t_htp_str *) luaL_checkudata( L, 1, "T.Http.Stream" );
 
 	if (LUA_NOREF != s->pR)
 	{
-		luaL_unref( luaVM, LUA_REGISTRYINDEX, s->pR );
+		luaL_unref( L, LUA_REGISTRYINDEX, s->pR );
 		s->pR = LUA_NOREF;
 	}
 
@@ -566,11 +566,8 @@ lt_htp_str__gc( lua_State *luaVM )
 	return 0;
 }
 
-
-
 /**--------------------------------------------------------------------------
- * \brief      the stream library definition
- *             assigns Lua available names to C-functions
+ * Objects metamethods library definition
  * --------------------------------------------------------------------------*/
 static const luaL_Reg t_htp_str_prx_s [] = {
 	{"write",        lt_htp_str_write},
@@ -586,31 +583,31 @@ static const luaL_Reg t_htp_str_prx_s [] = {
  * \brief   pushes this library onto the stack
  *          - creates Metatable with functions
  *          - creates metatable with methods
- * \param   luaVM     The lua state.
- * \lreturn string    the library
- * \return  The number of results to be passed back to the calling Lua script.
+ * \param   L      The lua state.
+ * \lreturn table  the library
+ * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 LUAMOD_API int
-luaopen_t_htp_str( lua_State *luaVM )
+luaopen_t_htp_str( lua_State *L )
 {
 	// T.Http.Stream instance metatable
-	luaL_newmetatable( luaVM, "T.Http.Stream" );
-	lua_pushcfunction( luaVM, lt_htp_str__index );
-	lua_setfield( luaVM, -2, "__index" );
-	lua_pushcfunction( luaVM, lt_htp_str__newindex );
-	lua_setfield( luaVM, -2, "__newindex" );
-	lua_pushcfunction( luaVM, lt_htp_str__len );
-	lua_setfield( luaVM, -2, "__len");
-	lua_pushcfunction( luaVM, lt_htp_str__gc );
-	lua_setfield( luaVM, -2, "__gc");
-	lua_pushcfunction( luaVM, lt_htp_str__tostring );
-	lua_setfield( luaVM, -2, "__tostring");
-	lua_pop( luaVM, 1 );        // remove metatable T.Http.Stream from stack
+	luaL_newmetatable( L, "T.Http.Stream" );
+	lua_pushcfunction( L, lt_htp_str__index );
+	lua_setfield( L, -2, "__index" );
+	lua_pushcfunction( L, lt_htp_str__newindex );
+	lua_setfield( L, -2, "__newindex" );
+	lua_pushcfunction( L, lt_htp_str__len );
+	lua_setfield( L, -2, "__len");
+	lua_pushcfunction( L, lt_htp_str__gc );
+	lua_setfield( L, -2, "__gc");
+	lua_pushcfunction( L, lt_htp_str__tostring );
+	lua_setfield( L, -2, "__tostring");
+	lua_pop( L, 1 );        // remove metatable T.Http.Stream from stack
 
-	luaL_newmetatable( luaVM, "T.Http.Stream.Proxy" );
-	luaL_newlib( luaVM, t_htp_str_prx_s );
-	lua_setfield( luaVM, -2, "__index" );
-	lua_pop( luaVM, 1 );        // remove metatable T.Http.Stream.Proxy from stack
+	luaL_newmetatable( L, "T.Http.Stream.Proxy" );
+	luaL_newlib( L, t_htp_str_prx_s );
+	lua_setfield( L, -2, "__index" );
+	lua_pop( L, 1 );        // remove metatable T.Http.Stream.Proxy from stack
 	return 0;
 }
 

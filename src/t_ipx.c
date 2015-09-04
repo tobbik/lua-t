@@ -32,43 +32,43 @@
 
 
 /**--------------------------------------------------------------------------
- * create an IP endpoint and return it.
- * \param   luaVM  The lua state.
+ * Create an IP endpoint and return it.
+ * \param   L  The lua state.
  * \lparam  port   the port for the socket.
  * \lparam  ip     the IP address for the socket.
  * \lreturn sockkaddr_in userdata.
- * \return  The number of results to be passed back to the calling Lua script.
+ * \return  int    # of values pushed onto the stack.
  * TODO:  allow for empty endpoints if it makes sense
  * --------------------------------------------------------------------------*/
 static int
-lt_ipx_New( lua_State *luaVM )
+lt_ipx_New( lua_State *L )
 {
 	struct sockaddr_in  *ip;
-	ip = t_ipx_create_ud( luaVM );
-	t_ipx_set( luaVM, 1, ip );
+	ip = t_ipx_create_ud( L );
+	t_ipx_set( L, 1, ip );
 	return 1;
 }
 
 
 /**--------------------------------------------------------------------------
- * construct a NetAddress and return it.
- * \param   luaVM  The lua state.
+ * Construct a NetAddress and return it.
+ * \param   L  The lua state.
  * \lparam  CLASS  Ip
  * \lparam  string    type "TCP", "UDP", ...
  * \lreturn struct sock_addr_in userdata.
- * \return  The number of results to be passed back to the calling Lua script.
+ * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int
-lt_ipx__Call( lua_State *luaVM )
+lt_ipx__Call( lua_State *L )
 {
-	lua_remove( luaVM, 1 );
-	return lt_ipx_New( luaVM );
+	lua_remove( L, 1 );
+	return lt_ipx_New( L );
 }
 
 
 /**--------------------------------------------------------------------------
- * \brief   evaluate stack parameters to set endpoint criteria.
- * \param   luaVM The lua state.
+ * Evaluate stack parameters to set endpoint criteria.
+ * \param   L The lua state.
  * \param   int   offset  on stack to start reading values
  * \param   struct sockaddr_in*  pointer to ip where values will be set
  * \lparam  ip    the IP address for the socket.
@@ -76,7 +76,7 @@ lt_ipx__Call( lua_State *luaVM )
  * TODO:  allow for empty endpoints if it makes sense
  * --------------------------------------------------------------------------*/
 void
-t_ipx_set( lua_State *luaVM, int pos, struct sockaddr_in *ip )
+t_ipx_set( lua_State *L, int pos, struct sockaddr_in *ip )
 {
 	int           port;
 	const char   *ips;      /// IP String aaa.bbb.ccc.ddd
@@ -85,96 +85,96 @@ t_ipx_set( lua_State *luaVM, int pos, struct sockaddr_in *ip )
 	ip->sin_family = AF_INET;
 
    // First element is nil assign 0.0.0.0 and no port
-	if (lua_isnoneornil( luaVM, pos+0 ))
+	if (lua_isnoneornil( L, pos+0 ))
 	{
 		ip->sin_addr.s_addr = htonl( INADDR_ANY );
 		return;
 	}
 	// First element is string -> Assume this is an IP address
-	if (LUA_TSTRING == lua_type( luaVM, pos+0 ))
+	if (LUA_TSTRING == lua_type( L, pos+0 ))
 	{
-		ips = luaL_checkstring( luaVM, pos+0 );
+		ips = luaL_checkstring( L, pos+0 );
 #ifdef _WIN32
 		if ( InetPton (AF_INET, ips, &(ip->sin_addr))==0)
-			t_push_error( luaVM, "InetPton() of %s failed", ips );
+			t_push_error( L, "InetPton() of %s failed", ips );
 #else
 		if ( inet_pton( AF_INET, ips, &(ip->sin_addr) )==0)
-			t_push_error( luaVM, "inet_aton() of %s failed", ips );
+			t_push_error( L, "inet_aton() of %s failed", ips );
 #endif
-		lua_remove( luaVM, pos+0 );
+		lua_remove( L, pos+0 );
 	}
 	else
 		ip->sin_addr.s_addr = htonl( INADDR_ANY );
 
-	if (lua_isnumber( luaVM, pos+0 ))   // pos+0 because we removed the previous string
+	if (lua_isnumber( L, pos+0 ))   // pos+0 because we removed the previous string
 	{
-		port = luaL_checkinteger( luaVM, pos+0 );
-		luaL_argcheck( luaVM, 1 <= port && port <= 65536, pos+1,  // +1 because first was removed
-							  "port number out of range" );
+		port = luaL_checkinteger( L, pos+0 );
+		luaL_argcheck( L, 1 <= port && port <= 65536, pos+1,  // +1 because first was removed
+		               "port number out of range" );
 		ip->sin_port   = htons( port );
-		lua_remove( luaVM, pos+0 );
+		lua_remove( L, pos+0 );
 	}
 }
 
 
 /**--------------------------------------------------------------------------
- * \brief   create an IP endpoint userdata and push to LuaStack.
- * \param   luaVM  The lua state.
+ * Create an IP endpoint userdata and push to LuaStack.
+ * \param   L  The lua state.
  * \return  struct sockaddr_in*  pointer to the sockaddr
  * --------------------------------------------------------------------------*/
 struct sockaddr_in
-*t_ipx_create_ud( lua_State *luaVM )
+*t_ipx_create_ud( lua_State *L )
 {
 	struct sockaddr_in  *ip;
 
-	ip = (struct sockaddr_in *) lua_newuserdata (luaVM, sizeof(struct sockaddr_in) );
+	ip = (struct sockaddr_in *) lua_newuserdata( L, sizeof(struct sockaddr_in) );
 
-	luaL_getmetatable(luaVM, "T.Ip");
-	lua_setmetatable(luaVM, -2);
+	luaL_getmetatable( L, "T.Ip" );
+	lua_setmetatable( L , -2 );
 	return ip;
 }
 
 
 /**--------------------------------------------------------------------------
- * \brief   check a value on the stack for being a struct sockaddr_in
- * \param   luaVM    The lua state.
+ * Check a value on the stack for being a struct sockaddr_in
+ * \param   L    The lua state.
  * \param   int      position on the stack
  * \return  struct sockaddr_in*  pointer to the sockaddr
  * --------------------------------------------------------------------------*/
 struct sockaddr_in
-*t_ipx_check_ud( lua_State *luaVM, int pos, int check )
+*t_ipx_check_ud( lua_State *L, int pos, int check )
 {
-	void *ud = luaL_testudata( luaVM, pos, "T.Ip" );
-	luaL_argcheck( luaVM, (ud != NULL  || !check), pos, "`T.Ip` expected" );
+	void *ud = luaL_testudata( L, pos, "T.Ip" );
+	luaL_argcheck( L, (ud != NULL  || !check), pos, "`T.Ip` expected" );
 	return (NULL==ud) ? NULL : (struct sockaddr_in *) ud;
 }
 
 
 /**--------------------------------------------------------------------------
- * \brief   set IP the IP endpoint.
- * \param   luaVM    The lua state.
+ * Set IP the IP endpoint.
+ * \param   L    The lua state.
  * \lparam  sockaddr the sockaddr_in userdata.
  * \lparam  string   the xxx.xxx.xxx.xxx formatted IP address.
- * \return  The number of results to be passed back to the calling Lua script.
+ * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int
-lt_ipx_set_ip( lua_State *luaVM )
+lt_ipx_set_ip( lua_State *L )
 {
-	struct sockaddr_in *ip = t_ipx_check_ud( luaVM, 1, 1 );
+	struct sockaddr_in *ip = t_ipx_check_ud( L, 1, 1 );
 	const char         *ips;  ///< IP String representation
 
-	if (lua_isstring( luaVM, 2 ))
+	if (lua_isstring( L, 2 ))
 	{
-		ips = luaL_checkstring( luaVM, 2 );
+		ips = luaL_checkstring( L, 2 );
 #ifdef _WIN32
 		if (InetPton( AF_INET, ips, &(ip->sin_addr) )==0)
-			return t_push_error(luaVM, "InetPton() of %s failed", ips);
+			return t_push_error( L, "InetPton() of %s failed", ips );
 #else
 		if (inet_pton( AF_INET, ips, &(ip->sin_addr) )==0)
-			return t_push_error(luaVM, "inet_aton() of %s failed", ips);
+			return t_push_error( L, "inet_aton() of %s failed", ips );
 #endif
 	}
-	else if (lua_isnil( luaVM, 2 ) )
+	else if (lua_isnil( L, 2 ))
 		ip->sin_addr.s_addr = htonl( INADDR_ANY );
 	return 0;
 }
@@ -182,18 +182,18 @@ lt_ipx_set_ip( lua_State *luaVM )
 
 /**--------------------------------------------------------------------------
  * \brief   set port the IP endpoint.
- * \param   luaVM    The lua state.
+ * \param   L    The lua state.
  * \lparam  sockaddr the sockaddr_in userdata.
  * \lparam  int      the port number.
- * \return  The number of results to be passed back to the calling Lua script.
+ * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int
-lt_ipx_set_port( lua_State *luaVM )
+lt_ipx_set_port( lua_State *L )
 {
-	struct sockaddr_in *ip = t_ipx_check_ud( luaVM, 1, 1 );
-	int               port = luaL_checkinteger( luaVM, 2 );
+	struct sockaddr_in *ip = t_ipx_check_ud( L, 1, 1 );
+	int               port = luaL_checkinteger( L, 2 );
 
-	luaL_argcheck( luaVM, 1 <= port && port <= 65536, 2,
+	luaL_argcheck( L, 1 <= port && port <= 65536, 2,
 	                 "port number out of range" );
 
 	ip->sin_port   = htons( port );
@@ -202,51 +202,51 @@ lt_ipx_set_port( lua_State *luaVM )
 
 
 /**--------------------------------------------------------------------------
- * \brief   get IP the IP endpoint.
- * \param   luaVM    The lua state.
+ * Get IP the IP endpoint.
+ * \param   L    The lua state.
  * \lparam  sockaddr the sockaddr_in userdata.
  * \lreturn int      sockkaddr port.
- * \return  The number of results to be passed back to the calling Lua script.
+ * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int
-lt_ipx_get_ip( lua_State *luaVM )
+lt_ipx_get_ip( lua_State *L )
 {
-	struct sockaddr_in *ip = t_ipx_check_ud( luaVM, 1, 1 );
+	struct sockaddr_in *ip = t_ipx_check_ud( L, 1, 1 );
 
-	lua_pushstring( luaVM, inet_ntoa( ip->sin_addr ) );
+	lua_pushstring( L, inet_ntoa( ip->sin_addr ) );
 	return 1;
 }
 
 
 /**--------------------------------------------------------------------------
- * \brief   get port the IP endpoint.
- * \param   luaVM    The lua state.
+ * Get port the IP endpoint.
+ * \param   L    The lua state.
  * \lparam  sockaddr the sockaddr_in userdata.
  * \lreturn string   xxx.xxx.xxx.xxx formatted string representing sockkaddr IP.
- * \return  The number of results to be passed back to the calling Lua script.
+ * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int
-lt_ipx_get_port( lua_State *luaVM )
+lt_ipx_get_port( lua_State *L )
 {
-	struct sockaddr_in *ip = t_ipx_check_ud( luaVM, 1, 1 );
+	struct sockaddr_in *ip = t_ipx_check_ud( L, 1, 1 );
 
-	lua_pushinteger( luaVM, ntohs( ip->sin_port ) );
+	lua_pushinteger( L, ntohs( ip->sin_port ) );
 	return 1;
 }
 
 
 /**--------------------------------------------------------------------------
- * \brief   prints out the ip endpoint.
- * \param   luaVM     The lua state.
+ * Prints out the ip endpoint.
+ * \param   L     The lua state.
  * \lparam  sockaddr  the sockaddr_in userdata.
  * \lreturn string    formatted string representing sockkaddr (IP:Port).
- * \return  The number of results to be passed back to the calling Lua script.
+ * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int
-lt_ipx___tostring (lua_State *luaVM)
+lt_ipx___tostring( lua_State *L )
 {
-	struct sockaddr_in *ip = t_ipx_check_ud( luaVM, 1, 1 );
-	lua_pushfstring( luaVM, "T.Ip{%s:%d}: %p",
+	struct sockaddr_in *ip = t_ipx_check_ud( L, 1, 1 );
+	lua_pushfstring( L, "T.Ip{%s:%d}: %p",
 			inet_ntoa( ip->sin_addr ),
 			ntohs( ip->sin_port ),
 			ip );
@@ -255,21 +255,22 @@ lt_ipx___tostring (lua_State *luaVM)
 
 
 /**--------------------------------------------------------------------------
- * \brief   compares values of two IP Endpoints.
- * \param   luaVM     The lua state.
+ * Compares values of two IP Endpoints.
+ * \param   L     The lua state.
  * \lparam  sockaddr  the sockaddr_in userdata.
  * \lparam  sockaddr  the sockaddr_in userdata.
  * \lreturn boolean   if IP:Port and .
- * \return  The number of results to be passed back to the calling Lua script.
+ * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int
-lt_ipx___eq (lua_State *luaVM) {
-	struct sockaddr_in *ip    = t_ipx_check_ud( luaVM, 1, 1 );
-	struct sockaddr_in *ipCmp = t_ipx_check_ud( luaVM, 2, 1 );
+lt_ipx___eq( lua_State *L )
+{
+	struct sockaddr_in *ip    = t_ipx_check_ud( L, 1, 1 );
+	struct sockaddr_in *ipCmp = t_ipx_check_ud( L, 2, 1 );
 
 	if (ip->sin_family != ipCmp->sin_family)
 	{
-		lua_pushboolean(luaVM, 0);
+		lua_pushboolean( L, 0 );
 		return 1;
 	}
 
@@ -278,124 +279,123 @@ lt_ipx___eq (lua_State *luaVM) {
 		if (ip->sin_addr.s_addr != ipCmp->sin_addr.s_addr ||
 		    ip->sin_port != ipCmp->sin_port)
 		{
-			lua_pushboolean( luaVM, 0 );
+			lua_pushboolean( L, 0 );
 			return 1;
 		}
 	}
 	else
 	{
 		// TODO: Deal with IPv6 at some point!
-			lua_pushboolean( luaVM, 0 );
+			lua_pushboolean( L, 0 );
 			return 1;
 	}
-	lua_pushboolean( luaVM, 1 );
+	lua_pushboolean( L, 1 );
 	return 1;
 }
 
 
 /**--------------------------------------------------------------------------
- * \brief   converts an integer into an IP address xxx.xxx.xxx.xxx representation
- * \param   luaVM     The lua state.
+ * Converts an integer into an IP address xxx.xxx.xxx.xxx representation
+ * \param   L     The lua state.
  * \lparam  int       the IPv4 Address as 32 bit integer.
  * \lreturn string    IP address in xxx.xxx.xxx.xxx
- * \return  The number of results to be passed back to the calling Lua script.
+ * \return  int    # of values pushed onto the stack.
  * TODO: check compile time endianess and reorder the uint8_t array
  * --------------------------------------------------------------------------*/
 static int
-lt_ipx_int2ip (lua_State *luaVM)
+lt_ipx_int2ip( lua_State *L )
 {
-	uint32_t  ip_int  = luaL_checkinteger( luaVM, 1 );
+	uint32_t  ip_int  = luaL_checkinteger( L, 1 );
 	uint8_t  *ip      = (uint8_t *) &ip_int;
 
-	lua_pushfstring( luaVM, "%d.%d.%d.%d",
+	lua_pushfstring( L, "%d.%d.%d.%d",
 		ip[3], ip[2], ip[1], ip[0] );
 	return 1;
 }
 
 
 /**--------------------------------------------------------------------------
- * \brief   converts an IPv4 Address into an unisgned integer
- * \param   luaVM     The lua state.
- * \lparam  string    the IPv4 Address as xxx.xxx.xxx.xxx string
- * \lreturn integer representing the IpAddress
- * \return  The number of results to be passed back to the calling Lua script.
+ * Converts an IPv4 Address into an unisgned integer
+ * \param   L      The lua state.
+ * \lparam  string the IPv4 Address as xxx.xxx.xxx.xxx string
+ * \lreturn int    representing the IpAddress
+ * \return  int    # of values pushed onto the stack.
  * TODO: check compile time endianess and reorder the uint8_t array
  * --------------------------------------------------------------------------*/
 static int
-lt_ipx_ip2int (lua_State *luaVM)
+lt_ipx_ip2int (lua_State *L)
 {
 	uint32_t       ip[4];
-	const char   *ip_str  = luaL_checkstring (luaVM, 1);
-	sscanf (ip_str, "%d.%d.%d.%d", &ip[3], &ip[2], &ip[1], &ip[0]);
+	const char   *ip_str  = luaL_checkstring( L, 1 );
+	sscanf( ip_str, "%d.%d.%d.%d", &ip[3], &ip[2], &ip[1], &ip[0] );
 
 	//printf ("strined IP[%d.%d.%d.%d]\n", ip[3], ip[2], ip[1], ip[0]);
-	lua_pushinteger (luaVM, ip[0] | ip[1] << 8 | ip[2] << 16 | ip[3] << 24);
+	lua_pushinteger( L, ip[0] | ip[1] << 8 | ip[2] << 16 | ip[3] << 24 );
 	return 1;
 }
 
-/**
- * \brief     class library definition
- */
 
+/**--------------------------------------------------------------------------
+ * Class metamethods library definition
+ * --------------------------------------------------------------------------*/
+static const struct luaL_Reg t_ipx_fm [] = {
+	{ "__call",      lt_ipx__Call },
+	{ NULL,   NULL }
+};
+
+/**--------------------------------------------------------------------------
+ * Class functions library definition
+ * --------------------------------------------------------------------------*/
 static const luaL_Reg t_ipx_cf [] =
 {
-	{"new",       lt_ipx_New},
-	{"ip2int",    lt_ipx_ip2int},
-	{"int2ip",    lt_ipx_int2ip},
-	{NULL,        NULL}
+	{ "new",       lt_ipx_New },
+	{ "ip2int",    lt_ipx_ip2int },
+	{ "int2ip",    lt_ipx_int2ip },
+	{ NULL,        NULL }
 };
 
-/**
- * \brief     class meta definition
- */
-static const struct luaL_Reg t_ipx_fm [] = {
-	{"__call",      lt_ipx__Call},
-	{NULL,   NULL}
-};
-
-
-/**
- * \brief      method definition xor t.Ip
- */
+/**--------------------------------------------------------------------------
+ * Objects metamethods library definition
+ * --------------------------------------------------------------------------*/
 static const struct luaL_Reg t_ipx_m [] = {
-	{"setIp",       lt_ipx_set_ip},
-	{"getIp",       lt_ipx_get_ip},
-	{"setPort",     lt_ipx_set_port},
-	{"getPort",     lt_ipx_get_port},
-	{NULL,   NULL}
+	{ "setIp",       lt_ipx_set_ip },
+	{ "getIp",       lt_ipx_get_ip },
+	{ "setPort",     lt_ipx_set_port },
+	{ "getPort",     lt_ipx_get_port },
+	{ NULL,   NULL}
 };
 
 
 /**--------------------------------------------------------------------------
- * \brief   pushes the t.Ip library onto the stack
- * \param   luaVM     The lua state.
- * \lreturn string    the library
- * \return  The number of results to be passed back to the calling Lua script.
+ * Pushes the t.Ip library onto the stack
+ * \param   L     The lua state.
+ * \lreturn table  the library
+ * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 LUAMOD_API int
-luaopen_t_ipx( lua_State *luaVM )
+luaopen_t_ipx( lua_State *L )
 {
 	// just make metatable known to be able to register and check userdata
 	// this is only avalable a <instance>:func()
-	luaL_newmetatable( luaVM, "T.Ip" );   // stack: functions meta
-	luaL_newlib( luaVM, t_ipx_m );
-	lua_setfield( luaVM, -2, "__index" );
-	lua_pushcfunction( luaVM, lt_ipx___tostring );
-	lua_setfield( luaVM, -2, "__tostring" );
-	lua_pushcfunction( luaVM, lt_ipx___eq );
-	lua_setfield( luaVM, -2, "__eq" );
-	lua_pop( luaVM, 1 );        // remove metatable from stack
+	luaL_newmetatable( L, "T.Ip" );   // stack: functions meta
+	luaL_newlib( L, t_ipx_m );
+	lua_setfield( L, -2, "__index" );
+	lua_pushcfunction( L, lt_ipx___tostring );
+	lua_setfield( L, -2, "__tostring" );
+	lua_pushcfunction( L, lt_ipx___eq );
+	lua_setfield( L, -2, "__eq" );
+	lua_pop( L, 1 );        // remove metatable from stack
 
 	// Push the class onto the stack
 	// this is avalable as T.ip.<member>
-	luaL_newlib( luaVM, t_ipx_cf );
-	lua_pushstring(luaVM, "127.0.0.1");
-	lua_setfield(luaVM, -2, "localhost");
+	luaL_newlib( L, t_ipx_cf );
+	lua_pushstring( L, "127.0.0.1" );
+	lua_setfield( L, -2, "localhost" );
 
 	// set the methods as metatable
 	// this is only avalable a <instance>.<member>
-	luaL_newlib( luaVM, t_ipx_fm );
-	lua_setmetatable( luaVM, -2 );
+	luaL_newlib( L, t_ipx_fm );
+	lua_setmetatable( L, -2 );
 	return 1;
 }
 

@@ -67,7 +67,7 @@ t_ael_removehandle_impl( struct t_ael *ael, int fd, enum t_ael_t t )
 
 /**--------------------------------------------------------------------------
  * Add an Timer event handler to the T.Loop.
- * \param   luaVM  The lua state.
+ * \param   L        The lua state.
  * \lparam  userdata T.Loop.                                     // 1
  * \lparam  userdata timeval.                                    // 2
  * \lparam  bool     shall this be treated as an interval?       // 3
@@ -82,12 +82,12 @@ t_ael_removehandle_impl( struct t_ael *ael, int fd, enum t_ael_t t )
 
 /**--------------------------------------------------------------------------
  * Set up a select call for all events in the T.Loop
- * \param   luaVM         The lua state.
+ * \param   L              The lua state.
  * \param   struct t_ael   The loop struct.
  * \return  number returns from select.
  * --------------------------------------------------------------------------*/
 int
-t_ael_poll_impl( lua_State *luaVM, struct t_ael *ael )
+t_ael_poll_impl( lua_State *L, struct t_ael *ael )
 {
 	int              i,r;
 	struct timeval  *tv;
@@ -106,7 +106,7 @@ t_ael_poll_impl( lua_State *luaVM, struct t_ael *ael )
 		return r;
 
 	if (0==r) // deal with timer
-		t_ael_executetimer( luaVM, ael, &rt );
+		t_ael_executetimer( L, ael, &rt );
 	else      // deal with sockets/file handles
 		for( i=0; r>0 && i <= ael->max_fd; i++ )
 		{
@@ -119,7 +119,7 @@ t_ael_poll_impl( lua_State *luaVM, struct t_ael *ael )
 				t |= T_AEL_WR;
 			if (T_AEL_NO != t)
 			{
-				t_ael_executehandle( luaVM, ael, i, t );
+				t_ael_executehandle( L, ael, i, t );
 				r--;
 			}
 		}

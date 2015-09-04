@@ -18,76 +18,76 @@
 
 /** ---------------------------------------------------------------------------
  * Creates a WebSocket.
- * \param    luaVM    lua state.
+ * \param    L    lua state.
  * \lparam   subp     sub-protocol.
- * \return integer # of elements pushed to stack.
+ * \return  int    # of values pushed onto the stack.
  *  -------------------------------------------------------------------------*/
-int lt_wsk_New( lua_State *luaVM )
+int lt_wsk_New( lua_State *L )
 {
 	struct t_wsk  *ws;
 	//size_t lp;
-	//char         *subp = luaL_checklstring( luaVM, 1, &lp );
-	ws = t_wsk_create_ud( luaVM );
+	//char         *subp = luaL_checklstring( L, 1, &lp );
+	ws = t_wsk_create_ud( L );
 	return 1;
 }
 
 
 /**--------------------------------------------------------------------------
  * construct a WebSocket
- * \param   luaVM  The lua state.
+ * \param   L  The lua state.
  * \lparam  CLASS  table WebSocket
  * \lparam  string sub protocol
  * \lreturn struct t_ws userdata.
- * \return  int    # of elements pushed to stack.
+ * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
-static int lt_wsk__Call( lua_State *luaVM )
+static int lt_wsk__Call( lua_State *L )
 {
-	lua_remove( luaVM, 1 );
-	return lt_wsk_New( luaVM );
+	lua_remove( L, 1 );
+	return lt_wsk_New( L );
 }
 
 
 /**--------------------------------------------------------------------------
  * create a t_ws and push to LuaStack.
- * \param   luaVM  The lua state.
+ * \param   L  The lua state.
  *
  * \return  struct t_ws*  pointer to the  xt_pack struct
  * --------------------------------------------------------------------------*/
-struct t_wsk *t_wsk_create_ud( lua_State *luaVM )
+struct t_wsk *t_wsk_create_ud( lua_State *L )
 {
 	struct t_wsk  *ws;
-	ws = (struct t_wsk *) lua_newuserdata( luaVM, sizeof( struct t_wsk ));
+	ws = (struct t_wsk *) lua_newuserdata( L, sizeof( struct t_wsk ));
 
-	luaL_getmetatable( luaVM, "T.Websocket" );
-	lua_setmetatable( luaVM, -2 );
+	luaL_getmetatable( L, "T.Websocket" );
+	lua_setmetatable( L, -2 );
 	return ws;
 }
 
 
 /**--------------------------------------------------------------------------
  * Check if the item on stack position pos is an xt_ws struct and return it
- * \param  luaVM    the Lua State
+ * \param  L    the Lua State
  * \param  pos      position on the stack
  *
  * \return struct xt_ws* pointer to xt_ws struct
  * --------------------------------------------------------------------------*/
-struct t_wsk *t_wsk_check_ud( lua_State *luaVM, int pos, int check )
+struct t_wsk *t_wsk_check_ud( lua_State *L, int pos, int check )
 {
-	void *ud = luaL_checkudata( luaVM, pos, "T.Websocket" );
-	luaL_argcheck( luaVM, (ud != NULL || !check), pos, "`T.Websocket` expected" );
+	void *ud = luaL_checkudata( L, pos, "T.Websocket" );
+	luaL_argcheck( L, (ud != NULL || !check), pos, "`T.Websocket` expected" );
 	return (struct t_wsk *) ud;
 }
 
 
 /**--------------------------------------------------------------------------
  * reads a message
- * \param   luaVM lua Virtual Machine.
+ * \param   L lua Virtual Machine.
  * \param   struct xt_ws.
  * \param   pointer to the buffer to read from(already positioned).
  * \lreturn value from the buffer a packers position according to packer format.
- * \return  integer number of values left on the stack.
+ * \return  int    # of values pushed onto the stack.
  *  -------------------------------------------------------------------------*/
-int t_wsk_rmsg( lua_State *luaVM, struct t_wsk *ws )
+int t_wsk_rmsg( lua_State *L, struct t_wsk *ws )
 {
 	char  buffer[ BUFSIZ ];
 	int   rcvd;
@@ -95,93 +95,92 @@ int t_wsk_rmsg( lua_State *luaVM, struct t_wsk *ws )
 	// TODO: Idea
 	// WS is in a state -> empty, receiving, sending
 	// negotiate to read into the buffer initially or into the luaL_Buffer
-	rcvd = t_sck_recv( luaVM, ws->sck, &(buffer[ 0 ]), BUFSIZ );
+	rcvd = t_sck_recv( L, ws->sck, &(buffer[ 0 ]), BUFSIZ );
 	return rcvd;
 }
 
 
 /**--------------------------------------------------------------------------
  * __tostring (print) representation of a packer instance.
- * \param   luaVM      The lua state.
+ * \param   L      The lua state.
  * \lparam  xt_pack    the packer instance user_data.
  * \lreturn string     formatted string representing packer.
- * \return  The number of results to be passed back to the calling Lua script.
+ * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
-static int lt_wsk__tostring( lua_State *luaVM )
+static int lt_wsk__tostring( lua_State *L )
 {
-	struct t_wsk *ws = t_wsk_check_ud( luaVM, 1, 1 );
+	struct t_wsk *ws = t_wsk_check_ud( L, 1, 1 );
 
-	lua_pushfstring( luaVM, "T.Websocket: %p", ws );
+	lua_pushfstring( L, "T.Websocket: %p", ws );
 	return 1;
 }
 
 
 /**--------------------------------------------------------------------------
  * __len (#) representation of an instance.
- * \param   luaVM      The lua state.
+ * \param   L      The lua state.
  * \lparam  userdata   the instance user_data.
  * \lreturn string     formatted string representing the instance.
- * \return  The number of results to be passed back to the calling Lua script.
+ * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
-static int lt_wsk__len( lua_State *luaVM )
+static int lt_wsk__len( lua_State *L )
 {
-	//struct t_wsk *wsk = t_wsk_check_ud( luaVM, 1, 1 );
+	//struct t_wsk *wsk = t_wsk_check_ud( L, 1, 1 );
 	//TODO: something meaningful here?
-	lua_pushinteger( luaVM, 4 );
+	lua_pushinteger( L, 4 );
 	return 1;
 }
 
 
 /**--------------------------------------------------------------------------
- * \brief    the metatble for the module
+ * Class metamethods library definition
  * --------------------------------------------------------------------------*/
 static const struct luaL_Reg t_wsk_fm [] = {
-	{"__call",        lt_wsk__Call},
-	{NULL,            NULL}
+	{ "__call",        lt_wsk__Call},
+	{ NULL,    NULL }
 };
 
 
 /**--------------------------------------------------------------------------
- * \brief    the metatble for the module
+ * Class functions library definition
  * --------------------------------------------------------------------------*/
 static const struct luaL_Reg t_wsk_cf [] = {
-	{"new",           lt_wsk_New},
-	{NULL,            NULL}
+	{ "new",           lt_wsk_New},
+	{ NULL,    NULL }
 };
 
 
 /**--------------------------------------------------------------------------
- * \brief      the buffer library definition
- *             assigns Lua available names to C-functions
+ * Objects metamethods library definition
  * --------------------------------------------------------------------------*/
 static const luaL_Reg t_wsk_m [] = {
-	{NULL,    NULL}
+	{ NULL,    NULL }
 };
 
 
 /**--------------------------------------------------------------------------
- * \brief   pushes this library onto the stack
+ * Pushes this library onto the stack
  *          - creates Metatable with functions
  *          - creates metatable with methods
- * \param   luaVM     The lua state.
- * \lreturn string    the library
- * \return  The number of results to be passed back to the calling Lua script.
+ * \param   L     The lua state.
+ * \lreturn table  the library
+ * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
-LUAMOD_API int luaopen_t_wsk (lua_State *luaVM)
+LUAMOD_API int luaopen_t_wsk (lua_State *L)
 {
 	// T.Buffer instance metatable
-	luaL_newmetatable( luaVM, "T.Websocket" );
-	luaL_newlib( luaVM, t_wsk_m );
-	lua_setfield( luaVM, -2, "__index" );
-	lua_pushcfunction( luaVM, lt_wsk__len );
-	lua_setfield( luaVM, -2, "__len");
-	lua_pushcfunction( luaVM, lt_wsk__tostring );
-	lua_setfield( luaVM, -2, "__tostring");
-	lua_pop( luaVM, 1 );        // remove metatable from stack
+	luaL_newmetatable( L, "T.Websocket" );
+	luaL_newlib( L, t_wsk_m );
+	lua_setfield( L, -2, "__index" );
+	lua_pushcfunction( L, lt_wsk__len );
+	lua_setfield( L, -2, "__len");
+	lua_pushcfunction( L, lt_wsk__tostring );
+	lua_setfield( L, -2, "__tostring");
+	lua_pop( L, 1 );        // remove metatable from stack
 	// T.Websocket class
-	luaL_newlib( luaVM, t_wsk_cf );
-	luaL_newlib( luaVM, t_wsk_fm );
-	lua_setmetatable( luaVM, -2 );
+	luaL_newlib( L, t_wsk_cf );
+	luaL_newlib( L, t_wsk_fm );
+	lua_setmetatable( L, -2 );
 	return 1;
 }
 

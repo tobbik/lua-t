@@ -1,12 +1,12 @@
 /* vim: ts=3 sw=3 sts=3 tw=80 sta noet list
 */
-/**
+/** -------------------------------------------------------------------------
  * \file      t_enc.c
  * \brief     Umbrella for various En/Decoding routines
  *            This covers encoding/Encryption
  * \author    tkieslich
  * \copyright See Copyright notice at the end of t.h
- */
+ *-------------------------------------------------------------------------*/
 
 #include <stdio.h>
 #include <string.h>     // strerror
@@ -20,8 +20,8 @@
 
 
 /** -------------------------------------------------------------------------
- * \brief   Wrapper around crypt() POSIX only
- * \param   luaVM  The lua state.
+ * Wrapper around crypt() POSIX only
+ * \param   L  The lua state.
  * \param   pwd    the password to crypt()
  * \param   string salt (optional)
  * \lreturn encrypted password
@@ -29,13 +29,13 @@
  * \return  void.
  *-------------------------------------------------------------------------*/
 static int
-t_enc_crypt( lua_State *luaVM )
+t_enc_crypt( lua_State *L )
 {
 	//char      *salt;
 	const char      *pass;
 
-	pass  = luaL_checkstring( luaVM, 1 );
-	//salt  = luaL_checkstring( luaVM, 2 );
+	pass  = luaL_checkstring( L, 1 );
+	//salt  = luaL_checkstring( L, 2 );
 
 	unsigned long seed[2];
 	char salt[] = "$1$........";
@@ -51,18 +51,19 @@ t_enc_crypt( lua_State *luaVM )
 
 	/* Turn it into printable characters from `seedchars'. */
 	for (i = 0; i < 8; i++)
-	  salt[3+i] = seedchars[(seed[i/5] >> (i%5)*6) & 0x3f];
+	{
+		salt[3+i] = seedchars[(seed[i/5] >> (i%5)*6) & 0x3f];
+	}
 
 	/* Read in the user's password and encrypt it. */
-	lua_pushstring( luaVM, crypt( pass, salt ) );
+	lua_pushstring( L, crypt( pass, salt ) );
 	return 1;
 }
 
 
-/**
- * \brief      the (empty) t library definition
- *             assigns Lua available names to C-functions
- */
+/** -------------------------------------------------------------------------
+ * The (empty) t library definition
+ *-------------------------------------------------------------------------*/
 static const luaL_Reg t_enc_lib [] =
 {
 	//{"crypt",     t_enc_crypt},
@@ -70,23 +71,23 @@ static const luaL_Reg t_enc_lib [] =
 };
 
 
-/**
- * \brief     Export the t_enc libray to Lua
- *\param      The Lua state.
- * \return     1 return value
- */
+/** -------------------------------------------------------------------------
+ * Export the t_enc libray to Lua
+ * \param   L   The Lua state.
+ * \return  int # of values pushed onto the stack.
+ *-------------------------------------------------------------------------*/
 LUAMOD_API int
-luaopen_t_enc( lua_State *luaVM )
+luaopen_t_enc( lua_State *L )
 {
-	luaL_newlib( luaVM, t_enc_lib );
-	luaopen_t_enc_arc4( luaVM );
-	lua_setfield( luaVM, -2, "Arc4" );
-	luaopen_t_enc_crc( luaVM );
-	lua_setfield( luaVM, -2, "Crc" );
-	luaopen_t_enc_b64( luaVM );
-	lua_setfield( luaVM, -2, "Base64" );
-	lua_pushcfunction( luaVM, t_enc_crypt );
-	lua_setfield( luaVM, -2, "crypt" );
+	luaL_newlib( L, t_enc_lib );
+	luaopen_t_enc_arc4( L );
+	lua_setfield( L, -2, "Arc4" );
+	luaopen_t_enc_crc( L );
+	lua_setfield( L, -2, "Crc" );
+	luaopen_t_enc_b64( L );
+	lua_setfield( L, -2, "Base64" );
+	lua_pushcfunction( L, t_enc_crypt );
+	lua_setfield( L, -2, "crypt" );
 	return 1;
 }
 
