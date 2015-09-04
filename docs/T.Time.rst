@@ -20,14 +20,14 @@ t.Time.sleep( int *x* )
   make the process sleep for *x* milliseconds
 
 t.Time.new( int *x* )
-  instantiate a new t.Time object with a value of 'x' milliseconds
+  instantiate a new t.Time object with a value of *x* milliseconds
 
 
 Class Metamembers
 -----------------
 
 t.Time( int *x* )   [__call]
-  instantiate a new t.Time object with a value of 'x' milliseconds
+  instantiate a new t.Time object with a value of *x* milliseconds
 
 
 Instance Members
@@ -58,5 +58,9 @@ t.time *t* = t.time *t1* - t.time *t2*  [__sub]
   Substracts duration of operand *t2* from operand *t1*.  Returns a new
   instance *t*.
 
+string *s* = tostring( timeInstance )  [__toString]
+  Returns a string representing the time instance.  The String contains type,
+  length and memory address information such as "T.Time[0:200000]: 0x1193d18",
+  meaning it has a duration of 0 seconds and 200000 microseconds.
 
 
