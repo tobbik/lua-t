@@ -22,8 +22,10 @@ AR=ar rcu
 RANLIB=ranlib
 
 T_SRC=t.c \
-	 t_sck.c \
-	 t_ipx.c \
+	 t_net.c \
+	 t_net_tcp.c \
+	 t_net_udp.c \
+	 t_net_ip4.c \
 	 t_ael.c \
 	 t_ael_sel.c \
 	 t_tim.c \
