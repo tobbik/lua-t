@@ -178,15 +178,13 @@ struct t_net
 			case T_NET_UDP:
 				if ( (s->fd  =  socket( AF_INET, SOCK_DGRAM, IPPROTO_UDP )) == -1 )
 					return NULL;
-				luaL_getmetatable( L, "T.Net.UDP" );
 				break;
 
 			case T_NET_TCP:
 				if ( (s->fd  =  socket( AF_INET, SOCK_STREAM, 0 )) == -1 )
 					return NULL;
-				if (-1 == setsockopt( s->fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one) ) )
+				if (-1 == setsockopt( s->fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof( one ) ) )
 					return NULL;
-				luaL_getmetatable( L, "T.Net.TCP" );
 				break;
 
 			default:
@@ -196,6 +194,13 @@ struct t_net
 
 	s->t = type;
 
+	switch (type)
+	{
+		case T_NET_UDP: luaL_getmetatable( L, "T.Net.UDP" ); break;
+		case T_NET_TCP: luaL_getmetatable( L, "T.Net.TCP" ); break;
+		default:
+			return NULL;
+	}
 	lua_setmetatable( L, -2 );
 	return s;
 }
