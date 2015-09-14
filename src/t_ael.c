@@ -250,7 +250,7 @@ int
 lt_ael_addhandle( lua_State *L )
 {
 	luaL_Stream   *lS;
-	struct t_sck  *sc;
+	struct t_net  *sc;
 	int            fd  = 0;
 	int            n   = lua_gettop( L ) + 1;    ///< iterator for arguments
 	struct t_ael  *ael = t_ael_check_ud( L, 1, 1 );
@@ -261,7 +261,7 @@ lt_ael_addhandle( lua_State *L )
 	if (NULL != lS)
 		fd = fileno( lS->f );
 
-	sc = (struct t_sck *) luaL_testudata( L, 2, "T.Socket" );
+	sc = t_net_check_ud( L, 2, 0 );
 	if (NULL != sc)
 		fd = sc->fd;
 
@@ -309,7 +309,7 @@ int
 lt_ael_removehandle( lua_State *L )
 {
 	luaL_Stream   *lS;
-	struct t_sck  *sc;
+	struct t_net  *sc;
 	int            fd  = 0;
 	struct t_ael  *ael = t_ael_check_ud( L, 1, 1 );
 	luaL_checktype( L, 3, LUA_TBOOLEAN );
@@ -319,7 +319,7 @@ lt_ael_removehandle( lua_State *L )
 	if (NULL != lS)
 		fd = fileno( lS->f );
 
-	sc = (struct t_sck *) luaL_testudata( L, 2, "T.Socket" );
+	sc = t_net_check_ud( L, 2, 0 );
 	if (NULL != sc)
 		fd = sc->fd;
 

@@ -442,11 +442,8 @@ struct t_pck
 *t_pck_check_ud( lua_State *L, int pos, int check )
 {
 	void *ud = luaL_testudata( L, pos, "T.Pack" );
-	if (NULL != ud)
-		return (struct t_pck *) ud;
-	if (check)
-		luaL_argcheck( L, ud != NULL, pos, "`T.Pack` expected" );
-	return NULL;
+	luaL_argcheck( L, (ud != NULL || !check), pos, "`T.Pack` expected" );
+	return (NULL==ud) ? NULL : (struct t_pck *) ud;
 }
 
 
@@ -459,7 +456,7 @@ struct t_pck
  * \return  size in bytes.
  * TODO: return 0 no matter if even one item is of unknown length.
  * --------------------------------------------------------------------------*/
-static size_t 
+static size_t
 t_pck_getsize( lua_State *L,  struct t_pck *p, int bits )
 {
 	size_t        s = 0;

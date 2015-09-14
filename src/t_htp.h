@@ -79,7 +79,7 @@ enum t_htp_ver {
 //|____/ \__,_|\__\__,_| |____/ \__|_|   \__,_|\___|\__|\__,_|_|  \___||___/
 /// The userdata struct for T.Http.Server
 struct t_htp_srv {
-	struct t_sck     *sck;    ///< t_sck socket (must be tcp)
+	struct t_net     *sck;    ///< t_net socket (must be tcp)
 	struct t_ael     *ael;    ///< t_ael event loop
 	int               sR;     ///< Lua registry reference for t.Socket instance
 	int               aR;     ///< Lua registry reference for t.Ip     instance (struct sockaddr_in)
@@ -100,7 +100,7 @@ struct t_htp_con {
 	// onBody() handler; anytime a read-event is fired AFTER the header was
 	// received this gets executed; Can be LUA_NOREF which discards incoming data
 	int               bR;     ///< Lua registry reference to body handler function
-	struct t_sck     *sck;    ///< pointer to the actual socket
+	struct t_net     *sck;    ///< pointer to the actual socket
 	struct t_htp_srv *srv;    ///< pointer to the HTTP-Server
 
 	int               kpAlv;  ///< keepalive value in seconds -> 0==no Keepalive
@@ -220,10 +220,10 @@ struct t_wsk_msg_h {
 
 /// data type tor websocket handling
 struct t_wsk {
-	int      sR;       /// Lua registry Reference for t_sck userdata
+	int      sR;       /// Lua registry Reference for t_net userdata
 	int      spR;      /// Lua registry Reference for subprotocol string
-	int      fd;       /// copy fd from t_sck for direct access
-	struct t_sck *sck; /// reference to t_sck type
+	int      fd;       /// copy fd from t_net for direct access
+	struct t_net *sck; /// reference to t_net type
 };
 
 

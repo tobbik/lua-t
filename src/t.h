@@ -46,15 +46,13 @@ int  t_push_error( lua_State *L, const char *fmt, ... );
 
 
 // global helper functions
-void     make_fdset( lua_State *L, int stack_pos, fd_set *collection, int *max_hndl );
 uint16_t get_crc16( const unsigned char *data, size_t size );
 
 
 // global sub classes registration
 LUAMOD_API int luaopen_t_ael( lua_State *L );
 LUAMOD_API int luaopen_t_tim( lua_State *L );
-LUAMOD_API int luaopen_t_ipx( lua_State *L );
-LUAMOD_API int luaopen_t_sck( lua_State *L );
+LUAMOD_API int luaopen_t_net( lua_State *L );
 LUAMOD_API int luaopen_t_enc( lua_State *L );
 LUAMOD_API int luaopen_t_buf( lua_State *L );
 LUAMOD_API int luaopen_t_pck( lua_State *L );
