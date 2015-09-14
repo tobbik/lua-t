@@ -341,7 +341,8 @@ t_net_listen( lua_State *L, int pos, enum t_net_t t )
 		lua_insert( L, pos+0 );
 
 		t_net_getdef( L, pos+0, &s, &ip, t );
-		//S: t_net,t_net_ipx
+		t_stackDump( L );
+		//S: t_net,t_net_ip4
 		if (bind( s->fd , (struct sockaddr*) &(*ip), sizeof( struct sockaddr ) ) == -1)
 			return t_push_error( L, "ERROR binding socket to %s:%d",
 					 inet_ntoa( ip->sin_addr ),

@@ -350,7 +350,7 @@ static const luaL_Reg t_net_tcp_m [] =
 	{ "close",       lt_net_close },
 	{ "send",        lt_net_tcp_send },
 	{ "recv",        lt_net_tcp_recv },
-	{ "getIp",       lt_net_tcp_getsockname },
+	{ "getsockname", lt_net_tcp_getsockname },
 	// generic net functions -> reuse functions
 	{ "getId",       lt_net_getfdid },
 	{ "getFdInfo",   lt_net_getfdinfo },
