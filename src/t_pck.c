@@ -1430,7 +1430,6 @@ luaopen_t_pck( lua_State *L )
 	luaL_newmetatable( L, "T.Pack" );   // stack: functions meta
 	luaL_setfuncs( L, t_pck_m, 0 );
 	lua_pop( L, 1 );        // remove metatable from stack
-	lua_pop( L, 1 );        // remove metatable from stack
 
 	// Push the class onto the stack
 	// this is avalable as T.Pack.<member>

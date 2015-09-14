@@ -126,7 +126,7 @@ int lt_net_getfdsinfo( lua_State *L )
  * functions such as bind, listen, connect etc.
  * possible combinations:
  *  - ...( sck, ip )
- *  - ...( ip)
+ *  - ...( ip)     TODO: FIX THIS
  *  - ...( sck,'ipString', port )
  *  - ...( sck, port )           -- IP will be 0.0.0.0
  *  - ...( sck, 'ipstring' )     -- Port unassigned
@@ -146,7 +146,7 @@ t_net_getdef( lua_State *L, int pos, struct t_net **s, struct sockaddr_in **ip,
 	if (NULL == *s)     // handle T.Net.whatever( )
 	{
 		*s = t_net_create_ud( L, t, 1 );
-		lua_replace( L, pos+0 );
+		lua_insert( L, pos+0 );
 	}
 
 	if (NULL == *ip)
@@ -178,6 +178,7 @@ struct t_net
 			case T_NET_UDP:
 				if ( (s->fd  =  socket( AF_INET, SOCK_DGRAM, IPPROTO_UDP )) == -1 )
 					return NULL;
+				luaL_getmetatable( L, "T.Net.UDP" );
 				break;
 
 			case T_NET_TCP:
@@ -185,6 +186,7 @@ struct t_net
 					return NULL;
 				if (-1 == setsockopt( s->fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one) ) )
 					return NULL;
+				luaL_getmetatable( L, "T.Net.TCP" );
 				break;
 
 			default:
@@ -194,7 +196,6 @@ struct t_net
 
 	s->t = type;
 
-	luaL_getmetatable( L, "T.Net" );
 	lua_setmetatable( L, -2 );
 	return s;
 }
@@ -390,8 +391,8 @@ t_net_bind( lua_State *L, enum t_net_t t )
 int
 t_net_connect( lua_State *L, enum t_net_t t )
 {
-	struct t_net       *s = NULL;
-	struct sockaddr_in *ip  = NULL;
+	struct t_net       *s  = NULL;
+	struct sockaddr_in *ip = NULL;
 
 	t_net_getdef( L, 1, &s, &ip, t );
 

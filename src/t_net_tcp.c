@@ -77,7 +77,7 @@ struct t_net
 *t_net_tcp_check_ud( lua_State *L, int pos, int check )
 {
 	void *ud = luaL_testudata( L, pos, "T.Net.TCP" );
-	luaL_argcheck( L, (ud != NULL || !check), pos, "`T.Net.TCPP` expected" );
+	luaL_argcheck( L, (ud != NULL || !check), pos, "`T.Net.TCP` expected" );
 	return (NULL==ud) ? NULL : (struct t_net *) ud;
 }
 

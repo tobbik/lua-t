@@ -74,7 +74,7 @@ t_stackPrint( lua_State *L, int i, int last )
  * \param  L The Lua state.
  *-------------------------------------------------------------------------*/
 void
-t_stackdump ( lua_State *L )
+t_stackDump ( lua_State *L )
 {
 	int top = lua_gettop( L );
 	printf( "STACK[%d]:   ", top );

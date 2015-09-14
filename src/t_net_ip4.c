@@ -128,7 +128,7 @@ struct sockaddr_in
 
 	ip4 = (struct sockaddr_in *) lua_newuserdata( L, sizeof(struct sockaddr_in) );
 
-	luaL_getmetatable( L, "T.Ip" );
+	luaL_getmetatable( L, "T.Net.IP4" );
 	lua_setmetatable( L , -2 );
 	return ip4;
 }
