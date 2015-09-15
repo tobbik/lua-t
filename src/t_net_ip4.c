@@ -80,7 +80,7 @@ t_net_ip4_set( lua_State *L, int pos, struct sockaddr_in *ip )
 	int           port;
 	const char   *ips;      /// IP String aaa.bbb.ccc.ddd
 
-	memset( (char *) &(*ip), 0, sizeof(ip) );
+	memset( (char *) &(*ip), 0, sizeof( ip ) );
 	ip->sin_family = AF_INET;
 
    // First element is nil assign 0.0.0.0 and no port
@@ -94,10 +94,10 @@ t_net_ip4_set( lua_State *L, int pos, struct sockaddr_in *ip )
 	{
 		ips = luaL_checkstring( L, pos+0 );
 #ifdef _WIN32
-		if ( InetPton (AF_INET, ips, &(ip->sin_addr))==0)
+		if ( InetPton( AF_INET, ips, &(ip->sin_addr) ) == 0)
 			t_push_error( L, "InetPton() of %s failed", ips );
 #else
-		if ( inet_pton( AF_INET, ips, &(ip->sin_addr) )==0)
+		if ( inet_pton( AF_INET, ips, &(ip->sin_addr) ) == 0)
 			t_push_error( L, "inet_aton() of %s failed", ips );
 #endif
 		lua_remove( L, pos+0 );
@@ -105,7 +105,7 @@ t_net_ip4_set( lua_State *L, int pos, struct sockaddr_in *ip )
 	else
 		ip->sin_addr.s_addr = htonl( INADDR_ANY );
 
-	if (lua_isnumber( L, pos+0 ))   // pos+0 because we removed the previous string
+	if (lua_isnumber( L, pos+0 ))   // pos+0 because previous string was removed if there
 	{
 		port = luaL_checkinteger( L, pos+0 );
 		luaL_argcheck( L, 1 <= port && port <= 65536, pos+1,  // +1 because first was removed
