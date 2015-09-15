@@ -196,7 +196,7 @@ static int
 lt_net_ip4__tostring( lua_State *L )
 {
 	struct sockaddr_in *ip4 = t_net_ip4_check_ud( L, 1, 1 );
-	lua_pushfstring( L, "T.Ip{%s:%d}: %p",
+	lua_pushfstring( L, "T.Net.IPv4{%s:%d}: %p",
 			inet_ntoa( ip4->sin_addr ),
 			ntohs( ip4->sin_port ),
 			ip4 );

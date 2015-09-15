@@ -1,11 +1,10 @@
 #!../out/bin/lua
 local t=require('t')
+ipAddr,port = '10.128.3.145', 8888 
 
-udpsock = t.Socket('UDP')
-ip      = t.IpEndpoint('192.168.0.200', 8888)
---ip      = t.IpEndpoint('127.0.0.1', 8888)
---ip      = t.IpEndpoint(t.IpEndpoint.localhost, 8888)
-print(udpsock, ip)
-udpsock:bind(ip)
-msg, len, ip_cli = udpsock:recvFrom()
-print(msg, len, ip_cli, "\n")
+udpsock = t.Net.UDP( )
+ip      = t.Net.IPv4( ipAddr, port )
+print( udpsock, ip )
+udpsock:bind( ip )
+msg, len, ip_cli = udpsock:recvfrom()
+print( msg, len, ip_cli, "\n" )
