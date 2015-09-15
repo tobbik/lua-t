@@ -2,10 +2,10 @@
 t  = require't'
 fmt= string.format
 l  = t.Loop(10)
-fileName = 'buf.lua';
+fileName = '../lua-t/example/buf.lua';
 
 
-function k ()
+function k( )
 	local f = io.open( fileName, "r" )
 	l:addHandle( f, true, function( )
 		local d = f:read( 200 )
@@ -14,13 +14,13 @@ function k ()
 		else
 			print( f, "end" )
 			l:removeHandle( f, true )
-			f:close()
-			l:stop()
+			f:close( )
+			l:stop( )
 		end
 	end )
 end
 
-k(  )
+k( )
 
-l:show()
-l:run()
+l:show( )
+l:run( )
