@@ -61,10 +61,10 @@ t_enc_crypt( lua_State *L )
 }
 
 
-/** -------------------------------------------------------------------------
- * The (empty) t library definition
- *-------------------------------------------------------------------------*/
-static const luaL_Reg t_enc_lib [] =
+/**--------------------------------------------------------------------------
+ * Class functions library definition
+ * --------------------------------------------------------------------------*/
+static const luaL_Reg t_enc_cf [] =
 {
 	//{"crypt",     t_enc_crypt},
 	{NULL,        NULL}
@@ -79,7 +79,7 @@ static const luaL_Reg t_enc_lib [] =
 LUAMOD_API int
 luaopen_t_enc( lua_State *L )
 {
-	luaL_newlib( L, t_enc_lib );
+	luaL_newlib( L, t_enc_cf );
 	luaopen_t_enc_arc4( L );
 	lua_setfield( L, -2, "Arc4" );
 	luaopen_t_enc_crc( L );

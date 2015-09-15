@@ -1,34 +1,34 @@
 #!../out/bin/lua
-t = require't'
-s  = t.Socket.bind( 'UDP',  8888 )
+t  = require't'
+s  = t.Net.UDP.bind( 8888 )
 l  = nil
-n  = 10
+n  = 28
 tm = {}
 
 p = function( ... )
 	local t = t.Time( math.random( 1500, 11500 ) )
-	print( table.unpack( {...} ), 'return   ' .. tostring( (t:get()>2500) and t:get() or 0 ) )
-	return (t:get()>2500) and t or nil
+	print( table.unpack( {...} ), 'return   ' .. tostring( (t:get( ) > n*250) and t:get( ) or 0 ) )
+	return (t:get( ) > n*250) and t or nil
 end
 
 
 function r(s)
-	local msg, len, ip_cli = s:recvFrom()
-	print(msg, len, ip_cli, "\n")
+	local msg, len, ip_cli = s:recvfrom( )
+	print( msg, len, ip_cli, "\n" )
 	if msg:sub( 1, 4 ) == 'exit' then
 		print( "go exit" )
-		l:stop()
+		l:stop( )
 	elseif msg:sub( 1, 8 ) == 'show' then
 		print( "SHOW LOOP:" )
 		l:show( )
 	elseif msg:sub( 1, 7 ) == 'remove ' then
-		local t = msg:match("remove (%d+)")
-		print( "remove timer ".. tonumber(t) )
-		l:removeTimer( tm[ tonumber(t) ] )
+		local t = msg:match( "remove (%d+)" )
+		print( "remove timer ".. tonumber( t ) )
+		l:removeTimer( tm[ tonumber( t ) ] )
 	elseif msg:sub( 1, 2 ) == 'rL' then
 		l:removeHandle( s )
 		print( "remove listener -> go exit" )
-		l:stop()
+		l:stop( )
 	end
 end
 
@@ -40,4 +40,4 @@ for i=1,n do
 end
 l:addHandle( s, true, r, s )
 
-l:run()
+l:run( )

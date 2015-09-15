@@ -442,11 +442,8 @@ struct t_pck
 *t_pck_check_ud( lua_State *L, int pos, int check )
 {
 	void *ud = luaL_testudata( L, pos, "T.Pack" );
-	if (NULL != ud)
-		return (struct t_pck *) ud;
-	if (check)
-		luaL_argcheck( L, ud != NULL, pos, "`T.Pack` expected" );
-	return NULL;
+	luaL_argcheck( L, (ud != NULL || !check), pos, "`T.Pack` expected" );
+	return (NULL==ud) ? NULL : (struct t_pck *) ud;
 }
 
 
@@ -459,7 +456,7 @@ struct t_pck
  * \return  size in bytes.
  * TODO: return 0 no matter if even one item is of unknown length.
  * --------------------------------------------------------------------------*/
-static size_t 
+static size_t
 t_pck_getsize( lua_State *L,  struct t_pck *p, int bits )
 {
 	size_t        s = 0;
@@ -1432,7 +1429,6 @@ luaopen_t_pck( lua_State *L )
 	// T.Pack.Struct instance metatable
 	luaL_newmetatable( L, "T.Pack" );   // stack: functions meta
 	luaL_setfuncs( L, t_pck_m, 0 );
-	lua_pop( L, 1 );        // remove metatable from stack
 	lua_pop( L, 1 );        // remove metatable from stack
 
 	// Push the class onto the stack

@@ -8,7 +8,7 @@
  * \copyright See Copyright notice at the end of t.h
  */
 
-#include "t_sck.h"
+#include "t_net.h"
 
 enum t_ael_t {
 	// 00000000
