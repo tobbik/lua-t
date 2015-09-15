@@ -150,87 +150,38 @@ struct sockaddr_in
 
 
 /**--------------------------------------------------------------------------
- * Set IP the IP endpoint.
+ * Set Ip and Port of the IP endpoint.
  * \param   L    The lua state.
  * \lparam  sockaddr the sockaddr_in userdata.
- * \lparam  string   the xxx.xxx.xxx.xxx formatted IP address.
- * \return  int    # of values pushed onto the stack.
- * --------------------------------------------------------------------------*/
-static int
-lt_net_ip4_set_ip( lua_State *L )
-{
-	struct sockaddr_in *ip4 = t_net_ip4_check_ud( L, 1, 1 );
-	const char         *ips;  ///< IP String representation
-
-	if (lua_isstring( L, 2 ))
-	{
-		ips = luaL_checkstring( L, 2 );
-#ifdef _WIN32
-		if (InetPton( AF_INET, ips, &(ip4->sin_addr) )==0)
-			return t_push_error( L, "InetPton() of %s failed", ips );
-#else
-		if (inet_pton( AF_INET, ips, &(ip4->sin_addr) )==0)
-			return t_push_error( L, "inet_aton() of %s failed", ips );
-#endif
-	}
-	else if (lua_isnil( L, 2 ))
-		ip4->sin_addr.s_addr = htonl( INADDR_ANY );
-	return 0;
-}
-
-
-/**--------------------------------------------------------------------------
- * Set port the IP endpoint.
- * \param   L    The lua state.
- * \lparam  sockaddr the sockaddr_in userdata.
+ * \lparam  string   IPv4 address.
  * \lparam  int      the port number.
  * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int
-lt_net_ip4_set_port( lua_State *L )
+lt_net_ip4_setIpAndPort( lua_State *L )
 {
 	struct sockaddr_in *ip4 = t_net_ip4_check_ud( L, 1, 1 );
-	int                port = luaL_checkinteger( L, 2 );
 
-	luaL_argcheck( L, 1 <= port && port <= 65536, 2,
-	                 "port number out of range" );
-
-	ip4->sin_port   = htons( port );
+	t_net_ip4_set( L, 1, ip4 );
 	return 0;
 }
 
 
 /**--------------------------------------------------------------------------
- * Get IP the IP endpoint.
+ * Get IP and port from the IP endpoint.
  * \param   L    The lua state.
  * \lparam  sockaddr the sockaddr_in userdata.
+ * \lreturn string   IPv4 address..
  * \lreturn int      sockkaddr port.
  * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int
-lt_net_ip4_get_ip( lua_State *L )
+lt_net_ip4_getIpAndPort( lua_State *L )
 {
 	struct sockaddr_in *ip4 = t_net_ip4_check_ud( L, 1, 1 );
-
 	lua_pushstring( L, inet_ntoa( ip4->sin_addr ) );
-	return 1;
-}
-
-
-/**--------------------------------------------------------------------------
- * Get port the IP endpoint.
- * \param   L    The lua state.
- * \lparam  sockaddr the sockaddr_in userdata.
- * \lreturn string   xxx.xxx.xxx.xxx formatted string representing sockkaddr IP.
- * \return  int    # of values pushed onto the stack.
- * --------------------------------------------------------------------------*/
-static int
-lt_net_ip4_get_port( lua_State *L )
-{
-	struct sockaddr_in *ip4 = t_net_ip4_check_ud( L, 1, 1 );
-
 	lua_pushinteger( L, ntohs( ip4->sin_port ) );
-	return 1;
+	return 2;
 }
 
 
@@ -361,10 +312,8 @@ static const struct luaL_Reg t_net_ip4_m [] = {
 	{ "__tostring",  lt_net_ip4__tostring },
 	{ "__eq",        lt_net_ip4__eq },
 	// object methods
-	{ "setIp",       lt_net_ip4_set_ip },
-	{ "getIp",       lt_net_ip4_get_ip },
-	{ "setPort",     lt_net_ip4_set_port },
-	{ "getPort",     lt_net_ip4_get_port },
+	{ "get",         lt_net_ip4_getIpAndPort },
+	{ "set",         lt_net_ip4_setIpAndPort },
 	{ NULL,   NULL}
 };
 
