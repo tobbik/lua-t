@@ -67,6 +67,12 @@ install: $(T_SRC) $(T_LIB_DYN) $(T_LIB_STA)
 	cp $(T_LIB_DYN) $(PREFIX)/lib/lua/$(LVER)/$(T_LIB_DYN)
 	cp $(T_LIB_STA) $(PREFIX)/lib/lua/$(LVER)/$(T_LIB_STA)
 
+test: $(SRCDIR)
+	$(MAKE) -C test CC=$(CC) LD=$(LD) \
+		LVER=$(LVER) \
+		MYCFLAGS=$(MYCFLAGS) \
+		LDFLAGS="$(LDFLAGS)" \
+		INCDIR=$(INCDIR)
 
 %: %.o
 	$(CC) $< -o $@ $(LDFLAGS) $(LIBS)
@@ -92,4 +98,7 @@ echo:
 	@echo "RM= $(RM)"
 
 clean:
+	$(MAKE) -C $(CURDIR)/test clean
 	-rm $(T_OBJ) $(T_LIB_DYN) $(T_LIB_STA)
+
+.PHONY: all test clean

@@ -40,6 +40,13 @@ install: $(SRCDIR)/$(T_LIB_DYN)
 		INCS=$(INCDIR) \
 		PREFIX="$(PREFIX)" install
 
+test: $(SRCDIR)
+	$(MAKE) -C $(SRCDIR) CC=$(CC) LD=$(LD) \
+		LVER=$(LVER) \
+		MYCFLAGS=$(MYCFLAGS) \
+		LDFLAGS="$(LDFLAGS)" \
+		INCDIR=$(INCDIR) test
+
 # echo config parameters
 echo:
 	$(MAKE) -C $(SRCDIR) -s echo
