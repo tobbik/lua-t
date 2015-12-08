@@ -36,8 +36,6 @@
 	 ((b) | (  (0x01) << (NB-(n))))    : \
 	 ((b) & (~((0x01) << (NB-(n))))) )
 
-
-
 // global default for T.Pack, can be flipped
 #ifdef IS_LITTLE_ENDIAN
 static int _default_endian = 1;

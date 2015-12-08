@@ -59,6 +59,7 @@ LUAMOD_API int luaopen_t_enc( lua_State *L );
 LUAMOD_API int luaopen_t_buf( lua_State *L );
 LUAMOD_API int luaopen_t_pck( lua_State *L );
 LUAMOD_API int luaopen_t_tst( lua_State *L );
+LUAMOD_API int luaopen_t_ort( lua_State *L );
 LUAMOD_API int luaopen_t_htp( lua_State *L );
 LUAMOD_API int luaopen_t_wsk( lua_State *L );
 LUAMOD_API int luaopen_t    ( lua_State *L );

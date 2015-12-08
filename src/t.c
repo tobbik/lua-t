@@ -370,6 +370,8 @@ luaopen_t( lua_State *L )
 	lua_setfield( L, -2, "Encode" );
 	luaopen_t_tst( L );
 	lua_setfield( L, -2, "Test" );
+	//luaopen_t_ort( L );
+	//lua_setfield( L, -2, "OrderedTable" );
 	luaopen_t_wsk( L );
 	lua_setfield( L, -2, "Websocket" );
 	luaopen_t_htp( L );
