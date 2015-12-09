@@ -135,8 +135,8 @@ struct t_nry *t_nry_check_ud( lua_State *L, int pos, int check )
 //
 // ================================= GENERIC LUA API========================
 /**--------------------------------------------------------------------------
- * reads an address where an array element sits.
- * \param   L       lua Virtual Machine.
+ * Reads an address where an array element sits.
+ * \param   L       Lua Virtual Machine.
  * \lparam  struct  t_nry.
  * \lreturn value   unpacked value according to packer format.
  * \return  *int    pointer to the requested value.
@@ -148,7 +148,7 @@ static int
 	size_t        idx = luaL_checkinteger( L, 2 );
 
 	luaL_argcheck( L, 1 <= idx && idx <= a->len, 2,
-                       "index out of range");
+                       "index out of range" );
 	/// return element address
 	return &a->v[ idx - 1 ];
 }
@@ -156,10 +156,10 @@ static int
 
 /**--------------------------------------------------------------------------
  * gets a value from the array.
- * \param   L  lua Virtual Machine.
+ * \param   L  Lua Virtual Machine.
  * \lparam  struct t_nry.
- * \lparam  int           array index.
- * \lreturn int           Value stored at index.
+ * \lparam  int    array index.
+ * \lreturn int    Value stored at index.
  * \return  int  # of values pushed onto the stack.
  *  -------------------------------------------------------------------------*/
 static int
@@ -178,7 +178,7 @@ lt_nry__index( lua_State *L )
 
 
 /**--------------------------------------------------------------------------
- * sets a value from the array.
+ * sets a value int the array.
  * \param  L  Lua Virtual Machine.
  * \lparam struct t_nry.
  * \lparam int           array index.
@@ -192,6 +192,58 @@ lt_nry__newindex( lua_State *L )
 	*t_nry_getelem( L ) = n_val;
 	return 0;
 }
+
+
+/**--------------------------------------------------------------------------
+ * the actual iterate(next) over the T.Numarray.
+ * It will return key,value pairs in proper order.
+ * \param   L Lua Virtual Machine.
+ * \lparam  cfunction.
+ * \lparam  previous key.
+ * \lparam  current key.
+ * \lreturn current key, current value.
+ * \return  int    # of values pushed onto the stack.
+ *  -------------------------------------------------------------------------*/
+static int
+t_nry_iter( lua_State *L )
+{
+	struct t_nry *a = t_nry_check_ud( L, -2, 1 );
+	size_t        i = luaL_checkinteger( L, -1 ) + 1;
+
+	lua_pushinteger( L, i );
+
+	if ( i > a->len )
+	{
+		lua_pushnil( L );
+		return 1;
+	}
+	else
+	{
+		lua_pushinteger( L, a->v[ i-1 ] );
+		return 2;
+	}
+}
+
+
+/**--------------------------------------------------------------------------
+ * Pairs method to iterate over the T.Numarray.
+ * \param   L Lua Virtual Machine.
+ * \lparam  instance  T.Numarray.
+ * \return  int       # of values pushed onto the stack.
+ *  -------------------------------------------------------------------------*/
+static int
+lt_nry__pairs( lua_State *L )
+{
+	t_nry_check_ud( L, -1, 1 );
+
+	lua_pushnumber( L, 0 );
+	lua_pushcfunction( L, &t_nry_iter );
+	lua_pushvalue(L, 1 );      /* state */
+	lua_pushinteger(L, 0 );   /* initial value */
+	return 3;
+}
+
+
 
 
 /**--------------------------------------------------------------------------
@@ -308,6 +360,7 @@ static const struct luaL_Reg t_nry_cf [] = {
 static const luaL_Reg t_nry_m [] = {
 	{ "__index",    lt_nry__index },
 	{ "__newindex", lt_nry__newindex },
+	{ "__pairs",    lt_nry__pairs },
 	{ "__len",      lt_nry__len },
 	{ "__tostring", lt_nry__tostring },
 	{ "__eq",       lt_nry__eq },
