@@ -40,8 +40,8 @@ endif
 LVER=5.3
 PREFIX=$(shell pkg-config --variable=prefix lua)
 INCDIR=$(shell pkg-config --variable=includedir lua)
-LDFLAGS=$(shell pkg-config --libs lua) -lcrypt
-#LDFLAGS:=$(LDFLAGS) -lcrypt
+#LDFLAGS=$(shell pkg-config --libs lua) -lcrypt
+LDFLAGS:=$(LDFLAGS) -lcrypt
 # clang can be substituted with gcc (command line args compatible)
 CC=clang
 LD=clang
