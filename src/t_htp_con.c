@@ -37,7 +37,7 @@ struct t_htp_con
 
 	c->sR        = luaL_ref( L, LUA_REGISTRYINDEX );
 
-	luaL_getmetatable( L, "T.Http.Connection" );
+	luaL_getmetatable( L, T_HTP_TYPE"."T_HTP_CON_NAME );
 	lua_setmetatable( L, -2 );
 	return c;
 }
@@ -53,8 +53,8 @@ struct t_htp_con
 struct t_htp_con
 *t_htp_con_check_ud( lua_State *L, int pos, int check )
 {
-	void *ud = luaL_checkudata( L, pos, "T.Http.Connection" );
-	luaL_argcheck( L, (ud != NULL || !check), pos, "`T.Http.Connection` expected" );
+	void *ud = luaL_checkudata( L, pos, T_HTP_TYPE"."T_HTP_CON_NAME );
+	luaL_argcheck( L, (ud != NULL || !check), pos, "`"T_HTP_TYPE"."T_HTP_CON_NAME"` expected" );
 	return (struct t_htp_con *) ud;
 }
 
@@ -184,7 +184,7 @@ t_htp_con_rsp( lua_State *L )
 		//        on kpAlv timeout
 		if (NULL == c->buf_head)       // current connection has no buffers left
 		{
-			printf( "remove Connection from Loop\n" );
+			printf( "remove "T_HTP_TYPE"."T_HTP_CON_NAME" from Loop\n" );
 			// remove this connections socket from evLoop
 			t_ael_removehandle_impl( c->srv->ael, c->sck->fd, T_AEL_WR );
 			c->srv->ael->fd_set[ c->sck->fd ]->t = T_AEL_RD;
@@ -240,7 +240,7 @@ lt_htp_con__newindex( lua_State *L )
 {
 	t_htp_con_check_ud( L, -3, 1 );
 
-	return t_push_error( L, "Can't change values in `T.Http.Connection`" );
+	return t_push_error( L, "Can't change values in `"T_HTP_TYPE"."T_HTP_CON_NAME"`" );
 }
 
 
@@ -254,9 +254,9 @@ lt_htp_con__newindex( lua_State *L )
 static int
 lt_htp_con__tostring( lua_State *L )
 {
-	struct t_htp_con *c = (struct t_htp_con *) luaL_checkudata( L, 1, "T.Http.Connection" );
+	struct t_htp_con *c = (struct t_htp_con *) luaL_checkudata( L, 1, T_HTP_TYPE"."T_HTP_CON_NAME );
 
-	lua_pushfstring( L, "T.Http.Connection: %p", c );
+	lua_pushfstring( L, T_HTP_TYPE"."T_HTP_CON_NAME": %p", c );
 	return 1;
 }
 
@@ -271,7 +271,7 @@ lt_htp_con__tostring( lua_State *L )
 static int
 lt_htp_con__len( lua_State *L )
 {
-	struct t_htp_con *c = (struct t_htp_con *) luaL_checkudata( L, 1, "T.Http.Connection" );
+	struct t_htp_con *c = (struct t_htp_con *) luaL_checkudata( L, 1, T_HTP_TYPE"."T_HTP_CON_NAME );
 	// TODO: return the length of the stream collection
 	lua_pushinteger( L, c->cnt );
 	return 1;
@@ -287,7 +287,7 @@ lt_htp_con__len( lua_State *L )
 static int
 lt_htp_con__gc( lua_State *L )
 {
-	struct t_htp_con *c = (struct t_htp_con *) luaL_checkudata( L, 1, "T.Http.Connection" );
+	struct t_htp_con *c = (struct t_htp_con *) luaL_checkudata( L, 1, T_HTP_TYPE"."T_HTP_CON_NAME );
 	struct t_htp_buf *b;
 
 	if (LUA_NOREF != c->pR)
@@ -320,7 +320,7 @@ lt_htp_con__gc( lua_State *L )
 		printf( "  DONE\n" );
 	}
 
-	printf( "GC'ed HTTP connection: %p\n", c );
+	printf( "GC'ed "T_HTP_TYPE"."T_HTP_CON_NAME" connection: %p\n", c );
 
 	return 0;
 }
@@ -351,7 +351,7 @@ LUAMOD_API int
 luaopen_t_htp_con( lua_State *L )
 {
 	// T.Http.Server instance metatable
-	luaL_newmetatable( L, "T.Http.Connection" );
+	luaL_newmetatable( L, T_HTP_TYPE"."T_HTP_CON_NAME );
 	luaL_setfuncs( L, t_htp_con_m, 0 );
 	lua_pop( L, 1 );        // remove metatable from stack
 

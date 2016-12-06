@@ -7,6 +7,9 @@
  * \copyright See Copyright notice at the end of t.h
  *-------------------------------------------------------------------------*/
 
+#define T_ENC_ARC4_NAME "Arc4"
+#define T_ENC_CRC_NAME  "Crc"
+#define T_ENC_B64_NAME  "Base64"
 /// struct to keep track of a Arc4 encoding
 struct t_enc_arc4 {
 	unsigned char  prng[256]; ///< Pseudo RNG, aka. the state

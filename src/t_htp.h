@@ -9,6 +9,10 @@
 
 #include "t_ael.h"
 
+#define T_HTP_CON_NAME     "Connection"
+#define T_HTP_SRV_NAME     "Server"
+#define T_HTP_STR_NAME     "Stream"
+#define T_HTP_STR_PRX_NAME "Proxy"
 
 // _   _ _____ _____ ____
 //| | | |_   _|_   _|  _ \   _ __   __ _ _ __ ___  ___ _ __

@@ -38,7 +38,7 @@ lt_htp_srv_New( lua_State *L )
 		s->lR  = luaL_ref( L, LUA_REGISTRYINDEX );
 	}
 	else
-		return t_push_error( L, "T.Http.Server( func ) requires a function as parameter" );
+		return t_push_error( L, T_HTP_TYPE"."T_HTP_SRV_NAME"( func ) requires a function as parameter" );
 	return 1;
 }
 
@@ -72,7 +72,7 @@ struct t_htp_srv
 	s->nw = time( NULL );
 	t_htp_srv_setnow( s, 1 );
 
-	luaL_getmetatable( L, "T.Http.Server" );
+	luaL_getmetatable( L, T_HTP_TYPE"."T_HTP_SRV_NAME );
 	lua_setmetatable( L, -2 );
 	return s;
 }
@@ -88,8 +88,8 @@ struct t_htp_srv
 struct t_htp_srv
 *t_htp_srv_check_ud( lua_State *L, int pos, int check )
 {
-	void *ud = luaL_testudata( L, pos, "T.Http.Server" );
-	luaL_argcheck( L, (ud != NULL || !check), pos, "`T.Http.Server` expected" );
+	void *ud = luaL_testudata( L, pos, T_HTP_TYPE"."T_HTP_SRV_NAME );
+	luaL_argcheck( L, (ud != NULL || !check), pos, "`"T_HTP_TYPE"."T_HTP_SRV_NAME"` expected" );
 	return (struct t_htp_srv *) ud;
 }
 
@@ -230,7 +230,7 @@ static int lt_htp_srv__tostring( lua_State *L )
 {
 	struct t_htp_srv *s = t_htp_srv_check_ud( L, 1, 1 );
 
-	lua_pushfstring( L, "T.Http.Server: %p", s );
+	lua_pushfstring( L, T_HTP_TYPE"."T_HTP_SRV_NAME": %p", s );
 	return 1;
 }
 
@@ -259,7 +259,7 @@ static int lt_htp_srv__len( lua_State *L )
 static int
 lt_htp_srv__gc( lua_State *L )
 {
-	struct t_htp_srv *s = (struct t_htp_srv *) luaL_checkudata( L, 1, "T.Http.Server" );
+	struct t_htp_srv *s = (struct t_htp_srv *) luaL_checkudata( L, 1, T_HTP_TYPE"."T_HTP_SRV_NAME );
 
 	// t_sck_close( L, s->sck );     // segfaults???
 	luaL_unref( L, LUA_REGISTRYINDEX, s->sR );
@@ -267,7 +267,7 @@ lt_htp_srv__gc( lua_State *L )
 	luaL_unref( L, LUA_REGISTRYINDEX, s->lR );
 	luaL_unref( L, LUA_REGISTRYINDEX, s->rR );
 
-	printf("GC'ed HTTP Server...\n");
+	printf("GC'ed "T_HTP_TYPE"."T_HTP_SRV_NAME" ...\n");
 
 	return 0;
 }
@@ -314,7 +314,7 @@ LUAMOD_API int
 luaopen_t_htp_srv( lua_State *L )
 {
 	// T.Http.Server instance metatable
-	luaL_newmetatable( L, "T.Http.Server" );
+	luaL_newmetatable( L, T_HTP_TYPE"."T_HTP_SRV_NAME );
 	luaL_setfuncs( L, t_htp_srv_m, 0 );
 	lua_setfield( L, -1, "__index" );
 

@@ -108,7 +108,7 @@ t_enc_b64_encode( lua_State *L )
 	else
 	{
 		return t_push_error( L,
-			    "T.Encode.Base64.encode takes at least one string parameter" );
+			    T_ENC_TYPE"."T_ENC_B64_NAME".encode takes at least one string parameter" );
 	}
 
 	rLen = b64_res_size( bLen, 1 );
@@ -116,7 +116,7 @@ t_enc_b64_encode( lua_State *L )
 	if (res == NULL)
 	{
 		return t_push_error( L,
-		        "T.Encode.Base64.encode failed due to internal memory allocation problem" );
+		        T_ENC_TYPE"."T_ENC_B64_NAME".encode failed due to internal memory allocation problem" );
 	}
 
 	b64_encode( body, res, bLen);
@@ -148,7 +148,7 @@ t_enc_b64_decode( lua_State *L )
 	else
 	{
 		return t_push_error( L,
-			    "T.Encode.Base64.decode takes at least one string parameter" );
+			    T_ENC_TYPE"."T_ENC_B64_NAME".decode takes at least one string parameter" );
 	}
 
 	rLen = b64_res_size( bLen, 0 );
@@ -156,7 +156,7 @@ t_enc_b64_decode( lua_State *L )
 	if (res == NULL)
 	{
 		return t_push_error( L,
-		        "T.Encode.Base64.decode failed due to internal memory allocation problem" );
+		        T_ENC_TYPE"."T_ENC_B64_NAME".decode failed due to internal memory allocation problem" );
 	}
 
 	b64_decode(  body, res, bLen);

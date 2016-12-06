@@ -214,7 +214,7 @@ struct t_ael
 	ael->fd_set  = (struct t_ael_fd **) malloc( (ael->fd_sz+1) * sizeof( struct t_ael_fd * ) );
 	for (n=0; n<=ael->fd_sz; n++) ael->fd_set[ n ] = NULL;
 	t_ael_create_ud_impl( ael );
-	luaL_getmetatable( L, "T.Loop" );
+	luaL_getmetatable( L, T_AEL_TYPE );
 	lua_setmetatable( L, -2 );
 	return ael;
 }
@@ -230,8 +230,8 @@ struct t_ael
 struct t_ael
 *t_ael_check_ud ( lua_State *L, int pos, int check )
 {
-	void *ud = luaL_checkudata( L, pos, "T.Loop" );
-	luaL_argcheck( L, (ud != NULL  || !check), pos, "`T.Loop` expected" );
+	void *ud = luaL_checkudata( L, pos, T_AEL_TYPE );
+	luaL_argcheck( L, (ud != NULL  || !check), pos, "`"T_AEL_TYPE"` expected" );
 	return (NULL==ud) ? NULL : (struct t_ael *) ud;
 }
 
@@ -261,7 +261,7 @@ lt_ael_addhandle( lua_State *L )
 	if (NULL != lS)
 		fd = fileno( lS->f );
 
-	sc = (struct t_sck *) luaL_testudata( L, 2, "T.Socket" );
+	sc = (struct t_sck *) luaL_testudata( L, 2, T_SCK_TYPE );
 	if (NULL != sc)
 		fd = sc->fd;
 
@@ -319,7 +319,7 @@ lt_ael_removehandle( lua_State *L )
 	if (NULL != lS)
 		fd = fileno( lS->f );
 
-	sc = (struct t_sck *) luaL_testudata( L, 2, "T.Socket" );
+	sc = (struct t_sck *) luaL_testudata( L, 2, T_SCK_TYPE );
 	if (NULL != sc)
 		fd = sc->fd;
 
@@ -521,7 +521,7 @@ static int
 lt_ael__tostring( lua_State *L )
 {
 	struct t_ael *ael = t_ael_check_ud( L, 1, 1 );
-	lua_pushfstring( L, "T.Loop{%d:%d}: %p", ael->fd_sz, ael->max_fd, ael );
+	lua_pushfstring( L, T_AEL_TYPE"{%d:%d}: %p", ael->fd_sz, ael->max_fd, ael );
 	return 1;
 }
 
@@ -538,7 +538,7 @@ lt_ael_showloop( lua_State *L )
 	struct t_ael_tm *tr  = ael->tm_head;
 	int              i   = 0;
 	int              n   = lua_gettop( L );
-	printf( "LOOP %p TIMER LIST:\n", ael );
+	printf( T_AEL_TYPE" %p TIMER LIST:\n", ael );
 	while (NULL != tr)
 	{
 		printf( "\t%d\t{%2ld:%6ld}\t%p   ", ++i,
@@ -550,7 +550,7 @@ lt_ael_showloop( lua_State *L )
 		printf( "\n" );
 		tr = tr->nxt;
 	}
-	printf( "LOOP %p HANDLE LIST:\n", ael );
+	printf( T_AEL_TYPE" %p HANDLE LIST:\n", ael );
 	for( i=0; i<ael->max_fd+1; i++)
 	{
 		if (NULL==ael->fd_set[ i ])
@@ -623,7 +623,7 @@ LUA_API int
 luaopen_t_ael( lua_State *L )
 {
 	// just make metatable known to be able to register and check userdata
-	luaL_newmetatable( L, "T.Loop" );   // stack: functions meta
+	luaL_newmetatable( L, T_AEL_TYPE );   // stack: functions meta
 	luaL_setfuncs( L, t_ael_m, 0 );
 	lua_setfield( L, -1, "__index" );
 

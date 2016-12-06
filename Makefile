@@ -20,6 +20,9 @@ SRCDIR=$(CURDIR)/src
 CC=clang
 LD=clang
 
+SCREEN_RC=screen.rc
+SCREEN=$(shell which screen)
+
 all: $(SRCDIR)/$(T_LIB_DYN)
 
 $(SRCDIR)/$(T_LIB_DYN):
@@ -54,3 +57,7 @@ clean:
 	$(MAKE) -C $(SRCDIR) \
 		T_LIB_DYN="$(T_LIB_DYN)" T_LIB_STA="$(T_LIB_STA)" \
 		clean
+
+start: $(SCREEN_RC)
+	$(SCREEN) -S lua -c "$(SCREEN_RC)"
+

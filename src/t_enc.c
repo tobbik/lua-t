@@ -81,11 +81,11 @@ luaopen_t_enc( lua_State *L )
 {
 	luaL_newlib( L, t_enc_lib );
 	luaopen_t_enc_arc4( L );
-	lua_setfield( L, -2, "Arc4" );
+	lua_setfield( L, -2, T_ENC_ARC4_NAME );
 	luaopen_t_enc_crc( L );
-	lua_setfield( L, -2, "Crc" );
+	lua_setfield( L, -2, T_ENC_CRC_NAME );
 	luaopen_t_enc_b64( L );
-	lua_setfield( L, -2, "Base64" );
+	lua_setfield( L, -2, T_ENC_B64_NAME );
 	lua_pushcfunction( L, t_enc_crypt );
 	lua_setfield( L, -2, "crypt" );
 	return 1;

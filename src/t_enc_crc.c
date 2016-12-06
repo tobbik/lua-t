@@ -292,7 +292,7 @@ struct t_enc_crc
 	struct t_enc_crc *crc;
 
 	crc = (struct t_enc_crc *) lua_newuserdata( L, sizeof( struct t_enc_crc ) );
-	luaL_getmetatable( L, "T.Encode.Crc" );
+	luaL_getmetatable( L, T_ENC_TYPE"."T_ENC_CRC_NAME );
 	lua_setmetatable( L, -2 );
 	return crc;
 }
@@ -307,8 +307,8 @@ struct t_enc_crc
 struct t_enc_crc
 *t_enc_crc_check_ud( lua_State *L, int pos )
 {
-	void *ud = luaL_checkudata( L, pos, "T.Encode.Crc" );
-	luaL_argcheck( L, ud != NULL, pos, "`T.Encode.Crc` expected" );
+	void *ud = luaL_checkudata( L, pos, T_ENC_TYPE"."T_ENC_CRC_NAME );
+	luaL_argcheck( L, ud != NULL, pos, "`"T_ENC_TYPE"."T_ENC_CRC_NAME"` expected" );
 	return (struct t_enc_crc *) ud;
 }
 
@@ -350,7 +350,7 @@ lt_enc_crc_calc( lua_State *L )
 	}
 	else
 		return t_push_error( L,
-			"ERROR T.Encode.Crc:calc(msg) takes msg argument" );
+			"ERROR `"T_ENC_TYPE"."T_ENC_CRC_NAME":calc( msg )` takes `msg` argument." );
 
 	len = (lua_isnumber( L, 4 )) ? (size_t) luaL_checkinteger( L, 4 )-sta : len - sta;
 
@@ -403,7 +403,7 @@ luaopen_t_enc_crc( lua_State *L )
 {
 	// just make metatable known to be able to register and check userdata
 	// this is only avalable a <instance>:func()
-	luaL_newmetatable( L, "T.Encode.Crc" );   // stack: functions meta
+	luaL_newmetatable( L, T_ENC_TYPE"."T_ENC_CRC_NAME );   // stack: functions meta
 	luaL_setfuncs( L, t_enc_crc_m, 0 );
 	lua_setfield( L, -1, "__index" );
 

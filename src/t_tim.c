@@ -150,7 +150,7 @@ struct timeval
 
 	tv = (struct timeval *) lua_newuserdata( L, sizeof( struct timeval ) );
 	gettimeofday( tv, 0 );
-	luaL_getmetatable( L, "T.Time" );
+	luaL_getmetatable( L, T_TIM_TYPE );
 	lua_setmetatable( L, -2 );
 	return tv;
 }
@@ -166,8 +166,8 @@ struct timeval
 struct timeval
 *t_tim_check_ud( lua_State *L, int pos, int check )
 {
-	void *ud = luaL_testudata( L, pos, "T.Time" );
-	luaL_argcheck( L, (ud != NULL  || !check), pos, "`T.Time` expected" );
+	void *ud = luaL_testudata( L, pos, T_TIM_TYPE );
+	luaL_argcheck( L, (ud != NULL  || !check), pos, "`"T_TIM_TYPE"` expected" );
 	return (NULL==ud) ? NULL : (struct timeval *) ud;
 }
 
@@ -248,7 +248,7 @@ lt_tim_now( lua_State *L )
 /**--------------------------------------------------------------------------
  * Get a string represents the timer.
  * \param   L         The lua state.
- * \lparam  userdata  T.Timer.
+ * \lparam  userdata  T.Time.
  * \lreturn string    formatted string representing sockkaddr (IP:Port).
  * \return  int  # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
@@ -257,7 +257,7 @@ lt_tim__tostring( lua_State *L )
 {
 	struct timeval *tv = t_tim_check_ud( L, 1, 1 );
 	lua_pushfstring( L,
-			"T.Time{%d:%d}: %p",
+			T_TIM_TYPE"{%d:%d}: %p",
 			//tv->tv_sec*1000 + tv->tv_usec/1000,
 			tv->tv_sec, tv->tv_usec,
 			tv
@@ -407,7 +407,7 @@ LUA_API int
 luaopen_t_tim( lua_State *L )
 {
 	// just make metatable known to be able to register and check userdata
-	luaL_newmetatable( L, "T.Time" );
+	luaL_newmetatable( L, T_TIM_TYPE );
 	luaL_setfuncs( L, t_tim_m, 0 );
 	lua_setfield( L, -1, "__index" );
 
