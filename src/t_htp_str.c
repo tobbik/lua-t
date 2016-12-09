@@ -55,9 +55,9 @@ struct t_htp_str
 struct t_htp_str
 *t_htp_str_check_ud( lua_State *L, int pos, int check )
 {
-	void *ud = luaL_checkudata( L, pos, T_HTP_TYPE"."T_HTP_STR_NAME );
+	void *ud = luaL_testudata( L, pos, T_HTP_TYPE"."T_HTP_STR_NAME );
 	luaL_argcheck( L, (ud != NULL || !check), pos, "`"T_HTP_TYPE"."T_HTP_STR_NAME"` expected." );
-	return (struct t_htp_str *) ud;
+	return (NULL==ud) ? NULL : (struct t_htp_str *) ud;
 }
 
 
@@ -521,9 +521,9 @@ lt_htp_str__newindex( lua_State *L )
 static int
 lt_htp_str__tostring( lua_State *L )
 {
-	struct t_htp_str *m = (struct t_htp_str *) luaL_checkudata( L, 1, T_HTP_TYPE"."T_HTP_STR_NAME );
+	struct t_htp_str *s = t_htp_str_check_ud( L, 1, 1 );
 
-	lua_pushfstring( L, T_HTP_TYPE"."T_HTP_STR_NAME": %p", m );
+	lua_pushfstring( L, T_HTP_TYPE"."T_HTP_STR_NAME": %p", s );
 	return 1;
 }
 
@@ -538,7 +538,7 @@ lt_htp_str__tostring( lua_State *L )
 static int
 lt_htp_str__len( lua_State *L )
 {
-	struct t_htp_str *s = (struct t_htp_str *) luaL_checkudata( L, 1, T_HTP_TYPE"."T_HTP_STR_NAME );
+	struct t_htp_str *s = t_htp_str_check_ud( L, 1, 1 );
 	lua_pushinteger( L, s->rqCl );
 	return 1;
 }
@@ -553,7 +553,7 @@ lt_htp_str__len( lua_State *L )
 int
 lt_htp_str__gc( lua_State *L )
 {
-	struct t_htp_str *s = (struct t_htp_str *) luaL_checkudata( L, 1, T_HTP_TYPE"."T_HTP_STR_NAME );
+	struct t_htp_str *s = t_htp_str_check_ud( L, 1, 1 );
 
 	if (LUA_NOREF != s->pR)
 	{

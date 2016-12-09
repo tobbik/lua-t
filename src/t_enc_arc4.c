@@ -157,9 +157,9 @@ struct t_enc_arc4
 struct t_enc_arc4
 *t_enc_arc4_check_ud( lua_State *L, int pos )
 {
-	void *ud = luaL_checkudata( L, pos, T_ENC_TYPE"."T_ENC_ARC4_NAME );
+	void *ud = luaL_testudata( L, pos, T_ENC_TYPE"."T_ENC_ARC4_NAME );
 	luaL_argcheck( L, ud != NULL, pos, "`"T_ENC_TYPE"."T_ENC_ARC4_NAME"` expected" );
-	return (struct t_enc_arc4 *) ud;
+	return (NULL==ud) ? NULL : (struct t_enc_arc4 *) ud;
 }
 
 

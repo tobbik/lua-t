@@ -73,9 +73,9 @@ struct t_wsk *t_wsk_create_ud( lua_State *L )
  * --------------------------------------------------------------------------*/
 struct t_wsk *t_wsk_check_ud( lua_State *L, int pos, int check )
 {
-	void *ud = luaL_checkudata( L, pos, T_WSK_NAME );
+	void *ud = luaL_testudata( L, pos, T_WSK_NAME );
 	luaL_argcheck( L, (ud != NULL || !check), pos, "`"T_WSK_NAME"` expected" );
-	return (struct t_wsk *) ud;
+	return (NULL==ud) ? NULL : (struct t_wsk *) ud;
 }
 
 

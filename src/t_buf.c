@@ -68,7 +68,7 @@ lt_buf_New( lua_State *L )
 	size_t                                  sz;
 	struct t_buf  __attribute__ ((unused)) *buf;
 
-	if (lua_isnumber( L, 1))
+	if (lua_isnumber( L, 1 ))
 	{
 		sz  = luaL_checkinteger( L, 1 );
 		buf = t_buf_create_ud( L, sz );

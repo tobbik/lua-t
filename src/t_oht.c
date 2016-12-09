@@ -29,7 +29,6 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#include <string.h>               // memset
 
 #include "t.h"
 #include "t_oht.h"
@@ -50,7 +49,7 @@ lt_oht_New( lua_State *L )
 
 
 /**--------------------------------------------------------------------------
- * Construct a t.OrderedTable and return it.
+ * Construct a T.OrderedHashTable and return it.
  * \param   L        The lua state.
  * \lparam  CLASS    table T.OrderedHashTable.
  * \lreturn struct   t_oht userdata.
@@ -95,14 +94,14 @@ struct t_oht
 struct t_oht
 *t_oht_check_ud ( lua_State *L, int pos, int check )
 {
-	void *ud = luaL_checkudata( L, pos, T_OHT_TYPE );
+	void *ud = luaL_testudata( L, pos, T_OHT_TYPE );
 	luaL_argcheck( L, (ud != NULL  || !check), pos, "`"T_OHT_TYPE"` expected" );
 	return (NULL==ud) ? NULL : (struct t_oht *) ud;
 }
 
 
 /**--------------------------------------------------------------------------
- * Read element from OrderedHashTable value.
+ * Read element from a T.OrderedHashTable.
  * \param   L          The lua state.
  * \lparam  userdata   T.OrderedHashTable instance.
  * \lparam  key        string/integer.
@@ -133,9 +132,9 @@ lt_oht__index( lua_State *L )
 
 
 /**--------------------------------------------------------------------------
- * Read an OrderedTable value.
+ * Set an Element on a T.OrderedHashTable.
  * \param   L          The lua state.
- * \lparam  userdata   T.OrderedTable instance.
+ * \lparam  userdata   T.OrderedHashTable instance.
  * \lparam  key        string/integer.
  * \lparam  value      value for index/hash.
  * \return  int        # of values pushed onto the stack.

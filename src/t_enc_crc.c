@@ -307,9 +307,9 @@ struct t_enc_crc
 struct t_enc_crc
 *t_enc_crc_check_ud( lua_State *L, int pos )
 {
-	void *ud = luaL_checkudata( L, pos, T_ENC_TYPE"."T_ENC_CRC_NAME );
+	void *ud = luaL_testudata( L, pos, T_ENC_TYPE"."T_ENC_CRC_NAME );
 	luaL_argcheck( L, ud != NULL, pos, "`"T_ENC_TYPE"."T_ENC_CRC_NAME"` expected" );
-	return (struct t_enc_crc *) ud;
+	return (NULL==ud) ? NULL : (struct t_enc_crc *) ud;
 }
 
 

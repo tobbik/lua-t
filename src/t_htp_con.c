@@ -53,9 +53,9 @@ struct t_htp_con
 struct t_htp_con
 *t_htp_con_check_ud( lua_State *L, int pos, int check )
 {
-	void *ud = luaL_checkudata( L, pos, T_HTP_TYPE"."T_HTP_CON_NAME );
+	void *ud = luaL_testudata( L, pos, T_HTP_TYPE"."T_HTP_CON_NAME );
 	luaL_argcheck( L, (ud != NULL || !check), pos, "`"T_HTP_TYPE"."T_HTP_CON_NAME"` expected" );
-	return (struct t_htp_con *) ud;
+	return (NULL==ud) ? NULL : (struct t_htp_con *) ud;
 }
 
 
@@ -254,7 +254,7 @@ lt_htp_con__newindex( lua_State *L )
 static int
 lt_htp_con__tostring( lua_State *L )
 {
-	struct t_htp_con *c = (struct t_htp_con *) luaL_checkudata( L, 1, T_HTP_TYPE"."T_HTP_CON_NAME );
+	struct t_htp_con *c = t_htp_con_check_ud( L, 1, 1 );
 
 	lua_pushfstring( L, T_HTP_TYPE"."T_HTP_CON_NAME": %p", c );
 	return 1;
@@ -271,7 +271,7 @@ lt_htp_con__tostring( lua_State *L )
 static int
 lt_htp_con__len( lua_State *L )
 {
-	struct t_htp_con *c = (struct t_htp_con *) luaL_checkudata( L, 1, T_HTP_TYPE"."T_HTP_CON_NAME );
+	struct t_htp_con *c = t_htp_con_check_ud( L, 1, 1 );
 	// TODO: return the length of the stream collection
 	lua_pushinteger( L, c->cnt );
 	return 1;
@@ -287,7 +287,7 @@ lt_htp_con__len( lua_State *L )
 static int
 lt_htp_con__gc( lua_State *L )
 {
-	struct t_htp_con *c = (struct t_htp_con *) luaL_checkudata( L, 1, T_HTP_TYPE"."T_HTP_CON_NAME );
+	struct t_htp_con *c = t_htp_con_check_ud( L, 1, 1 );
 	struct t_htp_buf *b;
 
 	if (LUA_NOREF != c->pR)

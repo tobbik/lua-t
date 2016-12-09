@@ -90,7 +90,7 @@ struct t_htp_srv
 {
 	void *ud = luaL_testudata( L, pos, T_HTP_TYPE"."T_HTP_SRV_NAME );
 	luaL_argcheck( L, (ud != NULL || !check), pos, "`"T_HTP_TYPE"."T_HTP_SRV_NAME"` expected" );
-	return (struct t_htp_srv *) ud;
+	return (NULL==ud) ? NULL : (struct t_htp_srv *) ud;
 }
 
 
@@ -259,7 +259,7 @@ static int lt_htp_srv__len( lua_State *L )
 static int
 lt_htp_srv__gc( lua_State *L )
 {
-	struct t_htp_srv *s = (struct t_htp_srv *) luaL_checkudata( L, 1, T_HTP_TYPE"."T_HTP_SRV_NAME );
+	struct t_htp_srv *s = t_htp_srv_check_ud( L, 1, 1 );
 
 	// t_sck_close( L, s->sck );     // segfaults???
 	luaL_unref( L, LUA_REGISTRYINDEX, s->sR );
