@@ -59,6 +59,7 @@ uint16_t get_crc16( const unsigned char *data, size_t size );
 #define T_ENC_NAME "Encode"
 #define T_TST_NAME "Test"
 #define T_OHT_NAME "OrderedHashTable"
+#define T_SET_NAME "Set"
 #define T_WSK_NAME "Websocket"
 #define T_HTP_NAME "Http"
 
@@ -71,6 +72,7 @@ uint16_t get_crc16( const unsigned char *data, size_t size );
 #define T_ENC_TYPE "T."T_ENC_NAME
 #define T_TST_TYPE "T."T_TST_NAME
 #define T_OHT_TYPE "T."T_OHT_NAME
+#define T_SET_TYPE "T."T_SET_NAME
 #define T_WSK_TYPE "T."T_WSK_NAME
 #define T_HTP_TYPE "T."T_HTP_NAME
 
@@ -85,6 +87,7 @@ LUAMOD_API int luaopen_t_buf( lua_State *L );
 LUAMOD_API int luaopen_t_pck( lua_State *L );
 LUAMOD_API int luaopen_t_tst( lua_State *L );
 LUAMOD_API int luaopen_t_oht( lua_State *L );
+LUAMOD_API int luaopen_t_set( lua_State *L );
 LUAMOD_API int luaopen_t_htp( lua_State *L );
 LUAMOD_API int luaopen_t_wsk( lua_State *L );
 LUAMOD_API int luaopen_t    ( lua_State *L );

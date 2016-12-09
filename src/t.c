@@ -372,6 +372,8 @@ luaopen_t( lua_State *L )
 	lua_setfield( L, -2, T_TST_NAME );
 	luaopen_t_oht( L );
 	lua_setfield( L, -2, T_OHT_NAME );
+	luaopen_t_set( L );
+	lua_setfield( L, -2, T_SET_NAME );
 	luaopen_t_wsk( L );
 	lua_setfield( L, -2, T_WSK_NAME );
 	luaopen_t_htp( L );

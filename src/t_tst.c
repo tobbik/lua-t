@@ -356,7 +356,7 @@ is_really_equal( lua_State *L )
 	{
 		lua_pushvalue( L, -2 );  //S: tableA tableB  keyA  valueA  keyA
 		lua_gettable( L, -4 );   //S: tableA tableB  keyA  valueA  valueB
-		if (! is_really_equal( L) )
+		if (! is_really_equal( L ) )
 		{
 			lua_pop( L, 3 );      //S: tableA tableB
 			return 0;

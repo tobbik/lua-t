@@ -6,52 +6,54 @@ Code organization
 =================
 
 As mentioned in te README.rst, lua-t is organized by a rigid naming and
-structure convention which allewed me to keep control over the code base when it
-was under heavy development load.  Understanding and following these conventions
-allows to read the codebase faster and be more productive in it.  This is true
-for bug fixing and for writing new functionality.  This guide illustrates the
-conventions and makes them transparent and understandable.  It is highly
-recomended to read the guide before studying the code base itself.
+structure convention which allewed me to keep control over the code base
+when it was under heavy development load.  Understanding and following these
+conventions allows to read the codebase faster and be more productive in it.
+This is true for bug fixing and for writing new functionality.  This guide
+illustrates the conventions and makes them transparent and understandable.
+It is highly recomended to read the guide before studying the code base
+itself.
 
 
 Naming conventions
 ------------------
 
-Code generally is all put into the src directory and added to its Makefile. Each
-file should be prefixed with "t_".  Each "Problem Space" lua-t adresses is
-assigned a three character code.  Each subproblems is assigned another three
-character code, allowing for a hirarchy which can be serialized as a string.
-For example, he Encoding class has 'enc' assigned to it.  The code within
-Encoding to provide Base64 has 'b64' assigned to it.  From the Lua side the
-Base64 object is available via T.Encoding.Base64.  Within C the files are named
-after the tree character code like so:
+Code generally is all put into the src directory and added to its Makefile.
+Each file should be prefixed with "t_".  Each "Problem Space" lua-t adresses
+is assigned a three character code.  Each subproblems is assigned another
+three character code, allowing for a hirarchy which can be serialized as a
+string.  For example, he Encoding class has 'enc' assigned to it.  The code
+within Encoding to provide Base64 has 'b64' assigned to it.  From the Lua
+side the Base64 object is available via T.Encoding.Base64.  Within C the
+files are named after the tree character code like so:
 
   - t_enc.c
   - t_enc_b64.c
   - t_enc_crc.c
 
-All functions belonging to a namespace are prefixed the same way.  Confining it
-to 3 characters keeps it short, assigning a fixed 3 character code to one
+All functions belonging to a namespace are prefixed the same way.  Confining
+it to 3 characters keeps it short, assigning a fixed 3 character code to one
 problem keeps it precise.
 
 
 File organization
 -----------------
 
-Most classes are represented as Lua userdata in lua-t.  For most of the C part
-of the code these are mainly structs.  For an example namespace 'abc'
+Most classes are represented as Lua userdata in lua-t.  For most of the C
+part of the code these are mainly structs.  For an example namespace 'abc'
 representing 'Alphabet' the struct would be defined in t_abc.h.  Because
 problems and subproblems are very interactive the definition for the subtype
-'abc.ext' for 'Alphabet.Extension' would also be placed in src/t_abc.h and NOT
-in a file t_abc_ext.h.  Any code for 'abc' will go in src/t_abc.c any code for
-abc_ext will got in src/t_abc_ext.c and so on.
+'abc.ext' for 'Alphabet.Extension' would also be placed in src/t_abc.h and
+NOT in a file t_abc_ext.h.  Any code for 'abc' will go in src/t_abc.c any
+code for abc_ext will got in src/t_abc_ext.c and so on.
 
 
 OOP interface
 =============
 
-The majority of this guide will use the fictional abc namespace which within Lua
-then is known as 'Alphabet'.  It will always assume, that lua-t was loaded by::
+The majority of this guide will use the fictional abc namespace which within
+Lua then is known as 'Alphabet'.  It will always assume, that lua-t was
+loaded by::
 
   T = require( "t" )
 
@@ -60,15 +62,16 @@ High-Level overview and Constructors
 ------------------------------------
 
 lua-t uses a unified OOP type according to Lua-Users style guide for classes
-with constructors.  A new instance of the Alphabet class would be instantiated
-by these two ways::
+with constructors.  A new instance of the Alphabet class would be
+instantiated by these two ways::
 
   myAbc1 = T.Alphabet.new( paramA )
   myAbc2 = T.Alphabet( paramB )
 
 Where applicable, metamethods should be hooked up to the instances to ease
-coding. For example if useful '#myAbc1' should be return a value and if possible
-if myAbc1==myAbc2 should provide a reasonable result for the comparison.
+coding. For example if useful '#myAbc1' should be return a value and if
+possible if myAbc1==myAbc2 should provide a reasonable result for the
+comparison.
 
 
 C File structure
@@ -91,10 +94,10 @@ functions will remain static as they are accesed within the class only.
 Exposure Level on Lua side
 --------------------------
 
-In general, a capitalized function name signals a function which is static to
-the the Lua class and a non capitalized name indicates a method on a class
-instance.  A single underscore before the name indicates a direct call by name,
-a double underscore signals that a metatabe is involved.
+In general, a capitalized function name signals a function which is static
+to the the Lua class and a non capitalized name indicates a method on a
+class instance.  A single underscore before the name indicates a direct call
+by name, a double underscore signals that a metatabe is involved.
 
 lt_abc_Func
   static method on t.Abc (eg. t.Abc.New)
@@ -113,36 +116,42 @@ Data type conventions
 ----------------------
 
 struct t_abc { ..., ..., ...  };
-   A struct defining the userdata generated by t.Abc( ). This is typically defined
-   in a file called t_abc.h
+  A struct defining the userdata generated by t.Abc( ). This is typically
+  defined in a file called t_abc.h
 
 
 Functional conventions
 ----------------------
 
-There are some special functions each C file(class) *shall* povide. They are used
-for creating and testing Lua userdata.  
+There are some special functions each C file(class) *shall* povide. They are
+used for creating and testing Lua userdata.
 
 static int lt_abc__Call( L )
   t.Abc( p1, p2 ) styled constructor
+
 static int lt_abc_New( L )
   t.Abc.New( p1, p2 ) styled constructor
+
 struct abc = t_abc_create_ud( L, sz ):
-  Create a userdata of type t.Abc with size sz and push onto stack, shall return
-  a pointer to abc struct.  This function would be typically called from
-  lt_abc_new( L ) after it evaluated the parameters passed from Lua and used
-  here to populate dthe struct abc.
+  Create a userdata of type t.Abc with size sz and push onto stack, shall
+  return a pointer to abc struct.  This function would be typically called
+  from lt_abc_new( L ) after it evaluated the parameters passed from Lua and
+  used here to populate dthe struct abc.
+
 struct abc = t_abc_check_ud( L, pos, check ):
   Check element on stack pos for to be a userdata of type abc (t.Abc).  If
   check==1 hard fail (lua_error) otherwise fail soft and return NULL pointer.
   If successful return pointer to abc struct.
+
 static int lt_abc__gc( luaVM )
   If t_abc_create_ud() would run some allocations or require a resource then
   this method must exist for clean up resources when the Alphabet instance gets
   garbage collected.
+
 LUA_API int luaopen_t_abc( L )
-  A function which is called from the src/t.c file which registers 'Alphabet' in
-  the "t" namespace and makes "t.Alphabet" and all it's functionality available.
+  A function which is called from the src/t.c file which registers 'Alphabet'
+  in the "t" namespace and makes "t.Alphabet" and all it's functionality
+  available.
 
 There are some typical functions each C file(class) *should* povide.  They are
 used for programmers convienience and the ability to use most of Lua's
@@ -150,17 +159,20 @@ capabilities:
 
 static int lt_abc__len( L )
   return a meaningful #abc value
+
 static int lt_abc__tostring( luaVM )
-  returns string "t.Abc{param1}: 0x123456". It usually returns the memory adress
-  as well
+  returns string "t.Abc{param1}: 0x123456". It usually returns the memory
+  address as well
 
 There are functions a C file(class) *can* provide.  They are usually used to
 provide metods on class instances or static functions on the class itself:
 
 lt_abc_Doit( L )
   t.Abc.Doit( p2 ) static method
+
 lt_abc_read( L )
   abc:read( p ) instance method
+
 lt_abc_write( L )
   abc:write( p, 2 ) instance method
 
@@ -168,10 +180,10 @@ lt_abc_write( L )
 Library conventions
 -------------------
 
-This convention describes how all the functionality is organized and hooked up
-to Lua itself.  lua-t makes heavy use of Lua's internal way of doing it but
-formalizes it somewhat.  It creates 3 struct luaL_Reg arrays which get hooked up
-in the luaopen_t_abc( L ) function. ::
+This convention describes how all the functionality is organized and hooked
+up to Lua itself.  lua-t makes heavy use of Lua's internal way of doing it
+but formalizes it somewhat.  It creates 3 struct luaL_Reg arrays which get
+hooked up in the luaopen_t_abc( L ) function. ::
 
   // the metatble for the module
   static const struct luaL_Reg t_abc_fm [] = {
