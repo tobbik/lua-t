@@ -17,9 +17,6 @@
 #include "t_ael.h"
 
 #include <string.h>           // memcpy
-#ifndef _WIN32
-#include <sys/time.h>         // gettimeofday
-#endif
 
 
 /**--------------------------------------------------------------------------
@@ -94,7 +91,7 @@ t_ael_poll_impl( lua_State *L, struct t_ael *ael )
 	struct timeval   rt;           ///< timer to calculate runtime over this poll
 	enum t_ael_t     t;            ///< handle action per fd (read/write/either)
 
-	gettimeofday( &rt, 0 );
+	t_tim_now( &rt, 0 );
 	tv  = (NULL != ael->tm_head) ? ael->tm_head->tv : NULL;
 
 	memcpy( &ael->rfds_w, &ael->rfds, sizeof( fd_set ) );

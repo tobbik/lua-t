@@ -163,7 +163,7 @@ t_tst__call( lua_State *L )
 
 	t_tst_check_ud ( L, 1 );
 	lua_pushstring( L, "_time" );
-	tm =  t_tim_create_ud( L );          // Stack: 2
+	tm =  t_tim_create_ud( L, 0 );          // Stack: 2
 	lua_rawset( L, 1 );
 
 	lua_getfield( L, 1, "setUp" );

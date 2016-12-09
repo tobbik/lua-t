@@ -6,7 +6,7 @@
  *            This covers the generic functions which are usable accross
  *            specific implementations
  *            They mainly handle the creation of data structures, their
- *            bindings to the Lua state and the list/collection opeartions
+ *            bindings to the Lua state and the list/collection operations
  * \author    tkieslich
  * \copyright See Copyright notice at the end of t.h
  */
@@ -16,7 +16,6 @@
 #include <stdlib.h>               // malloc, free
 #include <string.h>               // memset
 #include "t_ael.h"
-#include "t_tim.h"
 
 
 /**----------------------------------------------------------------------------

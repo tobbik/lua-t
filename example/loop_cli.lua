@@ -2,10 +2,10 @@
 local t   = require( 't' )
 local fmt = string.format
 
-ipadd = arg[1] or '127.0.0.1'
+ipadd     = arg[1] or t.Net.IPv4.localhost
 
 -- a client to interact with the loop.lua example
-printhelp = function( )
+print_help = function( )
 	print( [[
 		exit      - send exit to server and exit
 		help      - print this help
@@ -14,12 +14,12 @@ printhelp = function( )
 end
 
 s  = t.Net.UDP( )
-ip = t.Net.IPv4( t.Net.IPv4.localhost, 8888 )
+ip = t.Net.IPv4( ipadd, 8888 )
 print( s, ip )
 while true do
-	io.write( "Enter command and type enter ('help' for command list': ")
+	io.write( "Enter command and type enter ('help' for command list': " )
 	local cmd = io.read( '*l' )
-	if 'HELP' == cmd:upper( ) then printhelp( ) end
+	if 'HELP' == cmd:upper( ) then print_help( ) end
 	s:sendto( ip, cmd )
 	if 'EXIT' == cmd:upper( ) then break end
 end

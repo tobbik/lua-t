@@ -9,12 +9,6 @@
  */
 
 
-#ifdef _WIN32
-#include <time.h>
-#else
-#include <sys/time.h>    // gettimeofday()
-#endif
-
 #include "t.h"
 #include "t_tim.h"
 
@@ -72,20 +66,20 @@ t_tim_since( struct timeval *tA )
 {
 	struct timeval tC;
 
-	gettimeofday( &tC, 0 );
+	t_tim_now( &tC, 0 );
 	t_tim_sub( &tC, tA, tA );
 }
 
 
 /**--------------------------------------------------------------------------
- * Gets milliseconds worth of tm
- * \param  *tv struct timeval pointer
- * \return timeval value in milliseconds
+ * Gets milliseconds worth of timeval.
+ * \param  struct timeval *t pointer.
+ * \return long            value in milliseconds.
  * --------------------------------------------------------------------------*/
 long
-t_tim_getms( struct timeval *tA )
+t_tim_getms( struct timeval *t )
 {
-	return tA->tv_sec*1000 + tA->tv_usec/1000;
+	return t->tv_sec*1000 + t->tv_usec/1000;
 }
 
 
@@ -99,24 +93,24 @@ t_tim_getms( struct timeval *tA )
 
 /**--------------------------------------------------------------------------
  * Create an Timer and return it.
- * \param   L      The lua state.
+ * \param   L      The Lua state.
  * \lparam  int    time spam in milliseconds, if omitted time since epoch
  * \lreturn struct timeval userdata.
- * \return int  # of values pushed onto the stack.
+ * \return int     # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int
 lt_tim_New( lua_State *L )
 {
+	struct timeval  *org_tv = t_tim_check_ud( L, 1, 0 );
 	struct timeval  *tv;
-	int              ms;
+	int              ms     = 0;
 
-	tv = t_tim_create_ud( L );
 	if (lua_isnumber( L, 1 ))
-	{
 		ms          = luaL_checkinteger( L, 1 );
-		tv->tv_sec  = ms/1000;
-		tv->tv_usec = (ms % 1000) * 1000;
-	}
+	else if (NULL != org_tv)
+		ms          = t_tim_getms( org_tv );
+
+	tv = t_tim_create_ud( L, ms );
 
 	return 1;
 }
@@ -124,11 +118,11 @@ lt_tim_New( lua_State *L )
 
 /**--------------------------------------------------------------------------
  * Construct a timer and return it.
- * \param   L     The lua state.
- * \lparam  CLASS table Time
+ * \param   L      The Lua state.
+ * \lparam  CLASS  T.Time
  * \lparam  int    time spam in milliseconds, if omitted time since epoch
  * \lreturn struct timeval userdata.
- * \return int  # of values pushed onto the stack.
+ * \return         int  # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int
 lt_tim__Call( lua_State *L )
@@ -140,16 +134,23 @@ lt_tim__Call( lua_State *L )
 
 /**--------------------------------------------------------------------------
  * Create an timer userdata and push to LuaStack.
- * \param   L  The lua state.
+ * \param   L      The Lua state.
  * \return  struct timeval*  pointer to userdata at Stack position.
  * --------------------------------------------------------------------------*/
 struct timeval
-*t_tim_create_ud( lua_State *L )
+*t_tim_create_ud( lua_State *L, long ms )
 {
 	struct timeval *tv;
 
 	tv = (struct timeval *) lua_newuserdata( L, sizeof( struct timeval ) );
-	gettimeofday( tv, 0 );
+	if (ms > 0)
+	{
+		tv->tv_sec  = ms/1000;
+		tv->tv_usec = (ms % 1000) * 1000;
+	}
+	else
+		t_tim_now( tv, 0 );
+
 	luaL_getmetatable( L, "T.Time" );
 	lua_setmetatable( L, -2 );
 	return tv;
@@ -174,10 +175,11 @@ struct timeval
 
 /**--------------------------------------------------------------------------
  * Set the the value of timer.
- * \param   L        The lua state.
+ * \param   L        The Lua state.
  * \lparam  timeval  The timeval userdata.
- * \lparam  int      Time to set in milliseconds  (optional).
- * \return  int  # of values pushed onto the stack.
+ * \lparam  int      Time to set in milliseconds (optional).  If not passed
+ *                   creates T.Time with time for now since epoch.
+ * \return  int      # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int
 lt_tim_set( lua_State *L )
@@ -193,7 +195,7 @@ lt_tim_set( lua_State *L )
 	}
 	else
 	{
-		gettimeofday( tv, 0 );
+		t_tim_now( tv, 0 );
 	}
 
 	return 0;
@@ -202,8 +204,8 @@ lt_tim_set( lua_State *L )
 
 /**--------------------------------------------------------------------------
  * Get the value of the timer.
- * \param   L        The lua state.
- * \return  int  # of values pushed onto the stack.
+ * \param   L        The Lua state.
+ * \return  int      # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int
 lt_tim_get( lua_State *L )
@@ -219,8 +221,8 @@ lt_tim_get( lua_State *L )
  * It interprets the value of the time object as time passed since epoch and
  * rewrites it's value as difference between now and the previous value of the
  * object.  Useful to measure wall clock time in Lua.
- * \param   L        The lua state.
- * \return  int  # of values pushed onto the stack.
+ * \param   L        The Lua state.
+ * \return  int      # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int
 lt_tim_since( lua_State *L )
@@ -233,24 +235,24 @@ lt_tim_since( lua_State *L )
 
 /**--------------------------------------------------------------------------
  * Reset the value of a timer to the difference between epoch and now.
- * \param   L        The lua state.
- * \return  int  # of values pushed onto the stack.
+ * \param   L      The Lua state.
+ * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int
 lt_tim_now( lua_State *L )
 {
 	struct timeval *tv = t_tim_check_ud( L, 1, 1 );
-	gettimeofday( tv, 0 );
+	t_tim_now( tv, 0 );
 	return 0;
 }
 
 
 /**--------------------------------------------------------------------------
  * Get a string represents the timer.
- * \param   L         The lua state.
- * \lparam  userdata  T.Timer.
- * \lreturn string    formatted string representing sockkaddr (IP:Port).
- * \return  int  # of values pushed onto the stack.
+ * \param   L         The Lua state.
+ * \lparam  userdata  T.Time.
+ * \lreturn string    Formatted string T.Time{sec:microsecs}: mem_addr.
+ * \return  int       # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int
 lt_tim__tostring( lua_State *L )
@@ -268,39 +270,37 @@ lt_tim__tostring( lua_State *L )
 
 /**--------------------------------------------------------------------------
  * Compares two timer values.
- * \param   L         The lua state.
+ * \param   L         The Lua state.
  * \lparam  timeval   the timval userdata.
  * \lparam  timeval   timval userdata to compare to.
  * \lreturn boolean   true if equal otherwise false.
- * \return  int  # of values pushed onto the stack.
+ * \return  int       # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int
 lt_tim__eq( lua_State *L )
 {
 	struct timeval *tA = t_tim_check_ud( L, 1, 1 );
 	struct timeval *tB = t_tim_check_ud( L, 2, 1 );
-	if (tA->tv_sec == tB->tv_sec && tA->tv_usec == tB->tv_usec)
-		lua_pushboolean( L, 1 );
-	else
-		lua_pushboolean( L, 0 );
+
+	lua_pushboolean( L, t_tim_cmp( tA, tB, == ) );
 	return 1;
 }
 
 
 /**--------------------------------------------------------------------------
  * Adds two timer values.
- * \param   L     The lua state.
+ * \param   L         The Lua state.
  * \lparam  timeval   the timval userdata.
  * \lparam  timeval   timval userdata to add to.
  * \lreturn timeval   the difference in time.
- * \return  int  # of values pushed onto the stack.
+ * \return  int       # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int
 lt_tim__add( lua_State *L )
 {
 	struct timeval *tA = t_tim_check_ud( L, 1, 1 );
 	struct timeval *tB = t_tim_check_ud( L, 2, 1 );
-	struct timeval *tC = t_tim_create_ud( L );
+	struct timeval *tC = t_tim_create_ud( L, 0 );
 
 	t_tim_add( tA, tB, tC );
 	return 1;
@@ -309,18 +309,18 @@ lt_tim__add( lua_State *L )
 
 /**--------------------------------------------------------------------------
  * Substract two time values.
- * \param   L     The lua state.
+ * \param   L         The Lua state.
  * \lparam  timeval   the timval userdata.
  * \lparam  timeval   timval userdata to add to.
  * \lreturn timeval   true if equal otherwise false.
- * \return  int  # of values pushed onto the stack.
+ * \return  int       # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int
 lt_tim__sub( lua_State *L )
 {
 	struct timeval *tA = t_tim_check_ud( L, 1, 1 );
 	struct timeval *tB = t_tim_check_ud( L, 2, 1 );
-	struct timeval *tC = t_tim_create_ud( L );
+	struct timeval *tC = t_tim_create_ud( L, 0 );
 
 	t_tim_sub( tA, tB, tC );
 	return 1;
@@ -330,8 +330,8 @@ lt_tim__sub( lua_State *L )
 /**--------------------------------------------------------------------------
  * System call wrapper to sleep (Lua lacks that)
  *             Lua has no build in sleep method.
- * \param      The Lua state.
- * \lparam     int  milliseconds to sleep
+ * \param   L    The Lua state.
+ * \lparam  int  milliseconds to sleep
  * \return  int  # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int
@@ -399,8 +399,8 @@ static const struct luaL_Reg t_tim_m [] = {
  * Pushes the Timer library onto the stack
  *          - creates Metatable with functions
  *          - creates metatable with methods
- * \param   L      The lua state.
- * \lreturn table  the library
+ * \param   L      The Lua state.
+ * \lreturn table  The library.
  * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 LUA_API int
