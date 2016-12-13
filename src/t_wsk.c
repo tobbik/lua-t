@@ -58,7 +58,7 @@ struct t_wsk *t_wsk_create_ud( lua_State *L )
 	struct t_wsk  *ws;
 	ws = (struct t_wsk *) lua_newuserdata( L, sizeof( struct t_wsk ));
 
-	luaL_getmetatable( L, "T.Websocket" );
+	luaL_getmetatable( L, T_WSK_NAME );
 	lua_setmetatable( L, -2 );
 	return ws;
 }
@@ -73,9 +73,9 @@ struct t_wsk *t_wsk_create_ud( lua_State *L )
  * --------------------------------------------------------------------------*/
 struct t_wsk *t_wsk_check_ud( lua_State *L, int pos, int check )
 {
-	void *ud = luaL_checkudata( L, pos, "T.Websocket" );
-	luaL_argcheck( L, (ud != NULL || !check), pos, "`T.Websocket` expected" );
-	return (struct t_wsk *) ud;
+	void *ud = luaL_testudata( L, pos, T_WSK_NAME );
+	luaL_argcheck( L, (ud != NULL || !check), pos, "`"T_WSK_NAME"` expected" );
+	return (NULL==ud) ? NULL : (struct t_wsk *) ud;
 }
 
 
@@ -111,7 +111,7 @@ static int lt_wsk__tostring( lua_State *L )
 {
 	struct t_wsk *ws = t_wsk_check_ud( L, 1, 1 );
 
-	lua_pushfstring( L, "T.Websocket: %p", ws );
+	lua_pushfstring( L, T_WSK_NAME": %p", ws );
 	return 1;
 }
 
@@ -170,8 +170,8 @@ static const luaL_Reg t_wsk_m [] = {
  * --------------------------------------------------------------------------*/
 LUAMOD_API int luaopen_t_wsk (lua_State *L)
 {
-	// T.Buffer instance metatable
-	luaL_newmetatable( L, "T.Websocket" );
+	// T.Websocket instance metatable
+	luaL_newmetatable( L, T_WSK_NAME );
 	luaL_setfuncs( L, t_wsk_m, 0 );
 	lua_setfield( L, -1, "__index" );
 

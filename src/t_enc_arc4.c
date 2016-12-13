@@ -142,7 +142,7 @@ struct t_enc_arc4
 	struct t_enc_arc4 *arc4;
 
 	arc4 = (struct t_enc_arc4 *) lua_newuserdata( L, sizeof( struct t_enc_arc4 ) );
-	luaL_getmetatable( L, "T.Encode.Arc4" );
+	luaL_getmetatable( L, T_ENC_TYPE"."T_ENC_ARC4_NAME );
 	lua_setmetatable( L, -2 );
 	return arc4;
 }
@@ -157,9 +157,9 @@ struct t_enc_arc4
 struct t_enc_arc4
 *t_enc_arc4_check_ud( lua_State *L, int pos )
 {
-	void *ud = luaL_checkudata( L, pos, "T.Encode.Arc4" );
-	luaL_argcheck( L, ud != NULL, pos, "`T.Encode.Arc4` expected" );
-	return (struct t_enc_arc4 *) ud;
+	void *ud = luaL_testudata( L, pos, T_ENC_TYPE"."T_ENC_ARC4_NAME );
+	luaL_argcheck( L, ud != NULL, pos, "`"T_ENC_TYPE"."T_ENC_ARC4_NAME"` expected" );
+	return (NULL==ud) ? NULL : (struct t_enc_arc4 *) ud;
 }
 
 
@@ -190,7 +190,7 @@ lt_enc_arc4_crypt( lua_State *L )
 	}
 	else
 	{
-		return t_push_error( L, "T.Arc4.crypt takes at least one string parameter" );
+		return t_push_error( L, T_ENC_TYPE"."T_ENC_ARC4_NAME".crypt takes at least one string parameter" );
 	}
 	// if a key is provided for encoding,
 	// reset the Arc4 state by initializing it with new key
@@ -250,7 +250,7 @@ luaopen_t_enc_arc4( lua_State *L )
 {
 	// just make metatable known to be able to register and check userdata
 	// this is only avalable a <instance>:func()
-	luaL_newmetatable( L, "T.Encode.Arc4" );   // stack: functions meta
+	luaL_newmetatable( L, T_ENC_TYPE"."T_ENC_ARC4_NAME );   // stack: functions meta
 	luaL_setfuncs( L, t_enc_arc4_m, 0 );
 	lua_setfield( L, -1, "__index" );
 

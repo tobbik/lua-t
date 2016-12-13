@@ -416,7 +416,7 @@ luaopen_t_htp( lua_State *L )
 {
 	luaL_newlib( L, t_htp_lib );
 	luaopen_t_htp_srv( L );
-	lua_setfield( L, -2, "Server" );
+	lua_setfield( L, -2, T_HTP_SRV_NAME );
 	luaopen_t_htp_con( L );
 	luaopen_t_htp_str( L );
 	return 1;

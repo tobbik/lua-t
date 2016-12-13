@@ -16,6 +16,7 @@
 #include "t.h"
 #include "t_tim.h"
 
+#define T_TST_CAS_NAME     "Case"
 
 // forward declaration eliminates need for header file
 // l_t_tst.c
@@ -72,7 +73,7 @@ t_tst_New( lua_State *L )
 	else
 		lua_pushliteral( L, "anonymous" );
 	lua_setfield( L, -2 , "_suitename" );
-	luaL_getmetatable( L, "T.Test" );
+	luaL_getmetatable( L, T_TST_TYPE );
 	lua_setmetatable( L, -2 );
 	return 1;
 }
@@ -108,13 +109,13 @@ t_tst_check_ud( lua_State *L, int pos )
 	luaL_checktype( L, pos, LUA_TTABLE );
    if (lua_getmetatable( L, pos ))  /* does it have a metatable? */
 	{
-		luaL_getmetatable( L, "T.Test" );   /* get correct metatable */
+		luaL_getmetatable( L, T_TST_TYPE );   /* get correct metatable */
 		if (!lua_rawequal( L, -1, -2 ))      /* not the same? */
-			t_push_error( L, "wrong argument, `T.Test` expected" );
+			t_push_error( L, "wrong argument, `"T_TST_TYPE"` expected" );
 		lua_pop( L, 2);
 	}
 	else
-		t_push_error( L, "wrong argument, `T.Test` expected" );
+		t_push_error( L, "wrong argument, `"T_TST_TYPE"` expected" );
 }
 
 
@@ -307,7 +308,7 @@ t_tst__newindex( lua_State *L )
 			// TODO: find a more elegant way without that much stack gymnastics
 			lua_newtable( L );                // Stack 4: empty table
 			t_get_fn_source( L );
-			luaL_getmetatable( L, "T.Test.Case" );
+			luaL_getmetatable( L, T_TST_TYPE"."T_TST_CAS_NAME );
 			lua_setmetatable( L, 4 );
 
 			lua_pushvalue( L , 2 );           // copy name from 2 to 5
@@ -355,7 +356,7 @@ is_really_equal( lua_State *L )
 	{
 		lua_pushvalue( L, -2 );  //S: tableA tableB  keyA  valueA  keyA
 		lua_gettable( L, -4 );   //S: tableA tableB  keyA  valueA  valueB
-		if (! is_really_equal( L) )
+		if (! is_really_equal( L ) )
 		{
 			lua_pop( L, 3 );      //S: tableA tableB
 			return 0;
@@ -386,7 +387,7 @@ t_tst_equal( lua_State *L )
 {
 	if (lua_gettop( L )<2 || lua_gettop( L )>3)
 	{
-		return t_push_error( L, "T.Test._equals expects two or three arguments" );
+		return t_push_error( L, T_TST_TYPE"._equals expects two or three arguments" );
 	}
 	if (3==lua_gettop( L ))
 	{
@@ -440,7 +441,7 @@ t_tst_equal_not( lua_State *L )
 {
 	if (lua_gettop( L )<2 || lua_gettop( L )>3)
 	{
-		return t_push_error( L, "T.Test._equals expects two or three arguments" );
+		return t_push_error( L, T_TST_TYPE"._equals expects two or three arguments" );
 	}
 	if (3==lua_gettop( L ))
 	{
@@ -488,7 +489,7 @@ t_tst_lt( lua_State *L )
 {
 	if (lua_gettop( L )<2 || lua_gettop( L )>3)
 	{
-		return t_push_error( L, "T.Test._lt expects two or three arguments" );
+		return t_push_error( L, T_TST_TYPE"._lt expects two or three arguments" );
 	}
 	// compare types, references, metatable.__eq and values
 	if (lua_compare( L, 1, 2, LUA_OPLT ))
@@ -770,7 +771,7 @@ LUA_API int
 luaopen_t_tst( lua_State *L )
 {
 	// internal metatable that allows the it to be called
-	luaL_newmetatable( L, "T.Test.Case" );   // stack: functions meta
+	luaL_newmetatable( L, T_TST_TYPE"."T_TST_CAS_NAME );   // stack: functions meta
 	lua_pushcfunction( L, t_tst_case__call );
 	lua_setfield( L, -2, "__call" );
 	lua_pushcfunction( L, t_tst_case__tostring );
@@ -779,7 +780,7 @@ luaopen_t_tst( lua_State *L )
 
 	// just make metatable known to be able to register and check type
 	// this is only avalable a <instance>:func()
-	luaL_newmetatable( L, "T.Test" );   // stack: functions meta
+	luaL_newmetatable( L, T_TST_TYPE );   // stack: functions meta
 	luaL_newlib( L, t_tst_m );
 	lua_setfield( L, -2, "__index" );
 	lua_pushcfunction( L, t_tst__newindex );

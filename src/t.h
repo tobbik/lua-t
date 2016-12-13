@@ -40,13 +40,40 @@
 
 #define TSWAP(type,a,b) do{type SWAP_tmp= b; b= a; a= SWAP_tmp;}while(0)
 
+// global debugger helpers
 void t_stackDump ( lua_State *L );
 void t_stackPrint( lua_State *L, int first, int last );
 int  t_push_error( lua_State *L, const char *fmt, ... );
 
-
 // global helper functions
 uint16_t get_crc16( const unsigned char *data, size_t size );
+
+// sub-types/modules names
+#define T_AEL_NAME "Loop"
+#define T_TIM_NAME "Time"
+#define T_SCK_NAME "Socket"
+#define T_IPX_NAME "Ip"
+#define T_BUF_NAME "Buffer"
+#define T_PCK_NAME "Pack"
+#define T_ENC_NAME "Encode"
+#define T_TST_NAME "Test"
+#define T_OHT_NAME "OrderedHashTable"
+#define T_SET_NAME "Set"
+#define T_WSK_NAME "Websocket"
+#define T_HTP_NAME "Http"
+
+#define T_AEL_TYPE "T."T_AEL_NAME
+#define T_TIM_TYPE "T."T_TIM_NAME
+#define T_SCK_TYPE "T."T_SCK_NAME
+#define T_IPX_TYPE "T."T_IPX_NAME
+#define T_BUF_TYPE "T."T_BUF_NAME
+#define T_PCK_TYPE "T."T_PCK_NAME
+#define T_ENC_TYPE "T."T_ENC_NAME
+#define T_TST_TYPE "T."T_TST_NAME
+#define T_OHT_TYPE "T."T_OHT_NAME
+#define T_SET_TYPE "T."T_SET_NAME
+#define T_WSK_TYPE "T."T_WSK_NAME
+#define T_HTP_TYPE "T."T_HTP_NAME
 
 
 // global sub classes registration
@@ -57,6 +84,8 @@ LUAMOD_API int luaopen_t_enc( lua_State *L );
 LUAMOD_API int luaopen_t_buf( lua_State *L );
 LUAMOD_API int luaopen_t_pck( lua_State *L );
 LUAMOD_API int luaopen_t_tst( lua_State *L );
+LUAMOD_API int luaopen_t_oht( lua_State *L );
+LUAMOD_API int luaopen_t_set( lua_State *L );
 LUAMOD_API int luaopen_t_htp( lua_State *L );
 LUAMOD_API int luaopen_t_wsk( lua_State *L );
 LUAMOD_API int luaopen_t    ( lua_State *L );

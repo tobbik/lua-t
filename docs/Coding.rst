@@ -6,53 +6,54 @@ Code organization
 =================
 
 As mentioned in the README.rst, lua-t is organized by a rigid naming and
-structure convention which allowed me to keep control over the code base when it
-was under heavy development load.  Understanding and following these conventions
-allows to read the code base faster and be more productive in it.  This is true
-for bug fixing and for writing new functionality.  This guide illustrates the
-conventions and makes them transparent and understandable.  It is highly
-recommended to read the guide before studying the code base itself.
+structure convention which allowed me to keep control over the code base
+when it was under heavy development load.  Understanding and following these
+conventions allows to read the code base faster and be more productive in
+it.  This is true for bug fixing and for writing new functionality.  This
+guide illustrates the conventions and makes them transparent and
+understandable.  It is highly recommended to read the guide before studying
+the code base itself.
 
 
 Naming conventions
 ------------------
 
-Code generally is all put into the 'src' directory and added to its Makefile.
-Each file should be prefixed with "t_".  Each "Problem Space" lua-t adressess
-is assigned a three character code.  Each subproblems is assigned another three
-character code, allowing for a hierarchy which can be serialized as a string.
-For example, he Encoding class has 'enc' assigned to it.  The code within
-Encoding to provide Base64 has 'b64' assigned to it.  From the Lua side the
-Base64 object is available via T.Encoding.Base64.  Within C the files are named
-after the tree character code like so:
+Code generally is all put into the 'src' directory and added to its
+Makefile.  Each file should be prefixed with "t_".  Each "Problem Space"
+lua-t adressess is assigned a three character code.  Each subproblems is
+assigned another three character code, allowing for a hierarchy which can be
+serialized as a string.  For example, he Encoding class has 'enc' assigned
+to it.  The code within Encoding to provide Base64 has 'b64' assigned to it.
+From the Lua side the Base64 object is available via T.Encoding.Base64.
+Within C the files are named after the tree character code like so:
 
   - t_enc.c
   - t_enc_b64.c
   - t_enc_crc.c
 
-All functions belonging to a namespace are prefixed the same way.  Confining it
-to 3 characters keeps it short, assigning exactly 3 character code to one
+All functions belonging to a namespace are prefixed the same way.  Confining
+it to 3 characters keeps it short, assigning exactly 3 character code to one
 problem keeps it precise.
 
 
 File organization
 -----------------
 
-Most classes are represented as Lua userdata in lua-t.  For most of the C part
-of the code these are mainly structs.  As a result, for any userdata definition
-regarding a namespace and it's subspaces all of the struct definitions should
-go into the main header file for the namespace, in the above example that would
-be t_enc.h.  This ensures that all data definition within a namespace AND it's
-subspaces can interact with each other.
+Most classes are represented as Lua userdata in lua-t.  For most of the C
+part of the code these are mainly structs.  As a result, for any userdata
+definition regarding a namespace and it's subspaces all of the struct
+definitions should go into the main header file for the namespace, in the
+above example that would be t_enc.h.  This ensures that all data definition
+within a namespace AND it's subspaces can interact with each other.
 
 
 OOP interface
 =============
 
-The majority of this guide will use the eample namespace 'nry' which within Lua
-then is known as 'Numarray'.  The Numarray example is explained in detail by
-Roberto Ierusalimschy's book "Programming in Lua', also known as PiL.  This
-guide assumes that lua-t was loaded by::
+The majority of this guide will use the eample namespace 'nry' which within
+Lua then is known as 'Numarray'.  The Numarray example is explained in
+detail by Roberto Ierusalimschy's book "Programming in Lua', also known as
+PiL.  This guide assumes that lua-t was loaded by::
 
   T = require( "t" )
 
@@ -61,8 +62,8 @@ High-Level overview and Constructors
 ------------------------------------
 
 lua-t uses a unified OOP type according to Lua-Users style guide for classes
-with constructors.  A new instance of the Numarray class would be instantiated
-by these two ways::
+with constructors.  A new instance of the Numarray class would be
+instantiated by these two ways::
 
   myNry1 = T.Numarray.new( param )
   myNry2 = T.Numarray( param )
@@ -93,10 +94,10 @@ functions will remain static as they are accessed within the class only.
 Exposure Level on Lua side
 --------------------------
 
-In general, a capitalized function name signals a function which is static to
-the Lua class and a non capitalized name indicates a method on a class
-instance.  A single underscore before the name indicates a direct call by name,
-a double underscore signals that a metatable is involved.
+In general, a capitalized function name signals a function which is static
+to the Lua class and a non capitalized name indicates a method on a class
+instance.  A single underscore before the name indicates a direct call by
+name, a double underscore signals that a metatable is involved.
 
 lt_nry_Func
   static method on t.Numarray (eg. t.Numarray.New)
@@ -122,26 +123,31 @@ struct t_nry { ..., ..., ...  };
 Functional conventions
 ----------------------
 
-There are some special functions each C file(class) *shall* povide. They are used
-for creating and testing Lua userdata.  
+There are some special functions each C file(class) *shall* povide. They are
+used for creating and testing Lua userdata.
 
 static int lt_nry__Call( L )
   t.Numarray( p1, p2 ) styled constructor
+
 static int lt_nry_New( L )
   t.Numarray.New( p1, p2 ) styled constructor
+
 struct nry = t_nry_create_ud( L, sz ):
   Create a userdata of type t.Numarray with size sz and push onto stack, shall
   return a pointer to nry struct.  This function would be typically called from
   lt_nry_new( L ) after it evaluated the parameters passed from Lua and used
   here to populate dthe struct nry.
+
 struct nry = t_nry_check_ud( L, pos, check ):
   Check element on stack pos for to be a userdata of type nry (t.Numarray).  If
   check==1 hard fail (lua_error) otherwise fail soft and return NULL pointer.
   If successful return pointer to nry struct.
+
 static int lt_nry__gc( L )
   If t_nry_create_ud() would run some allocations or require a resource then
   this method must exist for clean up resources when the Numarray instance gets
   garbage collected.
+
 LUA_API int luaopen_t_nry( L )
   A function which is called from the src/t.c file which registers 'Numarray' in
   the "t" namespace and makes "t.Numarray" and all it's functionality available.
@@ -152,6 +158,7 @@ capabilities:
 
 static int lt_nry__len( L )
   return a meaningful #nry value
+
 static int lt_nry__tostring( luaVM )
   returns string "t.Numarray{length}: 0x123456". It usually returns the memory
   address as well
@@ -161,8 +168,10 @@ provide methods on class instances or static functions on the class itself:
 
 lt_nry_Doit( L )
   t.Numarray.Doit( p2 ) static method
+
 lt_nry_read( L )
   myNry:read( p ) instance method
+
 lt_nry_write( L )
   myNry:write( p, 2 ) instance method
 
@@ -170,10 +179,10 @@ lt_nry_write( L )
 Library conventions
 -------------------
 
-This convention describes how all the functionality is organized and hooked up
-to Lua itself.  lua-t makes heavy use of Lua's internal way of doing it but
-formalizes it somewhat.  It creates 3 struct luaL_Reg arrays which get hooked up
-in the luaopen_t_nry( L ) function. ::
+This convention describes how all the functionality is organized and hooked
+up to Lua itself.  lua-t makes heavy use of Lua's internal way of doing it
+but formalizes it somewhat.  It creates 3 struct luaL_Reg arrays which get
+hooked up in the luaopen_t_nry( L ) function. ::
 
   // Numarray class metamethods library definition 
   static const struct luaL_Reg t_nry_fm [] = {

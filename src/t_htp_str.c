@@ -27,7 +27,7 @@ struct t_htp_str
 	s = (struct t_htp_str *) lua_newuserdata( L, sizeof( struct t_htp_str ));
 	// Proxy contains lua readable items such as headers, length, status code etc
 	lua_newtable( L );
-	luaL_getmetatable( L, "T.Http.Stream.Proxy" );
+	luaL_getmetatable( L, T_HTP_TYPE"."T_HTP_STR_NAME"."T_HTP_STR_PRX_NAME );
 	lua_setmetatable( L, -2 );
 	s->pR      = luaL_ref( L, LUA_REGISTRYINDEX );
 	s->rqCl    = 0;                 ///< request  content length
@@ -39,7 +39,7 @@ struct t_htp_str
 	s->ver     = T_HTP_VER_09;      ///< HTTP Method for this request
 	s->con     = con;               ///< connection
 
-	luaL_getmetatable( L, "T.Http.Stream" );
+	luaL_getmetatable( L, T_HTP_TYPE"."T_HTP_STR_NAME );
 	lua_setmetatable( L, -2 );
 	return s;
 }
@@ -55,9 +55,9 @@ struct t_htp_str
 struct t_htp_str
 *t_htp_str_check_ud( lua_State *L, int pos, int check )
 {
-	void *ud = luaL_checkudata( L, pos, "T.Http.Stream" );
-	luaL_argcheck( L, (ud != NULL || !check), pos, "`T.Http.Stream` expected" );
-	return (struct t_htp_str *) ud;
+	void *ud = luaL_testudata( L, pos, T_HTP_TYPE"."T_HTP_STR_NAME );
+	luaL_argcheck( L, (ud != NULL || !check), pos, "`"T_HTP_TYPE"."T_HTP_STR_NAME"` expected." );
+	return (NULL==ud) ? NULL : (struct t_htp_str *) ud;
 }
 
 
@@ -114,7 +114,7 @@ t_htp_str_rcv( lua_State *L, struct t_htp_str *s, size_t rcvd )
 				break;
 		*/
 			default:
-				luaL_error( L, "Illegal state for T.Http.Message %d", (int) s->state );
+				luaL_error( L, "Illegal state for "T_HTP_TYPE"."T_HTP_STR_NAME" %d", (int) s->state );
 		}
 		//if (NULL == b)
 		//{
@@ -507,7 +507,7 @@ lt_htp_str__newindex( lua_State *L )
 {
 	t_htp_str_check_ud( L, -3, 1 );
 
-	return t_push_error( L, "Can't change values in `T.Http.Stream`" );
+	return t_push_error( L, "Can't change values in `"T_HTP_TYPE"."T_HTP_STR_NAME"`." );
 }
 
 
@@ -521,9 +521,9 @@ lt_htp_str__newindex( lua_State *L )
 static int
 lt_htp_str__tostring( lua_State *L )
 {
-	struct t_htp_str *m = (struct t_htp_str *) luaL_checkudata( L, 1, "T.Http.Stream" );
+	struct t_htp_str *s = t_htp_str_check_ud( L, 1, 1 );
 
-	lua_pushfstring( L, "T.Http.Stream: %p", m );
+	lua_pushfstring( L, T_HTP_TYPE"."T_HTP_STR_NAME": %p", s );
 	return 1;
 }
 
@@ -538,7 +538,7 @@ lt_htp_str__tostring( lua_State *L )
 static int
 lt_htp_str__len( lua_State *L )
 {
-	struct t_htp_str *s = (struct t_htp_str *) luaL_checkudata( L, 1, "T.Http.Stream" );
+	struct t_htp_str *s = t_htp_str_check_ud( L, 1, 1 );
 	lua_pushinteger( L, s->rqCl );
 	return 1;
 }
@@ -553,7 +553,7 @@ lt_htp_str__len( lua_State *L )
 int
 lt_htp_str__gc( lua_State *L )
 {
-	struct t_htp_str *s = (struct t_htp_str *) luaL_checkudata( L, 1, "T.Http.Stream" );
+	struct t_htp_str *s = t_htp_str_check_ud( L, 1, 1 );
 
 	if (LUA_NOREF != s->pR)
 	{
@@ -561,7 +561,7 @@ lt_htp_str__gc( lua_State *L )
 		s->pR = LUA_NOREF;
 	}
 
-	printf( "GC'ed HTTP Stream: %p\n", s );
+	printf( "GC'ed "T_HTP_TYPE"."T_HTP_STR_NAME": %p\n", s );
 
 	return 0;
 }
@@ -603,11 +603,11 @@ LUAMOD_API int
 luaopen_t_htp_str( lua_State *L )
 {
 	// T.Http.Stream instance metatable
-	luaL_newmetatable( L, "T.Http.Stream" );
+	luaL_newmetatable( L, T_HTP_TYPE"."T_HTP_STR_NAME );
 	luaL_setfuncs( L, t_htp_str_m, 0 );
 	lua_pop( L, 1 );        // remove metatable T.Http.Stream from stack
 
-	luaL_newmetatable( L, "T.Http.Stream.Proxy" );
+	luaL_newmetatable( L, T_HTP_TYPE"."T_HTP_STR_NAME"."T_HTP_STR_PRX_NAME );
 	luaL_setfuncs( L, t_htp_str_prx_s, 0 );
 	lua_setfield( L, -1, "__index" );
 	return 0;

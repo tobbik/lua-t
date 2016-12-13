@@ -36,8 +36,6 @@
 	 ((b) | (  (0x01) << (NB-(n))))    : \
 	 ((b) & (~((0x01) << (NB-(n))))) )
 
-
-
 // global default for T.Pack, can be flipped
 #ifdef IS_LITTLE_ENDIAN
 static int _default_endian = 1;
@@ -405,7 +403,7 @@ struct t_pck
 
 	luaL_getsubtable( L, LUA_REGISTRYINDEX, "_LOADED" );
 	lua_getfield( L, -1, "t" );
-	lua_getfield( L, -1, "Pack" );
+	lua_getfield( L, -1, T_PCK_NAME );
 	t_pck_format( L, t, s, m ); lua_concat( L, 2 );
 	lua_rawget( L, -2 );
 	if (lua_isnil( L, -1 ))    // havent found in cache -> create it
@@ -416,7 +414,7 @@ struct t_pck
 		p->s = s;
 		p->m = m;
 
-		luaL_getmetatable( L, "T.Pack" );
+		luaL_getmetatable( L, T_PCK_TYPE );
 		lua_setmetatable( L, -2 );
 		t_pck_format( L, t, s, m ); lua_concat( L, 2 );
 		lua_pushvalue( L, -2 );
@@ -441,8 +439,8 @@ struct t_pck
 struct t_pck
 *t_pck_check_ud( lua_State *L, int pos, int check )
 {
-	void *ud = luaL_testudata( L, pos, "T.Pack" );
-	luaL_argcheck( L, (ud != NULL || !check), pos, "`T.Pack` expected" );
+	void *ud = luaL_testudata( L, pos, T_PCK_TYPE );
+	luaL_argcheck( L, (ud != NULL || !check), pos, "`"T_PCK_TYPE"` expected" );
 	return (NULL==ud) ? NULL : (struct t_pck *) ud;
 }
 
@@ -654,7 +652,7 @@ struct t_pck
 static inline struct t_pck
 *t_pck_getpckreader( lua_State * L, int pos, struct t_pcr **prp )
 {
-	void         *ud = luaL_testudata( L, pos, "T.Pack.Reader" );
+	void         *ud = luaL_testudata( L, pos, T_PCK_TYPE".Reader" );
 	struct t_pcr *pr = (NULL == ud) ? NULL : (struct t_pcr *) ud;
 	struct t_pck *pc;
 	// get absolute stack position
@@ -754,7 +752,7 @@ static struct t_pck
 	lua_pushvalue( L, -3 );  // Stack: Pack,n,Array,Pack
 	ap->m = luaL_ref( L, LUA_REGISTRYINDEX ); // register packer table
 
-	luaL_getmetatable( L, "T.Pack" );
+	luaL_getmetatable( L, T_PCK_TYPE );
 	lua_setmetatable( L, -2 ) ;
 
 	return ap;
@@ -795,7 +793,7 @@ static struct t_pck
 	}
 	sq->m = luaL_ref( L, LUA_REGISTRYINDEX ); // register index  table
 
-	luaL_getmetatable( L, "T.Pack" ); // Stack: ...,T.Pack.Struct
+	luaL_getmetatable( L, T_PCK_TYPE ); // Stack: ...,T.Pack.Struct
 	lua_setmetatable( L, -2 ) ;
 
 	return sq;
@@ -828,16 +826,16 @@ static struct t_pck
 	while (n <= st->s)
 	{
 		luaL_argcheck( L, lua_istable( L, sp ), n,
-			"Arguments must be tables with single key/T.Pack pair" );
+			"Arguments must be tables with single key/"T_PCK_TYPE" pair" );
 		// Stack gymnastic:
 		lua_pushnil( L );
 		if (! lua_next( L, sp ))         // S:...,Struct,idx,name,Pack
-			luaL_error( L, "the table argument must contain one key/value pair." );
+			luaL_error( L, "The table argument must contain one key/value pair." );
 		// check if name is already used!
 		lua_pushvalue( L, -2 );          // S:...,Struct,idx,name,Pack,name
 		lua_rawget( L, -4 );             // S:...,Struct,idx,name,Pack,nil?
 		if (! lua_isnoneornil( L, -1 ))
-			luaL_error( L, "All elements in T.Pack.Struct must have unique key." );
+			luaL_error( L, "All elements in "T_PCK_TYPE".Struct must have unique key." );
 		lua_pop( L, 1 );                 // S:...,Struct,idx,name,Pack
 		p = t_pck_getpck( L, -1, &bo );  // allow T.Pack or T.Pack.Struct
 		// populate idx table
@@ -855,7 +853,7 @@ static struct t_pck
 
 	st->m = luaL_ref( L, LUA_REGISTRYINDEX ); // register index  table
 
-	luaL_getmetatable( L, "T.Pack" ); // Stack: ...,T.Pack.Struct
+	luaL_getmetatable( L, T_PCK_TYPE ); // Stack: ...,T.Pack.Struct
 	lua_setmetatable( L, -2 ) ;
 
 	return st;
@@ -1022,7 +1020,7 @@ lt_pck__index( lua_State *L )
 	struct t_pck *p;
 	struct t_pcr *r;
 
-	luaL_argcheck( L, pc->t > T_PCK_RAW, -2, "Trying to index Atomic T.Pack type" );
+	luaL_argcheck( L, pc->t > T_PCK_RAW, -2, "Trying to index Atomic "T_PCK_TYPE" type" );
 
 	if (LUA_TNUMBER == lua_type( L, -1 ) &&
 	      ((luaL_checkinteger( L, -1 ) > (int) pc->s) || (luaL_checkinteger( L, -1 ) < 1))
@@ -1050,9 +1048,9 @@ lt_pck__index( lua_State *L )
 		}
 		r->o += (((t_pck_getsize( L, p, 1 )) * (luaL_checkinteger( L, -3 )-1)) / NB);
 	}
-	else                                               // T.Struct/Sequence
+	else                                               // T.Pack.Struct/Sequence
 	{
-		if (! lua_tonumber( L, -3 ))               // T.Struct
+		if (! lua_tonumber( L, -3 ))               // T.Pack.Struct
 		{
 			lua_pushvalue( L, -3 );        // Stack: Struct,key,Reader,idx,key
 			lua_rawget( L, -2 );           // Stack: Struct,key,Reader,idx,i
@@ -1067,7 +1065,7 @@ lt_pck__index( lua_State *L )
 	}
 
 	r->r  = luaL_ref( L, LUA_REGISTRYINDEX );   // Stack: Seq,i,Reader
-	luaL_getmetatable( L, "T.Pack.Reader" );
+	luaL_getmetatable( L, T_PCK_TYPE".Reader" );
 	lua_setmetatable( L, -2 );
 	return 1;
 }
@@ -1086,7 +1084,7 @@ lt_pck__newindex( lua_State *L )
 {
 	struct t_pck *pc = t_pck_getpckreader( L, -3, NULL );
 
-	luaL_argcheck( L, pc->t > T_PCK_RAW, -3, "Trying to index Atomic T.Pack type" );
+	luaL_argcheck( L, pc->t > T_PCK_RAW, -3, "Trying to index Atomic "T_PCK_TYPE" type" );
 
 	return t_push_error( L, "Packers are static and can't be updated!" );
 }
@@ -1134,7 +1132,7 @@ t_pck_iter( lua_State *L )
 	r->r = luaL_ref( L, LUA_REGISTRYINDEX );   // Stack: func,xP,xC,Rd,ofs
 	r->o = lua_tointeger( L, lua_upvalueindex( 3 ) ) + luaL_checkinteger( L, -1 );
 	lua_pop( L, 1 );                  // remove ofs
-	luaL_getmetatable( L, "T.Pack.Reader" );
+	luaL_getmetatable( L, T_PCK_TYPE".Reader" );
 	lua_setmetatable( L, -2 );
 
 	return 2;
@@ -1177,9 +1175,9 @@ lt_pck__tostring( lua_State *L )
 	struct t_pck *pc = t_pck_getpckreader( L, -1, &pr );
 
 	if (NULL == pr)
-		lua_pushfstring( L, "T.Pack." );
+		lua_pushfstring( L, T_PCK_TYPE"." );
 	else
-		lua_pushfstring( L, "T.Pack.Reader[%d](", pr->o );
+		lua_pushfstring( L, T_PCK_TYPE".Reader[%d](", pr->o );
 	t_pck_format( L, pc->t, pc->s, pc->m );
 	lua_pushfstring( L, "): %p", pc );
 	lua_concat( L, 4 );
@@ -1219,7 +1217,7 @@ lt_pck__len( lua_State *L )
 {
 	struct t_pck *pc = t_pck_getpckreader( L, -1, NULL );
 
-	luaL_argcheck( L, pc->t > T_PCK_RAW, 1, "Attempt to get length of atomic T.Pack type" );
+	luaL_argcheck( L, pc->t > T_PCK_RAW, 1, "Attempt to get length of atomic "T_PCK_TYPE" type" );
 
 	lua_pushinteger( L, pc->s );
 	return 1;
@@ -1323,7 +1321,7 @@ lt_pcr__call( lua_State *L )
 	unsigned char *b;
 	size_t         l;                   /// length of string or buffer overall
 	luaL_argcheck( L,  2<=lua_gettop( L ) && lua_gettop( L )<=3, 2,
-		"Calling an T.Pack.Reader takes 2 or 3 arguments!" );
+		"Calling an "T_PCK_TYPE".Reader takes 2 or 3 arguments!" );
 
 	// are we reading/writing to from T.Buffer or Lua String
 	if (lua_isuserdata( L, 2 ))      // T.Buffer
@@ -1367,34 +1365,33 @@ lt_pcr__call( lua_State *L )
  * Class metamethods library definition
  * --------------------------------------------------------------------------*/
 static const struct luaL_Reg t_pck_fm [] = {
-	{ "__call",        lt_pck__Call},
-	{ NULL,            NULL }
+	  { "__call"         , lt_pck__Call}
+	, { NULL             , NULL }
 };
-
 
 /**--------------------------------------------------------------------------
  * Objects metamethods library definition
  * --------------------------------------------------------------------------*/
 static const struct luaL_Reg t_pck_cf [] = {
-	{ "new",       lt_pck_New },
-	{ "size",      lt_pck_size },
-	{ "get_ref",   lt_pck_getir },
-	{ "setendian", lt_pck_defaultendian },
-	{ NULL,    NULL }
+	  { "new"            , lt_pck_New }
+	, { "size"           , lt_pck_size }
+	, { "get_ref"        , lt_pck_getir }
+	, { "setendian"      , lt_pck_defaultendian }
+	, { NULL             , NULL }
 };
 
 /**--------------------------------------------------------------------------
  * Objects metamethods library definition
  * --------------------------------------------------------------------------*/
 static const luaL_Reg t_pck_m [] = {
-	{ "__call",          lt_pcr__call },
-	{ "__index",         lt_pck__index },
-	{ "__newindex",      lt_pck__newindex },
-	{ "__pairs",         lt_pck__pairs },
-	{ "__gc",            lt_pck__gc },
-	{ "__len",           lt_pck__len },
-	{ "__tostring",      lt_pck__tostring },
-	{ NULL,    NULL }
+	  { "__call"         , lt_pcr__call }
+	, { "__index"        , lt_pck__index }
+	, { "__newindex"     , lt_pck__newindex }
+	, { "__pairs"        , lt_pck__pairs }
+	, { "__gc"           , lt_pck__gc }
+	, { "__len"          , lt_pck__len }
+	, { "__tostring"     , lt_pck__tostring }
+	, { NULL             , NULL }
 };
 
 /**--------------------------------------------------------------------------
@@ -1409,7 +1406,7 @@ static int
 luaopen_t_pckr( lua_State *L )
 {
 	// T.Pack.Struct instance metatable
-	luaL_newmetatable( L, "T.Pack.Reader" );   // stack: functions meta
+	luaL_newmetatable( L, T_PCK_TYPE".Reader" );   // stack: functions meta
 	luaL_setfuncs( L, t_pck_m, 0 );
 	lua_pop( L, 1 );        // remove metatable from stack
 	return 0;
@@ -1427,7 +1424,7 @@ LUAMOD_API int
 luaopen_t_pck( lua_State *L )
 {
 	// T.Pack.Struct instance metatable
-	luaL_newmetatable( L, "T.Pack" );   // stack: functions meta
+	luaL_newmetatable( L, T_PCK_TYPE );   // stack: functions meta
 	luaL_setfuncs( L, t_pck_m, 0 );
 	lua_pop( L, 1 );        // remove metatable from stack
 

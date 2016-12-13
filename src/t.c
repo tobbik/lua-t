@@ -74,7 +74,7 @@ t_stackPrint( lua_State *L, int i, int last )
  * \param  L The Lua state.
  *-------------------------------------------------------------------------*/
 void
-t_stackdump ( lua_State *L )
+t_stackDump ( lua_State *L )
 {
 	int top = lua_gettop( L );
 	printf( "STACK[%d]:   ", top );
@@ -184,23 +184,27 @@ luaopen_t( lua_State *L )
 {
 	luaL_newlib( L, l_t_lib );
 	luaopen_t_ael( L );
-	lua_setfield( L, -2, "Loop" );
+	lua_setfield( L, -2, T_AEL_NAME );
 	luaopen_t_tim( L );
-	lua_setfield( L, -2, "Time" );
+	lua_setfield( L, -2, T_TIM_NAME );
 	luaopen_t_net( L );
 	lua_setfield( L, -2, "Net" );
 	luaopen_t_buf( L );
-	lua_setfield( L, -2, "Buffer" );
+	lua_setfield( L, -2, T_BUF_NAME );
 	luaopen_t_pck( L );
-	lua_setfield( L, -2, "Pack" );
+	lua_setfield( L, -2, T_PCK_NAME );
 	luaopen_t_enc( L );
-	lua_setfield( L, -2, "Encode" );
+	lua_setfield( L, -2, T_ENC_NAME );
 	luaopen_t_tst( L );
-	lua_setfield( L, -2, "Test" );
+	lua_setfield( L, -2, T_TST_NAME );
+	luaopen_t_oht( L );
+	lua_setfield( L, -2, T_OHT_NAME );
+	luaopen_t_set( L );
+	lua_setfield( L, -2, T_SET_NAME );
 	luaopen_t_wsk( L );
-	lua_setfield( L, -2, "Websocket" );
+	lua_setfield( L, -2, T_WSK_NAME );
 	luaopen_t_htp( L );
-	lua_setfield( L, -2, "Http" );
+	lua_setfield( L, -2, T_HTP_NAME );
 #ifdef T_NRY
 	luaopen_t_nry( L );
 	lua_setfield( L, -2, "Numarray" );
