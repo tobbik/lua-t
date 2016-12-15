@@ -188,7 +188,7 @@ luaopen_t( lua_State *L )
 	luaopen_t_tim( L );
 	lua_setfield( L, -2, T_TIM_NAME );
 	luaopen_t_net( L );
-	lua_setfield( L, -2, "Net" );
+	lua_setfield( L, -2, T_NET_NAME );
 	luaopen_t_buf( L );
 	lua_setfield( L, -2, T_BUF_NAME );
 	luaopen_t_pck( L );
@@ -207,7 +207,7 @@ luaopen_t( lua_State *L )
 	lua_setfield( L, -2, T_HTP_NAME );
 #ifdef T_NRY
 	luaopen_t_nry( L );
-	lua_setfield( L, -2, "Numarray" );
+	lua_setfield( L, -2, T_NRY_NAME );
 #endif
 	return 1;
 }

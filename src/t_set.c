@@ -17,11 +17,11 @@
  * Add/Remove element to a T.Set.
  * Expects on the stack Table, Element, Value.  If value is nil, the element
  * will be removed from the table.
- * \param   L            The Lua state.
+ * \param   L            Lua state.
  * \param   struct t_set set pointer.
  * \lparam  table        Table.
  * \lparam  value        element for set to add.
- * \lparam  value        if nil, delete element from table.
+ * \lparam  value        value if nil, delete element from table.
  * \return  int/bool     0 if element existed / 1 if element was added.
  * --------------------------------------------------------------------------*/
 static int
@@ -54,7 +54,7 @@ t_set_setElement( lua_State *L, struct t_set *set )
 
 /** ---------------------------------------------------------------------------
  * Checks if sA is disjunt or a subset of sB.
- * \param  L            lua_State.
+ * \param  L            Lua state.
  * \param  int(bool)    isDisjunct( 1 ) or isSubset( 0 ).
  * \param  struct t_set sA.
  * \param  struct t_set sB.
@@ -89,7 +89,7 @@ t_set_contains( lua_State *L, int disjunct, struct t_set *sA, struct t_set *sB )
 
 /**--------------------------------------------------------------------------
  * Create the Union of two set tables.
- * \param   L       The Lua state.
+ * \param   L       Lua state.
  * \lparam  ud      T.Set struct t_set A table.
  * \lparam  ud      T.Set struct t_set B table.
  * \lparam  ud      T.Set struct t_set Result table.
@@ -135,7 +135,7 @@ t_set_union( lua_State *L )
 
 /**--------------------------------------------------------------------------
  * Create the Intersection of two set tables.
- * \param   L       The Lua state.
+ * \param   L       Lua state.
  * \lparam  ud      T.Set struct t_set A table.
  * \lparam  ud      T.Set struct t_set B table.
  * \lparam  ud      T.Set struct t_set Result table.
@@ -172,7 +172,7 @@ t_set_intersection( lua_State *L )
 
 /**--------------------------------------------------------------------------
  * Create the Complement of two set tables.
- * \param   L       The Lua state.
+ * \param   L       Lua state.
  * \lparam  ud      T.Set struct t_set A table.
  * \lparam  ud      T.Set struct t_set B table.
  * \lparam  ud      T.Set struct t_set Result table.
@@ -209,7 +209,7 @@ t_set_complement( lua_State *L )
 
 /**--------------------------------------------------------------------------
  * Create the Symetric Difference of two set tables.
- * \param   L       The Lua state.
+ * \param   L       Lua state.
  * \lparam  ud      T.Set struct t_set A table.
  * \lparam  ud      T.Set struct t_set B table.
  * \lparam  ud      T.Set struct t_set Result table.
@@ -253,8 +253,8 @@ t_set_symdifference( lua_State *L )
 
 /**--------------------------------------------------------------------------
  * Create a new T.Set and return it.
- * \param   L    The Lua state.
- * \lreturn ud   T.Set instance.
+ * \param   L    Lua state.
+ * \lreturn ud   T.Set userdata instance.
  * \return  int  # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int
@@ -280,8 +280,8 @@ lt_set_New( lua_State *L )
 
 /**--------------------------------------------------------------------------
  * Get the underlying table from a T.Set userdata.
- * \param   L    The Lua state.
- * \lparam  ud   T.Set instance.
+ * \param   L    Lua state.
+ * \lparam  ud   T.Set userdata instance.
  * \return  int  # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int
@@ -296,8 +296,8 @@ lt_set_GetTable( lua_State *L )
 
 /**--------------------------------------------------------------------------
  * Serialize the underlying table from a T.Set userdata.
- * \param   L      The Lua state.
- * \lparam  ud     T.Set instance.
+ * \param   L      Lua state.
+ * \lparam  ud     T.Set userdata instance.
  * \lreturn table  Numerically indexed table with all elements from the set in
  *                 arbitrar order.
  * \return  int    # of values pushed onto the stack.
@@ -324,9 +324,9 @@ lt_set_ToTable( lua_State *L )
 
 /**--------------------------------------------------------------------------
  * Tests if two T.Set are disjoint.
- * \param   L       The Lua state.
- * \lparam  ud      T.Set instance sA.
- * \lparam  ud      T.Set instance sB.
+ * \param   L       Lua state.
+ * \lparam  ud      T.Set userdata instance sA.
+ * \lparam  ud      T.Set userdata instance sB.
  * \lreturn boolean 1 if disjoint, else 0.
  * \return  int     # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
@@ -343,9 +343,9 @@ lt_set_IsDisjoint( lua_State *L )
 
 /**--------------------------------------------------------------------------
  * Construct a T.Set and return it.
- * \param   L     The Lua state.
+ * \param   L     Lua state.
  * \lparam  CLASS table T.Set.
- * \lreturn ud    T.Set instance.
+ * \lreturn ud    T.Set userdata instance.
  * \return  int   # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int lt_set__Call( lua_State *L )
@@ -357,7 +357,7 @@ static int lt_set__Call( lua_State *L )
 
 /**--------------------------------------------------------------------------
  * Create a new t_set userdata and push to Lua Stack.
- * \param   L        The Lua state.
+ * \param   L        Lua state.
  * \param   int pos  create stack from table at position to create set.
  * \param   int mode >0 -> use table values, <0 use table keys.
  * \return  struct   t_set * pointer to new userdata on Lua Stack.
@@ -401,7 +401,7 @@ struct t_set
 
 /**--------------------------------------------------------------------------
  * Check a value on the stack for being a struct t_set.
- * \param   L       The Lua state.
+ * \param   L       Lua state.
  * \param   int     Position on the stack.
  * \param   int     check(boolean): if true error out on fail.
  * \return  struct  t_set* pointer to userdata on stack.
@@ -419,8 +419,8 @@ struct t_set
  * Read element from Set value.
  * Instance[value] will return true if the set contains the value.  Otherwise
  * returns nil( which is falsy in Lua ).
- * \param   L        The Lua state.
- * \lparam  ud       T.Set instance.
+ * \param   L        Lua state.
+ * \lparam  ud       T.Set userdata instance.
  * \lparam  key      Lua value.
  * \lreturn boolean  true if exists else false.
  * \return  int      # of values pushed onto the stack.
@@ -445,8 +445,8 @@ lt_set__index( lua_State *L )
  * Set/Delete element in T.Set value.
  * Using instance[value] = nil deletes an element.  Instance[value] = true adds
  * the value to the set.
- * \param   L      The Lua state.
- * \lparam  ud     T.Set instance.
+ * \param   L      Lua state.
+ * \lparam  ud     T.Set userdata instance.
  * \lparam  key    string/integer.
  * \lparam  value  value for index/hash.
  * \return  int    # of values pushed onto the stack.
@@ -466,7 +466,7 @@ lt_set__newindex( lua_State *L )
 /**--------------------------------------------------------------------------
  * the actual iterate(next) over the T.Set.
  * It will return all values key, value pairs.
- * \param   L        The Lua state.
+ * \param   L        Lua state.
  * \lparam  table    Table to iterate.
  * \lparam  value    previous key.
  * \lreturn multiple key, true.
@@ -491,8 +491,8 @@ t_set_iter( lua_State *L )
 
 /**--------------------------------------------------------------------------
  * Pairs method to iterate over the T.OrderedHashTable.
- * \param   L        The Lua state.
- * \lparam  ud       T.Set instance.
+ * \param   L        Lua state.
+ * \lparam  ud       T.Set userdata instance.
  * \lreturn multiple function, table, 0.
  * \return  int      # of values pushed onto the stack.
  *  -------------------------------------------------------------------------*/
@@ -511,10 +511,10 @@ lt_set__pairs( lua_State *L )
 
 /**--------------------------------------------------------------------------
  * Creates the Union of two sets.
- * \param   L    The Lua state.
- * \lparam  ud   T.Set instance sA.
- * \lparam  ud   T.Set instance sB.
- * \lreturn ud   T.Set instance -> union of Set A and Set B.
+ * \param   L    Lua state.
+ * \lparam  ud   T.Set userdata instance sA.
+ * \lparam  ud   T.Set userdata instance sB.
+ * \lreturn ud   T.Set userdata instance -> union of Set A and Set B.
  * \return  int  # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int
@@ -536,10 +536,10 @@ lt_set__bor( lua_State *L )
 
 /**--------------------------------------------------------------------------
  * Creates the Intersection of two sets.
- * \param   L    The Lua state.
- * \lparam  ud   T.Set instance sA.
- * \lparam  ud   T.Set instance sB.
- * \lreturn ud   T.Set instance -> intersection of Set A and Set B.
+ * \param   L    Lua state.
+ * \lparam  ud   T.Set userdata instance sA.
+ * \lparam  ud   T.Set userdata instance sB.
+ * \lreturn ud   T.Set userdata instance -> intersection of Set A and Set B.
  * \return  int  # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int
@@ -561,10 +561,10 @@ lt_set__band( lua_State *L )
 
 /**--------------------------------------------------------------------------
  * Creates the Difference (complement) of two sets.
- * \param   L    The Lua state.
- * \lparam  ud   T.Set instance sA.
- * \lparam  ud   T.Set instance sB.
- * \lreturn ud   T.Set instance -> difference of Set A and Set B.
+ * \param   L    Lua state.
+ * \lparam  ud   T.Set userdata instance sA.
+ * \lparam  ud   T.Set userdata instance sB.
+ * \lreturn ud   T.Set userdata instance -> difference of Set A and Set B.
  * \return  int  # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int
@@ -586,10 +586,10 @@ lt_set__sub( lua_State *L )
 
 /**--------------------------------------------------------------------------
  * Creates the Symmetric Difference of two sets.
- * \param   L    The Lua state.
- * \lparam  ud   T.Set instance sA.
- * \lparam  ud   T.Set instance sB.
- * \lreturn ud   T.Set instance -> symetric difference of Set A and Set B.
+ * \param   L    Lua state.
+ * \lparam  ud   T.Set userdata instance sA.
+ * \lparam  ud   T.Set userdata instance sB.
+ * \lreturn ud   T.Set userdata instance -> symetric difference of Set A and Set B.
  * \return  int  # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int
@@ -611,9 +611,9 @@ lt_set__bxor( lua_State *L )
 
 /**--------------------------------------------------------------------------
  * Compare two T.Set for equality.
- * \param   L       The Lua state.
- * \lparam  ud      T.Set instance sA.
- * \lparam  ud      T.Set instance sB.
+ * \param   L       Lua state.
+ * \lparam  ud      T.Set userdata instance sA.
+ * \lparam  ud      T.Set userdata instance sB.
  * \lreturn boolean True if A and B contain the same elements. Else false.
  * \return  int     # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
@@ -632,9 +632,9 @@ lt_set__eq( lua_State *L )
 
 /**--------------------------------------------------------------------------
  * Compare two T.Set for being a subset.
- * \param   L       The Lua state.
- * \lparam  ud      T.Set instance sA.
- * \lparam  ud      T.Set instance sB.
+ * \param   L       Lua state.
+ * \lparam  ud      T.Set userdata instance sA.
+ * \lparam  ud      T.Set userdata instance sB.
  * \lreturn boolean True if B contains all elements of A. Else false.
  * \return  int     # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
@@ -650,9 +650,9 @@ lt_set__le( lua_State *L )
 
 /**--------------------------------------------------------------------------
  * Compare two T.Set for being a subset and NOT equal.
- * \param   L       The Lua state.
- * \lparam  ud      T.Set instance sA.
- * \lparam  ud      T.Set instance sB.
+ * \param   L       Lua state.
+ * \lparam  ud      T.Set userdata instance sA.
+ * \lparam  ud      T.Set userdata instance sB.
  * \lreturn boolean True if B contains all elements of A and #B > #A. Else
  *                  false.
  * \return  int     # of values pushed onto the stack.
@@ -672,8 +672,8 @@ lt_set__lt( lua_State *L )
 
 /**--------------------------------------------------------------------------
  * Returns the # of elements in T.Set instance.
- * \param   L    The Lua state.
- * \lparam  ud   T.Set instance.
+ * \param   L    Lua state.
+ * \lparam  ud   T.Set userdata instance.
  * \return  int  # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int
@@ -689,7 +689,7 @@ lt_set__len( lua_State *L )
 /**--------------------------------------------------------------------------
  * Return Tostring representation of a T.Set instance.
  * \param   L       The Lua state.
- * \lparam  ud      T.Set instance.
+ * \lparam  ud      T.Set userdata instance.
  * \lreturn string  Formatted string representing Set.
  * \return  int     # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
@@ -707,8 +707,8 @@ lt_set__tostring( lua_State *L )
 
 /**--------------------------------------------------------------------------
  * __gc Garbage Collector. Releases references from Lua Registry.
- * \param  L     The Lua state.
- * \lparam ud    T.Set instance.
+ * \param  L     Lua state.
+ * \lparam ud    T.Set userdata instance.
  * \return int   # of values pushed onto the stack.
  * -------------------------------------------------------------------------*/
 static int
@@ -765,7 +765,7 @@ static const luaL_Reg t_set_m [] = {
  * Pushes the T.Set library onto the stack
  *          - creates Metatable with functions
  *          - creates metatable with methods
- * \param   L      The Lua state.
+ * \param   L      Lua state.
  * \lreturn table  the library
  * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/

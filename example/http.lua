@@ -2,7 +2,7 @@
 t=require't'
 fmt=string.format
 l=t.Loop(1200)
-s=t.Socket.bind( 'UDP',  8888 )
+s=t.Net.UDP.bind( 8888 )
 
 x=function( msg )
 	print ("Socket:",  msg.socket )
@@ -49,8 +49,8 @@ end
 l:addHandle( s, true, cmd, s )
 h=t.Http.Server( l, x )
 sc,ip = h:listen( 8000, 10 )  -- listen on 0.0.0.0 INADDR_ANY
-sc:setOption()
 print( sc, ip, s )
+sc:setOption( )
 
 l:show()
 

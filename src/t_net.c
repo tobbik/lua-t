@@ -120,6 +120,7 @@ int lt_net_getfdsinfo( lua_State *L )
 }
 #endif
 
+
 /**--------------------------------------------------------------------------
  * Evaluate elements on stack to be definitions or instances of sock and ip.
  * This is a helper function to handle possible input scenarios for many
@@ -132,9 +133,9 @@ int lt_net_getfdsinfo( lua_State *L )
  *  - ...( sck, 'ipstring' )     -- Port unassigned
  *  - ...( sck )                 -- Port unassigned, IP 0.0.0.0
  *
- * \param   L              The lua state.
- * \param   int            position on the stack.
- * \return  struct t_net*  pointer to the struct t_net.
+ * \param   L      Lua state.
+ * \param   int    Position on the stack.
+ * \return  struct t_net* pointer to the struct t_net.
  * --------------------------------------------------------------------------*/
 void
 t_net_getdef( lua_State *L, int pos, struct t_net **s, struct sockaddr_in **ip,
@@ -160,9 +161,9 @@ t_net_getdef( lua_State *L, int pos, struct t_net **s, struct sockaddr_in **ip,
 
 /**--------------------------------------------------------------------------
  * Create a socket and push to LuaStack.
- * \param   L         The lua state.
- * \param   enum t_net_t  Type of socket.
- * \param   bool/int      Should socket be created.
+ * \param   L      Lua state.
+ * \param   enum   t_net_t  Type of socket.
+ * \param   bool   1 if Should socket be created, else 0.
  * \return  struct t_net* pointer to the socket struct.
  * --------------------------------------------------------------------------*/
 struct t_net
@@ -196,8 +197,8 @@ struct t_net
 
 	switch (type)
 	{
-		case T_NET_UDP: luaL_getmetatable( L, "T.Net.UDP" ); break;
-		case T_NET_TCP: luaL_getmetatable( L, "T.Net.TCP" ); break;
+		case T_NET_TCP: luaL_getmetatable( L, T_NET_TCP_TYPE ); break;
+		case T_NET_UDP: luaL_getmetatable( L, T_NET_UDP_TYPE ); break;
 		default:
 			return NULL;
 	}
@@ -208,16 +209,16 @@ struct t_net
 
 /**--------------------------------------------------------------------------
  * Check a value on the stack for being a struct t_net.
- * \param   L    The lua state.
- * \param   int      position on the stack.
+ * \param   L      Lua state.
+ * \param   int    position on the stack.
  * \return  struct t_net*  pointer to the struct t_net.
  * --------------------------------------------------------------------------*/
 struct t_net
 *t_net_check_ud( lua_State *L, int pos, int check )
 {
-	void *ud = luaL_testudata( L, pos, "T.Net.TCP" );
+	void *ud = luaL_testudata( L, pos, T_NET_TCP_TYPE );
 	if (NULL == ud)
-		ud = luaL_testudata( L, pos, "T.Net.UDP" );
+		ud = luaL_testudata( L, pos, T_NET_UDP_TYPE );
 	luaL_argcheck( L, (ud != NULL || !check), pos, "`T.Net.TCP/UDP` expected" );
 	return (NULL==ud) ? NULL : (struct t_net *) ud;
 }
@@ -225,8 +226,8 @@ struct t_net
 
 /** -------------------------------------------------------------------------
  * Set a socket option.
- * \param   L  The lua state.
- * \lparam  socket socket userdata.
+ * \param   L      Lua state.
+ * \param   struct t_net* instance.
  * \return  int    # of values pushed onto the stack.
  * TODO: Actually do option settings with multiple options etc here...
  *-------------------------------------------------------------------------*/
@@ -259,9 +260,9 @@ lt_net_setoption( lua_State *L )
 
 /** -------------------------------------------------------------------------
  * Close a socket.
- * \param   L  The lua state.
- * \lparam  socket socket userdata.
- * \return  int    # of values pushed onto the stack.
+ * \param   L    Lua state.
+ * \param   ud   t_net userdata instance.
+ * \return  int  # of values pushed onto the stack.
  *-------------------------------------------------------------------------*/
 int
 t_net_close( lua_State *L, struct t_net *s )
@@ -307,19 +308,21 @@ lt_net_getfdid( lua_State *L )
 
 /**--------------------------------------------------------------------------
  * Prints out the socket.
- * \param   L    The lua state.
- * \lparam  struct t_net the socket userdata.
- * \lreturn string   formatted string representing sockkaddr (IP:Port).
+ * \param   L      Lua state.
+ * \lparam  ud     t_net userdata instance.
+ * \lreturn string formatted string representing sockkaddr (IP:Port).
  * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 int
 lt_net__tostring( lua_State *L )
 {
 	struct t_net *s = t_net_check_ud( L, 1, 1 );
-	lua_pushfstring( L, "T.Net.%s{%d}: %p",
-			(T_NET_TCP == s->t) ? "TCP" : "UDP",
-			s->fd,
-			s );
+
+	luaL_getmetafield( L, -1, "__name" );
+	lua_pushfstring( L, "%s{%d}: %p"
+		, lua_tostring( L , -1 )
+		, s->fd
+		, s );
 	return 1;
 }
 
@@ -338,13 +341,12 @@ t_net_listen( lua_State *L, int pos, enum t_net_t t )
 {
 	struct t_net       *s  = t_net_check_ud( L, pos+0, 0 );
 	struct sockaddr_in *ip = t_net_ip4_check_ud( L, pos+1, 0 );
-	int                 backlog;
+	int                 bl =luaL_checkinteger( L, -1 ); // backlog
+
+	lua_pop( L, 1 );
 
 	if (NULL == s)
 	{
-		s = t_net_create_ud( L, t, 1 );
-		lua_insert( L, pos+0 );
-
 		t_net_getdef( L, pos+0, &s, &ip, t );
 		//S: t_net,t_net_ip4
 		if (bind( s->fd , (struct sockaddr*) &(*ip), sizeof( struct sockaddr ) ) == -1)
@@ -352,10 +354,8 @@ t_net_listen( lua_State *L, int pos, enum t_net_t t )
 					 inet_ntoa( ip->sin_addr ),
 					 ntohs( ip->sin_port ) );
 	}
-	backlog = luaL_checkinteger( L, pos+2 );
-	lua_remove( L, pos+2 );
 
-	if (listen( s->fd , backlog ) == -1)
+	if (listen( s->fd , bl ) == -1)
 		return t_push_error( L, "ERROR listen to socket" );
 
 	return 2;  // socket, ip
@@ -364,9 +364,9 @@ t_net_listen( lua_State *L, int pos, enum t_net_t t )
 
 /** -------------------------------------------------------------------------
  * Bind a socket to an address.
- * \param   L  The lua state.
- * \lparam  socket The socket userdata.
- * \lparam  ip     sockaddr userdata.
+ * \param   L      Lua state.
+ * \lparam  ud     t_net userdata instance.
+ * \lparam  ud     t_net_ip4 userdata instance.
  * \return  int    # of values pushed onto the stack.
  *-------------------------------------------------------------------------*/
 int
@@ -375,6 +375,7 @@ t_net_bind( lua_State *L, enum t_net_t t )
 	struct t_net       *s  = NULL;
 	struct sockaddr_in *ip = NULL;
 
+	if (NULL == s)
 	t_net_getdef( L, 1, &s, &ip, t );
 
 	if (bind( s->fd , (struct sockaddr*) &(*ip), sizeof( struct sockaddr ) ) == -1)
@@ -388,9 +389,9 @@ t_net_bind( lua_State *L, enum t_net_t t )
 
 /** -------------------------------------------------------------------------
  * Connect a socket to an address.
- * \param   L  The lua state.
- * \lparam  socket socket userdata.
- * \lparam  ip     sockaddr userdata.
+ * \param   L      Lua state.
+ * \lparam  ud     t_net userdata instance.
+ * \lparam  ud     t_net_ip4 userdata instance.
  * \return  int    # of values pushed onto the stack.
  *-------------------------------------------------------------------------*/
 int
@@ -414,7 +415,7 @@ t_net_connect( lua_State *L, enum t_net_t t )
  * Helper to take sockets from Lua tables to FD_SET.
  * Itertates over the table puls out the socket structs and adds the actual
  * sockets to the fd_set.
- * \param   L  The lua state.
+ * \param   L      Lua state.
  * \param   int    position on stack where table is located
  * \param  *fd_set the set of sockets(fd) to be filled
  * \param  *int    the maximum socket(fd) value
@@ -448,12 +449,12 @@ make_fdset( lua_State *L, int stack_pos, fd_set *collection, int *max_hndl )
 
 
 /** -------------------------------------------------------------------------
- * \brief   select from open sockets.
- * \param   L  The lua state.
- * \lparam  socket_array   All sockets to read from.
- * \lparam  socket_array   All sockets to write to.
- * \lparam  socket_array   All sockets to check errors.
- * \lreturn int            Number of affected sockets.
+ * Select from open sockets.
+ * \param   L      Lua state.
+ * \lparam  table  T.Net socket array All sockets to read from.
+ * \lparam  table  T.Net socket array All sockets to write to.
+ * \lparam  table  T.Net socket array All sockets to check errors in.
+ * \lreturn int    Number of affected sockets.
  * \return  int    # of values pushed onto the stack.
  * TODO:  Allow for a Time Out to be handed to it
  *-------------------------------------------------------------------------*/
@@ -526,12 +527,12 @@ lt_net_select( lua_State *L )
 
 
 /** -------------------------------------------------------------------------
- * \brief   select from open sockets.
- * \param   L  The lua state.
- * \lparam  socket_array   All sockets to read from.
- * \lparam  socket_array   All sockets to write to.
- * \lparam  socket_array   All sockets to check errors.
- * \lreturn int            Number of affected sockets.
+ * Select from open sockets.
+ * \param   L      Lua state.
+ * \lparam  table  T.Net socket array All sockets to read from.
+ * \lparam  table  T.Net socket array All sockets to write to.
+ * \lparam  table  T.Net socket array All sockets to check errors in.
+ * \lreturn int    Number of affected sockets.
  * \return  int    # of values pushed onto the stack.
  * TODO:  Allow for a Time Out to be handed to it
  *-------------------------------------------------------------------------*/
@@ -577,6 +578,7 @@ lt_net_selectk( lua_State *L )
 	return 1;
 }
 
+
 /**--------------------------------------------------------------------------
  * Class functions library definition
  * --------------------------------------------------------------------------*/
@@ -604,10 +606,10 @@ luaopen_t_net( lua_State *L )
 {
 	luaL_newlib( L, t_net_cf );
 	luaopen_t_net_tcp( L );
-	lua_setfield( L, -2, "TCP" );
+	lua_setfield( L, -2, T_NET_TCP_NAME );
 	luaopen_t_net_udp( L );
-	lua_setfield( L, -2, "UDP" );
+	lua_setfield( L, -2, T_NET_UDP_NAME );
 	luaopen_t_net_ip4( L );
-	lua_setfield( L, -2, "IPv4" );
+	lua_setfield( L, -2, T_NET_IP4_NAME );
 	return 1;
 }

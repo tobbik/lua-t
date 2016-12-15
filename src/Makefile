@@ -17,7 +17,7 @@ T_SRC=t.c \
 	 t_ael_sel.c \
 	 t_tim.c \
 	 t_enc.c \
-	 t_enc_arc4.c \
+	 t_enc_rc4.c \
 	 t_enc_crc.c \
 	 t_enc_b64.c \
 	 t_buf.c \

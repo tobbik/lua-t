@@ -4,7 +4,7 @@ local sport=8005
 
 --srv,ip = t.Socket.bind('TCP', sport)
 --srv:listen(5)
-srv,ip = t.Socket.listen(sport, 5)
+srv,ip = t.Net.TCP.listen( sport, 5 )
 print( srv, ip )
 x=0
 
@@ -18,13 +18,13 @@ while true do
 		end
 	end
 
-	local rds,wrs = t.select( rconns, wconns )
+	local rds,wrs = t.Net.select( rconns, wconns )
 	print( #rds,#wrs, #rconns, #wconns )
 
 	for n,cli in ipairs( rds ) do
 		-- new connection
 		if cli == srv then
-			local s,a =  srv:accept()
+			local s,a =  srv:accept( )
 			conns[ s:getId() ] = {
 				sck = s,
 				ip  = a,
@@ -32,7 +32,7 @@ while true do
 			}
 			print('\tCONNECT: ' ..tostring(s).. " FROM:  "..tostring(a) )
 		else
-			local msg, len = cli:recv()
+			local msg, len = cli:recv( )
 			print( msg )
 			if msg:find('\n\r\n') then
 				local cn = conns[ cli:getId() ]

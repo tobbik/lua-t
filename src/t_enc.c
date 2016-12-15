@@ -80,8 +80,8 @@ LUAMOD_API int
 luaopen_t_enc( lua_State *L )
 {
 	luaL_newlib( L, t_enc_cf );
-	luaopen_t_enc_arc4( L );
-	lua_setfield( L, -2, T_ENC_ARC4_NAME );
+	luaopen_t_enc_rc4( L );
+	lua_setfield( L, -2, T_ENC_RC4_NAME );
 	luaopen_t_enc_crc( L );
 	lua_setfield( L, -2, T_ENC_CRC_NAME );
 	luaopen_t_enc_b64( L );

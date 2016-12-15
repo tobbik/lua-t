@@ -25,7 +25,7 @@ static const uint32_t      mod_table[ ]    = { 0, 2, 1 };
 
 /**
  * B64 allocator for output.
- * Depending on en or decoding returns empty string of right size.
+ * Depending on en- or decoding returns empty string of right size.
  * \param  size of input
  * \param  encode, if 1 then return string of size need for encoded result
  * \return size_t
@@ -88,11 +88,11 @@ b64_decode( const char *inbuf, char *outbuf, size_t inbuf_len )
 
 
 /**
- * \brief  expose Base64 encoding to Lua; wraps native function b64_encode above.
- * \param  L The Lua state.
- * \TODO: consider using a Lua_Buffer instead of allocating and freeing memory
+ * Expose Base64 encoding to Lua; wraps native function b64_encode above.
+ * \param   L      The Lua state.
  * \return  int    # of values pushed onto the stack.
  */
+ // TODO: consider using a Lua_Buffer instead of allocating and freeing memory
 static int
 t_enc_b64_encode( lua_State *L )
 {
@@ -108,7 +108,7 @@ t_enc_b64_encode( lua_State *L )
 	else
 	{
 		return t_push_error( L,
-			    T_ENC_TYPE"."T_ENC_B64_NAME".encode takes at least one string parameter" );
+			    T_ENC_B64_TYPE".encode takes at least one string parameter" );
 	}
 
 	rLen = b64_res_size( bLen, 1 );
@@ -116,7 +116,7 @@ t_enc_b64_encode( lua_State *L )
 	if (res == NULL)
 	{
 		return t_push_error( L,
-		        T_ENC_TYPE"."T_ENC_B64_NAME".encode failed due to internal memory allocation problem" );
+		        T_ENC_B64_TYPE".encode failed due to internal memory allocation problem" );
 	}
 
 	b64_encode( body, res, bLen);
@@ -128,11 +128,11 @@ t_enc_b64_encode( lua_State *L )
 
 
 /**
- * \brief  expose Base64 decoding to Lua; wraps native function b64_decode above.
- * \param  L The Lua state.
- * \TODO: consider using a Lua_Buffer instead of allocating and freeing memory
- * \return  int    # of values pushed onto the stack.
+ * Expose Base64 decoding to Lua; wraps native function b64_decode above.
+ * \param   L    The Lua state.
+ * \return  int  # of values pushed onto the stack.
  */
+ // TODO: consider using a Lua_Buffer instead of allocating and freeing memory
 static int
 t_enc_b64_decode( lua_State *L )
 {
@@ -148,7 +148,7 @@ t_enc_b64_decode( lua_State *L )
 	else
 	{
 		return t_push_error( L,
-			    T_ENC_TYPE"."T_ENC_B64_NAME".decode takes at least one string parameter" );
+			    T_ENC_B64_TYPE".decode takes at least one string parameter" );
 	}
 
 	rLen = b64_res_size( bLen, 0 );
@@ -156,7 +156,7 @@ t_enc_b64_decode( lua_State *L )
 	if (res == NULL)
 	{
 		return t_push_error( L,
-		        T_ENC_TYPE"."T_ENC_B64_NAME".decode failed due to internal memory allocation problem" );
+		        T_ENC_B64_TYPE".decode failed due to internal memory allocation problem" );
 	}
 
 	b64_decode(  body, res, bLen);
@@ -170,17 +170,17 @@ t_enc_b64_decode( lua_State *L )
  * Class functions library definition
  * --------------------------------------------------------------------------*/
 static const struct luaL_Reg t_enc_b64_cf [] = {
-	{ "encode",  t_enc_b64_encode },
-	{ "decode",  t_enc_b64_decode },
-	{ NULL,  NULL }
+	  { "encode"      ,  t_enc_b64_encode }
+	, { "decode"      ,  t_enc_b64_decode }
+	, { NULL          ,  NULL }
 };
 
 
 /**--------------------------------------------------------------------------
- * \brief   pushes the T.Encode.Base64 library onto the stack
+ * Pushes the T.Encode.Base64 library onto the stack
  *          - creates Metatable with functions
  *          - creates metatable with methods
- * \param   L     The lua state.
+ * \param   L      The Lua state.
  * \lreturn table  the library
  * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/

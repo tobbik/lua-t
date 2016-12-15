@@ -1,4 +1,4 @@
-n = require'example/numarray'()
+n = require'numarray'()
 
 n[1] = 100
 n[2] = 200

@@ -1,11 +1,9 @@
 #!/bin/sh
 
-IPS="10.129.1."
+IPS="172.16.0."
 IFI="wlan0"
 STR=120
 STP=200
-
-
 
 case "$1" in
 	up)

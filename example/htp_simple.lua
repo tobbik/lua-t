@@ -2,7 +2,7 @@
 t    = require't'
 fmt  = string.format
 l    = t.Loop( 1200 )
-s    = t.Socket.bind( 'UDP',  8888 )
+s    = t.Net.UDP.bind( 8888 )
 a    = "This is my Answer"
 
 x=function( stream )
@@ -54,7 +54,7 @@ h     = t.Http.Server( l, x )
 sc,ip = h:listen( 8000, 10 )  -- listen on 0.0.0.0 INADDR_ANY
 print( sc, ip, s )
 --for k,v in pairs( sc ) do print( k,v ) end
---sc:setOption( )
+sc:setOption( )
 
 l:show( )
 

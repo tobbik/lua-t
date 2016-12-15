@@ -52,7 +52,7 @@ uint16_t get_crc16( const unsigned char *data, size_t size );
 #define T_AEL_NAME "Loop"
 #define T_TIM_NAME "Time"
 #define T_SCK_NAME "Socket"
-#define T_IPX_NAME "Ip"
+#define T_NET_NAME "Net"
 #define T_BUF_NAME "Buffer"
 #define T_PCK_NAME "Pack"
 #define T_ENC_NAME "Encode"
@@ -61,11 +61,14 @@ uint16_t get_crc16( const unsigned char *data, size_t size );
 #define T_SET_NAME "Set"
 #define T_WSK_NAME "Websocket"
 #define T_HTP_NAME "Http"
+#ifdef T_NRY
+#define T_NRY_NAME "NumArray"
+#endif
 
 #define T_AEL_TYPE "T."T_AEL_NAME
 #define T_TIM_TYPE "T."T_TIM_NAME
 #define T_SCK_TYPE "T."T_SCK_NAME
-#define T_IPX_TYPE "T."T_IPX_NAME
+#define T_NET_TYPE "T."T_NET_NAME
 #define T_BUF_TYPE "T."T_BUF_NAME
 #define T_PCK_TYPE "T."T_PCK_NAME
 #define T_ENC_TYPE "T."T_ENC_NAME
@@ -74,6 +77,9 @@ uint16_t get_crc16( const unsigned char *data, size_t size );
 #define T_SET_TYPE "T."T_SET_NAME
 #define T_WSK_TYPE "T."T_WSK_NAME
 #define T_HTP_TYPE "T."T_HTP_NAME
+#ifdef T_NRY
+#define T_NRY_TYPE "T."T_NRY_NAME
+#endif
 
 
 // global sub classes registration

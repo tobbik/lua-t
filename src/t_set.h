@@ -20,7 +20,7 @@ struct t_set {
 
 // t_set.c
 // Constructors
-int             luaopen_t_set ( lua_State *L );
+int             luaopen_t_set  ( lua_State *L );
 struct t_set   *t_set_check_ud ( lua_State *L, int pos, int check );
 struct t_set   *t_set_create_ud( lua_State *L, int pos, int mode );
 

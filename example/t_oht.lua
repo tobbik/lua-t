@@ -46,6 +46,4 @@ for k,v,i in pairs( o ) do
 	print( "INSIDE:", k, v, i )
 end
 
-Oht.insert( o, 3, 'eleven', 'l' );
-
 

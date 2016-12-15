@@ -145,7 +145,7 @@ lt_net_udp_sendto( lua_State *L )
 	int                 len;
 	const char         *msg;
 
-	s = t_net_udp_check_ud( L, 1, 1 );
+	s   = t_net_udp_check_ud( L, 1, 1 );
 	ip  = t_net_ip4_check_ud( L, 2, 1 );
 	if (lua_isstring( L, 3 ))
 	{
@@ -209,7 +209,7 @@ lt_net_udp_recvfrom( lua_State *L )
 	  rcv, len, 0,
 	  (struct sockaddr *) &(*si_cli), &slen )
 	  ) == -1)
-		return t_push_error( L, "Failed to recieve UDP packet");
+		return t_push_error( L, "Failed to recieve UDP packet" );
 
 	// return buffer, length, IpEndpoint
 	lua_pushlstring( L, rcv, rcvd );
@@ -276,7 +276,7 @@ LUA_API int
 luaopen_t_net_udp( lua_State *L )
 {
 	// just make metatable known to be able to register and check userdata
-	luaL_newmetatable( L, "T.Net.UDP" );   // stack: functions meta
+	luaL_newmetatable( L, T_NET_UDP_TYPE );   // stack: functions meta
 	luaL_setfuncs( L, t_net_udp_m, 0 );
 	lua_setfield( L, -1, "__index" );
 

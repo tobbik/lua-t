@@ -26,7 +26,7 @@
 
 /**--------------------------------------------------------------------------
  * Delete an element from the table.
- * \param   L          The Lua state.
+ * \param   L          Lua state.
  * \lparam  table      table.
  * \lparam  value      key/index.
  * \lparam  nil        nil.
@@ -86,7 +86,7 @@ t_oht_deleteElement( lua_State *L )
 
 /**--------------------------------------------------------------------------
  * Insert an element into the table.
- * \param   L          The Lua state.
+ * \param   L          Lua state.
  * \lparam  table      table.
  * \lparam  integer    index.
  * \lparam  value      key.
@@ -114,7 +114,7 @@ t_oht_insertElement( lua_State *L )
 
 /**--------------------------------------------------------------------------
  * Get index in table where a key is located..
- * \param   L          The Lua state.
+ * \param   L          Lua state.
  * \lparam  table      table.
  * \lparam  value      key.
  * \return  size_t     1-based index for *key* is in the table.
@@ -137,7 +137,7 @@ t_oht_getIndex( lua_State *L )
 
 /**--------------------------------------------------------------------------
  * Get index in table where a key is located.
- * \param   L      The Lua state.
+ * \param   L      Lua state.
  * \lparam  ud     T.OrderedHashTable userdata instance.
  * \lparam  value  key.
  * \return  int    # of values pushed onto the stack.
@@ -162,7 +162,7 @@ lt_oht_GetIndex( lua_State *L )
 
 /**--------------------------------------------------------------------------
  * Insert key/value pair at specified index into OrderedHashTable.
- * \param   L        The Lua state.
+ * \param   L        Lua state.
  * \lparam  ud       T.OrderedHashTable userdata instance.
  * \lparam  integer  index.
  * \lparam  value    key.
@@ -192,8 +192,8 @@ lt_oht_Insert( lua_State *L )
 
 /**--------------------------------------------------------------------------
  * Create a new T.OrderedHashTable and return it.
- * \param   L        The Lua state.
- * \lreturn struct   t_oht userdata.
+ * \param   L        Lua state.
+ * \lreturn ud       T.OrderedHashTable userdata instance.
  * \return  int      # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int
@@ -206,9 +206,9 @@ lt_oht_New( lua_State *L )
 
 /**--------------------------------------------------------------------------
  * Construct a T.OrderedHashTable and return it.
- * \param   L        The Lua state.
+ * \param   L        Lua state.
  * \lparam  CLASS    table T.OrderedHashTable.
- * \lreturn struct   t_oht userdata.
+ * \lreturn ud       T.OrderedHashTable userdata instance.
  * \return  int      # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int lt_oht__Call( lua_State *L )
@@ -220,7 +220,7 @@ static int lt_oht__Call( lua_State *L )
 
 /**--------------------------------------------------------------------------
  * Create a new t_oht userdata and push to LuaStack.
- * \param   L        The Lua state.
+ * \param   L        Lua state.
  * \return  struct   t_oht * pointer to new userdata on Lua Stack.
  * --------------------------------------------------------------------------*/
 struct t_oht
@@ -241,7 +241,7 @@ struct t_oht
 
 /**--------------------------------------------------------------------------
  * Check a value on the stack for being a struct t_oht.
- * \param   L        The Lua state.
+ * \param   L        Lua state.
  * \param   int      Position on the stack.
  * \param   int      check(boolean): if true error out on fail.
  * \return  struct   t_oht*  pointer to userdata on stack.
@@ -257,11 +257,11 @@ struct t_oht
 
 /**--------------------------------------------------------------------------
  * Read element from a T.OrderedHashTable.
- * \param   L          The Lua state.
- * \lparam  userdata   T.OrderedHashTable instance.
- * \lparam  key/idx    Hash key or index.
- * \lreturn value      value from index/hash.
- * \return  int        # of values pushed onto the stack.
+ * \param   L        Lua state.
+ * \lreturn ud       T.OrderedHashTable userdata instance.
+ * \lparam  key/idx  Hash key or index.
+ * \lreturn value    value from index/hash.
+ * \return  int      # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int
 lt_oht__index( lua_State *L )
@@ -289,11 +289,11 @@ lt_oht__index( lua_State *L )
 
 /**--------------------------------------------------------------------------
  * Set an Element on a T.OrderedHashTable.
- * \param   L          The Lua state.
- * \lparam  userdata   T.OrderedHashTable instance.
- * \lparam  key        string/integer.
- * \lparam  value      value for index/hash.
- * \return  int        # of values pushed onto the stack.
+ * \param   L        Lua state.
+ * \lreturn ud       T.OrderedHashTable userdata instance.
+ * \lparam  key      string/integer.
+ * \lparam  value    value for index/hash.
+ * \return  int      # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int
 lt_oht__newindex( lua_State *L )
@@ -346,11 +346,11 @@ lt_oht__newindex( lua_State *L )
  * the actual iterate( next ) over the T.OrderedHashTable.
  * It will return id,value,key triplets in insertion order.  The current index
  * is passed via an upvalue.
- * \param   L          Lua Virtual Machine.
- * \lparam  table      Table to iterate.
- * \lparam  value      previous key.
- * \lreturn multiple   current key, current value, current idx.
- * \return  int        # of values pushed onto the stack.
+ * \param   L        Lua state.
+ * \lparam  table    Table to iterate.
+ * \lparam  value    previous key.
+ * \lreturn multiple current key, current value, current idx.
+ * \return  int      # of values pushed onto the stack.
  *  -------------------------------------------------------------------------*/
 static int
 t_oht_iter( lua_State *L )
@@ -374,10 +374,10 @@ t_oht_iter( lua_State *L )
 
 /**--------------------------------------------------------------------------
  * Pairs method to iterate over the T.OrderedHashTable.
- * \param   L         Lua Virtual Machine.
- * \lparam  iterator  T.OrderedHashTable.
- * \lreturn pos       position in t_buf.
- * \return  int       # of values pushed onto the stack.
+ * \param   L        Lua state.
+ * \lparam  ud       T.OrderedHashTable userdata instance.
+ * \lreturn multiple iter function, table, first key
+ * \return  int      # of values pushed onto the stack.
  *  -------------------------------------------------------------------------*/
 static int
 lt_oht__pairs( lua_State *L )
@@ -395,11 +395,11 @@ lt_oht__pairs( lua_State *L )
 /**--------------------------------------------------------------------------
  * the actual iterate( next ) over the T.OrderedHashTable.
  * It will return id,value,key triplets in insertion order.
- * \param   L          Lua Virtual Machine.
- * \lparam  table      Table to iterate.
- * \lparam  Integer    previous idx.
- * \lreturn multiple   current idx, current value, current key.
- * \return  int        # of values pushed onto the stack.
+ * \param   L        Lua state.
+ * \lparam  table    Table to iterate.
+ * \lparam  int      previous idx.
+ * \lreturn multiple current idx, current value, current key.
+ * \return  int      # of values pushed onto the stack.
  *  -------------------------------------------------------------------------*/
 static int
 t_oht_iiter( lua_State *L )
@@ -421,10 +421,10 @@ t_oht_iiter( lua_State *L )
 
 /**--------------------------------------------------------------------------
  * Pairs method to iterate over the T.OrderedHashTable.
- * \param   L         Lua Virtual Machine.
- * \lparam  iterator  T.OrderedHashTable.
- * \lreturn pos       position in t_buf.
- * \return  int       # of values pushed onto the stack.
+ * \param   L        Lua state.
+ * \lparam  ud       T.OrderedHashTable userdata instance.
+ * \lreturn multiple iter function, table, first key
+ * \return  int      # of values pushed onto the stack.
  *  -------------------------------------------------------------------------*/
 static int
 lt_oht__ipairs( lua_State *L )
@@ -441,7 +441,7 @@ lt_oht__ipairs( lua_State *L )
 
 /**--------------------------------------------------------------------------
  * Returns len of the ordered hash table.
- * \param   L    The Lua state.
+ * \param   L    Lua state.
  * \return  int  # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int
@@ -458,9 +458,9 @@ lt_oht__len( lua_State *L )
 
 /**--------------------------------------------------------------------------
  * Return Tostring representation of a ordered table stream.
- * \param   L     The lua state.
- * \lreturn string    formatted string representing ordered table.
- * \return  int  # of values pushed onto the stack.
+ * \param   L       Lua state.
+ * \lreturn string  formatted string representing ordered table.
+ * \return  int     # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int
 lt_oht__tostring( lua_State *L )
@@ -510,8 +510,8 @@ static const luaL_Reg t_oht_m [] = {
  * Pushes the T.OrderedHashTable library onto the stack
  *          - creates Metatable with functions
  *          - creates metatable with methods
- * \param   L      The lua state.
- * \lreturn table  the library
+ * \param   L      Lua state.
+ * \lreturn table  the library.
  * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 LUAMOD_API int

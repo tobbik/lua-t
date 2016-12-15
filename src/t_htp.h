@@ -85,8 +85,8 @@ enum t_htp_ver {
 struct t_htp_srv {
 	struct t_net     *sck;    ///< t_net socket (must be tcp)
 	struct t_ael     *ael;    ///< t_ael event loop
-	int               sR;     ///< Lua registry reference for t.Socket instance
-	int               aR;     ///< Lua registry reference for t.Ip     instance (struct sockaddr_in)
+	int               sR;     ///< Lua registry reference for t.Net.TCP instance
+	int               aR;     ///< Lua registry reference for t.Net.IP4 instance (struct sockaddr_in)
 	int               lR;     ///< Lua registry reference for t.Loop instance
 	int               rR;     ///< Lua registry reference to request handler function
 	time_t            nw;     ///< Current time on the server

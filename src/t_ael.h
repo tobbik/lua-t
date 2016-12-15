@@ -28,7 +28,7 @@ struct t_ael_fd {
 	int                fd;    ///< descriptor
 	int                rR;    ///< func/arg table reference for read  event in LUA_REGISTRYINDEX
 	int                wR;    ///< func/arg table reference for write event in LUA_REGISTRYINDEX
-	int                hR;    ///< handle   reference in LUA_REGISTRYINDEX (T.Socket or Lua file handle)
+	int                hR;    ///< handle   reference in LUA_REGISTRYINDEX (T.Net.* or Lua file handle)
 };
 
 

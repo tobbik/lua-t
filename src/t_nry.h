@@ -9,7 +9,7 @@
 
 
 /// Type of Numarray struct
-/// Enums should always be fully qualified
+/// Enums should always be fully qualified -> no typedef
 enum t_nry_t
 {
 	T_NRY_PART,             ///< Partial Numarray

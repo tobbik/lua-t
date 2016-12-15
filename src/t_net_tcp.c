@@ -34,10 +34,10 @@
 
 /** -------------------------------------------------------------------------
  * Create a TCP socket and return it.
- * \param   L  The lua state.
- * \lparam  port   the port for the socket.
- * \lparam  ip     the IP address for the socket.
- * \lreturn socket Lua UserData wrapped socket.
+ * \param   L      Lua state.
+ * \lparam  int    Port for the socket.
+ * \lparam  string IP address for the socket.
+ * \lreturn ud     t_net_tcp userdata instance( socket ).
  * \return  int    # of values pushed onto the stack.
  *-------------------------------------------------------------------------*/
 int
@@ -52,10 +52,11 @@ lt_net_tcp_New( lua_State *L )
 
 /**--------------------------------------------------------------------------
  * construct a TCP Socket and return it.
- * \param   L  The lua state.
- * \lparam  CLASS table Socket
- * \lparam  string    type "TCP", "UDP", ...
- * \lreturn struct t_net userdata.
+ * \param   L      Lua state.
+ * \lparam  CLASS  table T.Net.Ip4
+ * \lparam  int    Port for the socket.
+ * \lparam  string IP address for the socket.
+ * \lreturn ud     t_net_tcp userdata instance( socket ).
  * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int
@@ -69,23 +70,23 @@ lt_net_tcp__Call( lua_State *L )
 /**--------------------------------------------------------------------------
  * Check a value on the stack for being a struct t_net of TCP type.
  * If it's a TCP socket return pointer other wise retrun null.
- * \param   L    The lua state.
- * \param   int      position on the stack.
+ * \param   L      Lua state.
+ * \param   int    Position on the stack.
  * \return  struct t_net*  pointer to the struct t_net.
  * --------------------------------------------------------------------------*/
 struct t_net
 *t_net_tcp_check_ud( lua_State *L, int pos, int check )
 {
-	void *ud = luaL_testudata( L, pos, "T.Net.TCP" );
-	luaL_argcheck( L, (ud != NULL || !check), pos, "`T.Net.TCP` expected" );
+	void *ud = luaL_testudata( L, pos, T_NET_TCP_TYPE );
+	luaL_argcheck( L, (ud != NULL || !check), pos, "`"T_NET_TCP_TYPE"` expected" );
 	return (NULL==ud) ? NULL : (struct t_net *) ud;
 }
 
 
 /** -------------------------------------------------------------------------
  * Listen on a socket or create a listening socket.
- * \param   L  The lua state.
- * \lparam  socket The socket userdata.
+ * \param   L      Lua state.
+ * \lparam  ud     t_net_tcp userdata instance( socket ).
  * \lparam  int    Backlog connections.
  * \return  int    # of values pushed onto the stack.
  *-------------------------------------------------------------------------*/
@@ -98,9 +99,9 @@ lt_net_tcp_listen( lua_State *L )
 
 /** -------------------------------------------------------------------------
  * Bind a socket to an address.
- * \param   L  The lua state.
- * \lparam  socket The socket userdata.
- * \lparam  ip     sockaddr userdata.
+ * \param   L      Lua state.
+ * \lparam  ud     t_net_tcp userdata instance( socket ).
+ * \lparam  ud     t_net_ipX userdata instance( sockaddr ).
  * \return  int    # of values pushed onto the stack.
  *-------------------------------------------------------------------------*/
 static int
@@ -112,9 +113,9 @@ lt_net_tcp_bind( lua_State *L )
 
 /** -------------------------------------------------------------------------
  * Connect a socket to an address.
- * \param   L  The lua state.
- * \lparam  socket socket userdata.
- * \lparam  ip     sockaddr userdata.
+ * \param   L      Lua state.
+ * \lparam  ud     t_net_tcp userdata instance( socket ).
+ * \lparam  ud     t_net_ipX userdata instance( sockaddr ).
  * \return  int    # of values pushed onto the stack.
  *-------------------------------------------------------------------------*/
 int
@@ -126,10 +127,10 @@ lt_net_tcp_connect( lua_State *L )
 
 /** -------------------------------------------------------------------------
  * Accept a (TCP) socket connection.
- * \param   L   The lua state.
- * \param   t_net   Server.
- * \param   sockaddr_in*  Client Address pointer.
- * \return  t_net*  Client pointer.  Leaves cli_sock and cli_IP on stack.
+ * \param   L      Lua state.
+ * \param   int    position of server socket on stack.
+ * \lparam  ud     t_net_tcp userdata instance( socket ).
+ * \return  t_net* Client pointer.  Leaves cli_sock and cli_IP on stack.
  *-------------------------------------------------------------------------*/
 int
 t_net_tcp_accept( lua_State *L, int pos )
@@ -142,10 +143,12 @@ t_net_tcp_accept( lua_State *L, int pos )
 
 	cli     = t_net_create_ud( L, T_NET_TCP, 0 );
 	si_cli  = t_net_ip4_create_ud( L );
+	//t_stackDump( L );
 
 	if ( (cli->fd  =  accept( srv->fd, (struct sockaddr *) &(*si_cli), &cli_sz )) == -1 )
 		return t_push_error( L, "couldn't accept from socket" );
 
+	//t_stackDump( L );
 	if (-1 == setsockopt( cli->fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one) ) )
 		return t_push_error( L, "couldn't make client socket reusable" );
 	return 2;
@@ -154,10 +157,10 @@ t_net_tcp_accept( lua_State *L, int pos )
 
 /** -------------------------------------------------------------------------
  * Accept a (TCP) socket connection.
- * \param   L   The lua state.
- * \lparam  socket  socket userdata.
- * \lreturn socket  socket userdata for new connection.
- * \lreturn ip      sockaddr userdata.
+ * \param   L      Lua state.
+ * \lparam  ud     t_net_tcp userdata instance( server socket ).
+ * \lreturn ud     t_net_tcp userdata instance( new client socket ).
+ * \lreturn ud     t_net_ipX userdata instance( new client sockaddr ).
  * \return  int    # of values pushed onto the stack.
  *-------------------------------------------------------------------------*/
 static int
@@ -170,10 +173,10 @@ lt_net_tcp_accept( lua_State *L )
 
 /** -------------------------------------------------------------------------
  * Send some data to a TCP socket.
- * \param   L  The lua state.
- * \param   t_net  userdata.
- * \param   buff   char buffer.
- * \param   sz     size of char buffer.
+ * \param   L      Lua state.
+ * \param   struct t_net  userdata.
+ * \param   char*  char buffer.
+ * \param   uint   size of char buffer.
  * \return  number of bytes sent out.
  *-------------------------------------------------------------------------*/
 int
@@ -190,9 +193,9 @@ t_net_tcp_send( lua_State *L, struct t_net *s, const char* buf, size_t sz )
 
 /** -------------------------------------------------------------------------
  * Send a message over a TCP socket.
- * \param   L  The lua state.
- * \lparam  socket socket userdata.
- * \lparam  msg    luastring.
+ * \param   L      Lua state.
+ * \lparam  ud     t_net_tcp userdata instance( socket ).
+ * \lparam  string msg attempting to send.
  * \lreturn sent   number of bytes sent.
  * \return  int    # of values pushed onto the stack.
  *-------------------------------------------------------------------------*/
@@ -246,7 +249,7 @@ t_net_tcp_recv( lua_State *L, struct t_net *s, char* buff, size_t sz )
 	int  rslt;
 
 	if ((rslt = recv( s->fd, buff, sz, 0 )) == -1)
-		t_push_error( L, "Failed to recieve TCP packet" );
+		t_push_error( L, "Failed to receive TCP packet" );
 
 	return rslt;
 }
@@ -363,15 +366,15 @@ static const luaL_Reg t_net_tcp_m [] =
  * Pushes the TCP Socket library onto the stack
  *          - creates Metatable with functions
  *          - creates metatable with methods
- * \param   L     The lua state.
- * \lreturn table  the library
- * \return  int    # of values pushed onto the stack.
+ * \param   L     Lua state.
+ * \lreturn table the library
+ * \return  int   # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 LUA_API int
 luaopen_t_net_tcp( lua_State *L )
 {
 	// just make metatable known to be able to register and check userdata
-	luaL_newmetatable( L, "T.Net.TCP" );   // stack: functions meta
+	luaL_newmetatable( L, T_NET_TCP_TYPE );   // stack: functions meta
 	luaL_setfuncs( L, t_net_tcp_m, 0 );
 	lua_setfield( L, -1, "__index" );
 

@@ -1,14 +1,17 @@
 #!../out/bin/lua
-local t,fmt=require('t'),string.format
-local ipadd,port='10.128.3.145',8888
+t,fmt=require('t'),string.format
+ipAddr,port='172.16.0.195',8888
 
---tcpsock = t.Net.TCP( )
---ip      = t.Net.IPv4( ipadd, port )
---tcpsock:bind( ip )
+tcpsock = t.Net.TCP( )
+ip      = t.Net.IPv4( ipAddr, port )
+tcpsock:bind( ip )
+tcpsock:listen( 5 )
 -- --------------- or 
---tcpsock,ip = t.Net.TCP.bind( ipadd, port )
+--tcpsock,ip = t.Net.TCP.bind( ipAddr, port )
 -- --------------- or 
-tcpsock, ip = t.Net.TCP.listen( ipadd, port, 5 )
+--tcpsock, ip = t.Net.TCP.listen( ipAddr, port, 5 )
+--for k,v in pairs(getmetatable(ip)) do print( k, v ) end
+--for k,v in pairs(getmetatable(tcpsock)) do print( k, v ) end
 print( tcpsock, ip )
 consock,cip = tcpsock:accept( )
 length = 0

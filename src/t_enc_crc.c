@@ -64,7 +64,7 @@ calc_16( struct t_enc_crc *crc, const char *data, size_t len )
 		idx        = (uint8_t)   ( crc->crc16       ^ data[i]);
 		crc->crc16 = (uint16_t)  ((crc->crc16 >> 8) ^ crc->t16[idx]);
 	}
-	if (crc->be) return (int) crc->crc16;
+	if (crc->bE) return (int) crc->crc16;
 	else         return (int) htons(crc->crc16);
 }
 
@@ -79,7 +79,7 @@ calc_ccitt( struct t_enc_crc *crc, const char *data, size_t len )
 		idx        = (uint8_t)  ((crc->crc16 >> 8) ^ (0xff & data[i]));
 		crc->crc16 = (uint16_t) ((crc->crc16 << 8) ^ crc->t16[idx]);
 	}
-	if (crc->be) return (int) crc->crc16;
+	if (crc->bE) return (int) crc->crc16;
 	else         return (int) htons(crc->crc16);
 }
 
@@ -94,7 +94,7 @@ calc_32( struct t_enc_crc *crc, const char *data, size_t len )
 			 idx        = (uint8_t)  ((crc->crc32 & 0xff) ^ data[i]);
 			 crc->crc32 = (uint32_t) ((crc->crc32 >> 8)   ^ crc->t32[idx]);
 	}
-	if (crc->be) return (int)       ~crc->crc32;
+	if (crc->bE) return (int)       ~crc->crc32;
 	else         return (int) htonl (~crc->crc32);
 }
 
@@ -211,8 +211,8 @@ init_32( struct t_enc_crc *crc, uint32_t poly )
 // ----------------------------- Lua CRC wrapper functions
 /**--------------------------------------------------------------------------
  * Construct a CRC encoder and return it.
- * \param   L  The lua state.
- * \lparam  CLASS table CRC
+ * \param   L      The Lua state.
+ * \lparam  CLASS  table CRC
  * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int
@@ -225,8 +225,8 @@ lt_enc_crc__Call( lua_State *L )
 
 /**--------------------------------------------------------------------------
  * Resets the CRC encoder to it's initial value.
- * \param   L  The lua state.
- * \return  int    # of values pushed onto the stack.
+ * \param   L    The Lua state.
+ * \return  int  # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int
 lt_enc_crc_reset( lua_State *L )
@@ -241,10 +241,10 @@ lt_enc_crc_reset( lua_State *L )
 
 /**--------------------------------------------------------------------------
  * Construct a CRC encoder and return it.
- * \param   L The lua state.
- * \lparam  key   key string (optional)
- * \lparam  kLen  length of key string (if key contains \0 bytes (optional))
- * \lreturn struct T.Encode.Crc userdata.
+ * \param   L      The Lua state.
+ * \lparam  key    key string (optional)
+ * \lparam  kLen   length of key string (if key contains \0 bytes (optional))
+ * \lreturn ud     T.Encode.Crc userdata.
  * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 int
@@ -275,7 +275,7 @@ lt_enc_crc_New( lua_State *L )
 		default:
 			t_push_error( L, "Unknown CRC algorithm" );
 	}
-	crc->be = (lua_isboolean( L, 2 )) ? lua_toboolean( L, 2 ) : 1;
+	crc->bE = (lua_isboolean( L, 2 )) ? lua_toboolean( L, 2 ) : 1;
 
 	return 1;
 }
@@ -283,7 +283,7 @@ lt_enc_crc_New( lua_State *L )
 
 /**--------------------------------------------------------------------------
  * Create a crc encode userdata and push to LuaStack.
- * \param   L  The lua state.
+ * \param   L  The Lua state.
  * \return  struct t_enc_crc*  pointer
  * --------------------------------------------------------------------------*/
 struct t_enc_crc
@@ -292,7 +292,7 @@ struct t_enc_crc
 	struct t_enc_crc *crc;
 
 	crc = (struct t_enc_crc *) lua_newuserdata( L, sizeof( struct t_enc_crc ) );
-	luaL_getmetatable( L, T_ENC_TYPE"."T_ENC_CRC_NAME );
+	luaL_getmetatable( L, T_ENC_CRC_TYPE );
 	lua_setmetatable( L, -2 );
 	return crc;
 }
@@ -300,23 +300,23 @@ struct t_enc_crc
 
 /**--------------------------------------------------------------------------
  * Check a value on the stack for being a struct t_enc_crc
- * \param   L    The lua state.
+ * \param   L        The Lua state.
  * \param   int      position on the stack
  * \return  struct t_enc_crc*
  * --------------------------------------------------------------------------*/
 struct t_enc_crc
 *t_enc_crc_check_ud( lua_State *L, int pos )
 {
-	void *ud = luaL_testudata( L, pos, T_ENC_TYPE"."T_ENC_CRC_NAME );
-	luaL_argcheck( L, ud != NULL, pos, "`"T_ENC_TYPE"."T_ENC_CRC_NAME"` expected" );
+	void *ud = luaL_testudata( L, pos, T_ENC_CRC_TYPE );
+	luaL_argcheck( L, ud != NULL, pos, "`"T_ENC_CRC_TYPE"` expected" );
 	return (NULL==ud) ? NULL : (struct t_enc_crc *) ud;
 }
 
 
 /** -------------------------------------------------------------------------
  * Calculate the CRC checksum over a string or T.Buffer.
- * \param   L  The lua state.
- * \lparam  t_enc_crc userdata.
+ * \param   L          The Lua state.
+ * \lparam  ud         t_enc_crc userdata instance.
  * \lparam  data       luastring or T.Buffer.
  * \lparam  sta        start index in data.
  * \lparam  end        end index in data.
@@ -340,8 +340,7 @@ lt_enc_crc_calc( lua_State *L )
 	{
 		msg   = luaL_checklstring( L, 2, &len ) + sta;
 	}
-	// if t_buffer
-	else if (lua_isuserdata( L, 2 ))
+	else if (lua_isuserdata( L, 2 ))  // t_buf
 	{
 		buf  = t_buf_check_ud( L, 2, 1 );
 		msg  = (const char *) &(buf->b[ sta ]);
@@ -350,7 +349,7 @@ lt_enc_crc_calc( lua_State *L )
 	}
 	else
 		return t_push_error( L,
-			"ERROR `"T_ENC_TYPE"."T_ENC_CRC_NAME":calc( msg )` takes `msg` argument." );
+			"ERROR `"T_ENC_CRC_TYPE":calc( msg )` takes `msg` argument." );
 
 	len = (lua_isnumber( L, 4 )) ? (size_t) luaL_checkinteger( L, 4 )-sta : len - sta;
 
@@ -391,10 +390,10 @@ static const luaL_Reg t_enc_crc_m [] =
 
 
 /**--------------------------------------------------------------------------
- * \brief   pushes the T.Encode.CRC library onto the stack
+ * Pushes the T.Encode.CRC library onto the stack
  *          - creates Metatable with functions
  *          - creates metatable with methods
- * \param   L     The lua state.
+ * \param   L      The Lua state.
  * \lreturn table  the library
  * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
@@ -403,7 +402,7 @@ luaopen_t_enc_crc( lua_State *L )
 {
 	// just make metatable known to be able to register and check userdata
 	// this is only avalable a <instance>:func()
-	luaL_newmetatable( L, T_ENC_TYPE"."T_ENC_CRC_NAME );   // stack: functions meta
+	luaL_newmetatable( L, T_ENC_CRC_TYPE );   // stack: functions meta
 	luaL_setfuncs( L, t_enc_crc_m, 0 );
 	lua_setfield( L, -1, "__index" );
 

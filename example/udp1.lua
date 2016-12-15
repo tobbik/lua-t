@@ -1,9 +1,10 @@
 #!../out/bin/lua
-local t=require('t')
-ipAddr,port = '10.128.3.145', 8888 
+t,fmt=require('t'),string.format
+ipAddr,port='172.16.0.195',8888
 
 local s,ip = t.Net.UDP.bind( ipAddr, port )
-print( s,ip )
+print( s, ip )
+for k,v in pairs(getmetatable(s)) do print( k, v ) end
 
 -- this select loop makes no sense, but prooves that select is in fact working
 -- as expected

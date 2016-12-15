@@ -3,9 +3,9 @@
 /**
  * \file      t_nry.c
  * \brief     models an Numarray
- * This an example file as nrylained in the docs/Coding.rst.  It is an
+ * This an example file as exlained in the docs/Coding.rst.  It is an
  * implmentation of the NumArray example presented in PiL, but made compliant
- * with the conventions and mechanisms of lua-t
+ * with the conventions and mechanisms of lua-t.
  * \author    tkieslich
  * \copyright See Copyright notice at the end of t.h
  */
@@ -33,10 +33,10 @@
  *    - 1    arguments -> create a sized Numarray
  *    - mult arguments -> create a Numarray with mult numbers and fill in
  *    - mult arguments -> create partial Numarray stopping here
- * \param             L    lua state.
- * \lparam  int       size of Numarray.
- * \lparam  mult int  multiple integer filling array.
- * \return int  # of values pushed onto the stack.
+ * \param  L     Lua state.
+ * \lparam int   Size of Numarray.
+ * \lparam mult  Multiple integer filling array.
+ * \return int   # of values pushed onto the stack.
  *  -------------------------------------------------------------------------*/
 static int lt_nry_New( lua_State *L )
 {
@@ -47,7 +47,7 @@ static int lt_nry_New( lua_State *L )
 	if (1 == lua_gettop( L ))
 	{
 		sz = luaL_checkinteger( L, 1 );
-		luaL_argcheck( L, sz>0, 1, "size of T.Numarray must be positive" );
+		luaL_argcheck( L, sz>0, 1, "size of "T_NRY_TYPE" must be positive" );
 		a  = t_nry_create_ud( L, sz );
 	}
 	else
@@ -66,7 +66,7 @@ static int lt_nry_New( lua_State *L )
 
 /** -------------------------------------------------------------------------
  * creates an Numarray from the function call.
- * The __Call() function is almost always just a caller to __New(). It must
+ * The __Call() function is almost always just a caller to __New().  It must
  * remove the class table from the stack.  Anytime __call is used the table it
  * is used on will be passed as the first parameter which is not desired in this
  * context.
@@ -74,14 +74,14 @@ static int lt_nry_New( lua_State *L )
  *    - 1    arguments -> create a sized Numarray
  *    - mult arguments -> create a Numarray with mult numbers and fill in
  *    - mult arguments -> create partial Numarray stopping here
- * \param             L    lua state.
- * \lparam  CLASS     table Numarray. This is how the metafunction call works.
- * \lparam  int       size of Numarray.
- * \lparam  mult int  multiple integer filling array.
- * \return int  # of values pushed onto the stack.
- * \lparam  (opt)  char first character.
- * \lparam  (opt)  char last  character.
- * \return int  # of values pushed onto the stack.
+ * \param  L     Lua state.
+ * \lparam CLASS table Numarray.  __call puts it there by default.
+ * \lparam int   size of Numarray.
+ * \lparam mult  multiple integer filling array.
+ * \return int   # of values pushed onto the stack.
+ * \lparam (opt) char first character.
+ * \lparam (opt) char last  character.
+ * \return int   # of values pushed onto the stack.
  *  -------------------------------------------------------------------------*/
 static int lt_nry__Call( lua_State *L )
 {
@@ -95,9 +95,9 @@ static int lt_nry__Call( lua_State *L )
  * The paramters to the _create_ud function are specific to whatever type of
  * class the function is used for.  Sometimes it is useful to have this function
  * exposed so other lua-t code can create t_nry objects.  This is why it is not
- * static and listed in t_nry.h.
- * \param   L      The lua state.
- * \return  struct t_nry*  pointer to the  t_nry struct.
+ * static.
+ * \param   L       Lua state.
+ * \return  struct  t_nry* pointer to the t_nry struct.
  * --------------------------------------------------------------------------*/
 struct t_nry *t_nry_create_ud( lua_State *L, int sz )
 {
@@ -110,7 +110,7 @@ struct t_nry *t_nry_create_ud( lua_State *L, int sz )
 	memset( a->v, 0, sz+1 * sizeof( int ) );
 
 	a->len = sz;
-	luaL_getmetatable( L, "T.Numarray" );
+	luaL_getmetatable( L, T_NRY_TYPE );
 	lua_setmetatable( L, -2 );
 	return a;
 }
@@ -118,15 +118,16 @@ struct t_nry *t_nry_create_ud( lua_State *L, int sz )
 
 /**--------------------------------------------------------------------------
  * Check if the item on stack position pos is an t_nry struct and return it
- * \param  L    the Lua State
- * \param  pos      position on the stack
+ * \param  L    Lua State.
+ * \param  int  position on the stack.
+ * \param  int  check should NOT finding a t_nry type be an error.
  *
  * \return struct t_nry* pointer to t_nry struct
  * --------------------------------------------------------------------------*/
 struct t_nry *t_nry_check_ud( lua_State *L, int pos, int check )
 {
-	void *ud = luaL_testudata( L, pos, "T.Numarray" );
-	luaL_argcheck( L, (ud != NULL || !check), pos, "`T.Numarray` expected" );
+	void *ud = luaL_testudata( L, pos, T_NRY_TYPE );
+	luaL_argcheck( L, (ud != NULL || !check), pos, "`"T_NRY_TYPE"` expected" );
 	return (NULL==ud) ? NULL : (struct t_nry *) ud;
 }
 
@@ -136,10 +137,9 @@ struct t_nry *t_nry_check_ud( lua_State *L, int pos, int check )
 // ================================= GENERIC LUA API========================
 /**--------------------------------------------------------------------------
  * Reads an address where an array element sits.
- * \param   L       Lua Virtual Machine.
- * \lparam  struct  t_nry.
- * \lreturn value   unpacked value according to packer format.
- * \return  *int    pointer to the requested value.
+ * \param   L    Lua State.
+ * \lparam  ud   t_nry userdata instance.
+ * \return  *int pointer to the requested value.
  *  -------------------------------------------------------------------------*/
 static int
 *t_nry_getelem( lua_State *L )
@@ -155,11 +155,11 @@ static int
 
 
 /**--------------------------------------------------------------------------
- * gets a value from the array.
- * \param   L  Lua Virtual Machine.
- * \lparam  struct t_nry.
- * \lparam  int    array index.
- * \lreturn int    Value stored at index.
+ * Gets a value from the array.
+ * \param   L    Lua State.
+ * \lparam  ud   t_nry userdata instance.
+ * \lparam  int  array index.
+ * \lreturn int  Value stored at index.
  * \return  int  # of values pushed onto the stack.
  *  -------------------------------------------------------------------------*/
 static int
@@ -169,7 +169,7 @@ lt_nry__index( lua_State *L )
 		lua_pushinteger( L, *t_nry_getelem( L ) );
 	else
 	{
-		luaL_getmetatable( L, "T.Numarray" );
+		luaL_getmetatable( L, T_NRY_TYPE );
 		lua_pushvalue( L, 2 );
 		lua_rawget( L, -2 );
 	}
@@ -178,12 +178,13 @@ lt_nry__index( lua_State *L )
 
 
 /**--------------------------------------------------------------------------
- * sets a value int the array.
- * \param  L  Lua Virtual Machine.
- * \lparam struct t_nry.
- * \lparam int           array index.
- * \lparam int           Value to stored at index.
- * \return int  # of values pushed onto the stack.
+ * Sets a value to the array.
+ * \param   L     Lua State.
+ * \lparam  ud    t_nry userdata instance.
+ * \lparam  int   Array index.
+ * \lparam  value Array index.
+ * \lreturn int   Value stored at index.
+ * \return  int   # of values pushed onto the stack.
  *  -------------------------------------------------------------------------*/
 static int
 lt_nry__newindex( lua_State *L )
@@ -227,9 +228,9 @@ t_nry_iter( lua_State *L )
 
 /**--------------------------------------------------------------------------
  * Pairs method to iterate over the T.Numarray.
- * \param   L Lua Virtual Machine.
- * \lparam  instance  T.Numarray.
- * \return  int       # of values pushed onto the stack.
+ * \param   L     Lua state.
+ * \lparam  ud    t_nry userdata instance.
+ * \return  int   # of values pushed onto the stack.
  *  -------------------------------------------------------------------------*/
 static int
 lt_nry__pairs( lua_State *L )
@@ -248,10 +249,10 @@ lt_nry__pairs( lua_State *L )
 
 /**--------------------------------------------------------------------------
  * Reverse the array.
- * \param   L  lua Virtual Machine.
- * \lparam  struct t_nry.
- * \lparam  int           array index.
- * \lreturn int           Value stored at index.
+ * \param   L    Lua State.
+ * \lparam  ud   t_nry userdata instance.
+ * \lparam  int  array index.
+ * \lreturn int  Value stored at index.
  * \return  int  # of values pushed onto the stack.
  *  -------------------------------------------------------------------------*/
 static int
@@ -274,10 +275,10 @@ lt_nry_reverse( lua_State *L )
 
 /**--------------------------------------------------------------------------
  * Compares two Numarrays.
- * \param   L     The lua state.
- * \lparam  t_nry   the Numarray userdata.
- * \lparam  t_nry   Numarray userdata to compare to.
- * \lreturn boolean   true if equal otherwise false.
+ * \param   L    The lua state.
+ * \lparam  ud   t_nry userdata instance.
+ * \lparam  ud   t_nry userdata instance to compare to.
+ * \lreturn bool true if equal otherwise false.
  * \return  int  # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int
@@ -330,7 +331,7 @@ static int lt_nry__len( lua_State *L )
 static int lt_nry__tostring( lua_State *L )
 {
 	struct t_nry *a = t_nry_check_ud( L, 1, 1 );
-	lua_pushfstring( L, "T.Numarray[%d]: %p", a->len, a );
+	lua_pushfstring( L, T_NRY_TYPE"[%d]: %p", a->len, a );
 	return 1;
 }
 
@@ -348,8 +349,8 @@ static const struct luaL_Reg t_nry_fm [] = {
  * Numarray class functions library definition
  * --------------------------------------------------------------------------*/
 static const struct luaL_Reg t_nry_cf [] = {
-	{ "new",       lt_nry_New },
-	{ NULL, NULL }
+	  { "new"       , lt_nry_New }
+	, { NULL        , NULL }
 };
 
 
@@ -386,7 +387,7 @@ static const luaL_Reg t_nry_m [] = {
 LUAMOD_API int luaopen_t_nry( lua_State *L )
 {
 	// T.Numarray stance metatable
-	luaL_newmetatable( L, "T.Numarray" );
+	luaL_newmetatable( L, T_NRY_TYPE );
 	luaL_setfuncs( L, t_nry_m, 0 );
 	lua_pop( L, 1 );        // remove metatable from stack
 

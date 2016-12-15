@@ -7,6 +7,15 @@
  * \copyright See Copyright notice at the end of t.h
  */
 
+#define T_NET_TCP_NAME   "TCP"
+#define T_NET_UDP_NAME   "UDP"
+#define T_NET_IP4_NAME   "IPv4"
+
+#define T_NET_TCP_TYPE   T_NET_TYPE"."T_NET_TCP_NAME
+#define T_NET_UDP_TYPE   T_NET_TYPE"."T_NET_UDP_NAME
+#define T_NET_IP4_TYPE   T_NET_TYPE"."T_NET_IP4_NAME
+
+
 enum t_net_t {
 	T_NET_NONE,
 	T_NET_UDP,

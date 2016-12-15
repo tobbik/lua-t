@@ -146,7 +146,7 @@ lt_htp_srv_accept( lua_State *L )
 
 	// prepare the ael_fd->wR table on stack
 	lua_newtable( L );
-	lua_pushcfunction( L, t_htp_con_rsp );    //S: s,ss,cs,ip,rt,rsp
+	lua_pushcfunction( L, t_htp_con_rsp ); //S: s,ss,cs,ip,rt,rsp
 	lua_rawseti( L, -2, 1 );
 
 	lua_pushcfunction( L, lt_ael_addhandle );
@@ -182,9 +182,9 @@ lt_htp_srv_accept( lua_State *L )
 
 /**--------------------------------------------------------------------------
  * Puts the http server on a T.Loop to listen to incoming requests.
- * \param   L     lua Virtual Machine.
- * \lparam  userdata  struct t_htp_srv.
- * \lreturn value from the buffer a packers position according to packer format.
+ * \param   L     Lua state.
+ * \lparam  ud    T.Http.Server userdata instance.
+ * \lreturn mult  from the buffer a packers position according to packer format.
  * \return  int    # of values pushed onto the stack.
  *  -------------------------------------------------------------------------*/
 static int
@@ -194,7 +194,7 @@ lt_htp_srv_listen( lua_State *L )
 	struct t_net       *sc  = NULL;
 	struct sockaddr_in *ip  = NULL;
 
-	// reuse socket:listen()
+	// reuse socket:listen( )
 	t_net_listen( L, 2, T_NET_TCP );
 
 	sc     = t_net_tcp_check_ud( L, -2, 1 );
@@ -204,17 +204,20 @@ lt_htp_srv_listen( lua_State *L )
 	s->sR  = luaL_ref( L, LUA_REGISTRYINDEX );
 
 	// TODO: cheaper to reimplement functionality -> less overhead?
-	lua_pushcfunction( L, lt_ael_addhandle ); //S: srv,sc,addhandle
+	lua_pushcfunction( L, lt_ael_addhandle );   //S: srv addhandle
 	lua_rawgeti( L, LUA_REGISTRYINDEX, s->lR );
 	t_ael_check_ud( L, -1, 1 );
-	lua_rawgeti( L, LUA_REGISTRYINDEX, s->sR ); // get socket back on stack
-	lua_pushboolean( L, 1 );                 //S: srv,sc,addhandle,loop,sck,true
-	lua_pushcfunction( L, lt_htp_srv_accept );
-	lua_pushvalue( L, 1 );                  /// push server instance
+	lua_rawgeti( L, LUA_REGISTRYINDEX, s->sR );
+	lua_pushboolean( L, 1 );                    //S: srv addhandle ael sck true
+	lua_pushcfunction( L, lt_htp_srv_accept );  //S: srv addhandle ael sck true accept
 
-	lua_call( L, 5, 0 );
-	lua_rawgeti( L, LUA_REGISTRYINDEX, s->aR );
+	lua_pushvalue( L, 1 );                      //S: srv addhandle ael sck true accept srv
+
 	//TODO: Check if that returns tru or false; if false resize loop
+	lua_call( L, 5, 0 );
+	lua_rawgeti( L, LUA_REGISTRYINDEX, s->sR );
+	lua_rawgeti( L, LUA_REGISTRYINDEX, s->aR );
+	t_stackDump( L );
 	return  2;
 }
 

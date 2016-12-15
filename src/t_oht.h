@@ -18,7 +18,7 @@ struct t_oht {
 
 // t_oht.c
 // Constructors
-int             luaopen_t_oht ( lua_State *L );
+int             luaopen_t_oht  ( lua_State *L );
 struct t_oht   *t_oht_check_ud ( lua_State *L, int pos, int check );
 struct t_oht   *t_oht_create_ud( lua_State *L );
 

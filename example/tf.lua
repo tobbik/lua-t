@@ -1,8 +1,8 @@
 #!../out/bin/lua -i
 t  = require't'
 fmt= string.format
-l  = t.Loop(10)
-fileName = '../lua-t/example/buf.lua';
+l  = t.Loop( 10 )
+fileName = 'buf.lua';
 
 
 function k( )
@@ -10,7 +10,7 @@ function k( )
 	l:addHandle( f, true, function( )
 		local d = f:read( 200 )
 		if d then
-			print( f, #d )
+			print( f, #d, d )
 		else
 			print( f, "end" )
 			l:removeHandle( f, true )
