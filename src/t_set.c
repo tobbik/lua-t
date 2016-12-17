@@ -31,21 +31,21 @@ t_set_setElement( lua_State *L, struct t_set *set )
 	int remove       = (lua_isnil( L, -1 )) ? 1 : 0;
 	luaL_checktype( L, -3, LUA_TTABLE );
 
-	lua_pushvalue( L, -2 );                  // S: tbl,elm,val/nil,elm
-	lua_rawget( L, -4 );                     // S: tbl,elm,val/nil,true/nil?
+	lua_pushvalue( L, -2 );                  // S: tbl elm val/nil elm
+	lua_rawget( L, -4 );                     // S: tbl elm val/nil true/nil?
 	existed  = (lua_isnil( L, -1 )) ? 0 : 1;
 	lua_pop( L, 2 );                         // pop new val and existing val
 
 	if (!existed && !remove)
 	{
 		(set->len)++;
-		lua_pushboolean( L, 1 );              // S: tbl,elm,true
+		lua_pushboolean( L, 1 );              // S: tbl elm true
 		lua_rawset( L, -3 );
 	}
 	if ( existed &&  remove)
 	{
 		(set->len)--;
-		lua_pushnil( L );                     // S: tbl,elm,nil
+		lua_pushnil( L );                     // S: tbl elm nil
 		lua_rawset( L, -3 );
 	}
 	return existed;
@@ -90,9 +90,9 @@ t_set_contains( lua_State *L, int disjunct, struct t_set *sA, struct t_set *sB )
 /**--------------------------------------------------------------------------
  * Create the Union of two set tables.
  * \param   L       Lua state.
- * \lparam  ud      T.Set struct t_set A table.
- * \lparam  ud      T.Set struct t_set B table.
- * \lparam  ud      T.Set struct t_set Result table.
+ * \lparam  table   T.Set struct t_set A table.
+ * \lparam  table   T.Set struct t_set B table.
+ * \lparam  table   T.Set struct t_set Result table.
  * \return  size_t  # of elements in the union.
  * --------------------------------------------------------------------------*/
 static size_t
@@ -136,9 +136,9 @@ t_set_union( lua_State *L )
 /**--------------------------------------------------------------------------
  * Create the Intersection of two set tables.
  * \param   L       Lua state.
- * \lparam  ud      T.Set struct t_set A table.
- * \lparam  ud      T.Set struct t_set B table.
- * \lparam  ud      T.Set struct t_set Result table.
+ * \lparam  table   T.Set struct t_set A table.
+ * \lparam  table   T.Set struct t_set B table.
+ * \lparam  table   T.Set struct t_set Result table.
  * \return  size_t  # of elements in the intersection.
  * --------------------------------------------------------------------------*/
 static size_t
@@ -173,9 +173,9 @@ t_set_intersection( lua_State *L )
 /**--------------------------------------------------------------------------
  * Create the Complement of two set tables.
  * \param   L       Lua state.
- * \lparam  ud      T.Set struct t_set A table.
- * \lparam  ud      T.Set struct t_set B table.
- * \lparam  ud      T.Set struct t_set Result table.
+ * \lparam  table   T.Set struct t_set A table.
+ * \lparam  table   T.Set struct t_set B table.
+ * \lparam  table   T.Set struct t_set Result table.
  * \return  size_t  # of elements in the complement.
  * --------------------------------------------------------------------------*/
 static size_t
@@ -210,9 +210,9 @@ t_set_complement( lua_State *L )
 /**--------------------------------------------------------------------------
  * Create the Symetric Difference of two set tables.
  * \param   L       Lua state.
- * \lparam  ud      T.Set struct t_set A table.
- * \lparam  ud      T.Set struct t_set B table.
- * \lparam  ud      T.Set struct t_set Result table.
+ * \lparam  table   T.Set struct t_set A table.
+ * \lparam  table   T.Set struct t_set B table.
+ * \lparam  table   T.Set struct t_set Result table.
  * \return  size_t  # of elements in the Symetric Difference.
  * --------------------------------------------------------------------------*/
 static size_t
@@ -262,7 +262,7 @@ lt_set_GetTable( lua_State *L )
 {
 	struct t_set *set = t_set_check_ud( L, -1, 1 );
 
-	lua_rawgeti( L, LUA_REGISTRYINDEX, set->tR ); // S: set,tbl
+	lua_rawgeti( L, LUA_REGISTRYINDEX, set->tR ); // S: set tbl
 	return 1;
 }
 
@@ -328,7 +328,7 @@ static int lt_set__Call( lua_State *L )
 
 	if (NULL != org_set)
 	{
-		lua_rawgeti( L, LUA_REGISTRYINDEX, org_set->tR ); // S: set,tbl
+		lua_rawgeti( L, LUA_REGISTRYINDEX, org_set->tR ); // S: set tbl
 		set = t_set_create_ud( L, -1, -1 );
 		lua_remove( L, -2 );
 	}
@@ -442,8 +442,8 @@ lt_set__newindex( lua_State *L )
 {
 	struct t_set *set = t_set_check_ud( L, -3, 1 );
 
-	lua_rawgeti( L, LUA_REGISTRYINDEX, set->tR ); // S: set,elm,val,tbl
-	lua_replace( L, -4 );                         // S: tbl,elm,val
+	lua_rawgeti( L, LUA_REGISTRYINDEX, set->tR ); // S: set elm val tbl
+	lua_replace( L, -4 );                         // S: tbl elm val
 	t_set_setElement( L, set );
 	return 0;
 }
@@ -674,7 +674,7 @@ lt_set__len( lua_State *L )
 
 /**--------------------------------------------------------------------------
  * Return Tostring representation of a T.Set instance.
- * \param   L       The Lua state.
+ * \param   L       Lua state.
  * \lparam  ud      T.Set userdata instance.
  * \lreturn string  Formatted string representing Set.
  * \return  int     # of values pushed onto the stack.

@@ -113,7 +113,7 @@ t_oht_insertElement( lua_State *L )
 
 
 /**--------------------------------------------------------------------------
- * Get index in table where a key is located..
+ * Get index in table where a key is located.
  * \param   L          Lua state.
  * \lparam  table      table.
  * \lparam  value      key.
