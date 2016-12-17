@@ -3,7 +3,9 @@
 /**
  * \file      t_htp.c
  * \brief     OOP wrapper for HTTP operation
- * \detail    Contains meta methods, parsers, status codes etc.
+ * \detail    t_htp namespace is a bit different from normal lua-t namespaces.
+ *            There is no T.Http that it relates to.  Instead there are meta
+ *            methods, parsers, status codes etc. Mainly helpers.
  * \author    tkieslich
  * \copyright See Copyright notice at the end of t.h
  */

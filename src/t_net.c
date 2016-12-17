@@ -584,12 +584,12 @@ lt_net_selectk( lua_State *L )
  * --------------------------------------------------------------------------*/
 static const luaL_Reg t_net_cf [] =
 {
-	{ "select",      lt_net_select },
-	{ "selectK",     lt_net_selectk },
+	  { "select",      lt_net_select }
+	, { "selectK",     lt_net_selectk }
 #ifndef _WIN32
-	{ "showAllFd",   lt_net_getfdsinfo },
+	, { "showAllFd",   lt_net_getfdsinfo }
 #endif
-	{ NULL,    NULL }
+	, { NULL,    NULL }
 };
 
 

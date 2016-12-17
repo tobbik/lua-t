@@ -96,33 +96,21 @@ void av_arc4_crypt(AVARC4 *r, uint8_t *dst, const uint8_t *src, int count, uint8
 // ----------------------------- LUA RC4 wrapper functions
 /**--------------------------------------------------------------------------
  * Construct a RC4 encoder and return it.
- * \param   L      The Lua state.
- * \lparam  CLASS  table RC4
- * \return  int    # of values pushed onto the stack.
- * --------------------------------------------------------------------------*/
-static int
-lt_enc_rc4__Call( lua_State *L )
-{
-	lua_remove( L, 1 );
-	return lt_enc_rc4_New( L );
-}
-
-
-/**--------------------------------------------------------------------------
- * Construct a RC4 encoder and return it.
- * \param   L The Lua state.
- * \lparam  key   key string (optional)
- * \lparam  kLen  length of key string (if key contains \0 bytes (optional))
+ * \param   L     Lua state.
+ * \lparam  CLASS table RC4.
+ * \lparam  key   key string (optional).
+ * \lparam  kLen  length of key string (if key contains \0 bytes (optional)).
  * \lreturn ud    t_enc_rc4 userdata instance.
  * \return  int   # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
-int
-lt_enc_rc4_New( lua_State *L )
+static int
+lt_enc_rc4__Call( lua_State *L )
 {
 	struct t_enc_rc4     *rc4;
 	const  unsigned char *key;
 	size_t                kLen;
 
+	lua_remove( L, 1 );
 	rc4 = t_enc_rc4_create_ud( L );
 	if (lua_isstring( L, 1 ))
 	{
@@ -217,8 +205,8 @@ lt_enc_rc4_crypt( lua_State *L )
  * Class metamethods library definition
  * --------------------------------------------------------------------------*/
 static const struct luaL_Reg t_enc_rc4_fm [] = {
-	{"__call",  lt_enc_rc4__Call},
-	{NULL,      NULL}
+	  { "__call",  lt_enc_rc4__Call }
+	, { NULL,      NULL }
 };
 
 
@@ -226,8 +214,7 @@ static const struct luaL_Reg t_enc_rc4_fm [] = {
  * Class functions library definition
  * --------------------------------------------------------------------------*/
 static const struct luaL_Reg t_enc_rc4_cf [] = {
-	{"new",     lt_enc_rc4_New},
-	{NULL,      NULL}
+	  { NULL,      NULL }
 };
 
 
@@ -235,8 +222,8 @@ static const struct luaL_Reg t_enc_rc4_cf [] = {
  * Objects metamethods library definition
  * --------------------------------------------------------------------------*/
 static const luaL_Reg t_enc_rc4_m [] = {
-	{"crypt",   lt_enc_rc4_crypt},
-	{NULL,      NULL}
+	  { "crypt",   lt_enc_rc4_crypt }
+	, { NULL,      NULL }
 };
 
 

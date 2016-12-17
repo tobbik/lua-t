@@ -211,48 +211,20 @@ init_32( struct t_enc_crc *crc, uint32_t poly )
 // ----------------------------- Lua CRC wrapper functions
 /**--------------------------------------------------------------------------
  * Construct a CRC encoder and return it.
- * \param   L      The Lua state.
+ * \param   L      Lua state.
  * \lparam  CLASS  table CRC
- * \return  int    # of values pushed onto the stack.
- * --------------------------------------------------------------------------*/
-static int
-lt_enc_crc__Call( lua_State *L )
-{
-	lua_remove( L, 1 );
-	return lt_enc_crc_New( L );
-}
-
-
-/**--------------------------------------------------------------------------
- * Resets the CRC encoder to it's initial value.
- * \param   L    The Lua state.
- * \return  int  # of values pushed onto the stack.
- * --------------------------------------------------------------------------*/
-static int
-lt_enc_crc_reset( lua_State *L )
-{
-	struct t_enc_crc  *crc;
-	crc = t_enc_crc_check_ud( L, 1 );
-	crc->crc32 = crc->init32;
-	return 0;
-}
-
-
-
-/**--------------------------------------------------------------------------
- * Construct a CRC encoder and return it.
- * \param   L      The Lua state.
  * \lparam  key    key string (optional)
  * \lparam  kLen   length of key string (if key contains \0 bytes (optional))
  * \lreturn ud     T.Encode.Crc userdata.
  * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
-int
-lt_enc_crc_New( lua_State *L )
+static int
+lt_enc_crc__Call( lua_State *L )
 {
 	struct t_enc_crc    *crc;
 	int                  alg;
 
+	lua_remove( L, 1 );
 	crc = t_enc_crc_create_ud( L );
 	alg = luaL_checkinteger( L, 1 );
 	switch (alg)
@@ -278,6 +250,21 @@ lt_enc_crc_New( lua_State *L )
 	crc->bE = (lua_isboolean( L, 2 )) ? lua_toboolean( L, 2 ) : 1;
 
 	return 1;
+}
+
+
+/**--------------------------------------------------------------------------
+ * Resets the CRC encoder to it's initial value.
+ * \param   L    The Lua state.
+ * \return  int  # of values pushed onto the stack.
+ * --------------------------------------------------------------------------*/
+static int
+lt_enc_crc_reset( lua_State *L )
+{
+	struct t_enc_crc  *crc;
+	crc = t_enc_crc_check_ud( L, 1 );
+	crc->crc32 = crc->init32;
+	return 0;
 }
 
 
@@ -363,8 +350,8 @@ lt_enc_crc_calc( lua_State *L )
  * Class metamethods library definition
  * --------------------------------------------------------------------------*/
 static const struct luaL_Reg t_enc_crc_fm [] = {
-	{ "__call",  lt_enc_crc__Call },
-	{ NULL,  NULL }
+	  { "__call",  lt_enc_crc__Call }
+	, { NULL,  NULL }
 };
 
 
@@ -372,8 +359,7 @@ static const struct luaL_Reg t_enc_crc_fm [] = {
  * Class functions library definition
  * --------------------------------------------------------------------------*/
 static const struct luaL_Reg t_enc_crc_cf [] = {
-	{ "new",     lt_enc_crc_New },
-	{ NULL,  NULL }
+	  { NULL,  NULL }
 };
 
 
@@ -382,9 +368,9 @@ static const struct luaL_Reg t_enc_crc_cf [] = {
  * --------------------------------------------------------------------------*/
 static const luaL_Reg t_enc_crc_m [] =
 {
-	{ "calc",    lt_enc_crc_calc },
-	{ "reset",   lt_enc_crc_reset },
-	{ NULL,  NULL}
+	  { "calc",    lt_enc_crc_calc }
+	, { "reset",   lt_enc_crc_reset }
+	, { NULL,  NULL}
 };
 
 

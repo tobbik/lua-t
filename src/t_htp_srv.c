@@ -15,19 +15,22 @@
 #include "t_htp.h"
 
 
-/** ---------------------------------------------------------------------------
- * Creates an T.Http.Server.
- * \param   L    lua state.
- * \lparam  Loop for the Server.
- * \lparam  function WSAPI style request handler.
+/**--------------------------------------------------------------------------
+ * construct an HTTP Server
+ * \param   L      Lua state.
+ * \lparam  CLASS  table Http.Server
+ * \lparam  ud     T.Loop userdata instance for the Server.
+ * \lparam  func   WSAPI style request handler.
  * \return  int    # of values pushed onto the stack.
- *  -------------------------------------------------------------------------*/
-static int
-lt_htp_srv_New( lua_State *L )
+ * \lreturn ud     T.Http.Server userdata instances.
+ * \return  int    # of values pushed onto the stack.
+ * --------------------------------------------------------------------------*/
+static int lt_htp_srv__Call( lua_State *L )
 {
 	struct t_htp_srv *s;
 	struct t_ael     *l;
 
+	lua_remove( L, 1 );
 	if (lua_isfunction( L, -1 ) && (l = t_ael_check_ud( L, -2, 1 )))
 	{
 		s     = t_htp_srv_create_ud( L );
@@ -38,23 +41,8 @@ lt_htp_srv_New( lua_State *L )
 		s->lR  = luaL_ref( L, LUA_REGISTRYINDEX );
 	}
 	else
-		return t_push_error( L, T_HTP_TYPE"."T_HTP_SRV_NAME"( func ) requires a function as parameter" );
+		return t_push_error( L, T_HTP_SRV_TYPE"( func ) requires a function as parameter" );
 	return 1;
-}
-
-
-/**--------------------------------------------------------------------------
- * construct an HTTP Server
- * \param   L    The lua state.
- * \lparam  CLASS    table Http.Server
- * \lparam  T.Socket sub protocol
- * \lreturn userdata struct t_htp_srv* ref.
- * \return  int    # of values pushed onto the stack.
- * --------------------------------------------------------------------------*/
-static int lt_htp_srv__Call( lua_State *L )
-{
-	lua_remove( L, 1 );
-	return lt_htp_srv_New( L );
 }
 
 
@@ -72,7 +60,7 @@ struct t_htp_srv
 	s->nw = time( NULL );
 	t_htp_srv_setnow( s, 1 );
 
-	luaL_getmetatable( L, T_HTP_TYPE"."T_HTP_SRV_NAME );
+	luaL_getmetatable( L, T_HTP_SRV_TYPE );
 	lua_setmetatable( L, -2 );
 	return s;
 }
@@ -88,8 +76,8 @@ struct t_htp_srv
 struct t_htp_srv
 *t_htp_srv_check_ud( lua_State *L, int pos, int check )
 {
-	void *ud = luaL_testudata( L, pos, T_HTP_TYPE"."T_HTP_SRV_NAME );
-	luaL_argcheck( L, (ud != NULL || !check), pos, "`"T_HTP_TYPE"."T_HTP_SRV_NAME"` expected" );
+	void *ud = luaL_testudata( L, pos, T_HTP_SRV_TYPE );
+	luaL_argcheck( L, (ud != NULL || !check), pos, "`"T_HTP_SRV_TYPE"` expected" );
 	return (NULL==ud) ? NULL : (struct t_htp_srv *) ud;
 }
 
@@ -233,7 +221,7 @@ static int lt_htp_srv__tostring( lua_State *L )
 {
 	struct t_htp_srv *s = t_htp_srv_check_ud( L, 1, 1 );
 
-	lua_pushfstring( L, T_HTP_TYPE"."T_HTP_SRV_NAME": %p", s );
+	lua_pushfstring( L, T_HTP_SRV_TYPE": %p", s );
 	return 1;
 }
 
@@ -270,7 +258,7 @@ lt_htp_srv__gc( lua_State *L )
 	luaL_unref( L, LUA_REGISTRYINDEX, s->lR );
 	luaL_unref( L, LUA_REGISTRYINDEX, s->rR );
 
-	printf("GC'ed "T_HTP_TYPE"."T_HTP_SRV_NAME" ...\n");
+	printf("GC'ed "T_HTP_SRV_TYPE" ...\n");
 
 	return 0;
 }
@@ -280,15 +268,14 @@ lt_htp_srv__gc( lua_State *L )
  * Class metamethods library definition
  * --------------------------------------------------------------------------*/
 static const struct luaL_Reg t_htp_srv_fm [] = {
-	{ "__call",        lt_htp_srv__Call },
-	{ NULL,            NULL }
+	  { "__call",        lt_htp_srv__Call }
+	, { NULL,            NULL }
 };
 
 /**--------------------------------------------------------------------------
  * Class functions library definition
  * --------------------------------------------------------------------------*/
 static const struct luaL_Reg t_htp_srv_cf [] = {
-	{ "new",           lt_htp_srv_New },
 	{ NULL,   NULL }
 };
 
@@ -297,11 +284,11 @@ static const struct luaL_Reg t_htp_srv_cf [] = {
  * Objects metamethods library definition
  * --------------------------------------------------------------------------*/
 static const luaL_Reg t_htp_srv_m [] = {
-	{ "__len",         lt_htp_srv__len },
-	{ "__gc",          lt_htp_srv__gc },
-	{ "__tostring",    lt_htp_srv__tostring },
-	{ "listen",        lt_htp_srv_listen },
-	{ NULL,    NULL }
+	  { "__len",         lt_htp_srv__len }
+	, { "__gc",          lt_htp_srv__gc }
+	, { "__tostring",    lt_htp_srv__tostring }
+	, { "listen",        lt_htp_srv_listen }
+	, { NULL,    NULL }
 };
 
 
@@ -317,7 +304,7 @@ LUAMOD_API int
 luaopen_t_htp_srv( lua_State *L )
 {
 	// T.Http.Server instance metatable
-	luaL_newmetatable( L, T_HTP_TYPE"."T_HTP_SRV_NAME );
+	luaL_newmetatable( L, T_HTP_SRV_TYPE );
 	luaL_setfuncs( L, t_htp_srv_m, 0 );
 	lua_setfield( L, -1, "__index" );
 

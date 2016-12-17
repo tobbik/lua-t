@@ -64,13 +64,12 @@ t_ael_removehandle_impl( struct t_ael *ael, int fd, enum t_ael_t t )
 
 /**--------------------------------------------------------------------------
  * Add an Timer event handler to the T.Loop.
- * \param   L        The lua state.
- * \lparam  userdata T.Loop.                                     // 1
- * \lparam  userdata timeval.                                    // 2
- * \lparam  bool     shall this be treated as an interval?       // 3
- * \lparam  function to be executed when event handler fires.    // 4
- * \lparam  ...    parameters to function when executed.
- * \return  #stack items returned by function call.
+ * \param   L    The lua state.
+ * \lparam  ud   T.Loop userdata instance.                   // 1
+ * \lparam  ud   T.Time userdata instance.                   // 2
+ * \lparam  func to be executed when event handler fires.    // 4
+ * \lparam  ...  parameters to function when executed.       // 5 ...
+ * \return  int  #stack items returned by function call.
  * --------------------------------------------------------------------------*/
 //void t_ael_addtimer_impl( struct t_ael *ael, struct timeval *tv )
 //{
@@ -79,9 +78,9 @@ t_ael_removehandle_impl( struct t_ael *ael, int fd, enum t_ael_t t )
 
 /**--------------------------------------------------------------------------
  * Set up a select call for all events in the T.Loop
- * \param   L              The lua state.
+ * \param   L              Lua state.
  * \param   struct t_ael   The loop struct.
- * \return  number returns from select.
+ * \return  int            number returns from select.
  * --------------------------------------------------------------------------*/
 int
 t_ael_poll_impl( lua_State *L, struct t_ael *ael )
@@ -105,7 +104,7 @@ t_ael_poll_impl( lua_State *L, struct t_ael *ael )
 	if (0==r) // deal with timer
 		t_ael_executetimer( L, ael, &rt );
 	else      // deal with sockets/file handles
-		for( i=0; r>0 && i <= ael->max_fd; i++ )
+		for (i=0; r>0 && i <= ael->max_fd; i++)
 		{
 			if (NULL == ael->fd_set[ i ])
 				continue;

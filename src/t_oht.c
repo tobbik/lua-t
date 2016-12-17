@@ -193,28 +193,15 @@ lt_oht_Insert( lua_State *L )
 /**--------------------------------------------------------------------------
  * Create a new T.OrderedHashTable and return it.
  * \param   L        Lua state.
+ * \lparam  CLASS    table OrderedHashTable.
  * \lreturn ud       T.OrderedHashTable userdata instance.
  * \return  int      # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int
-lt_oht_New( lua_State *L )
+lt_oht__Call( lua_State *L )
 {
 	struct t_oht __attribute__ ((unused)) *oht = t_oht_create_ud( L );
 	return 1;
-}
-
-
-/**--------------------------------------------------------------------------
- * Construct a T.OrderedHashTable and return it.
- * \param   L        Lua state.
- * \lparam  CLASS    table T.OrderedHashTable.
- * \lreturn ud       T.OrderedHashTable userdata instance.
- * \return  int      # of values pushed onto the stack.
- * --------------------------------------------------------------------------*/
-static int lt_oht__Call( lua_State *L )
-{
-	lua_remove( L, 1 );
-	return lt_oht_New( L );
 }
 
 
@@ -486,8 +473,7 @@ static const struct luaL_Reg t_oht_fm [] = {
  * Class functions library definition
  * --------------------------------------------------------------------------*/
 static const struct luaL_Reg t_oht_cf [] = {
-	  { "new"          , lt_oht_New }
-	, { "getIndex"     , lt_oht_GetIndex }
+	  { "getIndex"     , lt_oht_GetIndex }
 	, { "insert"       , lt_oht_Insert }
 	, { NULL           , NULL }
 };

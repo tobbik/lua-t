@@ -30,38 +30,24 @@
 #include "t_net.h"
 
 
-
 /**--------------------------------------------------------------------------
- * Create an IP endpoint and return it.
+ * Construct a T.Net IPv4 Address and return it.
  * \param   L      Lua state.
- * \lparam  port   Port for the socket.
- * \lparam  string IP address for the socket.
+ * \lparam  CLASS  table T.Net.Ip4
+ * \lparam  port   Port for the Address.
+ * \lparam  string IP address in xxx.xxx.xxx.xxx format.
  * \lreturn ud     sockkaddr_in* userdata instance.
  * \return  int    # of values pushed onto the stack.
- * TODO:  allow for empty endpoints if it makes sense
- * --------------------------------------------------------------------------*/
-static int
-lt_net_ip4_New( lua_State *L )
-{
-	struct sockaddr_in  *ip4;
-	ip4 = t_net_ip4_create_ud( L );
-	t_net_ip4_set( L, 1, ip4 );
-	return 1;
-}
-
-
-/**--------------------------------------------------------------------------
- * Construct a NetAddress and return it.
- * \param   L     Lua state.
- * \lparam  CLASS Ip4
- * \lreturn ud    sockkaddr_in* userdata instance.
- * \return  int   # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int
 lt_net_ip4__Call( lua_State *L )
 {
+	struct sockaddr_in  *ip4;
+
 	lua_remove( L, 1 );
-	return lt_net_ip4_New( L );
+	ip4 = t_net_ip4_create_ud( L );
+	t_net_ip4_set( L, 1, ip4 );
+	return 1;
 }
 
 
@@ -289,8 +275,8 @@ lt_net_ip4_Ip2int (lua_State *L)
  * Class metamethods library definition
  * --------------------------------------------------------------------------*/
 static const struct luaL_Reg t_net_ip4_fm [] = {
-	{ "__call",      lt_net_ip4__Call },
-	{ NULL,   NULL }
+	  { "__call",      lt_net_ip4__Call }
+	, { NULL,          NULL }
 };
 
 /**--------------------------------------------------------------------------
@@ -298,10 +284,9 @@ static const struct luaL_Reg t_net_ip4_fm [] = {
  * --------------------------------------------------------------------------*/
 static const luaL_Reg t_net_ip4_cf [] =
 {
-	{ "new",       lt_net_ip4_New },
-	{ "ip2int",    lt_net_ip4_Ip2int },
-	{ "int2ip",    lt_net_ip4_Int2ip },
-	{ NULL,        NULL }
+	  { "ip2int",    lt_net_ip4_Ip2int }
+	, { "int2ip",    lt_net_ip4_Int2ip }
+	, { NULL,        NULL }
 };
 
 /**--------------------------------------------------------------------------
@@ -309,12 +294,12 @@ static const luaL_Reg t_net_ip4_cf [] =
  * --------------------------------------------------------------------------*/
 static const struct luaL_Reg t_net_ip4_m [] = {
 	// metamethods
-	{ "__tostring",  lt_net_ip4__tostring },
-	{ "__eq",        lt_net_ip4__eq },
+	  { "__tostring",  lt_net_ip4__tostring }
+	, { "__eq",        lt_net_ip4__eq }
 	// object methods
-	{ "get",         lt_net_ip4_getIpAndPort },
-	{ "set",         lt_net_ip4_setIpAndPort },
-	{ NULL,   NULL}
+	, { "get",         lt_net_ip4_getIpAndPort }
+	, { "set",         lt_net_ip4_setIpAndPort }
+	, { NULL,          NULL}
 };
 
 

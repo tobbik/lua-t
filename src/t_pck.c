@@ -90,7 +90,7 @@ t_pck_wbits( lua_Unsigned val, size_t len, size_t ofs, unsigned char * buf )
 #ifdef IS_LITTLE_ENDIAN
 	t_pck_cbytes( (unsigned char *) &set, buf, abyt, 1);
 #else
-	t_pck_cbytes( 
+	t_pck_cbytes(
 	   (unsigned char *) &set + sizeof( lua_Unsigned) - abyt,
 	   buf,
 		abyt,
@@ -101,7 +101,7 @@ t_pck_wbits( lua_Unsigned val, size_t len, size_t ofs, unsigned char * buf )
 #ifdef IS_LITTLE_ENDIAN
 	t_pck_cbytes( buf, (unsigned char *) &set, abyt, 1);
 #else
-	t_pck_cbytes( 
+	t_pck_cbytes(
 	   buf,
 	   (unsigned char *) &set + sizeof( lua_Unsigned) - abyt,
 		abyt,
@@ -147,7 +147,7 @@ t_pck_read( lua_State *L, struct t_pck *p, const unsigned char *b )
 #ifdef IS_LITTLE_ENDIAN
 			t_pck_cbytes( (unsigned char *) &val, b, p->s, ! p->m );
 #else
-			t_pck_cbytes( 
+			t_pck_cbytes(
 			   (unsigned char *) &val + sizeof( lua_Unsigned) - p->s,
 			   b,
 				p->s,
@@ -164,7 +164,7 @@ t_pck_read( lua_State *L, struct t_pck *p, const unsigned char *b )
 #ifdef IS_LITTLE_ENDIAN
 				t_pck_cbytes( (unsigned char *) &val, b, p->s, ! p->m );
 #else
-				t_pck_cbytes( 
+				t_pck_cbytes(
 				   (unsigned char *) &val + sizeof( lua_Unsigned) - p->s,
 				   b,
 					p->s,
@@ -186,7 +186,7 @@ t_pck_read( lua_State *L, struct t_pck *p, const unsigned char *b )
 #ifdef IS_LITTLE_ENDIAN
 				t_pck_cbytes( (unsigned char *) &val, b, (p->s+p->m-1)/8 + 1, 1 );
 #else
-				t_pck_cbytes( 
+				t_pck_cbytes(
 				   (unsigned char *) &val + sizeof( lua_Unsigned) - (p->s+p->m-1)/8 + 1,
 				   b,
 					(p->s+p->m-1)/8 + 1,
@@ -205,7 +205,7 @@ t_pck_read( lua_State *L, struct t_pck *p, const unsigned char *b )
 #ifdef IS_LITTLE_ENDIAN
 				t_pck_cbytes( (unsigned char *) &val, b, (p->s+p->m-1)/8 + 1, 1 );
 #else
-				t_pck_cbytes( 
+				t_pck_cbytes(
 				   (unsigned char *) &val + sizeof( lua_Unsigned) - (p->s+p->m-1)/8 + 1,
 				   b,
 					(p->s+p->m-1)/8 + 1,
@@ -347,7 +347,7 @@ t_pck_write( lua_State *L, struct t_pck *p, unsigned char *b )
 // #########################################################################
 /**--------------------------------------------------------------------------
  * __tostring helper that prints the packer type.
- * \param   L     The lua state.
+ * \param   L         Lua state.
  * \param   t_pack    the packer instance struct.
  * \lreturn  leaves two strings on the Lua Stack.
  * --------------------------------------------------------------------------*/
@@ -389,10 +389,10 @@ t_pck_format( lua_State *L, enum t_pck_t t, size_t s, int m )
  * See if requested type exists in T.Pack. otherwise create and register.
  * the format for a particular definition will never change. Hence, no need to
  * create them over and over again.  This approach saves memory.
- * \param     L  lua state.
+ * \param     L      Lua state.
  * \param     enum   t_pck_t.
  * \param     size   number of elements.
- * \param     mod parameter.
+ * \param     mod    parameter.
  * \return    struct t_pck* pointer. create a t_pack and push to LuaStack.
  * --------------------------------------------------------------------------*/
 struct t_pck
@@ -866,22 +866,25 @@ static struct t_pck
 // | |__| (_) | | | \__ \ |_| |  | |_| | (__| || (_) | |
 //  \____\___/|_| |_|___/\__|_|   \__,_|\___|\__\___/|_|
 //###########################################################################
+
 /** -------------------------------------------------------------------------
- * Creates a packerfrom the function call.
- * \param     L  lua state.
+ * Constructor for T.Pack.
+ * Behaves differently based on arguments.
+ * \param     L      Lua state.
+ * \lparam    CLASS  table T.Pack.
  * \lparam    fmt    string.
- *      or
- * \lparam    T.Pack elements.
- *      or
+ *      OR
  * \lparam    {name=T.Pack}, ...  name value pairs.
+ *      OR
+ * \lparam    T.Pack elements.    copy constructor
  * \return  int    # of values pushed onto the stack.
  *  -------------------------------------------------------------------------*/
-static int
-lt_pck_New( lua_State *L )
+static int lt_pck__Call (lua_State *L)
 {
 	struct t_pck  __attribute__ ((unused)) *p;
-	size_t                                  bo = 0;
+	size_t                                  bo = 0;  // bit offset
 
+	lua_remove( L, 1 );       // remove the T.Pack Class table
 	// Handle single packer types -> returns single packer or sequence
 	if (1==lua_gettop( L ))
 	{
@@ -894,7 +897,7 @@ lt_pck_New( lua_State *L )
 		p = t_pck_mkarray( L );
 		return 1;
 	}
-	// Handle everyting else ->Struct
+	// Handle everyting else -> Struct
 	if (LUA_TTABLE == lua_type( L, -1 ))
 	{
 		p = t_pck_mkstruct( L, 1, lua_gettop( L ) );
@@ -910,22 +913,6 @@ lt_pck_New( lua_State *L )
 }
 
 
-/** -------------------------------------------------------------------------
- * Creates the Packer from the Constructor.
- * Behaves differently based on arguments.
- * \param     L  lua state
- * \lparam    CLASS table Time
- * \lparam    length of buffer
- * \lparam    string buffer content initialized            OPTIONAL
- * \return  int    # of values pushed onto the stack.
- *  -------------------------------------------------------------------------*/
-static int lt_pck__Call (lua_State *L)
-{
-	lua_remove( L, 1 );    // remove the T.Buffer Class table
-	return lt_pck_New( L );
-}
-
-
 //###########################################################################
 //   ____ _                                _   _               _
 //  / ___| | __ _ ___ ___   _ __ ___   ___| |_| |__   ___   __| |___
@@ -935,10 +922,10 @@ static int lt_pck__Call (lua_State *L)
 //###########################################################################
 /**--------------------------------------------------------------------------
  * Get size in bytes covered by packer/struct/reader.
- * \param   L  The lua state.
- * \lparam  ud     T.Pack.* instance.
- * \lreturn int    size in bytes.
- * \return  int    # of values pushed onto the stack.
+ * \param   L    Lua state.
+ * \lparam  ud   T.Pack.* instance.
+ * \lreturn int  size in bytes.
+ * \return  int  # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int
 lt_pck_size( lua_State *L )
@@ -951,10 +938,10 @@ lt_pck_size( lua_State *L )
 
 /**--------------------------------------------------------------------------
  * Set the default endian style of the T.Pack Constructor for fmt.
- * \param   L  The lua state.
- * \lparam  ud     T.Pack.* instance.
- * \lreturn int    size in bytes.
- * \return  int    # of values pushed onto the stack.
+ * \param   L    Lua state.
+ * \lparam  ud   T.Pack.* instance.
+ * \lreturn int  size in bytes.
+ * \return  int  # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int
 lt_pck_defaultendian( lua_State *L )
@@ -976,7 +963,7 @@ lt_pck_defaultendian( lua_State *L )
 
 /**--------------------------------------------------------------------------
  * DEBUG: Get internal reference table from a Struct/Packer.
- * \param   L  The lua state.
+ * \param   L      Lua state.
  * \lparam  ud     T.Pack.* instance.
  * \lreturn table  Reference table of all members.
  * \return  int    # of values pushed onto the stack.
@@ -985,6 +972,7 @@ static int
 lt_pck_getir( lua_State *L )
 {
 	struct t_pck *p = t_pck_getpckreader( L, 1, NULL );
+
 	if (p->t > T_PCK_RAW && LUA_NOREF != p->m)
 		lua_rawgeti( L, LUA_REGISTRYINDEX, p->m );
 	else
@@ -1373,8 +1361,7 @@ static const struct luaL_Reg t_pck_fm [] = {
  * Objects metamethods library definition
  * --------------------------------------------------------------------------*/
 static const struct luaL_Reg t_pck_cf [] = {
-	  { "new"            , lt_pck_New }
-	, { "size"           , lt_pck_size }
+	  { "size"           , lt_pck_size }
 	, { "get_ref"        , lt_pck_getir }
 	, { "setendian"      , lt_pck_defaultendian }
 	, { NULL             , NULL }

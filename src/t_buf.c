@@ -22,7 +22,7 @@
 
 /** -------------------------------------------------------------------------
  * Helper to check arguments for being a t_buf and a valid position.
- * \param   L lua state.
+ * \param   L     Lua state.
  * \param   pB    position on stack which is buffer.
  * \param   pB    position on stack which is position (buffer index).
  *                handled as pointer and decremented by one to deal with the
@@ -54,52 +54,48 @@ t_buf * t_buf_getbuffer( lua_State *L, int pB, int pP, int *pos )
 // | |__| |_| | (_| |_____/ ___ \|  __/| |
 // |_____\__,_|\__,_|    /_/   \_\_|  |___|
 /////////////////////////////////////////////////////////////////////////////
+
 /** -------------------------------------------------------------------------
- * creates the buffer from the function call.
- * \param   L  lua state.
- * \lparam  length of buffer.
+ * Constructor - creates the buffer.
+ * \param   L      Lua state.
+ * \lparam  CLASS  table Buffer.
+ * \lparam  int    length of buffer.
  *        ALTERNATIVE
  * \lparam  string buffer content initialized.
- * \return  int    # of values pushed onto the stack.
- *  -------------------------------------------------------------------------*/
-static int
-lt_buf_New( lua_State *L )
-{
-	size_t                                  sz;
-	struct t_buf  __attribute__ ((unused)) *buf;
-
-	if (lua_isnumber( L, 1 ))
-	{
-		sz  = luaL_checkinteger( L, 1 );
-		buf = t_buf_create_ud( L, sz );
-	}
-	else if (lua_isstring( L, 1 ))
-	{
-		luaL_checklstring( L, 1, &sz);
-		buf = t_buf_create_ud( L, sz );
-		memcpy( (char*) &(buf->b[0]), luaL_checklstring( L, 1, NULL ), sz );
-	}
-	else
-	{
-		t_push_error( L, "can't create T.Buffer because of wrong argument type" );
-	}
-	return 1;
-}
-
-
-/** -------------------------------------------------------------------------
- * creates the buffer from the Constructor.
- * \param   L  lua state.
- * \lparam  CLASS table Time.
- * \lparam  length of buffer.
- * \lparam  string buffer content initialized.            OPTIONAL
+ *        ALTERNATIVE
+ * \lparam  ud     T.Buffer userdata instance to clone.
  * \return  int    # of values pushed onto the stack.
  *  -------------------------------------------------------------------------*/
 static int
 lt_buf__Call( lua_State *L )
 {
+	size_t                                  sz;
+	struct t_buf  __attribute__ ((unused)) *buf;
+	struct t_buf                           *cpy_buf = t_buf_check_ud( L, -1, 0);
+
 	lua_remove( L, 1 );    // remove the T.Buffer Class table
-	return lt_buf_New( L );
+	if (NULL != cpy_buf)
+	{
+		buf = t_buf_create_ud( L, cpy_buf->len );
+		memcpy( &(buf->b[0]), &(cpy_buf->b[0]), buf->len );
+		return 1;
+	}
+	if (lua_isnumber( L, -1 ))
+	{
+		sz  = luaL_checkinteger( L, -1 );
+		buf = t_buf_create_ud( L, sz );
+	}
+	else if (lua_isstring( L, -1 ))
+	{
+		luaL_checklstring( L, -1, &sz);
+		buf = t_buf_create_ud( L, sz );
+		memcpy( (char*) &(buf->b[0]), luaL_checklstring( L, -2, NULL ), sz );
+	}
+	else
+	{
+		t_push_error( L, "can't create "T_BUF_TYPE" because of wrong argument type" );
+	}
+	return 1;
 }
 
 
@@ -121,7 +117,7 @@ t_buf *t_buf_create_ud( lua_State *L, int size )
 	memset( b->b, 0, size * sizeof( unsigned char ) );
 
 	b->len = size;
-	luaL_getmetatable( L, "T.Buffer" );
+	luaL_getmetatable( L, T_BUF_TYPE );
 	lua_setmetatable( L, -2 );
 	return b;
 }
@@ -137,8 +133,8 @@ t_buf *t_buf_create_ud( lua_State *L, int size )
 struct
 t_buf *t_buf_check_ud( lua_State *L, int pos, int check )
 {
-	void *ud = luaL_testudata( L, pos, "T.Buffer" );
-	luaL_argcheck( L, (ud != NULL || !check), pos, "`T.Buffer` expected" );
+	void *ud = luaL_testudata( L, pos, T_BUF_TYPE );
+	luaL_argcheck( L, (ud != NULL || !check), pos, "`"T_BUF_TYPE"` expected" );
 	return (NULL==ud) ? NULL : (struct t_buf *) ud;
 }
 
@@ -289,7 +285,7 @@ static int
 lt_buf__tostring( lua_State *L )
 {
 	struct t_buf *buf = t_buf_check_ud( L, 1, 1 );
-	lua_pushfstring( L, "T.Buffer[%d]: %p", buf->len, buf );
+	lua_pushfstring( L, T_BUF_TYPE"[%d]: %p", buf->len, buf );
 	return 1;
 }
 
@@ -298,15 +294,14 @@ lt_buf__tostring( lua_State *L )
  * Class metamethods library definition
  * --------------------------------------------------------------------------*/
 static const struct luaL_Reg t_buf_fm [] = {
-	{"__call",        lt_buf__Call},
-	{NULL,            NULL}
+	  {"__call",        lt_buf__Call}
+	, {NULL,            NULL}
 };
 
 /**--------------------------------------------------------------------------
  * Class functions library definition
  * --------------------------------------------------------------------------*/
 static const struct luaL_Reg t_buf_cf [] = {
-	{"new",           lt_buf_New},
 	{NULL,            NULL}
 };
 
@@ -315,17 +310,15 @@ static const struct luaL_Reg t_buf_cf [] = {
  * --------------------------------------------------------------------------*/
 static const luaL_Reg t_buf_m [] = {
 	// metamethods
-	{ "__tostring", lt_buf__tostring },
-	{ "__len",      lt_buf__len },
+	  { "__tostring", lt_buf__tostring }
+	, { "__len",      lt_buf__len }
 	// instance methods
-	{"unpack",      lt_buf_unpack},
-	{"read",        lt_buf_read},
-	{"write",       lt_buf_write},
+	, { "unpack",      lt_buf_unpack }
+	, { "read",        lt_buf_read }
+	, { "write",       lt_buf_write }
 	// univeral stuff
-	{"toHex",       lt_buf_tohexstring},
-	{"length",      lt_buf__len},
-	{"toString",    lt_buf__tostring},
-	{NULL,    NULL}
+	, { "toHex",       lt_buf_tohexstring }
+	, { NULL,    NULL}
 };
 
 
@@ -340,7 +333,7 @@ static const luaL_Reg t_buf_m [] = {
 LUAMOD_API int luaopen_t_buf( lua_State *L )
 {
 	// T.Buffer instance metatable
-	luaL_newmetatable( L, "T.Buffer" );
+	luaL_newmetatable( L, T_BUF_TYPE );
 	luaL_setfuncs( L, t_buf_m, 0 );
 	lua_setfield( L, -1, "__index" );
 
@@ -350,5 +343,4 @@ LUAMOD_API int luaopen_t_buf( lua_State *L )
 	lua_setmetatable( L, -2 );
 	return 1;
 }
-
 

@@ -252,33 +252,6 @@ t_set_symdifference( lua_State *L )
 
 
 /**--------------------------------------------------------------------------
- * Create a new T.Set and return it.
- * \param   L    Lua state.
- * \lreturn ud   T.Set userdata instance.
- * \return  int  # of values pushed onto the stack.
- * --------------------------------------------------------------------------*/
-static int
-lt_set_New( lua_State *L )
-{
-	struct t_set                          *org_set = t_set_check_ud( L, -1, 0 );
-	struct t_set __attribute__ ((unused)) *set;
-
-	if (NULL != org_set)
-	{
-		lua_rawgeti( L, LUA_REGISTRYINDEX, org_set->tR ); // S: set,tbl
-		set = t_set_create_ud( L, -1, -1 );
-		lua_remove( L, -2 );
-	}
-	else if (lua_istable( L, -1 ))
-		set = t_set_create_ud( L, -1, 1 );
-	else
-		set = t_set_create_ud( L, 0, 0 );
-
-	return 1;
-}
-
-
-/**--------------------------------------------------------------------------
  * Get the underlying table from a T.Set userdata.
  * \param   L    Lua state.
  * \lparam  ud   T.Set userdata instance.
@@ -350,8 +323,21 @@ lt_set_IsDisjoint( lua_State *L )
  * --------------------------------------------------------------------------*/
 static int lt_set__Call( lua_State *L )
 {
-	lua_remove( L, 1 );
-	return lt_set_New( L );
+	struct t_set                          *org_set = t_set_check_ud( L, -1, 0 );
+	struct t_set __attribute__ ((unused)) *set;
+
+	if (NULL != org_set)
+	{
+		lua_rawgeti( L, LUA_REGISTRYINDEX, org_set->tR ); // S: set,tbl
+		set = t_set_create_ud( L, -1, -1 );
+		lua_remove( L, -2 );
+	}
+	else if (lua_istable( L, -1 ))
+		set = t_set_create_ud( L, -1, 1 );
+	else
+		set = t_set_create_ud( L, 0, 0 );
+
+	return 1;
 }
 
 
@@ -733,8 +719,7 @@ static const struct luaL_Reg t_set_fm [] = {
  * Class functions library definition
  * --------------------------------------------------------------------------*/
 static const struct luaL_Reg t_set_cf [] = {
-	  { "new"          , lt_set_New }
-	, { "getTable"     , lt_set_GetTable }
+	  { "getTable"     , lt_set_GetTable }
 	, { "toTable"      , lt_set_ToTable }
 	, { "isDisjoint"   , lt_set_IsDisjoint }
 	, { NULL           , NULL }

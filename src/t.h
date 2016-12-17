@@ -61,9 +61,6 @@ uint16_t get_crc16( const unsigned char *data, size_t size );
 #define T_SET_NAME "Set"
 #define T_WSK_NAME "Websocket"
 #define T_HTP_NAME "Http"
-#ifdef T_NRY
-#define T_NRY_NAME "NumArray"
-#endif
 
 #define T_AEL_TYPE "T."T_AEL_NAME
 #define T_TIM_TYPE "T."T_TIM_NAME
@@ -77,10 +74,11 @@ uint16_t get_crc16( const unsigned char *data, size_t size );
 #define T_SET_TYPE "T."T_SET_NAME
 #define T_WSK_TYPE "T."T_WSK_NAME
 #define T_HTP_TYPE "T."T_HTP_NAME
+
 #ifdef T_NRY
+#define T_NRY_NAME "Numarray"
 #define T_NRY_TYPE "T."T_NRY_NAME
 #endif
-
 
 // global sub classes registration
 LUAMOD_API int luaopen_t_ael( lua_State *L );

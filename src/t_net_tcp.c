@@ -31,39 +31,21 @@
 #include "t_buf.h"         // the ability to send and recv buffers
 
 
-
-/** -------------------------------------------------------------------------
- * Create a TCP socket and return it.
- * \param   L      Lua state.
- * \lparam  int    Port for the socket.
- * \lparam  string IP address for the socket.
- * \lreturn ud     t_net_tcp userdata instance( socket ).
- * \return  int    # of values pushed onto the stack.
- *-------------------------------------------------------------------------*/
-int
-lt_net_tcp_New( lua_State *L )
-{
-	struct t_net   __attribute__ ((unused)) *s;
-
-	s = t_net_create_ud( L, T_NET_TCP, 1 );
-	return 1 ;
-}
-
-
 /**--------------------------------------------------------------------------
  * construct a TCP Socket and return it.
  * \param   L      Lua state.
  * \lparam  CLASS  table T.Net.Ip4
- * \lparam  int    Port for the socket.
- * \lparam  string IP address for the socket.
  * \lreturn ud     t_net_tcp userdata instance( socket ).
  * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int
 lt_net_tcp__Call( lua_State *L )
 {
+	struct t_net   __attribute__ ((unused)) *s;
+
 	lua_remove( L, 1 );
-	return lt_net_tcp_New( L );
+	s = t_net_create_ud( L, T_NET_TCP, 1 );
+	return 1 ;
 }
 
 
@@ -320,8 +302,8 @@ lt_net_tcp_getsockname( lua_State *L )
  * Class metamethods library definition
  * --------------------------------------------------------------------------*/
 static const struct luaL_Reg t_net_tcp_fm [] = {
-	{ "__call",    lt_net_tcp__Call },
-	{ NULL,   NULL }
+	  { "__call",    lt_net_tcp__Call }
+	, { NULL,   NULL }
 };
 
 /**--------------------------------------------------------------------------
@@ -329,11 +311,10 @@ static const struct luaL_Reg t_net_tcp_fm [] = {
  * --------------------------------------------------------------------------*/
 static const luaL_Reg t_net_tcp_cf [] =
 {
-	{ "new",       lt_net_tcp_New },
-	{ "bind",      lt_net_tcp_bind },
-	{ "connect",   lt_net_tcp_connect },
-	{ "listen",    lt_net_tcp_listen },
-	{ NULL,        NULL}
+	  { "bind",      lt_net_tcp_bind }
+	, { "connect",   lt_net_tcp_connect }
+	, { "listen",    lt_net_tcp_listen }
+	, { NULL,        NULL}
 };
 
 /**--------------------------------------------------------------------------
@@ -342,23 +323,23 @@ static const luaL_Reg t_net_tcp_cf [] =
 static const luaL_Reg t_net_tcp_m [] =
 {
 	// metamethods
-	{ "__tostring",  lt_net__tostring },
-	//{ "__eq",        lt_net__eq },
-	{ "__gc",        lt_net_close },  // reuse function
+	  { "__tostring",  lt_net__tostring }
+	//, { "__eq",        lt_net__eq }
+	, { "__gc",        lt_net_close }  // reuse function
 	// object methods
-	{ "listen",      lt_net_tcp_listen },
-	{ "bind",        lt_net_tcp_bind },
-	{ "connect",     lt_net_tcp_connect },
-	{ "accept",      lt_net_tcp_accept },
-	{ "close",       lt_net_close },
-	{ "send",        lt_net_tcp_send },
-	{ "recv",        lt_net_tcp_recv },
-	{ "getsockname", lt_net_tcp_getsockname },
+	, { "listen",      lt_net_tcp_listen }
+	, { "bind",        lt_net_tcp_bind }
+	, { "connect",     lt_net_tcp_connect }
+	, { "accept",      lt_net_tcp_accept }
+	, { "close",       lt_net_close }
+	, { "send",        lt_net_tcp_send }
+	, { "recv",        lt_net_tcp_recv }
+	, { "getsockname", lt_net_tcp_getsockname }
 	// generic net functions -> reuse functions
-	{ "getId",       lt_net_getfdid },
-	{ "getFdInfo",   lt_net_getfdinfo },
-	{ "setOption",   lt_net_setoption },
-	{ NULL,        NULL }
+	, { "getId",       lt_net_getfdid }
+	, { "getFdInfo",   lt_net_getfdinfo }
+	, { "setOption",   lt_net_setoption }
+	, { NULL,        NULL }
 };
 
 

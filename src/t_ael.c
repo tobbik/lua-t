@@ -165,22 +165,6 @@ t_ael_executehandle( lua_State *L, struct t_ael *ael, int fd, enum t_ael_t t )
 
 
 /**--------------------------------------------------------------------------
- * Create a new t.Loop and return it.
- * \param   L  The lua state.
- * \lparam  int    initial size of fd_event slots in the Loop.
- * \lreturn struct t_ael userdata.
- * \return  #stack items returned by function call.
- * --------------------------------------------------------------------------*/
-static int
-lt_ael_New( lua_State *L )
-{
-	size_t                                 sz  = luaL_checkinteger( L, 1 );
-	struct t_ael __attribute__ ((unused)) *ael = t_ael_create_ud( L, sz );
-	return 1;
-}
-
-
-/**--------------------------------------------------------------------------
  * Construct a t.Loop and return it.
  * \param   L  The lua state.
  * \lparam  CLASS table t.Loop.
@@ -189,8 +173,10 @@ lt_ael_New( lua_State *L )
  * --------------------------------------------------------------------------*/
 static int lt_ael__Call( lua_State *L )
 {
-	lua_remove( L, 1 );
-	return lt_ael_New( L );
+	size_t                                 sz  = luaL_checkinteger( L, -1 );
+	struct t_ael __attribute__ ((unused)) *ael = t_ael_create_ud( L, sz );
+
+	return 1;
 }
 
 
@@ -348,12 +334,12 @@ lt_ael_removehandle( lua_State *L )
 
 /**--------------------------------------------------------------------------
  * Add a Timer event handler to the T.Loop.
- * \param   L  The lua state.
- * \lparam  userdata T.Loop.                                     // 1
- * \lparam  userdata timeval.                                    // 2
- * \lparam  function to be executed when event handler fires.    // 3
- * \lparam  ...    parameters to function when executed.
- * \return  #stack items returned by function call.
+ * \param   L    Lua state.
+ * \lparam  ud   T.Loop userdata instance.                   // 1
+ * \lparam  ud   T.Time userdata instance.                   // 2
+ * \lparam  func to be executed when event handler fires.    // 3
+ * \lparam  ...  parameters to function when executed.       // 4 ...
+ * \return  int  #stack items returned by function call.
  * --------------------------------------------------------------------------*/
 static int
 lt_ael_addtimer( lua_State *L )
@@ -385,10 +371,10 @@ lt_ael_addtimer( lua_State *L )
 
 /**--------------------------------------------------------------------------
  * Remove a Timer event handler from the T.Loop.
- * \param   L    The lua state.
- * \lparam  userdata T.Loop.                                     // 1
- * \lparam  userdata timeval.                                    // 2
- * \return  #stack items returned by function call.
+ * \param   L    Lua state.
+ * \lparam  ud   T.Loop userdata instance.                   // 1
+ * \lparam  ud   T.Time userdata instance.                   // 2
+ * \return  int  #stack items returned by function call.
  * TODO: optimize!
  * --------------------------------------------------------------------------*/
 static int
@@ -428,9 +414,9 @@ lt_ael_removetimer( lua_State *L )
 
 /**--------------------------------------------------------------------------
  * Garbage Collector. Free events in allocated spots.
- * \param  L   lua Virtual Machine.
- * \lparam table   T.Loop.
- * \return integer number of values left on te stack.
+ * \param   L    Lua state.
+ * \lparam  ud   T.Loop userdata instance.                   // 1
+ * \return  int  number of values left on te stack.
  * -------------------------------------------------------------------------*/
 static int
 lt_ael__gc( lua_State *L )
@@ -466,13 +452,9 @@ lt_ael__gc( lua_State *L )
 
 /**--------------------------------------------------------------------------
  * Set up a select call for all events in the T.Loop
- * \param   L  The lua state.
- * \lparam  userdata T.Loop.                                    // 1
- * \lparam  userdata timeval.                                    // 2
- * \lparam  bool     shall this be treated as an interval?       // 3
- * \lparam  function to be executed when event handler fires.    // 4
- * \lparam  ...    parameters to function when executed.
- * \return  #stack items returned by function call.
+ * \param   L    Lua state.
+ * \lparam  ud   T.Loop userdata instance.                       // 1
+ * \return  int  #stack items returned by function call.
  * --------------------------------------------------------------------------*/
 static int
 lt_ael_run( lua_State *L )
@@ -496,9 +478,9 @@ lt_ael_run( lua_State *L )
 
 /**--------------------------------------------------------------------------
  * Stop an T.Loop.
- * \param   L  The lua state.
- * \lparam  userdata T.Loop.                                    // 1
- * \return  #stack items returned by function call.
+ * \param   L    Lua state.
+ * \lparam  ud   T.Loop userdata instance.                       // 1
+ * \return  int  #stack items returned by function call.
  * --------------------------------------------------------------------------*/
 static int
 lt_ael_stop( lua_State *L )
@@ -511,10 +493,11 @@ lt_ael_stop( lua_State *L )
 
 /**--------------------------------------------------------------------------
  * Prints out the Loop.
- * \param   L     The lua state.
- * \lparam  userdata  T.Loop userdata
- * \lreturn string    formatted string representing T.Loop.
- * \return  The number of results to be passed back to the calling Lua script.
+ * \param   L      Lua state.
+ * \lparam  ud     T.Loop userdata instance.                       // 1
+ * \return  int    #stack items returned by function call.
+ * \lreturn string formatted string representing T.Loop.
+ * \return  int  #stack items returned by function call.
  * --------------------------------------------------------------------------*/
 static int
 lt_ael__tostring( lua_State *L )
@@ -579,15 +562,14 @@ lt_ael_showloop( lua_State *L )
  * Class metamethods library definition
  * --------------------------------------------------------------------------*/
 static const struct luaL_Reg t_ael_fm [] = {
-	{ "__call",         lt_ael__Call },
-	{ NULL,   NULL}
+	  { "__call",         lt_ael__Call }
+	, { NULL,   NULL}
 };
 
 /**--------------------------------------------------------------------------
  * Class functions library definition
  * --------------------------------------------------------------------------*/
 static const luaL_Reg t_ael_cf [] = {
-	{ "new",            lt_ael_New },
 	{ NULL,  NULL }
 };
 
@@ -596,17 +578,17 @@ static const luaL_Reg t_ael_cf [] = {
  * --------------------------------------------------------------------------*/
 static const struct luaL_Reg t_ael_m [] = {
 	// metamethods
-	{ "__tostring",    lt_ael__tostring },
-	{ "__gc",          lt_ael__gc },
+	  { "__tostring",    lt_ael__tostring }
+	, { "__gc",          lt_ael__gc }
 	// instance methods
-	{ "addTimer",       lt_ael_addtimer },
-	{ "removeTimer",    lt_ael_removetimer },
-	{ "addHandle",      lt_ael_addhandle },
-	{ "removeHandle",   lt_ael_removehandle },
-	{ "run",            lt_ael_run },
-	{ "stop",           lt_ael_stop },
-	{ "show",           lt_ael_showloop },
-	{ NULL,   NULL }
+	, { "addTimer",       lt_ael_addtimer }
+	, { "removeTimer",    lt_ael_removetimer }
+	, { "addHandle",      lt_ael_addhandle }
+	, { "removeHandle",   lt_ael_removehandle }
+	, { "run",            lt_ael_run }
+	, { "stop",           lt_ael_stop }
+	, { "show",           lt_ael_showloop }
+	, { NULL,   NULL }
 };
 
 

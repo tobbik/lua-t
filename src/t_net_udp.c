@@ -31,38 +31,21 @@
 #include "t_buf.h"         // the ability to send and recv buffers
 
 
-/** -------------------------------------------------------------------------
- * Create a UDP socket and return it.
- * \param   L  The lua state.
- * \lparam  port   the port for the socket.
- * \lparam  ip     the IP address for the socket.
- * \lreturn socket Lua UserData wrapped socket.
- * \return  int    # of values pushed onto the stack.
- *-------------------------------------------------------------------------*/
-int
-lt_net_udp_New( lua_State *L )
-{
-	struct t_net   __attribute__ ((unused)) *s;
-
-	s = t_net_create_ud( L, T_NET_UDP, 1 );
-
-	return 1 ;
-}
-
-
 /**--------------------------------------------------------------------------
  * Construct a UDP Socket and return it.
- * \param   L  The lua state.
- * \lparam  CLASS table Socket
- * \lparam  string    type "TCP", "UDP", ...
- * \lreturn struct t_net userdata.
+ * \param   L      Lua state.
+ * \lparam  CLASS  table T.Net.UDP
+ * \lreturn ud     t_net_udp userdata instance( socket ).
  * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int
 lt_net_udp__Call( lua_State *L )
 {
+	struct t_net   __attribute__ ((unused)) *s;
+
 	lua_remove( L, 1 );
-	return lt_net_udp_New( L );
+	s = t_net_create_ud( L, T_NET_UDP, 1 );
+	return 1 ;
 }
 
 
@@ -86,6 +69,8 @@ struct t_net
  * Listen on a socket or create a listening socket.
  * \param   L  The lua state.
  * \lparam  socket The socket userdata.
+ * \lparam  ip     the IP address for the socket.
+ * \lparam  port   the port for the socket.
  * \lparam  int    Backlog connections.
  * \return  int    # of values pushed onto the stack.
  *-------------------------------------------------------------------------*/
@@ -223,8 +208,8 @@ lt_net_udp_recvfrom( lua_State *L )
  * Class metamethods library definition
  * --------------------------------------------------------------------------*/
 static const struct luaL_Reg t_net_udp_fm [] = {
-	{ "__call",    lt_net_udp__Call },
-	{ NULL,   NULL }
+	  { "__call",    lt_net_udp__Call }
+	, { NULL,   NULL }
 };
 
 /**--------------------------------------------------------------------------
@@ -232,11 +217,10 @@ static const struct luaL_Reg t_net_udp_fm [] = {
  * --------------------------------------------------------------------------*/
 static const luaL_Reg t_net_udp_cf [] =
 {
-	{ "new",       lt_net_udp_New },
-	{ "bind",      lt_net_udp_bind },
-	{ "connect",   lt_net_udp_connect },
-	{ "listen",    lt_net_udp_listen },
-	{ NULL,        NULL}
+	  { "bind",      lt_net_udp_bind }
+	, { "connect",   lt_net_udp_connect }
+	, { "listen",    lt_net_udp_listen }
+	, { NULL,        NULL}
 };
 
 /**--------------------------------------------------------------------------
@@ -245,21 +229,21 @@ static const luaL_Reg t_net_udp_cf [] =
 static const luaL_Reg t_net_udp_m [] =
 {
 	// metamethods
-	{ "__tostring",  lt_net__tostring },
-	//{ "__eq",        lt_net__eq },
-	{ "__gc",        lt_net_close },  // reuse function
+	  { "__tostring",  lt_net__tostring }
+	//, { "__eq",        lt_net__eq }
+	, { "__gc",        lt_net_close }  // reuse function
 	// object methods
-	{ "listen",      lt_net_udp_listen },
-	{ "bind",        lt_net_udp_bind },
-	{ "connect",     lt_net_udp_connect },
-	{ "close",       lt_net_close },
-	{ "sendto",      lt_net_udp_sendto },
-	{ "recvfrom",    lt_net_udp_recvfrom },
+	, { "listen",      lt_net_udp_listen }
+	, { "bind",        lt_net_udp_bind }
+	, { "connect",     lt_net_udp_connect }
+	, { "close",       lt_net_close }
+	, { "sendto",      lt_net_udp_sendto }
+	, { "recvfrom",    lt_net_udp_recvfrom }
 	// generic net functions -> reuse functions
-	{ "getId",       lt_net_getfdid },
-	{ "getFdInfo",   lt_net_getfdinfo },
-	{ "setOption",   lt_net_setoption },
-	{ NULL,        NULL }
+	, { "getId",       lt_net_getfdid }
+	, { "getFdInfo",   lt_net_getfdinfo }
+	, { "setOption",   lt_net_setoption }
+	, { NULL,        NULL }
 };
 
 

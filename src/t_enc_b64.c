@@ -1,11 +1,11 @@
 /* vim: ts=3 sw=3 sts=3 tw=80 sta noet list
 */
-/**
+/**--------------------------------------------------------------------------
  * \file      t_enc_b64.c
  * \brief     Base64 Encoding Decoding algorithm
  * \author    tkieslich
  * \copyright See Copyright notice at the end of t.h
- */
+ * --------------------------------------------------------------------------*/
 
 #include <stdio.h>
 #include <stdlib.h>      // calloc
@@ -23,13 +23,13 @@ static const uint32_t      mod_table[ ]    = { 0, 2, 1 };
 // ----------------------------- Native Base64 functions
 
 
-/**
+/**--------------------------------------------------------------------------
  * B64 allocator for output.
  * Depending on en- or decoding returns empty string of right size.
  * \param  size of input
  * \param  encode, if 1 then return string of size need for encoded result
  * \return size_t
- */
+ * --------------------------------------------------------------------------*/
 static size_t
 b64_res_size( size_t len, int for_encode )
 {
@@ -87,11 +87,11 @@ b64_decode( const char *inbuf, char *outbuf, size_t inbuf_len )
 }
 
 
-/**
+/**--------------------------------------------------------------------------
  * Expose Base64 encoding to Lua; wraps native function b64_encode above.
- * \param   L      The Lua state.
+ * \param   L      Lua state.
  * \return  int    # of values pushed onto the stack.
- */
+ * --------------------------------------------------------------------------*/
  // TODO: consider using a Lua_Buffer instead of allocating and freeing memory
 static int
 t_enc_b64_encode( lua_State *L )
@@ -127,11 +127,11 @@ t_enc_b64_encode( lua_State *L )
 }
 
 
-/**
+/**--------------------------------------------------------------------------
  * Expose Base64 decoding to Lua; wraps native function b64_decode above.
- * \param   L    The Lua state.
+ * \param   L    Lua state.
  * \return  int  # of values pushed onto the stack.
- */
+ * --------------------------------------------------------------------------*/
  // TODO: consider using a Lua_Buffer instead of allocating and freeing memory
 static int
 t_enc_b64_decode( lua_State *L )

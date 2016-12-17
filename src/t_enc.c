@@ -21,18 +21,18 @@
 
 /** -------------------------------------------------------------------------
  * Wrapper around crypt() POSIX only
- * \param   L  The lua state.
- * \param   pwd    the password to crypt()
- * \param   string salt (optional)
- * \lreturn encrypted password
- * \lreturn salt
+ * \param   L      Lua state.
+ * \lparam  string password to crypt()
+ * \lparam  string salt (optional)
+ * \lreturn string encrypted password
+ * \lreturn string salt
  * \return  void.
  *-------------------------------------------------------------------------*/
 static int
-t_enc_crypt( lua_State *L )
+lt_enc_crypt( lua_State *L )
 {
 	//char      *salt;
-	const char      *pass;
+	const char    *pass;
 
 	pass  = luaL_checkstring( L, 1 );
 	//salt  = luaL_checkstring( L, 2 );
@@ -44,18 +44,17 @@ t_enc_crypt( lua_State *L )
 	  "UVWXYZabcdefghijklmnopqrstuvwxyz";
 	int i;
 
-	/* Generate a (not very) random seed.
-		You should do it better than this... */
-	seed[0] = time(NULL);
-	seed[1] = getpid() ^ (seed[0] >> 14 & 0x30000);
+	// Generate a (not very) random seed. You should do it better than this...
+	seed[ 0 ] = time( NULL );
+	seed[ 1 ] = getpid( ) ^ (seed[0] >> 14 & 0x30000);
 
-	/* Turn it into printable characters from `seedchars'. */
+	// Turn it into printable characters from `seedchars'.
 	for (i = 0; i < 8; i++)
 	{
-		salt[3+i] = seedchars[(seed[i/5] >> (i%5)*6) & 0x3f];
+		salt[3+i] = seedchars[ (seed[i/5] >> (i%5)*6) & 0x3f ];
 	}
 
-	/* Read in the user's password and encrypt it. */
+	// Read in the user's password and encrypt it.
 	lua_pushstring( L, crypt( pass, salt ) );
 	return 1;
 }
@@ -66,8 +65,8 @@ t_enc_crypt( lua_State *L )
  * --------------------------------------------------------------------------*/
 static const luaL_Reg t_enc_cf [] =
 {
-	//{"crypt",     t_enc_crypt},
-	{NULL,        NULL}
+	//  { "crypt",     lt_enc_crypt }
+	, { NULL,        NULL }
 };
 
 
@@ -86,7 +85,7 @@ luaopen_t_enc( lua_State *L )
 	lua_setfield( L, -2, T_ENC_CRC_NAME );
 	luaopen_t_enc_b64( L );
 	lua_setfield( L, -2, T_ENC_B64_NAME );
-	lua_pushcfunction( L, t_enc_crypt );
+	lua_pushcfunction( L, lt_enc_crypt );
 	lua_setfield( L, -2, "crypt" );
 	return 1;
 }

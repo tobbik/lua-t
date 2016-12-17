@@ -14,6 +14,11 @@
 #define T_HTP_STR_NAME     "Stream"
 #define T_HTP_STR_PRX_NAME "Proxy"
 
+#define T_HTP_CON_TYPE     T_HTP_TYPE"."T_HTP_CON_NAME
+#define T_HTP_SRV_TYPE     T_HTP_TYPE"."T_HTP_SRV_NAME
+#define T_HTP_STR_TYPE     T_HTP_TYPE"."T_HTP_STR_NAME
+#define T_HTP_STR_PRX_TYPE T_HTP_TYPE"."T_HTP_STR_PRX_NAME
+
 // _   _ _____ _____ ____
 //| | | |_   _|_   _|  _ \   _ __   __ _ _ __ ___  ___ _ __
 //| |_| | | |   | | | |_) | | '_ \ / _` | '__/ __|/ _ \ '__|

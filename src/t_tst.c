@@ -57,16 +57,18 @@ fmt_stack_item( lua_State *L, int pos)
 
 
 /**--------------------------------------------------------------------------
- * create an ceTest Object and put it onto the stack.
- * \param   L  The lua state.
+ * construct a Test and return it.
+ * \param   L      Lua state.
+ * \lparam  CLASS  table Test
  * \lparam  string name of the unit test
  * \lparam  string description of the unit test
- * \lreturn luatable representing a test
- * \return  The number of results to be passed back to the calling Lua script.
+ * \lreturn table  T.Test Lua table instance.
+ * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int
-t_tst_New( lua_State *L )
+t_tst__Call( lua_State *L )
 {
+	lua_remove( L, 1 );
 	lua_newtable( L );
 	if( lua_gettop( L ) ==2 && lua_isstring( L, 2 ) )
 		lua_pushvalue( L, 2 );
@@ -80,28 +82,11 @@ t_tst_New( lua_State *L )
 
 
 /**--------------------------------------------------------------------------
- * construct a Test and return it.
- * \param   L  The lua state.
- * \lparam  CLASS  table Test
- * \lparam  string name of the unit test
- * \lparam  string description of the unit test
- * \lreturn luatable representing a test
- * \return  The number of results to be passed back to the calling Lua script.
- * --------------------------------------------------------------------------*/
-static int
-t_tst__Call( lua_State *L )
-{
-	lua_remove( L, 1 );
-	return t_tst_New( L );
-}
-
-
-/**--------------------------------------------------------------------------
  * \brief   check a value on the stack for being a Test
- * \param   L    The lua state.
- * \param   int      position on the stack
- * \lparam  the Test table on the stack
- * \lreturn leaves the test table on the stack
+ * \param   L        Lua state.
+ * \param   int      position on the stack.
+ * \lparam  table    T.Test Lua table instance.
+ * \lreturn table    T.Test Lua table instance.
  * --------------------------------------------------------------------------*/
 void
 t_tst_check_ud( lua_State *L, int pos )
@@ -124,7 +109,7 @@ t_tst_check_ud( lua_State *L, int pos )
  * \param   L    The lua state.
  * \lparam  either assert result table or generig string
  * \lreturn a t_tst result Failure description table
- * \return  The number of results to be passed back to the calling Lua script.
+ * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int
 traceback( lua_State *L )
@@ -730,8 +715,8 @@ t_tst_case__call( lua_State *L )
  * Class metamethods library definition
  * --------------------------------------------------------------------------*/
 static const struct luaL_Reg t_tst_fm [] = {
-	{ "__call",              t_tst__Call },
-	{ NULL,  NULL }
+	  { "__call",              t_tst__Call }
+	, { NULL,  NULL }
 };
 
 
@@ -739,11 +724,11 @@ static const struct luaL_Reg t_tst_fm [] = {
  * Class functions library definition
  * --------------------------------------------------------------------------*/
 static const struct luaL_Reg t_tst_m [] = {
-	{ "run",                 t_tst__call },
-	{ "_eq",                 t_tst_equal },
-	{ "_eq_not",             t_tst_equal_not },
-	{ "_lt",                 t_tst_lt },
-	{ NULL,  NULL }
+	  { "run",                 t_tst__call }
+	, { "_eq",                 t_tst_equal }
+	, { "_eq_not",             t_tst_equal_not }
+	, { "_lt",                 t_tst_lt }
+	, { NULL,  NULL }
 };
 
 
@@ -751,11 +736,10 @@ static const struct luaL_Reg t_tst_m [] = {
  * Objects metamethods library definition
  * --------------------------------------------------------------------------*/
 static const luaL_Reg t_tst_cf [] = {
-	{ "new",                 t_tst_New },
-	{ "_eq",                 t_tst_equal },
-	{ "_eq_not",             t_tst_equal_not },
-	{ "_lt",                 t_tst_lt },
-	{ NULL,  NULL }
+	  { "_eq",                 t_tst_equal }
+	, { "_eq_not",             t_tst_equal_not }
+	, { "_lt",                 t_tst_lt }
+	, { NULL,  NULL }
 };
 
 

@@ -15,35 +15,22 @@
 #include "t_buf.h"
 
 
-
-/** ---------------------------------------------------------------------------
- * Creates a WebSocket.
- * \param    L    lua state.
- * \lparam   subp     sub-protocol.
- * \return  int    # of values pushed onto the stack.
- *  -------------------------------------------------------------------------*/
-int lt_wsk_New( lua_State *L )
-{
-	struct t_wsk  *ws;
-	//size_t lp;
-	//char         *subp = luaL_checklstring( L, 1, &lp );
-	ws = t_wsk_create_ud( L );
-	return 1;
-}
-
-
 /**--------------------------------------------------------------------------
  * construct a WebSocket
- * \param   L  The lua state.
+ * \param   L      Lua state.
  * \lparam  CLASS  table WebSocket
  * \lparam  string sub protocol
- * \lreturn struct t_ws userdata.
+ * \lreturn ud     T.Websocket userdata instance.
  * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int lt_wsk__Call( lua_State *L )
 {
+	struct t_wsk  *ws;
+	//size_t lp;
+	//char         *subp = luaL_checklstring( L, 1, &lp );
 	lua_remove( L, 1 );
-	return lt_wsk_New( L );
+	ws = t_wsk_create_ud( L );
+	return 1;
 }
 
 
@@ -136,8 +123,8 @@ static int lt_wsk__len( lua_State *L )
  * Class metamethods library definition
  * --------------------------------------------------------------------------*/
 static const struct luaL_Reg t_wsk_fm [] = {
-	{ "__call",        lt_wsk__Call},
-	{ NULL,    NULL }
+	  { "__call",        lt_wsk__Call}
+	, { NULL,    NULL }
 };
 
 
@@ -145,8 +132,7 @@ static const struct luaL_Reg t_wsk_fm [] = {
  * Class functions library definition
  * --------------------------------------------------------------------------*/
 static const struct luaL_Reg t_wsk_cf [] = {
-	{ "new",           lt_wsk_New},
-	{ NULL,    NULL }
+	  { NULL,    NULL }
 };
 
 
@@ -154,9 +140,9 @@ static const struct luaL_Reg t_wsk_cf [] = {
  * Objects metamethods library definition
  * --------------------------------------------------------------------------*/
 static const luaL_Reg t_wsk_m [] = {
-	{ "__len",           lt_wsk__len },
-	{ "__tostring",      lt_wsk__tostring },
-	{ NULL,    NULL }
+	  { "__len",           lt_wsk__len }
+	, { "__tostring",      lt_wsk__tostring }
+	, { NULL,    NULL }
 };
 
 

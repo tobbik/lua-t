@@ -2,24 +2,14 @@
 /**
  * \file      t_nry.h
  * \brief     models an Numarray
- * This an example file as explained in the docs/Coding.rst
+ *            This an example file as explained in the docs/Coding.rst
  * \author    tkieslich
  * \copyright See Copyright notice at the end of t.h
  */
 
-
-/// Type of Numarray struct
-/// Enums should always be fully qualified -> no typedef
-enum t_nry_t
-{
-	T_NRY_PART,             ///< Partial Numarray
-	T_NRY_FULL,             ///< Full    Numarray
-};
-
 /// The userdata struct for T.Numarray
 struct t_nry
 {
-	enum t_nry_t   t;       ///< Type of Numarray
 	size_t         len;
 	int            v[ 1 ];  ///< variable part, must be last in struct
 };
