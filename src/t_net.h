@@ -10,10 +10,18 @@
 #define T_NET_TCP_NAME   "TCP"
 #define T_NET_UDP_NAME   "UDP"
 #define T_NET_IP4_NAME   "IPv4"
+#define T_NET_IFC_NAME   "Interface"
 
 #define T_NET_TCP_TYPE   T_NET_TYPE"."T_NET_TCP_NAME
 #define T_NET_UDP_TYPE   T_NET_TYPE"."T_NET_UDP_NAME
 #define T_NET_IP4_TYPE   T_NET_TYPE"."T_NET_IP4_NAME
+#define T_NET_IFC_TYPE   T_NET_TYPE"."T_NET_IFC_NAME
+
+#define INT_TO_ADDR( _addr ) \
+	(_addr &       0xFF), \
+	(_addr >> 8  & 0xFF), \
+	(_addr >> 16 & 0xFF), \
+	(_addr >> 24 & 0xFF)
 
 
 enum t_net_t {
@@ -36,9 +44,16 @@ struct t_net {
 
 // Constructors
 // t_net_ip4.c
-struct sockaddr_in *t_net_ip4_check_ud  ( lua_State *L, int pos, int check );
-struct sockaddr_in *t_net_ip4_create_ud ( lua_State *L );
-void                t_net_ip4_set       ( lua_State *L, int pos, struct sockaddr_in *ip );
+struct sockaddr_in *t_net_ip4_check_ud    ( lua_State *L, int pos, int check );
+struct sockaddr_in *t_net_ip4_create_ud   ( lua_State *L );
+void                t_net_ip4_set         ( lua_State *L, int pos, struct sockaddr_in *ip );
+int                lt_net_ip4_getIpAndPort( lua_State *L );
+#define t_net_ip4_is( L, pos ) (NULL != t_net_ip4_check_ud( L, pos, 0 ))
+
+// t_net_ifc.c
+struct sockaddr_in *t_net_ifc_check_ud  ( lua_State *L, int pos, int check );
+struct sockaddr_in *t_net_ifc_create_ud ( lua_State *L );
+
 
 // t_net.c
 int           luaopen_t_net_tcp ( lua_State *L );
@@ -75,3 +90,7 @@ int           luaopen_t_net_ip4 ( lua_State *L );
 void          t_net_ip4_set     ( lua_State *L, int pos, struct sockaddr_in *ip );
 struct sockaddr_in  *t_net_ip4_create_ud ( lua_State *L );
 struct sockaddr_in  *t_net_ip4_check_ud  ( lua_State *L, int pos, int check );
+
+int           luaopen_t_net_ifc ( lua_State *L );
+struct sockaddr_in  *t_net_ifc_create_ud ( lua_State *L );
+struct sockaddr_in  *t_net_ifc_check_ud  ( lua_State *L, int pos, int check );

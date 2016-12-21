@@ -45,6 +45,11 @@ lt_net_ip4__Call( lua_State *L )
 	struct sockaddr_in  *ip4;
 
 	lua_remove( L, 1 );
+	if (t_net_ip4_is( L, 1 ))
+	{
+		lt_net_ip4_getIpAndPort( L );
+		lua_remove( L, 1 );
+	}
 	ip4 = t_net_ip4_create_ud( L );
 	t_net_ip4_set( L, 1, ip4 );
 	return 1;
@@ -69,7 +74,7 @@ t_net_ip4_set( lua_State *L, int pos, struct sockaddr_in *ip )
 	memset( (char *) &(*ip), 0, sizeof( ip ) );
 	ip->sin_family = AF_INET;
 
-   // First element is nil assign 0.0.0.0 and no port
+	// First element is nil assign 0.0.0.0 and no port
 	if (lua_isnoneornil( L, pos+0 ))
 	{
 		ip->sin_addr.s_addr = htonl( INADDR_ANY );
@@ -94,7 +99,7 @@ t_net_ip4_set( lua_State *L, int pos, struct sockaddr_in *ip )
 	if (lua_isnumber( L, pos+0 ))   // pos+0 because previous string was removed if there
 	{
 		port = luaL_checkinteger( L, pos+0 );
-		luaL_argcheck( L, 1 <= port && port <= 65536, pos+1,  // +1 because first was removed
+		luaL_argcheck( L, 0 <= port && port <= 65536, pos+1,  // +1 because first was removed
 		               "port number out of range" );
 		ip->sin_port   = htons( port );
 		lua_remove( L, pos+0 );
@@ -123,7 +128,7 @@ struct sockaddr_in
 /**--------------------------------------------------------------------------
  * Check a value on the stack for being a struct sockaddr_in
  * \param   L      Lua state.
- * \param   int    position on the stack
+ * \param   int    position on the stack.
  * \return  struct sockaddr_in*  pointer to the sockaddr
  * --------------------------------------------------------------------------*/
 struct sockaddr_in
@@ -161,11 +166,11 @@ lt_net_ip4_setIpAndPort( lua_State *L )
  * \lretrun int    Port number.
  * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
-static int
+int
 lt_net_ip4_getIpAndPort( lua_State *L )
 {
 	struct sockaddr_in *ip4 = t_net_ip4_check_ud( L, 1, 1 );
-	lua_pushstring( L, inet_ntoa( ip4->sin_addr ) );
+	lua_pushfstring( L, "%d.%d.%d.%d", INT_TO_ADDR( ip4->sin_addr.s_addr ) );
 	lua_pushinteger( L, ntohs( ip4->sin_port ) );
 	return 2;
 }
@@ -182,8 +187,8 @@ static int
 lt_net_ip4__tostring( lua_State *L )
 {
 	struct sockaddr_in *ip4 = t_net_ip4_check_ud( L, 1, 1 );
-	lua_pushfstring( L, T_NET_IP4_TYPE"{%s:%d}: %p",
-			inet_ntoa( ip4->sin_addr ),
+	lua_pushfstring( L, T_NET_IP4_TYPE"{%d.%d.%d.%d:%d}: %p",
+			INT_TO_ADDR( ip4->sin_addr.s_addr ),
 			ntohs( ip4->sin_port ),
 			ip4 );
 	return 1;
@@ -231,41 +236,36 @@ lt_net_ip4__eq( lua_State *L )
 
 
 /**--------------------------------------------------------------------------
- * Converts an integer into an IP address xxx.xxx.xxx.xxx representation
+ * Converts an integer into an IP address xxx.xxx.xxx.xxx representation.
  * \param   L      Lua state.
  * \lparam  int    the IPv4 Address as 32 bit integer.
- * \lreturn string IP address in xxx.xxx.xxx.xxx
+ * \lreturn string IP address in xxx.xxx.xxx.xxx.
  * \return  int    # of values pushed onto the stack.
  * TODO: check compile time endianess and reorder the uint8_t array
  * --------------------------------------------------------------------------*/
 static int
 lt_net_ip4_Int2ip( lua_State *L )
 {
-	uint32_t  ip_int  = luaL_checkinteger( L, 1 );
-	uint8_t  *ip      = (uint8_t *) &ip_int;
-
-	lua_pushfstring( L, "%d.%d.%d.%d",
-		ip[3], ip[2], ip[1], ip[0] );
+	lua_pushfstring( L, "%d.%d.%d.%d", INT_TO_ADDR( luaL_checkinteger( L, -1 ) ) );
 	return 1;
 }
 
 
 /**--------------------------------------------------------------------------
- * Converts an IPv4 Address into an unisgned integer
+ * Converts an IPv4 Address into an unisgned integer.
  * \param   L      Lua state.
- * \lparam  string the IPv4 Address as xxx.xxx.xxx.xxx string
- * \lreturn int    representing the IpAddress
+ * \lparam  string the IPv4 Address as xxx.xxx.xxx.xxx string.
+ * \lreturn int    representing the IpAddress.
  * \return  int    # of values pushed onto the stack.
  * TODO: check compile time endianess and reorder the uint8_t array
  * --------------------------------------------------------------------------*/
 static int
-lt_net_ip4_Ip2int (lua_State *L)
+lt_net_ip4_Ip2int( lua_State *L )
 {
-	uint32_t       ip[4];
-	const char   *ip_str  = luaL_checkstring( L, 1 );
-	sscanf( ip_str, "%d.%d.%d.%d", &ip[3], &ip[2], &ip[1], &ip[0] );
+	lua_Integer      ip[ 4 ];
+	sscanf( luaL_checkstring( L, 1 ), "%lld.%lld.%lld.%lld",
+		&ip[0], &ip[1], &ip[2], &ip[3] );
 
-	//printf ("strined IP[%d.%d.%d.%d]\n", ip[3], ip[2], ip[1], ip[0]);
 	lua_pushinteger( L, ip[0] | ip[1] << 8 | ip[2] << 16 | ip[3] << 24 );
 	return 1;
 }
@@ -275,8 +275,8 @@ lt_net_ip4_Ip2int (lua_State *L)
  * Class metamethods library definition
  * --------------------------------------------------------------------------*/
 static const struct luaL_Reg t_net_ip4_fm [] = {
-	  { "__call",      lt_net_ip4__Call }
-	, { NULL,          NULL }
+	  { "__call"     , lt_net_ip4__Call }
+	, { NULL         , NULL }
 };
 
 /**--------------------------------------------------------------------------
@@ -284,9 +284,9 @@ static const struct luaL_Reg t_net_ip4_fm [] = {
  * --------------------------------------------------------------------------*/
 static const luaL_Reg t_net_ip4_cf [] =
 {
-	  { "ip2int",    lt_net_ip4_Ip2int }
-	, { "int2ip",    lt_net_ip4_Int2ip }
-	, { NULL,        NULL }
+	  { "ip2int"     , lt_net_ip4_Ip2int }
+	, { "int2ip"     , lt_net_ip4_Int2ip }
+	, { NULL         , NULL }
 };
 
 /**--------------------------------------------------------------------------
@@ -294,12 +294,12 @@ static const luaL_Reg t_net_ip4_cf [] =
  * --------------------------------------------------------------------------*/
 static const struct luaL_Reg t_net_ip4_m [] = {
 	// metamethods
-	  { "__tostring",  lt_net_ip4__tostring }
-	, { "__eq",        lt_net_ip4__eq }
+	  { "__tostring" , lt_net_ip4__tostring }
+	, { "__eq"       , lt_net_ip4__eq }
 	// object methods
-	, { "get",         lt_net_ip4_getIpAndPort }
-	, { "set",         lt_net_ip4_setIpAndPort }
-	, { NULL,          NULL}
+	, { "get"        , lt_net_ip4_getIpAndPort }
+	, { "set"        , lt_net_ip4_setIpAndPort }
+	, { NULL         , NULL}
 };
 
 

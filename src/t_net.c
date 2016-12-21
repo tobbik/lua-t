@@ -611,5 +611,7 @@ luaopen_t_net( lua_State *L )
 	lua_setfield( L, -2, T_NET_UDP_NAME );
 	luaopen_t_net_ip4( L );
 	lua_setfield( L, -2, T_NET_IP4_NAME );
+	luaopen_t_net_ifc( L );
+	lua_setfield( L, -2, T_NET_IFC_NAME );
 	return 1;
 }

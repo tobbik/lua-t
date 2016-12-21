@@ -29,9 +29,10 @@ T_SRC=t.c \
 	 t_htp.c \
 	 t_htp_srv.c \
 	 t_htp_con.c \
-	 t_htp_str.c
+	 t_htp_str.c \
+	 t_net_ifc.c
 
-T_PRE:=""
+T_PRE:=
 
 ifdef BUILD_EXAMPLE
 T_PRE:=$(T_PRE) -D T_NRY=1
@@ -47,7 +48,8 @@ LDFLAGS:=$(LDFLAGS) -lcrypt
 # clang can be substituted with gcc (command line args compatible)
 CC=clang
 LD=clang
-CFLAGS:= -Wall -Wextra -O0 -std=c99 -fpic $(MYCFLAGS) $(T_PRE)
+#CFLAGS:= -Wall -Wextra -O0 -std=c99 -fpic $(MYCFLAGS) $(T_PRE)
+CFLAGS:= -Wall -Wextra -O0 -fpic $(MYCFLAGS) $(T_PRE)
 AR=ar rcu
 RANLIB=ranlib
 
