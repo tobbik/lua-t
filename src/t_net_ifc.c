@@ -29,6 +29,8 @@
 #include "t.h"
 #include "t_net.h"
 
+#define IFR_LEN  255
+
 
 /**--------------------------------------------------------------------------
  * Parse interface address into a T.Net.Ipv4 struct.
@@ -48,9 +50,8 @@ t_net_ifc_parseAddr( lua_State *L, int sd, struct ifreq *ifr, int ioctltype, int
 	if (ioctl( sd, ioctltype, ifr ) == 0)
 	{
 		addr    = t_net_ip4_create_ud( L );
-		*ip_int = ((struct sockaddr_in *)(&(ifr)->ifr_addr))->sin_addr.s_addr;
-		lua_pushfstring( L, "%d.%d.%d.%d", INT_TO_ADDR( *ip_int ) );
-		t_net_ip4_set( L, -1, addr );
+		memcpy( addr, (struct sockaddr_in *)(&(ifr)->ifr_addr), sizeof( struct sockaddr_in ) );
+		*ip_int = addr->sin_addr.s_addr;
 		return 1;
 	}
 	return 0;
@@ -111,16 +112,17 @@ t_net_ifc_parseFlag( lua_State *L, int sd, const char *name )
  * \param   int      sd Socket Descriptor.
  * \param   ifreq    struct ifreq pointer.
  * \lreturn table    T.Net.Interface instance.
- * \return  void
+ * \return  int/bool 1 if default, -1 if exist, 0 if not IPv4
  * --------------------------------------------------------------------------*/
-static void
+static int
 t_net_ifc_parseIfreq( lua_State *L, int sd, struct ifreq *ifr )
 {
 	struct sockaddr_in *nw_addr;
 	int                 addr, bcast, nmask;
+	int                 is_default = -1;
 
 	if (AF_INET != ifr->ifr_addr.sa_family)
-		return;
+		return 0;
 
 	lua_newtable( L );
 	if (t_net_ifc_parseAddr( L, sd, ifr, SIOCGIFADDR, &addr ))
@@ -137,14 +139,18 @@ t_net_ifc_parseIfreq( lua_State *L, int sd, struct ifreq *ifr )
 
 	if (t_net_ifc_parseFlag( L, sd, ifr->ifr_name ))
 	{
-		lua_pushvalue( L, -1 );
-		lua_setfield( L, -3, "default" ); // ifcs.default = ifc
+		lua_pushboolean( L, -1 );
+		lua_setfield( L, -2, "default" );
+		is_default = 1;
 	}
 
 	lua_pushstring( L, ifr->ifr_name );
 	lua_setfield( L, -2, "name" );
 
-	lua_setfield( L, -2, ifr->ifr_name ); // ifcs.name = ifc
+	luaL_getmetatable( L, T_NET_IFC_TYPE );
+	lua_setmetatable( L , -2 );
+
+	return is_default;
 }
 
 
@@ -158,11 +164,8 @@ t_net_ifc_parseIfreq( lua_State *L, int sd, struct ifreq *ifr )
 static int
 lt_net_ifc__Call( lua_State *L )
 {
-	struct sockaddr_in  *ifc;
-
-	lua_remove( L, 1 );
-	ifc = t_net_ifc_create_ud( L );
-	return 1;
+	lua_remove( L, 1 ); // remove T.Net.Interface CLASS table
+	return t_net_ifc_create_ud( L, luaL_checkstring( L, -1 ) );
 }
 
 
@@ -176,7 +179,7 @@ static int
 lt_net_ifc_List( lua_State *L )
 {
 	struct ifconf       ifc;
-	struct ifreq        ifr[ 255 ];
+	struct ifreq        ifr[ IFR_LEN ];
 	int                 sd;
 	size_t              i;
 
@@ -191,51 +194,124 @@ lt_net_ifc_List( lua_State *L )
 
 		if (ioctl( sd, SIOCGIFCONF, &ifc ) == 0)
 		{
-			lua_newtable( L );
+			lua_newtable( L );             // table for all interface names
 
 			for (i = 0; i < ifc.ifc_len / sizeof( struct ifreq ); ++i)
-				t_net_ifc_parseIfreq( L, sd, &(ifr[ i ]) );
+			{
+				lua_pushstring( L, ifr[ i ].ifr_name );
+				lua_rawseti( L, -2, i+1 );
+			}
+			close( sd );
+			return 1;
 		}
-
 		close( sd );
-		return 1;
 	}
 	return 0;
 }
 
 
 /**--------------------------------------------------------------------------
- * Create an IP endpoint userdata and push to LuaStack.
+ * get a named T.Net.Interface Lua table and push to LuaStack.
  * \param   L      Lua state.
- * \return  struct sockaddr_in*  pointer to the sockaddr
+ * \param   int    Socket descriptor.
+ * \param   char*  Name of interface.
+ * \lreturn table  T.Net.Interface Lua table instance.
+ * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
-struct sockaddr_in
-*t_net_ifc_create_ud( lua_State *L )
+static int
+t_net_ifc_getDefaultIf( lua_State *L, struct ifreq *ifr, int sd, size_t len )
 {
-	struct sockaddr_in  *ip4;
+	size_t              i;
 
-	ip4 = (struct sockaddr_in *) lua_newuserdata( L, sizeof(struct sockaddr_in) );
-
-	luaL_getmetatable( L, T_NET_IP4_TYPE );
-	lua_setmetatable( L , -2 );
-	return ip4;
+	for (i = 0; i < len; ++i)
+	{
+		if (1 == t_net_ifc_parseIfreq( L, sd, &(ifr[ i ]) )) //S: name ifc
+			return 1;
+	}
+	return 0;
 }
 
 
 /**--------------------------------------------------------------------------
- * Check a value on the stack for being a struct sockaddr_in
+ * get a named T.Net.Interface Lua table and push to LuaStack.
  * \param   L      Lua state.
- * \param   int    position on the stack
- * \return  struct sockaddr_in*  pointer to the sockaddr
+ * \param   int    Socket descriptor.
+ * \param   char*  Name of interface.
+ * \lreturn table  T.Net.Interface Lua table instance.
+ * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
-struct sockaddr_in
-*t_net_ifc_check_ud( lua_State *L, int pos, int check )
+static int
+t_net_ifc_getNamedIf( lua_State *L, struct ifreq *ifr, int sd, const char *if_name, size_t len )
 {
-	void *ud = luaL_testudata( L, pos, T_NET_IFC_TYPE );
-	luaL_argcheck( L, (ud != NULL  || !check), pos, "`"T_NET_IFC_TYPE"` expected" );
-	return (NULL==ud) ? NULL : (struct sockaddr_in *) ud;
+	size_t              i;
+
+	for (i = 0; i < len; ++i)
+		if (0 == strcmp( if_name, ifr[ i ].ifr_name ))
+		{
+			if (t_net_ifc_parseIfreq( L, sd, &(ifr[ i ]) )) //S: name ifc
+				return 1;
+		}
+	return 0;
 }
 
+
+/**--------------------------------------------------------------------------
+ * Create an T.Net.Interface Lua table and push to LuaStack.
+ * \param   L      Lua state.
+ * \lreturn table  T.Net.Interface Lua table instance.
+ * \return  int    # of values pushed onto the stack.
+ * --------------------------------------------------------------------------*/
+int
+t_net_ifc_create_ud( lua_State *L, const char *if_name )
+{
+	struct ifconf       ifc;
+	struct ifreq        ifr[ IFR_LEN ];
+	int                 sd;
+	int                 res = 0;
+
+	// Create a socket so we can use ioctl on the file
+	// descriptor to retrieve the interface info.
+	sd = socket( PF_INET, SOCK_DGRAM, 0 );
+
+	if (sd > 0)
+	{
+		ifc.ifc_len           = sizeof( ifr );
+		ifc.ifc_ifcu.ifcu_buf = (caddr_t) ifr;
+
+		if (ioctl( sd, SIOCGIFCONF, &ifc ) == 0)
+		{
+			if (0 == strncmp( "default", if_name, 7 ))
+				res = t_net_ifc_getDefaultIf( L, ifr, sd, ifc.ifc_len / sizeof( struct ifreq ) );
+			else
+				res = t_net_ifc_getNamedIf( L, ifr, sd, if_name, ifc.ifc_len / sizeof( struct ifreq ) );
+		}
+	}
+	close( sd );
+	return res;
+}
+
+
+/**--------------------------------------------------------------------------
+ * Check a value on the stack for being a T.Net.Interface
+ * \param   L        Lua state.
+ * \param   int      position on the stack.
+ * \lparam  table    T.Net.Interface Lua table instance.
+ * \lreturn void
+ * --------------------------------------------------------------------------*/
+void
+t_net_ifc_check_ud( lua_State *L, int pos )
+{
+	luaL_checktype( L, pos, LUA_TTABLE );
+   if (lua_getmetatable( L, pos ))            // does it have a metatable?
+	{
+		luaL_getmetatable( L, T_NET_IFC_TYPE ); // get correct metatable */
+		if (! lua_rawequal( L, -1, -2 ))        // not the same?
+			t_push_error( L, "wrong argument, `"T_NET_IFC_TYPE"` expected" );
+		lua_pop( L, 2);
+	}
+	else
+		t_push_error( L, "wrong argument, `"T_NET_IFC_TYPE"` expected" );
+}
 
 /**--------------------------------------------------------------------------
  * Prints out the ip endpoint.
@@ -247,10 +323,11 @@ struct sockaddr_in
 static int
 lt_net_ifc__tostring( lua_State *L )
 {
-	struct sockaddr_in *ifc = t_net_ip4_check_ud( L, 1, 1 );
-	lua_pushfstring( L, T_NET_IFC_TYPE"{%s}: %p",
-			INT_TO_ADDR( ifc->sin_addr.s_addr ),
-			ifc );
+	t_net_ifc_check_ud( L, 1 );
+	lua_pushstring( L, T_NET_IFC_TYPE"{" );
+	lua_getfield( L, -2, "name" );
+	lua_pushfstring( L, "}: %p", lua_topointer( L, -3 ) );
+	lua_concat( L, 3 );
 	return 1;
 }
 

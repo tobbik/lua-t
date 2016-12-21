@@ -1,7 +1,6 @@
 #!../out/bin/lua
 local t=require('t')
-local sip,sport='10.128.3.144',8888
---local sip,sport='192.168.0.200',8888
+sip,sport=t.Net.Interface( 'default' ).address:get(),8888
 
 tcpsock,ip = t.Net.TCP.listen( sip, sport, 5 )
 --tcpsock:listen(5)

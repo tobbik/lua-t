@@ -44,6 +44,7 @@ struct t_net {
 
 // Constructors
 // t_net_ip4.c
+int                 luaopen_t_net_ip4     ( lua_State *L );
 struct sockaddr_in *t_net_ip4_check_ud    ( lua_State *L, int pos, int check );
 struct sockaddr_in *t_net_ip4_create_ud   ( lua_State *L );
 void                t_net_ip4_set         ( lua_State *L, int pos, struct sockaddr_in *ip );
@@ -51,12 +52,11 @@ int                lt_net_ip4_getIpAndPort( lua_State *L );
 #define t_net_ip4_is( L, pos ) (NULL != t_net_ip4_check_ud( L, pos, 0 ))
 
 // t_net_ifc.c
-struct sockaddr_in *t_net_ifc_check_ud  ( lua_State *L, int pos, int check );
-struct sockaddr_in *t_net_ifc_create_ud ( lua_State *L );
-
+int           luaopen_t_net_ifc   ( lua_State *L );
+void          t_net_ifc_check_ud  ( lua_State *L, int pos );
+int           t_net_ifc_create_ud ( lua_State *L, const char *name );
 
 // t_net.c
-int           luaopen_t_net_tcp ( lua_State *L );
 struct t_net *t_net_check_ud    ( lua_State *L, int pos, int check );
 struct t_net *t_net_create_ud   ( lua_State *L, enum t_net_t type, int create );
 void          t_net_getdef      ( lua_State *L, int pos, struct t_net **s,
@@ -72,10 +72,9 @@ int           t_net_bind        ( lua_State *L, enum t_net_t t );
 int           t_net_connect     ( lua_State *L, enum t_net_t t );
 int          lt_net__tostring   ( lua_State *L );
 
-
 // t_net_tcp.c
-struct t_net *t_net_tcp_check_ud   ( lua_State *L, int pos, int check );
-
+int           luaopen_t_net_tcp ( lua_State *L );
+struct t_net *t_net_tcp_check_ud( lua_State *L, int pos, int check );
 int           t_net_tcp_recv    ( lua_State *L, struct t_net *s, char* buff, size_t sz );
 int           t_net_tcp_send    ( lua_State *L, struct t_net *s, const char* buff, size_t sz );
 int           t_net_tcp_accept  ( lua_State *L, int pos );
@@ -83,14 +82,3 @@ int           t_net_tcp_accept  ( lua_State *L, int pos );
 // t_net_udp.c
 int           luaopen_t_net_udp ( lua_State *L );
 struct t_net *t_net_udp_check_ud( lua_State *L, int pos, int check );
-
-
-
-int           luaopen_t_net_ip4 ( lua_State *L );
-void          t_net_ip4_set     ( lua_State *L, int pos, struct sockaddr_in *ip );
-struct sockaddr_in  *t_net_ip4_create_ud ( lua_State *L );
-struct sockaddr_in  *t_net_ip4_check_ud  ( lua_State *L, int pos, int check );
-
-int           luaopen_t_net_ifc ( lua_State *L );
-struct sockaddr_in  *t_net_ifc_create_ud ( lua_State *L );
-struct sockaddr_in  *t_net_ifc_check_ud  ( lua_State *L, int pos, int check );

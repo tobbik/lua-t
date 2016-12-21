@@ -1,6 +1,6 @@
 #!../out/bin/lua
 t,fmt=require('t'),string.format
-ipAddr,port='172.16.0.195',8888
+ipAddr,port=t.Net.Interface( 'default' ).address:get(),8888
 
 local s,ip = t.Net.UDP.bind( ipAddr, port )
 print( s, ip )

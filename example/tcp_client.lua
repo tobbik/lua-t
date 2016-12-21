@@ -1,6 +1,6 @@
 #!../out/bin/lua
 t=require('t')
-ipAddr,port=t.Net.Interface.list().default.address:get(),8888
+ipAddr,port=t.Net.Interface( 'default' ).address:get(),8888
 
 if arg[ 1 ] == "c" then
 	tcpsock = t.Net.TCP( )
