@@ -99,7 +99,7 @@ LUAMOD_API int luaopen_t_nry( lua_State *L );
 
 
 /******************************************************************************
- * Copyright (C) 2012-2014, Tobias Kieslich (tkieslich). All rights reseved.
+ * Copyright (C) 2012-2017, Tobias Kieslich (tkieslich). All rights reseved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
