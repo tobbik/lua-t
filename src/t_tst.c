@@ -14,46 +14,8 @@
 #include <stdlib.h>            // malloc
 
 #include "t.h"
+#include "t_tst.h"
 #include "t_tim.h"
-
-#define T_TST_CAS_NAME     "Case"
-
-// forward declaration eliminates need for header file
-// l_t_tst.c
-static void t_tst_check_ud( lua_State *L, int pos);
-
-
-/**--------------------------------------------------------------------------
- * push a string formatting a stack element
- * \param   L  The lua state.
- * \param   pos    integer.
- * \return  The number of results to be passed back to the calling Lua script.
- * --------------------------------------------------------------------------*/
-static void
-fmt_stack_item( lua_State *L, int pos)
-{
-	int t;
-	if (!luaL_callmeta( L, pos, "__tostring" ))
-	{
-		t = lua_type( L, pos );
-		switch (t)
-		{
-			case LUA_TSTRING:    /* strings */
-				lua_pushvalue( L, pos );
-				break;
-			case LUA_TBOOLEAN:   /* booleans */
-				if (lua_toboolean( L, pos )) lua_pushliteral( L, "true" );
-				else lua_pushliteral( L, "false" );
-				break;
-			case LUA_TNUMBER:    /* numbers */
-				lua_pushfstring( L, "%f", lua_tonumber( L, pos ) );
-				break;
-			default:	            /* other values */
-				lua_pushfstring( L, "%s", lua_typename( L, pos ) );
-				break;
-		}
-	}
-}
 
 
 /**--------------------------------------------------------------------------
@@ -293,7 +255,7 @@ t_tst__newindex( lua_State *L )
 			// TODO: find a more elegant way without that much stack gymnastics
 			lua_newtable( L );                // Stack 4: empty table
 			t_get_fn_source( L );
-			luaL_getmetatable( L, T_TST_TYPE"."T_TST_CAS_NAME );
+			luaL_getmetatable( L, T_TST_CSE_TYPE );
 			lua_setmetatable( L, 4 );
 
 			lua_pushvalue( L , 2 );           // copy name from 2 to 5
@@ -396,9 +358,9 @@ t_tst_equal( lua_State *L )
 		lua_newtable( L );
 		lua_pushvalue( L, 1 );
 		lua_setfield( L, -2, "message" );
-		fmt_stack_item( L, 2 );
+		t_fmtStackItem( L, 2, 0 );
 		lua_setfield( L, -2, "expected" );
-		fmt_stack_item( L, 3 );
+		t_fmtStackItem( L, 3, 0 );
 		lua_setfield( L, -2, "got" );
 		lua_pushliteral( L, "value expected not equal to value got" );
 		lua_setfield( L, -2, "assert" );
@@ -450,9 +412,9 @@ t_tst_equal_not( lua_State *L )
 		lua_newtable( L );
 		lua_pushvalue( L, 1 );
 		lua_setfield( L, -2, "message" );
-		fmt_stack_item( L, 2 );
+		t_fmtStackItem( L, 2, 0 );
 		lua_setfield( L, -2, "expected" );
-		fmt_stack_item( L, 3 );
+		t_fmtStackItem( L, 3, 0 );
 		lua_setfield( L, -2, "got" );
 		lua_pushliteral( L, "value expected is equal to value got" );
 		lua_setfield( L, -2, "assert" );
@@ -495,9 +457,9 @@ t_tst_lt( lua_State *L )
 			lua_newtable( L );
 			lua_pushvalue( L, 3 );
 			lua_setfield( L, -2, "message" );
-			fmt_stack_item( L, 1 );
+			t_fmtStackItem( L, 1, 0 );
 			lua_setfield( L, -2, "expected" );
-			fmt_stack_item( L, 2 );
+			t_fmtStackItem( L, 2, 0 );
 			lua_setfield( L, -2, "got" );
 			lua_pushliteral( L, "value expected not lesser than value got" );
 			lua_setfield( L, -2, "assert" );
@@ -755,7 +717,7 @@ LUA_API int
 luaopen_t_tst( lua_State *L )
 {
 	// internal metatable that allows the it to be called
-	luaL_newmetatable( L, T_TST_TYPE"."T_TST_CAS_NAME );   // stack: functions meta
+	luaL_newmetatable( L, T_TST_CSE_TYPE );   // stack: functions meta
 	lua_pushcfunction( L, t_tst_case__call );
 	lua_setfield( L, -2, "__call" );
 	lua_pushcfunction( L, t_tst_case__tostring );

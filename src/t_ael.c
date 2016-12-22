@@ -527,7 +527,7 @@ lt_ael_showloop( lua_State *L )
 			tr->tv->tv_sec,  tr->tv->tv_usec,
 			tr->tv );
 		t_ael_getfunc( L, tr->fR );
-		t_stackPrint( L, n+1, lua_gettop( L ) );
+		t_stackPrint( L, n+1, lua_gettop( L ), 1 );
 		lua_pop( L, lua_gettop( L ) - n );
 		printf( "\n" );
 		tr = tr->nxt;
@@ -541,7 +541,7 @@ lt_ael_showloop( lua_State *L )
 		{
 			printf( "%5d  [R]  ", i );
 			t_ael_getfunc( L, ael->fd_set[i]->rR );
-			t_stackPrint( L, n+2, lua_gettop( L ) );
+			t_stackPrint( L, n+2, lua_gettop( L ), 1 );
 			lua_pop( L, lua_gettop( L ) - n );
 			printf( "\n" );
 		}
@@ -549,7 +549,7 @@ lt_ael_showloop( lua_State *L )
 		{
 			printf( "%5d  [W]  ", i );
 			t_ael_getfunc( L, ael->fd_set[i]->wR );
-			t_stackPrint( L, n+2, lua_gettop( L ) );
+			t_stackPrint( L, n+2, lua_gettop( L ), 1 );
 			lua_pop( L, lua_gettop( L ) - n );
 			printf( "\n" );
 		}

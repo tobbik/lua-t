@@ -41,9 +41,10 @@
 #define TSWAP(type,a,b) do{type SWAP_tmp= b; b= a; a= SWAP_tmp;}while(0)
 
 // global debugger helpers
-void t_stackDump ( lua_State *L );
-void t_stackPrint( lua_State *L, int first, int last );
-int  t_push_error( lua_State *L, const char *fmt, ... );
+void t_fmtStackItem( lua_State *L, int idx, int no_tostring );
+void t_stackDump   ( lua_State *L );
+void t_stackPrint  ( lua_State *L, int first, int last, int no_tostring );
+int  t_push_error  ( lua_State *L, const char *fmt, ... );
 
 // global helper functions
 uint16_t get_crc16( const unsigned char *data, size_t size );
