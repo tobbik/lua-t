@@ -19,18 +19,15 @@ Class Members
 T.Time.sleep( int *x* )
   make the process sleep for *x* milliseconds
 
-T.Time *t* = T.Time.new( [ int *x* ], [ T.Time *tx* ] )
-  Instantiate a new T.Time object.  If an integer is passed as paramter the
-  value will be interpreted as milliseconds.  If another T.Time value is
-  passed a clone of that value will be created.  If no paramter is passed a
-  T.Time value with the time passed since the Unix epoch will be created.
-
 
 Class Metamembers
 -----------------
 
 T.Time *tx* = T.Time( int *x* )   [__call]
-  Same constructor behaviour as T.Time.new( )
+  Instantiate a new T.Time object.  If an integer is passed as paramter the
+  value will be interpreted as milliseconds.  If another T.Time value is
+  passed a clone of that value will be created.  If no paramter is passed a
+  T.Time value with the time passed since the Unix epoch will be created.
 
 
 Instance Members

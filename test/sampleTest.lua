@@ -128,5 +128,4 @@ end
 t.tearDown = function(self)
 end
 
-t:run( )
-print(t)
+t:run()

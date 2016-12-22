@@ -23,14 +23,15 @@ T_SRC=t.c \
 	 t_buf.c \
 	 t_pck.c \
 	 t_wsk.c \
-	 t_tst.c \
 	 t_oht.c \
 	 t_set.c \
 	 t_htp.c \
 	 t_htp_srv.c \
 	 t_htp_con.c \
 	 t_htp_str.c \
-	 t_net_ifc.c
+	 t_net_ifc.c \
+	 t_tst.c \
+	 t_tst_cse.c
 
 T_PRE:=
 
