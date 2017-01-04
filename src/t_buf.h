@@ -55,9 +55,9 @@ static const char *const t_pck_t_lst[] = {
 struct t_pck {
 	enum  t_pck_t  t;   ///< type of packer
 	/// size of packer -> various meanings
-	///  -- for int/uint, float, raw =  the number of bytes
-	///  -- for bit, bits and nibble =  the number of bits
-	///  -- for Seq,Struct,Arr       =  the number of elements in this Combinator
+	///  -- for int/uint, float, raw = the number of bytes
+	///  -- for bit, bits, nibble    = the number of bits
+	///  -- for Seq, Struct, Arr     = the number of elements in this Combinator
 	size_t         s;
 	/// modifier -> various meanings
 	///  -- for int/uint             = Endian (0=Big, 1=Little)
