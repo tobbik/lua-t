@@ -10,13 +10,13 @@ print( T.Buffer(s):toHex() )
 sq = T.Pack( fmt )          -- autodetect this as multiple packers -> create sequence
 
 st = T.Pack(                -- key/value pairs create Struct 
-	{ threeUInt      = sq[1] },  -- reuse definitions from sq ..
-	{ twoIntegs      = sq[2] },
-	{ signedByte     = sq[3] },
-	{ unsignByte     = sq[4] },
-	{ fiveSInt       = sq[5] },
-	{ fourSInt       = sq[6] },
-	{ signShort      = sq[7] }
+	{ threeUInt  = sq[1] },  -- reuse definitions from sq ..
+	{ twoIntegs  = sq[2] },
+	{ signedByte = sq[3] },
+	{ unsignByte = sq[4] },
+	{ fiveSInt   = sq[5] },
+	{ fourSInt   = sq[6] },
+	{ signShort  = sq[7] }
 )
 
 print( s, string.unpack( fmt, s ) )

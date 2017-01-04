@@ -15,7 +15,7 @@
 #include <string.h>               // memset
 
 #include "t.h"
-#include "t_buf.h"
+#include "t_pck.h"
 
 
 // --------------------------------- HELPERS Functions
@@ -159,8 +159,8 @@ lt_buf_unpack( lua_State *L )
 	size_t        n = 0,j;
 
 	buf = t_buf_getbuffer( L, 1 , 3, &pos );
-	pc  = t_pck_getpck( L, 2, &n );
-	t_pcr__callread( L, pc, buf->b + pos );
+	pc  = t_pck_getPacker( L, 2, &n );
+	t_pck_fld__callread( L, pc, buf->b + pos );
 
 	if (T_PCK_SEQ == pc->t)
 	{

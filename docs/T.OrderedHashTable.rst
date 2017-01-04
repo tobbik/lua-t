@@ -25,14 +25,14 @@ Common Pitfalls:
 ----------------
 
 Why is there no `T.OrderedHashTable( { A="foo", B="bar" } )` constructor?
-  The table in that example is already a Lua table by the time it is passed
+  The table in this case is already a Lua table by the time it is passed
   into the constructor.  At this point it the ordering information is
   already lost.
 
-Why is there no `t.add( element )`?
+Why is there no `t:add( element )`?
   OrderedHashTable uses table syntax for access.  A user might wanna create
-  an OrderedHashTable where 'add' is a value `t.add = true`.  This would
-  lead to conflicting accessors.
+  an OrderedHashTable where 'add' is a value such as `t.add = true`.  This
+  would lead to conflicting accessors.
 
 Calling `T.OrderedHashTable.getindex( instance, index )` seems slow?
   Above operation is not a lookup but an O(n) scan operation.  Since it is
