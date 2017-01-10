@@ -469,9 +469,7 @@ t_set_iter( lua_State *L )
 		return 2;
 	}
 	else
-	{
 		return 0;
-	}
 }
 
 
@@ -489,7 +487,7 @@ lt_set__pairs( lua_State *L )
 
 	lua_pushcfunction( L, &t_set_iter );
 	lua_rawgeti( L, LUA_REGISTRYINDEX, set->tR );
-	lua_pushnil( L );         // S: set,fnc,tbl,nil
+	lua_pushnil( L );         // S: set fnc tbl nil
 	lua_remove( L, -4 );      // remove T.Set from stack
 	return 3;
 }

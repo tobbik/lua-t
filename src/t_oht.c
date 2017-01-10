@@ -13,7 +13,7 @@
  *            "a" = "value 1",
  *            "b" = "value 2",
  *            "c" = "value 3",
- *            "d" = "value 4",
+ *            "d" = "value 4"
  * \author    tkieslich
  * \copyright See Copyright notice at the end of t.h
  */
@@ -255,22 +255,16 @@ lt_oht__index( lua_State *L )
 {
 	struct t_oht *oht = t_oht_check_ud( L, -2, 1 );
 
-	lua_rawgeti( L, LUA_REGISTRYINDEX, oht->tR );    // S: oht key/idx ref
-	lua_replace( L, -3 );                            // S: ref key/idx
+	lua_rawgeti( L, LUA_REGISTRYINDEX, oht->tR );       // S: oht key/idx ref
+	lua_replace( L, -3 );                               // S: ref key/idx
 
 	if (LUA_TNUMBER == lua_type( L, -1 ) )
-	{
-		lua_rawgeti( L, -2, luaL_checkinteger( L, -1) );  // S: ref idx key
-		lua_rawget( L, -3 );                          // S: ref idx val
-
-		return 1;
-	}
+		lua_rawgeti( L, -2, luaL_checkinteger( L, -1) ); // S: ref idx key
 	else
-	{
-		lua_pushvalue( L, -1 );                       // S: ref key key
-		lua_rawget( L, -3 );                          // S: ref key val
-		return 1;
-	}
+		lua_pushvalue( L, -1 );                          // S: ref key key
+
+	lua_rawget( L, -3 );                                // S: ref key/idx val
+	return 1;
 }
 
 
@@ -289,8 +283,8 @@ lt_oht__newindex( lua_State *L )
 	size_t        len;
 	struct t_oht *oht = t_oht_check_ud( L, -3, 1 );
 
-	lua_rawgeti( L, LUA_REGISTRYINDEX, oht->tR ); // S: oht key/id val tbl
-	lua_replace( L, -4 );                         // S: tbl key/id val
+	lua_rawgeti( L, LUA_REGISTRYINDEX, oht->tR ); // S: oht key/idx val tbl
+	lua_replace( L, -4 );                         // S: tbl key/idx val
 	len = lua_rawlen( L, -3 );
 	if (lua_isnil( L, -1 ))
 	{
@@ -310,18 +304,18 @@ lt_oht__newindex( lua_State *L )
 	}
 	else
 	{
-		lua_pushvalue( L, -2 );                    // S: tbl,key,val,key
-		lua_rawget( L, -4 );                       // S: tbl,key,val,valold?
+		lua_pushvalue( L, -2 );                    // S: tbl key val key
+		lua_rawget( L, -4 );                       // S: tbl key val valold?
 		if (lua_isnil( L, -1 ))      // add a new value to the table
 		{
 			lua_pop( L, 1 );
-			lua_pushvalue( L, -2 );                 // S: tbl,key,val,key
+			lua_pushvalue( L, -2 );                 // S: tbl key val key
 			lua_rawseti( L, -4, lua_rawlen( L, -4 ) + 1 );
 			lua_rawset( L, -3 );
 		}
 		else                         // replace a value in the table
 		{
-			lua_pop( L, 1 );                        // S: tbl,key,val
+			lua_pop( L, 1 );                        // S: tbl key val
 			lua_rawset( L, -3 );
 		}
 	}
@@ -444,7 +438,7 @@ lt_oht__len( lua_State *L )
 
 
 /**--------------------------------------------------------------------------
- * Return Tostring representation of a ordered table stream.
+ * Return Tostring representation of a ordered table.
  * \param   L       Lua state.
  * \lreturn string  formatted string representing ordered table.
  * \return  int     # of values pushed onto the stack.
@@ -474,7 +468,9 @@ static const struct luaL_Reg t_oht_fm [] = {
  * --------------------------------------------------------------------------*/
 static const struct luaL_Reg t_oht_cf [] = {
 	  { "getIndex"     , lt_oht_GetIndex }
+	//, { "getKey"       , lt_oht_GetKey }
 	, { "insert"       , lt_oht_Insert }
+	//, { "concat"       , lt_oht_Concat }
 	, { NULL           , NULL }
 };
 
@@ -488,7 +484,7 @@ static const luaL_Reg t_oht_m [] = {
 	, { "__newindex"   , lt_oht__newindex }
 	, { "__pairs"      , lt_oht__pairs }
 	, { "__ipairs"     , lt_oht__ipairs }
-	, { NULL           , NULL}
+	, { NULL           , NULL }
 };
 
 
