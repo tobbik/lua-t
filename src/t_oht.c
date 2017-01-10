@@ -14,6 +14,29 @@
  *            "b" = "value 2",
  *            "c" = "value 3",
  *            "d" = "value 4"
+ *   17164 Jan 10 13:46 src/t_oht.c
+ *    1004 Jan  3 01:22 src/t_oht.h
+ *   24376 Jan 10 13:46 src/t_oht.o
+ *            This design allows for numeric iteration no matter if pairs or
+ *            ipairs is used since the current index can be carried as an
+ *            upvalue.
+
+
+
+
+
+
+
+ *            1   = 'value 1',
+ *            2   = 'value 2',
+ *            3   = 'value 3',
+ *            4   = 'value 4',
+ *            "a" = 1,
+ *            "b" = 2,
+ *            "c" = 3,
+ *            "d" = 4
+ *            This design is not working because when using pairs, we can't
+ *            easily get the index of a key to assure proper order.
  * \author    tkieslich
  * \copyright See Copyright notice at the end of t.h
  */
@@ -34,53 +57,45 @@
 static void
 t_oht_deleteElement( lua_State *L )
 {
-	lua_Integer i;
-	size_t      k     = 1;
-	int         found = 0;
-	size_t      l     = lua_rawlen( L, -3 );
+	int         i = 0;
+	size_t      len = lua_rawlen( L, -3 );
 
 	// TODO: check that key actually exist and/or i is not outOfBound
 
 	if (LUA_TNUMBER == lua_type( L, -2 ) )
 	{
-		i = luaL_checkinteger( L, -2 );
-		// delete oht.key
-		lua_rawgeti( L, -3, i );              // S: … tbl idx nil key
-		lua_replace( L, -3 );                 // S: … tbl key nil
-		lua_rawset( L, -3 );                  // S: … tbl
-
-		for (k=i; k < l; k++)
+		// delete oht.key  -- reuse nil value for lua_next() start
+		while (lua_next( L, -3 ))          //S:  … tbl idx key idx
 		{
-			lua_rawgeti( L, -1, k + 1 );       // S: … tbl key
-			lua_rawseti( L, -2, k );           // S: … tbl
+			if (lua_rawequal( L, -1, -3 ))
+			{
+				lua_pop( L, 1 );             //S:  … tbl idx key
+				lua_pushnil( L );            //S:  … tbl idx key nil
+				lua_rawset( L, -4 );         //S:  … tbl idx
+				break;
+			}
+			else
+				lua_pop( L, 1 );             //S:  … tbl idx key
 		}
 	}
 	else
 	{
 		// delete oht.key
-		lua_pushvalue( L, -2 );               // S: … tbl key nil key
-		lua_insert( L, -3 );                  // S: … tbl key key nil
-		lua_rawset( L, -4 );                  // S: … tbl key
-
-		for (k=1; k < l; k++)
-		{
-			if (! found)
-			{
-				lua_rawgeti( L, -2, k );        // S: … tbl key keyK
-				if (lua_rawequal( L, -1, -2 ))
-					found = k;
-				lua_pop( L, 1 );
-			}
-			if (found)
-			{
-				lua_rawgeti( L, -2, k + 1 );    // S: … tbl key keyK+1
-				lua_rawseti( L, -3, k );        // S: … tbl key
-			}
-		}
-		lua_pop( L, 1 );                      // S: … tbl
+		lua_pushvalue( L, -2 );             //S: … tbl key nil key
+		lua_rawget( L, -4 );                //S: … tbl key nil idx
+		lua_insert( L, -3 );                //S: … tbl idx key nil
+		lua_rawset( L, -4 );                //S: … tbl idx
 	}
-	lua_pushnil( L );                        // S: … tbl key nil
-	lua_rawseti( L, -2, l );
+
+	// move up values > idx
+	for (i=luaL_checkinteger( L, -1 ); i < (int) len; i++)
+	{
+		lua_rawgeti( L, -1, i + 1 );    // S: … tbl idx idxK
+		lua_rawseti( L, -2, i );        // S: … tbl idx
+	}
+	lua_pop( L, 1 );                   // S: … tbl
+	lua_pushnil( L );                  // S: … tbl key nil
+	lua_rawseti( L, -2, len );
 }
 
 
@@ -98,64 +113,59 @@ t_oht_insertElement( lua_State *L )
 	size_t i     = luaL_checkinteger( L, -3 );
 	size_t k     = 1;
 
-	luaL_argcheck( L, 1 <= i && i <= lua_rawlen( L, -4 ), -3, "position out of bounds");
+	luaL_argcheck( L, 1 <= i && i <= lua_rawlen( L, -4 ), -3, "position out of bounds" );
 
-	for (k=lua_rawlen( L, -4 ); k>=i; k--)
+	for (k=lua_rawlen( L, -4 ); k>=i; k--)    // S: … tbl idx key val
 	{
-		lua_rawgeti( L, -4, k );               // S: … tbl idx key val keyK
+		lua_rawgeti( L, -4, k );               // S: … tbl idx key val valK
 		lua_rawseti( L, -5, k + 1 );           // S: … tbl idx key val
 	}
-	lua_pushvalue( L, -2 );                   // S: … tbl idx key val key
-	lua_rawseti( L, -5, i );                  // S: … tbl idx key val
-	lua_rawset( L, -4 );                      // S: … tbl idx
-	lua_pop( L, 1 );                          // S: … tbl idx
+	lua_rawseti( L, -4, i );                  // S: … tbl idx key
+	lua_insert( L, -2 );                      // S: … tbl key idx
+	lua_rawset( L, -3 );                      // S: … tbl
 }
 
 
 /**--------------------------------------------------------------------------
- * Get index in table where a key is located.
+ * Get key in table for given index.
  * \param   L          Lua state.
  * \lparam  table      table.
- * \lparam  value      key.
+ * \lparam  int        index.
  * \return  size_t     1-based index for *key* is in the table.
  * --------------------------------------------------------------------------*/
-static size_t
-t_oht_getIndex( lua_State *L )
+static void
+t_oht_getKey( lua_State *L )
 {
-	size_t  i = 1;
-
-	for ( i=1; i < lua_rawlen( L, -2 ) + 1; i++ )
+	int  equal = 0;
+	lua_pushnil( L );                  //S:  … tbl idx nil
+	while (lua_next( L, -3 ))          //S:  … tbl idx key idx
 	{
-		lua_rawgeti( L, -2, i );  // S: … tbl key keyI
-		if (lua_rawequal( L, -1, -2 ))
-			return i;
-		lua_pop( L, 1 );
+		equal = (lua_rawequal( L, -1, -3 )) ? 1 : 0;
+		lua_pop( L, 1 );                //S:  … tbl idx key
+		if (equal) return;         // return with key on stack
 	}
-	return 0;              // key not found
+	lua_pushnil( L );             // return with nil on stack
+	return;
 }
 
 
 /**--------------------------------------------------------------------------
- * Get index in table where a key is located.
+ * Get key in table for given index.
  * \param   L      Lua state.
  * \lparam  ud     T.OrderedHashTable userdata instance.
- * \lparam  value  key.
+ * \lparam  int    index.
+ * \lreturn value  key or nil if outOfBound.
  * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int
-lt_oht_GetIndex( lua_State *L )
+lt_oht_GetKey( lua_State *L )
 {
 	struct t_oht *oht = t_oht_check_ud( L, -2, 1 );
-	lua_Integer     i;
 
-	lua_rawgeti( L, LUA_REGISTRYINDEX, oht->tR );    // S: oht key ref
-	lua_insert( L, -2 );                             // S: oht ref key
+	lua_rawgeti( L, LUA_REGISTRYINDEX, oht->tR );    // S: oht idx tbl
+	lua_insert( L, -2 );                             // S: oht tbl idx
 
-	i = t_oht_getIndex( L );
-	if (i)
-		lua_pushinteger( L, i );
-	else
-		lua_pushnil( L );
+	t_oht_getKey( L );
 	return 1;
 }
 
@@ -173,17 +183,14 @@ static int
 lt_oht_Insert( lua_State *L )
 {
 	struct t_oht *oht = t_oht_check_ud( L, 1, 1 );
-	size_t          i = luaL_checkinteger( L, 2 );
-	luaL_argcheck( L, 1 <= i && i <= lua_rawlen( L, 1 ), 2, "position out of bounds");
 
-	lua_rawgeti( L, LUA_REGISTRYINDEX, oht->tR );    // S: oht idx key val ref
-	lua_replace( L, -5 );             // S: ref idx key val
+	lua_rawgeti( L, LUA_REGISTRYINDEX, oht->tR );  //S: oht idx key val tbl
+	lua_replace( L, 1 );                           //S: tbl idx key val
 
-	lua_pushvalue( L, -2 );           // S: ref idx key val key
-	lua_rawget( L, -5 );              // S: ref idx key val key val/nil
+	lua_rawgeti( L, 1, luaL_checkinteger( L, 2 ) ); //S: tbl idx key val val/nil
 	if (lua_isnil( L, -1 ) )
 	{
-		lua_pop( L, 1 );
+		lua_pop( L, 1 );                            //S: tbl idx key val
 		t_oht_insertElement( L );
 	}
 	return 0;
@@ -255,15 +262,13 @@ lt_oht__index( lua_State *L )
 {
 	struct t_oht *oht = t_oht_check_ud( L, -2, 1 );
 
-	lua_rawgeti( L, LUA_REGISTRYINDEX, oht->tR );       // S: oht key/idx ref
-	lua_replace( L, -3 );                               // S: ref key/idx
+	lua_rawgeti( L, LUA_REGISTRYINDEX, oht->tR );       // S: oht key/idx tbl
+	lua_replace( L, -3 );                               // S: tbl key/idx
 
-	if (LUA_TNUMBER == lua_type( L, -1 ) )
-		lua_rawgeti( L, -2, luaL_checkinteger( L, -1) ); // S: ref idx key
-	else
-		lua_pushvalue( L, -1 );                          // S: ref key key
+	if (LUA_TNUMBER != lua_type( L, -1 ) )
+		lua_rawget( L, -2 );                             // S: tbl idx
 
-	lua_rawget( L, -3 );                                // S: ref key/idx val
+	lua_rawgeti( L, -2, luaL_checkinteger( L, -1 ) );   // S: tbl idx val
 	return 1;
 }
 
@@ -286,6 +291,7 @@ lt_oht__newindex( lua_State *L )
 	lua_rawgeti( L, LUA_REGISTRYINDEX, oht->tR ); // S: oht key/idx val tbl
 	lua_replace( L, -4 );                         // S: tbl key/idx val
 	len = lua_rawlen( L, -3 );
+
 	if (lua_isnil( L, -1 ))
 	{
 		t_oht_deleteElement( L );
@@ -293,30 +299,30 @@ lt_oht__newindex( lua_State *L )
 	}
 
 	// Numeric indices can only be used to replace values on an T.OrderedHashTable
-	if (LUA_TNUMBER == lua_type( L, -2 ) )
+	if (LUA_TNUMBER == lua_type( L, -2 ))
 	{
 		idx = luaL_checkinteger( L, -2 );
 		luaL_argcheck( L, 1 <= idx && idx <= (int) len, -2,
 			"Index must be greater than 1 and lesser than array length" );
-		lua_rawgeti( L, -3, idx );                 // S: tbl idx val key
-		lua_replace( L, -3 );                      // S: tbl key val
-		lua_rawset( L, -3 );
+		lua_rawseti( L, -3, idx );           //S: tbl idx val
 	}
 	else
 	{
-		lua_pushvalue( L, -2 );                    // S: tbl key val key
-		lua_rawget( L, -4 );                       // S: tbl key val valold?
+		lua_pushvalue( L, -2 );              //S: tbl key val key
+		lua_rawget( L, -4 );                 //S: tbl key val valold?
 		if (lua_isnil( L, -1 ))      // add a new value to the table
 		{
-			lua_pop( L, 1 );
-			lua_pushvalue( L, -2 );                 // S: tbl key val key
-			lua_rawseti( L, -4, lua_rawlen( L, -4 ) + 1 );
-			lua_rawset( L, -3 );
+			lua_pop( L, 1 );          // pop nil
+			lua_insert( L, -2 );              //S: tbl val key
+			lua_pushinteger( L, len+1 );      //S: tbl val key len
+			lua_rawset( L, -4 );              //S: tbl val
+			lua_rawseti( L, -2, len+1 );
 		}
 		else                         // replace a value in the table
 		{
-			lua_pop( L, 1 );                        // S: tbl key val
-			lua_rawset( L, -3 );
+			idx = luaL_checkinteger( L, -2 );
+			lua_pop( L, 1 );                  //S: tbl key val
+			lua_rawseti( L, -3, idx );
 		}
 	}
 	return 0;
@@ -467,8 +473,8 @@ static const struct luaL_Reg t_oht_fm [] = {
  * Class functions library definition
  * --------------------------------------------------------------------------*/
 static const struct luaL_Reg t_oht_cf [] = {
-	  { "getIndex"     , lt_oht_GetIndex }
-	//, { "getKey"       , lt_oht_GetKey }
+	  { "getKey"       , lt_oht_GetKey }
+	//, { "getIndex"     , lt_oht_GetIndex }
 	, { "insert"       , lt_oht_Insert }
 	//, { "concat"       , lt_oht_Concat }
 	, { NULL           , NULL }
