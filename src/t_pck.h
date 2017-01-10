@@ -85,11 +85,8 @@ struct t_pck {
 	///  -- for Arr                = lua registry Reference for packer
 	///  -- for Seq                = lua registry Reference for the table
 	///        idx[ i    ] = Pack
-	///        idx[ s+i  ] = ofs
 	///  -- for Struct             = lua registry Reference for the table
 	///        idx[ i    ] = Pack
-	///        idx[ s+i  ] = ofs
-	///        idx[ 2s+i ] = name
 	///        idx[ name ] = i
 	int            m;
 };

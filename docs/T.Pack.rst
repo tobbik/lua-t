@@ -21,7 +21,7 @@ t.Pack format strings
 For Bit Style packing lua-t introduces the following format strings
 
    - **v:** a boolean represented as a single bit.
-   - **r:** a signed an unaligned Integer up to native size.  Size is
+   - **r:** a signed and unaligned Integer up to native size.  Size is
      defined in bits.  It can span byte boundaries.
    - **R:** an unsigned an unaligned Integer up to native size.  Size is
      defined in bits.  It can span byte boundaries.

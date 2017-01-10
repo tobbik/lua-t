@@ -19,7 +19,7 @@ st = T.Pack(                -- key/value pairs create Struct
 	{ signShort  = sq[7] }
 )
 
-print( s, string.unpack( fmt, s ) )
+--print( s, string.unpack( fmt, s ) )
 print( s, table.unpack( sq(s) ) )
 
 lt = table.pack( string.unpack( fmt, s ) )

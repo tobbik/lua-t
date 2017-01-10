@@ -65,12 +65,14 @@ gnl( lua_State *L, const char **fmt, int df, int max )
 
 /** -------------------------------------------------------------------------
  * Determines type of Packer from format string.
- * Returns the Packer, or NULL if unsuccessful.
- * \param     L      Lua state.
- * \param     char*  format string pointer. moved by this function.
- * \param     int*   e pointer to current endianess.
- * \param     int*   bo pointer to current bit offset within byte.
- * \return    struct t_pck* pointer.
+ * Returns the Packer, or NULL if unsuccessful.  Leaves created packer on the
+ * stack.
+ * \param   L      Lua state.
+ * \param   char*  format string pointer. moved by this function.
+ * \param   int*   e pointer to current endianess.
+ * \param   int*   bo pointer to current bit offset within byte.
+ * \lreturn ud     T.Pack userdata instance.
+ * \return  struct t_pck* pointer.
  * TODO: Deal with bit sized Packers:
  *       - Detect if we are in Bit sized type(o%8 !=0)
  *       - Detect if fmt switched back to byte style and ERROR
