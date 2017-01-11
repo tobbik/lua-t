@@ -49,9 +49,9 @@ print( p(x) )
 print( p(y) )
 if x~=y then print( 'The sets are not equal.' ) end
 
-if not Set.isDisjoint( a,b )then print( 'The sets A and B are not disjoint.' ) end
+if not (a%b) then print( 'The sets A and B are not disjoint.' ) end
 a.one   = nil
 a.two   = nil
 a.three = nil
-if Set.isDisjoint( a,b )then print( 'The sets A and B are disjoint.' ) end
+if a%b  then print( 'The sets A and B are disjoint.' ) end
 
