@@ -54,7 +54,7 @@ as = Pack( s, 10 )
 ab = string.rep( b, 10 )
 
 print(ap, as)
-print(as[6][3], as[6][3], ap[6].signedByte)
+print(as[6][3],     as[6][3],     ap[6].signedByte    )
 print(as[6][3](ab), as[6][3](ab), ap[6].signedByte(ab))
 
 

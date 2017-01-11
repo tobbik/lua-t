@@ -33,3 +33,4 @@ struct t_oht   *t_oht_create_ud( lua_State *L );
 void            t_oht_addElement( lua_State *L );
 void            t_oht_deleteElement( lua_State *L );
 void            t_oht_insertElement( lua_State *L );
+void            t_oht_readArguments( lua_State *L, int sp, int ep );

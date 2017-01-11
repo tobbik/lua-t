@@ -144,32 +144,6 @@ t_oht_insertElement( lua_State *L )
 
 
 /**--------------------------------------------------------------------------
- * Get index in table where a key is located.
- * \param   L          Lua state.
- * \lparam  table      table.
- * \lparam  value      key.
- * \lreturn idx/nil    nil or index
- * --------------------------------------------------------------------------*/
-static void
-t_oht_getIndex( lua_State *L )
-{
-	size_t i;
-
-	for ( i=1; i < lua_rawlen( L, -2 ) + 1; i++ )
-	{
-		lua_rawgeti( L, -2, i );  // S: … tbl key keyI
-		if (lua_rawequal( L, -1, -2 ))
-		{
-			lua_pushinteger( L, i );
-			return;
-		}
-		lua_pop( L, 1 );
-	}
-	lua_pushnil( L );              // key not found
-}
-
-
-/**--------------------------------------------------------------------------
  * Concat all values into a string.
  * \param   L      Lua state.
  * \lparam  ud     T.OrderedHashTable userdata instance.
@@ -181,7 +155,7 @@ lt_oht_Concat( lua_State *L )
 {
 	struct t_oht *oht  = t_oht_check_ud( L, 1, 1 );
 	size_t        lsep;
-	const char   *sep = luaL_optlstring( L, 2, "", &lsep );
+	const char   *sep  = luaL_optlstring( L, 2, "", &lsep );
 	luaL_Buffer   b;
 	size_t        i;
 	size_t        len;
@@ -217,11 +191,22 @@ static int
 lt_oht_GetIndex( lua_State *L )
 {
 	struct t_oht *oht = t_oht_check_ud( L, -2, 1 );
+	size_t        i;
 
 	lua_rawgeti( L, LUA_REGISTRYINDEX, oht->tR );    //S: oht key tbl
 	lua_insert( L, -2 );                             //S: oht tbl key
 
-	t_oht_getIndex( L );
+	for ( i=1; i < lua_rawlen( L, -2 ) + 1; i++ )
+	{
+		lua_rawgeti( L, -2, i );  // S: … tbl key keyI
+		if (lua_rawequal( L, -1, -2 ))
+		{
+			lua_pushinteger( L, i );
+			return 1;
+		}
+		lua_pop( L, 1 );
+	}
+	lua_pushnil( L );              // key not found
 	return 1;
 }
 
@@ -239,7 +224,6 @@ lt_oht_GetKey( lua_State *L )
 	struct t_oht *oht = t_oht_check_ud( L, -2, 1 );
 
 	lua_rawgeti( L, LUA_REGISTRYINDEX, oht->tR );    //S: oht idx tbl
-
 	lua_rawgeti( L, -1, luaL_checkinteger( L, -2 ) );
 	return 1;
 }
@@ -261,11 +245,11 @@ lt_oht_Insert( lua_State *L )
 	size_t          i = luaL_checkinteger( L, 2 );
 	luaL_argcheck( L, 1 <= i && i <= lua_rawlen( L, 1 ), 2, "position out of bounds");
 
-	lua_rawgeti( L, LUA_REGISTRYINDEX, oht->tR );    //S: oht idx key val ref
-	lua_replace( L, -5 );             //S: ref idx key val
+	lua_rawgeti( L, LUA_REGISTRYINDEX, oht->tR );    //S: oht idx key val tbl
+	lua_replace( L, -5 );             //S: tbl idx key val
 
-	lua_pushvalue( L, -2 );           //S: ref idx key val key
-	lua_rawget( L, -5 );              //S: ref idx key val key val/nil
+	lua_pushvalue( L, -2 );           //S: tbl idx key val key
+	lua_rawget( L, -5 );              //S: tbl idx key val key val/nil
 	if (lua_isnil( L, -1 ) )
 	{
 		lua_pop( L, 1 );
@@ -278,29 +262,31 @@ lt_oht_Insert( lua_State *L )
 /**--------------------------------------------------------------------------
  * Read all arguments from Stack.
  * \param   L        Lua state.
- * \return  struct   t_oht * pointer to new userdata on Lua Stack.
+ * \param   int      sp First stack index for first parameter table.
+ * \param   int      ep Last  stack index for last  parameter table.
+ * \lparam  mult     Sequence of tables with one key/value pair.
+ * \lreturn table    Table filled according to oht structure.
+ * \return  void.
  * --------------------------------------------------------------------------*/
-static void
-t_oht_readArguments( lua_State *L, struct t_oht *oht, int sp, int ep )
+void
+t_oht_readArguments( lua_State *L, int sp, int ep )
 {
 	size_t  i  = 0;         ///< iterator for going through the arguments
 	size_t  n  = ep-sp + 1; ///< process how many arguments
-	lua_rawgeti( L, LUA_REGISTRYINDEX, oht->tR );    //S: sp … ep oht tbl
 
-	// populate Oht table
+	lua_createtable( L, n, n );
 	while (i < n)
 	{
 		luaL_argcheck( L, lua_istable( L, sp ), i+1,
 			"Arguments must be tables with a single key/value pair" );
 		// get key/value from table
-		lua_pushnil( L );                //S: sp … ep oht tbl nil
+		lua_pushnil( L );                //S: sp … ep … tbl nil
 		luaL_argcheck( L, lua_next( L, sp ), ep-n-1,
 			"The table argument must contain one key/value pair." );
 		lua_remove( L, sp );             // remove the table now key/pck pair is on stack
-		t_oht_addElement( L );           //S: sp … ep oht tbl key val
+		t_oht_addElement( L );           //S: sp … ep … tbl key val
 		i++;
 	}
-	lua_pop( L, 1 );                    //S: oht
 }
 
 
@@ -317,7 +303,11 @@ lt_oht__Call( lua_State *L )
 	struct t_oht *oht = t_oht_create_ud( L );
 	lua_remove( L, 1 );          // remove T.OrderedHashTable class
 	if (lua_istable( L , 1 ))
-		t_oht_readArguments( L, oht, 1, lua_gettop( L )-1 );
+		t_oht_readArguments( L, 1, lua_gettop( L )-1 ); // -1 for oht
+	else
+		lua_newtable( L );
+	oht->tR = luaL_ref( L, LUA_REGISTRYINDEX );
+
 	return 1;
 }
 
@@ -333,9 +323,6 @@ struct t_oht
 	struct t_oht    *oht;
 
 	oht = (struct t_oht *) lua_newuserdata( L, sizeof( struct t_oht ) );
-	// create and set reference in userdata
-	lua_newtable( L );
-	oht->tR = luaL_ref( L, LUA_REGISTRYINDEX );
 
 	luaL_getmetatable( L, T_OHT_TYPE );
 	lua_setmetatable( L, -2 );

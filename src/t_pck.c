@@ -646,7 +646,7 @@ static int lt_pck__Call( lua_State *L )
  * \return  int  # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int
-lt_pck_size( lua_State *L )
+lt_pck_GetSize( lua_State *L )
 {
 	struct t_pck *p = t_pck_fld_getPackFromStack( L, 1, NULL );
 	lua_pushinteger( L, t_pck_getSize( L, p, 0 ) );
@@ -662,7 +662,7 @@ lt_pck_size( lua_State *L )
  * \return  int  # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int
-lt_pck_defaultendian( lua_State *L )
+lt_pck_SetDefaultEndian( lua_State *L )
 {
 	const char *endian = luaL_checkstring( L, -1 );
 	if (*endian == 'n') // native?
@@ -687,7 +687,7 @@ lt_pck_defaultendian( lua_State *L )
  * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int
-lt_pck_getir( lua_State *L )
+lt_pck_GetRt( lua_State *L )
 {
 	struct t_pck *p = t_pck_fld_getPackFromStack( L, 1, NULL );
 
@@ -915,9 +915,9 @@ static const struct luaL_Reg t_pck_fm [] = {
  * Objects metamethods library definition
  * --------------------------------------------------------------------------*/
 static const struct luaL_Reg t_pck_cf [] = {
-	  { "size"           , lt_pck_size }
-	, { "get_ref"        , lt_pck_getir }
-	, { "setendian"      , lt_pck_defaultendian }
+	  { "getSize"        , lt_pck_GetSize }
+	, { "getTable"       , lt_pck_GetRt }
+	, { "setEndian"      , lt_pck_SetDefaultEndian }
 	, { NULL             , NULL }
 };
 
