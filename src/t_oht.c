@@ -81,16 +81,37 @@ t_oht_deleteElement( lua_State *L )
 void
 t_oht_addElement( lua_State *L )
 {
+	lua_Integer  idx;
 	luaL_argcheck( L, lua_istable( L, -3 ), -3, "First Argument must be a table" );
-	luaL_argcheck( L, ! lua_isinteger( L, -2 ), -2, "Second Argument can't be numeric" );
+	if (lua_isnil( L, -1 ))                          //S:… tbl i/k nil
+		t_oht_deleteElement( L );
+	else
+	{
+		// Numeric indices can only be used to replace values on an T.OrderedHashTable
+		if (LUA_TNUMBER == lua_type( L, -2 ))
+		{
+			idx = luaL_checkinteger( L, -2 );
+			luaL_argcheck( L, 1 <= idx && idx <= (int) lua_rawlen( L, -3 ), -2,
+				"Index must be greater than 1 and lesser than length of "T_OHT_TYPE );
+			lua_rawgeti( L, -3, idx );                 //S:… tbl idx val key
+			lua_replace( L, -3 );                      //S:… tbl key val
+			lua_rawset( L, -3 );
+		}
+		else
+		{
+			lua_pushvalue( L, -2 );                    //S:… tbl key val key
+			lua_rawget( L, -4 );                       //S:… tbl key val valold?
+			if (lua_isnil( L, -1 ))         // add a new value to the table
+			{
+				lua_pushvalue( L, -3 );                 //S:… tbl key val nil key
+				lua_rawseti( L, -5, lua_rawlen( L, -5 )+1 );
+			}
 
-	lua_pushvalue( L, -2 );                       //S:… tbl key val key
-	lua_rawget( L, -4 );                          //S:… tbl key val valold?
-	luaL_argcheck( L, lua_isnil( L, -1 ), -3, "Key can't already exist" );
-	lua_pop( L, 1 );                              //S:… tbl key val
-	lua_pushvalue( L, -2 );                       //S:… tbl key val key
-	lua_rawseti( L, -4, lua_rawlen( L, -4 )+1 );  //S:… tbl key val
-	lua_rawset( L, -3 );                          //S:… tbl key val
+			lua_pop( L, 1 );                           //S:… tbl key val
+			lua_rawset( L, -3 );
+		}
+	}
+
 }
 
 
@@ -376,42 +397,12 @@ lt_oht__index( lua_State *L )
 static int
 lt_oht__newindex( lua_State *L )
 {
-	int           idx;
-	size_t        len;
-	struct t_oht *oht = t_oht_check_ud( L, -3, 1 );
+	struct t_oht *oht = t_oht_check_ud( L, 1, 1 );
 
 	lua_rawgeti( L, LUA_REGISTRYINDEX, oht->tR ); //S: oht key/idx val tbl
-	lua_replace( L, -4 );                         //S: tbl key/idx val
-	len = lua_rawlen( L, -3 );
-	if (lua_isnil( L, -1 ))
-	{
-		t_oht_deleteElement( L );
-		return 0;
-	}
+	lua_replace( L, 1 );                          //S: tbl key/idx val
+	t_oht_addElement( L );
 
-	// Numeric indices can only be used to replace values on an T.OrderedHashTable
-	if (LUA_TNUMBER == lua_type( L, -2 ))
-	{
-		idx = luaL_checkinteger( L, -2 );
-		luaL_argcheck( L, 1 <= idx && idx <= (int) len, -2,
-			"Index must be greater than 1 and lesser than array length" );
-		lua_rawgeti( L, -3, idx );                 //S: tbl idx val key
-		lua_replace( L, -3 );                      //S: tbl key val
-		lua_rawset( L, -3 );
-	}
-	else
-	{
-		lua_pushvalue( L, -2 );                    //S: tbl key val key
-		lua_rawget( L, -4 );                       //S: tbl key val valold?
-		if (lua_isnil( L, -1 ))         // add a new value to the table
-		{
-			lua_pushvalue( L, -3 );                 //S: tbl key val nil key
-			lua_rawseti( L, -5, lua_rawlen( L, -5 )+1 );
-		}
-
-		lua_pop( L, 1 );                           //S: tbl key val
-		lua_rawset( L, -3 );
-	}
 	return 0;
 }
 
