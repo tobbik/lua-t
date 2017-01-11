@@ -1,17 +1,20 @@
 Oht = require( 't' ).OrderedHashTable
 
+o   = Oht(
+	  { one   = 'first   position' }
+	, { two   = 'second  position' }
+	, { three = 'third   position' }
+	, { four  = 'fourth  position' }
+)
+print( "Length after running constructor", #o )
 
-o   = Oht( )
-
--- insertion order is preserved inside the Hash table
-o['one']   = 'first   position'
-o['two']   = 'second  position'
-o['three'] = 'third   position'
-o['four']  = 'fourth  position'
 o['five']  = 'fifth   position'
 o['six']   = 'sixth   position'
 o['seven'] = 'seventh position'
-print( "Length after adding elements", #o )
+print( "Length after adding more elements", #o )
+
+for k,v in pairs( Oht.getTable( o ) ) do print( k, v ) end
+print(o)
 
 for i,v,k in ipairs( o ) do
 	print( "IPAIRS:", i, v, k, o[i], o[k] )
@@ -44,6 +47,6 @@ for k,v,i in pairs( o ) do
 	print( "PAIRS:", k, v, i )
 end
 
-print( Oht.concat( o, '_what_' ) )
+print( Oht.concat( o, '_|||||_' ) )
 
 

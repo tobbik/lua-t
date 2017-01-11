@@ -30,3 +30,6 @@ int             luaopen_t_oht  ( lua_State *L );
 struct t_oht   *t_oht_check_ud ( lua_State *L, int pos, int check );
 struct t_oht   *t_oht_create_ud( lua_State *L );
 
+void            t_oht_addElement( lua_State *L );
+void            t_oht_deleteElement( lua_State *L );
+void            t_oht_insertElement( lua_State *L );

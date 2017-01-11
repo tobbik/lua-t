@@ -29,6 +29,23 @@ local tests = {
 		assert( #self.o == self.len, "Length of OrderedHashTable must equal number of inserts" )
 	end,
 
+	test_TableStyleConstructor = function( self )
+		-- #DESC:Length of OrderedHashTable must be equal number of inserts
+		o   = Oht(
+			  { one   = 'first   position' }
+			, { two   = 'second  position' }
+			, { three = 'third   position' }
+			, { four  = 'fourth  position' }
+		)
+		assert( #o == 4, "Length of OrderedHashTable must equal number of arguments in construtor" )
+
+		o['five']  = 'fifth   position'
+		o['six']   = 'sixth   position'
+		o['seven'] = 'seventh position'
+		assert( #o == 4 + 3, "Length of OrderedHashTable must equal number of arguments" ..
+		                     " in construtor plus number of inserts" )
+	end,
+
 	test_Concat = function( self )
 		-- #DESC:Concat concatenates values
 		local separator = 'willy nilly'
