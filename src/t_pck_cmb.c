@@ -17,62 +17,41 @@
 /**--------------------------------------------------------------------------
  * Create a  T.Pack.Struct Object and put it onto the stack.
  * \param   L      Lua state.
- * \param   int    sp start position on Stack for first Packer.
- * \param   int    ep   end position on Stack for last Packer.
- * \lparam  tbl,…  multiple of type  table { name = T.Pack}.
- * \return  struct t_pck* pointer.
+ * \lparam  table  T.OrderedHashTable instance with packer definitions.
+ * \return  struct t_pck*.
  * --------------------------------------------------------------------------*/
 struct t_pck
-*t_pck_str_create( lua_State *L, int sp, int ep )
+*t_pck_str_create( lua_State *L )
 {
-	size_t            n  = 0;  ///< iterator for going through the arguments
-	size_t            o  = 0;  ///< byte offset within the sequence
+	size_t            n;       ///< iterator for going through the arguments
+	size_t            o  = 0;  ///< runningbyte offset within the sequence
 	size_t            bo = 0;  ///< bit  offset within the sequence
 	struct t_pck     *p;       ///< temporary packer/struct for iteration
-	struct t_pck     *st;      ///< the userdata this constructor creates
+	struct t_pck     *ps;      ///< the packer instance to be created
 	struct t_pck_fld *pf;      ///< userdata for current field
 
-	st     = (struct t_pck *) lua_newuserdata( L, sizeof( struct t_pck ) );
-	st->t  = T_PCK_STR;
-	st->s  = (ep-sp) + 1;
-	luaL_getmetatable( L, T_PCK_TYPE ); //S:… T.Pack
-	lua_setmetatable( L, -2 ) ;
-
-	// create and populate table
-	lua_createtable( L, st->s, st->s ); // S:… Str tbl
-	while (n < st->s)
+	for (n=0; n<lua_rawlen( L, -1 ); n++)
 	{
-		luaL_argcheck( L, lua_istable( L, sp ), n+1,
-			"Arguments must be tables with single key/"T_PCK_TYPE" pair" );
-		// get key/value from table
-		lua_pushnil( L );
-		if (! lua_next( L, sp ))         //S:… Str tbl key Pck
-			luaL_error( L, "The table argument must contain one key/value pair." );
-		// check if key is already used!
-		lua_remove( L, sp );             // remove the table now key/pck pair is on stack
-		lua_pushvalue( L, -2 );          //S:… Str tbl key Pck key
-		lua_rawget( L, -4 );             //S:… Str tbl key Pck nil?
-		luaL_argcheck( L, lua_isnil( L, -1 ), ep-n-1, "Key duplicate in "T_PCK_TYPE".Struct." );
-		lua_pop( L, 1 );                 //S:… Str tbl key Pck
-		// create t_pck_fld
-		p      = t_pck_getPacker( L, -1, &bo );  // allow T.Pack or T.Pack.Struct
-		pf     = (struct t_pck_fld *) lua_newuserdata( L, sizeof( struct t_pck_fld ));
-		luaL_getmetatable( L, T_PCK_FLD_TYPE );
-		lua_setmetatable( L, -2 ) ;      //S:… Str tbl key Fld
-		lua_insert( L, -2 );
-		pf->pR = luaL_ref( L, LUA_REGISTRYINDEX );  // pops the packer from stack
-		pf->o  = o/8;
-		// populate tbl table
-		lua_pushvalue( L, -2 );          //S:… Str tbl key Fld key
-		lua_insert( L, -2 );             //S:… Str tbl key key Fld
-		lua_rawset( L, -4 );             //S:… Str tbl key          tbl[ name  ] = Fld
-		lua_rawseti( L, -2, n+1 );       //S:… Str tbl              tbl[ i ]     = nme
-		o += t_pck_getSize( L, p, 1 );
-		n++;
+		lua_rawgeti( L, -1, n+1 );                 //S:… tbl key
+		pf     = t_pck_fld_create_ud( L, o/8 );    //S:… tbl key Fld
+		lua_rawgeti( L, -3, n+1 );                 //S:… tbl key Fld key
+		lua_rawget( L, -4 );                       //S:… tbl key Fld Pck
+		p      = t_pck_getPacker( L, -1, &bo );    // turn Pck into true packer
+		pf->pR = luaL_ref( L, LUA_REGISTRYINDEX ); // pops the packer from stack
+		o     += t_pck_getSize( L, p, 1 );
+		// replace pack with new T.Pack.Field
+		lua_rawset( L, -3 );                       //S:… tbl key Fld
 	}
 
-	st->m = luaL_ref( L, LUA_REGISTRYINDEX ); // register table
-	return st;
+	ps    = (struct t_pck *) lua_newuserdata( L, sizeof( struct t_pck ) );
+	luaL_getmetatable( L, T_PCK_TYPE );           //S:… T.Pack
+	lua_setmetatable( L, -2 ) ;
+	ps->t = T_PCK_STR;
+	ps->s = lua_rawlen( L, -2 );                  //S:… tbl pck
+	lua_insert( L, -2 );                          //S:… pck tbl
+	ps->m = luaL_ref( L, LUA_REGISTRYINDEX );     // register table
+
+	return ps;
 }
 
 
@@ -148,6 +127,25 @@ struct t_pck
 	lua_setmetatable( L, -2 ) ;
 
 	return ap;
+}
+
+
+/**--------------------------------------------------------------------------
+ * Create a  T.Pack.Field Object and put it onto the stack.
+ * \param   L      Lua state.
+ * \param   int    ofs offset in bit.
+ * \return  struct t_pck_fld*.
+ * --------------------------------------------------------------------------*/
+struct t_pck_fld
+*t_pck_fld_create_ud( lua_State *L, int ofs )
+{
+	struct t_pck_fld *pf;      ///< userdata for packer field
+
+	pf     = (struct t_pck_fld *) lua_newuserdata( L, sizeof( struct t_pck_fld ));
+	luaL_getmetatable( L, T_PCK_FLD_TYPE );
+	lua_setmetatable( L, -2 ) ;                //S:… tbl key Fld
+	pf->o  = ofs/8;
+	return pf;
 }
 
 

@@ -7,7 +7,8 @@
  * \copyright See Copyright notice at the end of t.h
  */
 
-#include "t_buf.h"
+#include "t_buf.h"            // read/write buffers
+#include "t_oht.h"            // read arguments into struct
 
 #define T_PCK_FLD_NAME  "Field"
 
@@ -131,12 +132,15 @@ int           t_pck_fld__callread ( lua_State *L, struct t_pck *pc, const unsign
 struct t_pck *t_pck_fld_getPackFromStack( lua_State * L, int pos, struct t_pck_fld **pcf );
 
 
-struct t_pck *t_pck_str_create( lua_State *L, int sp, int ep );
+struct t_pck *t_pck_str_create( lua_State *L );
 struct t_pck *t_pck_seq_create( lua_State *L, int sp, int ep, size_t *bo );
 struct t_pck *t_pck_arr_create( lua_State *L );
+
 
 int          lt_pck_fld__index( lua_State *L );
 int          lt_pck_fld__newindex( lua_State *L );
 int          lt_pck_fld__pairs( lua_State *L );
 
 struct t_pck *t_pck_fmt_read( lua_State *L, const char **f, int *e, size_t *bo );
+
+struct t_pck_fld *t_pck_fld_create_ud( lua_State *L, int ofs );
