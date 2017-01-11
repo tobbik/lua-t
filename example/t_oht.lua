@@ -24,20 +24,20 @@ end
 print( "Index of 'five' key:", Oht.getIndex( o, 'five' ) )
 
 o[2] = nil;
-print( "Length after deleting o[2]:", #o )
+print( "Length after deleting index 2:", #o )
 for k,v,i in pairs( o ) do
 	print( "PAIRS:", k, v, i, o[k], o[i] )
 end
 
-o.eight = 'eighth position'
+o.eight = 'eighth  position'
 print( "Length after adding key 'eight':", #o )
 o.four  = nil;
-print( "Length after deleting 'four':", #o )
+print( "Length after deleting key 'four':", #o )
 for k,v,i in pairs( o ) do
 	print( "PAIRS:", k, v, i )
 end
 
-Oht.insert( o, 3, 'inserted on 3', 'new 3 position' );
+Oht.insert( o, 3, 'new 3', 'new 3rd position' );
 print( "Length after Insert:", #o )
 
 for k,v,i in pairs( o ) do
