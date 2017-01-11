@@ -296,25 +296,6 @@ lt_set_ToTable( lua_State *L )
 
 
 /**--------------------------------------------------------------------------
- * Tests if two T.Set are disjoint.
- * \param   L       Lua state.
- * \lparam  ud      T.Set userdata instance sA.
- * \lparam  ud      T.Set userdata instance sB.
- * \lreturn boolean 1 if disjoint, else 0.
- * \return  int     # of values pushed onto the stack.
- * --------------------------------------------------------------------------*/
-static int
-lt_set_IsDisjoint( lua_State *L )
-{
-	struct t_set *sA = t_set_check_ud( L, -2, 1 );
-	struct t_set *sB = t_set_check_ud( L, -1, 1 );
-
-	lua_pushboolean( L, t_set_contains( L, 1, sA, sB ) );
-	return 1;
-}
-
-
-/**--------------------------------------------------------------------------
  * Construct a T.Set and return it.
  * \param   L     Lua state.
  * \lparam  CLASS table T.Set.
@@ -469,9 +450,7 @@ t_set_iter( lua_State *L )
 		return 2;
 	}
 	else
-	{
 		return 0;
-	}
 }
 
 
@@ -489,7 +468,7 @@ lt_set__pairs( lua_State *L )
 
 	lua_pushcfunction( L, &t_set_iter );
 	lua_rawgeti( L, LUA_REGISTRYINDEX, set->tR );
-	lua_pushnil( L );         // S: set,fnc,tbl,nil
+	lua_pushnil( L );         // S: set fnc tbl nil
 	lua_remove( L, -4 );      // remove T.Set from stack
 	return 3;
 }
@@ -617,6 +596,25 @@ lt_set__eq( lua_State *L )
 
 
 /**--------------------------------------------------------------------------
+ * Tests if two T.Set are disjoint.  Re- or abusing modulo operator.
+ * \param   L       Lua state.
+ * \lparam  ud      T.Set userdata instance sA.
+ * \lparam  ud      T.Set userdata instance sB.
+ * \lreturn boolean 1 if disjoint, else 0.
+ * \return  int     # of values pushed onto the stack.
+ * --------------------------------------------------------------------------*/
+static int
+lt_set__mod( lua_State *L )
+{
+	struct t_set *sA = t_set_check_ud( L, 1, 1 );
+	struct t_set *sB = t_set_check_ud( L, 2, 1 );
+
+	lua_pushboolean( L, t_set_contains( L, 1, sA, sB ) );
+	return 1;
+}
+
+
+/**--------------------------------------------------------------------------
  * Compare two T.Set for being a subset.
  * \param   L       Lua state.
  * \lparam  ud      T.Set userdata instance sA.
@@ -721,7 +719,6 @@ static const struct luaL_Reg t_set_fm [] = {
 static const struct luaL_Reg t_set_cf [] = {
 	  { "getTable"     , lt_set_GetTable }
 	, { "toTable"      , lt_set_ToTable }
-	, { "isDisjoint"   , lt_set_IsDisjoint }
 	, { NULL           , NULL }
 };
 
@@ -742,6 +739,7 @@ static const luaL_Reg t_set_m [] = {
 	, { "__band"       , lt_set__band }     // &  intersection
 	, { "__sub"        , lt_set__sub }      // -  complement
 	, { "__bxor"       , lt_set__bxor }     // ~  symmetric difference
+	, { "__mod"        , lt_set__mod }      // %  test for disjoint sets
 	, { NULL           , NULL}
 };
 
