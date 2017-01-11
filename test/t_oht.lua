@@ -29,11 +29,24 @@ local tests = {
 		assert( #self.o == self.len, "Length of OrderedHashTable must equal number of inserts" )
 	end,
 
+	test_Concat = function( self )
+		-- #DESC:Concat concatenates values
+		local separator = 'willy nilly'
+		local values    = {}
+		for i = 1, self.len do
+			table.insert( values, self.vals[i] .. ' position' )
+		end
+		assert( Oht.concat( self.o, separator ) == table.concat( values, separator ),
+			 "Concatenated values must equal normal table concat results" )
+	end,
+
 	test_AccessIndexedElements = function( self )
 		-- #DESC:All elements must be available by their indexes
 		for i=1, self.len do
 			assert( self.o[i] == self.vals[i] .. ' position', "Indexed value must match original value" )
 			assert( self.o[self.keys[i]] == self.o[i], "Hash access must match index access" )
+			assert( Oht.getIndex( self.o, self.keys[i] ) == i, "Key index must match index" )
+			assert( Oht.getKey( self.o, i ) == self.keys[i], "Key index must match index" )
 		end
 	end,
 

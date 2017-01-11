@@ -125,6 +125,43 @@ t_oht_getIndex( lua_State *L )
 
 
 /**--------------------------------------------------------------------------
+ * Concat all values into a string.
+ * \param   L      Lua state.
+ * \lparam  ud     T.OrderedHashTable userdata instance.
+ * \lparam  string separator.
+ * \return  int    # of values pushed onto the stack.
+ * --------------------------------------------------------------------------*/
+static int
+lt_oht_Concat( lua_State *L )
+{
+	struct t_oht *oht  = t_oht_check_ud( L, 1, 1 );
+	size_t        lsep;
+	const char   *sep = luaL_optlstring( L, 2, "", &lsep );
+	luaL_Buffer   b;
+	size_t        i;
+	size_t        len;
+
+	lua_rawgeti( L, LUA_REGISTRYINDEX, oht->tR );    // S: oht sep tbl
+	lua_replace( L, 1 );                             // S: tbl sep
+	len = lua_rawlen( L, 1 );
+	luaL_buffinit( L, &b );
+	for (i=0; i < len; i++)
+	{
+		lua_rawgeti( L, 1, i+1 );                     // S: tbl sep key
+		lua_rawget( L, 1 );                           // S: tbl sep val
+		if (!lua_isstring( L, -1 ) )
+			luaL_error( L, "invalid value (%s) at index %d in OrderedHashTable for 'concat'",
+			           luaL_typename( L, -1 ), i+1 );
+		luaL_addvalue( &b );
+		if (i<len-1)
+			luaL_addlstring( &b, sep, lsep ) ;
+	}
+	luaL_pushresult( &b );
+	return 1;
+}
+
+
+/**--------------------------------------------------------------------------
  * Get index in table where a key is located.
  * \param   L      Lua state.
  * \lparam  ud     T.OrderedHashTable userdata instance.
@@ -136,10 +173,29 @@ lt_oht_GetIndex( lua_State *L )
 {
 	struct t_oht *oht = t_oht_check_ud( L, -2, 1 );
 
-	lua_rawgeti( L, LUA_REGISTRYINDEX, oht->tR );    // S: oht key ref
-	lua_insert( L, -2 );                             // S: oht ref key
+	lua_rawgeti( L, LUA_REGISTRYINDEX, oht->tR );    // S: oht key tbl
+	lua_insert( L, -2 );                             // S: oht tbl key
 
 	t_oht_getIndex( L );
+	return 1;
+}
+
+
+/**--------------------------------------------------------------------------
+ * Get key from table where a index is located.
+ * \param   L     Lua state.
+ * \lparam  ud    T.OrderedHashTable userdata instance.
+ * \lparam  int   index.
+ * \return  int   # of values pushed onto the stack.
+ * --------------------------------------------------------------------------*/
+static int
+lt_oht_GetKey( lua_State *L )
+{
+	struct t_oht *oht = t_oht_check_ud( L, -2, 1 );
+
+	lua_rawgeti( L, LUA_REGISTRYINDEX, oht->tR );    // S: oht idx tbl
+
+	lua_rawgeti( L, -1, luaL_checkinteger( L, -2 ) );
 	return 1;
 }
 
@@ -449,9 +505,9 @@ static const struct luaL_Reg t_oht_fm [] = {
  * --------------------------------------------------------------------------*/
 static const struct luaL_Reg t_oht_cf [] = {
 	  { "getIndex"     , lt_oht_GetIndex }
-	//, { "getKey"       , lt_oht_GetKey }
+	, { "getKey"       , lt_oht_GetKey }
 	, { "insert"       , lt_oht_Insert }
-	//, { "concat"       , lt_oht_Concat }
+	, { "concat"       , lt_oht_Concat }
 	, { NULL           , NULL }
 };
 
