@@ -35,4 +35,4 @@ void            t_oht_addElement( lua_State *L );
 void            t_oht_deleteElement( lua_State *L );
 void            t_oht_insertElement( lua_State *L );
 void            t_oht_readArguments( lua_State *L, int sp, int ep );
-void            t_oht_cloneTable( lua_State *L );
+void            t_oht_getTable( lua_State *L, int type );

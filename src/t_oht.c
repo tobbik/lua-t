@@ -14,9 +14,6 @@
  *            "b" = "value 2",
  *            "c" = "value 3",
  *            "d" = "value 4"
- 17380 Jan 10 15:15 src/t_oht.c
-  1004 Jan  3 01:22 src/t_oht.h
- 24376 Jan 10 15:15 src/t_oht.o
  * \author    tkieslich
  * \copyright See Copyright notice at the end of t.h
  */
@@ -28,25 +25,43 @@
 #include "t_oht.h"
 
 /**--------------------------------------------------------------------------
- * Clone the table of a T.OrderedHashTable.
+ * Get a variation of the referenced table from a T.OrderedHashTable.
+ * \param   L        Lua state.
+ * \param   int      type of clone.
+ *                   1 - get a table of keys.
+ *                   2 - get a table of values.
+ *                   3 - get a fully cloned table.
+ *                   4 - get a table of key/value pairs.
  * \lparam  table    original table.
  * \lreturn table    new cloned table.
  * --------------------------------------------------------------------------*/
 void
-t_oht_cloneTable( lua_State *L )
+t_oht_getTable( lua_State *L, int type )
 {
 	size_t  i  = 0;                   ///< iterator for going through the arguments
 	size_t  l  = lua_rawlen( L, -1 ); ///< process how many arguments
 
-	lua_createtable( L, l, l );       //S: … tbl tbl
+	lua_createtable( L, l, l );            //S: … tbl res
 	for (i=0; i<l; i++)
 	{
-		lua_rawgeti( L, -2, i+1 );     //S: … tbl tbl key
-		lua_pushvalue( L, -1 );        //S: … tbl tbl key key
-		lua_pushvalue( L, -1 );        //S: … tbl tbl key key key
-		lua_rawget( L, -5 );           //S: … tbl tbl key key val
-		lua_rawset( L, -4 );           //S: … tbl tbl key
-		lua_rawseti( L, -2, i+1 );     //S: … tbl tbl
+		lua_rawgeti( L, -2, i+1 );          //S: … tbl res key
+		if (type>2) lua_pushvalue( L, -1 ); //S: … tbl res key
+		switch (type)
+		{
+			case 2:
+				lua_rawget( L, -3 );          //S: … tbl res val
+				break;
+			case 3:
+				lua_pushvalue( L, -1 );       //S: … tbl res key key key
+				lua_rawget( L, -5 );          //S: … tbl res key key val
+				lua_rawset( L, -4 );          //S: … tbl res key
+				break;
+			case 4:
+				lua_rawget( L, -4 );          //S: … tbl res key val
+				lua_rawset( L, -3 );          //S: … tbl res
+				break;
+		}
+		if (type<4) lua_rawseti( L, -2, i+1 );
 	}
 }
 
@@ -351,7 +366,7 @@ lt_oht__Call( lua_State *L )
 		{
 			lua_rawgeti( L, LUA_REGISTRYINDEX, org_oht->tR );
 			lua_remove( L, 1 );       // remove Oht instance
-			t_oht_cloneTable( L );
+			t_oht_getTable( L, 3 );
 			lua_remove( L, -2 );      // remove Oht original table
 		}
 		else
@@ -599,19 +614,8 @@ static int
 lt_oht_GetTable( lua_State *L )
 {
 	struct t_oht *oht = t_oht_check_ud( L, -1, 1 );
-	size_t i;
-	size_t l;
-
 	lua_rawgeti( L, LUA_REGISTRYINDEX, oht->tR );
-	l = lua_rawlen( L, -1 );
-	lua_createtable( L, l, l );
-	for (i=0; i< l; i++)
-	{
-		lua_rawgeti( L, -2, i+1);     //S: oht tbl res key
-		lua_pushvalue( L, -1 );       //S: oht tbl res key key
-		lua_rawget( L, -4 );          //S: oht tbl res key val
-		lua_rawset( L, -3 );          //S: oht tbl res
-	}
+	t_oht_getTable( L, 4 );
 	return 1;
 }
 
@@ -627,18 +631,8 @@ static int
 lt_oht_GetValues( lua_State *L )
 {
 	struct t_oht *oht = t_oht_check_ud( L, -1, 1 );
-	size_t i;
-	size_t l;
-
 	lua_rawgeti( L, LUA_REGISTRYINDEX, oht->tR );
-	l = lua_rawlen( L, -1 );
-	lua_createtable( L, l, l );
-	for (i=0; i< l; i++)
-	{
-		lua_rawgeti( L, -2, i+1);     //S: oht tbl res key
-		lua_rawget( L, -3 );          //S: oht tbl res val
-		lua_rawseti( L, -2, i+1 );    //S: oht tbl res
-	}
+	t_oht_getTable( L, 2 );
 	return 1;
 }
 
@@ -654,17 +648,8 @@ static int
 lt_oht_GetKeys( lua_State *L )
 {
 	struct t_oht *oht = t_oht_check_ud( L, -1, 1 );
-	size_t i;
-	size_t l;
-
 	lua_rawgeti( L, LUA_REGISTRYINDEX, oht->tR );
-	l = lua_rawlen( L, -1 );
-	lua_createtable( L, l, l );
-	for (i=0; i< l; i++)
-	{
-		lua_rawgeti( L, -2, i+1);     //S: oht tbl res key
-		lua_rawseti( L, -2, i+1 );    //S: oht tbl res
-	}
+	t_oht_getTable( L, 1 );
 	return 1;
 }
 
