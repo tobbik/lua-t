@@ -31,21 +31,21 @@ t_set_setElement( lua_State *L, struct t_set *set )
 	int remove       = (lua_isnil( L, -1 )) ? 1 : 0;
 	luaL_checktype( L, -3, LUA_TTABLE );
 
-	lua_pushvalue( L, -2 );                  // S: tbl elm val/nil elm
-	lua_rawget( L, -4 );                     // S: tbl elm val/nil true/nil?
+	lua_pushvalue( L, -2 );                  //S: tbl elm val/nil elm
+	lua_rawget( L, -4 );                     //S: tbl elm val/nil true/nil?
 	existed  = (lua_isnil( L, -1 )) ? 0 : 1;
 	lua_pop( L, 2 );                         // pop new val and existing val
 
 	if (!existed && !remove)
 	{
 		(set->len)++;
-		lua_pushboolean( L, 1 );              // S: tbl elm true
+		lua_pushboolean( L, 1 );              //S: tbl elm true
 		lua_rawset( L, -3 );
 	}
 	if ( existed &&  remove)
 	{
 		(set->len)--;
-		lua_pushnil( L );                     // S: tbl elm nil
+		lua_pushnil( L );                     //S: tbl elm nil
 		lua_rawset( L, -3 );
 	}
 	return existed;
@@ -104,26 +104,26 @@ t_set_union( lua_State *L )
 	luaL_checktype( L, -1, LUA_TTABLE );
 
 	// clone sA->tR
-	lua_pushnil( L );            // S: … sA sB sR nil
-	while (lua_next( L, -4 ))    // S: … sA sB sR elm true
+	lua_pushnil( L );            //S: … sA sB sR nil
+	while (lua_next( L, -4 ))    //S: … sA sB sR elm true
 	{
-		lua_pushvalue( L, -2 );   // S: … sA sB sR elm true elm
-		lua_insert( L, -2 );      // S: … sA sB sR elm elm true
-		lua_settable( L, -4 );    // S: … sA sB sR elm
+		lua_pushvalue( L, -2 );   //S: … sA sB sR elm true elm
+		lua_insert( L, -2 );      //S: … sA sB sR elm elm true
+		lua_settable( L, -4 );    //S: … sA sB sR elm
 		cnt++;
 	}
 	// add sB->tR elements missing in sA->tR
-	lua_pushnil( L );            // S: … sA sB sR nil
-	while (lua_next( L, -3 ))    // S: … sA sB sR elm true
+	lua_pushnil( L );            //S: … sA sB sR nil
+	while (lua_next( L, -3 ))    //S: … sA sB sR elm true
 	{
-		lua_pushvalue( L, -2 );   // S: … sA sB sR elm true elm
-		lua_rawget( L, -6 );      // S: … sA sB sR elm true true/nil
+		lua_pushvalue( L, -2 );   //S: … sA sB sR elm true elm
+		lua_rawget( L, -6 );      //S: … sA sB sR elm true true/nil
 		if (lua_isnil( L, -1 ))
 		{
 			lua_pop( L, 1 );       // pop nil
-			lua_pushvalue( L, -2 );// S: … sA sB sR elm true elm
-			lua_insert( L, -2 );   // S: … sA sB sR elm elm true
-			lua_settable( L, -4 ); // S: … sA sB sR elm
+			lua_pushvalue( L, -2 );//S: … sA sB sR elm true elm
+			lua_insert( L, -2 );   //S: … sA sB sR elm elm true
+			lua_settable( L, -4 ); //S: … sA sB sR elm
 			cnt++;
 		}
 		else
@@ -150,16 +150,16 @@ t_set_intersection( lua_State *L )
 	luaL_checktype( L, -1, LUA_TTABLE );
 
 	// iterate over sA->tR
-	lua_pushnil( L );            // S: … sA sB sR nil
-	while (lua_next( L, -4 ))    // S: … sA sB sR elm true
+	lua_pushnil( L );            //S: … sA sB sR nil
+	while (lua_next( L, -4 ))    //S: … sA sB sR elm true
 	{
-		lua_pushvalue( L, -2 );   // S: … sA sB sR elm true elm
-		lua_rawget( L, -5 );      // S: … sA sB sR elm true true/nil
+		lua_pushvalue( L, -2 );   //S: … sA sB sR elm true elm
+		lua_rawget( L, -5 );      //S: … sA sB sR elm true true/nil
 		if (! lua_isnil( L, -1 ))
 		{
-			lua_pushvalue( L, -3); // S: … sA sB sR elm true elm
-			lua_insert( L, -2 );   // S: … sA sB sR elm elm true
-			lua_settable( L, -5 ); // S: … sA sB sR elm
+			lua_pushvalue( L, -3); //S: … sA sB sR elm true elm
+			lua_insert( L, -2 );   //S: … sA sB sR elm elm true
+			lua_settable( L, -5 ); //S: … sA sB sR elm
 			lua_pop( L, 1 );
 			cnt++;
 		}
@@ -187,17 +187,17 @@ t_set_complement( lua_State *L )
 	luaL_checktype( L, -1, LUA_TTABLE );
 
 	// iterate over sA->tR
-	lua_pushnil( L );            // S: … sA sB sR nil
-	while (lua_next( L, -4 ))    // S: … sA sB sR elm true
+	lua_pushnil( L );            //S: … sA sB sR nil
+	while (lua_next( L, -4 ))    //S: … sA sB sR elm true
 	{
-		lua_pushvalue( L, -2 );   // S: … sA sB sR elm true elm
-		lua_rawget( L, -5 );      // S: … sA sB sR elm true true/nil
+		lua_pushvalue( L, -2 );   //S: … sA sB sR elm true elm
+		lua_rawget( L, -5 );      //S: … sA sB sR elm true true/nil
 		if (lua_isnil( L, -1 ))   // if not exist in sB don't add to sC
 		{
 			lua_pop( L, 1 );       // pop the nil
-			lua_pushvalue( L, -2); // S: … sA sB sR elm true elm
-			lua_insert( L, -2 );   // S: … sA sB sR elm elm true
-			lua_settable( L, -4 ); // S: … sA sB sR elm
+			lua_pushvalue( L, -2); //S: … sA sB sR elm true elm
+			lua_insert( L, -2 );   //S: … sA sB sR elm elm true
+			lua_settable( L, -4 ); //S: … sA sB sR elm
 			cnt++;
 		}
 		else
@@ -229,17 +229,17 @@ t_set_symdifference( lua_State *L )
 	while ( p < -2)
 	{
 		//printf( "%d -> %d\n", p, -5-(4+p) );
-		lua_pushnil( L );             // S: … sA sB sR nil
-		while (lua_next( L, p ))      // S: … sA sB sR elm true
+		lua_pushnil( L );             //S: … sA sB sR nil
+		while (lua_next( L, p ))      //S: … sA sB sR elm true
 		{
-			lua_pushvalue( L, -2 );    // S: … sA sB sR elm true elm
-			lua_rawget( L, -5-(4+p) ); // S: … sA sB sR elm true true/nil
+			lua_pushvalue( L, -2 );    //S: … sA sB sR elm true elm
+			lua_rawget( L, -5-(4+p) ); //S: … sA sB sR elm true true/nil
 			if (lua_isnil( L, -1 ))
 			{
 				lua_pop( L, 1 );
-				lua_pushvalue( L, -2);  // S: … sA sB sR elm true true elm
-				lua_insert( L, -2 );    // S: … sA sB sR elm elm true
-				lua_settable( L, -4 );  // S: … sA sB sR elm
+				lua_pushvalue( L, -2);  //S: … sA sB sR elm true true elm
+				lua_insert( L, -2 );    //S: … sA sB sR elm elm true
+				lua_settable( L, -4 );  //S: … sA sB sR elm
 				cnt++;
 			}
 			else
@@ -262,13 +262,13 @@ lt_set_GetTable( lua_State *L )
 {
 	struct t_set *set = t_set_check_ud( L, -1, 1 );
 
-	lua_rawgeti( L, LUA_REGISTRYINDEX, set->tR ); // S: set tbl
+	lua_rawgeti( L, LUA_REGISTRYINDEX, set->tR ); //S: set tbl
 	return 1;
 }
 
 
 /**--------------------------------------------------------------------------
- * Serialize the underlying table from a T.Set userdata.
+ *  Return the underlying table from a T.Set as an indexed table.
  * \param   L      Lua state.
  * \lparam  ud     T.Set userdata instance.
  * \lreturn table  Numerically indexed table with all elements from the set in
@@ -276,19 +276,19 @@ lt_set_GetTable( lua_State *L )
  * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int
-lt_set_ToTable( lua_State *L )
+lt_set_GetValues( lua_State *L )
 {
 	struct t_set *set = t_set_check_ud( L, -1, 1 );
 	size_t runner     = 1;
 
 	lua_createtable( L, set->len, 0 );
 	lua_rawgeti( L, LUA_REGISTRYINDEX, set->tR );
-	lua_pushnil( L );              // S: set tbl tbl nil
+	lua_pushnil( L );              //S: set tbl tbl nil
 	while (lua_next( L, -2 ))
 	{
-		lua_pushvalue( L, -2 );     // S: set tbl tbl nil elm tru elm
+		lua_pushvalue( L, -2 );     //S: set tbl tbl nil elm tru elm
 		lua_rawseti( L, -5, runner++ );
-		lua_pop( L, 1 );            // S: set tbl tbl elm
+		lua_pop( L, 1 );            //S: set tbl tbl elm
 	}
 	lua_pop( L, 1 );
 	return 1;
@@ -309,7 +309,7 @@ static int lt_set__Call( lua_State *L )
 
 	if (NULL != org_set)
 	{
-		lua_rawgeti( L, LUA_REGISTRYINDEX, org_set->tR ); // S: set tbl
+		lua_rawgeti( L, LUA_REGISTRYINDEX, org_set->tR ); //S: set tbl
 		set = t_set_create_ud( L, -1, -1 );
 		lua_remove( L, -2 );
 	}
@@ -340,19 +340,19 @@ struct t_set
 
 	set = (struct t_set *) lua_newuserdata( L, sizeof( struct t_set ) );
 	// create table
-	lua_newtable( L );                // S: tbl? set tbl
+	lua_newtable( L );                //S: tbl? set tbl
 	if (mode)                         // populate if desired
 	{
-		lua_pushnil( L );              // S: tbl set tbl nil
+		lua_pushnil( L );              //S: tbl set tbl nil
 		while (lua_next( L, pos ))
 		{
 			if (mode < 0)
 			{
 				lua_pushvalue( L, -2 );
-				lua_insert( L, -2 );     // S: tbl set tbl key key tru
+				lua_insert( L, -2 );     //S: tbl set tbl key key tru
 			}
 			else
-				lua_pushboolean( L, 1 ); // S: tbl set tbl key val tru
+				lua_pushboolean( L, 1 ); //S: tbl set tbl key val tru
 			lua_rawset( L, -4 );
 			cnt++;
 		}
@@ -423,8 +423,8 @@ lt_set__newindex( lua_State *L )
 {
 	struct t_set *set = t_set_check_ud( L, -3, 1 );
 
-	lua_rawgeti( L, LUA_REGISTRYINDEX, set->tR ); // S: set elm val tbl
-	lua_replace( L, -4 );                         // S: tbl elm val
+	lua_rawgeti( L, LUA_REGISTRYINDEX, set->tR ); //S: set elm val tbl
+	lua_replace( L, -4 );                         //S: tbl elm val
 	t_set_setElement( L, set );
 	return 0;
 }
@@ -468,7 +468,7 @@ lt_set__pairs( lua_State *L )
 
 	lua_pushcfunction( L, &t_set_iter );
 	lua_rawgeti( L, LUA_REGISTRYINDEX, set->tR );
-	lua_pushnil( L );         // S: set fnc tbl nil
+	lua_pushnil( L );         //S: set fnc tbl nil
 	lua_remove( L, -4 );      // remove T.Set from stack
 	return 3;
 }
@@ -718,7 +718,7 @@ static const struct luaL_Reg t_set_fm [] = {
  * --------------------------------------------------------------------------*/
 static const struct luaL_Reg t_set_cf [] = {
 	  { "getTable"     , lt_set_GetTable }
-	, { "toTable"      , lt_set_ToTable }
+	, { "getValues"    , lt_set_GetValues }
 	, { NULL           , NULL }
 };
 

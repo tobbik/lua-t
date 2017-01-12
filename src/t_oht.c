@@ -578,6 +578,59 @@ lt_oht_GetTable( lua_State *L )
 
 
 /**--------------------------------------------------------------------------
+ *  Return the values from a T.OrderedHashTable as an ordered indexed table.
+ * \param   L      Lua state.
+ * \lparam  ud     T.OrderedHashTable userdata instance.
+ * \lreturn table  Numerically indexed table with all elements from instance.
+ * \return  int    # of values pushed onto the stack.
+ * --------------------------------------------------------------------------*/
+static int
+lt_oht_GetValues( lua_State *L )
+{
+	struct t_oht *oht = t_oht_check_ud( L, -1, 1 );
+	size_t i;
+	size_t l;
+
+	lua_rawgeti( L, LUA_REGISTRYINDEX, oht->tR );
+	l = lua_rawlen( L, -1 );
+	lua_createtable( L, l, l );
+	for (i=0; i< l; i++)
+	{
+		lua_rawgeti( L, -2, i+1);     //S: oht tbl res key
+		lua_rawget( L, -3 );          //S: oht tbl res val
+		lua_rawseti( L, -2, i+1 );    //S: oht tbl res
+	}
+	return 1;
+}
+
+
+/**--------------------------------------------------------------------------
+ *  Return the keys from a T.OrderedHashTable as an ordered indexed table.
+ * \param   L      Lua state.
+ * \lparam  ud     T.OrderedHashTable userdata instance.
+ * \lreturn table  Numerically indexed table with all elements from instance.
+ * \return  int    # of values pushed onto the stack.
+ * --------------------------------------------------------------------------*/
+static int
+lt_oht_GetKeys( lua_State *L )
+{
+	struct t_oht *oht = t_oht_check_ud( L, -1, 1 );
+	size_t i;
+	size_t l;
+
+	lua_rawgeti( L, LUA_REGISTRYINDEX, oht->tR );
+	l = lua_rawlen( L, -1 );
+	lua_createtable( L, l, l );
+	for (i=0; i< l; i++)
+	{
+		lua_rawgeti( L, -2, i+1);     //S: oht tbl res key
+		lua_rawseti( L, -2, i+1 );    //S: oht tbl res
+	}
+	return 1;
+}
+
+
+/**--------------------------------------------------------------------------
  * Class metamethods library definition
  * --------------------------------------------------------------------------*/
 static const struct luaL_Reg t_oht_fm [] = {
@@ -594,6 +647,8 @@ static const struct luaL_Reg t_oht_cf [] = {
 	, { "insert"       , lt_oht_Insert }
 	, { "concat"       , lt_oht_Concat }
 	, { "getTable"     , lt_oht_GetTable }
+	, { "getValues"    , lt_oht_GetValues }
+	, { "getKeys"      , lt_oht_GetKeys }
 	, { NULL           , NULL }
 };
 

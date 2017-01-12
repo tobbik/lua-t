@@ -32,7 +32,7 @@ Class Members
   dangerous operation because changing this table can result in wrong
   operations on ``s`` instance.
 
-``table t = T.Set.toTable( s )``
+``table t = T.Set.getValues( s )``
   Returns an array table with all elements of ``s`` as values.  The
   returned table could be used to create a cloned T.Set. ``T.Set(
   T.Set.toTable( set ) )``

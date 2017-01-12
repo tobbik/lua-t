@@ -92,12 +92,12 @@ local tests = {
 
 	test_Concat = function( self )
 		-- #DESC:Concat concatenates values
-		local separator = 'willy nilly'
-		local values    = {}
+		local sep   = 'willy nilly'
+		local vals  = {}
 		for i = 1, self.len do
-			table.insert( values, self.vals[i] .. ' position' )
+			table.insert( vals, self.vals[i] .. ' position' )
 		end
-		assert( Oht.concat( self.o, separator ) == table.concat( values, separator ),
+		assert( Oht.concat( self.o, separator ) == table.concat( vals, separator ),
 			 "Concatenated values must equal normal table concat results" )
 	end,
 
@@ -114,7 +114,7 @@ local tests = {
 	test_AddElement = function( self )
 		-- #DESC:Adding element increases size
 		local o_len = #self.o
-		local value   = "eighth position" 
+		local value   = "eighth position"
 
 		self.o.eight  = value
 		assert( #self.o      == o_len+1,    "Adding element must increase length" )
@@ -214,6 +214,30 @@ local tests = {
 		local func     = function() self.o[ oob_idx ] = val .. ' position' end
 
 		assert( not pcall( func ), "Not allowed to create elements with indexes" )
+	end,
+
+	test_GetValues = function( self )
+		-- #DESC:GetValues() returns properly ordered list of values
+		local sep   = '_|||_'
+		local xvals = {}
+		for i = 1, self.len do
+			table.insert( xvals, self.vals[i] .. ' position' )
+		end
+		local vals  = Oht.getValues( self.o )
+		local c_oV  = table.concat( xvals, sep )
+		local c_rV  = table.concat( vals, sep )
+		assert( c_oV == c_rV,
+			 "List of values must be equal:\n_" ..c_oV .."_\n_" ..c_rV.."_")
+	end,
+
+	test_GetKeys = function( self )
+		-- #DESC:GetKeys() returns properly ordered list of keys
+		local sep  = '_|||_'
+		local keys = Oht.getKeys( self.o )
+		local c_oK = table.concat( self.keys, sep )
+		local c_rK = table.concat( keys, sep )
+		assert( c_oK == c_rK,
+			 "List of keys must be equal:\n_" ..c_oK .."_\n_" ..c_rK.."_")
 	end,
 }
 

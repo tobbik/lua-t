@@ -48,5 +48,7 @@ for k,v,i in pairs( o ) do
 end
 
 print( Oht.concat( o, '_|||||_' ) )
+print( table.concat( Oht.getValues( o ), '_|||||_' ) )
+print( table.concat( Oht.getKeys( o ), '_|||||_' ) )
 
 
