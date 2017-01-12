@@ -31,7 +31,6 @@
  * Clone the table of a T.OrderedHashTable.
  * \lparam  table    original table.
  * \lreturn table    new cloned table.
- * \return  void.
  * --------------------------------------------------------------------------*/
 void
 t_oht_cloneTable( lua_State *L )
@@ -50,6 +49,25 @@ t_oht_cloneTable( lua_State *L )
 		lua_rawseti( L, -2, i+1 );     //S: … tbl tbl
 	}
 }
+
+
+/**--------------------------------------------------------------------------
+ * Get element from a T.OrderedHashTable.
+ * \param   L        Lua state.
+ * \lparam  table    Table referenced from t_oht ud.
+ * \lparam  value    key/index.
+ * --------------------------------------------------------------------------*/
+void
+t_oht_getElement( lua_State *L )
+{
+	if (LUA_TNUMBER == lua_type( L, -1 ) )
+	{
+		lua_rawgeti( L, -2, luaL_checkinteger( L, -1 ) ); //S: tbl idx key
+		lua_replace( L, -2 );                             //S: tbl key
+	}
+	lua_rawget( L, -2 );                                 //S: tbl val
+}
+
 
 /**--------------------------------------------------------------------------
  * Delete an element from the table.
@@ -100,7 +118,6 @@ t_oht_deleteElement( lua_State *L )
  * \lparam  table    Table referenced from t_oht ud.
  * \lparam  value    key/index.
  * \lparam  value    value for key/index.
- * \return  int      # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 void
 t_oht_addElement( lua_State *L )
@@ -395,14 +412,8 @@ lt_oht__index( lua_State *L )
 
 	lua_rawgeti( L, LUA_REGISTRYINDEX, oht->tR );        //S: oht key/idx tbl
 	lua_replace( L, -3 );                                //S: tbl key/idx
+	t_oht_getElement( L );
 
-	if (LUA_TNUMBER == lua_type( L, -1 ) )
-	{
-		lua_rawgeti( L, -2, luaL_checkinteger( L, -1 ) ); //S: tbl key
-		lua_replace( L, -2 );
-	}
-
-	lua_rawget( L, -2 );                                 //S: tbl val
 	return 1;
 }
 
@@ -568,11 +579,39 @@ lt_oht__tostring( lua_State *L )
  * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int
-lt_oht_GetTable( lua_State *L )
+lt_oht_GetReference( lua_State *L )
 {
 	struct t_oht *oht = t_oht_check_ud( L, -1, 1 );
 
 	lua_rawgeti( L, LUA_REGISTRYINDEX, oht->tR ); // S: oht tbl
+	return 1;
+}
+
+
+/**--------------------------------------------------------------------------
+ *  Return standard table without the ordering part.
+ * \param   L      Lua state.
+ * \lparam  ud     T.OrderedHashTable userdata instance.
+ * \lreturn table  Lua table with key/value pairs.
+ * \return  int    # of values pushed onto the stack.
+ * --------------------------------------------------------------------------*/
+static int
+lt_oht_GetTable( lua_State *L )
+{
+	struct t_oht *oht = t_oht_check_ud( L, -1, 1 );
+	size_t i;
+	size_t l;
+
+	lua_rawgeti( L, LUA_REGISTRYINDEX, oht->tR );
+	l = lua_rawlen( L, -1 );
+	lua_createtable( L, l, l );
+	for (i=0; i< l; i++)
+	{
+		lua_rawgeti( L, -2, i+1);     //S: oht tbl res key
+		lua_pushvalue( L, -1 );       //S: oht tbl res key key
+		lua_rawget( L, -4 );          //S: oht tbl res key val
+		lua_rawset( L, -3 );          //S: oht tbl res
+	}
 	return 1;
 }
 
@@ -646,6 +685,7 @@ static const struct luaL_Reg t_oht_cf [] = {
 	, { "getKey"       , lt_oht_GetKey }
 	, { "insert"       , lt_oht_Insert }
 	, { "concat"       , lt_oht_Concat }
+	, { "getReference" , lt_oht_GetReference }
 	, { "getTable"     , lt_oht_GetTable }
 	, { "getValues"    , lt_oht_GetValues }
 	, { "getKeys"      , lt_oht_GetKeys }

@@ -699,7 +699,7 @@ lt_pck_SetDefaultEndian( lua_State *L )
  * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int
-lt_pck_GetRt( lua_State *L )
+lt_pck_GetReference( lua_State *L )
 {
 	struct t_pck *p = t_pck_fld_getPackFromStack( L, 1, NULL );
 
@@ -928,7 +928,7 @@ static const struct luaL_Reg t_pck_fm [] = {
  * --------------------------------------------------------------------------*/
 static const struct luaL_Reg t_pck_cf [] = {
 	  { "getSize"        , lt_pck_GetSize }
-	, { "getTable"       , lt_pck_GetRt }
+	, { "getReference"   , lt_pck_GetReference }
 	, { "setEndian"      , lt_pck_SetDefaultEndian }
 	, { NULL             , NULL }
 };

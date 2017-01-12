@@ -258,7 +258,7 @@ t_set_symdifference( lua_State *L )
  * \return  int  # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int
-lt_set_GetTable( lua_State *L )
+lt_set_GetReference( lua_State *L )
 {
 	struct t_set *set = t_set_check_ud( L, -1, 1 );
 
@@ -276,7 +276,7 @@ lt_set_GetTable( lua_State *L )
  * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int
-lt_set_GetValues( lua_State *L )
+lt_set_GetTable( lua_State *L )
 {
 	struct t_set *set = t_set_check_ud( L, -1, 1 );
 	size_t runner     = 1;
@@ -717,8 +717,8 @@ static const struct luaL_Reg t_set_fm [] = {
  * Class functions library definition
  * --------------------------------------------------------------------------*/
 static const struct luaL_Reg t_set_cf [] = {
-	  { "getTable"     , lt_set_GetTable }
-	, { "getValues"    , lt_set_GetValues }
+	  { "getReference" , lt_set_GetReference }
+	, { "getTable"     , lt_set_GetTable }
 	, { NULL           , NULL }
 };
 

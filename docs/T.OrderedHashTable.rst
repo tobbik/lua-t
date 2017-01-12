@@ -36,7 +36,7 @@ Why is there no ``t.add( element )``?
   an OrderedHashTable where 'add' is a value such as ``t.add = true``.  This
   would lead to conflicting accessors.
 
-Calling ``T.OrderedHashTable.getIndex( instance, index )`` seems slow?
+Calling ``T.OrderedHashTable.getIndex( instance, key )`` seems slow?
   Above operation is not a lookup but an O(n) scan operation.  Since it is
   not used all that often it seems to be a fair tradeoff.
 
@@ -47,13 +47,16 @@ API
 Class Members
 -------------
 
-``table t = T.OrderedHashTable.toTable( oht )``
+``table t = T.OrderedHashTable.getValues( oht )``
   Returns a Lua table with all values ordered and keys discarded.
 
-``table t = T.OrderedHashTable.toHash( oht )``
-  Returns a Lua table with keys and values and order discarded.
+``table t = T.OrderedHashTable.getKeys( oht )``
+  Returns a Lua table with all keys ordered and values discarded.
 
 ``table t = T.OrderedHashTable.getTable( oht )``
+  Returns a Lua table with keys and values and order discarded.
+
+``table t = T.OrderedHashTable.getReference( oht )``
   Returns the underlying Lua table with keys and values which holds values
   in the following fashion::
 
@@ -79,11 +82,13 @@ Class Members
 
 ``integer i = T.OrderedHashTable.getIndex( oht, key )``
   Returns the index of the element in *oht* which has the given ``key``.  If
-  that key does not exist return nil.
+  that key does not exist return nil.  This operation is a bit more
+  expensive then a lookup because it has to perform a table scan (O^n).
 
-``value k = T.OrderedHashTable.getkey( oht, integer i )``
+``value k = T.OrderedHashTable.getKey( oht, integer i )``
   Returns the key of the element in ``oht`` which has the given index ``i``.
-  If that index does not exist return nil.
+  If that index does not exist return nil.  Unlike ``getKey``, this
+  operation is a lookup, not a scan.
 
 
 Class Metamembers

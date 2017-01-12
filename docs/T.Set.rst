@@ -27,15 +27,24 @@ API
 Class Members
 -------------
 
-``table t = T.Set.getTable( s )``
-  Returns the underlying table used for the set implementation.  This is a
-  dangerous operation because changing this table can result in wrong
-  operations on ``s`` instance.
+``table t = T.Set.getReference( s )``
+  Returns the underlying Lua table used for the set implementation which
+  holds values in the following fashion::
 
-``table t = T.Set.getValues( s )``
+    table = {
+      'firstSetElement'   = true,
+      'secondSetElement'  = true,
+      'thirdSetElement'   = true
+    }
+  
+  Since the returned table is a reference, manipulating the table may have
+  ill effects on the T.Set instance and result in erratic behaviour.  The
+  function shall be used for debugging purposes only.
+
+``table t = T.Set.getTable( s )``
   Returns an array table with all elements of ``s`` as values.  The
   returned table could be used to create a cloned T.Set. ``T.Set(
-  T.Set.toTable( set ) )``
+  T.Set.getTable( set ) )``
 
 
 Class Metamembers

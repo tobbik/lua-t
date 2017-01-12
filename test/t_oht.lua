@@ -71,24 +71,30 @@ local tests = {
 
 	test_PairsIterator = function( self )
 		-- #DESC:Function pair() must iterate in proper order
-		local ri = 1
+		local ri = 0
 		for k,v,i in pairs( self.o ) do
+			ri = ri+1
 			assert( i == ri, "Iterator index '"..i.."' must match running index '"..ri.."'" )
 			assert( k == self.keys[i], "Iterator hash must match running index hash" )
 			assert( v == self.vals[i], "Iterator value must match running index value" )
-			ri = ri+1
 		end
+		assert( #self.o == ri,
+			 "Number of iterations in pairs() ("..ri..
+			 ") must be equal to length of OrderedHashTable("..#self.o..")" )
 	end,
 
 	test_IpairsIterator = function( self )
 		-- #DESC:Function ipair() must iterate in proper order
-		local ri = 1
+		local ri = 0
 		for i,v,k in ipairs( self.o ) do
+			ri = ri+1
 			assert( i == ri, "Iterator index '"..i.."' must match running index '"..ri.."'" )
 			assert( k == self.keys[i], "Iterator hash must match running index hash" )
 			assert( v == self.vals[i], "Iterator value must match running index value" )
-			ri = ri+1
 		end
+		assert( #self.o == ri,
+			 "Number of iterations in ipairs() ("..ri..
+			 ") must be equal to length of OrderedHashTable("..#self.o..")" )
 	end,
 
 	test_Concat = function( self )
@@ -205,7 +211,7 @@ local tests = {
 	end,
 
 	test_CantCreateIndexOutOfBoundElement = function( self )
-		-- #DESC:Replace Index element remains size, indexes and keys
+		-- #DESC:Can't create an element with an index higher than length
 		local o_len    = #self.o
 		local oob_idx  = o_len + 1
 		local val      = "doesn't matter"
@@ -232,6 +238,20 @@ local tests = {
 		local c_rK = table.concat( keys, sep )
 		assert( c_oK == c_rK,
 			 "List of keys must be equal:\n_" ..c_oK .."_\n_" ..c_rK.."_")
+	end,
+
+	test_GetTable = function( self )
+		-- #DESC:GetTable() returns a complete table of keyvalue pairs
+		local t = Oht.getTable( self.o )
+		local i = 0
+
+		for k,v in pairs( t ) do
+			assert( v == self.o[ k ], "Key/Value from simple table must matched OrderedHashTable" )
+			i = i+1
+		end
+		assert( #self.o == i,
+			 "Number of elements in simple table ("..i..
+			 ") must be equal to number of elements in OrderedHashTable("..#self.o..")" )
 	end,
 }
 
