@@ -15,7 +15,8 @@ local tests = {
 		self.len  = 0
 		-- insertion order is preserved inside the Hash table
 		for i = 1, #self.keys do
-			self.o[ self.keys[i] ] = self.vals[i] .. ' position'
+			self.vals[i] = "This is an element at the " .. self.vals[i] .. " position."
+			self.o[ self.keys[i] ] = self.vals[i]
 			self.len  = self.len+1   -- count inserts
 		end
 		assert( #self.keys == self.len, "Number of inserts must equal length of Keys" )
@@ -32,16 +33,16 @@ local tests = {
 	test_TableStyleConstructor = function( self )
 		-- #DESC:Length of OrderedHashTable must be equal number of inserts
 		o   = Oht(
-			  { one   = 'first   position' }
-			, { two   = 'second  position' }
-			, { three = 'third   position' }
-			, { four  = 'fourth  position' }
+			  { [self.keys[1]]= self.vals[1] }
+			, { [self.keys[2]]= self.vals[2] }
+			, { [self.keys[3]]= self.vals[3] }
+			, { [self.keys[4]]= self.vals[4] }
 		)
 		assert( #o == 4, "Length must equal number of constructor arguments" )
 
-		o['five']  = 'fifth   position'
-		o['six']   = 'sixth   position'
-		o['seven'] = 'seventh position'
+		o[ self.keys[5] ] = self.vals[5]
+		o[ self.keys[6] ] = self.vals[6]
+		o[ self.keys[7] ] = self.vals[7]
 		assert( #o == 4 + 3, "Length of OrderedHashTable must equal number of arguments" ..
 		                     " in construtor plus number of inserts" )
 	end,
@@ -74,7 +75,7 @@ local tests = {
 		for k,v,i in pairs( self.o ) do
 			assert( i == ri, "Iterator index '"..i.."' must match running index '"..ri.."'" )
 			assert( k == self.keys[i], "Iterator hash must match running index hash" )
-			assert( v == self.vals[i] .. ' position', "Iterator value must match running index value" )
+			assert( v == self.vals[i], "Iterator value must match running index value" )
 			ri = ri+1
 		end
 	end,
@@ -85,7 +86,7 @@ local tests = {
 		for i,v,k in ipairs( self.o ) do
 			assert( i == ri, "Iterator index '"..i.."' must match running index '"..ri.."'" )
 			assert( k == self.keys[i], "Iterator hash must match running index hash" )
-			assert( v == self.vals[i] .. ' position', "Iterator value must match running index value" )
+			assert( v == self.vals[i], "Iterator value must match running index value" )
 			ri = ri+1
 		end
 	end,
@@ -93,18 +94,15 @@ local tests = {
 	test_Concat = function( self )
 		-- #DESC:Concat concatenates values
 		local sep   = 'willy nilly'
-		local vals  = {}
-		for i = 1, self.len do
-			table.insert( vals, self.vals[i] .. ' position' )
-		end
-		assert( Oht.concat( self.o, separator ) == table.concat( vals, separator ),
+
+		assert( Oht.concat( self.o, separator ) == table.concat( self.vals, separator ),
 			 "Concatenated values must equal normal table concat results" )
 	end,
 
 	test_AccessIndexedElements = function( self )
 		-- #DESC:All elements must be available by their indexes
 		for i=1, self.len do
-			assert( self.o[i] == self.vals[i] .. ' position', "Indexed value must match original value" )
+			assert( self.o[i] == self.vals[i], "Indexed value must match original value" )
 			assert( self.o[self.keys[i]] == self.o[i], "Hash access must match index access" )
 			assert( Oht.getIndex( self.o, self.keys[i] ) == i, "Key index must match index" )
 			assert( Oht.getKey( self.o, i ) == self.keys[i], "Key index must match index" )
@@ -114,7 +112,7 @@ local tests = {
 	test_AddElement = function( self )
 		-- #DESC:Adding element increases size
 		local o_len = #self.o
-		local value   = "eighth position"
+		local value   = string.gsub( self.vals[1], "first", "eighth" )
 
 		self.o.eight  = value
 		assert( #self.o      == o_len+1,    "Adding element must increase length" )
@@ -155,7 +153,7 @@ local tests = {
 		local o_len  = #self.o
 		local two    = self.o[2]
 		local three  = self.o[3]
-		local value  = 'oddth position'
+		local value  = string.gsub( self.vals[1], "first", "oddth" )
 		local key    = 'odd'
 
 		Oht.insert( self.o, 3, key, value )
@@ -173,16 +171,16 @@ local tests = {
 		local o_len  = #self.o
 		local idx    = 3
 		local key    = 'three'
-		local val    = 'thirdish'
+		local val    = string.gsub( self.vals[1], "first", "thirdish" )
 		local keys   = { table.unpack( self.keys ) }
 		local vals   = { table.unpack( self.vals ) }
 		keys[ idx ]  = key
 		vals[ idx ]  = val
 
-		self.o[ key ] = val .. ' position'
+		self.o[ key ] = val
 		for i=1,self.len do
-			assert( self.o[i]       == vals[i] .. ' position', "Indexed Values match after Replace" )
-			assert( self.o[keys[i]] == vals[i] .. ' position', "Hashed  Values match after Replace" )
+			assert( self.o[i]       == vals[i], "Indexed Values match after Replace" )
+			assert( self.o[keys[i]] == vals[i], "Hashed  Values match after Replace" )
 			assert( Oht.getIndex(self.o, keys[i] ) == i, "Indexes for keys match after Replace" )
 		end
 	end,
@@ -192,16 +190,16 @@ local tests = {
 		local o_len  = #self.o
 		local idx    = 3
 		local key    = 'three'
-		local val    = 'thirdish'
+		local val    = string.gsub( self.vals[1], "first", "thirdish" )
 		local keys   = { table.unpack( self.keys ) }
 		local vals   = { table.unpack( self.vals ) }
 		keys[ idx ]  = key
 		vals[ idx ]  = val
 
-		self.o[ idx ] = val .. ' position'
+		self.o[ idx ] = val
 		for i=1,self.len do
-			assert( self.o[i]       == vals[i] .. ' position', "Indexed Values match after Replace" )
-			assert( self.o[keys[i]] == vals[i] .. ' position', "Hashed  Values match after Replace" )
+			assert( self.o[i]       == vals[i], "Indexed Values match after Replace" )
+			assert( self.o[keys[i]] == vals[i], "Hashed  Values match after Replace" )
 			assert( Oht.getIndex(self.o, keys[i] ) == i, "Indexes for keys match after Replace" )
 		end
 	end,
@@ -211,7 +209,7 @@ local tests = {
 		local o_len    = #self.o
 		local oob_idx  = o_len + 1
 		local val      = "doesn't matter"
-		local func     = function() self.o[ oob_idx ] = val .. ' position' end
+		local func     = function() self.o[ oob_idx ] = val end
 
 		assert( not pcall( func ), "Not allowed to create elements with indexes" )
 	end,
@@ -219,12 +217,8 @@ local tests = {
 	test_GetValues = function( self )
 		-- #DESC:GetValues() returns properly ordered list of values
 		local sep   = '_|||_'
-		local xvals = {}
-		for i = 1, self.len do
-			table.insert( xvals, self.vals[i] .. ' position' )
-		end
 		local vals  = Oht.getValues( self.o )
-		local c_oV  = table.concat( xvals, sep )
+		local c_oV  = table.concat( self.vals, sep )
 		local c_rV  = table.concat( vals, sep )
 		assert( c_oV == c_rV,
 			 "List of values must be equal:\n_" ..c_oV .."_\n_" ..c_rV.."_")
