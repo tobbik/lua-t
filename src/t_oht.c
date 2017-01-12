@@ -28,6 +28,30 @@
 #include "t_oht.h"
 
 /**--------------------------------------------------------------------------
+ * Clone the table of a T.OrderedHashTable.
+ * \lparam  table    original table.
+ * \lreturn table    new cloned table.
+ * \return  void.
+ * --------------------------------------------------------------------------*/
+void
+t_oht_cloneTable( lua_State *L )
+{
+	size_t  i  = 0;                   ///< iterator for going through the arguments
+	size_t  l  = lua_rawlen( L, -1 ); ///< process how many arguments
+
+	lua_createtable( L, l, l );       //S: … tbl tbl
+	for (i=0; i<l; i++)
+	{
+		lua_rawgeti( L, -2, i+1 );     //S: … tbl tbl key
+		lua_pushvalue( L, -1 );        //S: … tbl tbl key key
+		lua_pushvalue( L, -1 );        //S: … tbl tbl key key key
+		lua_rawget( L, -5 );           //S: … tbl tbl key key val
+		lua_rawset( L, -4 );           //S: … tbl tbl key
+		lua_rawseti( L, -2, i+1 );     //S: … tbl tbl
+	}
+}
+
+/**--------------------------------------------------------------------------
  * Delete an element from the table.
  * \param   L        Lua state.
  * \lparam  table    Table referenced from t_oht ud.
@@ -111,7 +135,6 @@ t_oht_addElement( lua_State *L )
 			lua_rawset( L, -3 );
 		}
 	}
-
 }
 
 
@@ -300,12 +323,23 @@ t_oht_readArguments( lua_State *L, int sp, int ep )
 static int
 lt_oht__Call( lua_State *L )
 {
-	struct t_oht *oht = t_oht_create_ud( L );
+	struct t_oht *org_oht = t_oht_check_ud( L, 2, 0 );
+	struct t_oht *oht     = t_oht_create_ud( L );
 	lua_remove( L, 1 );          // remove T.OrderedHashTable class
+
 	if (lua_istable( L , 1 ))
 		t_oht_readArguments( L, 1, lua_gettop( L )-1 ); // -1 for oht
 	else
-		lua_newtable( L );
+		if (NULL != org_oht)
+		{
+			lua_rawgeti( L, LUA_REGISTRYINDEX, org_oht->tR );
+			lua_remove( L, 1 );       // remove Oht instance
+			t_oht_cloneTable( L );
+			lua_remove( L, -2 );      // remove Oht original table
+		}
+		else
+			lua_newtable( L );
+
 	oht->tR = luaL_ref( L, LUA_REGISTRYINDEX );
 
 	return 1;

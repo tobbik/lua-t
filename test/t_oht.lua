@@ -26,7 +26,7 @@ local tests = {
 
 	test_LengthMustEqualInserts = function( self )
 		-- #DESC:Length of OrderedHashTable must be equal number of inserts
-		assert( #self.o == self.len, "Length of OrderedHashTable must equal number of inserts" )
+		assert( #self.o == self.len, "Length must equal number of inserts" )
 	end,
 
 	test_TableStyleConstructor = function( self )
@@ -37,13 +37,57 @@ local tests = {
 			, { three = 'third   position' }
 			, { four  = 'fourth  position' }
 		)
-		assert( #o == 4, "Length of OrderedHashTable must equal number of arguments in construtor" )
+		assert( #o == 4, "Length must equal number of constructor arguments" )
 
 		o['five']  = 'fifth   position'
 		o['six']   = 'sixth   position'
 		o['seven'] = 'seventh position'
 		assert( #o == 4 + 3, "Length of OrderedHashTable must equal number of arguments" ..
 		                     " in construtor plus number of inserts" )
+	end,
+
+	test_CopyConstructor = function( self )
+		-- #DESC:OrderedHashTable constructed by copy must match original
+		o   = Oht( self.o )
+		assert( #self.o == self.len, "Original and clone length must be equal" )
+		for i=1, self.len do
+			assert( self.o[i] == o[i] , "Indexed value in clone must match original value" )
+		end
+	end,
+
+	test_EmptyConstructor = function( self )
+		-- #DESC:OrderedHashTable constructed from empty must match original
+		o   = Oht( )
+		for k,v,_ in pairs( self.o ) do  -- use pairs() iterator to fill copy
+			o[k] = v
+		end
+
+		assert( #self.o == self.len, "Original and clone length must be equal" )
+		for i=1, self.len do
+			assert( self.o[i] == o[i] , "Indexed value in clone must match original value" )
+		end
+	end,
+
+	test_PairsIterator = function( self )
+		-- #DESC:Function pair() must iterate in proper order
+		local ri = 1
+		for k,v,i in pairs( self.o ) do
+			assert( i == ri, "Iterator index '"..i.."' must match running index '"..ri.."'" )
+			assert( k == self.keys[i], "Iterator hash must match running index hash" )
+			assert( v == self.vals[i] .. ' position', "Iterator value must match running index value" )
+			ri = ri+1
+		end
+	end,
+
+	test_IpairsIterator = function( self )
+		-- #DESC:Function ipair() must iterate in proper order
+		local ri = 1
+		for i,v,k in ipairs( self.o ) do
+			assert( i == ri, "Iterator index '"..i.."' must match running index '"..ri.."'" )
+			assert( k == self.keys[i], "Iterator hash must match running index hash" )
+			assert( v == self.vals[i] .. ' position', "Iterator value must match running index value" )
+			ri = ri+1
+		end
 	end,
 
 	test_Concat = function( self )
@@ -77,7 +121,7 @@ local tests = {
 		assert( self.o.eight == value,      "New Element is available under given key" )
 		assert( self.o[ #self.o ] == value, "New Element is available as last element" )
 	end,
-	
+
 	test_DeleteHashElement = function( self )
 		-- #DESC:Removing Hash element decreases size and move down higher keys
 		local o_len = #self.o
@@ -91,7 +135,7 @@ local tests = {
 		assert( self.o.six  == six,     "Removing element musn't affect higher keys" )
 		assert( self.o[5]   == six,     "Removing element must move down higher keys" )
 	end,
-	
+
 	test_DeleteIndexElement = function( self )
 		-- #DESC:Removing Index element decreases size and move down higher keys
 		local o_len = #self.o
