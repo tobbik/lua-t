@@ -18,7 +18,7 @@ static int            secB  = 5678;
 static int            usecB = 654321;
 
 static int
-setup( )
+t_utst_case_setup( )
 {
 	tA.tv_sec  = secA;
 	tA.tv_usec = usecA;
@@ -28,7 +28,7 @@ setup( )
 }
 
 static int
-teardown( )
+t_utst_case_teardown( )
 {
 	tA.tv_sec  = 0;
 	tA.tv_usec = 0;
@@ -37,16 +37,13 @@ teardown( )
 	return 0;
 }
 
-
 static int
 test_t_tim_failure( )
 {
-	_assert( tC.tv_sec  == secA + secB + 1 );
-	_assert( tC.tv_sec  == secA + secB );
-	_assert( tC.tv_usec == usecA + usecB + 1 );
+	_assert(  secA +  secB  ==  secA +  secB   );
+	_assert( usecA + usecB  == usecA + usecB +1);
 	return 0;
 }
-
 
 static int
 test_t_tim_add( )
@@ -56,7 +53,6 @@ test_t_tim_add( )
 	_assert( tC.tv_usec == usecA + usecB );
 	return 0;
 }
-
 
 static int
 test_t_tim_add_ms_overflow( )
@@ -70,9 +66,8 @@ test_t_tim_add_ms_overflow( )
 	return 0;
 }
 
-
 // Add all testable functions to the array
-static const struct test_case all_tests [] = {
+static const struct t_utst_case t_utst_all_tests [] = {
 	{ "Adding two t_tim values"                    , test_t_tim_add },
 	{ "Adding two t_tim values with usec overflow" , test_t_tim_add_ms_overflow },
 	{ "Purposfully failing test"                   , test_t_tim_failure },

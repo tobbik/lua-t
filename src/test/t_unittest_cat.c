@@ -24,12 +24,41 @@ countlines( char * file_name )
 static void
 add_main_function( int lines )
 {
-	fprintf( stdout,
-				"int main()\n"
-					"{\n"
-						"\treturn test_execute( all_tests, setup, teardown, %d );\n"
-					"}\n\n",
-			lines );
+	fprintf( stdout, 
+"static int t_utst_run_case( int (*func) () )\n\
+{\n\
+	_verify( func );\n\
+	return 0;\n\
+}\n\
+\n\
+static int t_utst_run_envelope( int (*func) () )\n\
+{\n\
+	_envelope( func );\n\
+	return 0;\n\
+}\n\
+\n\
+static int t_utst_case_run_suite( const struct t_utst_case *t )\n\
+{\n\
+	int result = 0;\n\
+	for (; t->name != NULL; t++)\n\
+	{\n\
+		printf( \"Test...%%s\\n\", t->name );\n\
+		t_utst_run_envelope( t_utst_case_setup );\n\
+		result += t_utst_run_case( t->func );\n\
+		t_utst_run_envelope( t_utst_case_teardown );\n\
+	}\n\
+	return result;\n\
+}\n\
+\n\
+int\n\
+main( )\n\
+{\n\
+	t_utst_source_line_offset = %d;\n\
+\n\
+	return t_utst_case_run_suite( t_utst_all_tests );\n\
+}\n\
+\n\
+", lines );
 }
 
 int
@@ -49,3 +78,4 @@ main( int argc, char *argv[] )
 
 	add_main_function( lines );
 }
+

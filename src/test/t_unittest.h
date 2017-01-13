@@ -1,38 +1,39 @@
+#include <stdio.h>
+#include <stdlib.h>
+
 #define FAIL() \
 	printf( "\tfailure in %s() line %d\n\n", \
-	__func__, __LINE__ - source_line_offset )
+	__func__, __LINE__ - t_utst_source_line_offset )
 
 #define _assert(test) \
 	do { \
-		if (!(test)) { \
+		if (! (test)) { \
 			FAIL(); \
 			return 1; \
 		} \
-	} while(0)
+	} while (0)
 
 #define _envelope(envelope) \
 	do { \
 		int r=envelope(); \
-		if(r) { \
+		if (r) { \
 			printf( "\tsetup/teardown failed\n\n"); \
 			return r; \
 		} \
-	} while(0)
+	} while (0)
 
 #define _verify(test) \
 	do { \
 		int r=test(); \
-		tests_run++; \
-		if(r) \
+		t_utst_all_run_tests++; \
+		if (r) \
 			return r; \
-	} while(0)
+	} while (0)
 
-int tests_run;
-int source_line_offset;
+int t_utst_all_run_tests;
+int t_utst_source_line_offset;
 
-struct test_case {
+struct t_utst_case {
   const char   *name;
   int         (*func) ();
 };
-
-int test_execute( const struct test_case *t, int (*setup) (), int (*teardown) (), int offset );
