@@ -40,8 +40,8 @@ t_utst_case_teardown( )
 static int
 test_t_tim_failure( )
 {
-	_assert(  secA +  secB  ==  secA +  secB   );
-	_assert( usecA + usecB  == usecA + usecB +1);
+	_assert(  secA +  secB  ==  secA +  secB    , "Seconds shall be equal" );
+	_assert( usecA + usecB  == usecA + usecB +1 , "Microseconds shall be equal" );
 	return 0;
 }
 
@@ -49,8 +49,8 @@ static int
 test_t_tim_add( )
 {
 	t_tim_add( &tA, &tB, &tC );
-	_assert( tC.tv_sec  == secA + secB );
-	_assert( tC.tv_usec == usecA + usecB );
+	_assert( tC.tv_sec  == secA + secB , "Seconds shall be equal" );
+	_assert( tC.tv_usec == usecA + usecB , "Microseconds shall be equal" );
 	return 0;
 }
 
@@ -61,8 +61,8 @@ test_t_tim_add_ms_overflow( )
 
 	// test proper microsecond overflow
 	t_tim_add( &tA, &tB, &tC );
-	_assert( tC.tv_sec  == secA + secB + 1 );
-	_assert( tC.tv_usec == (usecA + usecB+ usecB) - 1000000 );
+	_assert( tC.tv_sec  == secA + secB + 1 , "Seconds shall be equal" );
+	_assert( tC.tv_usec == (usecA + usecB+ usecB) - 1000000  , "Microseconds shall have overflown");
 	return 0;
 }
 

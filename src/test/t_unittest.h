@@ -1,14 +1,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define FAIL() \
-	printf( "\tfailure in %s() line %d\n\n", \
-	__func__, __LINE__ - t_utst_source_line_offset )
+#define FAIL(description) \
+	printf( "\tfailure in %s() line %d -- \"%s\"\n\n", \
+	__func__, __LINE__ - t_utst_source_line_offset, description )
 
-#define _assert(test) \
+#define _assert(test, description) \
 	do { \
 		if (! (test)) { \
-			FAIL(); \
+			FAIL(description); \
 			return 1; \
 		} \
 	} while (0)

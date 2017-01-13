@@ -25,23 +25,19 @@ static void
 add_main_function( int lines )
 {
 	fprintf( stdout, 
-"static int t_utst_run_case( int (*func) () )\n\
-{\n\
+"static int t_utst_run_case( int (*func) () ) {\n\
 	_verify( func );\n\
 	return 0;\n\
 }\n\
 \n\
-static int t_utst_run_envelope( int (*func) () )\n\
-{\n\
+static int t_utst_run_envelope( int (*func) () ) {\n\
 	_envelope( func );\n\
 	return 0;\n\
 }\n\
 \n\
-static int t_utst_case_run_suite( const struct t_utst_case *t )\n\
-{\n\
+static int t_utst_case_run_suite( const struct t_utst_case *t ) {\n\
 	int result = 0;\n\
-	for (; t->name != NULL; t++)\n\
-	{\n\
+	for (; t->name != NULL; t++) {\n\
 		printf( \"Test...%%s\\n\", t->name );\n\
 		t_utst_run_envelope( t_utst_case_setup );\n\
 		result += t_utst_run_case( t->func );\n\
@@ -50,14 +46,10 @@ static int t_utst_case_run_suite( const struct t_utst_case *t )\n\
 	return result;\n\
 }\n\
 \n\
-int\n\
-main( )\n\
-{\n\
+int main () {\n\
 	t_utst_source_line_offset = %d;\n\
-\n\
 	return t_utst_case_run_suite( t_utst_all_tests );\n\
 }\n\
-\n\
 ", lines );
 }
 
