@@ -2,22 +2,6 @@
 #include <stdlib.h>
 #include "t_unittest.h"
 
-void
-countlines( char * file_name )
-{
-	source_line_offset = 0;
-	char ch;
-	FILE *fp = fopen( file_name, "r" );
-
-	while (! feof( fp ))
-	{
-		ch = fgetc( fp );
-		if ('\n' == ch)
-			source_line_offset++;
-	}
-	fclose( fp );
-}
-
 static int run_test_case( int (*func) () )
 {
 	_verify( func );
@@ -32,9 +16,11 @@ static int run_envelope( int (*func) () )
 
 
 int
-test_execute( const struct test_case *t, int (*setup) (), int (*teardown) () )
+test_execute( const struct test_case *t, int (*setup) (), int (*teardown) (), int offset )
 {
 	int result = 0;
+	source_line_offset = offset;
+
 	for (; t->name != NULL; t++)
 	{
 		printf( "Test...%s\n", t->name );
@@ -44,4 +30,5 @@ test_execute( const struct test_case *t, int (*setup) (), int (*teardown) () )
 	}
 	return result;
 }
+
 

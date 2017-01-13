@@ -1,5 +1,6 @@
 #define FAIL() \
-	printf( "\tfailure in %s() line %d\n\n", __func__, __LINE__-source_line_offset )
+	printf( "\tfailure in %s() line %d\n\n", \
+	__func__, __LINE__ - source_line_offset )
 
 #define _assert(test) \
 	do { \
@@ -26,13 +27,12 @@
 			return r; \
 	} while(0)
 
-int  source_line_offset;
-int  tests_run;
-void countlines( char *file_name );
+int tests_run;
+int source_line_offset;
 
 struct test_case {
   const char   *name;
   int         (*func) ();
 };
 
-int test_execute( const struct test_case *t, int (*setup) (), int (*teardown) () );
+int test_execute( const struct test_case *t, int (*setup) (), int (*teardown) (), int offset );

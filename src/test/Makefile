@@ -23,11 +23,14 @@ CFLAGS:=-Wall -Wextra -O0 -std=c99 -fpic $(MYCFLAGS) $(T_PRE)
 T_OBJ=$(T_SRC:.c=.o)
 T_EXE=$(T_SRC:.c=)
 
-all: $(T_SRC) $(T_OBJ) t_unittest.o $(T_EXE)
+all: cat $(T_SRC) $(T_OBJ) t_unittest.o $(T_EXE)
 	$(foreach exe,$(T_EXE),./$(exe);)
 
+cat: t_unittest_cat.c
+	$(CC) $(CFLAGS) t_unittest_cat.c -o $@ $(LIBS)
+
 %.o: %.c
-	cat ../$< $< $(T_MAIN) | $(CC) -x c $(INCS) $(CFLAGS) -c - -o $@
+	./cat ../$< ./$< | $(CC) -x c $(INCS) $(CFLAGS) -c - -o $@
 
 %: %.o
 	$(LD) t_unittest.o $< -o $@ $(LDFLAGS) $(LIBS)
@@ -37,4 +40,4 @@ t_unittest.o: t_unittest.c
 
 
 clean:
-	-rm $(T_OBJ) $(T_EXE) t_unittest.o
+	-rm $(T_OBJ) $(T_EXE) t_unittest.o cat
