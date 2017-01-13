@@ -73,9 +73,9 @@ install: $(T_SRC) $(T_LIB_DYN) $(T_LIB_STA)
 	cp $(T_LIB_STA) $(PREFIX)/lib/lua/$(LVER)/$(T_LIB_STA)
 
 test: $(SRCDIR)
-	$(MAKE) -C test CC=$(CC) LD=$(LD) \
+	$(MAKE) -C $(CURDIR)/test CC=$(CC) LD=$(LD) \
 		LVER=$(LVER) \
-		MYCFLAGS=$(MYCFLAGS) \
+		MYCFLAGS="$(MYCFLAGS)" \
 		LDFLAGS="$(LDFLAGS)" \
 		INCDIR=$(INCDIR)
 
