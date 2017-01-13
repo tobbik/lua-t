@@ -7,6 +7,8 @@
 
 T_SRC=t_tim.c
 
+T_MAIN=t_unittest_main.c
+
 #
 LVER=5.3
 PREFIX=$(shell pkg-config --variable=prefix lua)
@@ -25,7 +27,7 @@ all: $(T_SRC) $(T_OBJ) t_unittest.o $(T_EXE)
 	$(foreach exe,$(T_EXE),./$(exe);)
 
 %.o: %.c
-	cat ../$<  $< | $(CC) -x c $(INCS) $(CFLAGS) -c - -o $@
+	cat ../$< $< $(T_MAIN) | $(CC) -x c $(INCS) $(CFLAGS) -c - -o $@
 
 %: %.o
 	$(LD) t_unittest.o $< -o $@ $(LDFLAGS) $(LIBS)

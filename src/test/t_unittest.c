@@ -7,7 +7,7 @@ countlines( char * file_name )
 {
 	source_line_offset = 0;
 	char ch;
-	FILE *fp = fopen( file_name,"r" );
+	FILE *fp = fopen( file_name, "r" );
 
 	while (! feof( fp ))
 	{

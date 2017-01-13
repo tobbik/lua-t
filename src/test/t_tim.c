@@ -70,6 +70,7 @@ test_t_tim_add_ms_overflow( )
 	return 0;
 }
 
+
 // Add all testable functions to the array
 static const struct test_case all_tests [] = {
 	{ "Adding two t_tim values"                    , test_t_tim_add },
@@ -78,8 +79,4 @@ static const struct test_case all_tests [] = {
 	{ NULL, NULL }
 };
 
-int
-main()
-{
-	return test_execute( all_tests, setup, teardown );
-}
+
