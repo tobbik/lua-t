@@ -51,7 +51,7 @@ gn( const char **fmt, int df )
  * \param  char* format string
  * \param  int   default value if no number is in the format string
  * \param  int   max value allowed for int
- * \return the converted integer value
+ * \return int   converted integer value
  *  -------------------------------------------------------------------------*/
 static int
 gnl( lua_State *L, const char **fmt, int df, int max )
@@ -81,11 +81,10 @@ struct t_pck
 *t_pck_fmt_read( lua_State *L, const char **f, int *e, size_t *bo )
 {
 	int           opt;
-	int           m;
-	size_t        s;
-	enum t_pck_t  t;
 	struct t_pck *p = NULL;
 
+#define CP( typ, end, sz ) \
+	t_pck_create_ud( L, T_PCK_##typ, (sz), (end) );
 	while (NULL == p)
 	{
 		opt = *((*f)++);
@@ -93,56 +92,45 @@ struct t_pck
 		switch (opt)
 		{
 			// Integer types
-			case 'b': t = T_PCK_INT;  m = (1==*e);  s = 1;                                 break;
-			case 'B': t = T_PCK_UNT;  m = (1==*e);  s = 1;                                 break;
-			case 'h': t = T_PCK_INT;  m = (1==*e);  s = sizeof( short );                   break;
-			case 'H': t = T_PCK_UNT;  m = (1==*e);  s = sizeof( short );                   break;
-			case 'l': t = T_PCK_INT;  m = (1==*e);  s = sizeof( long );                    break;
-			case 'L': t = T_PCK_UNT;  m = (1==*e);  s = sizeof( long );                    break;
-			case 'j': t = T_PCK_INT;  m = (1==*e);  s = sizeof( lua_Integer );             break;
-			case 'J': t = T_PCK_UNT;  m = (1==*e);  s = sizeof( lua_Integer );             break;
-			case 'T': t = T_PCK_INT;  m = (1==*e);  s = sizeof( size_t );                  break;
-			case 'i': t = T_PCK_INT;  m = (1==*e);  s = gnl( L, f, sizeof( int ), MXINT ); break;
-			case 'I': t = T_PCK_UNT;  m = (1==*e);  s = gnl( L, f, sizeof( int ), MXINT ); break;
+			case 'b': p = CP( INT, 1==*e, 1                                 ); break;
+			case 'B': p = CP( UNT, 1==*e, 1                                 ); break;
+			case 'h': p = CP( INT, 1==*e, sizeof( short )                   ); break;
+			case 'H': p = CP( UNT, 1==*e, sizeof( short )                   ); break;
+			case 'l': p = CP( INT, 1==*e, sizeof( long )                    ); break;
+			case 'L': p = CP( UNT, 1==*e, sizeof( long )                    ); break;
+			case 'j': p = CP( INT, 1==*e, sizeof( lua_Integer )             ); break;
+			case 'J': p = CP( UNT, 1==*e, sizeof( lua_Integer )             ); break;
+			case 'T': p = CP( INT, 1==*e, sizeof( size_t )                  ); break;
+			case 'i': p = CP( INT, 1==*e, gnl( L, f, sizeof( int ), MXINT ) ); break;
+			case 'I': p = CP( UNT, 1==*e, gnl( L, f, sizeof( int ), MXINT ) ); break;
 
-			// Float types
-			case 'f': t = T_PCK_FLT;  m = (1==*e);  s = sizeof( float );                   break;
-			case 'd': t = T_PCK_FLT;  m = (1==*e);  s = sizeof( double );                  break;
-			case 'n': t = T_PCK_FLT;  m = (1==*e);  s = sizeof( lua_Number );              break;
+			// Float typesCP
+			case 'f': p = CP( FLT, 1==*e, sizeof( float )                   ); break;
+			case 'd': p = CP( FLT, 1==*e, sizeof( double )                  ); break;
+			case 'n': p = CP( FLT, 1==*e, sizeof( lua_Number )              ); break;
 
-			// String type
-			case 'c': t = T_PCK_RAW;  m = 0;        s = gnl( L, f, 1, 0x1 << NB );         break;
+			// String typeCP
+			case 'c': p = CP( RAW, 0    , gnl( L, f, 1, 0x1 << NB )         ); break;
 
 			// Bit types
-			case 'v':
-				t = T_PCK_BOL;
-				m = gnl(L, f, 1+(*bo%NB), NB) - 1;
-				s = 1;
-				break;
-			case 'r':
-				t = T_PCK_BTS;
-				m = *bo % NB;
-				s = gnl(L, f, 1, MXBIT );
-				break;
-			case 'R':
-				t = T_PCK_BTU;
-				m = *bo % NB;
-				s = gnl(L, f, 1, MXBIT );
-				break;
+			case 'r': p = CP( BTS, 0    , gnl( L, f, 1, MXBIT )             ); break;
+			case 'R': p = CP( BTU, 0    , gnl( L, f, 1, MXBIT )             ); break;
+			case 'v': p = CP( BOL, 0    , gnl( L, f, 1+(*bo%NB), NB )       ); break;
 
 			// modifier types
-			case '<': *e = 1; continue;                                                      break;
-			case '>': *e = 0; continue;                                                      break;
-			case '\0': return NULL;                                                          break;
+			case '<': *e = 1; continue;                                        break;
+			case '>': *e = 0; continue;                                        break;
+			case '\0': return NULL;                                            break;
 			default:
 				luaL_error( L, "invalid format option '%c'", opt );
 				return NULL;
 		}
 		// TODO: check if 0==offset%8 if byte type, else error
-		p    = t_pck_create_ud( L, t, s, m );
+		//p    = t_pck_create_ud( L, t, s, m );
 		// forward the Bit offset
-		*bo += ((T_PCK_BTU==t || T_PCK_BTS==t || T_PCK_BOL == t) ? s : s*NB);
+		*bo += ((T_PCK_BTU==p->t || T_PCK_BTS==p->t || T_PCK_BOL==p->t) ? p->s : p->s * NB );
 	}
+#undef CP
 	return p;
 }
 
