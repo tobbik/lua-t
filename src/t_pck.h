@@ -77,18 +77,18 @@ struct t_pck {
 	/// size of packer -> various meanings
 	///  -- for int/uint float raw = the number of bytes
 	///  -- for bit bits nibble    = the number of bits
-	///  -- for Seq StructArr      = the number of elements in this Combinator
+	///  -- for Seq Struct Arr     = the number of elements in this Combinator
 	size_t         s;
 	/// modifier -> various meanings
-	///  -- for int/uint           = Endian (0=Big, 1=Little)
-	///  -- for bit                = Offset from beginning of byte (bit numbering: MSB 0)
+	///  -- for int/uint           = Endian ( 0=Big, 1=Little )
+	///  -- for bit                = Offset from beginning of byte ( bit numbering: MSB 0 )
 	///  -- for raw                = ??? (unused)
-	///  -- for Arr                = lua registry Reference for packer
-	///  -- for Seq                = lua registry Reference for the table
-	///        idx[ i    ] = Pack
-	///  -- for Struct             = lua registry Reference for the table
-	///        idx[ i    ] = Pack
-	///        idx[ name ] = i
+	///  -- for Arr                = LUA_REGISTRYINDEX for packer
+	///  -- for Seq                = LUA_REGISTRYINDEX for table
+	///        table[ i    ] = Pack
+	///  -- for Struct             = LUA_REGISTRYINDEX for table
+	///        table[ i    ] = name             -- this is the same scheme that
+	///        table[ name ] = Pack             -- OrderedHashTable uses
 	int            m;
 };
 
@@ -102,8 +102,8 @@ struct t_pcr {
 
 /// The userdata struct for T.Pack.Field
 struct t_pck_fld {
-	int      pR;   ///< reference to packer type
-	size_t   o;    ///< offset from the beginning of the wrapping Struct
+	int      pR;   ///< LUA_REGISTRYINDEX to the T.Pack or T.Pack.Field type
+	size_t   o;    ///< offset from the beginning of the wrapping Combinator in bits
 };
 
 

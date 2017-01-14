@@ -619,6 +619,7 @@ static int lt_pck__Call( lua_State *L )
 	size_t         bo  = 0;  // running bit offset
 
 	lua_remove( L, 1 );                              // remove the T.Pack Class table
+	t_stackDump( L );
 	if (NULL != oht)
 	{
 		lua_rawgeti( L, LUA_REGISTRYINDEX, oht->tR );         //S: oht pck tbl

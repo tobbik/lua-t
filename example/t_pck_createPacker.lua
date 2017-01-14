@@ -53,6 +53,7 @@ print( #p2, p2 )
 print( #p3, p3 )
 print( #p4, p4 )
 
+for k,v in pairs( Pack.getReference( s ) ) do print( k, v ) end
 for k,v in pairs( Pack.getReference( p1 ) ) do print( k, v ) end
 for k,v in pairs( Pack.getReference( p2 ) ) do print( k, v ) end
 for k,v in pairs( Pack.getReference( p3 ) ) do print( k, v ) end

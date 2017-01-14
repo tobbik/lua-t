@@ -133,7 +133,7 @@ struct t_pck
 /**--------------------------------------------------------------------------
  * Create a  T.Pack.Field Object and put it onto the stack.
  * \param   L      Lua state.
- * \param   int    ofs offset in bit.
+ * \param   int    ofs offset in byte.
  * \return  struct t_pck_fld*.
  * --------------------------------------------------------------------------*/
 struct t_pck_fld
@@ -144,7 +144,7 @@ struct t_pck_fld
 	pf     = (struct t_pck_fld *) lua_newuserdata( L, sizeof( struct t_pck_fld ));
 	luaL_getmetatable( L, T_PCK_FLD_TYPE );
 	lua_setmetatable( L, -2 ) ;                //S:… tbl key Fld
-	pf->o  = ofs/8;
+	pf->o  = ofs;
 	return pf;
 }
 
