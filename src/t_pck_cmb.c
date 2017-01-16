@@ -280,7 +280,7 @@ t_pck_fld_iter( lua_State *L )
 	if (T_PCK_ARR == pct)
 	{
 		pc     = t_pck_check_ud( L, 1, 1 );
-		pf->o += idx*pc->s;
+		pf->o += (idx-1) * pc->s;
 		lua_pushvalue( L, 1 );                    //S: tbl idx ud pck
 	}
 	if (T_PCK_SEQ == pct)

@@ -790,6 +790,7 @@ int
 t_pck_fld__callread( lua_State *L, struct t_pck *pc, const unsigned char *b )
 {
 	struct t_pck     *p;      ///< packer currently processing
+	struct t_oht     *oht ;   ///< OrderedHashTable result if T.Struct is processed
 	struct t_pck_fld *pf;     ///< packer field currently processing
 	size_t            sz = 0; ///< size of packer currently processing
 	size_t            n;      /// iterator for complex types
@@ -812,7 +813,7 @@ t_pck_fld__callread( lua_State *L, struct t_pck *pc, const unsigned char *b )
 				p = t_pck_create_ud( L, p->t, p->s,
 					((p->s * (n-1)) % NB ) );
 			}
-			t_pck_fld__callread( L, p, b + ((sz * (n-1)) / 8) );       //S:… res typ val
+			t_pck_fld__callread( L, p, b + ((sz * (n-1)) / NB) );       //S:… res typ val
 			lua_rawseti( L, -3, n );
 		}
 		lua_pop( L, 1 );
@@ -824,14 +825,14 @@ t_pck_fld__callread( lua_State *L, struct t_pck *pc, const unsigned char *b )
 		{
 			lua_rawgeti( L, -1, n );           //S:… res tbl pck
 			p = t_pck_fld_getPackFromStack( L, -1, &pf );
-			t_pck_fld__callread( L, p, b + pf->o );//S:… res idx pck val
+			t_pck_fld__callread( L, p, b + pf->o/NB );//S:… res tbl pck val
 			lua_rawseti( L, -4, n );           //S:… res tbl pck
 			lua_pop( L, 1 );
 		}
 		lua_pop( L, 1 );
 		return 1;
 	}
-	if (pc->t == T_PCK_STR)       // handle Struct, return table
+	if (pc->t == T_PCK_STR)       // handle Struct, return oht
 	{
 		for (n=1; n <= pc->s; n++)
 		{
@@ -839,11 +840,14 @@ t_pck_fld__callread( lua_State *L, struct t_pck *pc, const unsigned char *b )
 			lua_pushvalue( L, -1 );            //S:… res tbl key key
 			lua_rawget( L, -3 );               //S:… res tbl key fld
 			p = t_pck_fld_getPackFromStack( L, -1, &pf );
-			t_pck_fld__callread( L, p, b + pf->o );//S:… res tbl key pck val
+			t_pck_fld__callread( L, p, b + pf->o/NB );//S:… res tbl key pck val
 			lua_remove( L, -2 );               //S:… res tbl key val
-			lua_rawset( L, -4 );               //S:… res tbl
+			t_oht_addElement( L, -4 );
 		}
-		lua_pop( L, 1 );
+		lua_pop( L, 1 );                      //S:… res
+		oht = t_oht_create_ud( L );           //S:… res oht
+		lua_insert( L, -2 );                  //S:… oht res
+		oht->tR = luaL_ref( L, LUA_REGISTRYINDEX );
 		return 1;
 	}
 	lua_pushnil( L );
@@ -885,15 +889,17 @@ lt_pck_fld__call( lua_State *L )
 		b   = (unsigned char *) luaL_checklstring( L, 2, &l );
 		b   =  b + o/NB;
 	}
-	luaL_argcheck( L,  l*NB >= o + t_pck_getSize( L, pc ), 2,
+
+	luaL_argcheck( L,  l*NB+NB >= o + t_pck_getSize( L, pc ), 2,
 		"String/Buffer must be longer than "T_PCK_TYPE" offset plus length." );
+
 
 	if (2 == lua_gettop( L ))      // read from input
 		return t_pck_fld__callread( L, pc, b );
 	else                           // write to input
 	{
 		if (pc->t < T_PCK_ARR)      // handle atomic packer, return single value
-			return t_pck_write( L, pc, (unsigned char *) b );
+			return t_pck_write( L, pc, b );
 		else                        // create a table ...
 			return t_push_error( L, "writing of complex types is not implemented");
 	}
