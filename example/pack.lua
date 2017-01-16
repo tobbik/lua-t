@@ -1,8 +1,13 @@
 T    = require't'
 sfmt = string.format
 
---       aBc       De      ü        HiJkL             mNoP       ö
-p   = { 6373987, 25924, -61,188, 311004130124,    1349471853, -18749 }
+--          >I3       <I2   b   B    <I5           <I4          h
+--          aBc       De      ü      HiJkL         mNoP         ö
+expect = { 6373987, 25924, -61, 188, 311004130124, 1349471853, -18749 }
+
+
+--       aBc       De      ü      HiJkL            mNoP         ö
+p   = { 6373987, 25924, -61, 188, 311004130124,    1349471853, -18749 }
 fmt = '>I3<i2bB>I5<I4h'
 s   = string.pack( fmt, table.unpack( p ) ) --use Lua 5.3 built in to pack
 print( T.Buffer(s):toHex() )

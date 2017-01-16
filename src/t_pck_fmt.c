@@ -51,7 +51,7 @@ gn( const char **fmt, int df )
  * \param  char* format string
  * \param  int   default value if no number is in the format string
  * \param  int   max value allowed for int
- * \return int   converted integer value
+ * \return int   converted integer value in tbit
  *  -------------------------------------------------------------------------*/
 static int
 gnl( lua_State *L, const char **fmt, int df, int max )
@@ -59,7 +59,7 @@ gnl( lua_State *L, const char **fmt, int df, int max )
 	int sz = gn( fmt, df );
 	if (sz > max || sz <= 0)
 		luaL_error( L, "size (%d) out of limits [1,%d]", sz, max );
-	return sz;
+	return sz * NB;
 }
 
 
@@ -92,22 +92,22 @@ struct t_pck
 		switch (opt)
 		{
 			// Integer types
-			case 'b': p = CP( INT, 1==*e, 1                                 ); break;
-			case 'B': p = CP( UNT, 1==*e, 1                                 ); break;
-			case 'h': p = CP( INT, 1==*e, sizeof( short )                   ); break;
-			case 'H': p = CP( UNT, 1==*e, sizeof( short )                   ); break;
-			case 'l': p = CP( INT, 1==*e, sizeof( long )                    ); break;
-			case 'L': p = CP( UNT, 1==*e, sizeof( long )                    ); break;
-			case 'j': p = CP( INT, 1==*e, sizeof( lua_Integer )             ); break;
-			case 'J': p = CP( UNT, 1==*e, sizeof( lua_Integer )             ); break;
-			case 'T': p = CP( INT, 1==*e, sizeof( size_t )                  ); break;
+			case 'b': p = CP( INT, 1==*e, NB                                ); break;
+			case 'B': p = CP( UNT, 1==*e, NB                                ); break;
+			case 'h': p = CP( INT, 1==*e, sizeof( short ) * NB              ); break;
+			case 'H': p = CP( UNT, 1==*e, sizeof( short ) * NB              ); break;
+			case 'l': p = CP( INT, 1==*e, sizeof( long ) * NB               ); break;
+			case 'L': p = CP( UNT, 1==*e, sizeof( long ) * NB               ); break;
+			case 'j': p = CP( INT, 1==*e, sizeof( lua_Integer ) * NB        ); break;
+			case 'J': p = CP( UNT, 1==*e, sizeof( lua_Integer ) * NB        ); break;
+			case 'T': p = CP( INT, 1==*e, sizeof( size_t ) * NB             ); break;
 			case 'i': p = CP( INT, 1==*e, gnl( L, f, sizeof( int ), MXINT ) ); break;
 			case 'I': p = CP( UNT, 1==*e, gnl( L, f, sizeof( int ), MXINT ) ); break;
 
 			// Float typesCP
-			case 'f': p = CP( FLT, 1==*e, sizeof( float )                   ); break;
-			case 'd': p = CP( FLT, 1==*e, sizeof( double )                  ); break;
-			case 'n': p = CP( FLT, 1==*e, sizeof( lua_Number )              ); break;
+			case 'f': p = CP( FLT, 1==*e, sizeof( float ) * NB              ); break;
+			case 'd': p = CP( FLT, 1==*e, sizeof( double ) * NB             ); break;
+			case 'n': p = CP( FLT, 1==*e, sizeof( lua_Number ) * NB         ); break;
 
 			// String typeCP
 			case 'c': p = CP( RAW, 0    , gnl( L, f, 1, 0x1 << NB )         ); break;
@@ -125,10 +125,6 @@ struct t_pck
 				luaL_error( L, "invalid format option '%c'", opt );
 				return NULL;
 		}
-		// TODO: check if 0==offset%8 if byte type, else error
-		//p    = t_pck_create_ud( L, t, s, m );
-		// forward the Bit offset
-		*bo += ((T_PCK_BTU==p->t || T_PCK_BTS==p->t || T_PCK_BOL==p->t) ? p->s : p->s * NB );
 	}
 #undef CP
 	return p;

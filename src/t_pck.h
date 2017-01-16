@@ -126,7 +126,7 @@ int           t_pck_write     ( lua_State *L, struct t_pck *p, unsigned char *bu
 
 // helpers for the Packers
 struct t_pck *t_pck_getPacker ( lua_State *L, int pos, size_t *bo );
-size_t        t_pck_getSize( lua_State *L,  struct t_pck *p, int bits );
+size_t        t_pck_getSize( lua_State *L,  struct t_pck *p );
 int           t_pck_fld__callread ( lua_State *L, struct t_pck *pc, const unsigned char *b );
 
 struct t_pck *t_pck_fld_getPackFromStack( lua_State * L, int pos, struct t_pck_fld **pcf );
