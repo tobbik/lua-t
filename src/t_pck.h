@@ -8,7 +8,7 @@
  */
 
 #include "t_buf.h"            // read/write buffers
-#include "t_oht.h"            // read arguments into struct
+#include "t_oht.h"            // read arguments into struct, write result
 
 #define T_PCK_FLD_NAME  "Field"
 
@@ -27,8 +27,6 @@
 
 // Maximum bits that can be read or written
 #define MXBIT              MXINT * NB
-
-
 
 
 // T.Pack is designed to work like Lua 5.3 pack/unpack support.  By the same
@@ -58,9 +56,9 @@ static const char *const t_pck_t_lst[] = {
 	, "UInt"         ///< Packer         Unsigned Integer
 	, "Float"        ///< Packer         Float
 	, "Double"       ///< Packer         Double
-	, "Boolean"      ///< Packer         Boolean (1 Bit)
-	, "BitSigned"    ///< Packer         Bit (integer x Bit)
-	, "BitUnsigned"  ///< Packer         Bit (integer x Bit)
+	, "Bool"         ///< Packer         Boolean (1 Bit)
+	, "SBit"         ///< Packer         Signed   Integer as BitArray (integer x Bit)
+	, "UBit"         ///< Packer         Unsigned Integer as BitArray (integer x Bit)
 	, "Raw"          ///< Packer         Raw - string/utf8/binary
 	// complex packer types
 	, "Array"        ///< Combinator     Array

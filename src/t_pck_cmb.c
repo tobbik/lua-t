@@ -165,57 +165,65 @@ int
 lt_pck_fld__index( lua_State *L )
 {
 	struct t_pck_fld *opf  = NULL;  ///< Pack.Field to read from
-	struct t_pck     *opc  = t_pck_fld_getPackFromStack( L, -2, &opf );
+	struct t_pck     *opc  = t_pck_fld_getPackFromStack( L, 1, &opf );
 	struct t_pck_fld *ipf  = NULL;  ///< Pack.Field found at index
-	struct t_pck     *ipc;
+	struct t_pck     *ipc;          ///< Pack found at index or referenced from ipf
 	struct t_pck_fld *npf;          ///< new Pack.Field to be returned
+	size_t            idx;          ///< index of requested field
 
-	luaL_argcheck( L, opc->t > T_PCK_RAW, -2, "Trying to index Atomic "T_PCK_TYPE" type" );
+	luaL_argcheck( L, opc->t > T_PCK_RAW, 1, "Trying to index Atomic "T_PCK_TYPE" type" );
+	luaL_argcheck( L, (opc->t < T_PCK_STR && LUA_TNUMBER == lua_type( L, 2 )) || opc->t == T_PCK_STR,
+		2, "Index for "T_PCK_TYPE".Array or "T_PCK_TYPE".Sequence must be numeric." );
 
-	if (LUA_TNUMBER == lua_type( L, -1 ) &&
-	   ((luaL_checkinteger( L, -1 ) > (int) opc->s) || (luaL_checkinteger( L, -1 ) < 1))
-	)
+	if (LUA_TNUMBER == lua_type( L, 2 ))
 	{
-		// Array/Sequence out of bound: return nil
-		lua_pushnil( L );
-		return 1;
+		idx = luaL_checkinteger( L, 2 );
+		if (idx > opc->s || idx<1)
+		{
+			// Array/Sequence out of bound: return nil
+			lua_pushnil( L );
+			return 1;
+		}
 	}
 	// push empty field on stack
 	npf    = (struct t_pck_fld *) lua_newuserdata( L, sizeof( struct t_pck_fld ) );
 	npf->o = (NULL == opf )? 0 : opf->o;  // recorded offset is 1 based -> don't add up
-	// get idx table (struct) or packer type (array)
-	lua_rawgeti( L, LUA_REGISTRYINDEX, opc->m );               // S: Str i/k ud tbl/Pck
+	// get table (struct,sequence) or packer type (array)
+	lua_rawgeti( L, LUA_REGISTRYINDEX, opc->m );           // S: Str i/k ud tbl/Pck
 	//t_stackDump( L );
 
 	if (LUA_TUSERDATA == lua_type( L, -1 ))    // T.Array
 	{
-		ipc   = t_pck_check_ud( L, -1, 1 );                     // S: Arr i/k ud Pck
+		ipc = t_pck_check_ud( L, -1, 1 );                   // S: Arr i/k ud Pck
 		if (T_PCK_BOL == ipc->t  || T_PCK_BTS == ipc->t  || T_PCK_BTU == ipc->t)
 		{
 			lua_pop( L, 1 );
 			ipc = t_pck_create_ud( L, ipc->t, ipc->s,
-				((ipc->s * (luaL_checkinteger( L, -2 )-1)) % NB ) );
+				((opf->o + ipc->s*(idx-1)) % NB ) );
 		}
-		npf->o += (((t_pck_getSize( L, ipc )) * (luaL_checkinteger( L, -3 )-1)) / NB);
+		npf->o += t_pck_getSize( L, ipc ) * (idx-1) ;
+		printf("idx: [%zu:%d:%zu:%2zu] ", opf->o, ipc->m, ipc->s, npf->o );
 	}
 	else                                       // T.Pack.Struct/Sequence
 	{
 		if (T_PCK_SEQ == opc->t)
-			lua_rawgeti( L, -1, luaL_checkinteger( L, -3 ) );   //S: Seq idx ud tbl Fld
+			lua_rawgeti( L, -1, idx );                        //S: Seq idx ud tbl Fld
 		if (T_PCK_STR == opc->t)
 		{
-			if (lua_isinteger( L, -3 ) )
-				lua_rawgeti( L, -1, luaL_checkinteger( L, -3) ); //S: Str idx ud tbl key
+			if (lua_isinteger( L, 2 ) )
+				lua_rawgeti( L, -1, idx );                     //S: Str idx ud tbl key
 			else
-				lua_pushvalue( L, -3 );                          //S: Str key ud tbl key
-			lua_rawget( L, -2 );                                //S: Str i/k ud tbl Fld
+				lua_pushvalue( L, 2 );                         //S: Str key ud tbl key
+			lua_rawget( L, -2 );                              //S: Str i/k ud tbl Fld
 		}
-		lua_remove( L, -2 );                                   //S: Str i/k ud Fld
-		ipc     = t_pck_fld_getPackFromStack( L, -1, &ipf );   //S: Str i/k ud Pck
+		lua_remove( L, -2 );                                 //S: Str i/k ud Fld
+		ipc     = t_pck_fld_getPackFromStack( L, -1, &ipf ); //S: Str i/k ud Pck
 		npf->o += ipf->o;
+	//printf("%zu:%zu:", ipf->o, npf->o );
+	//printf("%d-%lu  | ",(T_PCK_BTU==ipc->t || T_PCK_BTS==ipc->t || T_PCK_BOL==ipc->t) ? ipc->m : 0, npf->o % NB );
 	}
 
-	npf->pR  = luaL_ref( L, LUA_REGISTRYINDEX );              //S: Str i/k Fld
+	npf->pR  = luaL_ref( L, LUA_REGISTRYINDEX );            //S: Str i/k Fld
 	luaL_getmetatable( L, T_PCK_FLD_TYPE );
 	lua_setmetatable( L, -2 );
 	return 1;
@@ -234,9 +242,7 @@ int
 lt_pck_fld__newindex( lua_State *L )
 {
 	struct t_pck *pc = t_pck_fld_getPackFromStack( L, -3, NULL );
-
 	luaL_argcheck( L, pc->t > T_PCK_RAW, -3, "Atomic "T_PCK_TYPE" type has no fields" );
-
 	return t_push_error( L, T_PCK_TYPE" is read-only!" );
 }
 

@@ -19,7 +19,9 @@
  * \return    boolean 0:false - 1:true
  *  -------------------------------------------------------------------------*/
 static int
-is_digit( int c ) { return '0' <= c && c<='9'; }
+is_digit( int c ) {
+	return '0' <= c && c<='9';
+}
 
 
 /** -------------------------------------------------------------------------
@@ -83,8 +85,8 @@ struct t_pck
 	int           opt;
 	struct t_pck *p = NULL;
 
-#define CP( typ, end, sz ) \
-	t_pck_create_ud( L, T_PCK_##typ, (sz), (end) );
+#define CP( typ, mod, sz ) \
+	t_pck_create_ud( L, T_PCK_##typ, (sz), (mod) );
 	while (NULL == p)
 	{
 		opt = *((*f)++);
@@ -113,9 +115,9 @@ struct t_pck
 			case 'c': p = CP( RAW, 0    , gnl( L, f, 1, 0x1 << NB )         ); break;
 
 			// Bit types
-			case 'r': p = CP( BTS, 0    , gnl( L, f, 1, MXBIT )             ); break;
-			case 'R': p = CP( BTU, 0    , gnl( L, f, 1, MXBIT )             ); break;
-			case 'v': p = CP( BOL, 0    , gnl( L, f, 1+(*bo%NB), NB )       ); break;
+			case 'r': p = CP( BTS, *bo%NB, gnl( L, f, 1, MXBIT )/NB         ); break;
+			case 'R': p = CP( BTU, *bo%NB, gnl( L, f, 1, MXBIT )/NB         ); break;
+			case 'v': p = CP( BOL, *bo%NB, 1                                ); break;
 
 			// modifier types
 			case '<': *e = 1; continue;                                        break;
@@ -127,6 +129,9 @@ struct t_pck
 		}
 	}
 #undef CP
+	// forward the Bit offset
+	*bo += ((T_PCK_BTU==p->t || T_PCK_BTS==p->t || T_PCK_BOL==p->t) ? p->s : p->s * NB );
+	//printf("%zu:%d\n", p->s, p->m );
 	return p;
 }
 
