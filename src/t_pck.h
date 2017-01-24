@@ -16,13 +16,13 @@
 
 
 // macros taken from Lua 5.3 source code
-/* number of bits in a character */
+// number of bits in a character
 #define NB                 CHAR_BIT
 
-/* mask for one character (NB 1's) */
+// mask for one character (NB 1's)
 #define MC                 ((1 << NB) - 1)
 
-/* size of a lua_Integer */
+// size of a lua_Integer
 #define MXINT              ((int)sizeof(lua_Integer))
 
 // Maximum bits that can be read or written
@@ -90,20 +90,11 @@ struct t_pck {
 	int            m;
 };
 
-
-/// The userdata struct for T.Pack.Reader
-struct t_pcr {
-	int      r;   ///< reference to packer type
-	size_t   o;   ///< offset from the beginning of the wrapping Struct
-};
-
-
 /// The userdata struct for T.Pack.Field
 struct t_pck_fld {
 	int      pR;   ///< LUA_REGISTRYINDEX to the T.Pack or T.Pack.Field type
 	size_t   o;    ///< offset from the beginning of the wrapping Combinator in bits
 };
-
 
 /// Union for serializing floats (taken from Lua 5.3)
 union Ftypes {
