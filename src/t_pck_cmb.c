@@ -185,12 +185,12 @@ lt_pck_fld__index( lua_State *L )
 			return 1;
 		}
 	}
+
 	// push empty field on stack
 	npf    = (struct t_pck_fld *) lua_newuserdata( L, sizeof( struct t_pck_fld ) );
 	npf->o = (NULL == opf )? 0 : opf->o;  // recorded offset is 1 based -> don't add up
 	// get table (struct,sequence) or packer type (array)
 	lua_rawgeti( L, LUA_REGISTRYINDEX, opc->m );           // S: Str i/k ud tbl/Pck
-	//t_stackDump( L );
 
 	if (LUA_TUSERDATA == lua_type( L, -1 ))    // T.Array
 	{
@@ -219,7 +219,7 @@ lt_pck_fld__index( lua_State *L )
 		lua_remove( L, -2 );                                 //S: Str i/k ud Fld
 		ipc     = t_pck_fld_getPackFromStack( L, -1, &ipf ); //S: Str i/k ud Pck
 		npf->o += ipf->o;
-	//printf("%zu:%zu:", ipf->o, npf->o );
+	//printf("%zu:%zu|", ipf->o, npf->o );
 	//printf("%d-%lu  | ",(T_PCK_BTU==ipc->t || T_PCK_BTS==ipc->t || T_PCK_BOL==ipc->t) ? ipc->m : 0, npf->o % NB );
 	}
 

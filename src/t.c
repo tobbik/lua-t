@@ -18,7 +18,7 @@
  * Formats an item on the stack.  Pushes formatted string to last position.
  * \param  L        The Lua intepretter object.
  * \param  int      position stack element to format.
- * \param  int/bool use_tostring if 1 use tostring( ), else .
+ * \param  int/bool use _tostring if 1 use tostring( ), else .
  *-------------------------------------------------------------------------*/
 void
 t_fmtStackItem( lua_State *L, int idx, int no_tostring )
@@ -106,6 +106,68 @@ t_stackDump ( lua_State *L )
 	printf( "\n" );  // end the listing
 }
 
+/** -------------------------------------------------------------------------
+ * Prints a binary representation of a number as in memory.
+ * \param  char array to print.
+ *-------------------------------------------------------------------------*/
+void
+t_printCharBin( volatile char *b, size_t sz )
+{
+	size_t n, x;
+
+	for (n=0; n<sz; n++)
+	{
+		for (x=CHAR_BIT; x>0; x--)
+			printf( "%d", (b[n] >> (x-1) & 0x01) ? 1 : 0 );
+		printf( " " );
+	}
+	printf( "\n" );
+}
+
+/** -------------------------------------------------------------------------
+ * Prints a binary representation of a number.
+ * \param  int integer to print.
+ *-------------------------------------------------------------------------*/
+void
+t_printIntBin( lua_Unsigned i )
+{
+	size_t n,x;
+
+	for (n=sizeof( lua_Unsigned )*CHAR_BIT; n>0; n-=CHAR_BIT)
+	{
+		for (x=CHAR_BIT; x>0; x--)
+			printf( "%d", ((i >> (n-CHAR_BIT+x-1)) & 0x01) ? 1 : 0 );
+		printf( " " );
+	}
+	printf( "\n" );
+}
+
+/** -------------------------------------------------------------------------
+ * Prints a hexadecimal representation of a number as in memory.
+ * \param  char array to print.
+ *-------------------------------------------------------------------------*/
+void
+t_printCharHex( volatile char *b, size_t sz )
+{
+	size_t n;
+
+	for (n=0; n<sz; n++)
+		printf( "%02X ", b[n] & 0X00000000000000FF);
+	printf( "\n" );
+}
+
+/** -------------------------------------------------------------------------
+ * Prints a haxadecimal representation of a number.
+ * \param  int integer to print.
+ *-------------------------------------------------------------------------*/
+void
+t_printIntHex( lua_Unsigned i )
+{
+	size_t n;
+	for (n=CHAR_BIT*sizeof(lua_Unsigned); n>0; n--)
+		printf( "%02llX ", (i >> (n-1)*CHAR_BIT) & 0X00000000000000FF );
+	printf("\n");
+}
 
 /** -------------------------------------------------------------------------
  * Returns an error string to the LUA script.

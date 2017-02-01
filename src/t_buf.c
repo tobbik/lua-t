@@ -111,9 +111,9 @@ t_buf *t_buf_create_ud( lua_State *L, int size )
 	size_t          sz;
 
 	// size = sizof(...) -1 because the array has already one member
-	sz = sizeof( struct t_buf ) + (size - 1) * sizeof( unsigned char );
+	sz = sizeof( struct t_buf ) + (size - 1) * sizeof( char );
 	b  = (struct t_buf *) lua_newuserdata( L, sz );
-	memset( b->b, 0, size * sizeof( unsigned char ) );
+	memset( b->b, 0, size * sizeof( char ) );
 
 	b->len = size;
 	luaL_getmetatable( L, T_BUF_TYPE );
@@ -159,7 +159,7 @@ lt_buf_unpack( lua_State *L )
 
 	buf = t_buf_getbuffer( L, 1 , 3, &pos );
 	pc  = t_pck_getPacker( L, 2, &n );
-	t_pck_fld__callread( L, pc, buf->b + pos );
+	t_pck_fld__callread( L, pc, buf->b + pos, 0 );
 
 	if (T_PCK_SEQ == pc->t)
 	{

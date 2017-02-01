@@ -9,8 +9,8 @@
 
 /// The userdata struct for T.Buffer
 struct t_buf {
-	size_t         len;   ///<  length of the entire buffer in bytes
-	unsigned char  b[1];  ///<  pointer to the variable size buffer -> must be last in struct
+	size_t   len;   ///<  length of the entire buffer in bytes
+	char     b[1];  ///<  pointer to the variable size buffer -> must be last in struct
 };
 
 

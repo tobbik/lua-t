@@ -83,10 +83,10 @@ struct t_pck {
 	///  -- for raw                = ??? (unused)
 	///  -- for Arr                = LUA_REGISTRYINDEX for packer
 	///  -- for Seq                = LUA_REGISTRYINDEX for table
-	///        table[ i    ] = Pack
+	///        table[ i    ] = Pack.Field (has offset information)
 	///  -- for Struct             = LUA_REGISTRYINDEX for table
 	///        table[ i    ] = name             -- this is the same scheme that
-	///        table[ name ] = Pack             -- OrderedHashTable uses
+	///        table[ name ] = Pack.Field       -- OrderedHashTable uses
 	int            m;
 };
 
@@ -110,13 +110,12 @@ struct t_pck *t_pck_check_ud  ( lua_State *L, int pos, int check );
 struct t_pck *t_pck_create_ud ( lua_State *L, enum t_pck_t t, size_t s, int m );
 
 // accessor helpers for the Packers
-int           t_pck_read      ( lua_State *L, struct t_pck *p, const unsigned char *buffer);
-int           t_pck_write     ( lua_State *L, struct t_pck *p, unsigned char *buffer );
+int           t_pck_read      ( lua_State *L, struct t_pck *p, const char *b, size_t o );
+int           t_pck_write     ( lua_State *L, struct t_pck *p, char *b );
 
 // helpers for the Packers
 struct t_pck *t_pck_getPacker ( lua_State *L, int pos, size_t *bo );
 size_t        t_pck_getSize( lua_State *L,  struct t_pck *p );
-int           t_pck_fld__callread ( lua_State *L, struct t_pck *pc, const unsigned char *b );
 
 struct t_pck *t_pck_fld_getPackFromStack( lua_State * L, int pos, struct t_pck_fld **pcf );
 
@@ -129,6 +128,7 @@ struct t_pck *t_pck_arr_create( lua_State *L );
 int          lt_pck_fld__index( lua_State *L );
 int          lt_pck_fld__newindex( lua_State *L );
 int          lt_pck_fld__pairs( lua_State *L );
+int           t_pck_fld__callread( lua_State *L, struct t_pck *pc, const char *b, size_t o );
 
 struct t_pck *t_pck_fmt_read( lua_State *L, const char **f, int *e, size_t *bo );
 
