@@ -110,8 +110,8 @@ struct t_pck *t_pck_check_ud  ( lua_State *L, int pos, int check );
 struct t_pck *t_pck_create_ud ( lua_State *L, enum t_pck_t t, size_t s, int m );
 
 // accessor helpers for the Packers
-int           t_pck_read      ( lua_State *L, struct t_pck *p, const char *b, size_t o );
-int           t_pck_write     ( lua_State *L, struct t_pck *p, char *b, size_t o );
+int           t_pck_read      ( lua_State *L, const char *b, struct t_pck *p, size_t o );
+int           t_pck_write     ( lua_State *L,       char *b, struct t_pck *p, size_t o );
 
 // helpers for the Packers
 struct t_pck *t_pck_getPacker ( lua_State *L, int pos, size_t *bo );

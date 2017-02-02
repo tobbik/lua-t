@@ -25,4 +25,4 @@ for k,v in pairs( s ) do v(b1, expect[k]); print( k, v, v(b1) ) end
 --for k,v in ipairs( expect ) do print( k, v, v(b) ) end
 print( b1:toHex(), '', '', #b1, b1:read() )  -- expecting same as buffer b
 
-assert( b1 == b, "The string shall be identical" ) -- confirm equality
+assert( b1 == b, "The buffer shall be identical" )

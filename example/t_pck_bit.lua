@@ -29,4 +29,4 @@ print( b1:toHex(), '', '', #b1 )  -- expecting all zeros
 for i=1,#s do local f = s[i]; f(b1, expect[i]); print( i,f,'',f(b1) ) end
 print( b1:toHex(), '', '', #b1, b1:read() )  -- expecting same as buffer b
 
-assert( b1 == b, "The string shall be identical" ) --confirming 
+assert( b1 == b, "The buffer shall be identical" )
