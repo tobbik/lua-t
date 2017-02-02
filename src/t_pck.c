@@ -10,17 +10,15 @@
  */
 #include <string.h>     // memcpy
 
-
 #include "t.h"
 #include "t_pck.h"
 
 // ========== Buffer accessor Helpers
-// Macro helpers
 #define BIT_GET(b,n)       ( ((b) >> (NB-(n)-1)) & 0x01 )
-#define BIT_SET(b,n,v)     \
-	( (1==v)              ? \
-	 ((b) | (  (0x01) << (NB-(n)-1)))    : \
-	 ((b) & (~((0x01) << (NB-(n)-1)))) )
+#define BIT_SET(b,n,v)                   \
+	( b = ( (1==v)                              \
+	 ? ((b) | (  (0x01) << (NB-(n)-1)))   \
+	 : ((b) & (~((0x01) << (NB-(n)-1)))) ) )
 
 // global default for T.Pack, can be flipped
 #ifdef IS_LITTLE_ENDIAN
@@ -67,7 +65,7 @@ t_pck_copyBytes( char *dst, const char *src, size_t sz, int is_little )
  * Push an integer value to Lua stack.  Handles signing.
  * \param   L            Lua state.
  * \param   lua_Unsigned num value.
- * \lreturn push value onto stack.
+ * \lreturn push numeric value onto stack.
  * --------------------------------------------------------------------------*/
 static void
 t_pck_pushNumValue( lua_State *L, lua_Unsigned val, int sz, int is_signed )
@@ -86,10 +84,12 @@ t_pck_pushNumValue( lua_State *L, lua_Unsigned val, int sz, int is_signed )
 
 /**--------------------------------------------------------------------------
  * Get Byte Value from buffer.
+ * \param   L          Lua state.
  * \param   b          char* to read from.
  * \param   sz         how many bits to read.
+ * \param   is_little  interpret as Little Endian?
  * \param   is_signed  interpret as signed?
- * \lreturn push valu eonto stack;
+ * \lreturn push value onto stack;
  * --------------------------------------------------------------------------*/
 static void
 t_pck_getByteValue( lua_State *L, const char *b, size_t sz, int is_little, int is_signed )
@@ -97,16 +97,14 @@ t_pck_getByteValue( lua_State *L, const char *b, size_t sz, int is_little, int i
 	lua_Unsigned val    = 0;
 	char        *out    = (char *) &val;
 
-	//printf("%zu  %lu -- ", sz, sz/NB);
 	t_pck_copyBytes( out, b, sz/NB, ! is_little );
-	//t_printCharHex( (volatile char *) b, sz/NB );
-	//t_printCharHex( out, sizeof( lua_Unsigned ) );
 	t_pck_pushNumValue( L, val, sz, is_signed );
 }
 
 
 /**--------------------------------------------------------------------------
  * Get Bit Value from buffer.
+ * \param   L          Lua state.
  * \param   b          char* to read from.
  * \param   sz         how many bits to read.
  * \param   ofs        how many bits offset from beginning of byte.
@@ -127,60 +125,6 @@ static void t_pck_getBitValue( lua_State *L, const char *b, size_t sz, size_t of
 }
 
 
-/**--------------------------------------------------------------------------
- * Write an integer of y bits from to char buffer with offset ofs.
- * \param   val  the val gets written to.
- * \param   len  size in bits (1-64).
- * \param   ofs  offset in bits (0-7).
- * \param  *buf  char buffer already on proper position
- * --------------------------------------------------------------------------*/
-static void
-t_pck_writeBits( lua_Unsigned val, size_t len, size_t ofs, char *buf )
-{
-	lua_Unsigned set  = 0;                     ///< value for the read access
-	lua_Unsigned msk  = 0;                     ///< mask
-	/// how many bit are in all the bytes needed for the conversion
-	size_t       abyt = ((len+ofs-1)/NB) + 1;
-	size_t       abit = abyt* 8;
-
-	msk = (-1 << (MXBIT-len)) >> (MXBIT-abit+ofs);
-#ifdef IS_LITTLE_ENDIAN
-	t_pck_copyBytes( (char *) &set, buf, abyt, 1);
-#else
-	t_pck_copyBytes(
-	   (char *) &set + sizeof( lua_Unsigned) - abyt,
-	   buf,
-	   abyt,
-	   0 );
-#endif
-	// isolate the value and merge with pre-existing bits
-	set = (val << (abit-ofs-len)) | (set & ~msk);
-#ifdef IS_LITTLE_ENDIAN
-	t_pck_copyBytes( buf, (char *) &set, abyt, 1);
-#else
-	t_pck_copyBytes(
-	   buf,
-	   (char *) &set + sizeof( lua_Unsigned) - abyt,
-	   abyt,
-	   0 );
-#endif
-
-#if PRINT_DEBUGS == 1
-	printf("Read: %016llX       \nLft:  %016lX       %d \nMsk:  %016lX       %ld\n"
-	       "Nmsk: %016llX       \nval:  %016llX         \n"
-	       "Sval: %016llX    %ld\nRslt: %016llX         \n",
-	      val,
-	       -1 << (MXBIT-len), (MXBIT-len),  /// Mask after left shift
-	      (-1 << (MXBIT-len)) >> (MXBIT-abit+ofs), (MXBIT-abit+ofs),
-	      set & ~msk,
-	      val,
-	       val << (abit-ofs-len),  abit-ofs-len,
-	      (val << (abit-ofs-len)) | (set & ~msk)
-	      );
-#endif
-}
-
-
 ///////////////////////////////////////////////////////////////////////////////
 //
 // ================================= GENERIC t_pck API ========================
@@ -189,13 +133,13 @@ t_pck_writeBits( lua_Unsigned val, size_t len, size_t ofs, char *buf )
  * reads a value from the packer and pushes it onto the Lua stack.
  * \param   L       Lua state.
  * \param   struct* t_pck.
- * \param   char*   char buffer to read from (already positioned).
+ * \param   char*   const char buffer to read from (already positioned).
  * \param   size_t  offset in bit from byte border.
  * \lreturn value   Appropriate Lua value.
  * \return  int     # of values pushed onto the stack.
  * -------------------------------------------------------------------------- */
 int
-t_pck_read( lua_State *L, struct t_pck *p, const char *b, size_t o )
+t_pck_read( lua_State *L, struct t_pck *p, const char *b, size_t ofs )
 {
 	volatile union Ftypes  u;
 
@@ -208,13 +152,13 @@ t_pck_read( lua_State *L, struct t_pck *p, const char *b, size_t o )
 			t_pck_getByteValue( L, b, p->s, p->m, 0 );
 			break;
 		case T_PCK_BOL:
-			lua_pushboolean( L, BIT_GET( *b, o ) );
+			lua_pushboolean( L, BIT_GET( *b, ofs ) );
 			break;
 		case T_PCK_BTS:
-			t_pck_getBitValue( L, b, p->s, o, 1 );
+			t_pck_getBitValue( L, b, p->s, ofs, 1 );
 			break;
 		case T_PCK_BTU:
-			t_pck_getBitValue( L, b, p->s, o, 0 );
+			t_pck_getBitValue( L, b, p->s, ofs, 0 );
 			break;
 		case T_PCK_FLT:
 			t_pck_copyBytes( (char*) &(u), b, p->s/NB, 0 );
@@ -233,6 +177,57 @@ t_pck_read( lua_State *L, struct t_pck *p, const char *b, size_t o )
 
 
 /**--------------------------------------------------------------------------
+ * Set byte value to char buffer.
+ * \param   L          Lua state.
+ * \param   b          char* to read from.
+ * \param   sz         how many bits to read.
+ * \param   is_little  interpret as Little Endian?
+ * \param   is_signed  interpret as signed?
+ * --------------------------------------------------------------------------*/
+static void
+t_pck_setByteValue( lua_State *L, char *b, size_t sz, int is_little, int is_signed )
+{
+	lua_Integer  iVal = luaL_checkinteger( L, -1 );
+	lua_Unsigned  msk = (is_signed) ? (lua_Unsigned) 1  << (sz - 1) : 0;
+	lua_Unsigned  val = (lua_Unsigned) iVal;
+
+	if (is_signed && iVal<0 && sz != MXBIT)
+		val = (val + msk) ^ msk;
+	luaL_argcheck( L,  0 == (val >> sz) , 2,
+	   "value to pack must be smaller than the maximum value for the packer size" );
+	t_pck_copyBytes( b, (char *) &val, sz/NB, ! is_little );
+}
+
+
+/**--------------------------------------------------------------------------
+ * Write an integer of y bits from to char buffer with offset ofs.
+ * \param   L          Lua state.
+ * \param  *b          char buffer already on proper initial position.
+ * \param   sz         size in bits.
+ * \param   ofs        offset in bits (0-7).
+ * \param   is_signed  Handle signed value.
+ * --------------------------------------------------------------------------*/
+static void
+t_pck_setBitValue( lua_State *L, char *b, size_t sz, size_t ofs, int is_signed )
+{
+	lua_Integer  iVal = luaL_checkinteger( L, -1 );
+	lua_Unsigned  msk = (is_signed) ? (lua_Unsigned) 1  << (sz - 1) : 0;
+	lua_Unsigned  val = (lua_Unsigned) iVal;
+	int           n;
+
+	if (is_signed && iVal<0 && sz != MXBIT)
+		val = (val + msk) ^ msk;
+	luaL_argcheck( L,  0 == (val >> sz) , 2,
+	   "value to pack must be smaller than the maximum value for the packer size" );
+	for (n=sz; n>0; n--)
+	{
+		BIT_SET( *(b + (ofs/NB)), ofs%NB, ((val >> (n-1)) & 0x01) ? 1 : 0 );
+		ofs++;
+	}
+}
+
+
+/**--------------------------------------------------------------------------
  * Sets a value from stack to a char buffer according to packer format.
  * \param   L       Lua state.
  * \param   struct* t_pck.
@@ -241,10 +236,8 @@ t_pck_read( lua_State *L, struct t_pck *p, const char *b, size_t o )
  * \return integer  0==success; !=0 errors pushed to Lua stack.
  *  -------------------------------------------------------------------------*/
 int
-t_pck_write( lua_State *L, struct t_pck *p, char *b )
+t_pck_write( lua_State *L, struct t_pck *p, char *b, size_t ofs )
 {
-	lua_Integer            intVal;
-	lua_Unsigned           msk=0, val=0;
 	volatile union Ftypes  u;
 	const char            *strVal;
 	size_t                 sL;
@@ -253,71 +246,21 @@ t_pck_write( lua_State *L, struct t_pck *p, char *b )
 	switch( p->t )
 	{
 		case T_PCK_INT:
-			intVal = luaL_checkinteger( L, -1 );
-			val    = (lua_Unsigned) intVal;
-			if (0>intVal && p->s/NB != MXINT)
-			{
-				msk = (lua_Unsigned) 1  << (p->s - 1);
-				val = ((val ^ msk) - msk);
-			}
-			luaL_argcheck( L,  0 == (val >> (p->s)) , -1,
-			   "value to pack must be smaller than the maximum value for the packer size" );
-			if (NB==p->s)  // 1 byte
-				*b = (char) val;
-			else
-#ifdef IS_LITTLE_ENDIAN
-				t_pck_copyBytes( b, (char *) &val, p->s/NB, ! p->m );
-#else
-				t_pck_copyBytes(
-				   b,
-				   (char *) &val + sizeof( lua_Unsigned) - p->s/NB ,
-				   p->s/NB,
-				   p->m );
-#endif
-				//t_pck_wbytes( val, p->s/NB, p->m, b );
+			t_pck_setByteValue( L, b, p->s, p->m, 1 );
 			break;
 		case T_PCK_UNT:
-			intVal = luaL_checkinteger( L, -1 );
-			val    = (lua_Unsigned) intVal;
-			luaL_argcheck( L,  0 == (val >> (p->s)) , -1,
-			   "value to pack must be smaller than the maximum value for the packer size" );
-			if (NB==p->s)  // 1byte
-				*b = (char) val;
-			else
-#ifdef IS_LITTLE_ENDIAN
-				t_pck_copyBytes( b, (char *) &val, p->s/NB, ! p->m );
-#else
-				t_pck_copyBytes(
-				   b,
-				   (char *) &val + sizeof( lua_Unsigned) - p->s/NB ,
-				   p->s/NB,
-				   p->m );
-#endif
+			t_pck_setByteValue( L, b, p->s, p->m, 0 );
 			break;
 		case T_PCK_BOL:
 			luaL_argcheck( L,  lua_isboolean( L, -1 ) , -1,
 			   "value to pack must be boolean type" );
-			*b = BIT_SET( *b, p->m, lua_toboolean( L, -1 ) );
+			BIT_SET( *b, ofs, lua_toboolean( L, -1 ) );
 			break;
 		case T_PCK_BTS:
-			//TODO: proper boundary checking!
-			intVal = luaL_checkinteger( L, -1 );
-			val    = (lua_Unsigned) intVal << (MXBIT- p->s) >> (MXBIT-p->s);
-			luaL_argcheck( L,  0 == (val >> p->s) , -1,
-			   "value to pack must be smaller than the maximum value for the packer size" );
-			if (p->s == 1)
-				*b = BIT_SET( *b, p->m, lua_toboolean( L, -1 ) );
-			else
-				t_pck_writeBits( val, p->s, p->m, b );
+			t_pck_setBitValue( L, b, p->s, ofs, 1 );
 			break;
 		case T_PCK_BTU:
-			intVal = luaL_checkinteger( L, -1 );
-			luaL_argcheck( L,  0 == (intVal >> p->s) , -1,
-			   "value to pack must be smaller than the maximum value for the packer size" );
-			if (p->s == 1)
-				*b = BIT_SET( *b, p->m, lua_toboolean( L, -1 ) );
-			else
-				t_pck_writeBits( (lua_Unsigned) intVal, p->s, p->m, b );
+			t_pck_setBitValue( L, b, p->s, ofs, 0 );
 			break;
 		case T_PCK_FLT:
 			if      (sizeof( u.f ) == p->s/NB) u.f = (float)  luaL_checknumber( L, -1 );
@@ -807,7 +750,7 @@ lt_pck__len( lua_State *L )
  * \return  int     # of values pushed onto the stack.
  * -------------------------------------------------------------------------*/
 int
-t_pck_fld__callread( lua_State *L, struct t_pck *pc, const char *b, size_t o )
+t_pck_fld__callread( lua_State *L, struct t_pck *pc, const char *b, size_t ofs )
 {
 	struct t_pck     *p;         ///< packer currently processing
 	struct t_oht     *oht ;      ///< OrderedHashTable result if T.Struct is processed
@@ -815,10 +758,10 @@ t_pck_fld__callread( lua_State *L, struct t_pck *pc, const char *b, size_t o )
 	size_t            sz = 0;    ///< size of packer currently processing
 	size_t            n;         ///< iterator for complex types
 
-	//printf("%zu_", o);
+	//printf("%zu_", ofs);
 	if (pc->t < T_PCK_ARR)       // handle atomic packer, return single value
-		return t_pck_read( L, pc, b + o/NB, o%NB );
-		//return t_pck_read( L, pc, b + o/NB );
+		return t_pck_read( L, pc, b + ofs/NB, ofs%NB );
+		//return t_pck_read( L, pc, b + ofs/NB );
 
 	// for all others we need the p->m and a result table
 	lua_createtable( L, pc->s, 0 );             //S:… res
@@ -837,9 +780,9 @@ t_pck_fld__callread( lua_State *L, struct t_pck *pc, const char *b, size_t o )
 				lua_pop( L, 1 );
 				p = t_pck_create_ud( L, p->t, p->s, ((p->s * n) % NB ) );
 				//p = t_pck_create_ud( L, p->t, p->s,
-				//((opf->o + ipc->s*(idx-1)) % NB ) );
+				//((opf->ofs + ipc->s*(idx-1)) % NB ) );
 			}
-			t_pck_fld__callread( L, p, b, o + sz*n );       //S:… res typ val
+			t_pck_fld__callread( L, p, b, ofs + sz*n );       //S:… res typ val
 			lua_rawseti( L, -3, n+1 );
 		}
 		lua_pop( L, 1 );
@@ -851,7 +794,7 @@ t_pck_fld__callread( lua_State *L, struct t_pck *pc, const char *b, size_t o )
 		{
 			lua_rawgeti( L, -1, n+1 );         //S:… res tbl pck
 			p = t_pck_fld_getPackFromStack( L, -1, &pf );
-			t_pck_fld__callread( L, p, b, o+sz );//S:… res tbl pck val
+			t_pck_fld__callread( L, p, b, ofs+sz );//S:… res tbl pck val
 			sz += p->s;
 			lua_rawseti( L, -4, n+1 );         //S:… res tbl pck
 			lua_pop( L, 1 );
@@ -867,7 +810,7 @@ t_pck_fld__callread( lua_State *L, struct t_pck *pc, const char *b, size_t o )
 			lua_pushvalue( L, -1 );            //S:… res tbl key key
 			lua_rawget( L, -3 );               //S:… res tbl key fld
 			p = t_pck_fld_getPackFromStack( L, -1, &pf );
-			t_pck_fld__callread( L, p, b, o+sz );//S:… res tbl key pck val
+			t_pck_fld__callread( L, p, b, ofs+sz );//S:… res tbl key pck val
 			sz += p->s;
 			lua_remove( L, -2 );               //S:… res tbl key val
 			t_oht_addElement( L, -4 );
@@ -900,7 +843,7 @@ lt_pck_fld__call( lua_State *L )
 	struct t_pck_fld  *pf  = NULL;
 	struct t_pck      *pc  = t_pck_fld_getPackFromStack( L, 1, &pf );
 	struct t_buf      *buf = t_buf_check_ud( L, 2, 0 );
-	size_t             o   = (NULL == pf) ? 0 : pf->o;
+	size_t             ofs = (NULL == pf) ? 0 : pf->o;
 	char              *b;
 	size_t             l;                   /// length of string  overall
 	luaL_argcheck( L,  2<=lua_gettop( L ) && lua_gettop( L )<=3, 2,
@@ -914,20 +857,19 @@ lt_pck_fld__call( lua_State *L )
 	}
 	else                  // Lua String
 		b   =  (char *) luaL_checklstring( L, 2, &l );
-	//printf( " %ld  %lu %zu %lu %zu \n", (NULL==pf)?-1:pf->o, o, o/NB, l*NB, t_pck_getSize( L, pc ) );
+	//printf( " %ld  %lu %zu %lu %zu \n", (NULL==pf)?-1:pf->o, ofs, o/NB, l*NB, t_pck_getSize( L, pc ) );
 
-	luaL_argcheck( L,  l*NB+NB >= o + t_pck_getSize( L, pc ), 2,
+	luaL_argcheck( L,  l*NB+NB >= ofs + t_pck_getSize( L, pc ), 2,
 		"String/Buffer must be longer than "T_PCK_TYPE" offset plus length." );
 
-
 	if (2 == lua_gettop( L ))      // read from input
-		return t_pck_fld__callread( L, pc, (const char *) b, o );
+		return t_pck_fld__callread( L, pc, (const char *) b, ofs );
 	else                           // write to input
 	{
 		if (pc->t < T_PCK_ARR)      // handle atomic packer, return single value
-			return t_pck_write( L, pc, b );
+			return t_pck_write( L, pc, b + ofs/NB, ofs%NB );
 		else                        // create a table ...
-			return t_push_error( L, "writing of complex types is not implemented");
+			return t_push_error( L, "writing of complex types is not implemented" );
 	}
 
 	return 0;

@@ -290,6 +290,43 @@ lt_buf_toBinString( lua_State *L )
 
 
 /**--------------------------------------------------------------------------
+ * Compares two T.Buffer.
+ * \param   L    Lua state.
+ * \lparam  ud   t_buf userdata instance.
+ * \lparam  ud   t_buf userdata instance to compare to.
+ * \lreturn bool true if equal otherwise false.
+ * \return  int  # of values pushed onto the stack.
+ * --------------------------------------------------------------------------*/
+static int
+lt_buf__eq( lua_State *L )
+{
+	struct t_buf *bA = t_buf_check_ud( L, 1, 1 );
+	struct t_buf *bB = t_buf_check_ud( L, 2, 1 );
+	size_t        i;       ///< runner
+
+	if (bA == bB)
+	{
+		lua_pushboolean( L, 1 );
+		return 1;
+	}
+	if (bA->len != bB->len)
+	{
+		lua_pushboolean( L, 0 );
+		return 1;
+	}
+	else
+		for( i=0; i<bA->len; i++ )
+			if (bA->b[i] !=  bB->b[ i ])
+			{
+				lua_pushboolean( L, 0 );
+				return 1;
+			}
+	lua_pushboolean( L, 1 );
+	return 1;
+}
+
+
+/**--------------------------------------------------------------------------
  * Returns len of the buffer
  * \param   L    Lua state
  * \return  int  # of values pushed onto the stack.
@@ -342,6 +379,7 @@ static const luaL_Reg t_buf_m [] = {
 	// metamethods
 	  { "__tostring"   , lt_buf__tostring }
 	, { "__len"        , lt_buf__len }
+	, { "__eq"         , lt_buf__eq }
 	// instance methods
 	, { "unpack"       , lt_buf_unpack }
 	, { "read"         , lt_buf_read }

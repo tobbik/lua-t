@@ -164,7 +164,7 @@ void
 t_printIntHex( lua_Unsigned i )
 {
 	size_t n;
-	for (n=CHAR_BIT*sizeof(lua_Unsigned); n>0; n--)
+	for (n=sizeof(lua_Unsigned); n>0; n--)
 		printf( "%02llX ", (i >> (n-1)*CHAR_BIT) & 0X00000000000000FF );
 	printf("\n");
 }
