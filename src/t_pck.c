@@ -177,53 +177,33 @@ t_pck_read( lua_State *L, struct t_pck *p, const char *b, size_t ofs )
 
 
 /**--------------------------------------------------------------------------
- * Set byte value to char buffer.
+ * Set numeric value to char buffer.
  * \param   L          Lua state.
  * \param   b          char* to read from.
- * \param   sz         how many bits to read.
+ * \param   p          struct t_pck*.
  * \param   is_little  interpret as Little Endian?
  * \param   is_signed  interpret as signed?
  * --------------------------------------------------------------------------*/
 static void
-t_pck_setByteValue( lua_State *L, char *b, size_t sz, int is_little, int is_signed )
+t_pck_setNumValue( lua_State *L, char *b, struct t_pck *p, size_t ofs )
 {
 	lua_Integer  iVal = luaL_checkinteger( L, -1 );
-	lua_Unsigned  msk = (is_signed) ? (lua_Unsigned) 1  << (sz - 1) : 0;
+	int     is_signed = ((T_PCK_INT==p->t || T_PCK_BTS==p->t) && iVal<0 && p->s != MXBIT);
+	lua_Unsigned  msk = (is_signed) ? (lua_Unsigned) 1  << (p->s - 1) : 0;
 	lua_Unsigned  val = (lua_Unsigned) iVal;
+	size_t         n;
 
-	if (is_signed && iVal<0 && sz != MXBIT)
-		val = (val + msk) ^ msk;
-	luaL_argcheck( L,  0 == (val >> sz) , 2,
+	val = (is_signed) ? (val + msk) ^ msk : val;
+	luaL_argcheck( L,  0 == (val >> p->s) , 2,
 	   "value to pack must be smaller than the maximum value for the packer size" );
-	t_pck_copyBytes( b, (char *) &val, sz/NB, ! is_little );
-}
-
-
-/**--------------------------------------------------------------------------
- * Write an integer of y bits from to char buffer with offset ofs.
- * \param   L          Lua state.
- * \param  *b          char buffer already on proper initial position.
- * \param   sz         size in bits.
- * \param   ofs        offset in bits (0-7).
- * \param   is_signed  Handle signed value.
- * --------------------------------------------------------------------------*/
-static void
-t_pck_setBitValue( lua_State *L, char *b, size_t sz, size_t ofs, int is_signed )
-{
-	lua_Integer  iVal = luaL_checkinteger( L, -1 );
-	lua_Unsigned  msk = (is_signed) ? (lua_Unsigned) 1  << (sz - 1) : 0;
-	lua_Unsigned  val = (lua_Unsigned) iVal;
-	int           n;
-
-	if (is_signed && iVal<0 && sz != MXBIT)
-		val = (val + msk) ^ msk;
-	luaL_argcheck( L,  0 == (val >> sz) , 2,
-	   "value to pack must be smaller than the maximum value for the packer size" );
-	for (n=sz; n>0; n--)
-	{
-		BIT_SET( *(b + (ofs/NB)), ofs%NB, ((val >> (n-1)) & 0x01) ? 1 : 0 );
-		ofs++;
-	}
+	if (p->t < T_PCK_BOL)
+		t_pck_copyBytes( b, (char *) &val, p->s/NB, ! p->m );
+	else // only called for BTS,BTU
+		for (n=p->s; n>0; n--)
+		{
+			BIT_SET( *(b + (ofs/NB)), ofs%NB, ((val >> (n-1)) & 0x01) ? 1 : 0 );
+			ofs++;
+		}
 }
 
 
@@ -246,21 +226,15 @@ t_pck_write( lua_State *L, struct t_pck *p, char *b, size_t ofs )
 	switch( p->t )
 	{
 		case T_PCK_INT:
-			t_pck_setByteValue( L, b, p->s, p->m, 1 );
-			break;
 		case T_PCK_UNT:
-			t_pck_setByteValue( L, b, p->s, p->m, 0 );
+		case T_PCK_BTS:
+		case T_PCK_BTU:
+			t_pck_setNumValue( L, b, p, ofs );
 			break;
 		case T_PCK_BOL:
 			luaL_argcheck( L,  lua_isboolean( L, -1 ) , -1,
 			   "value to pack must be boolean type" );
 			BIT_SET( *b, ofs, lua_toboolean( L, -1 ) );
-			break;
-		case T_PCK_BTS:
-			t_pck_setBitValue( L, b, p->s, ofs, 1 );
-			break;
-		case T_PCK_BTU:
-			t_pck_setBitValue( L, b, p->s, ofs, 0 );
 			break;
 		case T_PCK_FLT:
 			if      (sizeof( u.f ) == p->s/NB) u.f = (float)  luaL_checknumber( L, -1 );
