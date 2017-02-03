@@ -266,7 +266,10 @@ lt_net_tcp_recv( lua_State *L )
 	rcvd = t_net_tcp_recv( L, s, rcv, len );
 
 	// return buffer, length
-	lua_pushlstring( L, buffer, rcvd );
+	if (0 == rcvd)
+		lua_pushnil( L );
+	else
+		lua_pushlstring( L, buffer, rcvd );
 	lua_pushinteger( L, rcvd );
 
 	return 2;

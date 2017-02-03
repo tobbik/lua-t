@@ -197,7 +197,10 @@ lt_net_udp_recvfrom( lua_State *L )
 		return t_push_error( L, "Failed to recieve UDP packet" );
 
 	// return buffer, length, IpEndpoint
-	lua_pushlstring( L, rcv, rcvd );
+	if (0 == rcvd)
+		lua_pushnil( L );
+	else
+		lua_pushlstring( L, rcv, rcvd );
 	lua_pushinteger( L, rcvd );
 	lua_pushvalue( L, -3 );
 	return 3;
