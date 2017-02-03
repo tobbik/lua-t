@@ -9,7 +9,7 @@
  */
 
 #include <stdio.h>
-#include <string.h>     // strerror
+#include <string.h>     // strerror,strrchr
 #include <errno.h>      // errno
 
 #include "t.h"
@@ -139,51 +139,42 @@ t_push_error( lua_State *L, const char *fmt, ... )
 
 
 /** -------------------------------------------------------------------------
- * Reverse the order of bytes for a 16 bit unsigned integer
- * \param     value Unsigned 16 bit integer
- * \return    Integer with the opposite Endianness
+ * Extended require patches the path and cpath with current path of file.
+ * \param   L     Lua state.
  *-------------------------------------------------------------------------*/
-inline uint16_t
-Reverse2Bytes( uint16_t value )
+static int
+lt_require( lua_State *L )
 {
-	return (
-		(value & 0xFFU)   << 8 |
-		(value & 0xFF00U) >> 8
-	);
-}
+	lua_Debug ar;
+	luaL_getsubtable( L, LUA_REGISTRYINDEX, "_LOADED" );
+	lua_getfield( L, -1, "package" );
 
+	lua_getstack( L, 1, &ar );
+	lua_getinfo( L, "S", &ar );
+	strrchr( ar.short_src, '/' )[0] = 0x00;
 
-/** -------------------------------------------------------------------------
- * Reverse the order of bytes for a 32 bit unsigned integer
- * \param     value Unsigned 32 bit integer
- * \return    integer with the opposite Endianness
- *-------------------------------------------------------------------------*/
-inline uint32_t
-Reverse4Bytes( uint32_t value )
-{
-	return (value & 0x000000FFU) << 24 |
-			 (value & 0x0000FF00U) << 8  |
-			 (value & 0x00FF0000U) >> 8  |
-			 (value & 0xFF000000U) >> 24;
-}
+	lua_getfield( L, -1, "path" );
+	lua_pushvalue( L, -1 );
+	lua_pushfstring(L, ";%s/?.lua;%s/?/init.lua", ar.short_src, ar.short_src );
+	lua_concat( L, 2 );
+	lua_setfield( L, -3, "path" );               //S: nme LOD pck pth
 
+	lua_getfield( L, -2, "cpath" );
+	lua_pushvalue( L, -1 );
+	lua_pushfstring(L, ";%s/?.so", ar.short_src );
+	lua_concat( L, 2 );
+	lua_setfield( L, -4, "cpath" );              //S: nme LOD pck pth cpt
 
-/** -------------------------------------------------------------------------
- * Reverse the order of bytes for a 64 bit unsigned integer.
- * \param   value Unsigned 64 bit integer
- * \return  Integer with the opposite Endianness
- *-------------------------------------------------------------------------*/
-inline uint64_t
-Reverse8Bytes( uint64_t value )
-{
-	return (value & 0x00000000000000FFUL) << 56 |
-			 (value & 0x000000000000FF00UL) << 40 |
-			 (value & 0x0000000000FF0000UL) << 24 |
-			 (value & 0x00000000FF000000UL) << 8  |
-			 (value & 0x000000FF00000000UL) >> 8  |
-			 (value & 0x0000FF0000000000UL) >> 24 |
-			 (value & 0x00FF000000000000UL) >> 40 |
-			 (value & 0xFF00000000000000UL) >> 56;
+	lua_getglobal( L, "require" );
+	lua_pushvalue( L, 1 );
+	lua_call( L, 1, 1 );                        //S: nme LOD pck pth cpt mod
+	lua_insert( L, 2 );
+	lua_setfield( L, -3, "cpath" );
+	lua_setfield( L, -2, "path" );
+	lua_pop( L, 2 );
+	t_stackDump( L );
+
+	return 0;
 }
 
 
@@ -193,7 +184,8 @@ Reverse8Bytes( uint64_t value )
 static const luaL_Reg l_t_lib [] =
 {
 	// t-global methods
-	{ NULL,   NULL}
+	  { "require"     ,   lt_require }
+	, { NULL          ,   NULL}
 };
 
 
