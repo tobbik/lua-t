@@ -344,7 +344,7 @@ struct t_pck
  * This will mainly be needed to calculate offsets when reading.
  * \param   L       Lua state.
  * \param   struct* t_pck.
- * \return  int     size in bytes.
+ * \return  int     size in bits.
  * TODO: return 0 no matter if even one item is of unknown length.
  * --------------------------------------------------------------------------*/
 size_t
@@ -366,9 +366,9 @@ t_pck_getSize( lua_State *L, struct t_pck *p )
 				break;
 			case T_PCK_SEQ:
 				s = 0;
-				for (n = 1; n <= p->s; n++)
+				for (n=0; n<p->s; n++)
 				{
-					lua_rawgeti( L, -1, n );    // get packer from table
+					lua_rawgeti( L, -1, n+1 );    // get packer from table
 					t_pck_fld_getPackFromStack( L, -1, NULL );
 					s += t_pck_getSize( L, t_pck_check_ud( L, -1, 1 ) );
 					lua_pop( L, 1 );
@@ -376,10 +376,10 @@ t_pck_getSize( lua_State *L, struct t_pck *p )
 				break;
 			case T_PCK_STR:
 				s = 0;
-				for (n = 1; n <= p->s; n++)
+				for (n=0; n<p->s; n++)
 				{
 					//t_stackDump(L);
-					lua_rawgeti( L, -1, n );
+					lua_rawgeti( L, -1, n+1 );
 					lua_rawget( L, -2 );
 					t_pck_fld_getPackFromStack( L, -1, NULL );
 					s += t_pck_getSize( L, t_pck_check_ud( L, -1, 1 ) );
@@ -397,7 +397,7 @@ t_pck_getSize( lua_State *L, struct t_pck *p )
 
 /**--------------------------------------------------------------------------
  * Get T.Pack from a stack element at specified position.
- * Return pointer to the t_pck_fld* if the found element is actually a field
+ * Set pointer to the t_pck_fld* if the found element is actually a field
  * and the return of the field pointer is requested by passing a pointer instead
  * of NULL.  If the element at the position is actually a T.Pack.Field it will
  * get replaced on the stack with the referenced T.Pack instance.
@@ -604,6 +604,22 @@ lt_pck_GetReference( lua_State *L )
 		lua_rawgeti( L, LUA_REGISTRYINDEX, p->m );
 	else
 		lua_pushnil( L );
+	return 1;
+}
+
+
+/**--------------------------------------------------------------------------
+ * Get The specific subType of a Packer/Field.
+ * \param   L      Lua state.
+ * \lparam  ud     T.Pack/T.Pack.Field userdata instance.
+ * \lreturn string Name of pack type.
+ * \return  int    # of values pushed onto the stack.
+ * --------------------------------------------------------------------------*/
+static int
+lt_pck_Type( lua_State *L )
+{
+	struct t_pck *p = t_pck_fld_getPackFromStack( L, 1, NULL );
+	lua_pushfstring( L, "%s", t_pck_t_lst[ p->t ] );
 	return 1;
 }
 
@@ -833,6 +849,7 @@ static const struct luaL_Reg t_pck_cf [] = {
 	  { "getSize"        , lt_pck_GetSize }
 	, { "getReference"   , lt_pck_GetReference }
 	, { "setEndian"      , lt_pck_SetDefaultEndian }
+	, { "type"           , lt_pck_Type }
 	, { NULL             , NULL }
 };
 

@@ -1,7 +1,7 @@
 T      = require't'
 Pack   = T.Pack
 Buffer = T.Buffer
-rep    = string.rep
+utl    = T.require('t_pck_utl')
 
 --     0     1     2     3     4     5     6     7
 --  0000  0001  0010  0011  0100  0101  0110  0111
@@ -20,13 +20,13 @@ s  = Pack( 'r4R7r3r3r3r3r3r3r3r3r15vvR1R1r1r1' )
 print( b:toHex(), '', '', #b, b:read() )
 print( b:toBin( ) )
 
-print( "Sequence sQ:", #s, s )
+print( "Sequence s:", #s, s )
 print( "-------------------------------------------------------------")
-for i=1,#s do local f = s[i]; print(i,f,'', f(b)) end
+utl.get(s,b)
 
-b1     = Buffer( #b )
+b1     = Buffer( #b )             -- create empty buffer of #b length
 print( b1:toHex(), '', '', #b1 )  -- expecting all zeros
-for i=1,#s do local f = s[i]; f(b1, expect[i]); print( i,f,'',f(b1) ) end
+utl.set(s,b1,expect)
 print( b1:toHex(), '', '', #b1, b1:read() )  -- expecting same as buffer b
 
 assert( b1 == b, "The buffer shall be identical" )

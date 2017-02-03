@@ -1,7 +1,7 @@
 T      = require't'
 Pack   = T.Pack
 Buffer = T.Buffer
-rep    = string.rep
+utl    = T.require('t_pck_utl')
 
 --          >I3       <i2   b   B    >I5           <I4          h
 --          aBc       De      ü      HiJkL         mNoP         ö
@@ -14,15 +14,12 @@ print( string.unpack( fmts, b:read() ) )
 s = Pack( fmts )
 
 print( "Sequence:", #s , s )
+print( "-------------------------------------------------------------")
+utl.get(s,b)
 
-print( "Sequence Iterator" );
-for k,v in pairs( s ) do print( k, v,    v(b)   , expect[k] ) end
-for i,v in pairs( s ) do print( i, s[i], s[i](b), expect[i] ) end
-
-b1     = Buffer( #b )
+b1     = Buffer( #b )                        -- create empty buffer of #b length
 print( b1:toHex(), '', '', #b1 )
-for k,v in pairs( s ) do v(b1, expect[k]); print( k, v, v(b1) ) end
---for k,v in ipairs( expect ) do print( k, v, v(b) ) end
+utl.set(s,b1,expect)                         -- fill with except values
 print( b1:toHex(), '', '', #b1, b1:read() )  -- expecting same as buffer b
 
 assert( b1 == b, "The buffer shall be identical" )

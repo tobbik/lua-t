@@ -36,17 +36,17 @@
  * \lreturn table    new cloned table.
  * --------------------------------------------------------------------------*/
 void
-t_oht_getTable( lua_State *L, int type )
+t_oht_getTable( lua_State *L, int t )
 {
 	size_t  i  = 0;                   ///< iterator for going through the arguments
 	size_t  l  = lua_rawlen( L, -1 ); ///< process how many arguments
 
-	lua_createtable( L, l, l );            //S: … tbl res
+	lua_createtable( L, (t<4) ? l : 0, (t>2) ? l : 0 );  //S: … tbl res
 	for (i=0; i<l; i++)
 	{
 		lua_rawgeti( L, -2, i+1 );          //S: … tbl res key
-		if (type>2) lua_pushvalue( L, -1 ); //S: … tbl res key
-		switch (type)
+		if (t>2) lua_pushvalue( L, -1 );    //S: … tbl res key
+		switch (t)
 		{
 			case 2:
 				lua_rawget( L, -3 );          //S: … tbl res val
@@ -61,7 +61,7 @@ t_oht_getTable( lua_State *L, int type )
 				lua_rawset( L, -3 );          //S: … tbl res
 				break;
 		}
-		if (type<4) lua_rawseti( L, -2, i+1 );
+		if (t<4) lua_rawseti( L, -2, i+1 );
 	}
 }
 
@@ -222,13 +222,13 @@ lt_oht_Concat( lua_State *L )
 	const char   *sep  = luaL_optlstring( L, 2, "", &lsep );
 	luaL_Buffer   b;
 	size_t        i;
-	size_t        len;
+	size_t        l;
 
 	lua_rawgeti( L, LUA_REGISTRYINDEX, oht->tR );    //S: oht sep tbl
 	lua_replace( L, 1 );                             //S: tbl sep
-	len = lua_rawlen( L, 1 );
+	l = lua_rawlen( L, 1 );
 	luaL_buffinit( L, &b );
-	for (i=0; i < len; i++)
+	for (i=0; i < l; i++)
 	{
 		lua_rawgeti( L, 1, i+1 );                     //S: tbl sep key
 		lua_rawget( L, 1 );                           //S: tbl sep val
@@ -236,7 +236,7 @@ lt_oht_Concat( lua_State *L )
 			luaL_error( L, "invalid value (%s) at index %d in OrderedHashTable for 'concat'",
 			           luaL_typename( L, -1 ), i+1 );
 		luaL_addvalue( &b );
-		if (i<len-1)
+		if (i<l-1)
 			luaL_addlstring( &b, sep, lsep ) ;
 	}
 	luaL_pushresult( &b );
@@ -245,7 +245,7 @@ lt_oht_Concat( lua_State *L )
 
 
 /**--------------------------------------------------------------------------
- * Get index in table where a key is located.
+ * Get index in table where a key is located.  This is an O(n) scan.
  * \param   L      Lua state.
  * \lparam  ud     T.OrderedHashTable userdata instance.
  * \lparam  value  key.
