@@ -1,14 +1,39 @@
-#define FAIL() printf("\nfailure in %s() line %d\n", __func__, __LINE__-source_line_offset)
-#define _assert(test) do { if (!(test)) { FAIL(); return 1; } } while(0)
-#define _verify(test) do { int r=test(); tests_run++; if(r) return r; } while(0)
+#include <stdio.h>
+#include <stdlib.h>
 
-int source_line_offset;
-int tests_run;
-void countlines( char * filename );
+#define FAIL(description) \
+	printf( "\tfailure in %s() line %d -- \"%s\"\n\n", \
+	__func__, __LINE__ - t_utst_source_line_offset, description )
 
-struct test_function {
-  const char        *name;
-  int  (*func) ();
+#define _assert(test, description) \
+	do { \
+		if (! (test)) { \
+			FAIL(description); \
+			return 1; \
+		} \
+	} while (0)
+
+#define _envelope(envelope) \
+	do { \
+		int r=envelope(); \
+		if (r) { \
+			printf( "\tsetup/teardown failed\n\n"); \
+			return r; \
+		} \
+	} while (0)
+
+#define _verify(test) \
+	do { \
+		int r=test(); \
+		t_utst_all_run_tests++; \
+		if (r) \
+			return r; \
+	} while (0)
+
+int t_utst_all_run_tests;
+int t_utst_source_line_offset;
+
+struct t_utst_case {
+  const char   *name;
+  int         (*func) ();
 };
-
-int test_execute( const struct test_function *t );
