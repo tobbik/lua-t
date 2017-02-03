@@ -62,7 +62,7 @@ void
 t_tst_check( lua_State *L, int pos )
 {
 	luaL_checktype( L, pos, LUA_TTABLE );
-   if (lua_getmetatable( L, pos ))        // does it have a metatable?
+	if (lua_getmetatable( L, pos ))        // does it have a metatable?
 	{
 		luaL_getmetatable( L, T_TST_TYPE ); // get correct metatable
 		if (! lua_rawequal( L, -1, -2 ))     // not the same?

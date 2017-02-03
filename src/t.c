@@ -139,8 +139,9 @@ t_push_error( lua_State *L, const char *fmt, ... )
 
 
 /** -------------------------------------------------------------------------
- * Extended require patches the path and cpath with current path of file.
- * \param   L     Lua state.
+ * Extended searchpath with current path of file, the run require.
+ * \param    L     Lua state.
+ * \lreturn  table imported library.
  *-------------------------------------------------------------------------*/
 static int
 lt_require( lua_State *L )
@@ -172,9 +173,25 @@ lt_require( lua_State *L )
 	lua_setfield( L, -3, "cpath" );
 	lua_setfield( L, -2, "path" );
 	lua_pop( L, 2 );
-	t_stackDump( L );
 
-	return 0;
+	return 1;
+}
+
+
+/** -------------------------------------------------------------------------
+ * Return extended type of a tav=ble/userdata.
+ * \param   L      Lua state.
+ * \lreturn string Name of type.
+ *-------------------------------------------------------------------------*/
+static int
+lt_type( lua_State *L )
+{
+	int tt = luaL_getmetafield(L, 1, "__name");  /* try name */
+	lua_pushfstring(L, "%s", (tt == LUA_TSTRING)
+		? lua_tostring( L, -1 ) : luaL_typename( L, 1 ) );
+	if (tt != LUA_TNIL)
+		lua_remove(L, -2);  /* remove '__name' */
+	return 1;
 }
 
 
@@ -185,6 +202,7 @@ static const luaL_Reg l_t_lib [] =
 {
 	// t-global methods
 	  { "require"     ,   lt_require }
+	, { "type"        ,   lt_type }
 	, { NULL          ,   NULL}
 };
 
