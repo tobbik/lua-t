@@ -6,7 +6,7 @@ mod = {
 		local rc = rc or 0
 		for k,v in pairs(r) do
 			io.write( rep( '\t', rc ), k )
-			if 'Struct' == Pack.type( v ) then
+			if 'Struct' == Pack.type( v ) or 'Sequence' == Pack.type( v ) or 'Array' == Pack.type( v ) then
 				print( )
 				mod.get( v, b, rc+1 )
 			else
@@ -19,7 +19,7 @@ mod = {
 		local rc = rc or 0
 		for k,v in pairs(r) do
 			io.write( rep( '\t', rc ), k )
-			if 'Struct' == Pack.type( v ) then
+			if 'Struct' == Pack.type( v ) or 'Sequence' == Pack.type( v ) or 'Array' == Pack.type( v ) then
 				print( )
 				mod.set( v, b, vs[k], rc+1 )
 			else

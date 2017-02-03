@@ -509,30 +509,24 @@ struct t_pck
  *  -------------------------------------------------------------------------*/
 static int lt_pck__Call( lua_State *L )
 {
-	struct t_pck  *p;
-	struct t_oht  *oht = t_oht_check_ud( L, 2, 0 );
-	size_t         bo  = 0;  // running bit offset
+	struct t_pck  *p;                       ///< packer to create
+	size_t         bo  = 0;                 ///< running bit offset
 
-	lua_remove( L, 1 );                              // remove the T.Pack Class table
-	if (NULL != oht)
-	{
-		lua_rawgeti( L, LUA_REGISTRYINDEX, oht->tR );         //S: oht pck tbl
-		lua_remove( L, 1 );
-		p = t_pck_str_create( L );                            //S: pck tbl
-		return 1;
-	}
-	if (lua_istable( L, 1 ))
+	lua_remove( L, 1 );                     // remove the T.Pack Class table
+	if (lua_istable( L, 1 ))                // Oht style constructor -> struct
 	{
 		t_oht_readArguments( L, 1, lua_gettop( L ) );
 		p = t_pck_str_create( L );                            //S: pck tbl
-		return 1;
 	}
 	else
 	{
-		if (2==lua_gettop( L ) && lua_isinteger( L, 2 ))
-			p = t_pck_arr_create( L );
+		if (1==lua_gettop( L ))
+			p = t_pck_getPacker( L, 1, &bo ); // single packer
 		else
-			p = t_pck_getPacker( L, 1, &bo );
+			if (lua_isinteger( L, 2 ))
+				p = t_pck_arr_create( L );     // if second is number it must be array
+			else
+				p = t_pck_seq_create( L, 1, lua_gettop( L ), &bo );
 	}
 	return 1;
 }
