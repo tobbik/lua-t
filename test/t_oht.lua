@@ -253,6 +253,22 @@ local tests = {
 			 "Number of elements in simple table ("..i..
 			 ") must be equal to number of elements in OrderedHashTable("..#self.o..")" )
 	end,
+
+	test_Equals = function( self )
+		-- #DESC: __eq metamethod properly comparse for equality
+		self.o.clone = Oht( self.o )
+		local o      = Oht( self.o )
+		assert( self.o == o, "Original and clone must be equal" )
+	end,
+
+	test_NotEquals = function( self )
+		-- #DESC: __eq metamethod properly comparse for inequality
+		self.o.clone = Oht( self.o )
+		local o      = Oht( self.o )
+		o.clone.six  = 'Not sixth anymore'
+
+		assert( self.o ~= o, "Original and clone must be equal" )
+	end,
 }
 
 t_oht = Test( tests )

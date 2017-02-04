@@ -1,5 +1,6 @@
 T      = require't'
 Pack   = T.Pack
+Test   = T.Test
 Buffer = T.Buffer
 Oht    = T.OrderedHashTable
 utl    = T.require('t_pck_utl')
@@ -66,3 +67,6 @@ b1     = Buffer( #b )             -- create empty buffer of #b length
 print( b1:toHex(), '', '', #b1 )  -- expecting all zeros
 utl.set(p,b1,v)
 print( b1:toHex(), '', '', #b1, b1:read() )  -- expecting same as buffer b
+
+x=p(b1)
+assert( Test.equal( x, val ), "The input and output shall be identical" )

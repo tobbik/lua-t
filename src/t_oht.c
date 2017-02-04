@@ -23,7 +23,9 @@
 
 #include "t.h"
 #include "t_oht.h"
+#include "t_tst.h"
 
+static int lt_oht__Call( lua_State *L );
 /**--------------------------------------------------------------------------
  * Get a variation of the referenced table from a T.OrderedHashTable.
  * \param   L        Lua state.
@@ -54,6 +56,14 @@ t_oht_getTable( lua_State *L, int t )
 			case 3:
 				lua_pushvalue( L, -1 );       //S: … tbl res key key key
 				lua_rawget( L, -5 );          //S: … tbl res key key val
+				if (NULL != t_oht_check_ud( L, -1, 0 ))
+				{
+					lua_pushcfunction( L, lt_oht__Call );
+					lua_insert( L, -2 );       //S: … tbl res key key fnc val
+					lua_newtable( L );         // Dummytable to fool lt_oht__Call
+					lua_insert( L, -2 );       //S: … tbl res key key fnc tbl val
+					lua_call( L, 2, 1 );       //S: … tbl res key key val
+				}
 				lua_rawset( L, -4 );          //S: … tbl res key
 				break;
 			case 4:
@@ -563,6 +573,7 @@ lt_oht__ipairs( lua_State *L )
 /**--------------------------------------------------------------------------
  * Returns len of T.OrderedHashTable.
  * \param   L    Lua state.
+ * \lparam  ud   T.OrderedHashTable userdata instance.
  * \return  int  # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int
@@ -573,6 +584,28 @@ lt_oht__len( lua_State *L )
 	lua_rawgeti( L, LUA_REGISTRYINDEX, oht->tR );
 	lua_pushinteger( L, lua_rawlen( L, -1 ) );
 	lua_remove( L, -2 );
+	return 1;
+}
+
+
+/**--------------------------------------------------------------------------
+ * Compares two T.OrderedHashTable recursively.
+ * \param   L    Lua state.
+ * \lparam  ud   T.OrderedHashTable userdata instance.
+ * \lparam  ud   T.OrderedHashTable userdata instance.
+ * \return  int  # of values pushed onto the stack.
+ * --------------------------------------------------------------------------*/
+static int
+lt_oht__eq( lua_State *L )
+{
+	struct t_oht *ohtA = t_oht_check_ud( L, 1, 1 );
+	struct t_oht *ohtB = t_oht_check_ud( L, 2, 1 );
+
+	lua_rawgeti( L, LUA_REGISTRYINDEX, ohtA->tR );
+	lua_rawgeti( L, LUA_REGISTRYINDEX, ohtB->tR );
+	lua_remove( L, -3 );
+	lua_remove( L, -3 );
+	lua_pushboolean( L, t_tst_isReallyEqual( L ) );
 	return 1;
 }
 
@@ -692,6 +725,7 @@ static const struct luaL_Reg t_oht_cf [] = {
 static const luaL_Reg t_oht_m [] = {
 	  { "__tostring"   , lt_oht__tostring }
 	, { "__len"        , lt_oht__len }
+	, { "__eq"         , lt_oht__eq }
 	, { "__index"      , lt_oht__index }
 	, { "__newindex"   , lt_oht__newindex }
 	, { "__pairs"      , lt_oht__pairs }

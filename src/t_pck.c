@@ -141,9 +141,9 @@ t_pck_setIntValue( lua_State *L, char *b, struct t_pck *p, size_t ofs )
  * \param   struct* t_pck.
  * \param   size_t  offset in bit from byte border.
  * \lreturn value   Appropriate Lua value.
- * \return  int     # of values pushed onto the stack.
+ * \return  amount of bits read from b.
  * -------------------------------------------------------------------------- */
-int
+size_t
 t_pck_read( lua_State *L, const char *b, struct t_pck *p, size_t ofs )
 {
 	volatile union Ftypes  u;
@@ -171,7 +171,7 @@ t_pck_read( lua_State *L, const char *b, struct t_pck *p, size_t ofs )
 		default:
 			return t_push_error( L, "Can't read value from unknown packer type" );
 	}
-	return 1;
+	return p->s;
 }
 
 
@@ -675,19 +675,21 @@ lt_pck__len( lua_State *L )
  * \param   char*   buffer to read from.
  * \param   size_t  running bit offset.
  * \lreturn value   value read from the buffer.
- * \return  int     # of values pushed onto the stack.
+ * \return  offset  after read.
  * -------------------------------------------------------------------------*/
-int
+size_t
 t_pck_fld__callread( lua_State *L, struct t_pck *pc, const char *b, size_t ofs )
 {
 	struct t_pck     *p;         ///< packer currently processing
 	struct t_oht     *oht ;      ///< OrderedHashTable result if T.Struct is processed
 	struct t_pck_fld *pf;        ///< packer field currently processing
-	size_t            sz = 0;    ///< size of packer currently processing
 	size_t            n;         ///< iterator for complex types
 
 	if (pc->t < T_PCK_ARR)       // handle atomic packer, return single value
-		return t_pck_read( L, b + ofs/NB, pc, ofs%NB );
+	{
+		t_pck_read( L, b + ofs/NB, pc, ofs%NB );
+		return ofs + pc->s;
+	}
 
 	// for all others we need the p->m and a result table
 	lua_createtable( L, pc->s, 0 );             //S:… res
@@ -695,28 +697,26 @@ t_pck_fld__callread( lua_State *L, struct t_pck *pc, const char *b, size_t ofs )
 	if (pc->t == T_PCK_ARR)       // handle Array; return table
 	{
 		p  = t_pck_check_ud( L, -1, 1 );
-		sz = t_pck_getSize( L, p );
 		for (n=0; n<pc->s; n++)
 		{
-			t_pck_fld__callread( L, p, b, ofs + sz*n );       // S:… res typ val
+			ofs = t_pck_fld__callread( L, p, b, ofs );       // S:… res typ val
 			lua_rawseti( L, -3, n+1 );
 		}
 		lua_pop( L, 1 );
-		return 1;
+		return ofs;
 	}
 	if (pc->t == T_PCK_SEQ)       // handle Sequence, return table
 	{
 		for (n=0; n<pc->s; n++)
 		{
 			lua_rawgeti( L, -1, n+1 );         //S:… res tbl pck
-			p = t_pck_fld_getPackFromStack( L, -1, &pf );
-			t_pck_fld__callread( L, p, b, ofs+sz );//S:… res tbl pck val
-			sz += t_pck_getSize( L, p );
+			p   = t_pck_fld_getPackFromStack( L, -1, &pf );
+			ofs = t_pck_fld__callread( L, p, b, ofs );//S:… res tbl pck val
 			lua_rawseti( L, -4, n+1 );         //S:… res tbl pck
 			lua_pop( L, 1 );
 		}
 		lua_pop( L, 1 );
-		return 1;
+		return ofs;
 	}
 	if (pc->t == T_PCK_STR)       // handle Struct, return oht
 	{
@@ -725,9 +725,8 @@ t_pck_fld__callread( lua_State *L, struct t_pck *pc, const char *b, size_t ofs )
 			lua_rawgeti( L, -1, n+1 );         //S:… res tbl key
 			lua_pushvalue( L, -1 );            //S:… res tbl key key
 			lua_rawget( L, -3 );               //S:… res tbl key fld
-			p = t_pck_fld_getPackFromStack( L, -1, &pf );
-			t_pck_fld__callread( L, p, b, ofs+sz );//S:… res tbl key pck val
-			sz += t_pck_getSize( L, p );
+			p   = t_pck_fld_getPackFromStack( L, -1, &pf );
+			ofs = t_pck_fld__callread( L, p, b, ofs );//S:… res tbl key pck val
 			lua_remove( L, -2 );               //S:… res tbl key val
 			t_oht_addElement( L, -4 );
 		}
@@ -735,10 +734,10 @@ t_pck_fld__callread( lua_State *L, struct t_pck *pc, const char *b, size_t ofs )
 		oht = t_oht_create_ud( L );           //S:… res oht
 		lua_insert( L, -2 );                  //S:… oht res
 		oht->tR = luaL_ref( L, LUA_REGISTRYINDEX );
-		return 1;
+		return ofs;
 	}
 	lua_pushnil( L );
-	return 1;
+	return ofs;
 }
 
 
@@ -779,7 +778,10 @@ lt_pck_fld__call( lua_State *L )
 		"String/Buffer must be longer than "T_PCK_TYPE" offset plus length." );
 
 	if (2 == lua_gettop( L ))      // read from input
-		return t_pck_fld__callread( L, pc, (const char *) b, ofs );
+	{
+		t_pck_fld__callread( L, pc, (const char *) b, ofs );
+		return 1;
+	}
 	else                           // write to input
 	{
 		if (pc->t < T_PCK_ARR)      // handle atomic packer, return single value

@@ -110,7 +110,7 @@ struct t_pck *t_pck_check_ud  ( lua_State *L, int pos, int check );
 struct t_pck *t_pck_create_ud ( lua_State *L, enum t_pck_t t, size_t s, int m );
 
 // accessor helpers for the Packers
-int           t_pck_read      ( lua_State *L, const char *b, struct t_pck *p, size_t o );
+size_t        t_pck_read      ( lua_State *L, const char *b, struct t_pck *p, size_t o );
 int           t_pck_write     ( lua_State *L,       char *b, struct t_pck *p, size_t o );
 
 // helpers for the Packers
@@ -128,7 +128,7 @@ struct t_pck *t_pck_arr_create( lua_State *L );
 int          lt_pck_fld__index( lua_State *L );
 int          lt_pck_fld__newindex( lua_State *L );
 int          lt_pck_fld__pairs( lua_State *L );
-int           t_pck_fld__callread( lua_State *L, struct t_pck *pc, const char *b, size_t o );
+size_t       t_pck_fld__callread( lua_State *L, struct t_pck *pc, const char *b, size_t o );
 
 struct t_pck *t_pck_fmt_read( lua_State *L, const char **f, int *e, size_t *bo );
 
