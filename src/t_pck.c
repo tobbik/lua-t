@@ -567,38 +567,13 @@ lt_pck_GetSize( lua_State *L )
 static int
 lt_pck_SetDefaultEndian( lua_State *L )
 {
-	const char *endian = luaL_checkstring( L, -1 );
-	if (*endian == 'n') // native?
-	{
-		_default_endian = IS_LITTLE_ENDIAN;
-		return 0;
-	}
-	luaL_argcheck( L,
-		*endian == 'l' || *endian == 'b',
-		-1,
+	char endian = *(luaL_checkstring( L, 1 ));
+	if ('n' == endian) // native?
+		endian = (IS_LITTLE_ENDIAN) ? 'l' : 'b';
+	luaL_argcheck( L, endian == 'l' || endian == 'b', 1,
 		"endianness must be 'l'/'b'/'n'" );
-	_default_endian =  (*endian == 'l');
+	_default_endian = (endian == 'l');
 	return 0;
-}
-
-
-/**--------------------------------------------------------------------------
- * DEBUG: Get internal reference table from a Struct/Packer.
- * \param   L      Lua state.
- * \lparam  ud     T.Pack.* userdata instance.
- * \lreturn table  Reference table of all members.
- * \return  int    # of values pushed onto the stack.
- * --------------------------------------------------------------------------*/
-static int
-lt_pck_GetReference( lua_State *L )
-{
-	struct t_pck *p = t_pck_fld_getPackFromStack( L, 1, NULL );
-
-	if (p->t > T_PCK_RAW && LUA_NOREF != p->m)
-		lua_rawgeti( L, LUA_REGISTRYINDEX, p->m );
-	else
-		lua_pushnil( L );
-	return 1;
 }
 
 
@@ -711,7 +686,6 @@ t_pck_fld__callread( lua_State *L, struct t_pck *pc, const char *b, size_t ofs )
 	size_t            sz = 0;    ///< size of packer currently processing
 	size_t            n;         ///< iterator for complex types
 
-	//printf("%zu_", ofs);
 	if (pc->t < T_PCK_ARR)       // handle atomic packer, return single value
 		return t_pck_read( L, b + ofs/NB, pc, ofs%NB );
 
@@ -722,19 +696,9 @@ t_pck_fld__callread( lua_State *L, struct t_pck *pc, const char *b, size_t ofs )
 	{
 		p  = t_pck_check_ud( L, -1, 1 );
 		sz = t_pck_getSize( L, p );
-
-		printf( "arr: [%d:%zu]\n ", p->m, sz );
-
 		for (n=0; n<pc->s; n++)
 		{
-			if (T_PCK_BOL == p->t  || T_PCK_BTS == p->t  || T_PCK_BTU == p->t)
-			{
-				lua_pop( L, 1 );
-				p = t_pck_create_ud( L, p->t, p->s, ((p->s * n) % NB ) );
-				//p = t_pck_create_ud( L, p->t, p->s,
-				//((opf->ofs + ipc->s*(idx-1)) % NB ) );
-			}
-			t_pck_fld__callread( L, p, b, ofs + sz*n );       //S:… res typ val
+			t_pck_fld__callread( L, p, b, ofs + sz*n );       // S:… res typ val
 			lua_rawseti( L, -3, n+1 );
 		}
 		lua_pop( L, 1 );
@@ -747,7 +711,7 @@ t_pck_fld__callread( lua_State *L, struct t_pck *pc, const char *b, size_t ofs )
 			lua_rawgeti( L, -1, n+1 );         //S:… res tbl pck
 			p = t_pck_fld_getPackFromStack( L, -1, &pf );
 			t_pck_fld__callread( L, p, b, ofs+sz );//S:… res tbl pck val
-			sz += p->s;
+			sz += t_pck_getSize( L, p );
 			lua_rawseti( L, -4, n+1 );         //S:… res tbl pck
 			lua_pop( L, 1 );
 		}
@@ -763,7 +727,7 @@ t_pck_fld__callread( lua_State *L, struct t_pck *pc, const char *b, size_t ofs )
 			lua_rawget( L, -3 );               //S:… res tbl key fld
 			p = t_pck_fld_getPackFromStack( L, -1, &pf );
 			t_pck_fld__callread( L, p, b, ofs+sz );//S:… res tbl key pck val
-			sz += p->s;
+			sz += t_pck_getSize( L, p );
 			lua_remove( L, -2 );               //S:… res tbl key val
 			t_oht_addElement( L, -4 );
 		}
@@ -841,7 +805,6 @@ static const struct luaL_Reg t_pck_fm [] = {
  * --------------------------------------------------------------------------*/
 static const struct luaL_Reg t_pck_cf [] = {
 	  { "getSize"        , lt_pck_GetSize }
-	, { "getReference"   , lt_pck_GetReference }
 	, { "setEndian"      , lt_pck_SetDefaultEndian }
 	, { "type"           , lt_pck_Type }
 	, { NULL             , NULL }
