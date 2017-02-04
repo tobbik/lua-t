@@ -19,5 +19,6 @@ int    t_tst_cse_create( lua_State *L );
 void   t_tst_cse_check( lua_State *L, int pos );
 void   t_tst_cse_addTapDiagnostic( lua_State *L, luaL_Buffer *lB, int pos );
 void   t_tst_cse_getDescription( lua_State *L, int pos );
-int    lt_tst_cse_skip( lua_State *L );
+int   lt_tst_cse_skip( lua_State *L );
+int    t_tst_isReallyEqual( lua_State *L );
 LUA_API int luaopen_t_tst_cse( lua_State *L );

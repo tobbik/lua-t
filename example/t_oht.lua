@@ -13,7 +13,7 @@ o['six']   = 'sixth   position'
 o['seven'] = 'seventh position'
 print( "Length after adding more elements", #o )
 
-for k,v in pairs( Oht.getTable( o ) ) do print( k, v ) end
+for k,v in pairs( Oht.getReference( o ) ) do print( k, v ) end
 print(o)
 
 for i,v,k in ipairs( o ) do
@@ -48,5 +48,9 @@ for k,v,i in pairs( o ) do
 end
 
 print( Oht.concat( o, '_|||||_' ) )
+print( table.concat( Oht.getValues( o ), '_|||||_' ) )
+print( table.concat( Oht.getKeys( o ), '_|||||_' ) )
+
+for k,v in pairs( Oht.getTable( o ) ) do print( k, v ) end
 
 

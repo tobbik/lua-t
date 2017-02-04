@@ -270,10 +270,9 @@ lt_tst__tostring( lua_State *L )
  * \lparam  value    valueA to compare
  * \lparam  value    valueB to compare
  * \return  int/bool 1 or 0
- * TODO: push an expressive error message onto the stack
  *--------------------------------------------------------------------------- */
 int
-lt_tst_isReallyEqual( lua_State *L )
+t_tst_isReallyEqual( lua_State *L )
 {
 	// if lua considers them equal ---> true
 	// catches value, reference an meta.__eq
@@ -287,7 +286,7 @@ lt_tst_isReallyEqual( lua_State *L )
 	{
 		lua_pushvalue( L, -2 );  //S: tblA tblB  keyA  valA  keyA
 		lua_gettable( L, -4 );   //S: tblA tblB  keyA  valA  valB
-		if (! lt_tst_isReallyEqual( L ))
+		if (! t_tst_isReallyEqual( L ))
 		{
 			lua_pop( L, 3 );      //S: tblA tblB
 			return 0;
@@ -295,6 +294,23 @@ lt_tst_isReallyEqual( lua_State *L )
 		// pop valueA and valueB
 		lua_pop( L, 2 );         //S: tblA tblB  keyA
 	}
+	return 1;
+}
+
+
+/** ---------------------------------------------------------------------------
+ * Compares the last two values on the stack (deep table compare; recursive)
+ * Work on negative inices ONLY for recursive use
+ * \param   L        Lua state
+ * \lparam  value    valueA to compare
+ * \lparam  value    valueB to compare
+ * \return  int/bool 1 or 0
+ * TODO: push an expressive error message onto the stack
+ *--------------------------------------------------------------------------- */
+static int
+lt_tst_IsReallyEqual( lua_State *L )
+{
+	lua_pushboolean( L, t_tst_isReallyEqual( L ) );
 	return 1;
 }
 
@@ -312,7 +328,7 @@ static const struct luaL_Reg t_tst_fm [] = {
  * Class functions library definition
  * --------------------------------------------------------------------------*/
 static const struct luaL_Reg t_tst_cf [] = {
-	  { "equal"              , lt_tst_isReallyEqual }
+	  { "equal"              , lt_tst_IsReallyEqual }
 	, { NULL,  NULL }
 };
 

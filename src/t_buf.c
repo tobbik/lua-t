@@ -15,7 +15,7 @@
 #include <string.h>               // memset
 
 #include "t.h"
-#include "t_buf.h"
+#include "t_pck.h"
 
 
 // --------------------------------- HELPERS Functions
@@ -29,7 +29,6 @@
  *                fact that C char buffers indexes are zero based.
  * \return *t_buf pointer to validated buffer.
  *  -------------------------------------------------------------------------*/
-
 struct
 t_buf * t_buf_getbuffer( lua_State *L, int pB, int pP, int *pos )
 {
@@ -112,9 +111,9 @@ t_buf *t_buf_create_ud( lua_State *L, int size )
 	size_t          sz;
 
 	// size = sizof(...) -1 because the array has already one member
-	sz = sizeof( struct t_buf ) + (size - 1) * sizeof( unsigned char );
+	sz = sizeof( struct t_buf ) + (size - 1) * sizeof( char );
 	b  = (struct t_buf *) lua_newuserdata( L, sz );
-	memset( b->b, 0, size * sizeof( unsigned char ) );
+	memset( b->b, 0, size * sizeof( char ) );
 
 	b->len = size;
 	luaL_getmetatable( L, T_BUF_TYPE );
@@ -159,8 +158,8 @@ lt_buf_unpack( lua_State *L )
 	size_t        n = 0,j;
 
 	buf = t_buf_getbuffer( L, 1 , 3, &pos );
-	pc  = t_pck_getpck( L, 2, &n );
-	t_pcr__callread( L, pc, buf->b + pos );
+	pc  = t_pck_getPacker( L, 2, &n );
+	t_pck_fld__callread( L, pc, buf->b + pos, 0 );
 
 	if (T_PCK_SEQ == pc->t)
 	{
@@ -234,34 +233,102 @@ lt_buf_write( lua_State *L )
 
 
 /**--------------------------------------------------------------------------
- * Gets the content of the buffer in Hex
- * \lreturn  string buffer representation in Hexadecimal
- *
- * \return  int    # of values pushed onto the stack.
+ * Gets the content of the buffer as a hexadecimal string.
+ * \param   L       Lua state.
+ * \lparam  ud      T.Buffer userdata instance.
+ * \lreturn string  T.Buffer representation as hexadecimal string.
+ * \return  int     # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int
-lt_buf_tohexstring( lua_State *L )
+lt_buf_toHexString( lua_State *L )
 {
-	int           l, c;
-	char         *sbuf;
+	char          hex[] = "0123456789ABCDEF";
+	int           n;
+	luaL_Buffer   lB;
+
+	struct t_buf *buf   = t_buf_check_ud( L, 1, 1 );
+	luaL_buffinit( L, &lB );
+
+	for (n=0; n<(int) buf->len; n++)
+	{
+		luaL_addchar( &lB, hex[ buf->b[n] >> 4 & 0x0F ] );
+		luaL_addchar( &lB, hex[ buf->b[n]      & 0x0F ] );
+		luaL_addchar( &lB, ' ' );
+	}
+
+	luaL_pushresult( &lB );
+	return 1;
+}
+
+
+/**--------------------------------------------------------------------------
+ * Gets the content of the buffer as a binary string.
+ * \param   L       Lua state.
+ * \lparam  ud      T.Buffer userdata instance.
+ * \lreturn string  T.Buffer representation as binary string.
+ * \return  int     # of values pushed onto the stack.
+ * --------------------------------------------------------------------------*/
+static int
+lt_buf_toBinString( lua_State *L )
+{
+	int          n, x;
+	luaL_Buffer  lB;
+
 	struct t_buf *buf = t_buf_check_ud( L, 1, 1 );
+	luaL_buffinit( L, &lB );
 
-	sbuf = malloc( 3 * buf->len * sizeof( char ) + 1 );
-	memset( sbuf, 0, 3 * buf->len * sizeof( char ) );
+	for (n=0; n<(int) buf->len; n++)
+	{
+		for (x=NB; x>0; x--)
+			luaL_addchar( &lB, ((buf->b[ n ] >> (x-1)) & 0x01) ? '1' : '0' );
+		luaL_addchar( &lB, ' ' );
+	}
 
-	c = 0;
-	for (l=0; l < (int) buf->len; l++)
-		c += snprintf( sbuf+c, 4, "%02X ", buf->b[l] );
+	luaL_pushresult( &lB );
+	return 1;
+}
 
-	lua_pushlstring( L, sbuf, c );
-	free( sbuf );
+
+/**--------------------------------------------------------------------------
+ * Compares two T.Buffer.
+ * \param   L    Lua state.
+ * \lparam  ud   t_buf userdata instance.
+ * \lparam  ud   t_buf userdata instance to compare to.
+ * \lreturn bool true if equal otherwise false.
+ * \return  int  # of values pushed onto the stack.
+ * --------------------------------------------------------------------------*/
+static int
+lt_buf__eq( lua_State *L )
+{
+	struct t_buf *bA = t_buf_check_ud( L, 1, 1 );
+	struct t_buf *bB = t_buf_check_ud( L, 2, 1 );
+	size_t        i;       ///< runner
+
+	if (bA == bB)
+	{
+		lua_pushboolean( L, 1 );
+		return 1;
+	}
+	if (bA->len != bB->len)
+	{
+		lua_pushboolean( L, 0 );
+		return 1;
+	}
+	else
+		for( i=0; i<bA->len; i++ )
+			if (bA->b[i] !=  bB->b[ i ])
+			{
+				lua_pushboolean( L, 0 );
+				return 1;
+			}
+	lua_pushboolean( L, 1 );
 	return 1;
 }
 
 
 /**--------------------------------------------------------------------------
  * Returns len of the buffer
- * \param   L    The Lua state
+ * \param   L    Lua state
  * \return  int  # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int
@@ -295,14 +362,14 @@ lt_buf__tostring( lua_State *L )
  * --------------------------------------------------------------------------*/
 static const struct luaL_Reg t_buf_fm [] = {
 	  {"__call",        lt_buf__Call}
-	, {NULL,            NULL}
+	, { NULL           , NULL }
 };
 
 /**--------------------------------------------------------------------------
  * Class functions library definition
  * --------------------------------------------------------------------------*/
 static const struct luaL_Reg t_buf_cf [] = {
-	{NULL,            NULL}
+	  { NULL           , NULL }
 };
 
 /**--------------------------------------------------------------------------
@@ -310,15 +377,17 @@ static const struct luaL_Reg t_buf_cf [] = {
  * --------------------------------------------------------------------------*/
 static const luaL_Reg t_buf_m [] = {
 	// metamethods
-	  { "__tostring", lt_buf__tostring }
-	, { "__len",      lt_buf__len }
+	  { "__tostring"   , lt_buf__tostring }
+	, { "__len"        , lt_buf__len }
+	, { "__eq"         , lt_buf__eq }
 	// instance methods
-	, { "unpack",      lt_buf_unpack }
-	, { "read",        lt_buf_read }
-	, { "write",       lt_buf_write }
+	, { "unpack"       , lt_buf_unpack }
+	, { "read"         , lt_buf_read }
+	, { "write"        , lt_buf_write }
 	// univeral stuff
-	, { "toHex",       lt_buf_tohexstring }
-	, { NULL,    NULL}
+	, { "toHex"        , lt_buf_toHexString }
+	, { "toBin"        , lt_buf_toBinString }
+	, { NULL           , NULL }
 };
 
 

@@ -1,6 +1,6 @@
 Set = require( 't' ).Set
 
-function p( s ) return #s, table.unpack( Set.toTable( s ) ) end
+function p( s ) return #s, table.unpack( Set.getTable( s ) ) end
 
 a = Set( {'one','two','three','four','eight'} ) -- create set from table
 
