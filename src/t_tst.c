@@ -156,14 +156,18 @@ lt_tst__call( lua_State *L )
 
 	t_tim_since( &tm );
 	printf( "---------------------------------------------------------\n"
-	        "Executed %lu tests in %03f seconds\n\n"
-	        "Skipped : %lu\n"
-	        "Failed  : %lu\n"
-	        "status  : %s\n",
-	   i, t_tim_getms( &tm )/1000.0,
-		skip,
-		i-pass,
-		(i==pass)? "OK":"FAIL" );
+	        "Handled %lu tests in %.3f seconds\n\n"
+	        "Executed         : %lu\n"
+	        "Skipped          : %lu\n"
+	        "Expected to fail : %lu\n"
+	        "Failed           : %lu\n"
+	        "status           : %s\n"
+		, i, t_tim_getms( &tm )/1000.0
+		, i - skip
+		, skip
+		, todo
+		, i-pass-skip
+		, (i==pass+skip+todo)? "OK":"FAIL" );
 
 	lua_pushboolean( L, (i==pass) ? 1 : 0 );
 
@@ -227,7 +231,7 @@ static int
 lt_tst__tostring( lua_State *L )
 {
 	luaL_Buffer lB;
-	int         i, pass, t_len;
+	int         i, pass, todo, t_len;
 
 	t_tst_check( L, 1 );
 	t_len  = luaL_len( L, 1 );
@@ -239,21 +243,23 @@ lt_tst__tostring( lua_State *L )
 		lua_rawgeti( L, 1, i+1 );
 		// passed: ok/not ok/not run
 		lua_getfield( L, 2, "pass" );
+		lua_getfield( L, 2, "todo" );
 		if (lua_isnil( L, 3 ))
 		{
-			luaL_addstring( &lB, "not run" );
+			luaL_addstring( &lB, "not run\n" );
 			lua_pop( L, 1 );             // pop nil
 		}
 		else
 		{
 			pass = lua_toboolean( L, 3 );
-			lua_pop( L, 1 );             // pop pass boolean
+			todo = ! lua_isnil( L, 4 );
+			lua_pop( L, 2 );             // pop pass boolena and todo msg
 			lua_pushfstring( L, "%s %d - ", (pass) ? "ok":"not ok", i+1 );
 			luaL_addvalue( &lB );
 			t_tst_cse_getDescription( L, 2 );
 			luaL_addvalue( &lB );
 			luaL_addchar( &lB, '\n' );
-			if (! pass)
+			if (! pass && ! todo)
 				t_tst_cse_addTapDiagnostic( L, &lB, 2 );
 		}
 		lua_remove( L, 2 );          // remove cse S: ste

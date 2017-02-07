@@ -21,12 +21,14 @@ or random order::
    t.test_three = function( self ) ... end
 
    -- invoking T.Test with a table as a parameter to the construtor will
-   -- make them get executed in the order pairs iterates over the Test suite
-   -- table (randomized at the time of instantiation)
+   -- make them get executed in the order pairs() iterates over the Test
+   -- suite table (randomized at the time of instantiation)
    t = T.Test({
-      t.test_one   = function( self ) ... end,
-      t.test_two   = function( self ) ... end,
-      t.test_three = function( self ) ... end
+      setUp      = function( self ) ... end,
+      tearDown   = function( self ) ... end,
+      test_one   = function( self ) ... end,
+      test_two   = function( self ) ... end,
+      test_three = function( self ) ... end
    })
 
 The test suite cannot be passed any numerically keyed elements.
@@ -34,8 +36,6 @@ The test suite cannot be passed any numerically keyed elements.
 Conventions
 -----------
 
- - If a `setUp` function is provided it will be executed **BEFORE EACH**
-   test case
  - If a `tearDown` function is provided it will be executed **AFTER EACH**
    test case
  - A test case function MUST start with the word `test`, otherwise it will
@@ -43,7 +43,7 @@ Conventions
    `self.[variable_name]`
  - To provide a more detailed description than the test functions name a
    special comment `-- #DESC:` can be provided within the function source
-   code.  NOTE: the comment MUST be within the functions source code, not
+   code.  NOTE: the comment MUST be *within* the functions source code, not
    above or below::
 
      t.test_one = function( self )
@@ -52,7 +52,7 @@ Conventions
      end
 
  - To skip a test a special comment `-- #SKIP:` can be provided within the
-   function source code.  NOTE: the comment MUST be within the functions
+   function source code.  NOTE: the comment MUST be *within* the functions
    source code, not above or below::
 
      t.test_two = function( self )
@@ -63,7 +63,7 @@ Conventions
  - To have a test expected to fail a special comment `-- #TODO:` can be
    provided within the function source code.  A test marked with a TODO will
    be run but is expected to fail.  As such it will not affect the overall
-   outcome of the test suite if failed.  NOTE: the comment MUST be within
+   outcome of the test suite if failed.  NOTE: the comment MUST be *within*
    the functions source code, not above or below::
 
      t.test_three = function( self )

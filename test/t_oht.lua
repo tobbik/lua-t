@@ -268,7 +268,7 @@ local tests = {
 		o.clone.six  = 'Not sixth anymore'
 
 		assert( self.o ~= o, "Original and clone must be equal" )
-	end,
+	end
 }
 
 t_oht = Test( tests )

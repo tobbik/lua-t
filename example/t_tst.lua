@@ -66,7 +66,13 @@ tc = {
 		local k = {x=1,y=2,z={a=1,b=true,c='stringy'}}
 		local h = {x=1,y=2,z={a=1,b=true,c='string'}}
 		assert( not Test.equal( k, h ), "Deep table comparison" )
-	end
+	end,
+
+	test_ToSkip = function( self )
+		-- #DESC: Test for skipping
+		-- #SKIP: ...for fun and profit ...
+		assert( self.b==self.a*2, "Multiplication equals result" )
+	end,
 }
 
 -- The tests in tc will be executed in random order
@@ -74,8 +80,9 @@ t = Test( tc )
 
 -- Test from here on will ALWAYS be executed in the order they are written and
 -- AFTER the tests in the table passed to the constructor
-t.test_EqTableNum = function( self )
+t.test_EqTableRecursive = function( self )
 	-- #DESC: Deep table comparison with first table shorter than second
+	-- #TODO: Make sure T.equal works recursively
 	local h = {6,7,8,9,'str',{'A','B','C','D',{'z','y','x'}    },3,4,5,6}
 	local k = {6,7,8,9,'str',{'A','B','C','D',{'z','y','x','w'}},3,4,5}
 	assert( Test.equal( h, k ), "Deep table comparison with different table sizes" )

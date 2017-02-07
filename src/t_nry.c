@@ -45,7 +45,8 @@
  * \lparam (opt) char last  character.
  * \return int   # of values pushed onto the stack.
  *  -------------------------------------------------------------------------*/
-static int lt_nry__Call( lua_State *L )
+static int
+lt_nry__Call( lua_State *L )
 {
 	lua_Integer    sz;
 	lua_Integer    i;
@@ -94,7 +95,8 @@ static int lt_nry__Call( lua_State *L )
  * \param   L       Lua state.
  * \return  struct  t_nry* pointer to the t_nry struct.
  * --------------------------------------------------------------------------*/
-struct t_nry *t_nry_create_ud( lua_State *L, int sz )
+struct t_nry
+*t_nry_create_ud( lua_State *L, int sz )
 {
 	struct t_nry  *a;
 	size_t         t_sz;
@@ -119,7 +121,8 @@ struct t_nry *t_nry_create_ud( lua_State *L, int sz )
  *
  * \return struct t_nry* pointer to t_nry struct or NULL
  * --------------------------------------------------------------------------*/
-struct t_nry *t_nry_check_ud( lua_State *L, int pos, int check )
+struct t_nry
+*t_nry_check_ud( lua_State *L, int pos, int check )
 {
 	void *ud = luaL_testudata( L, pos, T_NRY_TYPE );
 	luaL_argcheck( L, (ud != NULL || !check), pos, "`"T_NRY_TYPE"` expected" );
@@ -208,7 +211,7 @@ t_nry_iter( lua_State *L )
 	// S: nry idx
 	lua_pushinteger( L, i );  // S: nry idx idx+1
 
-	if ( i > a->len )
+	if (i > a->len)
 	{
 		lua_pushnil( L );
 		return 1;
@@ -236,8 +239,8 @@ lt_nry__pairs( lua_State *L )
 	t_nry_check_ud( L, -1, 1 );
 
 	lua_pushcfunction( L, &t_nry_iter );
-	lua_pushvalue(L, 1 );
-	lua_pushinteger(L, 0 );  //S: iter nry 0
+	lua_pushvalue( L, 1 );
+	lua_pushinteger( L, 0 );  //S: iter nry 0
 	return 3;
 }
 
@@ -292,7 +295,7 @@ lt_nry__eq( lua_State *L )
 	if (nA->len != nB->len)
 		r = 0;
 	else
-		for( i=0; i<nA->len; i++ )
+		for (i=0; i<nA->len; i++)
 			if (nA->v[i] !=  nB->v[ i ])
 			{
 				r = 0;
@@ -309,7 +312,8 @@ lt_nry__eq( lua_State *L )
  * \lreturn int  length of Numarray Instance.
  * \return  int  # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
-static int lt_nry__len( lua_State *L )
+static int
+lt_nry__len( lua_State *L )
 {
 	struct t_nry *a = t_nry_check_ud( L, 1, 1 );
 	lua_pushinteger( L, (int) a->len );
@@ -323,7 +327,8 @@ static int lt_nry__len( lua_State *L )
  * \lreturn string    formatted string representing NUmarray instance.
  * \return  int      # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
-static int lt_nry__tostring( lua_State *L )
+static int
+lt_nry__tostring( lua_State *L )
 {
 	struct t_nry *a = t_nry_check_ud( L, 1, 1 );
 	lua_pushfstring( L, T_NRY_TYPE"[%d]: %p", a->len, a );
@@ -335,8 +340,8 @@ static int lt_nry__tostring( lua_State *L )
  * Numarray class metamethods library definition
  * --------------------------------------------------------------------------*/
 static const struct luaL_Reg t_nry_fm [] = {
-	  { "__call",        lt_nry__Call}
-	, { NULL,            NULL}
+	  { "__call"     , lt_nry__Call }
+	, { NULL         , NULL }
 };
 
 
@@ -344,7 +349,7 @@ static const struct luaL_Reg t_nry_fm [] = {
  * Numarray class functions library definition
  * --------------------------------------------------------------------------*/
 static const struct luaL_Reg t_nry_cf [] = {
-	{ NULL        , NULL }
+	  { NULL         , NULL }
 };
 
 
@@ -353,17 +358,17 @@ static const struct luaL_Reg t_nry_cf [] = {
  * Assigns Lua available names to C-functions on T.Numarray instances
  * --------------------------------------------------------------------------*/
 static const luaL_Reg t_nry_m [] = {
-	  { "__index",    lt_nry__index }
-	, { "__newindex", lt_nry__newindex }
-	, { "__pairs",    lt_nry__pairs }
-	, { "__ipairs",   lt_nry__pairs }
-	, { "__len",      lt_nry__len }
-	, { "__tostring", lt_nry__tostring }
-	, { "__eq",       lt_nry__eq }
+	  { "__index"    , lt_nry__index }
+	, { "__newindex" , lt_nry__newindex }
+	, { "__pairs"    , lt_nry__pairs }
+	, { "__ipairs"   , lt_nry__pairs }
+	, { "__len"      , lt_nry__len }
+	, { "__tostring" , lt_nry__tostring }
+	, { "__eq"       , lt_nry__eq }
 	// normal methods -> __index will sort out if it tries to get this from here,
 	// or if missed, get it from t_nry->v
-	, { "reverse",    lt_nry_reverse }
-	, { NULL, NULL }
+	, { "reverse"    , lt_nry_reverse }
+	, { NULL         , NULL }
 };
 
 
@@ -375,7 +380,8 @@ static const luaL_Reg t_nry_m [] = {
  * \param  L    The lua state.
  * \return int  # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
-LUAMOD_API int luaopen_t_nry( lua_State *L )
+LUAMOD_API int
+luaopen_t_nry( lua_State *L )
 {
 	// T.Numarray stance metatable
 	luaL_newmetatable( L, T_NRY_TYPE );

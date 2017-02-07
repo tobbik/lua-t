@@ -266,7 +266,7 @@ t_tst_cse_addTapDiagnostic( lua_State *L, luaL_Buffer *lB, int pos )
  * Push Test.Case name information on stack
  * \param    L      Lua state.
  * \lparam   table  T.Test.Case Lua table instance.
- * \lresult  string T.Test.Case name.
+ * \lresult  string T.Test.Case description.
  * --------------------------------------------------------------------------*/
 void
 t_tst_cse_getDescription( lua_State *L, int pos )
@@ -289,21 +289,19 @@ t_tst_cse_getDescription( lua_State *L, int pos )
 		concat+=2;
 	}
 	else
-	{    // Add todo information?
-		lua_pop( L, 1 );                // pop skip
-		lua_getfield( L, pos, "todo" ); //S: … nme tdo
-		if (! lua_isnil( L, -1 ))
-		{
-			lua_pushstring( L, " # TODO: " );
-			lua_insert( L, -2 );         //S: … nme tdo
-			concat++;
-		}
-		else
-			lua_pop( L, 1 );             //S: … nme
+		lua_pop( L, 1 );                // pop skip nil
+	// Add todo information?
+	lua_getfield( L, pos, "todo" );    //S: … nme tdo
+	if (! lua_isnil( L, -1 ))
+	{
+		lua_pushstring( L, " # TODO: " );
+		lua_insert( L, -2 );            //S: … nme tdo
+		concat+=2;
 	}
+	else
+		lua_pop( L, 1 );                // pop todo nil
 	if (concat > 1) lua_concat( L, concat );
 }
-
 
 
 /**--------------------------------------------------------------------------

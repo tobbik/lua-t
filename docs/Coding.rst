@@ -210,10 +210,6 @@ hooked up in the luaopen_t_nry( L ) function. ::
   	// normal methods -> __index has logic to figure out if an access to the
   	// array or the method library was desired
   	{ "reverse",    lt_nry_reverse },
-  	// allow metamethods to be accessed in a more traditional OOP style
-  	// since those are function pointers there is very little overhead
-  	{ "length",     lt_nry__len },
-  	{ "toString",   lt_nry__tostring },
   	{ NULL, NULL }
   };
 
