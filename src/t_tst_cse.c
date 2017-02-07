@@ -20,26 +20,38 @@
 /**--------------------------------------------------------------------------
  * Creates a traceback from a function call
  * \param   L      Lua state.
- * \lparam  either assert result table or generic string
- * \lreturn a t_tst result Failure description table
+ * \lparam  either assert result table or generic string.
+ * \lreturn a t_tst result Failure description table.
  * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 int
 t_tst_cse_traceback( lua_State *L )
 {
+	char           *msg;
+	const char     *loc;
 	if (LUA_TSTRING == lua_type( L, 1 ))
 	{
 		lua_newtable( L );
 		lua_insert( L, 1 );
+		loc = lua_tostring( L, 2 );
+		msg = strrchr( loc, ':' );
+		msg = strrchr( msg, ':' ) + 2;
+		lua_pushstring( L, msg );
 		lua_setfield( L, 1, "message" );
-	}
-	if (LUA_TTABLE == lua_type( L, 1 ))
-	{
-		luaL_where( L, 2 );
+		lua_pushlstring( L, loc, msg-loc-2 );
 		lua_setfield( L, 1, "location" );
+		lua_pop( L, 1 );    // pop original massage
 		luaL_traceback( L, L, NULL, 1 );
 		lua_setfield( L, 1, "traceback" );
 	}
+	else
+		if (LUA_TTABLE == lua_type( L, 1 ))
+		{
+			//luaL_where( L, 2 );
+			//lua_setfield( L, 1, "location" );
+			luaL_traceback( L, L, NULL, 1 );
+			lua_setfield( L, 1, "traceback" );
+		}
 
 	return 1;
 }
@@ -253,8 +265,6 @@ t_tst_cse_addTapDiagnostic( lua_State *L, luaL_Buffer *lB, int pos )
 	t_tst_cse_addTapDetail( L, lB, pos, "name" );
 	t_tst_cse_addTapDetail( L, lB, pos, "message" );
 	t_tst_cse_addTapDetail( L, lB, pos, "assert" );
-	t_tst_cse_addTapDetail( L, lB, pos, "expected" );
-	t_tst_cse_addTapDetail( L, lB, pos, "got" );
 	t_tst_cse_addTapDetail( L, lB, pos, "location" );
 	t_tst_cse_addTapDetail( L, lB, pos, "traceback" );
 	t_tst_cse_addTapDetail( L, lB, pos, "src" );
