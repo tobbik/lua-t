@@ -82,14 +82,14 @@ t = Test( tc )
 -- AFTER the tests in the table passed to the constructor
 t.test_EqTableRecursive = function( self )
 	-- #DESC: Deep table comparison with first table shorter than second
-	-- # TODO: Make sure T.equal works recursively
 	local h = {6,7,8,9,'str',{'A','B','C','D',{'z','y','x'}    },3,4,5,6}
 	local k = {6,7,8,9,'str',{'A','B','C','D',{'z','y','x','w'}},3,4,5}
-	assert( Test.equal( h, k ), "Deep table comparison with different table sizes" )
+	assert( not Test.equal( h, k ), "Deep table comparison with different table sizes" )
 end
 
 t.test_MakeFail = function( self )
 	-- #DESC: Create an error in code
+	-- # TODO: Nothing todo here. This test fails to test the test framework
 	local x = 5
 	x = x.a + 5
 	assert( x==6 , "This math makes no sense" )

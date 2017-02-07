@@ -199,40 +199,6 @@ t_tst_cse_check( lua_State *L, int pos )
  * \param   m     the name of the diagnostic field.
  * \lparam  table T.Test.Case Lua table instance.
  * --------------------------------------------------------------------------*/
-//static void
-//t_tst_cse_addTapDetail( lua_State *L, luaL_Buffer *lB, int pos, const char *m )
-//{
-//	char    *a = luaL_prepbuffer( lB );
-//	size_t   n;
-//	lua_getfield( L, pos, m );
-//	if (! lua_isnil( L, -1 ))
-//	{
-//		n = sprintf( a, "\n%-10s : %s", m, lua_tostring( L, -1 ) );
-//		luaL_gsub( L, a, "\n", "\n    " );
-//		luaL_addsize( lB, n );
-//		printf("%s(%zu) .. ", m,n);t_stackDump( L );
-//		//luaL_addvalue( lB );
-//	}
-//	else
-//		luaL_addsize( lB, 0 );
-//	printf("%s .. ", m);t_stackDump( L );
-//	lua_pop( L, 1 );
-//}
-
-
-/**--------------------------------------------------------------------------
- * Add diagnostic output information for Test.Case into a TAP line
- * luaL_prepbuffer can create userdata on the stack - this function
- * accounts for that by calling luaL_prepbuffer before everything else
- * Expects on stack:
- *        1. test case
- *        2. boolean(false) for failed test
- *        3. (userdata) possible by-product of luaL_Buffer
- * \param   L     Lua state.
- * \param  *lB    an already initialized Lua Buffer.
- * \param   m     the name of the diagnostic field.
- * \lparam  table T.Test.Case Lua table instance.
- * --------------------------------------------------------------------------*/
 static void
 t_tst_cse_addTapDetail( lua_State *L, luaL_Buffer *lB, int pos, const char *m )
 {
@@ -264,7 +230,6 @@ t_tst_cse_addTapDiagnostic( lua_State *L, luaL_Buffer *lB, int pos )
 	luaL_addstring( lB, "    ---" );
 	t_tst_cse_addTapDetail( L, lB, pos, "name" );
 	t_tst_cse_addTapDetail( L, lB, pos, "message" );
-	t_tst_cse_addTapDetail( L, lB, pos, "assert" );
 	t_tst_cse_addTapDetail( L, lB, pos, "location" );
 	t_tst_cse_addTapDetail( L, lB, pos, "traceback" );
 	t_tst_cse_addTapDetail( L, lB, pos, "src" );
@@ -386,8 +351,6 @@ lt_tst_cse_skip( lua_State *L )
 
 	return 0;
 }
-
-
 
 
 /**--------------------------------------------------------------------------

@@ -162,14 +162,14 @@ lt_tst__call( lua_State *L )
 	        "Expected to fail : %lu\n"
 	        "Failed           : %lu\n"
 	        "status           : %s\n"
-		, i, t_tim_getms( &tm )/1000.0
-		, i - skip
-		, skip
-		, todo
-		, i-pass-skip
-		, (i==pass+skip+todo)? "OK":"FAIL" );
+	   , i, t_tim_getms( &tm )/1000.0
+	   , i - skip
+	   , skip
+	   , todo
+	   , i-pass-skip
+	   , (i==pass+skip+todo)? "OK":"FAIL" );
 
-	lua_pushboolean( L, (i==pass) ? 1 : 0 );
+	lua_pushboolean( L, (i==pass+skip+todo) ? 1 : 0 );
 
 	return 1;
 }
