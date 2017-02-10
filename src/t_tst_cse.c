@@ -284,6 +284,28 @@ lt_tst_cse__tostring( lua_State *L )
 
 
 /**--------------------------------------------------------------------------
+ * Execution envelope for a test harness.
+ * \param   L        Lua state.
+ * \param   field    const char* name to execute.
+ * \param   pos      position of T.Test table on stack to fetch function from.
+ * \lparam  table    T.Test.Suite Lua table instance.
+ * --------------------------------------------------------------------------*/
+static void
+t_tst_cse_envelope( lua_State *L, char *field, int pos )
+{
+	lua_getfield( L, pos, field );
+	if (! lua_isnil( L, -1 ))
+	{
+		lua_pushvalue( L, pos );        // S: cse ste fnc ste
+		if (lua_pcall( L, 1, 0, 0 ))
+			luaL_error( L, "Test %s failed %s", field, lua_tostring( L, -1 ) );
+	}
+	else
+		lua_pop( L, -1 );
+}
+
+
+/**--------------------------------------------------------------------------
  * Execution wrapper for T.Test.Case.
  * Stack:
  *          1 Test function table
@@ -299,29 +321,31 @@ t_tst_cse_execute( lua_State *L )
 	    is_todo   = 0,
 	    is_skip   = 0;
 
+	lua_getfield( L, 1, "function" );             // S: cse ste fnc
+	lua_insert( L, -2 );                          // S: cse fnc ste
 	lua_pushcfunction( L, t_tst_cse_traceback );  // S: cse fnc ste tbk
 	lua_insert( L, 2 );                           // S: cse tbk fnc ste
 
 	if (lua_pcall( L, 1, 0, 2 ))
 	{
-		lua_pushnil( L );                         // S: tbk cse fnc ste err nil
-		while (lua_next( L, -2 ))                 // copy elements from err to Case
+		lua_pushnil( L );                          // S: tbk cse fnc ste err nil
+		while (lua_next( L, -2 ))                  // copy elements from err to Case
 			lua_setfield( L, 1, lua_tostring( L, -2 ) );
-		lua_pop( L, 2 );                          // pop the err tbl and tbk func
+		lua_pop( L, 2 );                           // pop the err tbl and tbk func
 	}
 	else
 	{
-		lua_pop( L, 1 );                          // pop the tbk function
+		lua_pop( L, 1 );                           // pop the tbk function
 		is_pass = 1;
 	}
 	is_todo = t_tst_cse_hasField( L, "todo", 0 );
 	is_skip = t_tst_cse_hasField( L, "skip", 0 );
-	lua_pushboolean( L, is_pass || is_skip );    // S: cse pass
+	lua_pushboolean( L, is_pass || is_skip );     // S: cse pass
 	lua_setfield( L, 1, "pass" );
 	if (is_skip || (is_todo && ! is_pass) || (! is_todo && is_pass))
-		lua_pushboolean( L, 1 );                  // S: cse tru
+		lua_pushboolean( L, 1 );                   // S: cse tru
 	else
-		lua_pushboolean( L, 0 );                  // S: cse fls
+		lua_pushboolean( L, 0 );                   // S: cse fls
 	return 1;
 }
 
@@ -338,13 +362,14 @@ t_tst_cse_execute( lua_State *L )
 static int
 lt_tst_cse__call( lua_State *L )
 {
-	lua_getfield( L, 1, "function" );             // S: cse ste fnc
-	lua_pushvalue( L, 1 );                        // S: cse ste fnc cse
-	lua_pushcclosure( L, &t_tst_cse_execute, 1 ); // S: cse ste fnc cls
-	lua_insert( L, 1 );                           // S: cls cse ste fnc
-	lua_insert( L, 3 );                           // S: cls cse fnc ste
+	t_tst_cse_envelope( L, "setUp", 2 );
+	lua_pushvalue( L, 1 );                        // S: cse ste cse
+	lua_pushcclosure( L, &t_tst_cse_execute, 1 ); // S: cse ste cls
+	lua_pushvalue( L, 1 );                        // S: cse ste cls cse
+	lua_pushvalue( L, 2 );                        // S: cse ste cls cse ste
+	lua_call( L, 2, 1 );
 
-	lua_call( L, 3, 1 );
+	t_tst_cse_envelope( L, "tearDown", 2 );
 	return 1;
 }
 

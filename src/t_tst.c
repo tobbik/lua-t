@@ -67,27 +67,6 @@ t_tst_check( lua_State *L, int pos, int check )
 
 
 /**--------------------------------------------------------------------------
- * Run tearDown or setUp
- * \param   L        Lua state.
- * \param   int      position on the stack.
- * \lparam  table    T.Test.Suite Lua table instance.
- * --------------------------------------------------------------------------*/
-static void
-t_tst_envelope( lua_State *L, char *field )
-{
-	lua_getfield( L, 1, field );
-	if (! lua_isnil( L, -1 ))
-	{
-		lua_pushvalue( L, 1 );        // S: ste cse fnc ste
-		if (lua_pcall( L, 1, 0, 0 ))
-			luaL_error( L, "Test %s failed %s", field, lua_tostring( L, -1 ) );
-	}
-	else
-		lua_pop( L, 1 );
-}
-
-
-/**--------------------------------------------------------------------------
  * Executes the test suite.
  * \param   L      Lua state.
  * \lparam  table  T.Test Lua table instance.
@@ -117,8 +96,6 @@ lt_tst__call( lua_State *L )
 		printf( "%5zu of %zu --- `%s` -> ", i+1, all, lua_tostring( L, -1 ) );
 		lua_pop( L, 1 );                 // pop name and todo
 
-		t_tst_envelope( L, "setUp" );
-
 		// execute Test.Case
 		luaL_getmetafield( L, 2, "__call" );
 		lua_insert( L, -2 );             //S: ste cse _call cse
@@ -144,8 +121,6 @@ lt_tst__call( lua_State *L )
 		printf( "\n" );
 		pass += (is_pass) ? 1 : 0;
 		lua_pop( L, 1 );                 //S: ste
-
-		t_tst_envelope( L, "tearDown" );
 	}
 
 	t_tim_since( &tm );
