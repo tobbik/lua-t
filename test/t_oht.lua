@@ -26,12 +26,12 @@ local tests = {
 	--end,
 
 	test_LengthMustEqualInserts = function( self )
-		-- #DESC:Length of OrderedHashTable must be equal number of inserts
+		Test.describe( "Length of OrderedHashTable must be equal number of inserts" )
 		assert( #self.o == self.len, "Length must equal number of inserts" )
 	end,
 
 	test_TableStyleConstructor = function( self )
-		-- #DESC:Length of OrderedHashTable must be equal number of inserts
+		Test.describe( "Length of OrderedHashTable must be equal number of inserts" )
 		o   = Oht(
 			  { [self.keys[1]]= self.vals[1] }
 			, { [self.keys[2]]= self.vals[2] }
@@ -48,7 +48,7 @@ local tests = {
 	end,
 
 	test_CopyConstructor = function( self )
-		-- #DESC:OrderedHashTable constructed by copy must match original
+		Test.describe( "OrderedHashTable constructed by copy must match original" )
 		o   = Oht( self.o )
 		assert( #self.o == self.len, "Original and clone length must be equal" )
 		for i=1, self.len do
@@ -57,7 +57,7 @@ local tests = {
 	end,
 
 	test_EmptyConstructor = function( self )
-		-- #DESC:OrderedHashTable constructed from empty must match original
+		Test.describe( "OrderedHashTable constructed from empty must match original" )
 		o   = Oht( )
 		for k,v,_ in pairs( self.o ) do  -- use pairs() iterator to fill copy
 			o[k] = v
@@ -70,7 +70,7 @@ local tests = {
 	end,
 
 	test_PairsIterator = function( self )
-		-- #DESC:Function pair() must iterate in proper order
+		Test.describe( "Function pair() must iterate in proper order" )
 		local ri = 0
 		for k,v,i in pairs( self.o ) do
 			ri = ri+1
@@ -84,7 +84,7 @@ local tests = {
 	end,
 
 	test_IpairsIterator = function( self )
-		-- #DESC:Function ipair() must iterate in proper order
+		Test.describe( "Function ipair() must iterate in proper order" )
 		local ri = 0
 		for i,v,k in ipairs( self.o ) do
 			ri = ri+1
@@ -98,7 +98,7 @@ local tests = {
 	end,
 
 	test_Concat = function( self )
-		-- #DESC:Concat concatenates values
+		Test.describe( "Concat concatenates values" )
 		local sep   = 'willy nilly'
 
 		assert( Oht.concat( self.o, separator ) == table.concat( self.vals, separator ),
@@ -106,7 +106,7 @@ local tests = {
 	end,
 
 	test_AccessIndexedElements = function( self )
-		-- #DESC:All elements must be available by their indexes
+		Test.describe( "All elements must be available by their indexes" )
 		for i=1, self.len do
 			assert( self.o[i] == self.vals[i], "Indexed value must match original value" )
 			assert( self.o[self.keys[i]] == self.o[i], "Hash access must match index access" )
@@ -116,7 +116,7 @@ local tests = {
 	end,
 
 	test_AddElement = function( self )
-		-- #DESC:Adding element increases size
+		Test.describe( "Adding element increases size" )
 		local o_len = #self.o
 		local value   = string.gsub( self.vals[1], "first", "eighth" )
 
@@ -127,7 +127,7 @@ local tests = {
 	end,
 
 	test_DeleteHashElement = function( self )
-		-- #DESC:Removing Hash element decreases size and move down higher keys
+		Test.describe( "Removing Hash element decreases size and move down higher keys" )
 		local o_len = #self.o
 		local four  = self.o.four
 		local six   = self.o.six
@@ -141,7 +141,7 @@ local tests = {
 	end,
 
 	test_DeleteIndexElement = function( self )
-		-- #DESC:Removing Index element decreases size and move down higher keys
+		Test.describe( "Removing Index element decreases size and move down higher keys" )
 		local o_len = #self.o
 		local four  = self.o[4]
 		local six   = self.o[6]
@@ -155,7 +155,7 @@ local tests = {
 	end,
 
 	test_InsertElement = function( self )
-		-- #DESC:Insert element increases size and move up higher keys
+		Test.describe( "Insert element increases size and move up higher keys" )
 		local o_len  = #self.o
 		local two    = self.o[2]
 		local three  = self.o[3]
@@ -173,7 +173,7 @@ local tests = {
 	end,
 
 	test_ReplaceHashElement = function( self )
-		-- #DESC:Replace Hash element remains size, indexes and keys
+		Test.describe( "Replace Hash element remains size, indexes and keys" )
 		local o_len  = #self.o
 		local idx    = 3
 		local key    = 'three'
@@ -192,7 +192,7 @@ local tests = {
 	end,
 
 	test_ReplaceIndexElement = function( self )
-		-- #DESC:Replace Index element remains size, indexes and keys
+		Test.describe( "Replace Index element remains size, indexes and keys" )
 		local o_len  = #self.o
 		local idx    = 3
 		local key    = 'three'
@@ -211,7 +211,7 @@ local tests = {
 	end,
 
 	test_CantCreateIndexOutOfBoundElement = function( self )
-		-- #DESC:Can't create an element with an index higher than length
+		Test.describe( "Can't create an element with an index higher than length" )
 		local o_len    = #self.o
 		local oob_idx  = o_len + 1
 		local val      = "doesn't matter"
@@ -221,17 +221,17 @@ local tests = {
 	end,
 
 	test_GetValues = function( self )
-		-- #DESC:GetValues() returns properly ordered list of values
+		Test.describe( "GetValues() returns properly ordered list of values" )
 		local sep   = '_|||_'
 		local vals  = Oht.getValues( self.o )
 		local c_oV  = table.concat( self.vals, sep )
 		local c_rV  = table.concat( vals, sep )
 		assert( c_oV == c_rV,
-			 "List of values must be equal:\n_" ..c_oV .."_\n_" ..c_rV.."_")
+			 "List of values must be equal:\n_" ..c_oV .."_\n_" ..c_rV.."_" )
 	end,
 
 	test_GetKeys = function( self )
-		-- #DESC:GetKeys() returns properly ordered list of keys
+		Test.describe( "GetKeys() returns properly ordered list of keys" )
 		local sep  = '_|||_'
 		local keys = Oht.getKeys( self.o )
 		local c_oK = table.concat( self.keys, sep )
@@ -241,7 +241,7 @@ local tests = {
 	end,
 
 	test_GetTable = function( self )
-		-- #DESC:GetTable() returns a complete table of keyvalue pairs
+		Test.describe( "GetTable() returns a complete table of keyvalue pairs" )
 		local t = Oht.getTable( self.o )
 		local i = 0
 
@@ -255,14 +255,14 @@ local tests = {
 	end,
 
 	test_Equals = function( self )
-		-- #DESC: __eq metamethod properly comparse for equality
+		Test.describe( " __eq metamethod properly comparse for equality" )
 		self.o.clone = Oht( self.o )
 		local o      = Oht( self.o )
 		assert( self.o == o, "Original and clone must be equal" )
 	end,
 
 	test_NotEquals = function( self )
-		-- #DESC: __eq metamethod properly comparse for inequality
+		Test.describe( " __eq metamethod properly comparse for inequality" )
 		self.o.clone = Oht( self.o )
 		local o      = Oht( self.o )
 		o.clone.six  = 'Not sixth anymore'

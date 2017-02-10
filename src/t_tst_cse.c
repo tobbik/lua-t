@@ -34,15 +34,24 @@ t_tst_cse_traceback( lua_State *L )
 		lua_newtable( L );
 		lua_insert( L, 1 );
 		loc = lua_tostring( L, 2 );
-		msg = strrchr( loc, ':' );
-		msg = strrchr( msg, ':' ) + 2;
-		lua_pushstring( L, msg );
-		lua_setfield( L, 1, "message" );
-		lua_pushlstring( L, loc, msg-loc-2 );
-		lua_setfield( L, 1, "location" );
-		lua_pop( L, 1 );    // pop original massage
-		luaL_traceback( L, L, NULL, 1 );
-		lua_setfield( L, 1, "traceback" );
+		msg = strchr( loc, ':' ) +1;   // find separator of filename and line number
+		msg = strchr( msg, ':' ) + 2;  // find separator before message
+		if ( 0==strncmp( "T_TST_SKIP_INDICATOR:", msg, 21 ))
+		{
+			lua_pushstring( L, msg+21 );
+			lua_setfield( L, 1, "skip" );
+			lua_pop( L, 1 );    // pop original massage
+		}
+		else
+		{
+			lua_pushstring( L, msg );
+			lua_setfield( L, 1, "message" );
+			lua_pushlstring( L, loc, msg-loc-2 );
+			lua_setfield( L, 1, "location" );
+			lua_pop( L, 1 );    // pop original massage
+			luaL_traceback( L, L, NULL, 1 );
+			lua_setfield( L, 1, "traceback" );
+		}
 	}
 	else
 		if (LUA_TTABLE == lua_type( L, 1 ))
@@ -61,7 +70,6 @@ t_tst_cse_traceback( lua_State *L )
  * Inspects source for special lines in the comments
  * Use lua debug facilities to determine lines of code and read the code from
  * the source files
- *   - extracts #TODO, #SKIP and #DESC from the comments
  * \param   L        Lua state.
  * \param   int      position of Test.Case on stack.
  * \lparam  table    T.Test.Case Lua table instance.
@@ -72,13 +80,12 @@ t_tst_cse_getFuncSource( lua_State *L, int pos )
 	lua_Debug  ar;
 	FILE      *f;
 	int        r = 0; ///< current line count
-	char      *fnd;
 	char      *p;
 
 	luaL_Buffer lB;
 	luaL_buffinit( L, &lB );
 	lua_pushstring( L, ">S" );
-	lua_getfield( L, pos, "f" );
+	lua_getfield( L, pos, "function" );
 	lua_State *L1 = L;
 	lua_xmove( L, L1, 1 );
 	lua_getinfo( L1, ">S", &ar );
@@ -97,24 +104,9 @@ t_tst_cse_getFuncSource( lua_State *L, int pos )
 		if (++r < ar.linedefined)
 			continue;
 		luaL_addsize( &lB, strlen( p )-1 );
-		if (NULL != (fnd=strstr( p, "-- #TODO:" )))
-		{
-			lua_pushlstring( L, fnd+9, strlen( fnd+9 )-1 );
-			lua_setfield( L, pos, "todo" );
-		}
-		if (NULL != (fnd=strstr( p, "-- #SKIP:" )))
-		{
-			lua_pushlstring( L, fnd+9, strlen( fnd+9 )-1 );
-			lua_setfield( L, pos, "skip" );
-		}
-		if (NULL != (fnd=strstr( p,"-- #DESC:" )))
-		{
-			lua_pushlstring( L, fnd+9, strlen( fnd+9 )-1 );
-			lua_setfield( L, pos, "desc" );
-		}
 	}
 	luaL_pushresult( &lB );
-	lua_setfield( L, pos, "src" );
+	lua_setfield( L, pos, "source" );
 
 	fclose (f);
 }
@@ -150,10 +142,10 @@ t_tst_cse_create( lua_State *L )
 {
 	luaL_argcheck( L, lua_type( L, -2 ) == LUA_TSTRING,   -2, "testcasename must be a string." );
 	luaL_argcheck( L, lua_type( L, -1 ) == LUA_TFUNCTION, -1, "testcase value must be a function." );
-	lua_newtable( L );              //S: nme fnc tbl
-	lua_insert( L, -3 );            //S: tbl nme fnc
-	lua_setfield( L, -3, "f" );     //S: tbl nme
-	lua_setfield( L, -2, "name" );  //S: tbl
+	lua_newtable( L );                 //S: nme fnc tbl
+	lua_insert( L, -3 );               //S: tbl nme fnc
+	lua_setfield( L, -3, "function" ); //S: tbl nme
+	lua_setfield( L, -2, "name" );     //S: tbl
 
 	t_tst_cse_getFuncSource( L, 1 );
 
@@ -167,35 +159,25 @@ t_tst_cse_create( lua_State *L )
  * Check a value on the stack for being a Test.Case
  * \param   L        Lua state.
  * \param   int      position on the stack.
+ * \param   int      hardCheck; error out if not a Test.Case.
  * \lparam  table    T.Test.Case Lua table instance.
- * \lreturn table    T.Test.Case Lua table instance.
  * --------------------------------------------------------------------------*/
-void
-t_tst_cse_check( lua_State *L, int pos )
+int
+t_tst_cse_check( lua_State *L, int pos, int check )
 {
-	luaL_checktype( L, pos, LUA_TTABLE );
-   if (lua_getmetatable( L, pos ))              // does it have a metatable?
-	{
-		luaL_getmetatable( L, T_TST_CSE_TYPE );   // get correct metatable
-		if (! lua_rawequal( L, -1, -2 ))          // not the same?
-			t_push_error( L, "wrong argument, `"T_TST_CSE_TYPE"` expected" );
-		lua_pop( L, 2 );
-	}
-	else
-		t_push_error( L, "wrong argument, `"T_TST_CSE_TYPE"` expected" );
+	return t_checkTableType( L, pos, check, T_TST_CSE_TYPE );
 }
 
 
 /**--------------------------------------------------------------------------
  * Add diagnostic output information for Test.Case into a TAP line
- * luaL_prepbuffer can create userdata on the stack - this function
- * accounts for that by calling luaL_prepbuffer before everything else
  * Expects on stack:
  *        1. test case
  *        2. boolean(false) for failed test
  *        3. (userdata) possible by-product of luaL_Buffer
  * \param   L     Lua state.
  * \param  *lB    an already initialized Lua Buffer.
+ * \param   pos   position of T.Test.Case on stack (must be positive!).
  * \param   m     the name of the diagnostic field.
  * \lparam  table T.Test.Case Lua table instance.
  * --------------------------------------------------------------------------*/
@@ -207,13 +189,11 @@ t_tst_cse_addTapDetail( lua_State *L, luaL_Buffer *lB, int pos, const char *m )
 	{
 		lua_pushfstring( L, "\n%s : %s", m, lua_tostring( L, -1 ) );  //S: … val str
 		luaL_gsub( L, luaL_checkstring( L, -1 ), "\n", "\n    " );    //S: … val str str
-		//printf("x %s .. ", m);t_stackDump( L );
 		luaL_addvalue( lB );                                          //S: … val str
 		lua_pop( L, 2 );
 	}
 	else
 		lua_pop( L, 1 );
-	//printf("y %s .. ", m);t_stackDump( L );
 }
 
 
@@ -228,11 +208,14 @@ void
 t_tst_cse_addTapDiagnostic( lua_State *L, luaL_Buffer *lB, int pos )
 {
 	luaL_addstring( lB, "    ---" );
+	t_tst_cse_addTapDetail( L, lB, pos, "description" );
 	t_tst_cse_addTapDetail( L, lB, pos, "name" );
+	t_tst_cse_addTapDetail( L, lB, pos, "skip" );
+	t_tst_cse_addTapDetail( L, lB, pos, "todo" );
 	t_tst_cse_addTapDetail( L, lB, pos, "message" );
 	t_tst_cse_addTapDetail( L, lB, pos, "location" );
 	t_tst_cse_addTapDetail( L, lB, pos, "traceback" );
-	t_tst_cse_addTapDetail( L, lB, pos, "src" );
+	t_tst_cse_addTapDetail( L, lB, pos, "source" );
 	luaL_addstring( lB, "\n    ...\n" );
 }
 
@@ -247,8 +230,8 @@ void
 t_tst_cse_getDescription( lua_State *L, int pos )
 {
 	int concat = 0;
-	// print desc or name
-	lua_getfield( L, pos, "desc" );    //S: cse dsc
+	// print description or name
+	lua_getfield( L, pos, "description" );    //S: cse dsc
 	if( lua_isnil( L, -1 ))
 	{
 		lua_pop( L, 1 );
@@ -288,7 +271,7 @@ static int
 lt_tst_cse__tostring( lua_State *L )
 {
 	luaL_Buffer lB;
-	t_tst_cse_check( L, 1 );
+	t_tst_cse_check( L, 1, 1 );
 	luaL_buffinit( L, &lB );
 
 	t_tst_cse_getDescription( L, 1 );
@@ -296,6 +279,49 @@ lt_tst_cse__tostring( lua_State *L )
 	luaL_addchar( &lB, '\n' );
 	t_tst_cse_addTapDiagnostic( L, &lB, 1 );
 	luaL_pushresult( &lB );
+	return 1;
+}
+
+
+/**--------------------------------------------------------------------------
+ * Execution wrapper for T.Test.Case.
+ * Stack:
+ *          1 Test function table
+ *          2 Test Suite table
+ * \param   L      Lua state.
+ * \lparam  table  T.Test.Suite Lua table instance.
+ * \return  int    # of values pushed onto the stack.
+ * --------------------------------------------------------------------------*/
+static int
+t_tst_cse_execute( lua_State *L )
+{
+	int is_pass   = 0,
+	    is_todo   = 0,
+	    is_skip   = 0;
+
+	lua_pushcfunction( L, t_tst_cse_traceback );  // S: cse fnc ste tbk
+	lua_insert( L, 2 );                           // S: cse tbk fnc ste
+
+	if (lua_pcall( L, 1, 0, 2 ))
+	{
+		lua_pushnil( L );                         // S: tbk cse fnc ste err nil
+		while (lua_next( L, -2 ))                 // copy elements from err to Case
+			lua_setfield( L, 1, lua_tostring( L, -2 ) );
+		lua_pop( L, 2 );                          // pop the err tbl and tbk func
+	}
+	else
+	{
+		lua_pop( L, 1 );                          // pop the tbk function
+		is_pass = 1;
+	}
+	is_todo = t_tst_cse_hasField( L, "todo", 0 );
+	is_skip = t_tst_cse_hasField( L, "skip", 0 );
+	lua_pushboolean( L, is_pass || is_skip );    // S: cse pass
+	lua_setfield( L, 1, "pass" );
+	if (is_skip || (is_todo && ! is_pass) || (! is_todo && is_pass))
+		lua_pushboolean( L, 1 );                  // S: cse tru
+	else
+		lua_pushboolean( L, 0 );                  // S: cse fls
 	return 1;
 }
 
@@ -312,44 +338,39 @@ lt_tst_cse__tostring( lua_State *L )
 static int
 lt_tst_cse__call( lua_State *L )
 {
-	lua_pushcfunction( L, t_tst_cse_traceback ); // S: cse ste tbk
-	lua_insert( L, 2 );                          // S: cse tbk ste
-	lua_getfield( L, 1, "f" );                   // S: cse tbk ste fnc
-	lua_insert( L, 3 );                          // S: cse tbk fnc ste
+	lua_getfield( L, 1, "function" );             // S: cse ste fnc
+	lua_pushvalue( L, 1 );                        // S: cse ste fnc cse
+	lua_pushcclosure( L, &t_tst_cse_execute, 1 ); // S: cse ste fnc cls
+	lua_insert( L, 1 );                           // S: cls cse ste fnc
+	lua_insert( L, 3 );                           // S: cls cse fnc ste
 
-	if (lua_pcall( L, 1, 0, -3 ))
-	{
-		lua_pushnil( L );                         // S: cse fnc ste tbk err nil
-		while (lua_next( L, -2 ))                 // copy elements from err to Case
-			lua_setfield( L, 1, lua_tostring( L, -2 ) );
-		lua_pop( L, 2 );                          // pop the err tbl and tbk func
-		lua_pushboolean( L, 0 );                  // S: cse fls
-		lua_setfield( L, 1, "pass" );
-		lua_pushboolean( L, 0 );                  // S: cse fls
-	}
-	else
-	{
-		lua_pop( L, 1 );                          // pop the tbk function
-		lua_pushboolean( L, 1 );                  // S: cse tru
-		lua_setfield( L, 1, "pass" );
-		lua_pushboolean( L, 1 );                  // S: cse tru
-	}
+	lua_call( L, 3, 1 );
 	return 1;
 }
 
-/**--------------------------------------------------------------------------
- * Mark a Test.Case as skipped.
- * \param   L      Lua state.
- * \lparam  table  T.Test.Case Lua table instance.
- * \return  int    # of values pushed onto the stack.
- * --------------------------------------------------------------------------*/
-int
-lt_tst_cse_skip( lua_State *L )
-{
-	lua_pushboolean( L, 1 );                  // S: cse tru
-	lua_setfield( L, 1, "pass" );
 
-	return 0;
+/**--------------------------------------------------------------------------
+ * Is this T.Test.Case marked as "field"
+ * \param   L        Lua state.
+ * \param   fld      const char field name string.
+ * \param   leave    int/bool leave on stack if present/true.
+ * \lparam  table    T.Test.Case Lua table instance.
+ * \return  int/bool Is it marked as "field"
+ * --------------------------------------------------------------------------*/
+int t_tst_cse_hasField( lua_State *L, const char *fld, int leave )
+{
+	int retval = 0;
+	lua_getfield( L, -1, fld );
+	if (! lua_isnil(L, -1 ))
+		retval = (lua_isboolean( L, -1 )) ? lua_toboolean( L, -1 ) : 1;
+	//printf( "%d %d ", leave, retval );
+	//t_stackDump(L);
+	if (leave && retval)
+		return retval;
+	else
+		lua_pop( L, 1 );
+
+	return retval;
 }
 
 
@@ -395,6 +416,8 @@ luaopen_t_tst_cse( lua_State *L )
 	luaL_newmetatable( L, T_TST_CSE_TYPE );
 	luaL_setfuncs( L, t_tst_cse_m, 0 );
 	lua_setfield( L, -1, "__index" );
+	//lua_pushstring( L, T_TST_CSE_TYPE );
+	//lua_setfield( L, -2, "__name" );
 
 	// T.Test.Case class
 	luaL_newlib( L, t_tst_cse_cf );

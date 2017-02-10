@@ -85,11 +85,12 @@ t_fmtStackItem( lua_State *L, int idx, int no_tostring )
 void
 t_stackPrint( lua_State *L, int idx, int last, int no_tostring )
 {
+	idx = (idx < 0) ? lua_gettop( L ) + idx + 1 : idx;  // get absolute stack position
 	for ( ;idx <= last; idx++)
 	{
 		t_fmtStackItem( L, idx, no_tostring );
 		printf( "%s  ", lua_tostring( L, -1 ) ); // print serialized item and separator
-		lua_pop( L, 1 );                        // pop serialized item
+		lua_pop( L, 1 );                         // pop serialized item
 	}
 }
 
@@ -200,6 +201,41 @@ t_push_error( lua_State *L, const char *fmt, ... )
 }
 
 
+/**--------------------------------------------------------------------------
+ * Check a table on position pos of the stack for being of type "T_TYP_TYPE"
+ * \param   L     Lua state.
+ * \param   int   position on the stack.
+ * \param   int   hard check; error out if not a T_TYP_TYPE.
+ * \lparam  table T.* table to be tested.
+ * --------------------------------------------------------------------------*/
+int
+t_checkTableType( lua_State *L, int pos, int check, const char *type )
+{
+	int is_of_type = 0;
+	luaL_checktype( L, pos, LUA_TTABLE );
+	if (lua_getmetatable( L, pos ))              // does it have a metatable?
+	{
+		luaL_getmetatable( L, type );             // get correct metatable
+		if (! lua_rawequal( L, -1, -2 ))          // not the same?
+		{
+			if (check)
+				luaL_error( L, "wrong argument, `%s` expected", type );
+		}
+		else
+		{
+			is_of_type = 1;
+		}
+		lua_pop( L, 2 );
+	}
+	else
+	{
+		if (check)
+			luaL_error( L, "wrong argument, `%s` expected", type );
+	}
+	return is_of_type;
+}
+
+
 /** -------------------------------------------------------------------------
  * Extended searchpath with current path of file, the run require.
  * \param    L     Lua state.
@@ -241,18 +277,18 @@ lt_require( lua_State *L )
 
 
 /** -------------------------------------------------------------------------
- * Return extended type of a tav=ble/userdata.
+ * Return T_TYP_TYPE of a table/userdata or fallback to lua type.
  * \param   L      Lua state.
  * \lreturn string Name of type.
  *-------------------------------------------------------------------------*/
 static int
 lt_type( lua_State *L )
 {
-	int tt = luaL_getmetafield(L, 1, "__name");  /* try name */
+	int tt = luaL_getmetafield(L, 1, "__name");  // try name
 	lua_pushfstring(L, "%s", (tt == LUA_TSTRING)
 		? lua_tostring( L, -1 ) : luaL_typename( L, 1 ) );
 	if (tt != LUA_TNIL)
-		lua_remove(L, -2);  /* remove '__name' */
+		lua_remove(L, -2);  // remove '__name'
 	return 1;
 }
 

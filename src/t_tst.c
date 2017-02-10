@@ -53,24 +53,16 @@ lt_tst__Call( lua_State *L )
 
 
 /**--------------------------------------------------------------------------
- * Check a value on the stack for being a T.Test.Suite
+ * Check a value on the stack for being a T.Test.
  * \param   L        Lua state.
  * \param   int      position on the stack.
- * \lparam  table    T.Test.Suite Lua table instance.
+ * \param   int      hardCheck; error out if not a T.Test.
+ * \lparam  table    T.Test Lua table instance.
  * --------------------------------------------------------------------------*/
-void
-t_tst_check( lua_State *L, int pos )
+int
+t_tst_check( lua_State *L, int pos, int check )
 {
-	luaL_checktype( L, pos, LUA_TTABLE );
-	if (lua_getmetatable( L, pos ))        // does it have a metatable?
-	{
-		luaL_getmetatable( L, T_TST_TYPE ); // get correct metatable
-		if (! lua_rawequal( L, -1, -2 ))     // not the same?
-			t_push_error( L, "wrong argument, `"T_TST_TYPE"` expected" );
-		lua_pop( L, 2 );
-	}
-	else
-		t_push_error( L, "wrong argument, `"T_TST_TYPE"` expected" );
+	return t_checkTableType( L, pos, check, T_TST_TYPE );
 }
 
 
@@ -86,9 +78,9 @@ t_tst_envelope( lua_State *L, char *field )
 	lua_getfield( L, 1, field );
 	if (! lua_isnil( L, -1 ))
 	{
-		lua_pushvalue( L, 1 );        // S: ste cse setup ste
+		lua_pushvalue( L, 1 );        // S: ste cse fnc ste
 		if (lua_pcall( L, 1, 0, 0 ))
-			t_push_error( L, "Test %s failed %s", field, lua_tostring( L, -1 ) );
+			luaL_error( L, "Test %s failed %s", field, lua_tostring( L, -1 ) );
 	}
 	else
 		lua_pop( L, 1 );
@@ -110,48 +102,50 @@ lt_tst__call( lua_State *L )
 	                pass = 0,
 	                skip = 0,    // won't be run
 	                todo = 0;    // will be run, expected to fail
+	int             is_pass, is_todo, is_skip;
 	struct timeval  tm;
 
-	t_tst_check( L, 1 );
+	t_tst_check( L, 1, 1 );
 	t_tim_now( &tm, 0 );
 	all = lua_rawlen( L, 1 );
 
 	for ( i=0; i<all; i++ )
 	{
 		lua_rawgeti( L, 1, i+1 );        //S: ste cse
-		lua_getfield( L, 2, "name" );
+		lua_pushvalue( L, -1 );          //S: ste cse cse
+		lua_getfield( L, 2, "name" );    //S: ste cse cse nme
 		printf( "%5zu of %zu --- `%s` -> ", i+1, all, lua_tostring( L, -1 ) );
-		lua_getfield( L, 2, "todo" );
-		if (! lua_isnil( L, -1 ))
-			todo++;
-		lua_pop( L, 2 );                 // pop name and todo
+		lua_pop( L, 1 );                 // pop name and todo
 
-		lua_getfield( L, 2, "skip" );    //S: ste cse skp
-		if (! lua_isnil( L, -1 ))
+		t_tst_envelope( L, "setUp" );
+
+		// execute Test.Case
+		luaL_getmetafield( L, 2, "__call" );
+		lua_insert( L, -2 );             //S: ste cse _call cse
+		lua_pushvalue( L, 1 );           //S: ste cse _call cse ste
+		lua_call( L, 2, 1 );             //S: ste cse t/f
+		lua_pop( L, 1 );                 //S: ste cse
+		is_pass = (t_tst_cse_hasField( L, "pass", 0 )) ? 1 : 0;
+		is_skip = (t_tst_cse_hasField( L, "skip", 1 )) ? 1 : 0;
+		is_todo = (t_tst_cse_hasField( L, "todo", 1 )) ? 1 : 0;
+		printf( "%s", (is_skip || is_pass) ? "ok" : "fail" );
+		if (is_skip)
 		{
+			printf( " # SKIP: %s", lua_tostring( L, -1 ) );
 			skip++;
-			printf( "SKIPPED: %s\n", lua_tostring( L, -1 ) );
-			lua_pop( L, 1 );              // pop skip
-			lua_pushcfunction( L, lt_tst_cse_skip );
-			lua_insert( L, 2 );           //S: ste fnc cse
-			lua_call( L, 1, 0 );
+			lua_pop( L, 1 );
 		}
-		else
+		if (is_todo)
 		{
-			lua_pop( L, 1 );              // pop skip
-			t_tst_envelope( L, "setUp" );
-
-			// execute Test.Case
-			luaL_getmetafield( L, 2, "__call" );
-			lua_insert( L, -2 );          //S: ste _call cse
-			lua_pushvalue( L, 1 );        //S: ste _call cse ste
-			lua_call( L, 2, 1 );
-			pass = ( lua_toboolean( L, -1 )) ? pass+1 : pass;
-			printf( "%s\n", (lua_toboolean( L, -1 )) ? "ok" : "fail" );
-			lua_pop( L, 1 );              //S: ste cse
-
-			t_tst_envelope( L, "tearDown" );
+			printf( " # TODO: %s", lua_tostring( L, -1 ) );
+			todo++;
+			lua_pop( L, 1 );
 		}
+		printf( "\n" );
+		pass += (is_pass) ? 1 : 0;
+		lua_pop( L, 1 );                 //S: ste
+
+		t_tst_envelope( L, "tearDown" );
 	}
 
 	t_tim_since( &tm );
@@ -166,8 +160,8 @@ lt_tst__call( lua_State *L )
 	   , i - skip
 	   , skip
 	   , todo
-	   , i-pass-skip
-	   , (i==pass+skip+todo)? "OK":"FAIL" );
+	   , i-pass
+	   , (i==pass+todo)? "OK":"FAIL" );
 
 	lua_pushboolean( L, (i==pass+skip+todo) ? 1 : 0 );
 
@@ -176,11 +170,11 @@ lt_tst__call( lua_State *L )
 
 
 /**--------------------------------------------------------------------------
- * Gets called for assignement of variables to test instance
+ * Gets called for assignement of variables to test instance.
  * This covers three jobs:
+ *  - only allow strings as keys
  *  - make sure no one adds numeric elements (internal test order)
- *  - no overwrite or create of _* functions
- *  - append ^test_* named methods to internal test order
+ *  - append ^test* named methods to internal test order
  * \param   L      Lua state.
  * \lparam  table  T.Test Lua table instance.
  * \lparam  key    string
@@ -191,10 +185,9 @@ static int
 lt_tst__newindex( lua_State *L )
 {
 	const char *name;
-	t_tst_check( L, 1 );
-	name = luaL_checkstring( L, 2 );                   //S: ste nme fnc
+	t_tst_check( L, 1, 1 );
+	name = luaL_checkstring( L, 2 );      //S: ste nme fnc
 	luaL_argcheck( L, LUA_TNUMBER != lua_type( L, 1 ), 1, "Can't overwrite numeric indexes" );
-	//luaL_argcheck( L, '_' != *name, 1, "Can't overwrite or create internal test methods" );
 
 	// insert a testcase
 	if (0==strncasecmp( name, "test", 4 ))
@@ -205,14 +198,14 @@ lt_tst__newindex( lua_State *L )
 			lua_pushcfunction( L, t_tst_cse_create );
 			lua_pushvalue( L, 2 );
 			lua_pushvalue( L, 3 );          //S: ste nme fnc create name fnc
-			lua_remove( L, -4 );
-			lua_call( L, 2, 1 );
+			lua_remove( L, -4 );            //S: ste nme create name fnc
+			lua_call( L, 2, 1 );            //S: ste nme cse
 			lua_pushvalue( L, -1 );         //S: ste nme cse cse
-			lua_rawseti( L, 1, lua_rawlen( L, 1 ) + 1 );
-			lua_rawset( L, 1 );
+			lua_rawseti( L, 1,
+				lua_rawlen( L, 1 ) + 1 );    //S: ste nme cse
 		}
 		else
-			return t_push_error( L, "test* named elements must be methods" );
+			return luaL_error( L, "value for test* named element must be a function" );
 	}
 	// insert as test.name
 	lua_rawset( L, 1 );
@@ -233,7 +226,7 @@ lt_tst__tostring( lua_State *L )
 	luaL_Buffer lB;
 	int         i, pass, todo, t_len;
 
-	t_tst_check( L, 1 );
+	t_tst_check( L, 1, 1 );
 	t_len  = luaL_len( L, 1 );
 	luaL_buffinit( L, &lB );
 	lua_pushfstring( L, "1..%d\n", t_len );
@@ -266,6 +259,44 @@ lt_tst__tostring( lua_State *L )
 	}
 	luaL_pushresult( &lB );
 	return 1;
+}
+
+
+/** -------------------------------------------------------------------------
+ * Search all upvalues on all stack levels for a Test.Case.
+ * \param    L        Lua state.
+ * \lreturn  table    T.Test.Case Lua table instance.
+ * \return   int/bool found or not.
+ *-------------------------------------------------------------------------*/
+static int
+t_tst_findCaseOnStack( lua_State *L )
+{
+	lua_Debug   ar;
+	int         i   = 0;
+	int         nu  = 0;
+	const char *nme;
+
+	while ( lua_getstack( L, i++, &ar ))
+	{
+		lua_getinfo( L, "fu", &ar );       // get function onto stack
+		//printf("\n\n\nLevel %d[%d] -> ", i, ar.nups);   t_stackDump(L);
+		nu  = 0;
+		while (nu++ < ar.nups)
+		{
+			nme = lua_getupvalue( L, -1, nu );
+			//printf("   UPV %d - %s  \t-> ", nu, nme); t_stackDump(L);
+			if (t_tst_cse_check( L, -1, 0 ))
+			{
+				//printf("  FOUND THE TEST CASE  \n");
+				lua_remove( L, -2 );     // remove current function
+				return 1;
+			}
+			lua_pop( L, 1 );            // remove upvalue
+		}
+		//lua_remove( L, -1 - ar.nups ); // remove function that lua_getinfo put on stack
+		lua_pop( L, 1 );               // remove function that lua_getinfo put on stack
+	}
+	return 0;
 }
 
 
@@ -320,6 +351,98 @@ lt_tst_IsReallyEqual( lua_State *L )
 	return 1;
 }
 
+/** -------------------------------------------------------------------------
+ * Walk the stacktrace, find upvalues
+ * \param    L     Lua state.
+ *-------------------------------------------------------------------------*/
+static int
+lt_tst_Inter( lua_State *L )
+{
+	lua_Debug   ar;
+	int         i   = 0;
+	int         nu  = 0;
+	const char *nme;
+
+	while ( lua_getstack( L, i++, &ar ))
+	{
+		lua_getinfo( L, "fu", &ar );       // get function onto stack
+		printf("\n\n\nLevel %d[%d] -> ", i, ar.nups);   t_stackDump(L);
+		nu  = 0;
+		while (nu++ < ar.nups)
+		{
+			nme = lua_getupvalue( L, -1, nu );
+			printf("   UPV %d - %s  \t-> ", nu, nme); t_stackDump(L);
+			if (t_tst_cse_check( L, -1, 0 ))
+			{
+				printf("  FOUND THE TEST CASE  \n");
+				lua_remove( L, -2 );     // remove current function
+				return 1;
+			}
+			lua_pop( L, 1 );            // remove upvalue
+		}
+		//lua_remove( L, -1 - ar.nups ); // remove function that lua_getinfo put on stack
+		lua_pop( L, 1 );               // remove function that lua_getinfo put on stack
+	}
+	return 0;
+}
+
+
+/** -------------------------------------------------------------------------
+ * Mark a Test.Case as Todo.
+ * \param    L     Lua state.
+ * \lreturn  table imported library.
+ *-------------------------------------------------------------------------*/
+static int
+lt_tst_Todo( lua_State *L )
+{
+	luaL_checkstring( L, 1 );
+	if (t_tst_findCaseOnStack( L ))
+	{
+		lua_insert( L, 1 );
+		lua_setfield( L, 1, "todo" );
+	}
+	return 0;
+}
+
+
+/** -------------------------------------------------------------------------
+ * Set the description for a Test.Case
+ * \param    L     Lua state.
+ * \lreturn  table imported library.
+ *-------------------------------------------------------------------------*/
+static int
+lt_tst_Describe( lua_State *L )
+{
+	luaL_checkstring( L, 1 );
+	if (t_tst_findCaseOnStack( L ))
+	{
+		lua_insert( L, 1 );
+		lua_setfield( L, 1, "desc" );
+	}
+	return 0;
+}
+
+
+
+/** -------------------------------------------------------------------------
+ * Actively skip a Test.Case.
+ * Function does get executed until Test.skip('Reason') get's called.  Does
+ * allow conditional skipping.  A skip is to throw a controlled luaL_error which
+ * gets caught by t_tst_cse_traceback.
+ * \param    L     Lua state.
+ * \lreturn  table imported library.
+ *-------------------------------------------------------------------------*/
+static int
+lt_tst_Skip( lua_State *L )
+{
+	luaL_checkstring( L, 1 );
+	lua_pushstring( L, "T_TST_SKIP_INDICATOR:" );
+	lua_insert( L, -2 );
+	lua_concat( L, 2 );
+	luaL_error( L, lua_tostring( L, -1 ) );
+	return 0;
+}
+
 
 /**--------------------------------------------------------------------------
  * Class metamethods library definition
@@ -335,6 +458,10 @@ static const struct luaL_Reg t_tst_fm [] = {
  * --------------------------------------------------------------------------*/
 static const struct luaL_Reg t_tst_cf [] = {
 	  { "equal"              , lt_tst_IsReallyEqual }
+	, { "todo"               , lt_tst_Todo }
+	, { "skip"               , lt_tst_Skip }
+	, { "describe"           , lt_tst_Describe }
+	, { "inter"              , lt_tst_Inter }
 	, { NULL,  NULL }
 };
 

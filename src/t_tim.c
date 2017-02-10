@@ -146,7 +146,7 @@ struct timeval
 
 
 /**--------------------------------------------------------------------------
- * Check a value on the stack for being a struct sockaddr_in
+ * Check a value on the stack for being a struct timeval.
  * \param   L      Lua state.
  * \param   int    Position on the stack
  * \param   int    check(boolean): if true error out on fail
