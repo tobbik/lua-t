@@ -75,38 +75,32 @@ t_tst_cse_traceback( lua_State *L )
  * \lparam  table    T.Test.Case Lua table instance.
  * --------------------------------------------------------------------------*/
 static void
-t_tst_cse_getFuncSource( lua_State *L, int pos )
+t_tst_cse_getFuncSource( lua_State *L, int pos, luaL_Buffer *lB )
 {
 	lua_Debug  ar;
 	FILE      *f;
 	int        r = 0; ///< current line count
 	char      *p;
+	size_t     w;
 
-	luaL_Buffer lB;
-	luaL_buffinit( L, &lB );
-	lua_pushstring( L, ">S" );
 	lua_getfield( L, pos, "function" );
-	lua_State *L1 = L;
-	lua_xmove( L, L1, 1 );
-	lua_getinfo( L1, ">S", &ar );
-	lua_pop( L, 1 ); // pop the ">S"
-	lua_pushinteger( L, ar.linedefined );
-	lua_setfield( L, pos, "line" );
+	lua_getinfo( L, ">S", &ar );
 
+	p = luaL_prepbuffer( lB );
+	w = sprintf( p, "\n    source:" );
+	luaL_addsize( lB, w );
 	f = fopen( ar.short_src, "r" );
 	while (r < ar.lastlinedefined)
 	{
-		p = luaL_prepbuffer( &lB );
-		sprintf( p, "\n    %4d: ", r+1 );
-		if (fgets( p+11, LUAL_BUFFERSIZE, f ) == NULL)
+		p = luaL_prepbuffer( lB );
+		w = sprintf( p, "\n        %d: ", r+1 );
+		if (NULL == fgets( p+w, LUAL_BUFFERSIZE-w, f ))
 			break;  // eof?
 		//TODO: reasonable line end check
 		if (++r < ar.linedefined)
 			continue;
-		luaL_addsize( &lB, strlen( p )-1 );
+		luaL_addsize( lB, strlen( p )-1 );
 	}
-	luaL_pushresult( &lB );
-	lua_setfield( L, pos, "source" );
 
 	fclose (f);
 }
@@ -147,8 +141,6 @@ t_tst_cse_create( lua_State *L )
 	lua_setfield( L, -3, "function" ); //S: tbl nme
 	lua_setfield( L, -2, "name" );     //S: tbl
 
-	t_tst_cse_getFuncSource( L, 1 );
-
 	luaL_getmetatable( L, T_TST_CSE_TYPE );
 	lua_setmetatable( L, -2 );
 	return 1;
@@ -187,7 +179,7 @@ t_tst_cse_addTapDetail( lua_State *L, luaL_Buffer *lB, int pos, const char *m )
 	lua_getfield( L, pos, m );
 	if (! lua_isnil( L, -1 ))
 	{
-		lua_pushfstring( L, "\n%s : %s", m, lua_tostring( L, -1 ) );  //S: … val str
+		lua_pushfstring( L, "\n%s: %s", m, lua_tostring( L, -1 ) );  //S: … val str
 		luaL_gsub( L, luaL_checkstring( L, -1 ), "\n", "\n    " );    //S: … val str str
 		luaL_addvalue( lB );                                          //S: … val str
 		lua_pop( L, 2 );
@@ -215,7 +207,9 @@ t_tst_cse_addTapDiagnostic( lua_State *L, luaL_Buffer *lB, int pos )
 	t_tst_cse_addTapDetail( L, lB, pos, "message" );
 	t_tst_cse_addTapDetail( L, lB, pos, "location" );
 	t_tst_cse_addTapDetail( L, lB, pos, "traceback" );
-	t_tst_cse_addTapDetail( L, lB, pos, "source" );
+	//t_tst_cse_addTapDetail( L, lB, pos, "source" );
+	t_tst_cse_getFuncSource( L, pos, lB );
+
 	luaL_addstring( lB, "\n    ...\n" );
 }
 

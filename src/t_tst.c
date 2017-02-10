@@ -326,41 +326,6 @@ lt_tst_IsReallyEqual( lua_State *L )
 	return 1;
 }
 
-/** -------------------------------------------------------------------------
- * Walk the stacktrace, find upvalues
- * \param    L     Lua state.
- *-------------------------------------------------------------------------*/
-static int
-lt_tst_Inter( lua_State *L )
-{
-	lua_Debug   ar;
-	int         i   = 0;
-	int         nu  = 0;
-	const char *nme;
-
-	while ( lua_getstack( L, i++, &ar ))
-	{
-		lua_getinfo( L, "fu", &ar );       // get function onto stack
-		printf("\n\n\nLevel %d[%d] -> ", i, ar.nups);   t_stackDump(L);
-		nu  = 0;
-		while (nu++ < ar.nups)
-		{
-			nme = lua_getupvalue( L, -1, nu );
-			printf("   UPV %d - %s  \t-> ", nu, nme); t_stackDump(L);
-			if (t_tst_cse_check( L, -1, 0 ))
-			{
-				printf("  FOUND THE TEST CASE  \n");
-				lua_remove( L, -2 );     // remove current function
-				return 1;
-			}
-			lua_pop( L, 1 );            // remove upvalue
-		}
-		//lua_remove( L, -1 - ar.nups ); // remove function that lua_getinfo put on stack
-		lua_pop( L, 1 );               // remove function that lua_getinfo put on stack
-	}
-	return 0;
-}
-
 
 /** -------------------------------------------------------------------------
  * Mark a Test.Case as Todo.
@@ -392,7 +357,7 @@ lt_tst_Describe( lua_State *L )
 	if (t_tst_findCaseOnStack( L ))
 	{
 		lua_insert( L, 1 );
-		lua_setfield( L, 1, "desc" );
+		lua_setfield( L, 1, "description" );
 	}
 	return 0;
 }
@@ -436,7 +401,6 @@ static const struct luaL_Reg t_tst_cf [] = {
 	, { "todo"               , lt_tst_Todo }
 	, { "skip"               , lt_tst_Skip }
 	, { "describe"           , lt_tst_Describe }
-	, { "inter"              , lt_tst_Inter }
 	, { NULL,  NULL }
 };
 
