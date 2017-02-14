@@ -14,9 +14,9 @@ b['seven'] = true
 print( 'Set A:', p(a) )
 print( 'Set B:', p(b) )
 
-if     a.two     then print( 'Set a contains "two"' ) end
-if     a.six     then print( 'Set a contains "six"' ) end
-if not a.six then print( 'Set a does not contain "six"' ) end
+if     a.two   then print( 'Set a contains "two"' ) end
+if     a.six   then print( 'Set a contains "six"' ) end
+if not a.six   then print( 'Set a does not contain "six"' ) end
 print( 'Size of Set a: ' .. #a .. '\nSize of Set B: ' .. #b )
 
 print( 'Union:', p( a|b ) )

@@ -260,7 +260,7 @@ t_set_symdifference( lua_State *L )
 static int
 lt_set_GetReference( lua_State *L )
 {
-	struct t_set *set = t_set_check_ud( L, -1, 1 );
+	struct t_set *set = t_set_check_ud( L, 1, 1 );
 
 	lua_rawgeti( L, LUA_REGISTRYINDEX, set->tR ); //S: set tbl
 	return 1;
@@ -278,7 +278,7 @@ lt_set_GetReference( lua_State *L )
 static int
 lt_set_GetTable( lua_State *L )
 {
-	struct t_set *set = t_set_check_ud( L, -1, 1 );
+	struct t_set *set = t_set_check_ud( L, 1, 1 );
 	size_t runner     = 1;
 
 	lua_createtable( L, set->len, 0 );
@@ -296,6 +296,39 @@ lt_set_GetTable( lua_State *L )
 
 
 /**--------------------------------------------------------------------------
+ *  Return string that formats members.
+ * \param   L      Lua state.
+ * \lparam  ud     T.Set userdata instance.
+ * \lreturn table  Numerically indexed table with all elements from the set in
+ *                 arbitrar order.
+ * \return  int    # of values pushed onto the stack.
+ * --------------------------------------------------------------------------*/
+static int
+lt_set_ToString( lua_State *L )
+{
+	struct t_set *set = t_set_check_ud( L, 1, 1 );
+
+	lua_rawgeti( L, LUA_REGISTRYINDEX, set->tR );
+	lua_pushstring( L, "{ " );
+	lua_pushnil( L );              //S: set tbl "{" nil
+	while (lua_next( L, 2 ))       //S: set tbl "{" elm tru
+	{
+		lua_pop( L, 1 );            //S: set tbl "{" elm
+		t_fmtStackItem( L, -1, 1 ); //S: set tbl "{" elm "e"
+		lua_insert( L, -2 );
+		lua_pushstring( L, ", " );
+		lua_insert( L, -2 );        //S: set tbl "{" "e" "," elm
+	}
+	if (set->len > 1 )
+		lua_pop( L, 1 );            // pop trailing comma
+	lua_pushstring( L, " }" );
+	lua_remove( L, 2 );            // remove referenced table
+	lua_concat( L, lua_gettop( L )-1 );// all elements - T.Set instance
+	return 1;
+}
+
+
+/**--------------------------------------------------------------------------
  * Construct a T.Set and return it.
  * \param   L     Lua state.
  * \lparam  CLASS table T.Set.
@@ -304,8 +337,8 @@ lt_set_GetTable( lua_State *L )
  * --------------------------------------------------------------------------*/
 static int lt_set__Call( lua_State *L )
 {
-	struct t_set                          *org_set = t_set_check_ud( L, -1, 0 );
-	struct t_set __attribute__ ((unused)) *set;
+	struct t_set *org_set = t_set_check_ud( L, -1, 0 );
+	struct t_set *set;
 
 	if (NULL != org_set)
 	{
@@ -398,8 +431,8 @@ lt_set__index( lua_State *L )
 	struct t_set *set = t_set_check_ud( L, -2, 1 );
 
 	lua_rawgeti( L, LUA_REGISTRYINDEX, set->tR );
-	lua_replace( L, -3 );          // S: tbl,key
-	lua_rawget( L, -2 );           // S: tbl,val/key?
+	lua_replace( L, -3 );          // S: tbl key
+	lua_rawget( L, -2 );           // S: tbl k/v?
 	if (lua_isnil( L, -1 ))
 		lua_pushboolean( L, 0 );
 	else
@@ -550,7 +583,7 @@ lt_set__sub( lua_State *L )
 
 
 /**--------------------------------------------------------------------------
- * Creates the Symmetric Difference of two sets.
+ * Creates the Symetric Difference of two sets.
  * \param   L    Lua state.
  * \lparam  ud   T.Set userdata instance sA.
  * \lparam  ud   T.Set userdata instance sB.
@@ -596,7 +629,7 @@ lt_set__eq( lua_State *L )
 
 
 /**--------------------------------------------------------------------------
- * Tests if two T.Set are disjoint.  Re- or abusing modulo operator.
+ * Tests if two T.Set are disjoint.  Re/abusing modulo operator.
  * \param   L       Lua state.
  * \lparam  ud      T.Set userdata instance sA.
  * \lparam  ud      T.Set userdata instance sB.
@@ -632,6 +665,7 @@ lt_set__le( lua_State *L )
 	return 1;
 }
 
+
 /**--------------------------------------------------------------------------
  * Compare two T.Set for being a subset and NOT equal.
  * \param   L       Lua state.
@@ -648,7 +682,7 @@ lt_set__lt( lua_State *L )
 	struct t_set *sB = t_set_check_ud( L, -1, 1 );
 
 	lua_pushboolean( L,
-		sA->len != sB->len && t_set_contains( L, 0, sA, sB )
+		sA->len < sB->len && t_set_contains( L, 0, sA, sB )
 	);
 	return 1;
 }
@@ -719,6 +753,7 @@ static const struct luaL_Reg t_set_fm [] = {
 static const struct luaL_Reg t_set_cf [] = {
 	  { "getReference" , lt_set_GetReference }
 	, { "getTable"     , lt_set_GetTable }
+	, { "toString"     , lt_set_ToString }
 	, { NULL           , NULL }
 };
 

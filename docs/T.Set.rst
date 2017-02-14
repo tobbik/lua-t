@@ -13,7 +13,7 @@ metamethods and hence can be accessed with normal operators ( | , -, etc.)
 
 Common Pitfalls:
 ----------------
-T.Set has no instance members becuase the access to the elements is
+T.Set has no instance members because the access to the elements is
 controlled via Lua table syntax.  As such elements are added and removed the
 way the would be added and removed to tables: ``s.element = true`` adds
 ``element`` to the set.  Likewise, ``s.element = nil`` removes ``element``
