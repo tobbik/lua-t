@@ -209,22 +209,23 @@ lt_tst__tostring( lua_State *L )
 	for (i=0; i<t_len; i++)
 	{
 		lua_rawgeti( L, 1, i+1 );
+		lua_insert( L, 2 );   // make sure the test case is at stackpos 2
 		// passed: ok/not ok/not run
 		lua_getfield( L, 2, "pass" );
-		lua_getfield( L, 2, "todo" );
-		if (lua_isnil( L, 3 ))
+		lua_getfield( L, 2, "todo" );  //S: tst cse pss tdo
+		if (lua_isnil( L, -2 ))
 		{
+			lua_pop( L, 1 );             // pop pass nil
 			luaL_addstring( &lB, "not run\n" );
-			lua_pop( L, 1 );             // pop nil
 		}
 		else
 		{
-			pass = lua_toboolean( L, 3 );
-			todo = ! lua_isnil( L, 4 );
-			lua_pop( L, 2 );             // pop pass boolena and todo msg
+			pass = lua_toboolean( L, -2 );
+			todo = ! lua_isnil( L, -1 );
+			lua_pop( L, 2 );             // pop pass boolean and todo msg
 			lua_pushfstring( L, "%s %d - ", (pass) ? "ok":"not ok", i+1 );
-			luaL_addvalue( &lB );
 			t_tst_cse_getDescription( L, 2 );
+			lua_concat( L, 2 );
 			luaL_addvalue( &lB );
 			luaL_addchar( &lB, '\n' );
 			if (! pass && ! todo)

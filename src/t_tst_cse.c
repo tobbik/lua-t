@@ -202,12 +202,12 @@ t_tst_cse_addTapDiagnostic( lua_State *L, luaL_Buffer *lB, int pos )
 	luaL_addstring( lB, "    ---" );
 	t_tst_cse_addTapDetail( L, lB, pos, "description" );
 	t_tst_cse_addTapDetail( L, lB, pos, "name" );
+	t_tst_cse_addTapDetail( L, lB, pos, "pass" );
 	t_tst_cse_addTapDetail( L, lB, pos, "skip" );
 	t_tst_cse_addTapDetail( L, lB, pos, "todo" );
 	t_tst_cse_addTapDetail( L, lB, pos, "message" );
 	t_tst_cse_addTapDetail( L, lB, pos, "location" );
 	t_tst_cse_addTapDetail( L, lB, pos, "traceback" );
-	//t_tst_cse_addTapDetail( L, lB, pos, "source" );
 	t_tst_cse_getFuncSource( L, pos, lB );
 
 	luaL_addstring( lB, "\n    ...\n" );
@@ -217,6 +217,7 @@ t_tst_cse_addTapDiagnostic( lua_State *L, luaL_Buffer *lB, int pos )
 /**--------------------------------------------------------------------------
  * Push Test.Case name information on stack
  * \param    L      Lua state.
+ * \param    pos    int position of Test.Case on Stack.
  * \lparam   table  T.Test.Case Lua table instance.
  * \lresult  string T.Test.Case description.
  * --------------------------------------------------------------------------*/
