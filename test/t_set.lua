@@ -57,7 +57,6 @@ local   tests = {
 
 	test_ConstructEmptySet = function( self )
 		Test.describe( "Construct the Empty Set" )
-		Test.todo( "Fix empty set Constructor" )
 		local eSet = Set()
 		assert( #eSet == 0, "Length must be zero" )
 		for i,v in pairs( eSet ) do
@@ -72,6 +71,7 @@ local   tests = {
 		for i,v in pairs( eSet ) do
 			assert( false, "No iteration over empty Set" )
 		end
+		assert( eSet == Set(), "Set from empty table must be equal Emmpty set" )
 	end,
 
 	test_ConstructorFromArray = function( self )
@@ -319,7 +319,6 @@ local   tests = {
 
 	test_IntersectionDisjunct = function( self )
 		Test.describe( "The Intersection of 2 disjunct sets is the empty set" )
-		Test.todo( "Shall be fixed when EmptySet Constructor works" )
 		local iSet = self.setA & self.setB
 
 		assert( Set( ) == iSet, "Set and Intersection shall be equal" )
@@ -390,7 +389,6 @@ local   tests = {
 
 	test_ComplementEqual = function( self )
 		Test.describe( "The Complement of 2 equal sets shall be empty" )
-		Test.todo( "Shall be fixed when EmptySet Constructor works" )
 		local aSet = Set( self.setA )
 		local cSet = self.setA - aSet
 		--print( #cSet, Set.toString( cSet ) )
@@ -421,7 +419,6 @@ local   tests = {
 
 	test_SymmetricDifferenceEqual = function( self )
 		Test.describe( "The Symmetric Difference of 2 equal sets shall be empty" )
-		Test.todo( "Shall be fixed when EmptySet Constructor works" )
 		local aSet = Set( self.setA )
 		local dSet = self.setA ~ aSet
 

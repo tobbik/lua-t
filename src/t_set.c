@@ -340,6 +340,7 @@ static int lt_set__Call( lua_State *L )
 	struct t_set *org_set = t_set_check_ud( L, -1, 0 );
 	struct t_set *set;
 
+	lua_remove( L, 1 );         // Remove T.Set Class table
 	if (NULL != org_set)
 	{
 		lua_rawgeti( L, LUA_REGISTRYINDEX, org_set->tR ); //S: set tbl
