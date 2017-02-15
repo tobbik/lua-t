@@ -124,19 +124,13 @@ local   tests = {
 
 	test_ConstructorRemovesDuplicates = function( self )
 		Test.describe( "Constructing Set removes duplicates " )
-		Test.todo( "Fix Constructor to remove duplicates" )
 		for i=1,self.len do
 			self.aryB[ self.len+i ] = self.aryB[ i ]
 		end
-		--print()
-		--for i,v in ipairs(self.aryB) do
-		--	print(i,v)
-		--end
-		--print( self.len, #self.aryB )
 		assert( #self.aryB == 2*self.len, "New values must be double size of original array" )
 		local lSet = Set( self.aryB )
-		--print( self.len, #lSet )
 		assert( #lSet == self.len, "New Set must be size of original array" )
+		assert( lSet == self.setB, "New Set must be equal to setB" )
 	end,
 
 	-- -----------------------------------------------------------------------

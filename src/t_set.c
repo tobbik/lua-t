@@ -18,37 +18,40 @@
  * Expects on the stack Table, Element, Value.  If value is nil, the element
  * will be removed from the table.
  * \param   L            Lua state.
- * \param   struct t_set set pointer.
+ * \param   pos          int position of table on stack.
  * \lparam  table        Table.
  * \lparam  value        element for set to add.
  * \lparam  value        value if nil, delete element from table.
- * \return  int/bool     0 if element existed / 1 if element was added.
+ * \return  int          0 if existed / 1 if added / -1 if deleted.
  * --------------------------------------------------------------------------*/
 static int
-t_set_setElement( lua_State *L, struct t_set *set )
+t_set_setElement( lua_State *L, int pos )
 {
-	int existed      = 0;
-	int remove       = (lua_isnil( L, -1 )) ? 1 : 0;
-	luaL_checktype( L, -3, LUA_TTABLE );
+	int existed = 0;
+	int remove  = (lua_isnil( L, -1 )) ? 1 : 0;
+
+	pos         = (pos < 0) ? lua_gettop( L ) + pos + 1 : pos;  // get absolute stack position
+	luaL_checktype( L, pos, LUA_TTABLE );
 
 	lua_pushvalue( L, -2 );                  //S: tbl elm val/nil elm
-	lua_rawget( L, -4 );                     //S: tbl elm val/nil true/nil?
+	lua_rawget( L, pos );                    //S: tbl elm val/nil true/nil?
 	existed  = (lua_isnil( L, -1 )) ? 0 : 1;
 	lua_pop( L, 2 );                         // pop new val and existing val
 
-	if (!existed && !remove)
+	if (! existed && ! remove)
 	{
-		(set->len)++;
 		lua_pushboolean( L, 1 );              //S: tbl elm true
-		lua_rawset( L, -3 );
+		lua_rawset( L, pos );
+		return 1;
 	}
-	if ( existed &&  remove)
+	if (existed && remove)
 	{
-		(set->len)--;
 		lua_pushnil( L );                     //S: tbl elm nil
-		lua_rawset( L, -3 );
+		lua_rawset( L, pos );
+		return -1;
 	}
-	return existed;
+	lua_pop( L, 1 );
+	return 0;
 }
 
 
@@ -344,11 +347,11 @@ static int lt_set__Call( lua_State *L )
 	if (NULL != org_set)
 	{
 		lua_rawgeti( L, LUA_REGISTRYINDEX, org_set->tR ); //S: set tbl
-		set = t_set_create_ud( L, -1, -1 );
-		lua_remove( L, -2 );
+		lua_replace( L, -2 );                             //S: tbl
+		set = t_set_create_ud( L, 1, -1 );
 	}
-	else if (lua_istable( L, -1 ))
-		set = t_set_create_ud( L, -1, 1 );
+	else if (lua_istable( L, 1 ))
+		set = t_set_create_ud( L, 1, 1 );
 	else
 		set = t_set_create_ud( L, 0, 0 );
 
@@ -378,17 +381,17 @@ struct t_set
 	if (mode)                         // populate if desired
 	{
 		lua_pushnil( L );              //S: tbl set tbl nil
-		while (lua_next( L, pos ))
+		while (lua_next( L, pos ))     //S: tbl set tbl key val
 		{
-			if (mode < 0)
+			lua_pushvalue( L, -2 );     // preserve key for lua_next()
+			lua_insert( L, -2 );        //S: tbl set tbl key key val
+			if (mode < 0)               // use keys as elements
+				cnt += t_set_setElement( L, -4 );
+			else                        // use values as elements
 			{
-				lua_pushvalue( L, -2 );
-				lua_insert( L, -2 );     //S: tbl set tbl key key tru
+				lua_insert( L, -2 );     //S: tbl set tbl key val key
+				cnt += t_set_setElement( L, -4 );
 			}
-			else
-				lua_pushboolean( L, 1 ); //S: tbl set tbl key val tru
-			lua_rawset( L, -4 );
-			cnt++;
 		}
 	}
 	set->tR  = luaL_ref( L, LUA_REGISTRYINDEX );
@@ -459,7 +462,7 @@ lt_set__newindex( lua_State *L )
 
 	lua_rawgeti( L, LUA_REGISTRYINDEX, set->tR ); //S: set elm val tbl
 	lua_replace( L, -4 );                         //S: tbl elm val
-	t_set_setElement( L, set );
+	set->len += t_set_setElement( L, 1 );
 	return 0;
 }
 
