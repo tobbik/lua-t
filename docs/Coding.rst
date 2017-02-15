@@ -6,7 +6,7 @@ Coding Standards and Convention
 Code organization
 =================
 
-As mentioned in the README.rst, lua-t is organized by a rigid naming and
+As mentioned in the Origin.rst, lua-t is organized by a rigid naming and
 structure convention which allowed me to keep control over the code base
 when it was under heavy development load.  Understanding and following these
 conventions allows to read the code base faster and be more productive in

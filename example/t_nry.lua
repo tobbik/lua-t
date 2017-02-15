@@ -22,3 +22,5 @@ for k,v in ipairs( r ) do
 	print( k, v )
 end
 
+print (n==m, r==m, r==n )
+

@@ -105,17 +105,17 @@ lt_buf__Call( lua_State *L )
  * \return struct t_buf*  pointer to the  t_buf struct
  * --------------------------------------------------------------------------*/
 struct
-t_buf *t_buf_create_ud( lua_State *L, int size )
+t_buf *t_buf_create_ud( lua_State *L, size_t n )
 {
 	struct t_buf  *b;
-	size_t          sz;
+	size_t         sz;
 
 	// size = sizof(...) -1 because the array has already one member
-	sz = sizeof( struct t_buf ) + (size - 1) * sizeof( char );
+	sz = sizeof( struct t_buf ) + (n - 1) * sizeof( char );
 	b  = (struct t_buf *) lua_newuserdata( L, sz );
-	memset( b->b, 0, size * sizeof( char ) );
+	memset( b->b, 0, n * sizeof( char ) );
 
-	b->len = size;
+	b->len = n;
 	luaL_getmetatable( L, T_BUF_TYPE );
 	lua_setmetatable( L, -2 );
 	return b;

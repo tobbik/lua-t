@@ -72,7 +72,7 @@ lt_nry__Call( lua_State *L )
 				a->v[ i ] = org_a->v[ i ];
 		}
 	}
-	else
+	else  // interpret each value on stack as a number
 	{
 		sz = lua_gettop( L );
 		a  = t_nry_create_ud( L, sz );
@@ -96,17 +96,17 @@ lt_nry__Call( lua_State *L )
  * \return  struct  t_nry* pointer to the t_nry struct.
  * --------------------------------------------------------------------------*/
 struct t_nry
-*t_nry_create_ud( lua_State *L, int sz )
+*t_nry_create_ud( lua_State *L, size_t n )
 {
 	struct t_nry  *a;
-	size_t         t_sz;
+	size_t         sz;
 
 	// size = sizeof(...) -1 because the array has already one member
-	t_sz = sizeof( struct t_nry ) + (sz - 1) * sizeof( int );
-	a    = (struct t_nry *) lua_newuserdata( L, t_sz );
-	memset( a->v, 0, sz+1 * sizeof( int ) );
+	sz = sizeof( struct t_nry ) + (n - 1) * sizeof( lua_Integer );
+	a  = (struct t_nry *) lua_newuserdata( L, sz );
+	memset( a->v, 0, n * sizeof( lua_Integer ) );
 
-	a->len = sz;
+	a->len = n;
 	luaL_getmetatable( L, T_NRY_TYPE );
 	lua_setmetatable( L, -2 );
 	return a;
@@ -139,7 +139,7 @@ struct t_nry
  * \lparam  ud   t_nry userdata instance.
  * \return  *int pointer to the requested value.
  *  -------------------------------------------------------------------------*/
-static int
+static lua_Integer
 *t_nry_getelem( lua_State *L )
 {
 	struct t_nry *a   = t_nry_check_ud( L, 1, 1 );
@@ -165,11 +165,12 @@ lt_nry__index( lua_State *L )
 {
 	if (lua_isnumber( L, 2 ))
 		lua_pushinteger( L, *t_nry_getelem( L ) );
-	else
+	else  // this is trying access things like nry:reverse() etc
 	{
 		luaL_getmetatable( L, T_NRY_TYPE );
 		lua_pushvalue( L, 2 );
 		lua_rawget( L, -2 );
+		lua_remove( L, -2 );  //remove metatable, balance stack
 	}
 	return 1;
 }
@@ -187,7 +188,7 @@ lt_nry__index( lua_State *L )
 static int
 lt_nry__newindex( lua_State *L )
 {
-	int n_val = luaL_checknumber ( L, 3 );
+	lua_Integer n_val = luaL_checkinteger ( L, 3 );
 	*t_nry_getelem( L ) = n_val;
 	return 0;
 }
@@ -284,23 +285,23 @@ lt_nry__eq( lua_State *L )
 {
 	struct t_nry *nA = t_nry_check_ud( L, 1, 1 );
 	struct t_nry *nB = t_nry_check_ud( L, 2, 1 );
-	size_t        i;       ///< runner
-	int           r = 1;   ///< result
+	int           r  = 1;   ///< result
+	size_t        i;        ///< runner
 
-	if (nA == nB)
+	if (nB!=nA)
 	{
-		lua_pushboolean( L, r );
-		return 1;
-	}
-	if (nA->len != nB->len)
-		r = 0;
-	else
-		for (i=0; i<nA->len; i++)
-			if (nA->v[i] !=  nB->v[ i ])
+		if (nA->len != nB->len)
+			r = 0;
+		else
+			for (i=0; i<nA->len; i++)
 			{
-				r = 0;
-				break;
+				if (nA->v[i] !=  nB->v[i])
+				{
+					r = 0;
+					break;
+				}
 			}
+	}
 	lua_pushboolean( L, r );
 	return 1;
 }

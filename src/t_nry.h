@@ -11,10 +11,10 @@
 struct t_nry
 {
 	size_t         len;
-	int            v[ 1 ];  ///< variable part, must be last in struct
+	lua_Integer    v[ 1 ];  ///< variable part, must be last in struct
 };
 
 // Constructors
 int           luaopen_t_nry  ( lua_State *L );
 struct t_nry *t_nry_check_ud ( lua_State *L, int pos, int check );
-struct t_nry *t_nry_create_ud( lua_State *L, int size );
+struct t_nry *t_nry_create_ud( lua_State *L, size_t n );
