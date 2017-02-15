@@ -136,7 +136,7 @@ lt_tst__call( lua_State *L )
 	   , skip
 	   , todo
 	   , i-pass
-	   , (i==pass+todo)? "OK":"FAIL" );
+	   , (i==pass+todo) ? "OK" : "FAIL" );
 
 	lua_pushboolean( L, (i==pass+skip+todo) ? 1 : 0 );
 
@@ -177,7 +177,7 @@ lt_tst__newindex( lua_State *L )
 			lua_call( L, 2, 1 );            //S: ste nme cse
 			lua_pushvalue( L, -1 );         //S: ste nme cse cse
 			lua_rawseti( L, 1,
-				lua_rawlen( L, 1 ) + 1 );    //S: ste nme cse
+			lua_rawlen( L, 1 ) + 1 );       //S: ste nme cse
 		}
 		else
 			return luaL_error( L, "value for test* named element must be a function" );
