@@ -70,7 +70,6 @@ local tests = {
 
 	test_Skip = function( self, done )
 		Test.describe( "Skip should skip test" )
-		Test.todo( "Fix the return value calculation of t() __call test runner" )
 		self.r.test_Test = function( s ) Test.skip('skip me'); assert( false,  "This better fails" ) end
 		local t = Test( self.r )
 		assert( t(), "Test suite should not have failed because failing test got skipped" )

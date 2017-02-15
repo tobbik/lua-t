@@ -136,9 +136,9 @@ lt_tst__call( lua_State *L )
 	   , skip
 	   , todo
 	   , i-pass
-	   , (i==pass+todo) ? "OK" : "FAIL" );
+	   , (i==pass + todo) ? "OK" : "FAIL" );
 
-	lua_pushboolean( L, (i==pass+skip+todo) ? 1 : 0 );
+	lua_pushboolean( L, (i==pass + todo) ? 1 : 0 );
 
 	return 1;
 }
