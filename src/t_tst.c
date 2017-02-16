@@ -269,7 +269,6 @@ t_tst_findCaseOnStack( lua_State *L )
 			}
 			lua_pop( L, 1 );            // remove upvalue
 		}
-		//lua_remove( L, -1 - ar.nups ); // remove function that lua_getinfo put on stack
 		lua_pop( L, 1 );               // remove function that lua_getinfo put on stack
 	}
 	return 0;
@@ -377,7 +376,7 @@ static int
 lt_tst_Skip( lua_State *L )
 {
 	luaL_checkstring( L, 1 );
-	lua_pushstring( L, "T_TST_SKIP_INDICATOR:" );
+	lua_pushstring( L, T_TST_CSE_SKIPINDICATOR );
 	lua_insert( L, -2 );
 	lua_concat( L, 2 );
 	luaL_error( L, lua_tostring( L, -1 ) );
@@ -433,7 +432,7 @@ luaopen_t_tst( lua_State *L )
 	lua_pop( L, 1 );
 
 	// Push the class onto the stack
-	// this is avalable as T.Test.Suite.<member>
+	// this is avalable as T.Test.<member>
 	luaL_newlib( L, t_tst_cf );
 	luaopen_t_tst_cse( L );
 	lua_setfield( L, -2, T_TST_CSE_NAME );

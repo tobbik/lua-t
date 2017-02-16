@@ -10,6 +10,7 @@
 #define T_TST_CSE_NAME  "Case"
 
 #define T_TST_CSE_TYPE  T_TST_TYPE"."T_TST_CSE_NAME
+#define T_TST_CSE_SKIPINDICATOR  "<test_case_skip_indicator>:"
 
 int    t_tst_create( lua_State *L );
 int    t_tst_check( lua_State *L, int pos, int check );

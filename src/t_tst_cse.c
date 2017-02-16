@@ -36,9 +36,9 @@ t_tst_cse_traceback( lua_State *L )
 		loc = lua_tostring( L, 2 );
 		msg = strchr( loc, ':' ) +1;   // find separator of filename and line number
 		msg = strchr( msg, ':' ) + 2;  // find separator before message
-		if ( 0==strncmp( "T_TST_SKIP_INDICATOR:", msg, 21 ))
+		if ( 0==strncmp( T_TST_CSE_SKIPINDICATOR, msg, strlen( T_TST_CSE_SKIPINDICATOR) ))
 		{
-			lua_pushstring( L, msg+21 );
+			lua_pushstring( L, msg+strlen( T_TST_CSE_SKIPINDICATOR) );
 			lua_setfield( L, 1, "skip" );
 			lua_pop( L, 1 );    // pop original massage
 		}
@@ -179,9 +179,9 @@ t_tst_cse_addTapDetail( lua_State *L, luaL_Buffer *lB, int pos, const char *m )
 	lua_getfield( L, pos, m );
 	if (! lua_isnil( L, -1 ))
 	{
-		lua_pushfstring( L, "\n%s: %s", m, lua_tostring( L, -1 ) );  //S: … val str
-		luaL_gsub( L, luaL_checkstring( L, -1 ), "\n", "\n    " );    //S: … val str str
-		luaL_addvalue( lB );                                          //S: … val str
+		lua_pushfstring( L, "\n%s: %s", m, lua_tostring( L, -1 ) ); //S: … val str
+		luaL_gsub( L, luaL_checkstring( L, -1 ), "\n", "\n    " );  //S: … val str str
+		luaL_addvalue( lB );                                        //S: … val str
 		lua_pop( L, 2 );
 	}
 	else
@@ -383,8 +383,6 @@ int t_tst_cse_hasField( lua_State *L, const char *fld, int leave )
 	lua_getfield( L, -1, fld );
 	if (! lua_isnil(L, -1 ))
 		retval = (lua_isboolean( L, -1 )) ? lua_toboolean( L, -1 ) : 1;
-	//printf( "%d %d ", leave, retval );
-	//t_stackDump(L);
 	if (leave && retval)
 		return retval;
 	else
@@ -436,8 +434,6 @@ luaopen_t_tst_cse( lua_State *L )
 	luaL_newmetatable( L, T_TST_CSE_TYPE );
 	luaL_setfuncs( L, t_tst_cse_m, 0 );
 	lua_setfield( L, -1, "__index" );
-	//lua_pushstring( L, T_TST_CSE_TYPE );
-	//lua_setfield( L, -2, "__name" );
 
 	// T.Test.Case class
 	luaL_newlib( L, t_tst_cse_cf );
