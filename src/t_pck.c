@@ -681,7 +681,6 @@ size_t
 t_pck_fld__callread( lua_State *L, struct t_pck *pc, const char *b, size_t ofs )
 {
 	struct t_pck     *p;         ///< packer currently processing
-	struct t_oht     *oht ;      ///< OrderedHashTable result if T.Struct is processed
 	struct t_pck_fld *pf;        ///< packer field currently processing
 	size_t            n;         ///< iterator for complex types
 
@@ -731,9 +730,7 @@ t_pck_fld__callread( lua_State *L, struct t_pck *pc, const char *b, size_t ofs )
 			t_oht_addElement( L, -4 );
 		}
 		lua_pop( L, 1 );                      //S:… res
-		oht = t_oht_create_ud( L );           //S:… res oht
-		lua_insert( L, -2 );                  //S:… oht res
-		oht->tR = luaL_ref( L, LUA_REGISTRYINDEX );
+		t_oht_create( L );                    //S:… oht
 		return ofs;
 	}
 	lua_pushnil( L );

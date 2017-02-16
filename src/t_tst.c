@@ -243,6 +243,23 @@ lt_tst__tostring( lua_State *L )
 }
 
 
+/**--------------------------------------------------------------------------
+ * Returns len of T.Test.
+ * \param   L    Lua state.
+ * \lparam  ud   T.OrderedHashTable userdata instance.
+ * \return  int  # of values pushed onto the stack.
+ * --------------------------------------------------------------------------*/
+static int
+lt_tst__len( lua_State *L )
+{
+	t_stackDump(L);
+	t_tst_check( L, 1, 1 );
+	lua_pushinteger( L, lua_rawlen( L, 1 ) );
+	lua_remove( L, 1 );
+	return 1;
+}
+
+
 /** -------------------------------------------------------------------------
  * Search all upvalues on all stack levels for a Test.Case.
  * \param    L        Lua state.
@@ -418,6 +435,7 @@ static const luaL_Reg t_tst_m [] = {
 	, { "__tostring"         , lt_tst__tostring }
 	, { "__newindex"         , lt_tst__newindex }
 	, { "__index"            , t_getFromProxyTable }
+	, { "__len"              , lt_tst__len }
 	, { NULL                 , NULL }
 };
 

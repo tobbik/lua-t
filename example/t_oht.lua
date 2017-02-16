@@ -1,4 +1,5 @@
-Oht = require( 't' ).OrderedHashTable
+T   = require( 't' )
+Oht = T.OrderedHashTable
 
 o   = Oht(
 	  { one   = 'first   position' }
@@ -13,7 +14,7 @@ o['six']   = 'sixth   position'
 o['seven'] = 'seventh position'
 print( "Length after adding more elements", #o )
 
-for k,v in pairs( Oht.getReference( o ) ) do print( k, v ) end
+for k,v in pairs( o[ T.proxyTableIndex ] ) do print( k, v ) end
 print(o)
 
 for i,v,k in ipairs( o ) do
