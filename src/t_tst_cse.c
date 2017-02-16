@@ -134,12 +134,12 @@ lt_tst_cse__Call( lua_State *L )
 int
 t_tst_cse_create( lua_State *L )
 {
-	luaL_argcheck( L, lua_type( L, -2 ) == LUA_TSTRING,   -2, "testcasename must be a string." );
+	luaL_argcheck( L, lua_type( L, -2 ) == LUA_TSTRING,   -2, "testcase description must be a string." );
 	luaL_argcheck( L, lua_type( L, -1 ) == LUA_TFUNCTION, -1, "testcase value must be a function." );
-	lua_newtable( L );                 //S: nme fnc tbl
-	lua_insert( L, -3 );               //S: tbl nme fnc
-	lua_setfield( L, -3, "function" ); //S: tbl nme
-	lua_setfield( L, -2, "name" );     //S: tbl
+	lua_newtable( L );                    //S: nme fnc tbl
+	lua_insert( L, -3 );                  //S: tbl nme fnc
+	lua_setfield( L, -3, "function" );    //S: tbl nme
+	lua_setfield( L, -2, "description" ); //S: tbl
 
 	luaL_getmetatable( L, T_TST_CSE_TYPE );
 	lua_setmetatable( L, -2 );
@@ -201,7 +201,6 @@ t_tst_cse_addTapDiagnostic( lua_State *L, luaL_Buffer *lB, int pos )
 {
 	luaL_addstring( lB, "    ---" );
 	t_tst_cse_addTapDetail( L, lB, pos, "description" );
-	t_tst_cse_addTapDetail( L, lB, pos, "name" );
 	t_tst_cse_addTapDetail( L, lB, pos, "pass" );
 	t_tst_cse_addTapDetail( L, lB, pos, "skip" );
 	t_tst_cse_addTapDetail( L, lB, pos, "todo" );
@@ -215,7 +214,7 @@ t_tst_cse_addTapDiagnostic( lua_State *L, luaL_Buffer *lB, int pos )
 
 
 /**--------------------------------------------------------------------------
- * Push Test.Case name information on stack
+ * Push Test.Case description information on stack
  * \param    L      Lua state.
  * \param    pos    int position of Test.Case on Stack.
  * \lparam   table  T.Test.Case Lua table instance.
@@ -225,34 +224,21 @@ void
 t_tst_cse_getDescription( lua_State *L, int pos )
 {
 	int concat = 0;
-	// print description or name
+	// description
 	lua_getfield( L, pos, "description" );    //S: cse dsc
-	if( lua_isnil( L, -1 ))
-	{
-		lua_pop( L, 1 );
-		lua_getfield( L, pos, "name" ); //S: cse nme
-	}
-	concat++;                          //S: … nme
-	// Add skip info
-	lua_getfield( L, pos, "skip" );    //S: … nme skp
-	if (! lua_isnil( L, -1 ))
+	concat++;                          //S: … dsc
+	if (t_tst_cse_hasField( L, "skip", 1 ))
 	{
 		lua_pushstring( L, " # SKIP: " );
 		lua_insert( L, -2 );            //S: … nme skp
 		concat+=2;
 	}
-	else
-		lua_pop( L, 1 );                // pop skip nil
-	// Add todo information?
-	lua_getfield( L, pos, "todo" );    //S: … nme tdo
-	if (! lua_isnil( L, -1 ))
+	if (t_tst_cse_hasField( L, "todo", 1 ))
 	{
 		lua_pushstring( L, " # TODO: " );
-		lua_insert( L, -2 );            //S: … nme tdo
+		lua_insert( L, -2 );            //S: … nme skp
 		concat+=2;
 	}
-	else
-		lua_pop( L, 1 );                // pop todo nil
 	if (concat > 1) lua_concat( L, concat );
 }
 

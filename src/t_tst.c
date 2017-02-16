@@ -22,8 +22,7 @@ static int lt_tst__newindex( lua_State *L );
  * Construct a T.Test and return it.
  * \param   L      Lua state.
  * \lparam  CLASS  table Test
- * \lparam  string name of the unit test
- * \lparam  string description of the unit test
+ * \lparam  table  optional table of unit test cases (functions)
  * \lreturn table  T.Test Lua table instance.
  * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
@@ -98,9 +97,9 @@ lt_tst__call( lua_State *L )
 	{
 		lua_rawgeti( L, 1, i+1 );        //S: ste cse
 		lua_pushvalue( L, -1 );          //S: ste cse cse
-		lua_getfield( L, 2, "name" );    //S: ste cse cse nme
+		lua_getfield( L, 2, "description" );    //S: ste cse cse dsc
 		printf( "%5zu of %zu --- `%s` -> ", i+1, all, lua_tostring( L, -1 ) );
-		lua_pop( L, 1 );                 // pop name and todo
+		lua_pop( L, 1 );                 // pop desc and todo
 
 		// execute Test.Case
 		luaL_getmetafield( L, 2, "__call" );
