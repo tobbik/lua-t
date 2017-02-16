@@ -266,8 +266,11 @@ t_push_error( lua_State *L, const char *fmt, ... )
 int
 t_checkTableType( lua_State *L, int pos, int check, const char *type )
 {
-	int is_of_type = 0;
-	luaL_checktype( L, pos, LUA_TTABLE );
+	int isOfType = 0;
+	if (! check && ! lua_istable( L, pos ))
+		return isOfType;
+	else
+		luaL_checktype( L, pos, LUA_TTABLE );
 	if (lua_getmetatable( L, pos ))              // does it have a metatable?
 	{
 		luaL_getmetatable( L, type );             // get correct metatable
@@ -277,9 +280,7 @@ t_checkTableType( lua_State *L, int pos, int check, const char *type )
 				luaL_error( L, "wrong argument, `%s` expected", type );
 		}
 		else
-		{
-			is_of_type = 1;
-		}
+			isOfType = 1;
 		lua_pop( L, 2 );
 	}
 	else
@@ -287,7 +288,7 @@ t_checkTableType( lua_State *L, int pos, int check, const char *type )
 		if (check)
 			luaL_error( L, "wrong argument, `%s` expected", type );
 	}
-	return is_of_type;
+	return isOfType;
 }
 
 
