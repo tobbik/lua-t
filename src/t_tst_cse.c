@@ -346,10 +346,8 @@ t_tst_cse_execute( lua_State *L )
 
 
 /**--------------------------------------------------------------------------
- * Execute T.Test.Case
- * Stack:
- *          1 Test function table
- *          2 Test Suite table
+ * Execute T.Test.Case.
+ * Stack:  T.Test.Case T.Test
  * \param   L      Lua state.
  * \lparam  table  T.Test.Suite Lua table instance.
  * \return  int    # of values pushed onto the stack.
@@ -370,10 +368,10 @@ lt_tst_cse__call( lua_State *L )
 
 
 /**--------------------------------------------------------------------------
- * Is this T.Test.Case marked as "field"
+ * Is this T.Test.Case marked as "field".
  * \param   L        Lua state.
  * \param   fld      const char field name string.
- * \param   leave    int/bool leave on stack if present/true.
+ * \param   leave    int/bool leave on stack if present or true.
  * \lparam  table    T.Test.Case Lua table instance.
  * \return  int/bool Is it marked as "field"
  * --------------------------------------------------------------------------*/

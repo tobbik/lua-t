@@ -15,6 +15,61 @@
 #include "t.h"
 
 /** -------------------------------------------------------------------------
+ * Get the proxy table index onto the stack.
+ * Objects that use a proxy table such as T.Test or T.OrderedHashTable have an
+ * internal tracking or proxy table which holds the data so that __index and
+ * __newindex operations can be done without hassle.  Within the object, the
+ * tracking table is indexed by an empty table:
+ * T.proxyTableIndex = {}    -- a globally (to T) defined empty table
+ * oht = Oht()               -- oht is the table instance with the metamethods
+ * oht[ T.proxyTableIndex ]  -- this is the table that actually contains the
+ *                           -- values
+ * \param   L        The Lua intepretter object.
+ * \lreturn {}       The empty table used as index for proxy tables
+ *-------------------------------------------------------------------------*/
+void
+t_getProxyTableIndex( lua_State *L )
+{
+	luaL_getsubtable( L, LUA_REGISTRYINDEX, "_LOADED" );
+	lua_getfield( L, -1, "t" );
+	lua_getfield( L, -1, T_PROXYTABLEINDEX );      //S: … loaded t {}
+	lua_insert( L, -3 );                           //S: … {} loaded t
+	lua_pop( L, 2 );                               //S: … {}
+}
+
+
+/** -------------------------------------------------------------------------
+ * For objects utilizing a proxy table replace object on stack with table.
+ * \param  L        The Lua intepretter object.
+ * \param  pos      int; position stack element to format.
+ *-------------------------------------------------------------------------*/
+void
+t_getProxyTable( lua_State *L, int pos )
+{
+	pos = (pos < 0) ? lua_gettop( L ) + pos + 1 : pos;  // get absolute stack position
+	t_getProxyTableIndex( L );           //S: … obj … {}
+	lua_rawget( L, pos );                //S: … obj … tbl
+	lua_replace( L, pos );               //S: … tbl …
+}
+
+
+/** -------------------------------------------------------------------------
+ * For objects utilizing a proxy table replace object on stack with table.
+ * \param   L        The Lua intepretter object.
+ * \lparam  obj      Object to retrieve value from.
+ * \lparam  key      key for __index.
+ *-------------------------------------------------------------------------*/
+int
+t_getFromProxyTable( lua_State *L )
+{
+	t_getProxyTable( L, -2 );            //S: … tbl key
+	lua_rawget( L, -2 );                 //S: … tbl val
+	lua_replace( L, -2 );                //S: … val
+	return 1;
+}
+
+
+/** -------------------------------------------------------------------------
  * Formats an item on the stack.  Pushes formatted string to last position.
  * \param  L        The Lua intepretter object.
  * \param  int      position stack element to format.
@@ -341,6 +396,8 @@ luaopen_t( lua_State *L )
 	luaopen_t_nry( L );
 	lua_setfield( L, -2, T_NRY_NAME );
 #endif
+	lua_newtable( L );
+	lua_setfield( L, -2, T_PROXYTABLEINDEX );
 	return 1;
 }
 

@@ -19,7 +19,7 @@
 static int lt_tst__newindex( lua_State *L );
 
 /**--------------------------------------------------------------------------
- * Construct a T.Test.Suite and return it.
+ * Construct a T.Test and return it.
  * \param   L      Lua state.
  * \lparam  CLASS  table Test
  * \lparam  string name of the unit test
@@ -30,21 +30,24 @@ static int lt_tst__newindex( lua_State *L );
 static int
 lt_tst__Call( lua_State *L )
 {
-	lua_remove( L, 1 );
-	lua_newtable( L );
-	luaL_getmetatable( L, T_TST_TYPE );
-	lua_setmetatable( L, -2 );
+	lua_remove( L, 1 );                  //S: …         remove T.Test class
+	lua_newtable( L );                   //S: … ste
+	luaL_getmetatable( L, T_TST_TYPE );  //S: … ste met
+	lua_setmetatable( L, -2 );           //S: … ste
+	t_getProxyTableIndex( L );           //S: … ste {}
+	lua_newtable( L );                   //S: … ste {} tbl
+	lua_rawset( L, -3 );                 //S: … ste
 	if( lua_istable( L, 1 ) )
 	{
 		lua_pushnil( L );
-		while (lua_next( L, 1 ))    // S: tbl tst nme fnc
+		while (lua_next( L, 1 ))          //S: tbl ste nme fnc
 		{
 			lua_pushcfunction( L, lt_tst__newindex );
-			lua_insert( L, -4 );
-			lua_pushvalue( L, -2 );
-			lua_insert( L, 2 );
-			lua_pushvalue( L, -3 );
-			lua_insert( L, 2 );      // S: tbl tst nme __ni tst nme fnc
+			lua_insert( L, -4 );           //S: tbl _ni ste nme fnc
+			lua_pushvalue( L, -2 );        //S: tbl _ni ste nme fnc nme
+			lua_insert( L, 2 );            //S: tbl nme _ni ste nme fnc
+			lua_pushvalue( L, -3 );        //S: tbl nme _ni ste nme fnc ste
+			lua_insert( L, 2 );            //S: tbl ste nme _ni ste nme fnc
 			lua_call( L, 3, 0 );
 		}
 	}
@@ -53,7 +56,7 @@ lt_tst__Call( lua_State *L )
 
 
 /**--------------------------------------------------------------------------
- * Check a value on the stack for being a T.Test.
+ * Check a value on the stack for being a T.Test. Replace T.Test with proxy table.
  * \param   L        Lua state.
  * \param   int      position on the stack.
  * \param   int      hardCheck; error out if not a T.Test.
@@ -62,7 +65,10 @@ lt_tst__Call( lua_State *L )
 int
 t_tst_check( lua_State *L, int pos, int check )
 {
-	return t_checkTableType( L, pos, check, T_TST_TYPE );
+	int isTest = t_checkTableType( L, pos, check, T_TST_TYPE );
+	if (isTest)
+		t_getProxyTable( L, pos );
+	return isTest;
 }
 
 
@@ -412,6 +418,7 @@ static const luaL_Reg t_tst_m [] = {
 	  { "__call"             , lt_tst__call }
 	, { "__tostring"         , lt_tst__tostring }
 	, { "__newindex"         , lt_tst__newindex }
+	, { "__index"            , t_getFromProxyTable }
 	, { NULL                 , NULL }
 };
 
