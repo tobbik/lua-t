@@ -207,7 +207,7 @@ lt_tst__tostring( lua_State *L )
 	int         i, pass, todo, t_len;
 
 	t_tst_check( L, 1, 1 );
-	t_len  = luaL_len( L, 1 );
+	t_len  = lua_rawlen( L, 1 );
 	luaL_buffinit( L, &lB );
 	lua_pushfstring( L, "1..%d\n", t_len );
 	luaL_addvalue( &lB );
@@ -252,7 +252,6 @@ lt_tst__tostring( lua_State *L )
 static int
 lt_tst__len( lua_State *L )
 {
-	t_stackDump(L);
 	t_tst_check( L, 1, 1 );
 	lua_pushinteger( L, lua_rawlen( L, 1 ) );
 	lua_remove( L, 1 );
