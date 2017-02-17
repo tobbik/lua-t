@@ -29,13 +29,13 @@ Turning it it onto it's head
 The requirements for the "simulator" soon became much higher.  It was
 expected to simulate hundreds of nodes each spitting out a message a second.
 Additionally, the messages couldn't be arbitrar but the meaning had to be
-synchronized accross the simulated nodes to make sense, thus creating a need
+synchronized across the simulated nodes to make sense, thus creating a need
 to do all this from a single thread.  After doing a little research and not
 finding a binary packer/parser flexible enough for the project needs, I
 decided to write a library that was written in C for Lua which would allow
 to create messages flexibly and efficiently and some asynchronous magic to
 allow for the multiple nodes to be simulated.  With no budget at hand, I
-decided to write it as a library in my sparetime which I could use at work
+decided to write it as a library in my spare time which I could use at work
 to make my job even possible.
 
 
@@ -55,6 +55,22 @@ it's own unit test framework it didn't have any test coverage for it's own
 functionality.
 
 
+Why rolling my own
+------------------
+
+As mentioned, the main driver of creating this library was the bit and byte
+packing capability.  At the time Lua did not have any of this build in (pre
+5.3 era) and the available libraries did not have and still not have bit
+resolution.  With the bit operators of Lua 5.3 it would have been possible
+to write bit handling on to of byte packing but at that time lua-t was
+already very developed.  Why not use lua-socket?  I simply need better
+asynchronous capabilities.  When I studied Redis' asynchronous event loop I
+saw how I could make a native Lua event loop that could be packaged.  I
+acknowledge that there are libraries out there (Lua wrappers for libuv) that
+could have been made work.  But writing my own allowed me to keep it within
+the coding structure I had developed for lua-t.
+
+
 Where to go
 -----------
 
@@ -63,16 +79,30 @@ use.  The plan is to move over to a completely Test driven development.
 Then, each library should get improved by doing the following steps:
 
  - write a comprehensive set of unit tests
- - improve the library and bring it up to standard meaing
+ - improve the library and bring it up to standard (Coding.rst)
 
    - add clone constructors ( where applicable )
-   - add comparator metamethods ( where applicable )
+   - add comparator meta-methods ( where applicable )
    - fix file layouts, bring in line with coding guide
    - update comments
-   - write or commplete documentation
+   - write or complete documentation
    - improve example files
 
 Next up would be improving portability.  With the asynchronous functionality
 that is no easy task though.
+
+
+Roadmap
+-------
+
+ - make more classes table based instead of using structs (if possible)
+   this will make it easier to convert whole things to Lua code instead of C
+ - write Asynchronous T.Tests (by passing down and handling of a done()
+   method)
+ - make the asynchronous event loop handle coroutines in parallel with
+   callbacks
+ - get the HTTP Server and client working properly
+ - create a WebSocket server and client
+ - have a good look at axTLS to handle https/wss
 
 

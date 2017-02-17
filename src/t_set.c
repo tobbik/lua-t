@@ -4,9 +4,7 @@
  * \file      t_set.c
  * \brief     Logic for a Set
  *            Implemented as a table which uses the elements as keys and their
- *            values are fixed as true.  The numeric part of the table is
- *            populate with boolean true as well to keep track of the length of
- *            the set.
+ *            values are fixed as true.
  * \author    tkieslich
  * \copyright See Copyright notice at the end of t.h
  */
