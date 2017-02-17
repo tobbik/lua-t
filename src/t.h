@@ -40,7 +40,10 @@
 
 #define TSWAP(type,a,b) do{type SWAP_tmp= b; b= a; a= SWAP_tmp;}while(0)
 
-// global debugger helpers
+// global helpers
+void t_getProxyTableIndex( lua_State *L );
+void t_getProxyTable( lua_State *L, int pos );
+int  t_getFromProxyTable( lua_State *L );
 void t_fmtStackItem( lua_State *L, int idx, int no_tostring );
 void t_stackDump   ( lua_State *L );
 void t_stackPrint  ( lua_State *L, int first, int last, int no_tostring );
@@ -85,6 +88,8 @@ uint16_t get_crc16( const unsigned char *data, size_t size );
 #define T_NRY_NAME "Numarray"
 #define T_NRY_TYPE "T."T_NRY_NAME
 #endif
+
+#define  T_PROXYTABLEINDEX "proxyTableIndex"
 
 // global sub classes registration
 LUAMOD_API int luaopen_t_ael( lua_State *L );

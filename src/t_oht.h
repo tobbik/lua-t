@@ -18,21 +18,15 @@
  * \copyright See Copyright notice at the end of t.h
  */
 
-/// The userdata struct for T.OrderedHashTable
-struct t_oht {
-	int            tR;    ///<  LUA_REGISTRYINDEX reference for the table
-};
-
-
 // t_oht.c
 // Constructors
-int             luaopen_t_oht  ( lua_State *L );
-struct t_oht   *t_oht_check_ud ( lua_State *L, int pos, int check );
-struct t_oht   *t_oht_create_ud( lua_State *L );
+int   luaopen_t_oht  ( lua_State *L );
+int   t_oht_check    ( lua_State *L, int pos, int check );
+int   t_oht_create   ( lua_State *L );
 
-void            t_oht_getElement( lua_State *L, int pos );
-void            t_oht_addElement( lua_State *L, int pos );
-void            t_oht_deleteElement( lua_State *L, int pos );
-void            t_oht_insertElement( lua_State *L, int pos );
-void            t_oht_readArguments( lua_State *L, int sp, int ep );
-void            t_oht_getTable( lua_State *L, int type );
+void  t_oht_getElement( lua_State *L, int pos );
+void  t_oht_addElement( lua_State *L, int pos );
+void  t_oht_deleteElement( lua_State *L, int pos );
+void  t_oht_insertElement( lua_State *L, int pos );
+void  t_oht_readArguments( lua_State *L, int sp, int ep );
+void  t_oht_getTable( lua_State *L, int type );

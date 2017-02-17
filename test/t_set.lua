@@ -433,4 +433,4 @@ local   tests = {
 
 t = Test( tests )
 t( )
---print( t )
+print( t )

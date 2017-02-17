@@ -255,14 +255,14 @@ local tests = {
 	end,
 
 	test_Equals = function( self )
-		Test.describe( " __eq metamethod properly comparse for equality" )
+		Test.describe( "__eq metamethod properly comparse for equality" )
 		self.o.inner = Oht( self.o )
 		local o      = Oht( self.o )
 		assert( self.o == o, "Original and clone must be equal" )
 	end,
 
 	test_NotEquals = function( self )
-		Test.describe( " __eq metamethod properly comparse for inequality" )
+		Test.describe( "__eq metamethod properly compares for inequality" )
 		self.o.inner = Oht( self.o )
 		local o      = Oht( self.o )
 		o.inner.six  = 'Not sixth anymore'
