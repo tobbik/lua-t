@@ -8,14 +8,12 @@ local   Oht    = require ('t').OrderedHashTable
 
 local tests = {
 	setUp = function( self )
-		self.keys = { 'one'  , 'two'   , 'three', 'four'  , 'five' , 'six'   , 'seven'   }
-		self.vals = { 'first', 'second', 'third', 'fourth', 'fifth', 'sixth' , 'seventh' }
+		self.keys = { print, true  , {'a'}  , 0.75      , 'a string' , function(a) return a end, {} }
+		self.vals = { false, 1.2345, 'third', Oht.concat, function(x) return x+x end, {}, {1,2} }
 		assert( #self.keys == #self.vals, "Keys and Values must be of same length" )
-		self.o    = Oht( )
-		self.len  = 0
+		self.o, self.len    = Oht( ), 0
 		-- insertion order is preserved inside the Hash table
 		for i = 1, #self.keys do
-			self.vals[i] = "This is an element at the " .. self.vals[i] .. " position."
 			self.o[ self.keys[i] ] = self.vals[i]
 			self.len  = self.len+1   -- count inserts
 		end
@@ -33,10 +31,10 @@ local tests = {
 	test_TableStyleConstructor = function( self )
 		Test.describe( "Length of OrderedHashTable must be equal number of inserts" )
 		o   = Oht(
-			  { [self.keys[1]]= self.vals[1] }
-			, { [self.keys[2]]= self.vals[2] }
-			, { [self.keys[3]]= self.vals[3] }
-			, { [self.keys[4]]= self.vals[4] }
+			  { [self.keys[1]] = self.vals[1] }
+			, { [self.keys[2]] = self.vals[2] }
+			, { [self.keys[3]] = self.vals[3] }
+			, { [self.keys[4]] = self.vals[4] }
 		)
 		assert( #o == 4, "Length must equal number of constructor arguments" )
 
@@ -97,11 +95,15 @@ local tests = {
 			 ") must be equal to length of OrderedHashTable("..#self.o..")" )
 	end,
 
-	test_Concat = function( self )
-		Test.describe( "Concat concatenates values" )
-		local sep   = 'willy nilly'
+	test_ConcatStrings = function( self )
+		Test.describe( "Concat concatenates strings" )
+		local sep = 'willy nilly'
+		local keys = { 'one'  , 'two'   , 'three', 'four'  , 'five' , 'six'   , 'seven'   }
+		local vals = { 'first', 'second', 'third', 'fourth', 'fifth', 'sixth' , 'seventh' }
+		local o   = Oht()
+		for i=1,#keys do o[keys[i]] = vals[1] end
 
-		assert( Oht.concat( self.o, separator ) == table.concat( self.vals, separator ),
+		assert( Oht.concat( o, sep ) == table.concat( vals, sep ),
 			 "Concatenated values must equal normal table concat results" )
 	end,
 
@@ -118,9 +120,9 @@ local tests = {
 	test_AddElement = function( self )
 		Test.describe( "Adding element increases size" )
 		local o_len = #self.o
-		local value   = string.gsub( self.vals[1], "first", "eighth" )
+		local value = "eighth"
 
-		self.o.eight  = value
+		self.o.eight         =  value
 		assert( #self.o      == o_len+1,    "Adding element must increase length" )
 		assert( self.o.eight == value,      "New Element is available under given key" )
 		assert( self.o[ #self.o ] == value, "New Element is available as last element" )
@@ -129,55 +131,63 @@ local tests = {
 	test_DeleteHashElement = function( self )
 		Test.describe( "Removing Hash element decreases size and move down higher keys" )
 		local o_len = #self.o
-		local four  = self.o.four
-		local six   = self.o.six
+		local k4    = self.keys[4]
+		local k5    = self.keys[5]
+		local k6    = self.keys[6]
+		local four  = self.o[k4]
+		local six   = self.o[k6]
 
-		self.o.five   = nil
+		self.o[k5]          =  nil
 		assert( #self.o     == o_len-1, "Removing element must decrease length" )
-		assert( self.o.four == four,    "Removing element musn't affect lower keys" )
+		assert( self.o[k4]  == four,    "Removing element musn't affect lower keys" )
 		assert( self.o[4]   == four,    "Removing element musn't affect lower keys" )
-		assert( self.o.six  == six,     "Removing element musn't affect higher keys" )
+		assert( self.o[k6]  == six,     "Removing element musn't affect higher keys" )
 		assert( self.o[5]   == six,     "Removing element must move down higher keys" )
 	end,
 
 	test_DeleteIndexElement = function( self )
 		Test.describe( "Removing Index element decreases size and move down higher keys" )
 		local o_len = #self.o
+		local k4    = self.keys[4]
+		local k6    = self.keys[6]
 		local four  = self.o[4]
 		local six   = self.o[6]
 
 		self.o[5]   = nil
 		assert( #self.o     == o_len-1, "Removing element must decrease length" )
-		assert( self.o.four == four,    "Removing element musn't affect lower keys" )
+		assert( self.o[k4]  == four,    "Removing element musn't affect lower keys" )
 		assert( self.o[4]   == four,    "Removing element musn't affect lower keys" )
-		assert( self.o.six  == six,     "Removing element musn't affect higher keys" )
+		assert( self.o[k6]  == six,     "Removing element musn't affect lower keys" )
 		assert( self.o[5]   == six,     "Removing element must move down higher keys" )
 	end,
 
 	test_InsertElement = function( self )
 		Test.describe( "Insert element increases size and move up higher keys" )
-		local o_len  = #self.o
-		local two    = self.o[2]
-		local three  = self.o[3]
-		local value  = string.gsub( self.vals[1], "first", "oddth" )
-		local key    = 'odd'
+		local o_len = #self.o
+		local k2    = self.keys[2]
+		local k3    = self.keys[3]
+		local v2    = self.o[2]
+		local v3    = self.o[3]
+		local value = "oddth"
+		local key   = 'odd'
+		local idx   = 3
 
-		Oht.insert( self.o, 3, key, value )
-		assert( #self.o      == o_len+1, "Inserting element must increase length" )
-		assert( self.o[key]  == value,   "Inserted  element must be available by key" )
-		assert( self.o[3]    == value,   "Inserted  element must be available by index" )
-		assert( self.o.two   == two,     "Inserting element musn't affect lower keys" )
-		assert( self.o[2]    == two,     "Inserting element musn't affect original lower keys" )
-		assert( self.o.three == three,   "Inserting element musn't affect original higher keys" )
-		assert( self.o[4]    == three,   "Inserting element must move up higher keys" )
+		Oht.insert( self.o, idx, key, value )
+		assert( #self.o       == o_len+1, "Inserting element must increase length" )
+		assert( self.o[key]   == value,   "Inserted  element must be available by key" )
+		assert( self.o[idx]   == value,   "Inserted  element must be available by index" )
+		assert( self.o[k2]    == v2,      "Inserting element musn't affect lower keys" )
+		assert( self.o[idx-1] == v2,      "Inserting element musn't affect original lower keys" )
+		assert( self.o[k3]    == v3,      "Inserting element musn't affect original higher keys" )
+		assert( self.o[idx+1] == v3,      "Inserting element must move up higher keys" )
 	end,
 
 	test_ReplaceHashElement = function( self )
 		Test.describe( "Replace Hash element remains size, indexes and keys" )
 		local o_len  = #self.o
 		local idx    = 3
-		local key    = 'three'
-		local val    = string.gsub( self.vals[1], "first", "thirdish" )
+		local key    = self.keys[idx]
+		local val    = "thirdish"
 		local keys   = { table.unpack( self.keys ) }
 		local vals   = { table.unpack( self.vals ) }
 		keys[ idx ]  = key
@@ -195,8 +205,8 @@ local tests = {
 		Test.describe( "Replace Index element remains size, indexes and keys" )
 		local o_len  = #self.o
 		local idx    = 3
-		local key    = 'three'
-		local val    = string.gsub( self.vals[1], "first", "thirdish" )
+		local key    = self.keys[idx]
+		local val    = "thirdish"
 		local keys   = { table.unpack( self.keys ) }
 		local vals   = { table.unpack( self.vals ) }
 		keys[ idx ]  = key
@@ -212,8 +222,7 @@ local tests = {
 
 	test_CantCreateIndexOutOfBoundElement = function( self )
 		Test.describe( "Can't create an element with an index higher than length" )
-		local o_len    = #self.o
-		local oob_idx  = o_len + 1
+		local oob_idx  = #self.o + 1
 		local val      = "doesn't matter"
 		local func     = function() self.o[ oob_idx ] = val end
 
@@ -222,22 +231,24 @@ local tests = {
 
 	test_GetValues = function( self )
 		Test.describe( "GetValues() returns properly ordered list of values" )
-		local sep   = '_|||_'
+		--Test.todo( "Test.equal should report arrays as equal" )
 		local vals  = Oht.getValues( self.o )
-		local c_oV  = table.concat( self.vals, sep )
-		local c_rV  = table.concat( vals, sep )
-		assert( c_oV == c_rV,
-			 "List of values must be equal:\n_" ..c_oV .."_\n_" ..c_rV.."_" )
+		for i=1,#vals do
+			assert( vals[i] == self.vals[ i ],
+				tostring( vals[i]) .." should equal ".. tostring( self.vals[i] ) )
+		end
+		--assert( Test.equal( vals == self.vals ), "getValues() shall return self.vals" )
 	end,
 
 	test_GetKeys = function( self )
 		Test.describe( "GetKeys() returns properly ordered list of keys" )
-		local sep  = '_|||_'
+		--Test.todo( "Test.equal should report arrays as equal" )
 		local keys = Oht.getKeys( self.o )
-		local c_oK = table.concat( self.keys, sep )
-		local c_rK = table.concat( keys, sep )
-		assert( c_oK == c_rK,
-			 "List of keys must be equal:\n_" ..c_oK .."_\n_" ..c_rK.."_")
+		for i=1,#keys do
+			assert( keys[i] == self.keys[ i ],
+				tostring( keys[i]) .." should equal ".. tostring( self.keys[i] ) )
+		end
+		--assert( Test.equal( keys == self.keys ), "getKeys() shall return self.keys" )
 	end,
 
 	test_GetTable = function( self )
@@ -265,7 +276,8 @@ local tests = {
 		Test.describe( "__eq metamethod properly compares for inequality" )
 		self.o.inner = Oht( self.o )
 		local o      = Oht( self.o )
-		o.inner.six  = 'Not sixth anymore'
+		local k6     = self.keys[6]
+		o.inner[k6]  = 'Not sixth anymore'
 
 		assert( self.o ~= o, "Original and clone must be equal" )
 	end

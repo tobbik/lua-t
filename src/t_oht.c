@@ -85,7 +85,7 @@ t_oht_getTable( lua_State *L, int t )
 void
 t_oht_getElement( lua_State *L, int pos )
 {
-	if (LUA_TNUMBER == lua_type( L, -1 ) )
+	if (lua_isinteger( L, 2 ))
 	{
 		lua_rawgeti( L, pos, luaL_checkinteger( L, -1 ) ); //S: tbl … idx key
 		lua_replace( L, -2 );                              //S: tbl … key
@@ -112,7 +112,7 @@ t_oht_deleteElement( lua_State *L, int pos )
 	pos = (pos < 0) ? lua_gettop( L ) + pos + 1 : pos;  // get absolute stack position
 
 	// TODO: check that key actually exist and/or i is not outOfBound
-	if (LUA_TNUMBER == lua_type( L, -2 ) )
+	if (lua_isinteger( L, -2 ))
 	{
 		i = luaL_checkinteger( L, -2 );
 		lua_rawgeti( L, pos, i );              //S: tbl … idx nil key
@@ -162,7 +162,7 @@ t_oht_addElement( lua_State *L, int pos )
 	else
 	{
 		// Numeric indices can only be used to replace values on an T.OrderedHashTable
-		if (LUA_TNUMBER == lua_type( L, -2 ))
+		if (lua_isinteger( L, -2 ))
 		{
 			idx = luaL_checkinteger( L, -2 );
 			luaL_argcheck( L, 1 <= idx && idx <= (int) lua_rawlen( L, pos ), pos,
@@ -241,7 +241,7 @@ lt_oht_Concat( lua_State *L )
 	{
 		lua_rawgeti( L, 1, i+1 );                     //S: tbl sep key
 		lua_rawget( L, 1 );                           //S: tbl sep val
-		if (!lua_isstring( L, -1 ) )
+		if (! lua_isstring( L, -1 ) )
 			luaL_error( L, "invalid value (%s) at index %d in OrderedHashTable for 'concat'",
 			           luaL_typename( L, -1 ), i+1 );
 		luaL_addvalue( &b );
@@ -604,7 +604,7 @@ lt_oht__tostring( lua_State *L )
 
 
 /**--------------------------------------------------------------------------
- *  Return standard table without the ordering part.
+ * Return standard table without the ordering part.
  * \param   L      Lua state.
  * \lparam  table  T.OrderedHashTable table instance.
  * \lreturn table  Lua table with key/value pairs.
@@ -620,7 +620,7 @@ lt_oht_GetTable( lua_State *L )
 
 
 /**--------------------------------------------------------------------------
- *  Return the values from a T.OrderedHashTable as an ordered indexed table.
+ * Return the values from a T.OrderedHashTable as an ordered indexed table.
  * \param   L      Lua state.
  * \lparam  table  T.OrderedHashTable table instance.
  * \lreturn table  Numerically indexed table with all elements from instance.
@@ -636,7 +636,7 @@ lt_oht_GetValues( lua_State *L )
 
 
 /**--------------------------------------------------------------------------
- *  Return the keys from a T.OrderedHashTable as an ordered indexed table.
+ * Return the keys from a T.OrderedHashTable as an ordered indexed table.
  * \param   L      Lua state.
  * \lparam  table  T.OrderedHashTable table instance.
  * \lreturn table  Numerically indexed table with all elements from instance.
