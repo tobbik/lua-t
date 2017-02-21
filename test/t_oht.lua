@@ -101,10 +101,11 @@ local tests = {
 		local keys = { 'one'  , 'two'   , 'three', 'four'  , 'five' , 'six'   , 'seven'   }
 		local vals = { 'first', 'second', 'third', 'fourth', 'fifth', 'sixth' , 'seventh' }
 		local o   = Oht()
-		for i=1,#keys do o[keys[i]] = vals[1] end
+		for i=1,#keys do o[keys[i]] = vals[i] end
 
 		assert( Oht.concat( o, sep ) == table.concat( vals, sep ),
-			 "Concatenated values must equal normal table concat results" )
+			 "Concatenated values:\n".. Oht.concat( o, sep ) ..
+			 "\n must equal normal table concat results:\n" .. table.concat( vals, sep ) )
 	end,
 
 	test_AccessIndexedElements = function( self )
@@ -285,4 +286,5 @@ local tests = {
 
 t_oht = Test( tests )
 t_oht( )
-print( t_oht )
+--t_oht.test_ConcatStrings( t_oht )
+--print( t_oht )

@@ -205,37 +205,43 @@ lt_tst__tostring( lua_State *L )
 {
 	luaL_Buffer lB;
 	int         i, pass, todo, t_len;
+	size_t      concat = 0;
 
 	t_tst_check( L, 1, 1 );
 	t_len  = lua_rawlen( L, 1 );
 	luaL_buffinit( L, &lB );
-	lua_pushfstring( L, "1..%d\n", t_len );
-	luaL_addvalue( &lB );
+	lua_pushfstring( L, "1..%d\n", t_len );  //S: tbl 1..
+	concat++;
 	for (i=0; i<t_len; i++)
 	{
-		lua_rawgeti( L, 1, i+1 );
+		lua_rawgeti( L, 1, i+1 );             //S: tbl 1.. cse
+		todo = t_tst_cse_hasField( L, "todo", 0 );
 		lua_insert( L, 2 );   // make sure the test case is at stackpos 2
 		// passed: ok/not ok/not run
-		lua_getfield( L, 2, "pass" );
-		lua_getfield( L, 2, "todo" );  //S: tst cse pss tdo
-		if (lua_isnil( L, -2 ))
+		lua_getfield( L, 2, "pass" );         //S: tbl 1.. cse pss
+		if (lua_isnil( L, -1 ))
 		{
 			lua_pop( L, 1 );             // pop pass nil
-			luaL_addstring( &lB, "not run\n" );
+			lua_pushstring( L, "not run" );
+			concat++;
 		}
 		else
 		{
-			pass = lua_toboolean( L, -2 );
-			todo = ! lua_isnil( L, -1 );
-			lua_pop( L, 2 );             // pop pass boolean and todo msg
+			pass = lua_toboolean( L, -1 );
+			lua_pop( L, 1 );             // pop pass boolean
 			lua_pushfstring( L, "%s %d - ", (pass) ? "ok":"not ok", i+1 );
 			t_tst_cse_getDescription( L, 2 );
-			lua_concat( L, 2 );
-			luaL_addvalue( &lB );
-			luaL_addchar( &lB, '\n' );
+			concat+=2;
 			if (! pass && ! todo)
-				t_tst_cse_addTapDiagnostic( L, &lB, 2 );
+			{
+				t_tst_cse_addTapDiagnostic( L, 2 );
+				concat++;
+			}
 		}
+		lua_concat( L, concat );
+		concat=0;
+		luaL_addvalue( &lB );
+		luaL_addchar( &lB, '\n' );
 		lua_remove( L, 2 );          // remove cse S: ste
 	}
 	luaL_pushresult( &lB );

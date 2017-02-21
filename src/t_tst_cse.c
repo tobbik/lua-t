@@ -67,42 +67,44 @@ t_tst_cse_traceback( lua_State *L )
 
 
 /**----------------------------------------------------------------------------
- * Inspects source for special lines in the comments
+ * Put source of function onto stack
  * Use lua debug facilities to determine lines of code and read the code from
  * the source files
  * \param   L        Lua state.
  * \param   int      position of Test.Case on stack.
  * \lparam  table    T.Test.Case Lua table instance.
+ * \lreturn string   Source of function.
  * --------------------------------------------------------------------------*/
-static void
-t_tst_cse_getFuncSource( lua_State *L, int pos, luaL_Buffer *lB )
+static size_t
+t_tst_cse_getFuncSource( lua_State *L, int pos )
 {
 	lua_Debug  ar;
 	FILE      *f;
-	int        r = 0; ///< current line count
-	char      *p;
+	int        r      = 0; ///< current line count
+	char       b[ LUAL_BUFFERSIZE ];
 	size_t     w;
+	size_t     concat = 0;
 
 	lua_getfield( L, pos, "function" );
 	lua_getinfo( L, ">S", &ar );
 
-	p = luaL_prepbuffer( lB );
-	w = sprintf( p, "\n    source:" );
-	luaL_addsize( lB, w );
+	lua_pushstring( L, "\n    source:" );
+	concat++;
 	f = fopen( ar.short_src, "r" );
 	while (r < ar.lastlinedefined)
 	{
-		p = luaL_prepbuffer( lB );
-		w = sprintf( p, "\n        %d: ", r+1 );
-		if (NULL == fgets( p+w, LUAL_BUFFERSIZE-w, f ))
+		w = sprintf( &(b[0]), "\n        %d: ", r+1 );
+		if (NULL == fgets( &(b[0])+w, LUAL_BUFFERSIZE-w, f ))
 			break;  // eof?
 		//TODO: reasonable line end check
 		if (++r < ar.linedefined)
 			continue;
-		luaL_addsize( lB, strlen( p )-1 );
+		lua_pushlstring( L, &(b[0]), strlen( &(b[0]) )-1 );
+		concat++;
 	}
-
 	fclose (f);
+	lua_concat( L, concat );
+	return 1;
 }
 
 
@@ -168,48 +170,51 @@ t_tst_cse_check( lua_State *L, int pos, int check )
  *        2. boolean(false) for failed test
  *        3. (userdata) possible by-product of luaL_Buffer
  * \param   L     Lua state.
- * \param  *lB    an already initialized Lua Buffer.
  * \param   pos   position of T.Test.Case on stack (must be positive!).
  * \param   m     the name of the diagnostic field.
  * \lparam  table T.Test.Case Lua table instance.
  * --------------------------------------------------------------------------*/
-static void
-t_tst_cse_addTapDetail( lua_State *L, luaL_Buffer *lB, int pos, const char *m )
+static size_t
+t_tst_cse_pushTapDetail( lua_State *L, int pos, const char *m )
 {
-	lua_getfield( L, pos, m );
+	lua_getfield( L, pos, m );                                     //S: … val
 	if (! lua_isnil( L, -1 ))
 	{
 		lua_pushfstring( L, "\n%s: %s", m, lua_tostring( L, -1 ) ); //S: … val str
 		luaL_gsub( L, luaL_checkstring( L, -1 ), "\n", "\n    " );  //S: … val str str
-		luaL_addvalue( lB );                                        //S: … val str
-		lua_pop( L, 2 );
+		lua_remove( L, -2 );                                        //S: … val str
+		lua_remove( L, -2 );                                        //S: … str
+		return 1;
 	}
 	else
 		lua_pop( L, 1 );
+	return 0;
 }
 
 
 /**--------------------------------------------------------------------------
  * Add diagnostic output information for Test.Case to a luaL_Buffer
- * \param   L     Lua state.
- * \param  *lB    an already initialized Lua Buffer.
- * \param   int   position on the stack for Test.Case instance.
- * \lparam  table T.Test.Case Lua table instance.
+ * \param   L      Lua state.
+ * \param   int    position on the stack for Test.Case instance.
+ * \lparam  table  T.Test.Case Lua table instance.
+ * \lreturn string TAP formatted Test.Case Details.
  * --------------------------------------------------------------------------*/
 void
-t_tst_cse_addTapDiagnostic( lua_State *L, luaL_Buffer *lB, int pos )
+t_tst_cse_addTapDiagnostic( lua_State *L, int pos )
 {
-	luaL_addstring( lB, "    ---" );
-	t_tst_cse_addTapDetail( L, lB, pos, "description" );
-	t_tst_cse_addTapDetail( L, lB, pos, "pass" );
-	t_tst_cse_addTapDetail( L, lB, pos, "skip" );
-	t_tst_cse_addTapDetail( L, lB, pos, "todo" );
-	t_tst_cse_addTapDetail( L, lB, pos, "message" );
-	t_tst_cse_addTapDetail( L, lB, pos, "location" );
-	t_tst_cse_addTapDetail( L, lB, pos, "traceback" );
-	t_tst_cse_getFuncSource( L, pos, lB );
+	size_t concat = 1;
+	lua_pushstring( L, "\n    ---" );
+	concat += t_tst_cse_pushTapDetail( L, pos, "description" );
+	concat += t_tst_cse_pushTapDetail( L, pos, "pass" );
+	concat += t_tst_cse_pushTapDetail( L, pos, "skip" );
+	concat += t_tst_cse_pushTapDetail( L, pos, "todo" );
+	concat += t_tst_cse_pushTapDetail( L, pos, "message" );
+	concat += t_tst_cse_pushTapDetail( L, pos, "location" );
+	concat += t_tst_cse_pushTapDetail( L, pos, "traceback" );
+	concat += t_tst_cse_getFuncSource( L, pos );
 
-	luaL_addstring( lB, "\n    ...\n" );
+	lua_pushstring( L, "\n    ...\n" );
+	lua_concat( L, concat+1 );;
 }
 
 
@@ -256,9 +261,10 @@ lt_tst_cse__tostring( lua_State *L )
 	luaL_buffinit( L, &lB );
 
 	t_tst_cse_getDescription( L, 1 );
+	lua_pushstring( L, "\n" );
+	t_tst_cse_addTapDiagnostic( L, 1 );
+	lua_concat( L, 3 );
 	luaL_addvalue( &lB );
-	luaL_addchar( &lB, '\n' );
-	t_tst_cse_addTapDiagnostic( L, &lB, 1 );
 	luaL_pushresult( &lB );
 	return 1;
 }
