@@ -27,28 +27,40 @@
 int
 t_tst_cse_traceback( lua_State *L )
 {
-	char           *msg;
+	char           *msg = NULL;
 	const char     *loc;
 	if (LUA_TSTRING == lua_type( L, 1 ))
 	{
 		lua_newtable( L );
-		lua_insert( L, 1 );
+		lua_insert( L, 1 );            // S: tbl msg
 		loc = lua_tostring( L, 2 );
-		msg = strchr( loc, ':' ) +1;   // find separator of filename and line number
-		msg = strchr( msg, ':' ) + 2;  // find separator before message
-		if ( 0==strncmp( T_TST_CSE_SKIPINDICATOR, msg, strlen( T_TST_CSE_SKIPINDICATOR) ))
+		msg = strchr( loc, ':' );      // find separator of filename and line number
+		if (msg)
 		{
-			lua_pushstring( L, msg+strlen( T_TST_CSE_SKIPINDICATOR) );
-			lua_setfield( L, 1, "skip" );
-			lua_pop( L, 1 );    // pop original massage
+			msg++;
+			msg = strchr( msg, ':' ) + 2;  // find separator before message
+			if (0==strncmp( T_TST_CSE_SKIPINDICATOR, msg, strlen( T_TST_CSE_SKIPINDICATOR ) ))
+			{
+				lua_pushstring( L, msg+strlen( T_TST_CSE_SKIPINDICATOR) );
+				lua_setfield( L, 1, "skip" );
+				lua_pop( L, 1 );    // pop original massage
+			}
+			else
+			{
+				lua_pushstring( L, msg );
+				lua_setfield( L, 1, "message" );
+				lua_pushlstring( L, loc, msg-loc-2 );
+				lua_setfield( L, 1, "location" );
+				lua_pop( L, 1 );    // pop original message
+				luaL_traceback( L, L, NULL, 1 );
+				lua_setfield( L, 1, "traceback" );
+			}
 		}
 		else
 		{
-			lua_pushstring( L, msg );
-			lua_setfield( L, 1, "message" );
-			lua_pushlstring( L, loc, msg-loc-2 );
+			lua_setfield( L, 1, "message" );    // push original message
+			luaL_where( L, 2 );
 			lua_setfield( L, 1, "location" );
-			lua_pop( L, 1 );    // pop original massage
 			luaL_traceback( L, L, NULL, 1 );
 			lua_setfield( L, 1, "traceback" );
 		}
