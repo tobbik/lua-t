@@ -45,7 +45,7 @@ local   tests = {
 		local eSet = Set()
 		assert( #eSet == 0, "Length must be zero" )
 		for i,v in pairs( eSet ) do
-			assert( false, "No iteration over empty Set" )
+			assert( false, "No iteration over Empty Set" )
 		end
 	end,
 
@@ -54,9 +54,9 @@ local   tests = {
 		local eSet = Set( {} )
 		assert( #eSet == 0, "Length must be zero" )
 		for i,v in pairs( eSet ) do
-			assert( false, "No iteration over empty Set" )
+			assert( false, "No iteration over Empty Set" )
 		end
-		assert( eSet == Set(), "Set from empty table must be equal Emmpty set" )
+		assert( eSet == Set(), "Set from empty table must be equal Empty set" )
 	end,
 
 	test_ConstructorFromArray = function( self )
@@ -371,7 +371,7 @@ local   tests = {
 		local aSet = Set( self.setA )
 		local cSet = self.setA - aSet
 
-		assert( Set( ) == cSet, "Complement shall be empty set" )
+		assert( Set( ) == cSet, "Complement shall be Empty set" )
 	end,
 
 	test_ComplementDisjoint = function( self )
@@ -406,7 +406,7 @@ local   tests = {
 		local aSet = Set( self.setA )
 		local dSet = self.setA ~ aSet
 
-		assert( Set(  ) == dSet, "Difference shall be empty set" )
+		assert( Set(  ) == dSet, "Difference shall be Empty set" )
 	end,
 
 	test_SymmetricDifferenceDisjunct = function( self )
