@@ -3,21 +3,25 @@
 ---
 -- \file    t_oht.lua
 -- \brief   Test for the Ordered Hash Table
-local   Test   = require ('t').Test
-local   Oht    = require ('t').OrderedHashTable
+local T      = require( 't' )
+local Test   = T.Test
+local Oht    = T.OrderedHashTable
+local Rtvg   = T.require( 'rtvg' )
 
 local tests = {
+	len   = math.random( 700, 2000 ),
 	setUp = function( self )
-		self.keys = { print, true  , {'a'}  , 0.75      , 'a string' , function(a) return a end, {} }
-		self.vals = { false, 1.2345, 'third', Oht.concat, function(x) return x+x end, {}, {1,2} }
-		assert( #self.keys == #self.vals, "Keys and Values must be of same length" )
-		self.o, self.len    = Oht( ), 0
+		self.rtvg   = Rtvg( )
+		self.keys   = self.rtvg:getKeys( self.len )
+		self.vals   = self.rtvg:getVals( self.len )
+		self.o, len = Oht( ), 0
 		-- insertion order is preserved inside the Hash table
 		for i = 1, #self.keys do
 			self.o[ self.keys[i] ] = self.vals[i]
-			self.len  = self.len+1   -- count inserts
+			len  = len+1   -- count inserts
 		end
-		assert( #self.keys == self.len, "Number of inserts must equal length of Keys" )
+		assert( #self.keys == #self.vals, "Keys and Values must be of same length" )
+		assert( len        == self.len,   "Number of inserts must equal length of Keys" )
 	end,
 
 	--tearDown = function( self )  -- not necessary for this suite
@@ -284,7 +288,7 @@ local tests = {
 	end
 }
 
-t_oht = Test( tests )
-t_oht( )
---t_oht.test_ConcatStrings( t_oht )
---print( t_oht )
+t = Test( tests )
+t( )
+--t.test_DeleteHashElement( t )
+print( t )
