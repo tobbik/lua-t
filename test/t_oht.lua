@@ -125,45 +125,54 @@ local tests = {
 	test_AddElement = function( self )
 		Test.describe( "Adding element increases size" )
 		local o_len = #self.o
-		local value = "eighth"
+		local key   = self.rtvg:getKey()
+		local value = self.rtvg:getVal()
 
-		self.o.eight         =  value
-		assert( #self.o      == o_len+1,    "Adding element must increase length" )
-		assert( self.o.eight == value,      "New Element is available under given key" )
-		assert( self.o[ #self.o ] == value, "New Element is available as last element" )
+		self.o[ key ]         =  value
+		assert( #self.o       == o_len+1,    "Adding element must increase length" )
+		assert( self.o[ key ] == value,      "New Element is available under given key" )
+		assert( self.o[ #self.o ] == value,  "New Element is available as last element" )
 	end,
 
 	test_DeleteHashElement = function( self )
 		Test.describe( "Removing Hash element decreases size and move down higher keys" )
 		local o_len = #self.o
-		local k4    = self.keys[4]
-		local k5    = self.keys[5]
-		local k6    = self.keys[6]
-		local four  = self.o[k4]
-		local six   = self.o[k6]
+		local idx   = math.ceil( o_len / 2 )
+		local key   = self.keys[ idx   ]
+		local klt   = self.keys[ idx-1 ]
+		local kgt   = self.keys[ idx+1 ]
+		local vlt   = self.o[ klt ]
+		local vgt   = self.o[ kgt ]
 
-		self.o[k5]          =  nil
-		assert( #self.o     == o_len-1, "Removing element must decrease length" )
-		assert( self.o[k4]  == four,    "Removing element musn't affect lower keys" )
-		assert( self.o[4]   == four,    "Removing element musn't affect lower keys" )
-		assert( self.o[k6]  == six,     "Removing element musn't affect higher keys" )
-		assert( self.o[5]   == six,     "Removing element must move down higher keys" )
+		assert( self.o[idx]   ~= nil,   "Element must exist before removing it" )
+		self.o[ key ]         =  nil
+		assert( #self.o       == o_len-1, "Removing element must decrease length" )
+		assert( self.o[klt]   == vlt,     "Removing element musn't affect lower keys" )
+		assert( self.o[idx-1] == vlt,     "Removing element musn't affect lower keys" )
+		assert( self.o[idx]   == vgt,     "Removing element must move down higher keys" )
+		assert( self.o[kgt]   == vgt,     "Removing element must keep keys attached" )
 	end,
 
 	test_DeleteIndexElement = function( self )
 		Test.describe( "Removing Index element decreases size and move down higher keys" )
-		local o_len = #self.o
-		local k4    = self.keys[4]
-		local k6    = self.keys[6]
-		local four  = self.o[4]
-		local six   = self.o[6]
+		local o     = self.o
+		local o_len = #o
+		local idx   = math.ceil( o_len / 2 )
+		local key   = self.keys[ idx   ]
+		local val   = o[ idx   ]
+		local klt   = self.keys[ idx-1 ]
+		local kgt   = self.keys[ idx+1 ]
+		local vlt   = o[ klt ]
+		local vgt   = o[ kgt ]
 
-		self.o[5]   = nil
-		assert( #self.o     == o_len-1, "Removing element must decrease length" )
-		assert( self.o[k4]  == four,    "Removing element musn't affect lower keys" )
-		assert( self.o[4]   == four,    "Removing element musn't affect lower keys" )
-		assert( self.o[k6]  == six,     "Removing element musn't affect lower keys" )
-		assert( self.o[5]   == six,     "Removing element must move down higher keys" )
+		assert( o[key]   ~= nil,     "Element must exist before removing it" )
+		o[ idx ]         =  nil
+		assert( #o       == o_len-1, "Removing element must decrease length" )
+		assert( o[klt]   == vlt,     "Removing element musn't affect lower keys" )
+		assert( o[idx-1] == vlt,     "Removing element musn't affect lower keys" )
+		assert( o[kgt]   == vgt,     "Removing element musn't affect lower keys" )
+		assert( o[idx]   == vgt,     "Removing element must move down higher keys" )
+		assert( o[key]   == nil,     "Element mustn't exist after removing it" )
 	end,
 
 	test_InsertElement = function( self )
@@ -290,5 +299,4 @@ local tests = {
 
 t = Test( tests )
 t( )
---t.test_DeleteHashElement( t )
 print( t )

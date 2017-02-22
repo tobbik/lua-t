@@ -420,7 +420,6 @@ local   tests = {
 	end,
 }
 
-
 t = Test( tests )
 t( )
 print( t )
