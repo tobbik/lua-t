@@ -30,8 +30,8 @@ static int
 lt_tst__Call( lua_State *L )
 {
 	lua_remove( L, 1 );                  //S: …         remove T.Test class
-	lua_newtable( L );                   //S: … ste
-	luaL_getmetatable( L, T_TST_TYPE );  //S: … ste met
+	lua_newtable( L );                   //S: … tbl
+	luaL_getmetatable( L, T_TST_TYPE );  //S: … tbl met
 	lua_setmetatable( L, -2 );           //S: … ste
 	t_getProxyTableIndex( L );           //S: … ste {}
 	lua_newtable( L );                   //S: … ste {} tbl
@@ -72,71 +72,36 @@ t_tst_check( lua_State *L, int pos, int check )
 
 
 /**--------------------------------------------------------------------------
- * Executes the test suite.
- * \param   L      Lua state.
- * \lparam  table  T.Test Lua table instance.
- * \lreturn boole  True if all passed, otherwise false.
- * \return  int    # of values pushed onto the stack.
+ * Finishes the __call of the table.
+ * \param   L        Lua state.
+ * \lparam  table    T.Test Lua table instance.
  * --------------------------------------------------------------------------*/
 static int
-lt_tst__call( lua_State *L )
+t_tst__callFinish( lua_State *L )
 {
-	size_t          i,
-	                all,
-	                pass = 0,
-	                skip = 0,    // won't be run
-	                todo = 0;    // will be run, expected to fail
-	int             is_pass, is_todo, is_skip;
-	struct timeval  tm;
-
 	t_tst_check( L, 1, 1 );
-	t_tim_now( &tm, 0 );
-	all = lua_rawlen( L, 1 );
+	size_t          i;
+	size_t			 pass = 0,
+						 skip = 0,  ///< marked as ran but haven't finished
+						 todo = 0;  ///< expected to fail
 
-	for ( i=0; i<all; i++ )
+	for (i=0; i<lua_rawlen( L, 1 ); i++)
 	{
-		lua_rawgeti( L, 1, i+1 );        //S: ste cse
-		lua_pushvalue( L, -1 );          //S: ste cse cse
-		lua_getfield( L, 2, "description" );    //S: ste cse cse dsc
-		printf( "%5zu of %zu --- `%s` -> ", i+1, all, lua_tostring( L, -1 ) );
-		lua_pop( L, 1 );                 // pop desc and todo
-
-		// execute Test.Case
-		luaL_getmetafield( L, 2, "__call" );
-		lua_insert( L, -2 );             //S: ste cse _call cse
-		lua_pushvalue( L, 1 );           //S: ste cse _call cse ste
-		lua_call( L, 2, 1 );             //S: ste cse t/f
-		lua_pop( L, 1 );                 //S: ste cse
-		is_pass = (t_tst_cse_hasField( L, "pass", 0 )) ? 1 : 0;
-		is_skip = (t_tst_cse_hasField( L, "skip", 1 )) ? 1 : 0;
-		is_todo = (t_tst_cse_hasField( L, "todo", 1 )) ? 1 : 0;
-		printf( "%s", (is_skip || is_pass) ? "ok" : "fail" );
-		if (is_skip)
-		{
-			printf( " # SKIP: %s", lua_tostring( L, -1 ) );
-			skip++;
-			lua_pop( L, 1 );
-		}
-		if (is_todo)
-		{
-			printf( " # TODO: %s", lua_tostring( L, -1 ) );
-			todo++;
-			lua_pop( L, 1 );
-		}
-		printf( "\n" );
-		pass += (is_pass) ? 1 : 0;
-		lua_pop( L, 1 );                 //S: ste
+		lua_rawgeti( L, 1, i );          //S: ste tbl cse
+		pass += (t_tst_cse_hasField( L, "pass", 0 )) ? 1 : 0;
+		skip += (t_tst_cse_hasField( L, "skip", 0 )) ? 1 : 0;
+		todo += (t_tst_cse_hasField( L, "todo", 0 )) ? 1 : 0;
+		lua_pop( L, 1 );                 //S: ste tbl
 	}
-
-	t_tim_since( &tm );
 	printf( "---------------------------------------------------------\n"
-	        "Handled %lu tests in %.3f seconds\n\n"
-	        "Executed         : %lu\n"
-	        "Skipped          : %lu\n"
-	        "Expected to fail : %lu\n"
-	        "Failed           : %lu\n"
+	        "Handled %ld tests in %.3f seconds\n\n"
+	        "Executed         : %ld\n"
+	        "Skipped          : %ld\n"
+	        "Expected to fail : %ld\n"
+	        "Failed           : %ld\n"
 	        "status           : %s\n"
-	   , i, t_tim_getms( &tm )/1000.0
+	   //, i, t_tim_getms( &tm )/1000.0
+	   , i, 3.0000
 	   , i - skip
 	   , skip
 	   , todo
@@ -147,6 +112,64 @@ lt_tst__call( lua_State *L )
 
 	return 1;
 }
+
+
+/**--------------------------------------------------------------------------
+ * Execute the next test in line.
+ * \param   L        Lua state.
+ * \upval   int      next test to pop from the list.
+ * \lparam  table    T.Test Lua table instance.
+ * --------------------------------------------------------------------------*/
+int
+t_tst_exec( lua_State *L )
+{
+	lua_pushvalue( L, lua_upvalueindex( 1 ) );
+	int idx = lua_tointeger( L, lua_upvalueindex( 2 ) ) + 1;
+	lua_pushvalue( L, 1 );          //S: ste ste
+	t_tst_check( L, 2, 1 );         //S: ste tbl
+	printf( "EXECUTE INDEX: %d\n", idx );
+	if (idx>(int) lua_rawlen( L, -1 ))
+	{
+		lua_pushcfunction( L, t_tst__callFinish ); //S: ste tbl fnc
+		lua_insert( L, -3 );
+		lua_pop( L, 1 );
+		lua_call( L, 1, 0 );
+	}
+	else
+	{
+		lua_pushinteger( L, idx );
+		lua_pushcclosure( L, lt_tst_cse__call, 1 ); //S: ste tbl fnc
+		lua_rawgeti( L, 2, idx );       //s: ste tbl fnc cse
+		lua_remove( L, 2 );             //S: ste fnc cse
+		lua_pushvalue( L, 1 );          //s: ste fnc cse ste
+		lua_call( L, 2, 1 );
+	}
+	return 1;
+}
+
+
+/**--------------------------------------------------------------------------
+ * Call the first test on the table.
+ * \param   L        Lua state.
+ * \upval   int      next test to pop from the list.
+ * \lparam  table    T.Test Lua table instance.
+ * --------------------------------------------------------------------------*/
+static int
+lt_tst__call( lua_State *L )
+{
+	lua_pushvalue( L, 1 );
+	t_tst_check( L, 2, 1 );                //S: ste tbl
+	if (lua_rawlen( L, -1 ) < 1)
+		return 0;
+	lua_pop( L, 1 );
+	lua_pushinteger( L, 0 );               //S: ste idx
+	lua_pushcclosure( L, t_tst_exec, 2 );  //S: exc
+
+	lua_call( L, 0, 0 );
+	return 0;
+}
+
+
 
 
 /**--------------------------------------------------------------------------
@@ -388,7 +411,6 @@ lt_tst_Describe( lua_State *L )
 	}
 	return 0;
 }
-
 
 
 /** -------------------------------------------------------------------------

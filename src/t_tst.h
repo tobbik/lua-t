@@ -14,6 +14,7 @@
 
 int    t_tst_create( lua_State *L );
 int    t_tst_check( lua_State *L, int pos, int check );
+int    t_tst_exec( lua_State *L );
 LUA_API int luaopen_t_tst( lua_State *L );
 
 int    t_tst_cse_create( lua_State *L );
@@ -21,5 +22,7 @@ int    t_tst_cse_check( lua_State *L, int pos, int check );
 void   t_tst_cse_addTapDiagnostic( lua_State *L, int pos );
 void   t_tst_cse_getDescription( lua_State *L, int pos );
 int    t_tst_cse_hasField( lua_State *L, const char *fld, int leave );
+int    t_tst_cse_isType( lua_State *L, int pos, const char *typeName );
+int    lt_tst_cse__call( lua_State *L );
 int    t_tst_isReallyEqual( lua_State *L );
 LUA_API int luaopen_t_tst_cse( lua_State *L );

@@ -34,10 +34,10 @@ BITS                  HEX
 11111      -1   31     1F 
 
 
-XZ XZ AB CD RT RT RT RT ...
+Unit test execution model:
 
-[CD AB 00 00 00 00 00 00]
-[00 00 00 00 00 00 AB CD]
+-> Test.Suite.__call( Test.Suite )
+-> Test.Case.__call( Test.Case, Test.Suite )
 
 
 

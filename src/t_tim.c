@@ -323,7 +323,7 @@ lt_tim__sub( lua_State *L )
  * \return  int  # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int
-lt_tim_sleep( lua_State *L )
+lt_tim_Sleep( lua_State *L )
 {
 #ifdef _WIN32
 	fd_set dummy;
@@ -359,7 +359,7 @@ static const struct luaL_Reg t_tim_fm [] = {
  * Class functions library definition
  * --------------------------------------------------------------------------*/
 static const luaL_Reg t_tim_cf [] = {
-	  { "sleep",     lt_tim_sleep }     // can work on class or instance
+	  { "sleep",     lt_tim_Sleep }     // can work on class or instance
 	, { NULL,        NULL }
 };
 
@@ -375,7 +375,7 @@ static const struct luaL_Reg t_tim_m [] = {
 	// instance methods
 	, { "set",        lt_tim_set }
 	, { "get",        lt_tim_get }
-	, { "sleep",      lt_tim_sleep }
+	, { "sleep",      lt_tim_Sleep }
 	, { "now",        lt_tim_now }
 	, { "since",      lt_tim_since }
 	, { NULL,   NULL }
