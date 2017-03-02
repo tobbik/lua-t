@@ -121,29 +121,11 @@ t_tst__callFinish( lua_State *L )
  * \lparam  table    T.Test Lua table instance.
  * --------------------------------------------------------------------------*/
 int
-t_tst_exec( lua_State *L )
+t_tst_done( lua_State *L )
 {
 	lua_pushvalue( L, lua_upvalueindex( 1 ) );
-	int idx = lua_tointeger( L, lua_upvalueindex( 2 ) ) + 1;
-	lua_pushvalue( L, 1 );          //S: ste ste
-	t_tst_check( L, 2, 1 );         //S: ste tbl
-	printf( "EXECUTE INDEX: %d\n", idx );
-	if (idx>(int) lua_rawlen( L, -1 ))
-	{
-		lua_pushcfunction( L, t_tst__callFinish ); //S: ste tbl fnc
-		lua_insert( L, -3 );
-		lua_pop( L, 1 );
-		lua_call( L, 1, 0 );
-	}
-	else
-	{
-		lua_pushinteger( L, idx );
-		lua_pushcclosure( L, lt_tst_cse__call, 1 ); //S: ste tbl fnc
-		lua_rawgeti( L, 2, idx );       //s: ste tbl fnc cse
-		lua_remove( L, 2 );             //S: ste fnc cse
-		lua_pushvalue( L, 1 );          //s: ste fnc cse ste
-		lua_call( L, 2, 1 );
-	}
+	int idx = lua_tointeger( L, lua_upvalueindex( 2 ) );
+	printf("DONE EXECUTING TESTING INDEX:  %d\n", idx );
 	return 1;
 }
 
@@ -157,15 +139,19 @@ t_tst_exec( lua_State *L )
 static int
 lt_tst__call( lua_State *L )
 {
+	size_t idx;
 	lua_pushvalue( L, 1 );
-	t_tst_check( L, 2, 1 );                //S: ste tbl
-	if (lua_rawlen( L, -1 ) < 1)
-		return 0;
-	lua_pop( L, 1 );
-	lua_pushinteger( L, 0 );               //S: ste idx
-	lua_pushcclosure( L, t_tst_exec, 2 );  //S: exc
+	t_tst_check( L, 2, 1 );            //S: ste tbl
+	printf( "TESTLENGTH: %d\n", lua_rawlen( L, 2 ));
+	for (idx=0; idx<lua_rawlen( L, 2 ); idx++)
+	{
+		lua_pushinteger(L,idx+1);
+		lua_pushcclosure( L, lt_tst_cse__call,1); //S: ste tbl fnc
+		lua_rawgeti( L, 2, idx+1 );     //S: ste tbl fnc cse
+		lua_pushvalue( L, 1 );          //S: ste fnc cse ste
+		lua_call( L, 2, 0 );
+	}
 
-	lua_call( L, 0, 0 );
 	return 0;
 }
 

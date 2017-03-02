@@ -353,7 +353,7 @@ t_tst_cse_afterEach( lua_State *L )
 		lua_pushvalue( L, lua_upvalueindex( 3 ) );     //S: cse trd ste
 		if (is_cb)
 		{
-			lua_pushvalue( L, lua_upvalueindex( 1 ) );  //S: cse trd ste exc
+			lua_pushvalue( L, lua_upvalueindex( 1 ) );  //S: cse trd ste dne
 			if (lua_pcall( L, 2, 0, 0 ))
 				luaL_error( L, "Test %s failed %s", "afterEach", lua_tostring( L, -1 ) );
 		}
@@ -361,14 +361,14 @@ t_tst_cse_afterEach( lua_State *L )
 		{
 			if (lua_pcall( L, 1, 0, 0 ))
 				luaL_error( L, "Test %s failed %s", "afterEach", lua_tostring( L, -1 ) );
-			lua_pushvalue( L, lua_upvalueindex( 1 ) );  //S: cse trd ste exc
+			lua_pushvalue( L, lua_upvalueindex( 1 ) );  //S: cse trd ste dne
 			lua_call( L, 0, 0 );
 		}
 	}
 	else
 	{
-		lua_pop( L, -1 );
-		lua_pushvalue( L, lua_upvalueindex( 1 ) );  //S: cse exc
+		lua_pop( L, 1 );
+		lua_pushvalue( L, lua_upvalueindex( 1 ) );  //S: cse trd ste dne
 		lua_call( L, 0, 0 );
 	}
 	return 0;
@@ -407,10 +407,7 @@ t_tst_cse_execute( lua_State *L )
 		lua_pop( L, 2 );                           // pop the err tbl and tbk func
 	}
 	else
-	{
-		printf("%s -- ", (is_cb)?"async":"sync");t_stackDump(L);
 		lua_pop( L, 1 );                           // pop the tbk function
-	}
 	if (! is_cb)
 	{
 		lua_pushvalue( L, lua_upvalueindex( 1 ) ); // S: cse tbk fnc ste trd
@@ -434,13 +431,11 @@ lt_tst_cse__call( lua_State *L )
 	t_tst_cse_check( L, 1, 1 );
 	lua_pushvalue( L, 2 );                        // S: cse ste ste
 	t_tst_check( L, 3, 1 );                       // S: cse ste tbl
-	int idx   = lua_tointeger( L, lua_upvalueindex( 1 ) );
-	printf( "index %d\n", idx );
 
 	// create closure that returns control to the runner
 	lua_pushvalue( L, 2 );
-	lua_pushinteger( L, idx );                    // S: cse ste tbl ste idx
-	lua_pushcclosure( L, t_tst_exec, 2 );         // S: cse ste tbl run
+	lua_pushvalue( L, lua_upvalueindex( 1 ) );    // S: cse ste tbl ste idx
+	lua_pushcclosure( L, t_tst_done, 2 );         // S: cse ste tbl run
 
 	// create closure for the afterEach Hook
 	lua_pushvalue( L, 1 );

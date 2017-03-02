@@ -14,7 +14,7 @@
 
 int    t_tst_create( lua_State *L );
 int    t_tst_check( lua_State *L, int pos, int check );
-int    t_tst_exec( lua_State *L );
+int    t_tst_done( lua_State *L );
 LUA_API int luaopen_t_tst( lua_State *L );
 
 int    t_tst_cse_create( lua_State *L );
