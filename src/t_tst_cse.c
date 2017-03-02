@@ -32,8 +32,6 @@ t_tst_cse_traceback( lua_State *L )
 	if (LUA_TSTRING == lua_type( L, 1 ))
 	{
 		lua_newtable( L );
-		lua_pushboolean( L, 0 );
-		lua_setfield( L, -2, "skip" );
 		lua_insert( L, 1 );            // S: tbl msg
 		loc = lua_tostring( L, 2 );
 		msg = strchr( loc, ':' );      // find separator of filename and line number
@@ -45,10 +43,14 @@ t_tst_cse_traceback( lua_State *L )
 			{
 				lua_pushstring( L, msg+strlen( T_TST_CSE_SKIPINDICATOR) );
 				lua_setfield( L, 1, "skip" );
+				lua_pushboolean( L, 1 );
+				lua_setfield( L, 1, "pass" );
 				lua_pop( L, 1 );    // pop original massage
 			}
 			else
 			{
+				lua_pushboolean( L, 1 );
+				lua_setfield( L, 1, "pass" );
 				lua_pushstring( L, msg );
 				lua_setfield( L, 1, "message" );
 				lua_pushlstring( L, loc, msg-loc-2 );
@@ -306,7 +308,7 @@ t_tst_cse_beforeEach( lua_State *L )    //S: … cse ste tbl exc
 	lua_remove( L, -3 );                 //S: … cse ste exc n/f
 	if (! lua_isnil( L, -1 ))
 	{
-		lua_insert( L, -3 );              //S: … cse fnc ste exc
+		lua_insert( L, -3 );              //S: … cse bfe ste exc
 		if (is_cb)
 		{
 			if (lua_pcall( L, 2, 0, 0 ))
@@ -317,12 +319,15 @@ t_tst_cse_beforeEach( lua_State *L )    //S: … cse ste tbl exc
 			lua_insert( L, -3 );           //S: … cse exc fnc ste
 			if (lua_pcall( L, 1, 0, 0 ))
 				luaL_error( L, "Test %s failed %s", "beforeEach", lua_tostring( L, -1 ) );
+			lua_call( L, 0, 0 );
 		}
 	}
 	else
-		lua_pop( L, -1 );          //S: … cse ste exc
-	if (! is_cb)
+	{
+		lua_pop( L, 1 );          //S: … cse ste exc
 		lua_call( L, 0, 0 );
+	}
+
 	return 0;
 }
 
@@ -340,14 +345,18 @@ t_tst_cse_afterEach( lua_State *L )
 	is_cb   = t_tst_cse_isType( L, 1, "callback" );  //S: cse
 	is_todo = t_tst_cse_hasField( L, "todo", 0 );
 	is_skip = t_tst_cse_hasField( L, "skip", 0 );
-	lua_pushboolean( L, 1 );                      //S: cse pass
-	lua_setfield( L, 1, "pass" );
+	lua_getfield( L, -1, "pass" );
+	if (lua_isnil( L, -1 ))
+	{
+		lua_pushboolean( L, 1 );                      //S: cse nil true
+		lua_setfield( L, -3, "pass" );
+	}
+	lua_pop( L, 1 );
 
 	lua_pushvalue( L, lua_upvalueindex( 3 ) );     ///< test suite
 	t_tst_check( L, -1, 1 );                       //S: cse tbl
 	lua_getfield( L, -1, (is_cb) ? "afterEach_cb":"afterEach" );
 	lua_remove( L, -2 );                           //S: cse n/f
-	//t_stackDump(L);
 	if (! lua_isnil( L, -1 ))
 	{
 		lua_pushvalue( L, lua_upvalueindex( 3 ) );     //S: cse trd ste
@@ -395,7 +404,6 @@ t_tst_cse_execute( lua_State *L )
 	lua_pushvalue( L, lua_upvalueindex( 3 ) );    // S: cse tbk fnc ste
 	is_cb = t_tst_cse_isType( L, -4, "callback" );
 
-	//t_stackDump(L);
 	if (is_cb)
 		lua_pushvalue( L, lua_upvalueindex( 1 ) ); // S: cse tbk fnc ste trd
 
@@ -434,7 +442,7 @@ lt_tst_cse__call( lua_State *L )
 
 	// create closure that returns control to the runner
 	lua_pushvalue( L, 2 );
-	lua_pushvalue( L, lua_upvalueindex( 1 ) );    // S: cse ste tbl ste idx
+	lua_pushvalue( L, 1 );                        // S: cse ste tbl ste cse
 	lua_pushcclosure( L, t_tst_done, 2 );         // S: cse ste tbl run
 
 	// create closure for the afterEach Hook

@@ -10,7 +10,7 @@ local Rtvg   = T.require( 'rtvg' )
 
 local tests = {
 	len   = math.random( 700, 2000 ),
-	setUp = function( self )
+	beforeEach = function( self )
 		self.rtvg   = Rtvg( )
 		self.keys   = self.rtvg:getKeys( self.len )
 		self.vals   = self.rtvg:getVals( self.len )
@@ -24,7 +24,7 @@ local tests = {
 		assert( len        == self.len,   "Number of inserts must equal length of Keys" )
 	end,
 
-	--tearDown = function( self )  -- not necessary for this suite
+	--afterEach = function( self )  -- not necessary for this suite
 	--end,
 
 	test_LengthMustEqualInserts = function( self )

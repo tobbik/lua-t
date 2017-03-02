@@ -10,7 +10,7 @@ local Rtvg  = T.require( 'rtvg' )
 
 local   tests = {
 	len   = math.random( 700, 2000 ),
-	setUp = function( self )
+	beforeEach = function( self )
 		self.rtvg = Rtvg( )
 		self.aryA = self.rtvg:getVals( self.len )
 		self.aryB = self.rtvg:getVals( self.len )
@@ -33,7 +33,7 @@ local   tests = {
 		return part1, part2
 	end,
 
-	--tearDown = function( self )  -- not necessary for this suite
+	--afterEach = function( self )  -- not necessary for this suite
 	--end,
 
 	-- -----------------------------------------------------------------------

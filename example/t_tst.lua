@@ -6,7 +6,7 @@
 local   Test   = require ('t').Test
 
 tc = {
-	setUp = function( self )
+	beforeEach = function( self )
 		self.a       = 10
 		self.b       = 20
 		self.c       = 30

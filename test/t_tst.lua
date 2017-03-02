@@ -6,7 +6,7 @@
 local Test  = require ('t').Test
 
 local tests = {
-	setUp = function( self )
+	beforeEach = function( self )
 		-- base test elements -> all of them successful
 		self.t = Test( {
 			setUp        = function( s )   s.something = 1 end,
@@ -16,7 +16,7 @@ local tests = {
 		} )
 	end,
 
-	tearDown = function( self ) -- not necessary for this suite
+	afterEach = function( self ) -- not necessary for this suite
 	end,
 
 	-- -----------------------------------------------------------------------

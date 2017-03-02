@@ -79,15 +79,15 @@ t_tst_check( lua_State *L, int pos, int check )
 static int
 t_tst__callFinish( lua_State *L )
 {
-	t_tst_check( L, 1, 1 );
-	size_t          i;
-	size_t			 pass = 0,
-						 skip = 0,  ///< marked as ran but haven't finished
-						 todo = 0;  ///< expected to fail
+	size_t     i;
+	size_t  pass = 0,
+	        skip = 0,  ///< marked as ran but haven't finished
+	        todo = 0;  ///< expected to fail
 
+	t_tst_check( L, 1, 1 );
 	for (i=0; i<lua_rawlen( L, 1 ); i++)
 	{
-		lua_rawgeti( L, 1, i );          //S: ste tbl cse
+		lua_rawgeti( L, 1, i+1 );        //S: ste tbl cse
 		pass += (t_tst_cse_hasField( L, "pass", 0 )) ? 1 : 0;
 		skip += (t_tst_cse_hasField( L, "skip", 0 )) ? 1 : 0;
 		todo += (t_tst_cse_hasField( L, "todo", 0 )) ? 1 : 0;
@@ -123,10 +123,29 @@ t_tst__callFinish( lua_State *L )
 int
 t_tst_done( lua_State *L )
 {
+	size_t ran = 0;
+	lua_pushvalue( L, lua_upvalueindex( 2 ) );
+	t_tst_cse_getDescription( L, 1 );
+	printf("Executed Test:  %s\n", lua_tostring( L, -1 ) );
+	lua_pop( L, 2 );
 	lua_pushvalue( L, lua_upvalueindex( 1 ) );
-	int idx = lua_tointeger( L, lua_upvalueindex( 2 ) );
-	printf("DONE EXECUTING TESTING INDEX:  %d\n", idx );
-	return 1;
+	t_tst_check( L, -1, 1 );
+	for (size_t idx=0; idx < lua_rawlen( L, 1 ); idx++)
+	{
+		lua_rawgeti( L, 1, idx+1 );      //S: tbl cse
+		lua_getfield( L, -1, "pass" );
+		ran += (lua_isnil( L, -1 )) ? 0 : 1;
+		lua_pop( L, 2 );         // pop nil/pass and the case
+	}
+	if (lua_rawlen( L, -1 ) == ran)
+	{
+		lua_pushcfunction( L, t_tst__callFinish );
+		lua_pushvalue( L, lua_upvalueindex( 1 ) );
+		lua_call( L, 1, 1 );
+		return 1;
+	}
+	else
+		return 0;
 }
 
 
@@ -142,11 +161,9 @@ lt_tst__call( lua_State *L )
 	size_t idx;
 	lua_pushvalue( L, 1 );
 	t_tst_check( L, 2, 1 );            //S: ste tbl
-	printf( "TESTLENGTH: %d\n", lua_rawlen( L, 2 ));
 	for (idx=0; idx<lua_rawlen( L, 2 ); idx++)
 	{
-		lua_pushinteger(L,idx+1);
-		lua_pushcclosure( L, lt_tst_cse__call,1); //S: ste tbl fnc
+		lua_pushcfunction( L, lt_tst_cse__call ); //S: ste tbl fnc
 		lua_rawgeti( L, 2, idx+1 );     //S: ste tbl fnc cse
 		lua_pushvalue( L, 1 );          //S: ste fnc cse ste
 		lua_call( L, 2, 0 );
@@ -154,8 +171,6 @@ lt_tst__call( lua_State *L )
 
 	return 0;
 }
-
-
 
 
 /**--------------------------------------------------------------------------
