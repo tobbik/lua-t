@@ -358,13 +358,18 @@ t_tst_cse_afterEach( lua_State *L )
 				luaL_error( L, "Test %s failed %s", "afterEach", lua_tostring( L, -1 ) );
 		}
 		else
+		{
 			if (lua_pcall( L, 1, 0, 0 ))
 				luaL_error( L, "Test %s failed %s", "afterEach", lua_tostring( L, -1 ) );
+			lua_pushvalue( L, lua_upvalueindex( 1 ) );  //S: cse trd ste exc
+			lua_call( L, 0, 0 );
+		}
 	}
 	else
 	{
 		lua_pop( L, -1 );
-		lua_pushcfunction( L, t_tst_exec );
+		lua_pushvalue( L, lua_upvalueindex( 1 ) );  //S: cse exc
+		lua_call( L, 0, 0 );
 	}
 	return 0;
 }
@@ -403,7 +408,7 @@ t_tst_cse_execute( lua_State *L )
 	}
 	else
 	{
-		t_stackDump(L);
+		printf("%s -- ", (is_cb)?"async":"sync");t_stackDump(L);
 		lua_pop( L, 1 );                           // pop the tbk function
 	}
 	if (! is_cb)
