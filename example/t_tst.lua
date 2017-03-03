@@ -7,15 +7,15 @@ local   Test   = require ('t').Test
 
 tc = {
 	beforeEach = function( self )
-		self.a       = 10
-		self.b       = 20
-		self.c       = 30
-		self.s1      = "This is a String"
-		self.s11     = "This is a String"
-		self.s2      = "This is anonther String"
+		self.a    = 10
+		self.b    = 20
+		self.c    = 30
+		self.s1   = "This is a String"
+		self.s11  = "This is a String"
+		self.s2   = "This is anonther String"
 	end,
 
-	--tearDown = function( self )  -- not necessary for this suite
+	--afterEach = function( self )  -- not necessary for this suite
 	--end,
 
 	test_EqNumbers = function( self )

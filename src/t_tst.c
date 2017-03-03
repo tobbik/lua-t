@@ -72,12 +72,12 @@ t_tst_check( lua_State *L, int pos, int check )
 
 
 /**--------------------------------------------------------------------------
- * Finishes the __call of the table.
+ * Finishes the __call of T.Test suite.  Assembles report.
  * \param   L        Lua state.
  * \lparam  table    T.Test Lua table instance.
  * --------------------------------------------------------------------------*/
 static int
-t_tst__callFinish( lua_State *L )
+t_tst_callFinalize( lua_State *L )
 {
 	size_t i;
 	size_t pass  = 0,
@@ -109,7 +109,6 @@ t_tst__callFinish( lua_State *L )
 	   , todo
 	   , i-pass
 	   , (i == pass+todo) ? "OK" : "FAIL" );
-
 	lua_pushboolean( L, (i==pass + todo) ? 1 : 0 );
 
 	return 1;
@@ -117,7 +116,34 @@ t_tst__callFinish( lua_State *L )
 
 
 /**--------------------------------------------------------------------------
- * Finish the execution of a T.Test case.
+ * Run the beforeAll/afterAll envelope for T.Test suite.
+ * \param   L        Lua state.
+ * \lparam  table    T.Test Lua table instance.
+ * \lparam  cfunc    Function to be executed after envelope() call.
+ * --------------------------------------------------------------------------*/
+static int
+t_tst_callEnvelope( lua_State *L, const char *envelope )
+{
+	lua_getfield( L, 1, envelope );
+	if (! lua_isnil( L, -1 ))
+	{
+		lua_insert( L, -3 );
+		if (lua_pcall( L, 2, 0, 0 ))
+			luaL_error( L, "T.Test Suite %s() failed: %s",
+				envelope, lua_tostring( L, -1 ) );
+	}
+	else
+	{
+		lua_pop( L, 1 );
+		lua_insert( L , -2 );
+		lua_call( L, 1, 0 );
+	}
+	return 0;
+}
+
+
+/**--------------------------------------------------------------------------
+ * Finish the execution of a T.Test.Case.
  * \param   L        Lua state.
  * \upvale  table    T.Test Lua table instance.
  * \upvale  table    T.Test.Case Lua table instance.
@@ -131,7 +157,7 @@ t_tst_done( lua_State *L )
 	lua_getfield( L, -1, "executionTime" );
 	t_tim_since( t_tim_check_ud( L, -1, 1 ) );
 	t_tst_cse_getDescription( L, 1 );
-	printf("Executed Test:  %s\n", lua_tostring( L, -1 ) );
+	printf( "Executed Test:  %s\n", lua_tostring( L, -1 ) );
 	lua_pop( L, 3 );  // pop Test.Case, executionTime and Description
 	lua_pushvalue( L, lua_upvalueindex( 1 ) );
 	t_tst_check( L, -1, 1 );
@@ -144,13 +170,36 @@ t_tst_done( lua_State *L )
 	}
 	if (lua_rawlen( L, -1 ) == ran)
 	{
-		lua_pushcfunction( L, t_tst__callFinish );
+		lua_pop( L, 1 );
 		lua_pushvalue( L, lua_upvalueindex( 1 ) );
-		lua_call( L, 1, 1 );
+		lua_pushcfunction( L, t_tst_callFinalize );
+		t_tst_callEnvelope( L, "afterAll" );
 		return 1;
 	}
 	else
 		return 0;
+}
+
+
+/**--------------------------------------------------------------------------
+ * Loops over all cases in Test.Suite and executes them.
+ * \param   L        Lua state.
+ * \lparam  table    T.Test Lua table instance.
+ * --------------------------------------------------------------------------*/
+static int
+t_tst_callLoopCases( lua_State *L )
+{
+	size_t idx;
+	lua_pushvalue( L, 1 );
+	t_tst_check( L, 2, 1 );            //S: ste tbl
+	for (idx=0; idx<lua_rawlen( L, 2 ); idx++)
+	{
+		lua_pushcfunction( L, lt_tst_cse__call ); //S: ste tbl fnc
+		lua_rawgeti( L, 2, idx+1 );     //S: ste tbl fnc cse
+		lua_pushvalue( L, 1 );          //S: ste fnc cse ste
+		lua_call( L, 2, 0 );
+	}
+	return 0;
 }
 
 
@@ -163,17 +212,9 @@ t_tst_done( lua_State *L )
 static int
 lt_tst__call( lua_State *L )
 {
-	size_t idx;
-	lua_pushvalue( L, 1 );
-	t_tst_check( L, 2, 1 );            //S: ste tbl
-	for (idx=0; idx<lua_rawlen( L, 2 ); idx++)
-	{
-		lua_pushcfunction( L, lt_tst_cse__call ); //S: ste tbl fnc
-		lua_rawgeti( L, 2, idx+1 );     //S: ste tbl fnc cse
-		lua_pushvalue( L, 1 );          //S: ste fnc cse ste
-		lua_call( L, 2, 0 );
-	}
-
+	t_checkTableType( L, 1, 1, T_TST_TYPE );
+	lua_pushcfunction( L, t_tst_callLoopCases );
+	t_tst_callEnvelope( L, "beforeAll" );
 	return 0;
 }
 
