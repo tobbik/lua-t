@@ -346,14 +346,14 @@ t_tst_cse_afterEach( lua_State *L )
 	is_todo = t_tst_cse_hasField( L, "todo", 0 );
 	is_skip = t_tst_cse_hasField( L, "skip", 0 );
 	lua_getfield( L, -1, "pass" );
-	if (lua_isnil( L, -1 ))
+	if (lua_isnil( L, -1 ))                          // unless traceback set it to failed
 	{
 		lua_pushboolean( L, 1 );                      //S: cse nil true
 		lua_setfield( L, -3, "pass" );
 	}
 	lua_pop( L, 1 );
 
-	lua_pushvalue( L, lua_upvalueindex( 3 ) );     ///< test suite
+	lua_pushvalue( L, lua_upvalueindex( 3 ) );     //S: cse ste
 	t_tst_check( L, -1, 1 );                       //S: cse tbl
 	lua_getfield( L, -1, (is_cb) ? "afterEach_cb":"afterEach" );
 	lua_remove( L, -2 );                           //S: cse n/f
@@ -439,6 +439,9 @@ lt_tst_cse__call( lua_State *L )
 	t_tst_cse_check( L, 1, 1 );
 	lua_pushvalue( L, 2 );                        // S: cse ste ste
 	t_tst_check( L, 3, 1 );                       // S: cse ste tbl
+
+	t_tim_create_ud( L, 0 );
+	lua_setfield( L, 1, "executionTime" );
 
 	// create closure that returns control to the runner
 	lua_pushvalue( L, 2 );

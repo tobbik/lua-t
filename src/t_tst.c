@@ -79,19 +79,22 @@ t_tst_check( lua_State *L, int pos, int check )
 static int
 t_tst__callFinish( lua_State *L )
 {
-	size_t     i;
-	size_t  pass = 0,
-	        skip = 0,  ///< marked as ran but haven't finished
-	        todo = 0;  ///< expected to fail
+	size_t i;
+	size_t pass  = 0,
+	       skip  = 0,  ///< marked as ran but haven't finished
+	       todo  = 0;  ///< expected to fail
+	long   since = 0;
 
 	t_tst_check( L, 1, 1 );
 	for (i=0; i<lua_rawlen( L, 1 ); i++)
 	{
-		lua_rawgeti( L, 1, i+1 );        //S: ste tbl cse
-		pass += (t_tst_cse_hasField( L, "pass", 0 )) ? 1 : 0;
-		skip += (t_tst_cse_hasField( L, "skip", 0 )) ? 1 : 0;
-		todo += (t_tst_cse_hasField( L, "todo", 0 )) ? 1 : 0;
-		lua_pop( L, 1 );                 //S: ste tbl
+		lua_rawgeti( L, 1, i+1 );                //S: ste tbl cse
+		pass  += (t_tst_cse_hasField( L, "pass", 0 )) ? 1 : 0;
+		skip  += (t_tst_cse_hasField( L, "skip", 0 )) ? 1 : 0;
+		todo  += (t_tst_cse_hasField( L, "todo", 0 )) ? 1 : 0;
+		lua_getfield( L, -1, "executionTime" );  //S: ste tbl cse tim
+		since += t_tim_getms( t_tim_check_ud( L, -1, 1 ) );
+		lua_pop( L, 2 );                         //S: ste tbl
 	}
 	printf( "---------------------------------------------------------\n"
 	        "Handled %ld tests in %.3f seconds\n\n"
@@ -100,13 +103,12 @@ t_tst__callFinish( lua_State *L )
 	        "Expected to fail : %ld\n"
 	        "Failed           : %ld\n"
 	        "status           : %s\n"
-	   //, i, t_tim_getms( &tm )/1000.0
-	   , i, 3.0000
+	   , i, since/1000.0
 	   , i - skip
 	   , skip
 	   , todo
 	   , i-pass
-	   , (i==pass + todo) ? "OK" : "FAIL" );
+	   , (i == pass+todo) ? "OK" : "FAIL" );
 
 	lua_pushboolean( L, (i==pass + todo) ? 1 : 0 );
 
@@ -115,19 +117,22 @@ t_tst__callFinish( lua_State *L )
 
 
 /**--------------------------------------------------------------------------
- * Execute the next test in line.
+ * Finish the execution of a T.Test case.
  * \param   L        Lua state.
- * \upval   int      next test to pop from the list.
- * \lparam  table    T.Test Lua table instance.
+ * \upvale  table    T.Test Lua table instance.
+ * \upvale  table    T.Test.Case Lua table instance.
  * --------------------------------------------------------------------------*/
 int
 t_tst_done( lua_State *L )
 {
 	size_t ran = 0;
+
 	lua_pushvalue( L, lua_upvalueindex( 2 ) );
+	lua_getfield( L, -1, "executionTime" );
+	t_tim_since( t_tim_check_ud( L, -1, 1 ) );
 	t_tst_cse_getDescription( L, 1 );
 	printf("Executed Test:  %s\n", lua_tostring( L, -1 ) );
-	lua_pop( L, 2 );
+	lua_pop( L, 3 );  // pop Test.Case, executionTime and Description
 	lua_pushvalue( L, lua_upvalueindex( 1 ) );
 	t_tst_check( L, -1, 1 );
 	for (size_t idx=0; idx < lua_rawlen( L, 1 ); idx++)
@@ -135,7 +140,7 @@ t_tst_done( lua_State *L )
 		lua_rawgeti( L, 1, idx+1 );      //S: tbl cse
 		lua_getfield( L, -1, "pass" );
 		ran += (lua_isnil( L, -1 )) ? 0 : 1;
-		lua_pop( L, 2 );         // pop nil/pass and the case
+		lua_pop( L, 2 );         // pop nil/pass and the T.Test.Case
 	}
 	if (lua_rawlen( L, -1 ) == ran)
 	{
