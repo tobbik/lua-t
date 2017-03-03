@@ -124,8 +124,45 @@ t_tst_cse_getFuncSource( lua_State *L, int pos )
 }
 
 
+/** -------------------------------------------------------------------------
+ * Search all upvalues on all stack levels for a Test.Case.
+ * \param    L        Lua state.
+ * \lreturn  table    T.Test.Case Lua table instance.
+ * \return   int/bool found or not.
+ *-------------------------------------------------------------------------*/
+static int
+t_tst_cse_findOnStack( lua_State *L )
+{
+	lua_Debug   ar;
+	int         i   = 0;
+	int         nu  = 0;
+	const char *nme;
+
+	while ( lua_getstack( L, i++, &ar ))
+	{
+		lua_getinfo( L, "fu", &ar );       // get function onto stack
+		//printf("\n\n\nLevel %d[%d] -> ", i, ar.nups);   t_stackDump(L);
+		nu  = 0;
+		while (nu++ < ar.nups)
+		{
+			nme = lua_getupvalue( L, -1, nu );
+			//printf("   UPV %d - %s  \t-> ", nu, nme); t_stackDump(L);
+			if (t_tst_cse_check( L, -1, 0 ))
+			{
+				//printf("  FOUND THE TEST CASE  \n");
+				lua_remove( L, -2 );     // remove current function
+				return 1;
+			}
+			lua_pop( L, 1 );            // remove upvalue
+		}
+		lua_pop( L, 1 );               // remove function that lua_getinfo put on stack
+	}
+	return 0;
+}
+
+
 /**--------------------------------------------------------------------------
- * construct a Test Case and return it.
+ * Construct a Test.Case and return it.
  * \param   L      Lua state.
  * \lparam  CLASS  table T.Test.Case
  * \lparam  string name of the unit test case function.
@@ -142,7 +179,7 @@ lt_tst_cse__Call( lua_State *L )
 
 
 /**--------------------------------------------------------------------------
- * create the Test Case table and return it.
+ * Create the Test.Case table and leave it on the stack.
  * \param   L      Lua state.
  * \lparam  string name of the unit test case function.
  * \lparam  func   test case function.
@@ -508,6 +545,63 @@ int t_tst_cse_isType( lua_State *L, int pos, const char *typeName )
 }
 
 
+/** -------------------------------------------------------------------------
+ * Mark a Test.Case as Todo.
+ * \param    L     Lua state.
+ * \lreturn  table imported library.
+ *-------------------------------------------------------------------------*/
+static int
+lt_tst_cse_Todo( lua_State *L )
+{
+	luaL_checkstring( L, 1 );
+	if (t_tst_cse_findOnStack( L ))
+	{
+		lua_insert( L, 1 );
+		lua_setfield( L, 1, "todo" );
+	}
+	return 0;
+}
+
+
+/** -------------------------------------------------------------------------
+ * Set the description for a Test.Case
+ * \param    L     Lua state.
+ * \lreturn  table imported library.
+ *-------------------------------------------------------------------------*/
+static int
+lt_tst_cse_Describe( lua_State *L )
+{
+	luaL_checkstring( L, 1 );
+	if (t_tst_cse_findOnStack( L ))
+	{
+		lua_insert( L, 1 );
+		lua_setfield( L, 1, "description" );
+	}
+	return 0;
+}
+
+
+/** -------------------------------------------------------------------------
+ * Actively skip a Test.Case.
+ * Function does get executed until Test.skip('Reason') get's called.  Does
+ * allow conditional skipping.  A skip is to throw a controlled luaL_error which
+ * gets caught by t_tst_cse_traceback.
+ * \param    L     Lua state.
+ * \lreturn  table imported library.
+ *-------------------------------------------------------------------------*/
+static int
+lt_tst_cse_Skip( lua_State *L )
+{
+	luaL_checkstring( L, 1 );
+	lua_pushstring( L, T_TST_CSE_SKIPINDICATOR );
+	lua_insert( L, -2 );
+	lua_concat( L, 2 );
+	luaL_error( L, lua_tostring( L, -1 ) );
+	return 0;
+}
+
+
+
 /**--------------------------------------------------------------------------
  * Class metamethods library definition
  * --------------------------------------------------------------------------*/
@@ -521,7 +615,10 @@ static const struct luaL_Reg t_tst_cse_fm [] = {
  * Class functions library definition
  * --------------------------------------------------------------------------*/
 static const struct luaL_Reg t_tst_cse_cf [] = {
-	  { NULL,  NULL }
+	  { "todo"        , lt_tst_cse_Todo }
+	, { "skip"        , lt_tst_cse_Skip }
+	, { "describe"    , lt_tst_cse_Describe }
+	, { NULL          , NULL }
 };
 
 

@@ -1,14 +1,15 @@
 #!../out/bin/lua
 
 ---
--- \file    t_tst_asy.lua
--- \brief   Asynchronous tests in lua
+-- \file    t_tst_asy_par.lua
+-- \brief   Asynchronous tests in Lua; running all cases at the same time on
+--          the loop
 T     = require ('t')
 Test  = T.Test
 Loop  = T.Loop
 Timer = T.Time
 t_async = function( self, done )
-	Test.describe( 'Running an asynchrounous Timer test' )
+	Test.Case.describe( 'Running an asynchrounous Timer test' )
 	local rTimeMs = math.random(500,3000)
 	self.loop:addTimer( 
 		Timer( rTimeMs ),
@@ -21,7 +22,7 @@ t_async = function( self, done )
 end
 
 t_sync = function( self )
-	Test.describe( 'Running a synchrounous test' )
+	Test.Case.describe( 'Running a synchrounous test' )
 	assert( self.b==self.a*2, "Multiplication equals result" )
 	print("TEST SYNC")
 end

@@ -335,43 +335,6 @@ lt_tst__len( lua_State *L )
 }
 
 
-/** -------------------------------------------------------------------------
- * Search all upvalues on all stack levels for a Test.Case.
- * \param    L        Lua state.
- * \lreturn  table    T.Test.Case Lua table instance.
- * \return   int/bool found or not.
- *-------------------------------------------------------------------------*/
-static int
-t_tst_findCaseOnStack( lua_State *L )
-{
-	lua_Debug   ar;
-	int         i   = 0;
-	int         nu  = 0;
-	const char *nme;
-
-	while ( lua_getstack( L, i++, &ar ))
-	{
-		lua_getinfo( L, "fu", &ar );       // get function onto stack
-		//printf("\n\n\nLevel %d[%d] -> ", i, ar.nups);   t_stackDump(L);
-		nu  = 0;
-		while (nu++ < ar.nups)
-		{
-			nme = lua_getupvalue( L, -1, nu );
-			//printf("   UPV %d - %s  \t-> ", nu, nme); t_stackDump(L);
-			if (t_tst_cse_check( L, -1, 0 ))
-			{
-				//printf("  FOUND THE TEST CASE  \n");
-				lua_remove( L, -2 );     // remove current function
-				return 1;
-			}
-			lua_pop( L, 1 );            // remove upvalue
-		}
-		lua_pop( L, 1 );               // remove function that lua_getinfo put on stack
-	}
-	return 0;
-}
-
-
 /** ---------------------------------------------------------------------------
  * Compares the last two values on the stack (deep table compare; recursive)
  * Work on negative inices ONLY for recursive use
@@ -424,62 +387,6 @@ lt_tst_IsReallyEqual( lua_State *L )
 }
 
 
-/** -------------------------------------------------------------------------
- * Mark a Test.Case as Todo.
- * \param    L     Lua state.
- * \lreturn  table imported library.
- *-------------------------------------------------------------------------*/
-static int
-lt_tst_Todo( lua_State *L )
-{
-	luaL_checkstring( L, 1 );
-	if (t_tst_findCaseOnStack( L ))
-	{
-		lua_insert( L, 1 );
-		lua_setfield( L, 1, "todo" );
-	}
-	return 0;
-}
-
-
-/** -------------------------------------------------------------------------
- * Set the description for a Test.Case
- * \param    L     Lua state.
- * \lreturn  table imported library.
- *-------------------------------------------------------------------------*/
-static int
-lt_tst_Describe( lua_State *L )
-{
-	luaL_checkstring( L, 1 );
-	if (t_tst_findCaseOnStack( L ))
-	{
-		lua_insert( L, 1 );
-		lua_setfield( L, 1, "description" );
-	}
-	return 0;
-}
-
-
-/** -------------------------------------------------------------------------
- * Actively skip a Test.Case.
- * Function does get executed until Test.skip('Reason') get's called.  Does
- * allow conditional skipping.  A skip is to throw a controlled luaL_error which
- * gets caught by t_tst_cse_traceback.
- * \param    L     Lua state.
- * \lreturn  table imported library.
- *-------------------------------------------------------------------------*/
-static int
-lt_tst_Skip( lua_State *L )
-{
-	luaL_checkstring( L, 1 );
-	lua_pushstring( L, T_TST_CSE_SKIPINDICATOR );
-	lua_insert( L, -2 );
-	lua_concat( L, 2 );
-	luaL_error( L, lua_tostring( L, -1 ) );
-	return 0;
-}
-
-
 /**--------------------------------------------------------------------------
  * Class metamethods library definition
  * --------------------------------------------------------------------------*/
@@ -494,9 +401,6 @@ static const struct luaL_Reg t_tst_fm [] = {
  * --------------------------------------------------------------------------*/
 static const struct luaL_Reg t_tst_cf [] = {
 	  { "equal"              , lt_tst_IsReallyEqual }
-	, { "todo"               , lt_tst_Todo }
-	, { "skip"               , lt_tst_Skip }
-	, { "describe"           , lt_tst_Describe }
 	, { NULL,  NULL }
 };
 
