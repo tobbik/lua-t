@@ -44,6 +44,7 @@ Hooks
        -- call synchronous beforeEach
        self:beforeEach()
        -- do some asynch stuff here ...
+       done()
     end
 
 ``t.afterEach_cb = function( self, done )``
@@ -75,14 +76,14 @@ Class Members
   test at the point where it is called and it will set the skip reason so it
   can be displayed in the summary.  The function is implemented as a
   controlled call to luaL_error which will invoke the traceback for the
-  wrapping ``lua_pcall()``.  The traceback will recognize the special
+  wrapping ``lua_pcall( )``.  The traceback will recognize the special
   invocation and act accordingly.  Implementing skip as a function has the
   following effects:
 
-    # it can be used in a condition:
-      ``if not server then Test.skip('Server Unavailable')``
+    # it can be used in a conditional:
+      ``if not server then Test.skip('Server Unavailable') end``
     # if a test fails before skip gets called it is still a failed test
-      because the call to T.Test.Case.skip() will never execute
+      because the call to ``T.Test.Case.skip( )`` will never execute
 
 
 Class Metamembers
@@ -137,7 +138,6 @@ Instance Members
   Can be `standard` or `callback`.  If it is a `callback` the
   `testCaseInstance.function` must call the ``done()`` callback to continue
   execution.
-  test was never executed.
 
 
 Instance Metamembers

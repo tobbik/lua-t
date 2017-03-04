@@ -14,11 +14,11 @@ mixed within the same T.Test suite.
 Summary
 =======
 
- - passing a table to the ``T.Test()`` constructor will result in tests
+ - passing a table to the ``T.Test( )`` constructor will result in tests
    running in random order
  - an actual test case **must start with** ``test`` as function name.
- - the global test suite hooks ``beforeAll(self,done)`` and
-   ``afterAll(self,done)`` must call the ``done()`` callback even when
+ - the global test suite hooks ``beforeAll( self, done )`` and
+   ``afterAll( self, done )`` must call the ``done( )`` callback even when
    executed synchronously
 
 
@@ -47,10 +47,10 @@ directory recursively.  Then the runner would iterate over all required
 tests and execute them::
 
    test_runner.lua
-   local t_names = {'test1', 'test2', 'test3', 'test4', ... }
+   local t_names = { 'test1', 'test2', 'test3', 'test4', ... }
    for i=i,#t_names do
       local tst = require(t_names[i])
-      tst()
+      tst( )
    end
 
 
@@ -68,7 +68,7 @@ the T.est instance::
    t.test_one   = function( self ) ... end
    t.test_two   = function( self ) ... end
    t.test_three = function( self ) ... end
-   t() -- this will run the tests in the order specified
+   t( ) -- this will run the tests in the order specified
 
 To achieve randomly ordered test execution the ``T.Test()`` constructor will
 accept a table that has all test functions defined as members.  Upon
@@ -78,13 +78,13 @@ T.Test instance.  That means the order gets randomized at construction time
 and each consecutive execution of the entire suite will happen in the same
 random order::
 
-   t = T.Test({
+   t = T.Test( {
       test_one   = function( self ) ... end,
       test_two   = function( self ) ... end,
       test_three = function( self ) ... end
-   })
-   t() -- this will run the tests in the order pairs() would iterate over
-       -- the table
+   } )
+   t( ) -- this will run the tests in the order pairs() would iterate over
+        -- the table
 
 
 Constructing a T.Test Suite
@@ -159,7 +159,7 @@ T.Test.Case instance.
 Instance Metamembers
 --------------------
 
-``boolean x = T.Test t()  [__call]``
+``boolean x = T.Test t( )  [__call]``
   Executes the test suite.  Returns true or false depending on weather the
   execution of the test suite was successful.  The boolean return only works
   for synchronous tests.  As soon as there is a single asynchronous test
