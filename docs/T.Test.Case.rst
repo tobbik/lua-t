@@ -35,12 +35,22 @@ Hooks
 ``t.beforeEach_cb = function( self, done )``
   The hook gets called before executing each callback based test case in the
   suite.  The ``done()`` callback must be called when the test finishes,
-  otherwise test execution will be stalled.
+  otherwise test execution will be stalled.  The test runner does not fall
+  back to use ``t.beforeEach`` if ``t.beforeEach_cb`` is not found.  If your
+  T.Test suite mixes synchronous and callback based tests you can do the
+  following::
+
+  t.beforeEach_cb = function( self, done )
+     -- call synchronous beforeEach
+     self:beforeEach()
+     -- do some asynch stuff here ...
+  end
 
 ``t.afterEach_cb = function( self, done )``
   The hook gets called after executing each callback based test case in the
   suite.  The ``done()`` callback must be called when the test finishes,
-  otherwise test execution will be stalled.
+  otherwise test execution will be stalled.  Like ``t.beforeEach_cb`` there
+  is no fall back to ``t.beforeEach`` for callback based test cases.
 
 
 API
@@ -64,9 +74,9 @@ Class Members
   This is meant to be called from within a T.Test.Case.  It will skip the
   test at the point where it is called and it will set the skip reason so it
   can be displayed in the summary.  The function is implemented as a
-  controlled call to luaL_error which will invoke the tracback for the
+  controlled call to luaL_error which will invoke the traceback for the
   wrapping ``lua_pcall()``.  The traceback will recognize the special
-  invication and act accordingly.  Implementing skip as a function has the
+  invocation and act accordingly.  Implementing skip as a function has the
   following effects:
 
     # it can be used in a condition:
@@ -125,7 +135,7 @@ Instance Members
 
 ``string t = testCaseInstance.testtype``
   Can be `standard` or `callback`.  If it is a `callback` the
-  `testCaseInstance.function` must call the ``done()`` calback to continue
+  `testCaseInstance.function` must call the ``done()`` callback to continue
   execution.
   test was never executed.
 
@@ -136,7 +146,7 @@ Instance Metamembers
 ``boolean x = t.testCase( T.Test suite )  [__call]``
   Executes the test case.  T.Test `suite` must be passed as an argument.
   Returns true or false depending on weather the execution of the test case
-  was successful unlessit was a *callback* `testtype` which always returns
+  was successful unless it was a *callback* `testtype` which always returns
   `true`.
 
 ``string s = tostring( T.Test.Case test_case )  [__toString]``

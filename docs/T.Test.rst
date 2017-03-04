@@ -5,7 +5,7 @@ lua-t T.Test - The Unit Test Library
 Overview
 ========
 
-T.Test provides functinality to create and run unit test suites.  It also
+T.Test provides functionality to create and run unit test suites.  It also
 has a deep table(object) comparing functions.  T.Test allows to write
 synchronous and asynchronous test (callback based) and it allows them to be
 mixed within the same T.Test suite.
@@ -57,8 +57,8 @@ tests and execute them::
 Test Execution Order
 --------------------
 
-T.Test can execute test cases in a guarantedd order or, in true unit testing
-spirit, in a random order.  The behaviour can be choosen via the way the
+T.Test can execute test cases in a guaranteed order or, in true unit testing
+spirit, in a random order.  The behaviour can be chosen via the way the
 ``T.Test()`` constructor gets called.  For guaranteed order, create an empty
 T.Test instance first and then assign test case functions to it.  When
 running the suite tests will get executed in the order they got assigned to
@@ -74,7 +74,7 @@ To achieve randomly ordered test execution the ``T.Test()`` constructor will
 accept a table that has all test functions defined as members.  Upon
 constructing the T.Test instance all members of the table will be iterated
 over like ``pairs()``.  That order will be used as execution order for the
-T.Test instance.  That means the order gets randomized at constrution time
+T.Test instance.  That means the order gets randomized at construction time
 and each consecutive execution of the entire suite will happen in the same
 random order::
 
@@ -95,11 +95,11 @@ suite which name **must begin** with ``test*``.  When such a function with a
 proper name is passed to T.Test it will invoke the T.Test.Case constructor
 with the proper parameters.  If the function name starts with ``test_cb*``
 the constructed T.Test.Case will be able to execute asynchronously because
-the test rynner will pass in a ``done`` callback.  Any other value that gets
+the test runner will pass in a ``done`` callback.  Any other value that gets
 assigned to the table will be simply an instance variable that within the
-test is available by ``self.variable_name``.  It is not possible to create
-numerically indexed T.Test suite elements because the numeric part of the
-table is reserved to define the execution order.
+test is available by ``self.variable_name``.  It is **not possible** to
+create numerically indexed T.Test suite elements because the numeric part of
+the table is reserved to define the execution order.
 
 
 Hooks
@@ -136,8 +136,8 @@ Class Members
   - if they have the same reference
   - if they have the same scalar value
   - if they have an __eq metamethod and return that result
-  - if thay are tables and table length is equal, recursively compare them
-    and their subtables
+  - if they are tables and table length is equal, recursively compare them
+    and their sub-tables
 
 
 Class Metamembers
@@ -145,7 +145,7 @@ Class Metamembers
 
 ``T.Test tc = T.Test( [ table t ] )   [__call]``
   Creates a new Unit Test Suite.  If a table is passed it will be converted
-  into a unittest.  The table can not contain **ANY** numeric keys.
+  into a unit test.  The table can not contain **ANY** numeric keys.
 
 
 Instance Members
