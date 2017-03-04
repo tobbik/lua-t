@@ -11,8 +11,37 @@ handed to a T.Test suite instance will be converted to a T.Test.Case
 instance.
 
 
-Conventions
+Usage
+=====
+
+Some general information on how to write and invoke T.Test.Case.
+
+Constructor
 -----------
+
+The constructor is provided to have a complete interface.  However, it is
+not supposed to be used in normal operation and the construction of test
+cases should be left to T.Test capabilities.
+
+Hooks
+-----
+
+``t.beforeEach = function( self )``
+  The hook gets called before executing each test case in the suite.
+
+``t.afterEach = function( self )``
+  The hook gets called after executing each test case in the suite.
+
+``t.beforeEach_cb = function( self, done )``
+  The hook gets called before executing each callback based test case in the
+  suite.  The ``done()`` callback must be called when the test finishes,
+  otherwise test execution will be stalled.
+
+``t.afterEach_cb = function( self, done )``
+  The hook gets called after executing each callback based test case in the
+  suite.  The ``done()`` callback must be called when the test finishes,
+  otherwise test execution will be stalled.
+
 
 API
 ===
@@ -50,8 +79,10 @@ Class Metamembers
 -----------------
 
 ``T.Test.Case tc = T.Test.Case( [ 'test_name', function ] )   [__call]``
-  Creates a new T.Test.Case.  Takes ``test_name`` as preliminary description
-  and the function to be executed.
+  Creates a new T.Test.Case.  Takes ``test_name`` as and the function to be
+  executed.  If the test name starts with ``test_cb`` the test will be
+  constructed as callback based Test.Case and during execution time a
+  callback will be passed in a second parameter (after ``self``).
 
 
 Instance Members

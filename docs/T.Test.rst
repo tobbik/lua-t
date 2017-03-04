@@ -91,13 +91,15 @@ Constructing a T.Test Suite
 ---------------------------
 
 To create a T.Test.Case in a T.Test suite a function must be assigned to the
-suite which name **must begin** with ``test``.  When such a function with a
+suite which name **must begin** with ``test*``.  When such a function with a
 proper name is passed to T.Test it will invoke the T.Test.Case constructor
-with the proper parameters.  Any other value that gets assigned to the table
-will be simply an instance variable that within the test is available by
-``self.variable_name``.  It is not possible to create numerically indexed
-T.Test suite elements because the numeric part of the table is reserved to
-define the execution order.
+with the proper parameters.  If the function name starts with ``test_cb*``
+the constructed T.Test.Case will be able to execute asynchronously because
+the test rynner will pass in a ``done`` callback.  Any other value that gets
+assigned to the table will be simply an instance variable that within the
+test is available by ``self.variable_name``.  It is not possible to create
+numerically indexed T.Test suite elements because the numeric part of the
+table is reserved to define the execution order.
 
 
 Hooks
@@ -157,13 +159,13 @@ T.Test.Case instance.
 Instance Metamembers
 --------------------
 
-``boolean *x* = T.Test t()  [__call]``
+``boolean x = T.Test t()  [__call]``
   Executes the test suite.  Returns true or false depending on weather the
   execution of the test suite was successful.  The boolean return only works
   for synchronous tests.  As soon as there is a single asynchronous test
   case in the T.Test instance the return value is always ``true``.
 
-``string *s* = tostring( testInstance )  [__toString]``
+``string s = tostring( testInstance )  [__toString]``
   Returns a string which is a TAP report of the Test suite.
 
 
