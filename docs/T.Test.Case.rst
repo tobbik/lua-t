@@ -40,11 +40,11 @@ Hooks
   T.Test suite mixes synchronous and callback based tests you can do the
   following::
 
-  t.beforeEach_cb = function( self, done )
-     -- call synchronous beforeEach
-     self:beforeEach()
-     -- do some asynch stuff here ...
-  end
+    t.beforeEach_cb = function( self, done )
+       -- call synchronous beforeEach
+       self:beforeEach()
+       -- do some asynch stuff here ...
+    end
 
 ``t.afterEach_cb = function( self, done )``
   The hook gets called after executing each callback based test case in the
