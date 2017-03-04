@@ -71,7 +71,7 @@ t_tst_check( lua_State *L, int pos, int check )
 /**--------------------------------------------------------------------------
  * Finishes the __call of T.Test suite.  Assembles report.
  * \param   L        Lua state.
- * \lparam  table    T.Test Lua table instance.
+ * \upvalue table    T.Test Lua table instance.
  * --------------------------------------------------------------------------*/
 static int
 t_tst_callFinalize( lua_State *L )
@@ -82,6 +82,7 @@ t_tst_callFinalize( lua_State *L )
 	            todo  = 0;  ///< expected to fail
 	long        since = 0;
 
+	lua_pushvalue( L, lua_upvalueindex( 1 ) );
 	t_tst_check( L, 1, 1 );
 	for (idx=0; idx<luaL_len( L, 1 ); idx++)
 	{
@@ -170,7 +171,8 @@ t_tst_done( lua_State *L )
 	{
 		lua_pop( L, 1 );
 		lua_pushvalue( L, lua_upvalueindex( 1 ) );
-		lua_pushcfunction( L, t_tst_callFinalize );
+		lua_pushvalue( L, -1 );
+		lua_pushcclosure( L, t_tst_callFinalize, 1 );
 		t_tst_callEnvelope( L, "afterAll" );
 		return 1;
 	}
@@ -182,12 +184,13 @@ t_tst_done( lua_State *L )
 /**--------------------------------------------------------------------------
  * Loops over all cases in Test.Suite and executes them.
  * \param   L        Lua state.
- * \lparam  table    T.Test Lua table instance.
+ * \upvalue  table    T.Test Lua table instance.
  * --------------------------------------------------------------------------*/
 static int
 t_tst_callLoopCases( lua_State *L )
 {
 	lua_Integer idx;
+	lua_pushvalue( L, lua_upvalueindex( 1 ) );
 	t_tst_check( L, 1, 1 );         //S: ste
 	for (idx=0; idx<luaL_len( L, 1 ); idx++)
 	{
@@ -209,7 +212,8 @@ static int
 lt_tst__call( lua_State *L )
 {
 	t_checkTableType( L, 1, 1, T_TST_TYPE );
-	lua_pushcfunction( L, t_tst_callLoopCases );
+	lua_pushvalue( L, 1 );
+	lua_pushcclosure( L, t_tst_callLoopCases, 1 );
 	t_tst_callEnvelope( L, "beforeAll" );
 	return 0;
 }
