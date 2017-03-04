@@ -36,7 +36,7 @@ Class Members
       'secondSetElement'  = true,
       'thirdSetElement'   = true
     }
-  
+
   Since the returned table is a reference, manipulating the table may have
   ill effects on the T.Set instance and result in erratic behaviour.  The
   function shall be used for debugging purposes only.

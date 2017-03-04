@@ -2,7 +2,6 @@
 
 ---
 -- \file    t_tst_asy_seq.lua
--- \brief   Asynchronous tests in lua
 -- \brief   Asynchronous tests in Lua; running all cases sequentially on the
 --          loop
 T     = require ('t')
