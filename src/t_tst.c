@@ -55,7 +55,7 @@ lt_tst__Call( lua_State *L )
 
 
 /**--------------------------------------------------------------------------
- * Check a value on the stack for being a T.Test. Replace T.Test with proxy table.
+ * Check a value on the stack for being a T.Test Suite.
  * \param   L        Lua state.
  * \param   int      position on the stack.
  * \param   int      hardCheck; error out if not a T.Test.
@@ -64,10 +64,7 @@ lt_tst__Call( lua_State *L )
 int
 t_tst_check( lua_State *L, int pos, int check )
 {
-	int isTest = t_checkTableType( L, pos, check, T_TST_TYPE );
-	if (isTest)
-		t_getProxyTable( L, pos );
-	return isTest;
+	return t_checkTableType( L, pos, check, T_TST_TYPE );
 }
 
 
@@ -79,16 +76,16 @@ t_tst_check( lua_State *L, int pos, int check )
 static int
 t_tst_callFinalize( lua_State *L )
 {
-	size_t i;
-	size_t pass  = 0,
-	       skip  = 0,  ///< marked as ran but haven't finished
-	       todo  = 0;  ///< expected to fail
-	long   since = 0;
+	lua_Integer idx;
+	lua_Integer pass  = 0,
+	            skip  = 0,  ///< marked as ran but haven't finished
+	            todo  = 0;  ///< expected to fail
+	long        since = 0;
 
 	t_tst_check( L, 1, 1 );
-	for (i=0; i<lua_rawlen( L, 1 ); i++)
+	for (idx=0; idx<luaL_len( L, 1 ); idx++)
 	{
-		lua_rawgeti( L, 1, i+1 );                //S: ste tbl cse
+		lua_geti( L, 1, idx+1 );                 //S: ste tbl cse
 		pass  += (t_tst_cse_hasField( L, "pass", 0 )) ? 1 : 0;
 		skip  += (t_tst_cse_hasField( L, "skip", 0 )) ? 1 : 0;
 		todo  += (t_tst_cse_hasField( L, "todo", 0 )) ? 1 : 0;
@@ -97,19 +94,19 @@ t_tst_callFinalize( lua_State *L )
 		lua_pop( L, 2 );                         //S: ste tbl
 	}
 	printf( "---------------------------------------------------------\n"
-	        "Handled %ld tests in %.3f seconds\n\n"
-	        "Executed         : %ld\n"
-	        "Skipped          : %ld\n"
-	        "Expected to fail : %ld\n"
-	        "Failed           : %ld\n"
+	        "Handled %lld tests in %.3f seconds\n\n"
+	        "Executed         : %lld\n"
+	        "Skipped          : %lld\n"
+	        "Expected to fail : %lld\n"
+	        "Failed           : %lld\n"
 	        "status           : %s\n"
-	   , i, since/1000.0
-	   , i - skip
+	   , idx, since/1000.0
+	   , idx - skip
 	   , skip
 	   , todo
-	   , i-pass
-	   , (i == pass+todo) ? "OK" : "FAIL" );
-	lua_pushboolean( L, (i==pass + todo) ? 1 : 0 );
+	   , idx-pass
+	   , (idx == pass+todo) ? "OK" : "FAIL" );
+	lua_pushboolean( L, (idx==pass + todo) ? 1 : 0 );
 
 	return 1;
 }
@@ -151,7 +148,8 @@ t_tst_callEnvelope( lua_State *L, const char *envelope )
 int
 t_tst_done( lua_State *L )
 {
-	size_t ran = 0;
+	lua_Integer ran = 0;
+	lua_Integer idx;
 
 	lua_pushvalue( L, lua_upvalueindex( 2 ) );
 	lua_getfield( L, -1, "executionTime" );
@@ -161,14 +159,14 @@ t_tst_done( lua_State *L )
 	lua_pop( L, 3 );  // pop Test.Case, executionTime and Description
 	lua_pushvalue( L, lua_upvalueindex( 1 ) );
 	t_tst_check( L, -1, 1 );
-	for (size_t idx=0; idx < lua_rawlen( L, 1 ); idx++)
+	for (idx=0; idx < luaL_len( L, 1 ); idx++)
 	{
-		lua_rawgeti( L, 1, idx+1 );      //S: tbl cse
+		lua_geti( L, 1, idx+1 );      //S: tbl cse
 		lua_getfield( L, -1, "pass" );
 		ran += (lua_isnil( L, -1 )) ? 0 : 1;
 		lua_pop( L, 2 );         // pop nil/pass and the T.Test.Case
 	}
-	if (lua_rawlen( L, -1 ) == ran)
+	if (luaL_len( L, 1 ) == ran)
 	{
 		lua_pop( L, 1 );
 		lua_pushvalue( L, lua_upvalueindex( 1 ) );
@@ -189,14 +187,13 @@ t_tst_done( lua_State *L )
 static int
 t_tst_callLoopCases( lua_State *L )
 {
-	size_t idx;
-	lua_pushvalue( L, 1 );
-	t_tst_check( L, 2, 1 );            //S: ste tbl
-	for (idx=0; idx<lua_rawlen( L, 2 ); idx++)
+	lua_Integer idx;
+	t_tst_check( L, 1, 1 );         //S: ste
+	for (idx=0; idx<luaL_len( L, 1 ); idx++)
 	{
-		lua_pushcfunction( L, lt_tst_cse__call ); //S: ste tbl fnc
-		lua_rawgeti( L, 2, idx+1 );     //S: ste tbl fnc cse
-		lua_pushvalue( L, 1 );          //S: ste fnc cse ste
+		lua_pushcfunction( L, lt_tst_cse__call ); //S: ste fnc
+		lua_geti( L, 1, idx+1 );     //S: ste fnc cse
+		lua_pushvalue( L, 1 );       //S: ste fnc cse ste
 		lua_call( L, 2, 0 );
 	}
 	return 0;
@@ -206,7 +203,6 @@ t_tst_callLoopCases( lua_State *L )
 /**--------------------------------------------------------------------------
  * Call the first test on the table.
  * \param   L        Lua state.
- * \upval   int      next test to pop from the list.
  * \lparam  table    T.Test Lua table instance.
  * --------------------------------------------------------------------------*/
 static int
@@ -238,6 +234,7 @@ lt_tst__newindex( lua_State *L )
 	t_tst_check( L, 1, 1 );
 	name = luaL_checkstring( L, 2 );      //S: ste nme fnc
 	luaL_argcheck( L, LUA_TNUMBER != lua_type( L, 1 ), 1, "Can't overwrite numeric indexes" );
+	t_getProxyTable( L, 1 );              //S: tbl nme fnc
 
 	// insert a testcase
 	if (0==strncasecmp( name, "test", 4 ))
@@ -247,12 +244,12 @@ lt_tst__newindex( lua_State *L )
 		{
 			lua_pushcfunction( L, t_tst_cse_create );
 			lua_pushvalue( L, 2 );
-			lua_pushvalue( L, 3 );          //S: ste nme fnc create name fnc
-			lua_remove( L, -4 );            //S: ste nme create name fnc
-			lua_call( L, 2, 1 );            //S: ste nme cse
-			lua_pushvalue( L, -1 );         //S: ste nme cse cse
+			lua_pushvalue( L, 3 );          //S: tbl nme fnc create name fnc
+			lua_remove( L, -4 );            //S: tbl nme create name fnc
+			lua_call( L, 2, 1 );            //S: tbl nme cse
+			lua_pushvalue( L, -1 );         //S: tbl nme cse cse
 			lua_rawseti( L, 1,
-			lua_rawlen( L, 1 ) + 1 );       //S: ste nme cse
+			lua_rawlen( L, 1 ) + 1 );       //S: tbl nme cse
 		}
 		else
 			return luaL_error( L, "value for test* named element must be a function" );
@@ -274,21 +271,22 @@ static int
 lt_tst__tostring( lua_State *L )
 {
 	luaL_Buffer lB;
-	int         i, pass, todo, t_len;
+	int         i, pass, todo;
+	lua_Integer t_len;
 	size_t      concat = 0;
 
 	t_tst_check( L, 1, 1 );
-	t_len  = lua_rawlen( L, 1 );
+	t_len  = luaL_len( L, 1 );
 	luaL_buffinit( L, &lB );
-	lua_pushfstring( L, "1..%d\n", t_len );  //S: tbl 1..
+	lua_pushfstring( L, "1..%d\n", t_len );  //S: ste 1..
 	concat++;
 	for (i=0; i<t_len; i++)
 	{
-		lua_rawgeti( L, 1, i+1 );             //S: tbl 1.. cse
+		lua_geti( L, 1, i+1 );                //S: ste 1.. cse
 		todo = t_tst_cse_hasField( L, "todo", 0 );
 		lua_insert( L, 2 );   // make sure the test case is at stackpos 2
 		// passed: ok/not ok/not run
-		lua_getfield( L, 2, "pass" );         //S: tbl 1.. cse pss
+		lua_getfield( L, 2, "pass" );         //S: ste 1.. cse pss
 		if (lua_isnil( L, -1 ))
 		{
 			lua_pop( L, 1 );             // pop pass nil
@@ -309,7 +307,7 @@ lt_tst__tostring( lua_State *L )
 			}
 		}
 		lua_concat( L, concat );
-		concat=0;
+		concat = 0;
 		luaL_addvalue( &lB );
 		luaL_addchar( &lB, '\n' );
 		lua_remove( L, 2 );          // remove cse S: ste
@@ -321,16 +319,17 @@ lt_tst__tostring( lua_State *L )
 
 /**--------------------------------------------------------------------------
  * Returns len of T.Test.
- * \param   L    Lua state.
- * \lparam  ud   T.OrderedHashTable userdata instance.
- * \return  int  # of values pushed onto the stack.
+ * \param   L     Lua state.
+ * \lparam  table T.Test Lua table instance.
+ * \lreturn int   Length of T.Test Lua table instance.
+ * \return  int   # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int
 lt_tst__len( lua_State *L )
 {
-	t_tst_check( L, 1, 1 );
+	t_tst_check( L, 1, 1 );   //S: ste
+	t_getProxyTable( L, 1 );  //S: tbl
 	lua_pushinteger( L, lua_rawlen( L, 1 ) );
-	lua_remove( L, 1 );
 	return 1;
 }
 

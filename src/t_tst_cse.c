@@ -335,14 +335,17 @@ lt_tst_cse__tostring( lua_State *L )
 
 /**--------------------------------------------------------------------------
  * Execute beforeEach hook.
- * \param   L        Lua state.
+ * \param   L         Lua state.
+ * \lparam  table     T.Test.Case Lua table instance.
+ * \lparam  table     T.Test Lua table instance.
+ * \lparam  function  Done callback.  This will be t_tst_cse_execute( ).
+ * \return  int       meaning less.
  * --------------------------------------------------------------------------*/
 static int
-t_tst_cse_beforeEach( lua_State *L )    //S: … cse ste tbl exc
+t_tst_cse_beforeEach( lua_State *L )    //S: … cse ste exc
 {
-	int is_cb = t_tst_cse_isType( L, -4, "callback" );
-	lua_getfield( L, -2, (is_cb) ? "beforeEach_cb":"beforeEach" ); //S: … cse ste tbl exc n/f
-	lua_remove( L, -3 );                 //S: … cse ste exc n/f
+	int is_cb = t_tst_cse_isType( L, -3, "callback" );
+	lua_getfield( L, -2, (is_cb) ? "beforeEach_cb":"beforeEach" ); //S: … cse ste exc n/f
 	if (! lua_isnil( L, -1 ))
 	{
 		lua_insert( L, -3 );              //S: … cse bfe ste exc
@@ -361,7 +364,7 @@ t_tst_cse_beforeEach( lua_State *L )    //S: … cse ste tbl exc
 	}
 	else
 	{
-		lua_pop( L, 1 );          //S: … cse ste exc
+		lua_pop( L, 1 );                  //S: … cse ste exc
 		lua_call( L, 0, 0 );
 	}
 
@@ -371,32 +374,34 @@ t_tst_cse_beforeEach( lua_State *L )    //S: … cse ste tbl exc
 
 /**--------------------------------------------------------------------------
  * Execute afterEach hook.
- * \param   L        Lua state.
- * \return  int/bool Is it marked as "field"
+ * \param    L         Lua state.
+ * \upvalue  function  Done callback.  This will be t_tst_done( ).
+ * \upvalue  table     T.Test.Case Lua table instance.
+ * \upvalue  table     T.Test Lua table instance.
+ * \return   int       meaning less.
  * --------------------------------------------------------------------------*/
 static int
 t_tst_cse_afterEach( lua_State *L )
 {
 	int is_cb, is_todo, is_skip;
-	lua_pushvalue( L, lua_upvalueindex( 2 ) );       ///< test case
-	is_cb   = t_tst_cse_isType( L, 1, "callback" );  //S: cse
+	lua_pushvalue( L, lua_upvalueindex( 2 ) );        //S: cse
+	is_cb   = t_tst_cse_isType( L, 1, "callback" );
 	is_todo = t_tst_cse_hasField( L, "todo", 0 );
 	is_skip = t_tst_cse_hasField( L, "skip", 0 );
 	lua_getfield( L, -1, "pass" );
-	if (lua_isnil( L, -1 ))                          // unless traceback set it to failed
+	if (lua_isnil( L, -1 ))                           // unless traceback set it to failed
 	{
-		lua_pushboolean( L, 1 );                      //S: cse nil true
+		lua_pushboolean( L, 1 );                       //S: cse nil true
 		lua_setfield( L, -3, "pass" );
 	}
 	lua_pop( L, 1 );
 
-	lua_pushvalue( L, lua_upvalueindex( 3 ) );     //S: cse ste
-	t_tst_check( L, -1, 1 );                       //S: cse tbl
+	lua_pushvalue( L, lua_upvalueindex( 3 ) );        //S: cse ste
+	t_tst_check( L, -1, 1 );                          //S: cse ste
 	lua_getfield( L, -1, (is_cb) ? "afterEach_cb":"afterEach" );
-	lua_remove( L, -2 );                           //S: cse n/f
 	if (! lua_isnil( L, -1 ))
 	{
-		lua_pushvalue( L, lua_upvalueindex( 3 ) );     //S: cse trd ste
+		lua_insert( L, -2 );                           //S: cse trd ste
 		if (is_cb)
 		{
 			lua_pushvalue( L, lua_upvalueindex( 1 ) );  //S: cse trd ste dne
@@ -414,7 +419,7 @@ t_tst_cse_afterEach( lua_State *L )
 	else
 	{
 		lua_pop( L, 1 );
-		lua_pushvalue( L, lua_upvalueindex( 1 ) );  //S: cse trd ste dne
+		lua_pushvalue( L, lua_upvalueindex( 1 ) );  //S: cse ste dne
 		lua_call( L, 0, 0 );
 	}
 	return 0;
@@ -423,19 +428,18 @@ t_tst_cse_afterEach( lua_State *L )
 
 /**--------------------------------------------------------------------------
  * Execution wrapper for T.Test.Case.
- * Stack:
- *          1 Test function table
- *          2 Test Suite table
- * \param   L      Lua state.
- * \lparam  table  T.Test.Suite Lua table instance.
- * \return  int    # of values pushed onto the stack.
+ * \param    L         Lua state.
+ * \upvalue  function  Done callback.  This will be t_tst_cse_afterEach( ).
+ * \upvalue  table     T.Test.Case Lua table instance.
+ * \upvalue  table     T.Test Lua table instance.
+ * \return   int       meaning less.
  * --------------------------------------------------------------------------*/
 static int
 t_tst_cse_execute( lua_State *L )
 {
 	int is_cb     = 0;
 
-	lua_pushvalue( L, lua_upvalueindex( 2 ) );
+	lua_pushvalue( L, lua_upvalueindex( 2 ) );    // S: cse
 	lua_pushcfunction( L, t_tst_cse_traceback );  // S: cse tbk
 	lua_getfield( L, -2, "function" );            // S: cse tbk fnc
 	lua_pushvalue( L, lua_upvalueindex( 3 ) );    // S: cse tbk fnc ste
@@ -474,30 +478,29 @@ int
 lt_tst_cse__call( lua_State *L )
 {
 	t_tst_cse_check( L, 1, 1 );
-	lua_pushvalue( L, 2 );                        // S: cse ste ste
-	t_tst_check( L, 3, 1 );                       // S: cse ste tbl
+	t_tst_check( L, 2, 1 );                       // S: cse ste
 
 	t_tim_create_ud( L, 0 );
 	lua_setfield( L, 1, "executionTime" );
 
 	// create closure that returns control to the runner
 	lua_pushvalue( L, 2 );
-	lua_pushvalue( L, 1 );                        // S: cse ste tbl ste cse
-	lua_pushcclosure( L, t_tst_done, 2 );         // S: cse ste tbl run
+	lua_pushvalue( L, 1 );                        // S: cse ste ste cse
+	lua_pushcclosure( L, t_tst_done, 2 );         // S: cse ste run
 
 	// create closure for the afterEach Hook
 	lua_pushvalue( L, 1 );
 	lua_pushvalue( L, 2 );
-	lua_pushcclosure( L, t_tst_cse_afterEach, 3 );// S: cse ste tbl afe
+	lua_pushcclosure( L, t_tst_cse_afterEach, 3 );// S: cse ste afe
 
 	// create closure to execute test case
 	lua_pushvalue( L, 1 );
 	lua_pushvalue( L, 2 );
-	lua_pushcclosure( L, t_tst_cse_execute, 3 );  // S: cse ste tbl exc
+	lua_pushcclosure( L, t_tst_cse_execute, 3 );  // S: cse ste exc
 
-	lua_pushcfunction( L, t_tst_cse_beforeEach ); // S: cse ste tbl exc bfe
-	lua_insert( L, 1 );                           // S: bfe cse ste tbl exc
-	lua_call( L, 4, 0 );
+	lua_pushcfunction( L, t_tst_cse_beforeEach ); // S: cse ste exc bfe
+	lua_insert( L, 1 );                           // S: bfe cse ste exc
+	lua_call( L, 3, 0 );
 
 	return 1;
 }
