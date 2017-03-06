@@ -30,6 +30,10 @@
 
 #define UNUSED(...)   (void)(__VA_ARGS__)
 
+// macro taken from Lua 5.3 source code
+// number of bits in a character
+#define NB                 CHAR_BIT
+
 
 // http://stackoverflow.com/questions/2100331/c-macro-definition-to-determine-big-endian-or-little-endian-machine
 // http://esr.ibiblio.org/?p=5095

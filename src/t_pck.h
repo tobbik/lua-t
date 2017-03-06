@@ -14,11 +14,7 @@
 
 #define T_PCK_FLD_TYPE  T_PCK_TYPE"."T_PCK_FLD_NAME
 
-
 // macros taken from Lua 5.3 source code
-// number of bits in a character
-#define NB                 CHAR_BIT
-
 // mask for one character (NB 1's)
 #define MC                 ((1 << NB) - 1)
 

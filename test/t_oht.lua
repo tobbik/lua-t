@@ -34,7 +34,7 @@ local tests = {
 
 	test_TableStyleConstructor = function( self )
 		Test.Case.describe( "Length of OrderedHashTable must be equal number of inserts" )
-		o   = Oht(
+		local o = Oht(
 			  { [self.keys[1]] = self.vals[1] }
 			, { [self.keys[2]] = self.vals[2] }
 			, { [self.keys[3]] = self.vals[3] }
@@ -51,7 +51,7 @@ local tests = {
 
 	test_CopyConstructor = function( self )
 		Test.Case.describe( "OrderedHashTable constructed by copy must match original" )
-		o   = Oht( self.o )
+		local o = Oht( self.o )
 		assert( #self.o == self.len, "Original and clone length must be equal" )
 		for i=1, self.len do
 			assert( self.o[i] == o[i] , "Indexed value in clone must match original value" )
@@ -60,7 +60,7 @@ local tests = {
 
 	test_EmptyConstructor = function( self )
 		Test.Case.describe( "OrderedHashTable constructed from empty must match original" )
-		o   = Oht( )
+		local o = Oht( )
 		for k,v,_ in pairs( self.o ) do  -- use pairs() iterator to fill copy
 			o[k] = v
 		end

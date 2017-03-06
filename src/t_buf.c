@@ -15,44 +15,7 @@
 #include <string.h>               // memset
 
 #include "t.h"
-#include "t_pck.h"
-
-
-// --------------------------------- HELPERS Functions
-
-/** -------------------------------------------------------------------------
- * Helper to check arguments for being a t_buf and a valid position.
- * \param   L     Lua state.
- * \param   pB    position on stack which is buffer.
- * \param   pB    position on stack which is position (buffer index).
- *                handled as pointer and decremented by one to deal with the
- *                fact that C char buffers indexes are zero based.
- * \return *t_buf pointer to validated buffer.
- *  -------------------------------------------------------------------------*/
-struct
-t_buf * t_buf_getbuffer( lua_State *L, int pB, int pP, int *pos )
-{
-	struct t_buf *buf = t_buf_check_ud( L, pB, 1 );
-
-	*pos = (lua_isnone( L, pP ))
-		? 1
-		: luaL_checkinteger( L, pP );   ///< starting byte  b->b[pos]
-
-	luaL_argcheck( L,  1 <= *pos && *pos <= (int) buf->len, pP,
-		                 "T.Buffer position must be >= 1 or <= #buffer" );
-	*pos = *pos-1;     /// account for char array access being 0 based
-	return buf;
-}
-
-
-
-/////////////////////////////////////////////////////////////////////////////
-//  _                        _    ____ ___
-// | |   _   _  __ _        / \  |  _ \_ _|
-// | |  | | | |/ _` |_____ / _ \ | |_) | |
-// | |__| |_| | (_| |_____/ ___ \|  __/| |
-// |_____\__,_|\__,_|    /_/   \_\_|  |___|
-/////////////////////////////////////////////////////////////////////////////
+#include "t_buf.h"
 
 /** -------------------------------------------------------------------------
  * Constructor - creates the buffer.
@@ -70,7 +33,7 @@ lt_buf__Call( lua_State *L )
 {
 	size_t                                  sz;
 	struct t_buf  __attribute__ ((unused)) *buf;
-	struct t_buf                           *cpy_buf = t_buf_check_ud( L, -1, 0);
+	struct t_buf                           *cpy_buf = t_buf_check_ud( L, -1, 0 );
 
 	lua_remove( L, 1 );    // remove the T.Buffer Class table
 	if (NULL != cpy_buf)
@@ -143,46 +106,12 @@ t_buf *t_buf_check_ud( lua_State *L, int pos, int check )
 // ================================= GENERIC LUA API========================
 
 /**--------------------------------------------------------------------------
- * Reads a value, unpacks it and pushes it onto the Lua stack.
- * \param   L      lua Virtual Machine.
- * \lparam  struct t_pack.
- * \lreturn value  unpacked value according to packer format.
- * \return  int    # of values pushed onto the stack.
- *  -------------------------------------------------------------------------*/
-static int
-lt_buf_unpack( lua_State *L )
-{
-	int           pos;                               ///< starting byte  b->b[pos]
-	struct t_buf *buf;
-	struct t_pck *pc;
-	size_t        n = 0,j;
-
-	buf = t_buf_getbuffer( L, 1 , 3, &pos );
-	pc  = t_pck_getPacker( L, 2, &n );
-	t_pck_fld__callread( L, pc, buf->b + pos, 0 );
-
-	if (T_PCK_SEQ == pc->t)
-	{
-		n = lua_rawlen( L, -1 );
-		for (j=1; j<=n; j++)
-		{
-			lua_rawgeti( L, 0-j, j );
-		}
-		return n;
-	}
-	else
-	{
-		return 1;
-	}
-}
-
-
-/**--------------------------------------------------------------------------
  * Read a set of chars to the buffer at position x.
- * \lparam  buf  userdata of type T.Buffer (struct t_buf).
- * \lparam  pos  position in bytes.
- * \lparam  sz   size in bytes(1-#buf).
- * \lreturn val  lua_String.
+ * \param   L      Lua state.
+ * \lparam  ud     T.Buffer userdata instance.
+ * \lparam  pos    Position in T.Buffer where writing starts.
+ * \lparam  len    how many bytes of val shall be read from buf.
+ * \lreturn val    Lua string.
  * TODO: check buffer length vs requested size and offset
  *
  * \return  int    # of values pushed onto the stack.
@@ -191,43 +120,37 @@ static int
 lt_buf_read( lua_State *L )
 {
 	struct t_buf *buf = t_buf_check_ud( L, 1, 1 );
-	int           pos;
-	int           sz;
+	size_t idx = (lua_isnumber( L, 2 )) ? (size_t) luaL_checkinteger( L, 2 ) : 1;
+	size_t len = (lua_isnumber( L, 3 )) ? (size_t) luaL_checkinteger( L, 3 ) : buf->len+1 - idx;
 
-	pos = (lua_isnumber( L, 2 )) ? (size_t) luaL_checkinteger( L, 2 ) : 0;
-	sz  = (lua_isnumber( L, 3 )) ? (size_t) luaL_checkinteger( L, 3 ) : buf->len - pos;
-
-	lua_pushlstring( L, (const char*) &(buf->b[ pos ]), sz );
+	luaL_argcheck( L, 1 <= idx && idx <= buf->len, 2, "index out of range" );
+	lua_pushlstring( L, (const char*) &(buf->b[ idx-1 ]), len );
 	return 1;
 }
 
 
 /**--------------------------------------------------------------------------
  * Write an set of chars to the buffer at position x.
- * \lparam  buf  userdata of type T.Buffer (struct t_buf).
- * \lparam  val  lua_String.
- * \lparam  pos  position in bytes.
- * \lparam  sz   size in bits (1-64).
- * TODO: check string vs buffer length
- *
+ * \param   L      Lua state.
+ * \lparam  ud     T.Buffer userdata instance.
+ * \lparam  string Lua string to write to T.Buffer.
+ * \lparam  pos    Position in T.Buffer where writing starts.
+ * \lparam  len    how many bytes of val shall be written to buf.
  * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int
 lt_buf_write( lua_State *L )
 {
 	struct t_buf *buf = t_buf_check_ud( L, 1, 1 );
-	int           pos = (lua_isnumber( L, 3 )) ? luaL_checkinteger( L, 3 ) : 0;
-	size_t        sz;
+	size_t idx = (lua_isnumber( L, 3 )) ? (size_t) luaL_checkinteger( L, 4 ) : 1;
+	size_t len;
 
-	// if a third parameter is given write only x bytes of the input string to the buffer
-	if (lua_isnumber( L, 4 ))
-	{
-		sz  = luaL_checkinteger( L, 4 );
-		memcpy  ( (char*) &(buf->b[ pos ]), luaL_checklstring( L, 2, NULL ), sz );
-	}
-	// otherwise write the whole thing
-	else
-		memcpy  ( (char*) &(buf->b[ pos ]), luaL_checklstring( L, 2, &sz ), sz );
+	luaL_checklstring( L, 2, &len );
+	len = (lua_isnumber( L, 4 )) ? (size_t) luaL_checkinteger( L, 4 ) : len;
+
+	luaL_argcheck( L, 1 <= idx && idx+len <= buf->len, 2, "index out of range" );
+
+	memcpy( (char*) &(buf->b[ idx-1 ]), lua_tostring( L, 2 ), len );
 	return 0;
 }
 
@@ -243,13 +166,13 @@ static int
 lt_buf_toHexString( lua_State *L )
 {
 	char          hex[] = "0123456789ABCDEF";
-	int           n;
+	size_t        n;
 	luaL_Buffer   lB;
 
 	struct t_buf *buf   = t_buf_check_ud( L, 1, 1 );
 	luaL_buffinit( L, &lB );
 
-	for (n=0; n<(int) buf->len; n++)
+	for (n=0; n<buf->len; n++)
 	{
 		luaL_addchar( &lB, hex[ buf->b[n] >> 4 & 0x0F ] );
 		luaL_addchar( &lB, hex[ buf->b[n]      & 0x0F ] );
@@ -327,6 +250,27 @@ lt_buf__eq( lua_State *L )
 
 
 /**--------------------------------------------------------------------------
+ * Combines two T.Buffer into a new T.Buffer.
+ * \param   L    Lua state.
+ * \lparam  ud   T.Buffer userdata instance.
+ * \lparam  ud   T.Buffer userdata instance to add.
+ * \lreturn ud   T.Buffer userdata instance.
+ * \return  int  # of values pushed onto the stack.
+ * --------------------------------------------------------------------------*/
+static int
+lt_buf__add( lua_State *L )
+{
+	struct t_buf *bA = t_buf_check_ud( L, 1, 1 );
+	struct t_buf *bB = t_buf_check_ud( L, 2, 1 );
+	struct t_buf *bR = t_buf_create_ud( L, bA->len + bB->len );
+
+	memcpy( (char*) &(bR->b[ 0 ]),       bA->b, bA->len );
+	memcpy( (char*) &(bR->b[ bA->len ]), bB->b, bB->len );
+	return 1;
+}
+
+
+/**--------------------------------------------------------------------------
  * Returns len of the buffer
  * \param   L    Lua state
  * \return  int  # of values pushed onto the stack.
@@ -380,11 +324,11 @@ static const luaL_Reg t_buf_m [] = {
 	  { "__tostring"   , lt_buf__tostring }
 	, { "__len"        , lt_buf__len }
 	, { "__eq"         , lt_buf__eq }
+	, { "__add"        , lt_buf__add }
 	// instance methods
-	, { "unpack"       , lt_buf_unpack }
 	, { "read"         , lt_buf_read }
 	, { "write"        , lt_buf_write }
-	// univeral stuff
+	// universal stuff
 	, { "toHex"        , lt_buf_toHexString }
 	, { "toBin"        , lt_buf_toBinString }
 	, { NULL           , NULL }

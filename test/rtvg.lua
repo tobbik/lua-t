@@ -55,9 +55,9 @@ local m = {
 	getBoolean = function( self )
 		return math.random( 1, self.max ) % 2 == 1
 	end,
-	getString = function( self )
+	getString = function( self, n )
 		local str = {}
-		for i=1,math.random(1, 12) do
+		for i=1,math.random(1, n or 12) do
 			table.insert( str, makeWord( ) )
 		end
 		return table.concat( str, ' ' )

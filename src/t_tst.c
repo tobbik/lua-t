@@ -86,13 +86,13 @@ t_tst_callFinalize( lua_State *L )
 	t_tst_check( L, 1, 1 );
 	for (idx=0; idx<luaL_len( L, 1 ); idx++)
 	{
-		lua_geti( L, 1, idx+1 );                 //S: ste tbl cse
+		lua_geti( L, 1, idx+1 );                 //S: ste cse
 		pass  += (t_tst_cse_hasField( L, "pass", 0 )) ? 1 : 0;
 		skip  += (t_tst_cse_hasField( L, "skip", 0 )) ? 1 : 0;
 		todo  += (t_tst_cse_hasField( L, "todo", 0 )) ? 1 : 0;
-		lua_getfield( L, -1, "executionTime" );  //S: ste tbl cse tim
+		lua_getfield( L, -1, "executionTime" );  //S: ste cse tim
 		since += t_tim_getms( t_tim_check_ud( L, -1, 1 ) );
-		lua_pop( L, 2 );                         //S: ste tbl
+		lua_pop( L, 2 );                         //S: ste
 	}
 	printf( "---------------------------------------------------------\n"
 	        "Handled %lld tests in %.3f seconds\n\n"

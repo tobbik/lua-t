@@ -551,7 +551,8 @@ int t_tst_cse_isType( lua_State *L, int pos, const char *typeName )
 /** -------------------------------------------------------------------------
  * Mark a Test.Case as Todo.
  * \param    L     Lua state.
- * \lreturn  table imported library.
+ * \lreturn  void.
+ * \return   int   # of values pushed onto the stack.
  *-------------------------------------------------------------------------*/
 static int
 lt_tst_cse_Todo( lua_State *L )
@@ -569,7 +570,8 @@ lt_tst_cse_Todo( lua_State *L )
 /** -------------------------------------------------------------------------
  * Set the description for a Test.Case
  * \param    L     Lua state.
- * \lreturn  table imported library.
+ * \lreturn  void.
+ * \return   int   # of values pushed onto the stack.
  *-------------------------------------------------------------------------*/
 static int
 lt_tst_cse_Describe( lua_State *L )
@@ -590,7 +592,8 @@ lt_tst_cse_Describe( lua_State *L )
  * allow conditional skipping.  A skip is to throw a controlled luaL_error which
  * gets caught by t_tst_cse_traceback.
  * \param    L     Lua state.
- * \lreturn  table imported library.
+ * \lreturn  void.
+ * \return   int   # of values pushed onto the stack.
  *-------------------------------------------------------------------------*/
 static int
 lt_tst_cse_Skip( lua_State *L )
@@ -602,7 +605,6 @@ lt_tst_cse_Skip( lua_State *L )
 	luaL_error( L, lua_tostring( L, -1 ) );
 	return 0;
 }
-
 
 
 /**--------------------------------------------------------------------------
@@ -636,10 +638,10 @@ static const luaL_Reg t_tst_cse_m [] = {
 
 
 /**--------------------------------------------------------------------------
- * Pushes the Test library onto the stack
+ * Pushes the Test.Case library onto the stack
  *          - creates Metatable with functions
  *          - creates metatable with methods
- * \param   L     The lua state.
+ * \param   L      Lua state.
  * \lreturn table  the library
  * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/

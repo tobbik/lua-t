@@ -40,4 +40,7 @@ Unit test execution model:
 -> Test.Case.__call( Test.Case, Test.Suite )
 
 
+Check for net module
+https://github.com/spc476/lua-conmanorg
+
 

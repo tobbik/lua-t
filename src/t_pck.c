@@ -768,7 +768,10 @@ lt_pck_fld__call( lua_State *L )
 		b = &(buf->b[ 0 ]);
 	}
 	else                  // Lua String
+	{
 		b = (char *) luaL_checklstring( L, 2, &l );
+		luaL_argcheck( L, lua_gettop( L ) < 3, 2, "Can't write value to string type" );
+	}
 	//printf( " %ld  %lu %zu %lu %zu \n", (NULL==pf)?-1:pf->o, ofs, o/NB, l*NB, t_pck_getSize( L, pc ) );
 
 	luaL_argcheck( L,  l*NB+NB >= ofs + t_pck_getSize( L, pc ), 2,
@@ -784,7 +787,7 @@ lt_pck_fld__call( lua_State *L )
 		if (pc->t < T_PCK_ARR)      // handle atomic packer, return single value
 			return t_pck_write( L, b + ofs/NB, pc, ofs%NB );
 		else                        // create a table ...
-			return t_push_error( L, "writing of complex types is not implemented" );
+			return luaL_error( L, "writing of complex types is not implemented" );
 	}
 
 	return 0;
