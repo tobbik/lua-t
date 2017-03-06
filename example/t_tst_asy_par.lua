@@ -4,7 +4,7 @@
 -- \file    t_tst_asy_par.lua
 -- \brief   Asynchronous tests in Lua; running all cases at the same time on
 --          the loop
-T     = require ('t')
+T     = require( 't' )
 Test  = T.Test
 Loop  = T.Loop
 Timer = T.Time
@@ -33,6 +33,8 @@ tbl = {
 		print("+++++++++++++++++++++++++++++++BEFORE ALL")
 		local tm = Timer(1)
 		print(tm)
+		self.a = 10
+		self.b = 20
 		self.loop:addTimer( tm, done, self )
 		-- loop:run() blocks further execution but the done function here is the
 		-- test runner itself.  When it get's executed it will loop over all test

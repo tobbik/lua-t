@@ -4,7 +4,7 @@
 -- \file    t_tst_asy_seq.lua
 -- \brief   Asynchronous tests in Lua; running all cases sequentially on the
 --          loop
-T     = require ('t')
+T     = require( 't' )
 Test  = T.Test
 Loop  = T.Loop
 Timer = T.Time
@@ -30,6 +30,8 @@ end
 tbl = {
 	beforeAll = function( self, done )
 		print("BEFOREALL")
+		self.a = 10
+		self.b = 20
 		self.loop    = Loop(20)
 		done( self )
 	end,

@@ -3,7 +3,7 @@
 ---
 -- \file    test/t_tst.lua
 -- \brief   Test for T.Test
-local Test  = require ('t').Test
+local Test  = require( 't' ).Test
 
 local tests = {
 	beforeEach = function( self )
@@ -26,7 +26,7 @@ local tests = {
 	test_Success = function( self, done )
 		Test.Case.describe( "Test to success" )
 		self.t.test_Test = function( s ) assert( true, "This better works" ) end
-		assert( self.t(), "Test suite should have worked" )
+		assert( self.t(), "Test suite should have succeeded" )
 		assert( self.t.test_Test.pass, "Test.test_Test case suite should have passed" )
 		assert( self.t.test_Test.message   == nil, "No Message   should be set" )
 		assert( self.t.test_Test.location  == nil, "No Location  should be set" )
@@ -39,7 +39,7 @@ local tests = {
 		self.t.test_Test = function( s ) assert( false, errorMsg ) end
 		assert( not self.t(), "Test suite should have failed" )
 		assert( not self.t.test_Test.pass, "Test.test_Test case suite should NOT have passed" )
-		assert( self.t.test_Test.message == errorMsg, "Error Message   should be set" )
+		assert( self.t.test_Test.message == errorMsg, "Error Message should be set" )
 		assert( self.t.test_Test.location, "Error Location  should be set" )
 		assert( self.t.test_Test.location:match(":%d+$"),
 			"Error Location should contain trailing line number" )
@@ -51,7 +51,7 @@ local tests = {
 	test_TodoFails = function( self, done )
 		Test.Case.describe( "A failed TODO should NOT fail the suite" )
 		self.t.test_Test = function( s ) Test.Case.todo('todo'); assert( false, "This better fails" ) end
-		assert( self.t(), "Test suite should have succed" )
+		assert( self.t(), "Test suite should have succeeded" )
 		assert( self.t.test_Test.todo == "todo", "Test Todo reason should be set" )
 		assert( not self.t.test_Test.pass, "Test.test_Test case suite should NOT have passed" )
 	end,

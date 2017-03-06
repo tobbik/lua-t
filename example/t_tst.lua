@@ -3,7 +3,7 @@
 ---
 -- \file    sampleTest.lua
 -- \brief   basic tests to show t.Test
-local   Test   = require ('t').Test
+local   Test   = require( 't' ).Test
 
 tc = {
 	beforeEach = function( self )
@@ -20,7 +20,7 @@ tc = {
 
 	test_EqNumbers = function( self )
 		Test.Case.describe( 'Test for equality of numeric values' )
-		Test.skip( 'Numbers are all over the place today...' )
+		Test.Case.skip( 'Numbers are all over the place today...' )
 		assert( self.b==self.a*2, "Multiplication equals result" )
 	end,
 
@@ -70,7 +70,7 @@ tc = {
 
 	test_ToSkip = function( self )
 		Test.Case.describe( 'Test for skipping' )
-		Test.skip( '...for fun and profit ...')
+		Test.Case.skip( '...for fun and profit ...')
 		assert( self.b==self.a*2, "Multiplication equals result" )
 	end,
 }
@@ -89,7 +89,7 @@ end
 
 t.test_MakeFail = function( self )
 	Test.Case.describe('Create an error in code')
-	Test.todo( 'Nothing todo here. This test fails to test the test framework' )
+	Test.Case.todo( 'Nothing todo here. This test fails to test the test framework' )
 	local x = 5
 	x = x.a + 5
 	assert( x==6 , "This math makes no sense" )

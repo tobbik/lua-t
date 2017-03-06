@@ -69,21 +69,23 @@ t_tst_check( lua_State *L, int pos, int check )
 
 
 /**--------------------------------------------------------------------------
- * Finishes the __call of T.Test suite.  Assembles report.
+ * Evaluates if a test suite has passed or not.
  * \param   L        Lua state.
- * \upvalue table    T.Test Lua table instance.
+ * \param   *count   Integer counting all test cases in suite.
+ * \param   *pass    Integer counting all passed  test cases in suite.
+ * \param   *skip    Integer counting all skipped test cases in suite.
+ * \param   *todo    Integer counting all todo    test cases in suite.
+ * \param   *since   Long adding up recorded execution times.
+ * \lparam  table    T.Test Lua table instance.
  * --------------------------------------------------------------------------*/
-static int
-t_tst_callFinalize( lua_State *L )
+static void
+t_tst_getMetrics( lua_State *L )
 {
 	lua_Integer idx;
 	lua_Integer pass  = 0,
 	            skip  = 0,  ///< marked as ran but haven't finished
 	            todo  = 0;  ///< expected to fail
-	long        since = 0;
-
-	lua_pushvalue( L, lua_upvalueindex( 1 ) );
-	t_tst_check( L, 1, 1 );
+	lua_Integer since = 0;
 	for (idx=0; idx<luaL_len( L, 1 ); idx++)
 	{
 		lua_geti( L, 1, idx+1 );                 //S: ste cse
@@ -94,22 +96,43 @@ t_tst_callFinalize( lua_State *L )
 		since += t_tim_getms( t_tim_check_ud( L, -1, 1 ) );
 		lua_pop( L, 2 );                         //S: ste
 	}
+	lua_pushboolean( L, (idx == pass + todo) ? 1 : 0 );
+	lua_pushinteger( L, pass );
+	lua_pushinteger( L, skip );
+	lua_pushinteger( L, todo );
+	lua_pushinteger( L, since );
+}
+
+
+/**--------------------------------------------------------------------------
+ * Finishes the __call of T.Test suite.  Assembles report.
+ * \param   L        Lua state.
+ * \upvalue table    T.Test Lua table instance.
+ * --------------------------------------------------------------------------*/
+static int
+t_tst_callFinalize( lua_State *L )
+{
+	size_t      len;
+
+	lua_pushvalue( L, lua_upvalueindex( 1 ) );
+	t_tst_check( L, 1, 1 );
+	len = luaL_len( L, 1 );
+	t_tst_getMetrics( L );   //S: ste bool pass skip todo since
 	printf( "---------------------------------------------------------\n"
-	        "Handled %lld tests in %.3f seconds\n\n"
+	        "Handled %lu tests in %.3f seconds\n\n"
 	        "Executed         : %lld\n"
 	        "Skipped          : %lld\n"
 	        "Expected to fail : %lld\n"
 	        "Failed           : %lld\n"
 	        "status           : %s\n"
-	   , idx, since/1000.0
-	   , idx - skip
-	   , skip
-	   , todo
-	   , idx-pass
-	   , (idx == pass+todo) ? "OK" : "FAIL" );
-	lua_pushboolean( L, (idx==pass + todo) ? 1 : 0 );
+	   , len, lua_tointeger( L, -1 )/1000.0
+	   , len - lua_tointeger( L, -3 )
+	   , lua_tointeger( L, -3 )
+	   , lua_tointeger( L, -2 )
+	   , len - lua_tointeger( L, -4 )
+	   , (lua_toboolean( L, 5 )) ? "OK" : "FAIL" );
 
-	return 1;
+	return 0;
 }
 
 
@@ -127,7 +150,7 @@ t_tst_callEnvelope( lua_State *L, const char *envelope )
 	{
 		lua_insert( L, -3 );
 		if (lua_pcall( L, 2, 0, 0 ))
-			luaL_error( L, "T.Test Suite %s() failed: %s",
+			return luaL_error( L, "T.Test Suite %s() failed: %s",
 				envelope, lua_tostring( L, -1 ) );
 	}
 	else
@@ -136,7 +159,7 @@ t_tst_callEnvelope( lua_State *L, const char *envelope )
 		lua_insert( L , -2 );
 		lua_call( L, 1, 0 );
 	}
-	return 0;
+	return 1;
 }
 
 
@@ -199,7 +222,7 @@ t_tst_callLoopCases( lua_State *L )
 		lua_pushvalue( L, 1 );       //S: ste fnc cse ste
 		lua_call( L, 2, 0 );
 	}
-	return 0;
+	return 1;
 }
 
 
@@ -213,9 +236,13 @@ lt_tst__call( lua_State *L )
 {
 	t_checkTableType( L, 1, 1, T_TST_TYPE );
 	lua_pushvalue( L, 1 );
+	lua_pushvalue( L, 1 );
 	lua_pushcclosure( L, t_tst_callLoopCases, 1 );
 	t_tst_callEnvelope( L, "beforeAll" );
-	return 0;
+
+	t_tst_getMetrics( L );   //S: ste bool pass skip todo since
+	lua_pop( L, 4 );
+	return 1;
 }
 
 
@@ -375,7 +402,6 @@ t_tst_isReallyEqual( lua_State *L )
 
 /** ---------------------------------------------------------------------------
  * Compares the last two values on the stack (deep table compare; recursive)
- * Work on negative inices ONLY for recursive use
  * \param   L        Lua state
  * \lparam  value    valueA to compare
  * \lparam  value    valueB to compare
@@ -386,6 +412,24 @@ static int
 lt_tst_IsReallyEqual( lua_State *L )
 {
 	lua_pushboolean( L, t_tst_isReallyEqual( L ) );
+	return 1;
+}
+
+
+/** ---------------------------------------------------------------------------
+ * Test if a T.Test.Suite has run successfully.
+ * Note that test case marked as TODO must fail else the suite will fail.
+ * \param   L       Lua state
+ * \lparam  table   T.Test Lua table instance.
+ * \lreturn boolean True, if all test ran successfully, else False.
+ * \return  int     # of values pushed onto the stack.
+ *--------------------------------------------------------------------------- */
+static int
+lt_tst_HasPassed( lua_State *L )
+{
+	t_tst_check( L, 1, 1 );
+	t_tst_getMetrics( L );   //S: ste bool pass skip todo since
+	lua_pop( L, 5 );
 	return 1;
 }
 
@@ -404,6 +448,7 @@ static const struct luaL_Reg t_tst_fm [] = {
  * --------------------------------------------------------------------------*/
 static const struct luaL_Reg t_tst_cf [] = {
 	  { "equal"              , lt_tst_IsReallyEqual }
+	, { "hasPassed"          , lt_tst_HasPassed }
 	, { NULL,  NULL }
 };
 

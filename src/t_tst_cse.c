@@ -55,14 +55,14 @@ t_tst_cse_traceback( lua_State *L )
 				lua_setfield( L, 1, "message" );
 				lua_pushlstring( L, loc, msg-loc-2 );
 				lua_setfield( L, 1, "location" );
-				lua_pop( L, 1 );    // pop original message
+				lua_pop( L, 1 );                 // pop original message
 				luaL_traceback( L, L, NULL, 1 );
 				lua_setfield( L, 1, "traceback" );
 			}
 		}
 		else
 		{
-			lua_setfield( L, 1, "message" );    // push original message
+			lua_setfield( L, 1, "message" );    // set original message
 			luaL_where( L, 2 );
 			lua_setfield( L, 1, "location" );
 			luaL_traceback( L, L, NULL, 1 );
