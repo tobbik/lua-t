@@ -471,6 +471,33 @@ t_tst_cse_execute( lua_State *L )
 
 
 /**--------------------------------------------------------------------------
+ * Prune T.Test.Case from previous execution.
+ * Stack:  T.Test.Case
+ * \param   L      Lua state.
+ * \lparam  table  T.Test.Case Lua table instance.
+ * \return  int    # of values pushed onto the stack.
+ * --------------------------------------------------------------------------*/
+int
+t_tst_cse_prune( lua_State *L )
+{
+	t_tst_cse_check( L, -1, 1 );
+	lua_pushnil( L );
+	lua_setfield( L, -2, "pass" );
+	lua_pushnil( L );
+	lua_setfield( L, -2, "skip" );
+	lua_pushnil( L );
+	lua_setfield( L, -2, "todo" );
+	lua_pushnil( L );
+	lua_setfield( L, -2, "message" );
+	lua_pushnil( L );
+	lua_setfield( L, -2, "location" );
+	lua_pushnil( L );
+	lua_setfield( L, -2, "traceback" );
+	return 0;
+}
+
+
+/**--------------------------------------------------------------------------
  * Execute T.Test.Case.
  * Stack:  T.Test.Case T.Test
  * \param   L      Lua state.
@@ -484,6 +511,7 @@ lt_tst_cse__call( lua_State *L )
 	t_tst_cse_check( L, 1, 1 );
 	t_tst_check( L, 2, 1 );                       // S: cse ste
 
+	// prepare and prune from previous execution
 	t_tim_create_ud( L, 0 );
 	lua_setfield( L, 1, "executionTime" );
 

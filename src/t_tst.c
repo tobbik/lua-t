@@ -70,13 +70,12 @@ t_tst_check( lua_State *L, int pos, int check )
 
 /**--------------------------------------------------------------------------
  * Evaluates if a test suite has passed or not.
- * \param   L        Lua state.
- * \param   *count   Integer counting all test cases in suite.
- * \param   *pass    Integer counting all passed  test cases in suite.
- * \param   *skip    Integer counting all skipped test cases in suite.
- * \param   *todo    Integer counting all todo    test cases in suite.
- * \param   *since   Long adding up recorded execution times.
- * \lparam  table    T.Test Lua table instance.
+ * \param   L       Lua state.
+ * \lparam  table   T.Test Lua table instance.
+ * \lreturn pass    Integer counting all passed  test cases in suite.
+ * \lreturn skip    Integer counting all skipped test cases in suite.
+ * \lreturn todo    Integer counting all todo    test cases in suite.
+ * \lreturn since   Long adding up recorded execution times.
  * --------------------------------------------------------------------------*/
 static void
 t_tst_getMetrics( lua_State *L )
@@ -234,7 +233,14 @@ t_tst_callLoopCases( lua_State *L )
 static int
 lt_tst__call( lua_State *L )
 {
+	lua_Integer idx;
 	t_checkTableType( L, 1, 1, T_TST_TYPE );
+	for (idx=0; idx < luaL_len( L, 1 ); idx++)
+	{
+		lua_geti( L, 1, idx+1 );
+		t_tst_cse_prune( L );
+		lua_pop( L, 1 );
+	}
 	lua_pushvalue( L, 1 );
 	lua_pushvalue( L, 1 );
 	lua_pushcclosure( L, t_tst_callLoopCases, 1 );
