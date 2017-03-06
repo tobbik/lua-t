@@ -49,7 +49,7 @@ t_tst_cse_traceback( lua_State *L )
 			}
 			else
 			{
-				lua_pushboolean( L, 1 );
+				lua_pushboolean( L, 0 );
 				lua_setfield( L, 1, "pass" );
 				lua_pushstring( L, msg );
 				lua_setfield( L, 1, "message" );
@@ -242,7 +242,11 @@ t_tst_cse_pushTapDetail( lua_State *L, int pos, const char *m )
 	lua_getfield( L, pos, m );                                     //S: … val
 	if (! lua_isnil( L, -1 ))
 	{
-		lua_pushfstring( L, "\n%s: %s", m, lua_tostring( L, -1 ) ); //S: … val str
+		if (lua_isboolean( L, -1 ))
+			lua_pushfstring( L, "\n%s: %s", m, (lua_toboolean( L, -1 )) ? "True":"False" ); //S: … val str
+		else
+			lua_pushfstring( L, "\n%s: %s", m, lua_tostring( L, -1 ) ); //S: … val str
+
 		luaL_gsub( L, luaL_checkstring( L, -1 ), "\n", "\n    " );  //S: … val str str
 		lua_remove( L, -2 );                                        //S: … val str
 		lua_remove( L, -2 );                                        //S: … str
@@ -504,6 +508,7 @@ lt_tst_cse__call( lua_State *L )
 
 	return 1;
 }
+
 
 /**--------------------------------------------------------------------------
  * Is this T.Test.Case marked as "field".
