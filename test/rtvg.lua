@@ -3,7 +3,7 @@ local makeWord = function( )
 	for i=1,math.random(1,12) do
 		table.insert( wrd, string.char( math.random( 32, 123) ) )
 	end
-	return table.concat( wrd, '' )
+	return table.concat( wrd, '' ) .. ' '
 end
 
 local m = {
@@ -56,6 +56,21 @@ local m = {
 		return math.random( 1, self.max ) % 2 == 1
 	end,
 	getString = function( self, n )
+		local str   = { }
+		local count = 0
+		n = n or math.random( 1000, 3000 )
+		while count<n do
+			local word = makeWord( )
+			count = count + #word
+			if count <= n then
+				table.insert( str, word )
+			else
+				table.insert( str, word:sub( 1,  #word-(count-n) ) )
+			end
+		end
+		return table.concat( str, '' )
+	end,
+	getWords = function( self, n )
 		local str = {}
 		for i=1,math.random(1, n or 12) do
 			table.insert( str, makeWord( ) )
@@ -83,8 +98,8 @@ return setmetatable(
 		__call  = function( self, max )
 			local rtvg =  {
 				max  = max or 10000000,
-				keys = { m.getTable, m.getString, m.getFunction, m.getBoolean, m.getCoroutine, m.getFloat },
-				vals = { m.getTable, m.getString, m.getFunction, m.getBoolean, m.getCoroutine, m.getFloat, m.getInteger }
+				keys = { m.getTable, m.getWords, m.getFunction, m.getBoolean, m.getCoroutine, m.getFloat },
+				vals = { m.getTable, m.getWords, m.getFunction, m.getBoolean, m.getCoroutine, m.getFloat, m.getInteger }
 			}
 			rtvg.aKeys  = { [ rtvg.keys[ math.random( 1, #rtvg.keys ) ]( rtvg ) ] = true }
 			rtvg.aVals  = { [ rtvg.vals[ math.random( 1, #rtvg.vals ) ]( rtvg ) ] = true }

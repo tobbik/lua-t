@@ -142,13 +142,13 @@ static int
 lt_buf_write( lua_State *L )
 {
 	struct t_buf *buf = t_buf_check_ud( L, 1, 1 );
-	size_t idx = (lua_isnumber( L, 3 )) ? (size_t) luaL_checkinteger( L, 4 ) : 1;
+	size_t idx = (lua_isnumber( L, 3 )) ? (size_t) luaL_checkinteger( L, 3 ) : 1;
 	size_t len;
 
 	luaL_checklstring( L, 2, &len );
 	len = (lua_isnumber( L, 4 )) ? (size_t) luaL_checkinteger( L, 4 ) : len;
 
-	luaL_argcheck( L, 1 <= idx && idx+len <= buf->len, 2, "index out of range" );
+	luaL_argcheck( L, 1 <= idx && idx+len-1 <= buf->len, 2, "index out of range" );
 
 	memcpy( (char*) &(buf->b[ idx-1 ]), lua_tostring( L, 2 ), len );
 	return 0;
