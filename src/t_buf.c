@@ -42,7 +42,7 @@ lt_buf__Call( lua_State *L )
 		memcpy( &(buf->b[0]), &(cpy_buf->b[0]), buf->len );
 		return 1;
 	}
-	if (lua_isnumber( L, -1 ))
+	if (lua_isinteger( L, -1 ))
 	{
 		sz  = luaL_checkinteger( L, -1 );
 		buf = t_buf_create_ud( L, sz );
@@ -112,7 +112,6 @@ t_buf *t_buf_check_ud( lua_State *L, int pos, int check )
  * \lparam  pos    Position in T.Buffer where writing starts.
  * \lparam  len    how many bytes of val shall be read from buf.
  * \lreturn val    Lua string.
- * TODO: check buffer length vs requested size and offset
  *
  * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
@@ -120,10 +119,16 @@ static int
 lt_buf_read( lua_State *L )
 {
 	struct t_buf *buf = t_buf_check_ud( L, 1, 1 );
-	size_t idx = (lua_isnumber( L, 2 )) ? (size_t) luaL_checkinteger( L, 2 ) : 1;
-	size_t len = (lua_isnumber( L, 3 )) ? (size_t) luaL_checkinteger( L, 3 ) : buf->len+1 - idx;
+	lua_Integer   idx = (lua_isinteger( L, 2 ))
+		? luaL_checkinteger( L, 2 )
+		: 1;
+	lua_Integer   len = (lua_isinteger( L, 3 ))
+		? luaL_checkinteger( L, 3 )
+		: buf->len+1 - idx;
 
-	luaL_argcheck( L, 1 <= idx && idx <= buf->len, 2, "index out of range" );
+	luaL_argcheck( L, 1 <= idx && (size_t)idx         <= buf->len, 2, "index out of range" );
+	luaL_argcheck( L, 1 <= len && (size_t)(idx+len-1) <= buf->len, 3, "requested length out of range" );
+
 	lua_pushlstring( L, (const char*) &(buf->b[ idx-1 ]), len );
 	return 1;
 }
@@ -142,13 +147,19 @@ static int
 lt_buf_write( lua_State *L )
 {
 	struct t_buf *buf = t_buf_check_ud( L, 1, 1 );
-	size_t idx = (lua_isnumber( L, 3 )) ? (size_t) luaL_checkinteger( L, 3 ) : 1;
-	size_t len;
+	lua_Integer   idx = (lua_isinteger( L, 3 ))
+		? luaL_checkinteger( L, 3 )
+		: 1;
+	size_t        len;
 
 	luaL_checklstring( L, 2, &len );
-	len = (lua_isnumber( L, 4 )) ? (size_t) luaL_checkinteger( L, 4 ) : len;
 
-	luaL_argcheck( L, 1 <= idx && idx+len-1 <= buf->len, 2, "index out of range" );
+	luaL_argcheck( L, lua_isnone( L, 4 ) || (lua_isinteger( L, 4 ) && lua_tointeger( L, 4 ) > 0),
+		4, "requested Length must be bigger than 0" );
+	len = (lua_isinteger( L, 4 )) ? (size_t) lua_tointeger( L, 4 ) : len;
+
+	luaL_argcheck( L, 1 <= idx && (size_t)idx         <= buf->len, 2, "index out of range" );
+	luaL_argcheck( L, 1 <= len && (size_t)(idx+len-1) <= buf->len, 3, "requested length out of range" );
 
 	memcpy( (char*) &(buf->b[ idx-1 ]), lua_tostring( L, 2 ), len );
 	return 0;

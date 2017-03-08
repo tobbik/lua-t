@@ -3,16 +3,17 @@
 ---
 -- \file    t_buf.lua
 -- \brief   Test for the T.Buffer implementation
-local T      = require( 't' )
-local Test   = T.Test
-local Buffer = T.Buffer
-local Rtvg   = T.require( 'rtvg' )
+T      = require( 't' )
+Test   = T.Test
+Buffer = T.Buffer
+Rtvg   = T.require( 'rtvg' )
 
 local tests = {
 	rtvg       = Rtvg( ),
 	beforeEach = function( self )
-		self.s    = self.rtvg:getWords( math.random(500,1000) )
-		self.b    = Buffer( self.s )
+		local  n = math.random( 1000,2000 )
+		self.s = self.rtvg:getWords( n )
+		self.b = Buffer( self.s )
 	end,
 
 	--afterEach = function( self )  -- not necessary for this suite
@@ -43,7 +44,7 @@ local tests = {
 
 	test_ConstructorFromString = function( self )
 		Test.Case.describe( "T.Buffer constructed from String must have right length and values" )
-		local s = self.rtvg:getWords( math.random(500,1000) )
+		local s = self.rtvg:getWords( math.random( 1000, 2000 ) )
 		local b = Buffer( s )
 		assert( #b == #s, "Length of T.Buffer should be "..#s.." but was " ..#b )
 		for i=1,#b do
@@ -54,6 +55,20 @@ local tests = {
 		end
 	end,
 
+	test_ReadIndexOutOfRange = function( self )
+		Test.Case.describe( "Reading from Buffer past it's length fails" )
+		local f = function(b,n) return b:read( n+1 ) end
+		assert( not pcall( f, self.b, #self.b ),
+			"Can't read from buffer on index past it's length" )
+	end,
+
+	test_ReadLengthBeyondBufferLength = function( self )
+		Test.Case.describe( "Reading from Buffer past it's length fails" )
+		local f = function(b,n,l) return b:read(n,l) end
+		assert( not pcall( f, self.b, #self.b-100, 200 ),
+			"Can't read a string longer than buffer" )
+	end,
+
 	test_ReadFull = function( self )
 		Test.Case.describe( "Reading full Buffer content gets full string" )
 		assert( self.b:read( ) == self.s, "Read data and original string must be equal" )
@@ -61,9 +76,10 @@ local tests = {
 
 	test_ReadPartial = function( self )
 		Test.Case.describe( "Reading partial Buffer content matches string" )
-		local starts = math.random( 100, 300 )
-		local ends   = #self.s - math.random( 100, 200 )
+		local starts = math.random( math.floor(#self.s/5), math.floor(#self.s/2 ) )
+		local ends   = math.random( starts, #self.s )
 		local subS   = self.s:sub( starts, ends )
+		self.b:write( subS, starts, ends-starts )
 		local readS  = self.b:read( starts, ends-starts+1 )
 		assert( #subS == #readS, "#Substring shall be "..#subS.." but is ".. #readS )
 		assert( subS == readS, "Substrings shall be equal" )
@@ -75,16 +91,27 @@ local tests = {
 		self.b:write( s )
 		assert( self.b:read( ) == s, "Read data and new string must be equal" )
 	end,
-	
+
 	test_WritePartial = function( self )
 		Test.Case.describe( "Writing partial Buffer content matches string" )
-		local starts = math.random( 100, 300 )
-		local ends   = #self.s - math.random( 100, 200 )
+		local starts = math.random( math.floor(#self.s/5), math.floor(#self.s/2 ) )
+		local ends   = math.random( starts, #self.s )
 		local s      = self.rtvg:getString( ends-starts )
 		self.b:write( s, starts )
 		local readS  = self.b:read( starts, ends-starts )
 		assert( #s == #readS, "#Substring shall be "..#s.." but is ".. #readS )
 		assert( s  ==  readS, "Substrings shall be equal" )
+	end,
+
+	test_WritePartialString = function( self )
+		Test.Case.describe( "Writing partial string to Buffer content matches string" )
+		local starts = math.random( 100, 300 )
+		local ends   = math.random( starts, #self.s )
+		local s      = self.rtvg:getString( #self.s )
+		self.b:write( s, starts, ends-starts )
+		local readS  = self.b:read( starts, ends-starts )
+		assert( self.s:sub(1,starts-1) == self.b:read(1,starts-1),
+			"First part of Buffer shall equal original string" )
 	end,
 
 	test_Equals = function( self )
@@ -103,8 +130,8 @@ local tests = {
 
 	test_Add = function( self )
 		Test.Case.describe( "__add metamethod properly adds T.Buffers" )
-		local sA = self.rtvg:getWords( math.random(500,1000) )
-		local sB = self.rtvg:getWords( math.random(500,1000) )
+		local sA = self.rtvg:getWords( math.random( 1000, 2000 ) )
+		local sB = self.rtvg:getWords( math.random( 1000, 2000 ) )
 		local sR = sA .. sB
 		local bR = Buffer( sR )
 		local bA = Buffer( sA )

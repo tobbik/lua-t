@@ -1,7 +1,7 @@
 local makeWord = function( )
 	local wrd = {}
-	for i=1,math.random(1,12) do
-		table.insert( wrd, string.char( math.random( 32, 123) ) )
+	for i=1,math.random(3,12) do
+		table.insert( wrd, string.char( math.random( 32, 123 ) ) )
 	end
 	return table.concat( wrd, '' ) .. ' '
 end
@@ -75,7 +75,7 @@ local m = {
 		for i=1,math.random(1, n or 12) do
 			table.insert( str, makeWord( ) )
 		end
-		return table.concat( str, ' ' )
+		return table.concat( str, '' )
 	end,
 	getFloat = function( self )
 		return math.random( ) * math.random( 1, self.max )
