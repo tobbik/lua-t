@@ -21,6 +21,7 @@ T_SRC=t.c \
 	 t_enc_crc.c \
 	 t_enc_b64.c \
 	 t_buf.c \
+	 t_buf_seg.c \
 	 t_pck.c \
 	 t_pck_cmb.c \
 	 t_pck_fmt.c \
