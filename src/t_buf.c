@@ -131,12 +131,9 @@ char
 	}
 	else if (NULL != seg)
 	{
-		lua_rawgeti( L, LUA_REGISTRYINDEX, seg->bR );
-		buf  = t_buf_check_ud( L, -1, 1 );
 		*len = seg->len;
 		*cw  = 1;
-		lua_pop( L, 1 );
-		return (char*) &(buf->b[ seg->ofs-1 ]);
+		return seg->b;
 	}
 	else if (lua_isstring( L, pos))
 	{
