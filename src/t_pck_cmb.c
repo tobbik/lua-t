@@ -202,7 +202,6 @@ lt_pck_fld__index( lua_State *L )
 				((opf->o + ipc->s*(idx-1)) % NB ) );
 		}
 		npf->o += t_pck_getSize( L, ipc ) * (idx-1) ;
-		printf("idx: [%zu:%d:%zu:%2zu] ", opf->o, ipc->m, ipc->s, npf->o );
 	}
 	else                                       // T.Pack.Struct/Sequence
 	{

@@ -35,7 +35,7 @@
  * construct a TCP Socket and return it.
  * \param   L      Lua state.
  * \lparam  CLASS  table T.Net.Ip4
- * \lreturn ud     t_net_tcp userdata instance( socket ).
+ * \lparam  ud     T.Net.Tcp userdata instance( socket ).
  * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int
@@ -68,7 +68,7 @@ struct t_net
 /** -------------------------------------------------------------------------
  * Listen on a socket or create a listening socket.
  * \param   L      Lua state.
- * \lparam  ud     t_net_tcp userdata instance( socket ).
+ * \lparam  ud     T.Net.Tcp userdata instance( socket ).
  * \lparam  int    Backlog connections.
  * \return  int    # of values pushed onto the stack.
  *-------------------------------------------------------------------------*/
@@ -82,8 +82,8 @@ lt_net_tcp_listen( lua_State *L )
 /** -------------------------------------------------------------------------
  * Bind a socket to an address.
  * \param   L      Lua state.
- * \lparam  ud     t_net_tcp userdata instance( socket ).
- * \lparam  ud     t_net_ipX userdata instance( sockaddr ).
+ * \lparam  ud     T.Net.Tcp userdata instance( socket ).
+ * \lparam  ud     T.Net.IpX userdata instance( socket address ).
  * \return  int    # of values pushed onto the stack.
  *-------------------------------------------------------------------------*/
 static int
@@ -96,8 +96,8 @@ lt_net_tcp_bind( lua_State *L )
 /** -------------------------------------------------------------------------
  * Connect a socket to an address.
  * \param   L      Lua state.
- * \lparam  ud     t_net_tcp userdata instance( socket ).
- * \lparam  ud     t_net_ipX userdata instance( sockaddr ).
+ * \lparam  ud     T.Net.Tcp userdata instance( client socket ).
+ * \lparam  ud     T.Net.IpX userdata instance( client socket address ).
  * \return  int    # of values pushed onto the stack.
  *-------------------------------------------------------------------------*/
 int
@@ -111,7 +111,7 @@ lt_net_tcp_connect( lua_State *L )
  * Accept a (TCP) socket connection.
  * \param   L      Lua state.
  * \param   int    position of server socket on stack.
- * \lparam  ud     t_net_tcp userdata instance( socket ).
+ * \lparam  ud     T.Net.Tcp userdata instance( server socket ).
  * \return  t_net* Client pointer.  Leaves cli_sock and cli_IP on stack.
  *-------------------------------------------------------------------------*/
 int
@@ -140,9 +140,9 @@ t_net_tcp_accept( lua_State *L, int pos )
 /** -------------------------------------------------------------------------
  * Accept a (TCP) socket connection.
  * \param   L      Lua state.
- * \lparam  ud     t_net_tcp userdata instance( server socket ).
- * \lreturn ud     t_net_tcp userdata instance( new client socket ).
- * \lreturn ud     t_net_ipX userdata instance( new client sockaddr ).
+ * \lparam  ud     T.Net.Tcp userdata instance( server socket ).
+ * \lreturn ud     T.Net.Tcp userdata instance( new client socket ).
+ * \lreturn ud     T.Net.IpX userdata instance( new client sockaddr ).
  * \return  int    # of values pushed onto the stack.
  *-------------------------------------------------------------------------*/
 static int
@@ -150,7 +150,6 @@ lt_net_tcp_accept( lua_State *L )
 {
 	return t_net_tcp_accept( L, 1 );
 }
-
 
 
 /** -------------------------------------------------------------------------
@@ -164,62 +163,41 @@ lt_net_tcp_accept( lua_State *L )
 int
 t_net_tcp_send( lua_State *L, struct t_net *s, const char* buf, size_t sz )
 {
-	int     rslt;
+	int     sent;
 
-	if ((rslt = send( s->fd, buf, sz, 0 )) == -1)
+	if ((sent = send( s->fd, buf, sz, 0 )) == -1)
 		return t_push_error( L, "Failed to send TCP message" ) ;
-
-	return rslt;
+	return sent;
 }
 
 
 /** -------------------------------------------------------------------------
  * Send a message over a TCP socket.
  * \param   L      Lua state.
- * \lparam  ud     t_net_tcp userdata instance( socket ).
+ * \lparam  ud     T.Net.TCP userdata instance.
  * \lparam  string msg attempting to send.
+ *        OR
+ * \lparam  ud     T.Buffer/Segment userdata instance.
  * \lreturn sent   number of bytes sent.
  * \return  int    # of values pushed onto the stack.
  *-------------------------------------------------------------------------*/
 static int
 lt_net_tcp_send( lua_State *L )
 {
-	struct t_net *s;
-	struct t_buf *buf;
+	struct t_net *sck      = t_net_tcp_check_ud( L, 1, 1 );
 	size_t        to_send;      // How much should get send out maximally
-	const char   *msg;
-	size_t        into_msg = 0; // where in the message to start sending from
+	int           canwrite;
+	const char   *msg      = t_buf_checklstring( L, 2, &to_send, &canwrite );
+	size_t        msg_ofs  = (lua_isinteger( L, 3 )) ? lua_tointeger( L, 3 ) : 0;
 
-	s = t_net_tcp_check_ud( L, 1, 1 );
-	// check for starting point
-	if (lua_isnumber( L, 3 ))
-	{
-		into_msg = lua_tointeger( L, 3 );
-	}
-	// do we deal with a lib-t buffer
-	if (lua_isuserdata( L, 2 ))
-	{
-		buf      = t_buf_check_ud( L, 2, 1 );
-		msg      = (char *) &(buf->b[ 0 ]);
-		to_send  = buf->len;
-	}     // or is it a string
-	else if (lua_isstring( L, 2 ))
-		msg   = lua_tolstring( L, 2, &to_send );
-	else
-		return t_push_error( L, "ERROR send( socket, msg ) takes msg argument" ) ;
-
-	msg      = msg + into_msg;
-	to_send -= into_msg;
-
-	lua_pushinteger( L, t_net_tcp_send( L, s, msg, to_send ) );
-
+	lua_pushinteger( L, t_net_tcp_send( L, sck, msg+msg_ofs, to_send-msg_ofs ) );
 	return 1;
 }
 
 
 /** -------------------------------------------------------------------------
  * Recieve some data from a TCP socket.
- * \param   L  The lua state.
+ * \param   L      Lua state.
  * \param   t_net  userdata.
  * \param   buff   char buffer.
  * \param   sz     size of char buffer.
@@ -232,15 +210,18 @@ t_net_tcp_recv( lua_State *L, struct t_net *s, char* buff, size_t sz )
 
 	if ((rslt = recv( s->fd, buff, sz, 0 )) == -1)
 		t_push_error( L, "Failed to receive TCP packet" );
-
 	return rslt;
 }
 
 
 /** -------------------------------------------------------------------------
  * Recieve some data from a TCP socket.
- * \param   L  The lua state.
- * \lparam  socket socket userdata.
+ * If the second parameter is a T.Buffer or a T.Buffer.Segement received data
+ * will be written into them.  That automatically caps recieving data to the
+ * length of that Buffer.
+ * \param   L      Lua state.
+ * \lparam  ud     T.Net.TCP userdata instance.
+ * \lparam  ud     T.Buffer/Segment userdata instance (optional).
  * \lreturn string The recieved message.
  * \lreturn rcvd   number of bytes recieved.
  * \return  int    # of values pushed onto the stack.
@@ -248,28 +229,26 @@ t_net_tcp_recv( lua_State *L, struct t_net *s, char* buff, size_t sz )
 static int
 lt_net_tcp_recv( lua_State *L )
 {
-	struct t_net *s;
-	struct t_buf *buf;
-	int           rcvd;
+	struct t_net *sck       = t_net_tcp_check_ud( L, 1, 1 );
+	int           canwrite;
+	size_t        len;
+	char         *rcv       = t_buf_tolstring( L, 2, &len, &canwrite );
 	char          buffer[ BUFSIZ ];
-	char         *rcv = &(buffer[0]);
-	int           len = sizeof (buffer)-1;
+	int           rcvd;
 
-	s = t_net_tcp_check_ud( L, 1, 1 );
-	if (lua_isuserdata( L, 2 ))
+	if (NULL == rcv)
 	{
-		buf  = t_buf_check_ud( L, 2, 1 );
-		rcv  = (char *) &(buf->b[ 0 ]);
-		len  = buf->len;
+		rcv  = &(buffer[0]);
+		len  = sizeof (buffer)-1;
 	}
 
-	rcvd = t_net_tcp_recv( L, s, rcv, len );
+	rcvd = t_net_tcp_recv( L, sck, rcv, len );
 
 	// return buffer, length
 	if (0 == rcvd)
 		lua_pushnil( L );
 	else
-		lua_pushlstring( L, buffer, rcvd );
+		lua_pushlstring( L, rcv, rcvd );
 	lua_pushinteger( L, rcvd );
 
 	return 2;
@@ -278,10 +257,10 @@ lt_net_tcp_recv( lua_State *L )
 
 /** -------------------------------------------------------------------------
  * Recieve IpEndpoint from a TCP socket.
- * \param   L  The lua state.
- * \lparam  socket socket userdata.
- * \lparam  IpEndpoint userdata.
- * \lreturn IpEndpoint userdata.
+ * \param   L      Lua state.
+ * \lparam  ud     T.Net.TCP userdata instance.
+ * \lparam  ud     T.Net.Ip4 userdata instance.
+ * \lreturn ud     T.Net.Ip4 userdata instance.
  * \return  int    # of values pushed onto the stack.
  *-------------------------------------------------------------------------*/
 static int

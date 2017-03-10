@@ -32,6 +32,8 @@ int           luaopen_t_buf   ( lua_State *L );
 struct t_buf *t_buf_check_ud  ( lua_State *L, int pos, int check );
 struct t_buf *t_buf_create_ud ( lua_State *L, size_t n );
 // t_buf.c helpers
+char         *t_buf_tolstring   ( lua_State *L, int pos, size_t *len, int *cw );
+char         *t_buf_checklstring( lua_State *L, int pos, size_t *len, int *cw );
 int           t_buf_getHexString( lua_State *L, char *b, size_t len );
 int           t_buf_getBinString( lua_State *L, char *b, size_t len );
 int           t_buf_compare( lua_State *L, char *bA, char *bB, size_t aLen, size_t bLen );

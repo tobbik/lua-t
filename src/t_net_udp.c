@@ -112,43 +112,29 @@ lt_net_udp_connect( lua_State *L )
 /** -------------------------------------------------------------------------
  * Send Datagram over a UDP socket to an IP endpoint.
  * \param   L  The lua state.
- * \lparam  socket socket userdata.
- * \lparam  ip     sockaddr userdata.
+ * \lparam  ud     T.Net.UDP userdata instance.
+ * \lparam  ud     T.Net.IP4 userdata instance.
  * \lparam  msg    luastring.
  *       or
- * \lparam  T.Buffer   lua-t BUffer type.
+ * \lparam  ud     T.Buffer/Segment userdata instance.
  * \lreturn sent   number of bytes sent.
  * \return  int    # of values pushed onto the stack.
  *-------------------------------------------------------------------------*/
 static int
 lt_net_udp_sendto( lua_State *L )
 {
-	struct t_net       *s;
-	struct sockaddr_in *ip;
-	struct t_buf       *buf;
+	struct t_net       *sck  = t_net_udp_check_ud( L, 1, 1 );
+	struct sockaddr_in *ip   = t_net_ip4_check_ud( L, 2, 1 );
+	int                 canwrite;
+	size_t              to_send;
+	const char         *msg  = t_buf_checklstring( L, 3, &to_send, &canwrite );
+	size_t              msg_ofs  = (lua_isinteger( L, 4 )) ? lua_tointeger( L, 4 ) : 0;
 	int                 sent;
-	int                 len;
-	const char         *msg;
 
-	s   = t_net_udp_check_ud( L, 1, 1 );
-	ip  = t_net_ip4_check_ud( L, 2, 1 );
-	if (lua_isstring( L, 3 ))
-	{
-		msg   = lua_tostring( L, 3 );
-		len   = strlen( msg );
-	}
-	else if (lua_isuserdata( L, 3 ))
-	{
-		buf  = t_buf_check_ud( L, 3, 1 );
-		msg  = (char *) &(buf->b[ 0 ]);
-		len  = buf->len;
-	}
-	else
-		return t_push_error( L, "ERROR sendTo(socket,ip,msg) takes msg argument" );
-
+	t_stackDump(L);
 	if ((sent = sendto(
-	  s->fd,
-	  msg, len, 0,
+	  sck->fd,
+	  msg+msg_ofs, to_send-msg_ofs, 0,
 	  (struct sockaddr *) &(*ip), sizeof( struct sockaddr ))
 	  ) == -1)
 		return t_push_error( L, "Failed to send UDP packet to %s:%d",
@@ -163,7 +149,8 @@ lt_net_udp_sendto( lua_State *L )
 /** -------------------------------------------------------------------------
  * Recieve Datagram from a UDP socket.
  * \param   L  The lua state.
- * \lparam  socket socket userdata.
+ * \lparam  ud     T.Net.UDP userdata instance.
+ * \lparam  ud     T.Buffer/Segment userdata instance.
  * \lreturn rcvd   number of bytes recieved.
  * \lreturn ip     ip endpoint userdata.
  * \return  int    # of values pushed onto the stack.
@@ -171,26 +158,23 @@ lt_net_udp_sendto( lua_State *L )
 static int
 lt_net_udp_recvfrom( lua_State *L )
 {
-	struct t_net       *s;
-	struct t_buf       *buf;
-	struct sockaddr_in *si_cli;
+	struct t_net       *sck      = t_net_udp_check_ud( L, 1, 1 );
+	struct sockaddr_in *si_cli   = t_net_ip4_create_ud( L );
+	unsigned int        slen     = sizeof( si_cli );
 	int                 rcvd;
+	int                 canwrite;
+	size_t              len;
 	char                buffer[ BUFSIZ ];
-	char               *rcv = &(buffer[ 0 ]);
-	int                 len = sizeof( buffer )-1;
+	char               *rcv      = t_buf_tolstring( L, 2, &len, &canwrite );
 
-	unsigned int        slen = sizeof( si_cli );
-
-	s = t_net_udp_check_ud( L, 1, 1 );
-	if (lua_isuserdata( L, 2 )) {
-		buf  = t_buf_check_ud ( L, 2, 1 );
-		rcv  = (char *) &(buf->b[ 0 ]);
-		len  = buf->len;
+	if (NULL == rcv)
+	{
+		rcv  = &(buffer[0]);
+		len  = sizeof (buffer)-1;
 	}
-	si_cli = t_net_ip4_create_ud( L );
 
 	if ((rcvd = recvfrom(
-	  s->fd,
+	  sck->fd,
 	  rcv, len, 0,
 	  (struct sockaddr *) &(*si_cli), &slen )
 	  ) == -1)

@@ -28,7 +28,6 @@
 #include <sys/select.h>
 #endif
 #include "t_net.h"
-#include "t_buf.h"         // the ability to send and recv buffers
 
 
 #ifndef _WIN32

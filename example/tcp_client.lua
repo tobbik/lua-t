@@ -15,14 +15,15 @@ else
 end
 print( tcpsock, sip, cip )
 
-msg = string.rep( '0123456789', 10010 )
+buf  = t.Buffer( string.rep( '0123456789', 12345678 ) )
 sent = 0
-print( tcpsock, sip, cip )
-while sent<#msg do
-	local snt = tcpsock:send( msg, sent )
+while sent<#buf do
+	local snt = tcpsock:send( buf, sent )
 	print ( "SNT:", snt )
 	sent = sent + snt
-	print( sent, #msg )
+	print( sent, #buf )
 end
 print( "DONE", '\n', sent, "\n" )
 tcpsock:close( )
+buf = nil
+collectgarbage()
