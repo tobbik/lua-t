@@ -178,6 +178,7 @@ t_net_tcp_send( lua_State *L, struct t_net *s, const char* buf, size_t sz )
  * \lparam  string msg attempting to send.
  *        OR
  * \lparam  ud     T.Buffer/Segment userdata instance.
+ * \lparam  ofs    Offset in string or buffer.
  * \lreturn sent   number of bytes sent.
  * \return  int    # of values pushed onto the stack.
  *-------------------------------------------------------------------------*/

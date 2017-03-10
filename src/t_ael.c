@@ -146,6 +146,7 @@ void
 t_ael_executehandle( lua_State *L, struct t_ael *ael, int fd, enum t_ael_t t )
 {
 	int n;
+	printf("%d\n", fd);
 
 	//printf( "%d    %d    %d    %d\n", fd,  ael->fd_set[ fd ]->rR ,  ael->fd_set[ fd ]->wR, t );
 	if( t & T_AEL_RD )
