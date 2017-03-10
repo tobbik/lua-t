@@ -20,6 +20,8 @@ Summary
  - the global test suite hooks ``beforeAll( self, done )`` and
    ``afterAll( self, done )`` must call the ``done( )`` callback even when
    executed synchronously
+ - running a T.Test suite and checking for success is as easy as executing
+   it: ``success = t()``
 
 
 Usage
@@ -31,9 +33,16 @@ Some general information on how to write and invoke T.Test suites.
 Test runner
 -----------
 
-T.Test does not come with a console based runner executable.  Instead usage
-is meant to be wrapped in a Lua script that is catered towards the
-application.  Firstly, the several unit tests will get defined as modules::
+T.Test does not come with a console based runner executable.  This is by
+design because the actual behaviour of a T.Test instance is defined by
+metamethods and once a T.Test suite is instantiated it gets executed by just
+calling it.
+
+In order to create a test runner that can handle multiple test suites a
+small Lua script is needed that wraps the test suites.  This way it can be
+easily catered towards the application.  In a very simple scenario this
+would look like the following.  Firstly, the several unit tests will get
+defined as modules::
 
    test1.lua
    Test = require't'.Test
@@ -111,7 +120,24 @@ hooks is optional:
 ``t.beforeAll = function( self, done )``
   The hook gets called before executing any test case in the suite.  If this
   hook is present, note that the execution **requires** to be finished by
-  calling the ``done( )`` callback.
+  calling the ``done( )`` callback.  The beforeAll hook is especially useful
+  if a Test suite depends on the existence of a remote server or similar
+  things when a connection needs to be setup before executing all tests.  If
+  no elaborate logic is needed to be performed in the beforeAll hook it is
+  simpler to just make the values part of the T.Test suite definition like
+  this::
+
+  tbl = {
+     testValueGenerator = TestValueGenerator(),
+     beforeEach = function( self )
+        self.str = self.testValueGenerator:getString( 500 )
+     end,
+     test_StringForLength = function( self )
+        assert( #self.str == 500, "String should be 500 long" )
+     end
+   }
+   t = T.Test( tbl )
+   t( )
 
 ``t.afterAll = function( self, done )``
   The hook gets called after all tests in the suite got executed.  If this
@@ -119,9 +145,6 @@ hooks is optional:
   calling the ``done( )`` callback.
 
 Any hooks for T.Test.Case are described in the T.Test.Case documentation.
-
-``t.beforeEach = function( self )``
-  The hook gets called before executing each test case in the suite.
 
 
 API
@@ -139,6 +162,14 @@ Class Members
   - if they are tables and table length is equal, recursively compare them
     and their sub-tables
 
+``boolean hasPassed, int pass, int skip, int todo, int time = T.Test.hasPassed( T.Test t )``
+  Allows to get metrics from an already ran T.Test suite.  
+
+  - hasPassed   Was the Test run successful
+  - pass        Number of Test.Case instances ran successfully
+  - skip        Number of Test.Case instances that were skipped
+  - todo        Number of Test.Case instances that were expected to fail
+  - time        Accumulated runtime of the entire test suite, in millisecs
 
 Class Metamembers
 -----------------
@@ -168,4 +199,6 @@ Instance Metamembers
 ``string s = tostring( testInstance )  [__toString]``
   Returns a string which is a TAP report of the Test suite.
 
+``int len = #testInstance  [__len]``
+  Returns the number of T.Test.Case instances in this suite.
 
