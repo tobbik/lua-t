@@ -75,8 +75,8 @@ int          lt_net__tostring   ( lua_State *L );
 // t_net_tcp.c
 int           luaopen_t_net_tcp ( lua_State *L );
 struct t_net *t_net_tcp_check_ud( lua_State *L, int pos, int check );
-int           t_net_tcp_recv    ( lua_State *L, struct t_net *s, char* buff, size_t sz );
-int           t_net_tcp_send    ( lua_State *L, struct t_net *s, const char* buff, size_t sz );
+int           t_net_tcp_recv    ( lua_State *L, struct t_net *sck, char* buf, size_t len );
+int           t_net_tcp_send    ( lua_State *L, struct t_net *sck, const char* buf, size_t len );
 int           t_net_tcp_accept  ( lua_State *L, int pos );
 
 // t_net_udp.c
