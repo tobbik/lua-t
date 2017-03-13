@@ -4,21 +4,21 @@ ipAddr = arg[1] and arg[1] or t.Net.Interface( 'default' ).address:get()
 port   = arg[2] and arg[2] or 8888
 
 if arg[ 1 ] == "c" then
-	tcpsock = t.Net.TCP( )
+	tcpsock = t.Net.Socket( 'ip4', 'TCP' )
 	sip     = t.Net.IPv4( ipAddr, port )
 	cip     = t.Net.IPv4( ipAddr, 11111 )
 	--for k,v in pairs(getmetatable(tcpsock)) do print( k, v ) end
 	tcpsock:bind( cip )               -- control outgoing port for client
 	tcpsock:connect( sip )
 else
-	tcpsock, sip = t.Net.TCP.connect( ipAddr, port )
+	tcpsock, sip = t.Net.Socket.connect( ipAddr, port )
 end
 print( tcpsock, sip, cip )
 
-buf  = t.Buffer( string.rep( '0123456789', 12345678 ) )
+buf  = t.Buffer( string.rep( 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz', 1234567 ) )
 sent = 0
 while sent<#buf do
-	local snt = tcpsock:send( buf, sent )
+	local snt = tcpsock:send( nil, buf, sent )
 	print ( "SNT:", snt )
 	sent = sent + snt
 	print( sent, #buf )

@@ -2,7 +2,8 @@
 t    = require't'
 fmt  = string.format
 l    = t.Loop( 1200 )
-s    = t.Net.UDP.bind( 8888 )
+s    = t.Net.Socket( 'ip4', 'UDP' )
+s:bind( 8888 )
 a    = "This is my Answer"
 
 x=function( stream )
@@ -36,7 +37,7 @@ end
 
 
 cmd = function( sck )
-	local msg, len, ip_cli = sck:recvFrom()
+	local msg, len, ip_cli = sck:recv()
 	local chunk = load( msg )
 	if chunk then
 		local done, msg = pcall( chunk )

@@ -235,21 +235,21 @@ struct t_ael
 int
 lt_ael_addhandle( lua_State *L )
 {
-	luaL_Stream   *lS;
-	struct t_net  *sc;
-	int            fd  = 0;
-	int            n   = lua_gettop( L ) + 1;    ///< iterator for arguments
-	struct t_ael  *ael = t_ael_check_ud( L, 1, 1 );
-	enum t_ael_t   t   = lua_toboolean( L, 3 ) ? T_AEL_RD :T_AEL_WR;
+	luaL_Stream      *lS;
+	struct t_net_sck *sck;
+	int               fd  = 0;
+	int               n   = lua_gettop( L ) + 1;    ///< iterator for arguments
+	struct t_ael     *ael = t_ael_check_ud( L, 1, 1 );
+	enum t_ael_t      t   = lua_toboolean( L, 3 ) ? T_AEL_RD :T_AEL_WR;
 
 	luaL_checktype( L, 4, LUA_TFUNCTION );
 	lS = (luaL_Stream *) luaL_testudata( L, 2, LUA_FILEHANDLE );
 	if (NULL != lS)
 		fd = fileno( lS->f );
 
-	sc = t_net_check_ud( L, 2, 0 );
-	if (NULL != sc)
-		fd = sc->fd;
+	sck = t_net_sck_check_ud( L, 2, 0 );
+	if (NULL != sck)
+		fd = sck->fd;
 
 	if (0 == fd)
 		return t_push_error( L, "Argument to addHandle must be file or socket" );
@@ -294,28 +294,26 @@ lt_ael_addhandle( lua_State *L )
 int
 lt_ael_removehandle( lua_State *L )
 {
-	luaL_Stream   *lS;
-	struct t_net  *sc;
-	int            fd  = 0;
-	struct t_ael  *ael = t_ael_check_ud( L, 1, 1 );
+	luaL_Stream      *lS;
+	struct t_net_sck *sck;
+	int               fd  = 0;
+	struct t_ael     *ael = t_ael_check_ud( L, 1, 1 );
 	luaL_checktype( L, 3, LUA_TBOOLEAN );
-	enum t_ael_t   t   = lua_toboolean( L, 3 ) ? T_AEL_RD :T_AEL_WR;
+	enum t_ael_t      t   = lua_toboolean( L, 3 ) ? T_AEL_RD :T_AEL_WR;
 
 	lS = (luaL_Stream *) luaL_testudata( L, 2, LUA_FILEHANDLE );
 	if (NULL != lS)
 		fd = fileno( lS->f );
 
-	sc = t_net_check_ud( L, 2, 0 );
-	if (NULL != sc)
-		fd = sc->fd;
+	sck = t_net_sck_check_ud( L, 2, 0 );
+	if (NULL != sck)
+		fd = sck->fd;
 
 	if (0 == fd)
 		return t_push_error( L, "Argument to addHandle must be file or socket" );
 	// remove function
 	if (T_AEL_RD & t)
-	{
 		luaL_unref( L, LUA_REGISTRYINDEX, ael->fd_set[ fd ]->rR );
-	}
 	else
 		luaL_unref( L, LUA_REGISTRYINDEX, ael->fd_set[ fd ]->wR );
 	t_ael_removehandle_impl( ael, fd, t );

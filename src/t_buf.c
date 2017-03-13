@@ -126,18 +126,18 @@ char
 	if (NULL != buf)
 	{
 		*len = buf->len;
-		*cw  = 1;
+		if (NULL!=cw) *cw  = 1;
 		return (char*) &(buf->b[0]);
 	}
 	else if (NULL != seg)
 	{
 		*len = seg->len;
-		*cw  = 1;
+		if (NULL!=cw) *cw  = 1;
 		return seg->b;
 	}
 	else if (lua_isstring( L, pos))
 	{
-		*cw = 0;
+		if (NULL!=cw) *cw = 0;
 		return (char*) luaL_checklstring( L, pos, len );
 	}
 	else

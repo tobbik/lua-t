@@ -13,14 +13,14 @@ print_help = function( )
 		show      - make server list all its loop events]] )
 end
 
-s  = t.Net.UDP( )
+s  = t.Net.Socket( 'ip4', 'UDP' )
 ip = t.Net.IPv4( ipadd, 8888 )
 print( s, ip )
 while true do
 	io.write( "Enter command and type enter ('help' for command list': " )
 	local cmd = io.read( '*l' )
 	if 'HELP' == cmd:upper( ) then print_help( ) end
-	s:sendto( ip, cmd )
+	s:send( ip, cmd )
 	if 'EXIT' == cmd:upper( ) then break end
 end
 s:close()

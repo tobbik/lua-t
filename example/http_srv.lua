@@ -4,7 +4,7 @@ t      = require( 't' )
 s_port = 8003
 answer = 'This is my answer'
 
-srv,ip = t.Net.TCP.listen( s_port, 5 )
+srv,ip = t.Net.Socket.listen( s_port, 5 )
 ipAdd, port   = ip:get( )
 assert( ipAdd, port )
 print( tostring(srv) .. " listening on '" ..ipAdd.. ":" ..port.. "' (" ..tostring( ip ).. ")..."  )
@@ -23,7 +23,7 @@ while true do
 		--print( len, msg, string.byte(msg) )
 		msg, len = cli:recv( )
 	end
-	len = cli:send( payload )
+	len = cli:send( nil, payload )
 	print( '\tsend : ' ..len.. " BYTES VIA:  "..tostring( cli ) )
 	cli:close( )
 	collectgarbage( )

@@ -5,7 +5,7 @@ Buffer = t.Buffer
 
 print( ipAddr, port)
 
-tcpsock = t.Net.TCP( )
+tcpsock = t.Net.Socket( 'ip4', 'TCP' )
 ip      = t.Net.IPv4( ipAddr, port )
 tcpsock:bind( ip )
 tcpsock:listen( 5 )

@@ -2,9 +2,9 @@
 local t=require('t')
 local sport=8005
 
---srv,ip = t.Socket.bind('TCP', sport)
+--srv,ip = t.Net..Socket.bind(sport)
 --srv:listen(5)
-srv,ip = t.Net.TCP.listen( sport, 5 )
+srv,ip = t.Net.Socket.listen( sport, 5 )
 print( srv, ip )
 x=0
 
@@ -18,7 +18,7 @@ while true do
 		end
 	end
 
-	local rds,wrs = t.Net.select( rconns, wconns )
+	local rds,wrs = t.Net.Socket.select( rconns, wconns )
 	print( #rds,#wrs, #rconns, #wconns )
 
 	for n,cli in ipairs( rds ) do

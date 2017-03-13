@@ -2,7 +2,7 @@
 t      = require't'
 ipAddr = t.Net.Interface( 'default' ).address:get()
 port   = 8888
-s      = t.Net.TCP.bind( ipAddr, port )
+s      = t.Net.Socket.bind( ipAddr, port )
 l      = t.Loop( 10 )
 
 read = function( c )

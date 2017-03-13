@@ -83,7 +83,7 @@ t_htp_con_rcv( lua_State *L )
 	int               res;   // return result
 
 	// read
-	rcvd = t_net_tcp_recv( L, c->sck, &(c->buf[ c->read ]), BUFSIZ - c->read );
+	rcvd = t_net_sck_recv( L, c->sck, NULL, &(c->buf[ c->read ]), BUFSIZ - c->read );
 	printf( "RCVD: %d bytes\n", rcvd );
 
 	if (! rcvd)    // peer has closed
@@ -154,8 +154,9 @@ t_htp_con_rsp( lua_State *L )
 	str = t_htp_str_check_ud( L, -1, 1 );
 	//printf( "Send ResponseChunk: %s\n", b );
 
-	snt = t_net_tcp_send( L,
+	snt = t_net_sck_send( L,
 			c->sck,
+			NULL,
 			&(b[ buf->sl ]),
 			buf->bl - buf->sl );
 	buf->sl   += snt;  // How much of current buffer is sent -> adjustment
@@ -315,7 +316,7 @@ lt_htp_con__gc( lua_State *L )
 		free( c->srv->ael->fd_set[ c->sck->fd ] );
 		c->srv->ael->fd_set[ c->sck->fd ] = NULL;
 
-		t_net_close( L, c->sck );
+		t_net_sck_close( L, c->sck );
 		c->sck = NULL;
 		printf( "  DONE\n" );
 	}
