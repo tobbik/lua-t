@@ -502,39 +502,37 @@ lt_net_sck_getsockname( lua_State *L )
  * \return  void.
  *-------------------------------------------------------------------------*/
 static void
-make_fdset( lua_State *L, int stack_pos, fd_set *collection, int *max_hndl )
+t_net_sck_mkFdset( lua_State *L, int pos, fd_set *set, int *maxFd )
 {
-	struct t_net_sck  *hndl;
+	struct t_net_sck  *sck;
 
-	FD_ZERO( collection );
+	FD_ZERO( set );
 	// empty table == nil
-	if (lua_isnil( L, stack_pos) )
-	{
+	if (lua_isnil( L, pos) )
 		return;
-	}
 	// only accept tables
-	luaL_checktype( L, stack_pos, LUA_TTABLE );
+	luaL_checktype( L, pos, LUA_TTABLE );
 	// TODO: check table for len==0 and return
 
 	// adding fh to FD_SETs
 	lua_pushnil( L );
-	while (lua_next( L, stack_pos ))
+	while (lua_next( L, pos ))
 	{
-		hndl = t_net_sck_check_ud( L, -1, 1 );
-		FD_SET( hndl->fd, collection );
-		*max_hndl = (hndl->fd > *max_hndl) ? hndl->fd : *max_hndl;
+		sck = t_net_sck_check_ud( L, -1, 1 );
+		FD_SET( sck->fd, set );
+		*maxFd = (sck->fd > *maxFd) ? sck->fd : *maxFd;
 		lua_pop( L, 1 );   // remove the socket, keep key for next()
 	}
 }
 
 
 /** -------------------------------------------------------------------------
- * Select from open sockets.
+ * Systemcall select() for ready sockets.
  * \param   L      Lua state.
  * \lparam  table  T.Net socket array All sockets to read from.
  * \lparam  table  T.Net socket array All sockets to write to.
- * \lparam  table  T.Net socket array All sockets to check errors in.
- * \lreturn int    Number of affected sockets.
+ * \lreturn table  T.Net.Socket table of sockets ready to read from.
+ * \lreturn table  T.Net.Socket table of sockets ready to write to.
  * \return  int    # of values pushed onto the stack.
  * TODO:  Allow for a Time Out to be handed to it
  *-------------------------------------------------------------------------*/
@@ -544,12 +542,11 @@ lt_net_sck_select( lua_State *L )
 	fd_set            rfds, wfds;
 	struct t_net_sck *hndl;
 	int               rnum, wnum, readsocks, i;
-	int               rset=1, wset=1;
 
 	wnum = -1;
 	rnum = -1;
-	make_fdset( L, 1, &rfds, &rnum );
-	make_fdset( L, 2, &wfds, &wnum );
+	t_net_sck_mkFdset( L, 1, &rfds, &rnum );
+	t_net_sck_mkFdset( L, 2, &wfds, &wnum );
 
 	readsocks = select(
 		(wnum > rnum) ? wnum+1 : rnum+1,
@@ -559,103 +556,32 @@ lt_net_sck_select( lua_State *L )
 		NULL
 	);
 
-	lua_createtable( L, 0, 0 );     // create result table
-	lua_createtable( L, 0, 0 );     // create result table
-	//TODO: check if readsocks hit 0 and break cuz we are done
-	for ( i=1 ; ; i++ )
+	lua_createtable( L, 0, 0 );     // create read  result table
+	lua_createtable( L, 0, 0 );     // create write result table
+	for (i=1; i<3; i++)
 	{
-		lua_rawgeti( L, 1, i );
-		// in table this is when the last index is found
-		if (lua_isnil( L, -1 ))
+		lua_pushnil( L );
+		while (lua_next( L, i ))
 		{
-			lua_pop( L, 1 );
-			break;
-		}
-		hndl = t_net_sck_check_ud( L, -1, 1 );
-		if FD_ISSET( hndl->fd, &rfds )
-		{
-			lua_rawseti( L, -3, rset++ );
-			readsocks--;
-			if (0 == readsocks)
-				break;
-		}
-		else
-			lua_pop( L, 1 );
-	}
-	for ( i=1 ; ; i++ )
-	{
-		lua_rawgeti( L, 2, i );
-		// in table this is when the last index is found
-		if (lua_isnil( L, -1 ))
-		{
-			lua_pop( L, 1 );
-			break;
-		}
-		hndl = t_net_sck_check_ud( L, -1, 1 );
-		if FD_ISSET( hndl->fd, &wfds )
-		{
-			lua_rawseti( L, -2, wset++ );
-			readsocks--;
-			if (0 == readsocks)
-				break;
-		}
-		else
-			lua_pop( L, 1 );
-	}
-	return 2;
-}
-
-
-/** -------------------------------------------------------------------------
- * Select from open sockets.
- * \param   L      Lua state.
- * \lparam  table  T.Net socket array All sockets to read from.
- * \lparam  table  T.Net socket array All sockets to write to.
- * \lparam  table  T.Net socket array All sockets to check errors in.
- * \lreturn int    Number of affected sockets.
- * \return  int    # of values pushed onto the stack.
- * TODO:  Allow for a Time Out to be handed to it
- *-------------------------------------------------------------------------*/
-static int
-lt_net_sck_selectk( lua_State *L )
-{
-	fd_set            rfds, wfds;
-	struct t_net_sck *hndl;
-	int               rnum, wnum, readsocks;
-
-	wnum = -1;
-	rnum = -1;
-	make_fdset( L, 1, &rfds, &rnum );
-	make_fdset( L, 2, &wfds, &wnum );
-
-	readsocks = select(
-		(wnum > rnum) ? wnum+1 : rnum+1,
-		(-1  != rnum) ? &rfds  : NULL,
-		(-1  != wnum) ? &wfds  : NULL,
-		(fd_set *) 0,
-		NULL
-	);
-
-	lua_createtable( L, 0, 0 );     // create result table
-	//lua_createtable(L, 0, 0);
-	lua_pushnil( L );
-	while (lua_next( L, 1 ))
-	{
-		hndl = t_net_sck_check_ud( L, -1, 1 );
-		if FD_ISSET( hndl->fd, &rfds )
-		{
-			//TODO: Find better way to preserve key for next iteration
-			lua_pushvalue( L, -2 );
-			lua_pushvalue( L, -2 );
-			lua_rawset( L, -5 );
-			if (0 == --readsocks) {
-				lua_pop( L, 2 );
-				break;
+			hndl = t_net_sck_check_ud( L, -1, 1 );   //S: rdi wri rdr wrr key sck
+			if FD_ISSET( hndl->fd, &rfds )
+			{
+				if (lua_isinteger( L, -2 ))
+					lua_rawseti( L, i+2, lua_rawlen( L, i+2 )+1 );
+				else
+				{
+					lua_pushvalue( L, -2 );
+					lua_insert( L, -2 );               //S: rdi wri rdr wrr key key sck
+					lua_rawset( L, i+2 );
+				}
+				if (0 == --readsocks) {
+					lua_pop( L, 1 );
+					break;
+				}
 			}
 		}
-		lua_pop( L, 1 );
 	}
-	return 1;
+	return 2;
 }
 
 
@@ -673,7 +599,6 @@ static const struct luaL_Reg t_net_sck_fm [] = {
 static const luaL_Reg t_net_sck_cf [] =
 {
 	  { "select"     , lt_net_sck_select }
-	, { "selectK"    , lt_net_sck_selectk }
 	, { "bind"       , lt_net_sck_bind }
 	, { "connect"    , lt_net_sck_connect }
 	, { "listen"     , lt_net_sck_listen }
