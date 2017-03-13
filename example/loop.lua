@@ -1,6 +1,6 @@
 #!../out/bin/lua
 t  = require't'
-s  = t.Net.Socket( 'ip4', 'UDP' )
+s  = t.Net.Socket( 'UDP', 'ip4' )
 s:bind( 8888 )
 l  = nil
 n  = 9

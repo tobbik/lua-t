@@ -34,7 +34,7 @@
 int
 t_net_getProtocol( lua_State *L, const int pos )
 {
-	const char      *pName = luaL_checkstring( L, pos );
+	const char      *pName = luaL_optstring( L, pos, "TCP" );
 	struct protoent  result_buf;
 	struct protoent *result;
 	char             buf[ BUFSIZ ];

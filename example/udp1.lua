@@ -2,7 +2,7 @@
 t,fmt=require('t'),string.format
 ipAddr,port=t.Net.Interface( 'default' ).address:get(),8888
 
-local s    = t.Net.Socket( 'ip4', 'UDP' )
+local s    = t.Net.Socket( 'UDP' ) -- implicit ip4
 local s,ip = s:bind( ipAddr, port )
 print( s, ip )
 for k,v in pairs(getmetatable(s)) do print( k, v ) end

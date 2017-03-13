@@ -2,15 +2,15 @@
 local t=require('t')
 
 local start_wall_clock = t.Time( )
-local tcpsock,ip = t.Net.TCP.connect( '128.30.52.37', 80 )
-local len     = tcpsock:send( "GET /TR/REC-html32.html HTTP/1.0\r\n\r\n" )
+local tcpsock,ip = t.Net.Socket.connect( '128.30.52.37', 80 )
+local len     = tcpsock:send( nil, "GET /TR/REC-html32.html HTTP/1.0\r\n\r\n" )
 local buffer = {}
 local length = 0
 
 -- this select loop makes no sense, but prooves that select is in fact working
 -- as expected
 while true do
-	res = t.Net.select( {tcpsock},{} )
+	res = t.Net.Socket.select( {tcpsock},{} )
 	io.write( tostring( res[1] ) ..'\t'.. tostring( tcpsock ) .. '\t... ' )
 	msg, len = res[1]:recv( )
 	if len<1 then

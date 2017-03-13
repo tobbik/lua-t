@@ -2,7 +2,7 @@
 local t=require('t')
 sip,sport=t.Net.Interface( 'default' ).address:get(),8888
 
-tcpsock,ip = t.Net.TCP.listen( sip, sport, 5 )
+tcpsock,ip = t.Net.Socket.listen( sip, sport, 5 )
 --tcpsock:listen(5)
 print( tcpsock, ip )
 a=0

@@ -34,18 +34,23 @@
 /**--------------------------------------------------------------------------
  * Create a socket and push to LuaStack.
  * \param   L        Lua state.
- * \lparam  domain   string:'ip4', 'ip6', 'raw'.
  * \lparam  protocol string:'TCP', 'UDP', ...
+ * \lparam  domain   string:'ip4', 'ip6', 'raw'.
+ * \usage   T.Net.Socket( )                   -> create TCP IPv4 Socket
+ *          T.Net.Socket( 'TCP' )             -> create TCP IPv4 Socket
+ *          T.Net.Socket( 'TCP', 'ip4' )      -> create TCP IPv4 Socket
+ *          T.Net.Socket( 'UDP', 'ip4' )      -> create UDP IPv4 Socket
+ *          T.Net.Socket( 'UDP', 'ip6' )      -> create UDP IPv6 Socket
  * \return  struct t_net_sck pointer to the socket struct.
  * --------------------------------------------------------------------------*/
 static int
 lt_net_sck__Call( lua_State *L )
 {
 	lua_remove( L, 1 );         // remove CLASS table
+	int               protocol = t_net_getProtocol( L, 1 );
 	int               domain   = t_net_domainType[
-	                                luaL_checkoption( L, 1, "ip4", t_net_domainName )
+	                                luaL_checkoption( L, 2, "ip4", t_net_domainName )
 	                             ];
-	int               protocol = t_net_getProtocol( L, 2 );
 	int               type;
 	struct t_net_sck *sck;
 
@@ -310,7 +315,7 @@ lt_net_sck_connect( lua_State *L )
  * Accept a (TCP) socket connection.
  * \param   L      Lua state.
  * \param   int    position of server socket on stack.
- * \lparam  ud     T.Net.Tcp userdata instance( server socket ).
+ * \lparam  ud     T.Net.Socket userdata instance( server socket ).
  * \return  t_net* Client pointer.  Leaves cli_sock and cli_IP on stack.
  *-------------------------------------------------------------------------*/
 int
@@ -339,8 +344,8 @@ t_net_sck_accept( lua_State *L, const int pos )
 /** -------------------------------------------------------------------------
  * Accept a (TCP) socket connection.
  * \param   L      Lua state.
- * \lparam  ud     T.Net.Tcp userdata instance( server socket ).
- * \lreturn ud     T.Net.Tcp userdata instance( new client socket ).
+ * \lparam  ud     T.Net.Socket(TCP) userdata instance( server socket ).
+ * \lreturn ud     T.Net.Socket(TCP) userdata instance( new client socket ).
  * \lreturn ud     T.Net.IpX userdata instance( new client sockaddr ).
  * \return  int    # of values pushed onto the stack.
  *-------------------------------------------------------------------------*/
@@ -370,9 +375,14 @@ t_net_sck_send( lua_State *L, struct t_net_sck *sck, struct sockaddr_in *addr, c
 	  buf, len, 0,
 	  (struct sockaddr *) &(*addr), sizeof( struct sockaddr ))
 	  ) == -1)
-		return t_push_error( L, "Failed to send message to %s:%d",
+	{
+		if (NULL == addr)
+			return t_push_error( L, "Failed to send message");
+		else
+			return t_push_error( L, "Failed to send message to %s:%d",
 					 inet_ntoa( addr->sin_addr ),
 					 ntohs(     addr->sin_port ) );
+	}
 
 	return sent;
 }
@@ -381,7 +391,7 @@ t_net_sck_send( lua_State *L, struct t_net_sck *sck, struct sockaddr_in *addr, c
 /** -------------------------------------------------------------------------
  * Send a message.
  * \param   L      Lua state.
- * \lparam  ud     T.Net.Sck userdata instance.
+ * \lparam  ud     T.Net.Socket userdata instance.
  * \lparam  ud     T.Net.Ip4 userdata instance (optional).
  * \lparam  string msg attempting to send.
  *       OR
@@ -442,11 +452,11 @@ t_net_sck_recv( lua_State *L, struct t_net_sck *sck, struct sockaddr_in *addr, c
 static int
 lt_net_sck_recv( lua_State *L )
 {
-	struct t_net_sck   *sck    = t_net_sck_check_ud( L, 1, 1 );
-	struct sockaddr_in *si_cli = t_net_ip4_create_ud( L );
+	struct t_net_sck   *sck  = t_net_sck_check_ud( L, 1, 1 );
+	struct sockaddr_in *ip   = t_net_ip4_create_ud( L );
 	int                 rcvd;
 	size_t              len;
-	char               *rcv    = t_buf_tolstring( L, 2, &len, NULL );
+	char               *rcv  = t_buf_tolstring( L, 2, &len, NULL );
 
 	if (NULL == rcv)
 	{
@@ -455,7 +465,7 @@ lt_net_sck_recv( lua_State *L )
 		len  = sizeof (buffer)-1;
 	}
 
-	rcvd = t_net_sck_recv( L, sck, si_cli, rcv, len );
+	rcvd = t_net_sck_recv( L, sck, ip, rcv, len );
 
 	// return buffer, length, IpEndpoint
 	if (0 == rcvd)
@@ -564,7 +574,7 @@ lt_net_sck_select( lua_State *L )
 		while (lua_next( L, i ))
 		{
 			hndl = t_net_sck_check_ud( L, -1, 1 );   //S: rdi wri rdr wrr key sck
-			if FD_ISSET( hndl->fd, &rfds )
+			if FD_ISSET( hndl->fd, (1==i) ? &rfds : &wfds )
 			{
 				if (lua_isinteger( L, -2 ))
 					lua_rawseti( L, i+2, lua_rawlen( L, i+2 )+1 );
@@ -579,6 +589,8 @@ lt_net_sck_select( lua_State *L )
 					break;
 				}
 			}
+			else
+				lua_pop( L, 1 );
 		}
 	}
 	return 2;
@@ -589,8 +601,8 @@ lt_net_sck_select( lua_State *L )
  * Class metamethods library definition
  * --------------------------------------------------------------------------*/
 static const struct luaL_Reg t_net_sck_fm [] = {
-	  { "__call",    lt_net_sck__Call }
-	, { NULL,   NULL }
+	  { "__call"      , lt_net_sck__Call }
+	, { NULL          , NULL }
 };
 
 /**--------------------------------------------------------------------------
@@ -598,11 +610,11 @@ static const struct luaL_Reg t_net_sck_fm [] = {
  * --------------------------------------------------------------------------*/
 static const luaL_Reg t_net_sck_cf [] =
 {
-	  { "select"     , lt_net_sck_select }
-	, { "bind"       , lt_net_sck_bind }
-	, { "connect"    , lt_net_sck_connect }
-	, { "listen"     , lt_net_sck_listen }
-	, { NULL         , NULL }
+	  { "select"      , lt_net_sck_select }
+	, { "bind"        , lt_net_sck_bind }
+	, { "connect"     , lt_net_sck_connect }
+	, { "listen"      , lt_net_sck_listen }
+	, { NULL          , NULL }
 };
 
 /**--------------------------------------------------------------------------
@@ -611,22 +623,21 @@ static const luaL_Reg t_net_sck_cf [] =
 static const luaL_Reg t_net_sck_m [] =
 {
 	// metamethods
-	  { "__tostring",  lt_net_sck__tostring }
-	//, { "__eq",        lt_net__eq }
-	, { "__gc",        lt_net_sck_close }  // reuse function
+	  { "__tostring"  , lt_net_sck__tostring }
+	, { "__gc"        , lt_net_sck_close }
 	// object methods
-	, { "listen",      lt_net_sck_listen }
-	, { "bind",        lt_net_sck_bind }
-	, { "connect",     lt_net_sck_connect }
-	, { "accept",      lt_net_sck_accept }
-	, { "close",       lt_net_sck_close }
-	, { "send",        lt_net_sck_send }
-	, { "recv",        lt_net_sck_recv }
-	, { "getsockname", lt_net_sck_getsockname }
+	, { "listen"      , lt_net_sck_listen }
+	, { "bind"        , lt_net_sck_bind }
+	, { "connect"     , lt_net_sck_connect }
+	, { "accept"      , lt_net_sck_accept }
+	, { "close"       , lt_net_sck_close }
+	, { "send"        , lt_net_sck_send }
+	, { "recv"        , lt_net_sck_recv }
+	, { "getsockname" , lt_net_sck_getsockname }
 	// generic net functions -> reuse functions
-	, { "getFd",       lt_net_sck_getFd }
+	, { "getFd"       , lt_net_sck_getFd }
 	//, { "setOption",   lt_net_setoption }
-	, { NULL,        NULL }
+	, { NULL          , NULL }
 };
 
 

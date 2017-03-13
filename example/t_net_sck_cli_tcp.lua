@@ -4,8 +4,7 @@ ipAddr = arg[1] and arg[1] or t.Net.Interface( 'default' ).address:get()
 port   = arg[2] and arg[2] or 8888
 
 if arg[ 1 ] then
-	tcpsock = t.Net.Socket( 'TCP', 'ip4' )
-	print( ipAddr, port );
+	tcpsock = t.Net.Socket( ) -- implicit TCP and ip4
 	sip     = t.Net.IPv4( ipAddr, port )
 	cip     = t.Net.IPv4( ipAddr, 11111 )
 	--for k,v in pairs(getmetatable(tcpsock)) do print( k, v ) end
@@ -16,6 +15,7 @@ else
 end
 print( tcpsock, sip, cip )
 
+--buf  = t.Buffer( string.rep( '0123456789', 12345678 ) )
 buf  = t.Buffer( string.rep( 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz', 1234567 ) )
 sent = 0
 while sent<#buf do

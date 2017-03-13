@@ -13,7 +13,7 @@ print_help = function( )
 		show      - make server list all its loop events]] )
 end
 
-s  = t.Net.Socket( 'ip4', 'UDP' )
+s  = t.Net.Socket( 'UDP', 'ip4' )
 ip = t.Net.IPv4( ipadd, 8888 )
 print( s, ip )
 while true do

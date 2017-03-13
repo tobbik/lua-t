@@ -2,7 +2,7 @@
 t    = require't'
 fmt  = string.format
 l    = t.Loop( 1200 )
-s    = t.Net.Socket( 'ip4', 'UDP' )
+s    = t.Net.Socket( 'UDP', 'ip4' )
 s:bind( 8888 )
 a    = "This is my Answer"
 

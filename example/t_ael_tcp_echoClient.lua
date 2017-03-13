@@ -2,7 +2,7 @@
 t      = require't'
 ipAddr = t.Net.Interface( 'default' ).address:get()
 port   = 8888
-s      = t.Net.Socket( 'ip4', 'TCP' )
+s      = t.Net.Socket( 'TCP', 'ip4' )
 l      = t.Loop( 10 )
 buf    = t.Buffer( string.rep( '0123456789', 12345678 ) )
 ofs    = 1
