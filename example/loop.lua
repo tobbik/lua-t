@@ -1,6 +1,7 @@
 #!../out/bin/lua
 t  = require't'
-s  = t.Net.UDP.bind( 8888 )
+s  = t.Net.Socket( 'UDP', 'ip4' )
+s:bind( 8888 )
 l  = nil
 n  = 9
 tm = { }
@@ -13,7 +14,7 @@ end
 
 
 function r( s )
-	local msg, len, ip_cli = s:recvfrom( )
+	local msg, len, ip_cli = s:recv( )
 	print( msg, len, ip_cli, "\n" )
 	if msg:sub( 1, 4 ) == 'exit' then
 		print( "go exit" )

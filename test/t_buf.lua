@@ -12,8 +12,8 @@ local tests = {
 	rtvg       = Rtvg( ),
 	beforeEach = function( self )
 		local  n = math.random( 1000,2000 )
-		self.s = self.rtvg:getWords( n )
-		self.b = Buffer( self.s )
+		self.s   = self.rtvg:getWords( n )
+		self.b   = Buffer( self.s )
 	end,
 
 	--afterEach = function( self )  -- not necessary for this suite
@@ -55,11 +55,17 @@ local tests = {
 		end
 	end,
 
-	test_ReadIndexOutOfRange = function( self )
-		Test.Case.describe( "Reading from Buffer past it's length fails" )
-		local f = function(b,n) return b:read( n+1 ) end
-		assert( not pcall( f, self.b, #self.b ),
-			"Can't read from buffer on index past it's length" )
+	test_ClearBuffer = function( self )
+		Test.Case.describe( "Clearing Buffer sets each byte to 0" )
+		for i=1,#self.b do
+			assert( string.byte( self.b:read( i, 1 ), 1 ) ~= 0,
+				"Value in buffer at position "..i.. " should be 0" )
+		end
+		self.b:clear()
+		for i=1,#self.b do
+			assert( string.byte( self.b:read( i, 1 ), 1 ) == 0,
+				"Value in buffer at position "..i.. " should be 0" )
+		end
 	end,
 
 	test_ReadLengthBeyondBufferLength = function( self )
@@ -105,13 +111,15 @@ local tests = {
 
 	test_WritePartialString = function( self )
 		Test.Case.describe( "Writing partial string to Buffer content matches string" )
-		local starts = math.random( 100, 300 )
-		local ends   = math.random( starts, #self.s )
-		local s      = self.rtvg:getString( #self.s )
-		self.b:write( s, starts, ends-starts )
-		local readS  = self.b:read( starts, ends-starts )
+		local starts = math.random( math.floor(#self.b/5), math.floor(#self.b/2 ) )
+		local ends   = math.random( starts, starts+math.floor(#self.b/3) )
+		local s      = self.rtvg:getString( ends-starts )
+		self.b:write( s, starts, #s )
+		local readS  = self.b:read( starts, #s )
 		assert( self.s:sub(1,starts-1) == self.b:read(1,starts-1),
 			"First part of Buffer shall equal original string" )
+		assert( s == self.b:read(starts, #s),
+			"Overwritten part of Buffer shall equal new string" )
 	end,
 
 	test_Equals = function( self )

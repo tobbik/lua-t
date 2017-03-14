@@ -10,8 +10,7 @@ T_LIB_STA=t.a
 
 T_SRC=t.c \
 	 t_net.c \
-	 t_net_tcp.c \
-	 t_net_udp.c \
+	 t_net_sck.c \
 	 t_net_ip4.c \
 	 t_ael.c \
 	 t_ael_sel.c \
@@ -21,6 +20,7 @@ T_SRC=t.c \
 	 t_enc_crc.c \
 	 t_enc_b64.c \
 	 t_buf.c \
+	 t_buf_seg.c \
 	 t_pck.c \
 	 t_pck_cmb.c \
 	 t_pck_fmt.c \

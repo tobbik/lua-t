@@ -1,9 +1,9 @@
 #!../out/bin/lua
-t  = require't'
+t      = require't'
 ipAddr = t.Net.Interface( 'default' ).address:get()
-port = 8888
-s    = t.Net.TCP.bind( ipAddr, port )
-l    = t.Loop( 10 )
+port   = 8888
+s      = t.Net.Socket.bind( ipAddr, port )
+l      = t.Loop( 10 )
 
 read = function( c )
 	local m,cnt = c:recv()

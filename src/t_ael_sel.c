@@ -115,6 +115,7 @@ t_ael_poll_impl( lua_State *L, struct t_ael *ael )
 				t |= T_AEL_WR;
 			if (T_AEL_NO != t)
 			{
+				printf("%d  %d\n", i, t);
 				t_ael_executehandle( L, ael, i, t );
 				r--;
 			}

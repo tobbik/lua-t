@@ -23,7 +23,7 @@ x01=function( msg )
 	msg:finish( s01 .. l2 )
 end
 
-fileName = 'buf.lua';
+fileName = 't_oht.lua';
 --stats    = fs.statSync( fileName );
 fSz      = 2500;
 ln       = 0;

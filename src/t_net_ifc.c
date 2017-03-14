@@ -313,6 +313,7 @@ t_net_ifc_check_ud( lua_State *L, int pos )
 		t_push_error( L, "wrong argument, `"T_NET_IFC_TYPE"` expected" );
 }
 
+
 /**--------------------------------------------------------------------------
  * Prints out the ip endpoint.
  * \param   L      Lua state.

@@ -2,7 +2,7 @@ write,fmt   = io.write, string.format
 IPv4        = require"t".Net.IPv4
 If          = require"t".Net.Interface
 
-ip          = If.list( ).default.address
+ip          = If('default').address
 
 print( ip:get( ) )
 

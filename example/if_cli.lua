@@ -4,8 +4,8 @@ local ip1,ip2,dip,dport= '10.128.3.200','10.128.3.201','10.128.3.144',8888
 --local ip1,ip2,dip,dport= '192.168.0.140','192.168.0.131','192.168.0.200',8888
 
 local i=10
-tcpsock1, src_ip1 = t.Net.TCP.bind( ip1 )
-tcpsock2, src_ip2 = t.Net.TCP.bind( ip2 )
+tcpsock1, src_ip1 = t.Net.Socket.bind( ip1 )
+tcpsock2, src_ip2 = t.Net.Socket.bind( ip2 )
 dst_ip            = t.Net.IPv4( dip,dport )
 print( tcpsock1, src_ip1 )
 print( tcpsock2, src_ip2 )

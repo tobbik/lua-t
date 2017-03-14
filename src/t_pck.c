@@ -744,7 +744,7 @@ t_pck_fld__callread( lua_State *L, struct t_pck *pc, const char *b, size_t ofs )
  *          one argument means read, two arguments mean write.
  * \param   L     lua Virtual Machine.
  * \lparam  ud        T.Pack.Field instance.
- * \lparam  ud,string T.Buffer or Lua string.
+ * \lparam  ud,string T.Buffer, t.Buffer.Segment or Lua string.
  * \lparam  T.Buffer or Lua string.
  * \lreturn value     read from Buffer/String according to T.Pack.Field.
  * \return  int    # of values pushed onto the stack.
@@ -754,27 +754,18 @@ lt_pck_fld__call( lua_State *L )
 {
 	struct t_pck_fld  *pf  = NULL;
 	struct t_pck      *pc  = t_pck_fld_getPackFromStack( L, 1, &pf );
-	struct t_buf      *buf = t_buf_check_ud( L, 2, 0 );
 	size_t             ofs = (NULL == pf) ? 0 : pf->o;
 	char              *b;
 	size_t             l;                   /// length of string  overall
+	int                canwrite;            /// false if string is passed
+
 	luaL_argcheck( L,  2<=lua_gettop( L ) && lua_gettop( L )<=3, 2,
 		"Calling an "T_PCK_FLD_TYPE" takes 2 or 3 arguments!" );
 
-	// are we reading/writing to from T.Buffer or Lua String
-	if (NULL != buf)      // T.Buffer
-	{
-		l = buf->len;
-		b = &(buf->b[ 0 ]);
-	}
-	else                  // Lua String
-	{
-		b = (char *) luaL_checklstring( L, 2, &l );
-		luaL_argcheck( L, lua_gettop( L ) < 3, 2, "Can't write value to string type" );
-	}
+	b = t_buf_checklstring( L, 2, &l, &canwrite );
 	//printf( " %ld  %lu %zu %lu %zu \n", (NULL==pf)?-1:pf->o, ofs, o/NB, l*NB, t_pck_getSize( L, pc ) );
 
-	luaL_argcheck( L,  l*NB+NB >= ofs + t_pck_getSize( L, pc ), 2,
+	luaL_argcheck( L, (l*NB)+NB >= ofs + t_pck_getSize( L, pc ), 2,
 		"String/Buffer must be longer than "T_PCK_TYPE" offset plus length." );
 
 	if (2 == lua_gettop( L ))      // read from input
@@ -784,6 +775,7 @@ lt_pck_fld__call( lua_State *L )
 	}
 	else                           // write to input
 	{
+		luaL_argcheck( L, (canwrite), 2, "Can't write value to string type" );
 		if (pc->t < T_PCK_ARR)      // handle atomic packer, return single value
 			return t_pck_write( L, b + ofs/NB, pc, ofs%NB );
 		else                        // create a table ...
