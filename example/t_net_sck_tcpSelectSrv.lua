@@ -2,28 +2,36 @@
 t,fmt=require('t'),string.format
 ipAddr,port=t.Net.Interface( 'default' ).address:get(),8888
 
-tcpsock, ip = t.Net.Socket.listen( ipAddr, port, 5 )
+tcpsock = t.Net.Socket( 'TCP' ) --ip4 implied
+print( tcpsock.reuseaddr, tcpsock.reuseport )
+tcpsock.reuseaddr = true
+tcpsock.reuseport = true
+print( tcpsock.reuseaddr, tcpsock.reuseport )
+_,ip    = tcpsock:listen( ipAddr, port, 5 )
 print( tcpsock, ip )
+rcvd = 0
 
 conns = {master = tcpsock}
 while true do
-	res = t.Net.Socket.select( conns, {} )
-	--print( #res, tcpsock )
-	if res.master then
-		local s,a =  tcpsock:accept( )
+	rds = t.Net.Socket.select( conns, {} )
+	--print( #rds, tcpsock )
+	if rds.master then
+		local s,a = tcpsock:accept( )
 		print( "MASTER ACCEPT:",s ,a )
 		table.insert( conns, s )
 	end
 
 	-- ipairs() iterates over numeric indices only -> excluding master
-	for n,cli in ipairs( res ) do
+	for n,cli in ipairs( rds ) do
 		print( n, cli )
 		msg, len = cli:recv( )
 		if msg then
-			print( msg, len, ip )
+			rcvd = rcvd + len
+			print( "RCVD:", len, rcvd )
 		else
 			for i,v in ipairs( conns ) do
 				if v == cli then
+					rcvd = 0;
 					conns[i]:close( )
 					table.remove( conns, i )
 					print( '\tCLOSED: '.. tostring( v ) )

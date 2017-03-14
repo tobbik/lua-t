@@ -92,6 +92,18 @@ t_net_getdef( lua_State *L, const int pos, struct t_net_sck **sock, struct socka
 }
 
 
+int
+t_net_testOption( lua_State *L, int pos, const char *const lst[] )
+{
+	const char *nme = luaL_checkstring( L, pos );
+	int i;
+	for (i=0; lst[i]; i++)
+		if (strcmp( lst[i], nme ) == 0)
+			return i;
+	return -1;
+}
+
+
 #ifndef _WIN32
 /** -------------------------------------------------------------------------
  * check the set parameters of a particular Socket/Filedescriptor

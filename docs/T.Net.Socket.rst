@@ -29,7 +29,7 @@ significance of an argument by type:
    address to be either `0.0.0.0` or `localhost` depending on the function.
    Create the ``T.Net.Address`` instance and return as second value.
 
-Similarily send() and recv() act for both UDP and TDP type sockets.  In case
+Similarly send() and recv() act for both UDP and TDP type sockets.  In case
 of UDP the user is supposed to specify an address to send the datagram to.
 As a result the `send()` function inspects the first argument.  If it is a
 ``T.Net.Address`` it'll be used to send the message to it. If it's ``nil``

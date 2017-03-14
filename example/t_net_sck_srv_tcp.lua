@@ -27,5 +27,5 @@ while msg do
 	print( len, length, msg )
 end
 print( fmt( "DONE  From: %s Length: %d", cip, length ) )
-clisock:close( )
-tcpsock:close( )
+--clisock:close( )
+--tcpsock:close( )

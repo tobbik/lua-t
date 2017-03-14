@@ -8,10 +8,14 @@
  */
 
 #include <netdb.h>
+#include <unistd.h>
+#include <fcntl.h>     // O_NONBLOCK,...
 
+#define T_NET_SCK_NAME   "Socket"
 #define T_NET_IP4_NAME   "IPv4"
 #define T_NET_IFC_NAME   "Interface"
 
+#define T_NET_SCK_TYPE   T_NET_TYPE"."T_NET_SCK_NAME
 #define T_NET_IP4_TYPE   T_NET_TYPE"."T_NET_IP4_NAME
 #define T_NET_IFC_TYPE   T_NET_TYPE"."T_NET_IFC_NAME
 
@@ -30,12 +34,6 @@ void                t_net_ip4_set         ( lua_State *L, int pos, struct sockad
 int                lt_net_ip4_getIpAndPort( lua_State *L );
 #define t_net_ip4_is( L, pos ) (NULL != t_net_ip4_check_ud( L, pos, 0 ))
 
-// t_net_ifc.c
-int                 luaopen_t_net_ifc   ( lua_State *L );
-void                t_net_ifc_check_ud  ( lua_State *L, int pos );
-int                 t_net_ifc_create_ud ( lua_State *L, const char *name );
-
-
 
 // ############################# REWRITE ######################################
 
@@ -47,19 +45,81 @@ struct t_net_sck {
 	int   fd;    ///< socket handle
 };
 
+// ----------------------------- CONSTANT VALUES -----------------------------------
 
 static const char *const t_net_domainName[ ] = { "ip4"   , "ip6"    , "unix" , NULL };
 static const int         t_net_domainType[ ] = { AF_INET , AF_INET6 , AF_UNIX };
 
+static const int t_net_sck_options[ ] = {
+	//fcntl
+	  O_NONBLOCK
 
-#define T_NET_SCK_NAME   "Socket"
-#define T_NET_SCK_TYPE   T_NET_TYPE"."T_NET_SCK_NAME
+	//getsockopt/setsockopt with integer value
+	, SO_RCVLOWAT
+	, SO_RCVTIMEO
+	, SO_SNDBUF
+	, SO_SNDLOWAT
+	, SO_SNDTIMEO
+	, SO_ERROR
+	, SO_TYPE
+	, SO_RCVBUF
+
+	//getsockopt/setsockopt with boolean value
+	, SO_BROADCAST
+	, SO_DEBUG
+	, SO_DONTROUTE
+	, SO_KEEPALIVE
+	, SO_OOBINLINE
+	, SO_REUSEADDR
+#ifdef SO_USELOOPBACK
+	, SO_USELOOPBACK
+#endif
+#ifdef SO_REUSEPORT
+	, SO_REUSEPORT
+#endif
+};
+
+static const char *const t_net_sck_optionNames[ ] = {
+	//fcntl
+	  "nonblock"
+
+	//getsockopt/setsockopt with boolean value
+	, "recvlow"
+	, "recvtimeout"
+	, "sendbuffer"
+	, "sendlow"
+	, "sendtimeout"
+	, "error"
+	, "type"
+	, "recvbuffer"
+
+	//getsockopt/setsockopt with boolean value
+	, "broadcast"
+	, "debug"
+	, "dontroute"
+	, "keepalive"
+	, "oobinline"
+	, "reuseaddr"
+#ifdef SO_USELOOPBACK
+	, "useloopback"
+#endif
+#ifdef SO_REUSEPORT
+	, "reuseport"
+#endif
+	, NULL
+};
 
 
 // ----------------------------- INTERFACES -----------------------------------
 // t_net.c
 int               t_net_getProtocol  ( lua_State *L, const int pos );
 void              t_net_getdef       ( lua_State *L, const int pos, struct t_net_sck **sock, struct sockaddr_in **addr );
+int               t_net_testOption   ( lua_State *L, int pos, const char *const lst[] );
+
+// t_net_ifc.c
+int               luaopen_t_net_ifc   ( lua_State *L );
+void              t_net_ifc_check_ud  ( lua_State *L, int pos );
+int               t_net_ifc_create_ud ( lua_State *L, const char *name );
 
 
 // t_net_sck.c

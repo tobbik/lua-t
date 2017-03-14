@@ -20,8 +20,6 @@
 #else
 #include <string.h>
 #include <stdlib.h>
-#include <unistd.h>
-#include <fcntl.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
@@ -72,9 +70,11 @@ lt_net_sck__Call( lua_State *L )
 
 /**--------------------------------------------------------------------------
  * Create a socket and push to LuaStack.
- * \param   L      Lua state.
- * \param   enum   t_net_t  Type of socket.
- * \param   bool   1 if Should socket be created, else 0.
+ * \param   L        Lua state.
+ * \param   domain   int AF_INET, AF_INET6, ...
+ * \param   type     int SOCK_RAW, SOCK_STREAM, ...
+ * \param   protocol int IPPROTO_UDP, IPPROTO_TCP, ...
+ * \param   create   bool, should socket be created or just wrapping userdata.
  * \return  struct t_net_sck* pointer to the socket struct.
  * --------------------------------------------------------------------------*/
 struct t_net_sck
@@ -198,9 +198,9 @@ t_net_sck_listen( lua_State *L, const int pos )
 	struct sockaddr_in *ip  = t_net_ip4_check_ud( L, pos+1, 0 );
 	int                 bl  = luaL_checkinteger( L, -1 ); // backlog
 
-	lua_pop( L, 1 );   // remove address
+	lua_pop( L, 1 );   // remove backlog
 
-	if (NULL == sck)
+	if (NULL == sck || NULL == ip)
 	{
 		t_net_getdef( L, pos+0, &sck, &ip );
 		//S: t_net,t_net_ip4
@@ -597,6 +597,159 @@ lt_net_sck_select( lua_State *L )
 }
 
 
+/** -------------------------------------------------------------------------
+ * __index; used to display socket options
+ * \param   L      Lua state.
+ * \lparam  ud     T.Net.Socket userdata instance.
+ * \lparam  string socket option name or fucntion name.
+ * \lreturn value  int or bool socket option value or function.
+ * \return  int    # of values pushed onto the stack.
+ *-------------------------------------------------------------------------*/
+static int
+lt_net_sck__index( lua_State *L )
+{
+	struct t_net_sck   *sck     = t_net_sck_check_ud( L, 1, 1 );
+	int             sck_opt;
+	int             sck_opt_idx = t_net_testOption( L, 2, t_net_sck_optionNames );
+	int                 val;
+	socklen_t           len     = sizeof( val );
+
+	if (-1 == sck_opt_idx)
+	{
+		// in case no socket option was requested, relay functions from the
+		// metatable (send,recv,accept,bind, ...)
+		lua_getmetatable( L, 1 );
+		lua_pushvalue( L, 2 );
+		lua_gettable( L, -2 );
+		return 1;
+	}
+	else
+		sck_opt = t_net_sck_options[ sck_opt_idx ];
+
+	switch (sck_opt)
+	{
+		case O_NONBLOCK:
+			val = fcntl( sck->fd, F_GETFL );
+			lua_pushboolean( L, (-1==val) ? 0 :(val & O_NONBLOCK) == O_NONBLOCK );
+			break;
+
+		case SO_RCVLOWAT:
+		case SO_RCVTIMEO:
+		case SO_SNDBUF:
+		case SO_SNDLOWAT:
+		case SO_SNDTIMEO:
+		case SO_ERROR:
+		case SO_TYPE:
+		case SO_RCVBUF:
+			if (getsockopt( sck->fd, SOL_SOCKET, sck_opt, &val, &len ) < 0)
+				lua_pushinteger( L, -1 );
+			else
+				lua_pushinteger(L, val );
+			break;
+
+		case SO_BROADCAST:
+		case SO_DEBUG:
+		case SO_DONTROUTE:
+		case SO_KEEPALIVE:
+		case SO_OOBINLINE:
+		case SO_REUSEADDR:
+#ifdef SO_USELOOPBACK
+		case SO_USELOOPBACK:
+#endif
+#ifdef SO_REUSEPORT
+		case SO_REUSEPORT:
+#endif
+			if (getsockopt( sck->fd, SOL_SOCKET, sck_opt, &val, &len ) < 0)
+				lua_pushboolean( L, 0 );
+			else
+				lua_pushboolean(L, val );
+			break;
+
+		default:
+			// should never get here
+			luaL_error( L, "unknown socket option: %s", lua_tostring( L, 2 ) );
+	}
+	return 1;
+}
+
+
+/** -------------------------------------------------------------------------
+ * __newindex; used to set socket options
+ * \param   L      Lua state.
+ * \lparam  ud     T.Net.Socket userdata instance.
+ * \lparam  string socket option name or function name.
+ * \lparam  value  int or bool socket option value or function.
+ * \return  int    # of values pushed onto the stack.
+ *-------------------------------------------------------------------------*/
+static int
+lt_net_sck__newindex( lua_State *L )
+{
+	struct t_net_sck       *sck = t_net_sck_check_ud( L, 1, 1 );
+	int                 sck_opt;
+	int             sck_opt_idx = t_net_testOption( L, 2, t_net_sck_optionNames );
+	int                 val;
+
+	if (-1 == sck_opt_idx)
+		return luaL_error( L, "unknown socket option" );
+	else
+		sck_opt = t_net_sck_options[ sck_opt_idx ];
+
+	switch (sck_opt)
+	{
+		case O_NONBLOCK:
+			val = fcntl( sck->fd, F_GETFL );
+			if (val > 0)
+			{
+				if (lua_toboolean( L, 3 ))
+					val |= sck_opt;
+				else
+					val &= ~sck_opt;
+				if (fcntl( sck->fd, F_SETFL, val) < 0)
+					t_push_error( L, "Couldn't set socket option" );
+			}
+			else
+				t_push_error( L, "Failed to set socket option" );
+			break;
+
+		case SO_RCVLOWAT:
+		case SO_RCVTIMEO:
+		case SO_SNDBUF:
+		case SO_SNDLOWAT:
+		case SO_SNDTIMEO:
+		case SO_ERROR:
+		case SO_TYPE:
+		case SO_RCVBUF:
+			val = luaL_checkinteger( L, 3 );
+			if (setsockopt( sck->fd, SOL_SOCKET, sck_opt, &val, sizeof( val ) ) < 0)
+				t_push_error( L, "Couldn't set socket option" );
+			break;
+
+		case SO_BROADCAST:
+		case SO_DEBUG:
+		case SO_DONTROUTE:
+		case SO_KEEPALIVE:
+		case SO_OOBINLINE:
+		case SO_REUSEADDR:
+#ifdef SO_USELOOPBACK
+		case SO_USELOOPBACK:
+#endif
+#ifdef SO_REUSEPORT
+		case SO_REUSEPORT:
+#endif
+			val = lua_toboolean( L, 3 );
+			if (setsockopt( sck->fd, SOL_SOCKET, sck_opt, &val, sizeof( val ) ) < 0)
+				t_push_error( L, "Couldn't set socket option" );
+			break;
+
+		default:
+			// should never get here
+			luaL_error( L, "unknown socket option: %s", lua_tostring( L, 2 ) );
+	}
+	return 1;
+}
+
+
+
 /**--------------------------------------------------------------------------
  * Class metamethods library definition
  * --------------------------------------------------------------------------*/
@@ -624,6 +777,8 @@ static const luaL_Reg t_net_sck_m [] =
 {
 	// metamethods
 	  { "__tostring"  , lt_net_sck__tostring }
+	, { "__index"     , lt_net_sck__index }
+	, { "__newindex"  , lt_net_sck__newindex }
 	, { "__gc"        , lt_net_sck_close }
 	// object methods
 	, { "listen"      , lt_net_sck_listen }
@@ -655,7 +810,7 @@ luaopen_t_net_sck( lua_State *L )
 	// just make metatable known to be able to register and check userdata
 	luaL_newmetatable( L, T_NET_SCK_TYPE );   // stack: functions meta
 	luaL_setfuncs( L, t_net_sck_m, 0 );
-	lua_setfield( L, -1, "__index" );
+	lua_pop( L, 1 );
 
 	// Push the class onto the stack
 	// this is avalable as Socket.<member>
