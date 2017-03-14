@@ -506,33 +506,32 @@ lt_net_sck_getsockname( lua_State *L )
  * Itertates over the table puls out the socket structs and adds the actual
  * sockets to the fd_set.
  * \param   L      Lua state.
- * \param   int    position on stack where table is located
- * \param  *fd_set the set of sockets(fd) to be filled
- * \param  *int    the maximum socket(fd) value
- * \return  void.
+ * \param   int    position on stack where table is located.
+ * \param  *fd_set the set of sockets(fd) to be filled.
+ * \param  *int    the maximum socket(fd) value.
+ * \return  maxFd  highest FD number in set.
  *-------------------------------------------------------------------------*/
-static void
-t_net_sck_mkFdset( lua_State *L, int pos, fd_set *set, int *maxFd )
+static int
+t_net_sck_mkFdset( lua_State *L, int pos, fd_set *set )
 {
 	struct t_net_sck  *sck;
+	int                maxFd = -1;
 
+	if (lua_isnil( L, pos) )                // empty table == nil
+		return maxFd;
+	luaL_checktype( L, pos, LUA_TTABLE );   // only accept tables
 	FD_ZERO( set );
-	// empty table == nil
-	if (lua_isnil( L, pos) )
-		return;
-	// only accept tables
-	luaL_checktype( L, pos, LUA_TTABLE );
-	// TODO: check table for len==0 and return
 
-	// adding fh to FD_SETs
+	// adding all sd to FD_SET
 	lua_pushnil( L );
 	while (lua_next( L, pos ))
 	{
-		sck = t_net_sck_check_ud( L, -1, 1 );
+		sck   = t_net_sck_check_ud( L, -1, 1 );
+		maxFd = (sck->fd > maxFd) ? sck->fd : maxFd;
 		FD_SET( sck->fd, set );
-		*maxFd = (sck->fd > *maxFd) ? sck->fd : *maxFd;
 		lua_pop( L, 1 );   // remove the socket, keep key for next()
 	}
+	return maxFd;
 }
 
 
@@ -551,17 +550,14 @@ lt_net_sck_select( lua_State *L )
 {
 	fd_set            rfds, wfds;
 	struct t_net_sck *hndl;
-	int               rnum, wnum, readsocks, i;
+	int               readySocks, i;
+	int               rMax          = t_net_sck_mkFdset( L, 1, &rfds );
+	int               wMax          = t_net_sck_mkFdset( L, 2, &wfds );
 
-	wnum = -1;
-	rnum = -1;
-	t_net_sck_mkFdset( L, 1, &rfds, &rnum );
-	t_net_sck_mkFdset( L, 2, &wfds, &wnum );
-
-	readsocks = select(
-		(wnum > rnum) ? wnum+1 : rnum+1,
-		(-1  != rnum) ? &rfds  : NULL,
-		(-1  != wnum) ? &wfds  : NULL,
+	readySocks = select(
+		(wMax > rMax) ? wMax+1 : rMax+1,
+		(-1  != rMax) ? &rfds  : NULL,
+		(-1  != wMax) ? &wfds  : NULL,
 		(fd_set *) 0,
 		NULL
 	);
@@ -573,18 +569,19 @@ lt_net_sck_select( lua_State *L )
 		lua_pushnil( L );
 		while (lua_next( L, i ))
 		{
-			hndl = t_net_sck_check_ud( L, -1, 1 );   //S: rdi wri rdr wrr key sck
+			hndl = t_net_sck_check_ud( L, -1, 1 ); //S: rdi wri rdr wrr key sck
 			if FD_ISSET( hndl->fd, (1==i) ? &rfds : &wfds )
 			{
-				if (lua_isinteger( L, -2 ))
+				if (lua_isinteger( L, -2 ))         // append numeric idx
 					lua_rawseti( L, i+2, lua_rawlen( L, i+2 )+1 );
 				else
 				{
-					lua_pushvalue( L, -2 );
-					lua_insert( L, -2 );               //S: rdi wri rdr wrr key key sck
+					lua_pushvalue( L, -2 );          // reuse key for hash idx
+					lua_insert( L, -2 );             //S: rdi wri rdr wrr key key sck
 					lua_rawset( L, i+2 );
 				}
-				if (0 == --readsocks) {
+				if (0 == --readySocks)
+				{
 					lua_pop( L, 1 );
 					break;
 				}
@@ -598,35 +595,21 @@ lt_net_sck_select( lua_State *L )
 
 
 /** -------------------------------------------------------------------------
- * __index; used to display socket options
- * \param   L      Lua state.
- * \lparam  ud     T.Net.Socket userdata instance.
- * \lparam  string socket option name or fucntion name.
+ * Get socket option values on stack.
+ * \param   L        Lua state.
+ * \param   sckOpt   int Socket option number.
+ * \param   optName  const char* Socket option name.
  * \lreturn value  int or bool socket option value or function.
  * \return  int    # of values pushed onto the stack.
  *-------------------------------------------------------------------------*/
-static int
-lt_net_sck__index( lua_State *L )
+int
+t_net_sck_getSocketOption( lua_State *L, struct t_net_sck *sck, int sckOpt,
+                                         const char       *sckOptName )
 {
-	struct t_net_sck   *sck     = t_net_sck_check_ud( L, 1, 1 );
-	int             sck_opt;
-	int             sck_opt_idx = t_net_testOption( L, 2, t_net_sck_optionNames );
-	int                 val;
-	socklen_t           len     = sizeof( val );
+	int               val;
+	socklen_t         len         = sizeof( val );
 
-	if (-1 == sck_opt_idx)
-	{
-		// in case no socket option was requested, relay functions from the
-		// metatable (send,recv,accept,bind, ...)
-		lua_getmetatable( L, 1 );
-		lua_pushvalue( L, 2 );
-		lua_gettable( L, -2 );
-		return 1;
-	}
-	else
-		sck_opt = t_net_sck_options[ sck_opt_idx ];
-
-	switch (sck_opt)
+	switch (sckOpt)
 	{
 		case O_NONBLOCK:
 			val = fcntl( sck->fd, F_GETFL );
@@ -641,7 +624,7 @@ lt_net_sck__index( lua_State *L )
 		case SO_ERROR:
 		case SO_TYPE:
 		case SO_RCVBUF:
-			if (getsockopt( sck->fd, SOL_SOCKET, sck_opt, &val, &len ) < 0)
+			if (getsockopt( sck->fd, SOL_SOCKET, sckOpt, &val, &len ) < 0)
 				lua_pushinteger( L, -1 );
 			else
 				lua_pushinteger(L, val );
@@ -659,7 +642,7 @@ lt_net_sck__index( lua_State *L )
 #ifdef SO_REUSEPORT
 		case SO_REUSEPORT:
 #endif
-			if (getsockopt( sck->fd, SOL_SOCKET, sck_opt, &val, &len ) < 0)
+			if (getsockopt( sck->fd, SOL_SOCKET, sckOpt, &val, &len ) < 0)
 				lua_pushboolean( L, 0 );
 			else
 				lua_pushboolean(L, val );
@@ -667,44 +650,71 @@ lt_net_sck__index( lua_State *L )
 
 		default:
 			// should never get here
-			luaL_error( L, "unknown socket option: %s", lua_tostring( L, 2 ) );
+			luaL_error( L, "unknown socket option: %s", sckOptName );
 	}
 	return 1;
 }
 
 
 /** -------------------------------------------------------------------------
- * __newindex; used to set socket options
+ * __index; used to get socket option values
  * \param   L      Lua state.
  * \lparam  ud     T.Net.Socket userdata instance.
- * \lparam  string socket option name or function name.
- * \lparam  value  int or bool socket option value or function.
+ * \lparam  string socket option name or fucntion name.
+ * \lreturn value  int or bool socket option value or function.
  * \return  int    # of values pushed onto the stack.
  *-------------------------------------------------------------------------*/
 static int
-lt_net_sck__newindex( lua_State *L )
+lt_net_sck__index( lua_State *L )
 {
-	struct t_net_sck       *sck = t_net_sck_check_ud( L, 1, 1 );
-	int                 sck_opt;
-	int             sck_opt_idx = t_net_testOption( L, 2, t_net_sck_optionNames );
-	int                 val;
+	struct t_net_sck *sck         = t_net_sck_check_ud( L, 1, 1 );
+	int               sck_opt_idx = t_net_testOption( L, 2, t_net_sck_optionNames );
 
 	if (-1 == sck_opt_idx)
-		return luaL_error( L, "unknown socket option" );
+	{
+		// in case no socket option was requested, relay functions from the
+		// metatable if available (send,recv,accept,bind etc.)
+		lua_getmetatable( L, 1 );
+		lua_pushvalue( L, 2 );
+		lua_gettable( L, -2 );
+		return 1;
+	}
 	else
-		sck_opt = t_net_sck_options[ sck_opt_idx ];
+	{
+		return t_net_sck_getSocketOption(
+			L,
+			sck,
+			t_net_sck_options[ sck_opt_idx ],
+			lua_tostring( L, 2 ) );
+	}
+}
 
-	switch (sck_opt)
+
+/** -------------------------------------------------------------------------
+ * Set socket option values.
+ * \param   L        Lua state.
+ * \param   sckOpt   int Socket option number.
+ * \param   optName  const char* Socket option name.
+ * \param   val      int Value to set option to.
+ * \return  int    # of values pushed onto the stack.
+ *-------------------------------------------------------------------------*/
+int
+t_net_sck_setSocketOption( lua_State *L, struct t_net_sck *sck , int sckOpt,
+                                         const char *sckOptName, int val )
+{
+	int               flags;
+
+	switch (sckOpt)
 	{
 		case O_NONBLOCK:
-			val = fcntl( sck->fd, F_GETFL );
-			if (val > 0)
+			flags = fcntl( sck->fd, F_GETFL );
+			if (flags > 0)
 			{
-				if (lua_toboolean( L, 3 ))
-					val |= sck_opt;
+				if (val)
+					flags |= sckOpt;
 				else
-					val &= ~sck_opt;
-				if (fcntl( sck->fd, F_SETFL, val) < 0)
+					flags &= ~sckOpt;
+				if (fcntl( sck->fd, F_SETFL, flags ) < 0)
 					t_push_error( L, "Couldn't set socket option" );
 			}
 			else
@@ -716,11 +726,8 @@ lt_net_sck__newindex( lua_State *L )
 		case SO_SNDBUF:
 		case SO_SNDLOWAT:
 		case SO_SNDTIMEO:
-		case SO_ERROR:
-		case SO_TYPE:
 		case SO_RCVBUF:
-			val = luaL_checkinteger( L, 3 );
-			if (setsockopt( sck->fd, SOL_SOCKET, sck_opt, &val, sizeof( val ) ) < 0)
+			if (setsockopt( sck->fd, SOL_SOCKET, sckOpt, &val, sizeof( val ) ) < 0)
 				t_push_error( L, "Couldn't set socket option" );
 			break;
 
@@ -736,18 +743,44 @@ lt_net_sck__newindex( lua_State *L )
 #ifdef SO_REUSEPORT
 		case SO_REUSEPORT:
 #endif
-			val = lua_toboolean( L, 3 );
-			if (setsockopt( sck->fd, SOL_SOCKET, sck_opt, &val, sizeof( val ) ) < 0)
+			if (setsockopt( sck->fd, SOL_SOCKET, sckOpt, &val, sizeof( val ) ) < 0)
 				t_push_error( L, "Couldn't set socket option" );
 			break;
 
+		case SO_ERROR:
+		case SO_TYPE:
+			luaL_error( L, "can't set readonly socket option: %s", sckOptName );
 		default:
 			// should never get here
-			luaL_error( L, "unknown socket option: %s", lua_tostring( L, 2 ) );
+			luaL_error( L, "unknown socket option: %s", sckOptName );
 	}
-	return 1;
+	return 0;
 }
 
+
+/** -------------------------------------------------------------------------
+ * __newindex; used to get socket option values
+ * \param   L      Lua state.
+ * \lparam  ud     T.Net.Socket userdata instance.
+ * \lparam  string socket option name or function name.
+ * \lparam  value  int or bool socket option value.
+ * \return  int    # of values pushed onto the stack.
+ *-------------------------------------------------------------------------*/
+static int
+lt_net_sck__newindex( lua_State *L )
+{
+	int               sck_opt_idx = luaL_checkoption( L, 2, NULL, t_net_sck_optionNames );
+
+	return t_net_sck_setSocketOption(
+		L,
+		t_net_sck_check_ud( L, 1, 1 ),
+		t_net_sck_options[ sck_opt_idx ],
+		lua_tostring( L, 2 ),
+		(lua_isboolean( L, 3 ))
+			? lua_toboolean( L, 3 )
+			: luaL_checkinteger( L, 3 )
+	);
+}
 
 
 /**--------------------------------------------------------------------------

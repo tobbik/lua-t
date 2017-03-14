@@ -91,7 +91,13 @@ t_net_getdef( lua_State *L, const int pos, struct t_net_sck **sock, struct socka
 	}
 }
 
-
+/** -------------------------------------------------------------------------
+ * get socket otions from an array like luaL_checkoption but no error
+ * \param   L      Lua state.
+ * \param   pos    stack position of string to test.
+ * \param   lst    NULL Terminated array of strings.
+ * \return  idx    index in array where string occurs, -1 if not found.
+ *-------------------------------------------------------------------------*/
 int
 t_net_testOption( lua_State *L, int pos, const char *const lst[] )
 {
@@ -104,138 +110,12 @@ t_net_testOption( lua_State *L, int pos, const char *const lst[] )
 }
 
 
-#ifndef _WIN32
-/** -------------------------------------------------------------------------
- * check the set parameters of a particular Socket/Filedescriptor
- * \param   int  The File/Socket descriptor ident.
- * \return  int  Boolean - 1 if found; 0 if not.
- *-------------------------------------------------------------------------*/
-int t_net_getfdinfo( int fd )
-{
-	char    buf[ 256 ];
-	char    path[ 256 ];
-	int     fd_flags;
-	int     fl_flags;
-	ssize_t s;
-
-	sprintf( path, "/proc/self/fd/%d", fd );
-	s = readlink( path, &buf[0], 256 );
-	if ( s == -1 )
-	{
-		//printf( " (%s): not available", path);
-		return 0;
-	}
-	else
-	{
-		fd_flags = fcntl( fd, F_GETFD );
-		if ( fd_flags == -1 )
-			return 0;
-
-		fl_flags = fcntl( fd, F_GETFL );
-		if ( fl_flags == -1 )
-			return 0;
-
-		printf( " (%s): ", path);
-		memset( &buf[0], 0, 256 );
-
-		if ( fd_flags & FD_CLOEXEC )  printf( "cloexec " );
-
-		// file status
-		if ( fl_flags & O_APPEND   )  printf( "append " );
-		if ( fl_flags & O_NONBLOCK )  printf( "nonblock " );
-
-		// acc mode
-		if ( fl_flags & O_RDONLY   )  printf( "read-only " );
-		if ( fl_flags & O_RDWR     )  printf( "read-write " );
-		if ( fl_flags & O_WRONLY   )  printf( "write-only " );
-
-		if ( fl_flags & O_DSYNC    )  printf( "dsync " );
-		if ( fl_flags & O_RSYNC    )  printf( "rsync " );
-		if ( fl_flags & O_SYNC     )  printf( "sync " );
-
-		struct flock fl;
-		fl.l_type   = F_WRLCK;
-		fl.l_whence = 0;
-		fl.l_start  = 0;
-		fl.l_len    = 0;
-		fcntl( fd, F_GETLK, &fl );
-		if ( fl.l_type != F_UNLCK )
-		{
-			if ( fl.l_type == F_WRLCK )
-				printf( "write-locked" );
-			else
-				printf( "read-locked" );
-			printf( "(pid: %d)", fl.l_pid );
-		}
-		printf( "\n" );
-		return 1;
-	}
-	return 0;
-}
-
-
-int lt_net_getfdinfo( lua_State *L )
-{
-	struct t_net_sck *s = t_net_sck_check_ud( L, 1, 1 );
-	t_net_getfdinfo( s->fd );
-	return 0;
-}
-
-
-int lt_net_getfdsinfo( lua_State *L )
-{
-	UNUSED( L );
-	int numFd  = getdtablesize();
-	int fd;
-	for (fd=0; fd<numFd; fd++)
-		t_net_getfdinfo( fd );
-	return 0;
-}
-#endif
-
-
-/** -------------------------------------------------------------------------
- * Set a socket option.
- * \param   L      Lua state.
- * \param   struct t_net* instance.
- * \return  int    # of values pushed onto the stack.
- * TODO: Actually do option settings with multiple options etc here...
- *-------------------------------------------------------------------------*/
-int
-t_net_reuseaddr( lua_State *L, struct t_net_sck *s )
-{
-	size_t one           = 1;
-	int flag             = 0;
-
-	if (-1 != s->fd)
-	{
-		if (-1 == setsockopt( s->fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof( one ) ) )
-			return t_push_error( L, "ERROR setting option" );
-		flag = fcntl( s->fd, F_GETFL, 0 );           // Get socket flags
-		fcntl( s->fd, F_SETFL, flag | O_NONBLOCK );  // Add non-blocking flag
-	}
-
-	return 0;
-}
-
-
-int
-lt_net_setoption( lua_State *L )
-{
-	struct t_net_sck *s = t_net_sck_check_ud( L, 1, 1 );
-	return t_net_reuseaddr( L, s );
-}
-
 /**--------------------------------------------------------------------------
  * Class functions library definition
  * --------------------------------------------------------------------------*/
 static const luaL_Reg t_net_cf [] =
 {
-	  { "setOption",   lt_net_setoption }
-#ifndef _WIN32
-	, { "showAllFd",   lt_net_getfdsinfo }
-#endif
-	, { NULL,    NULL }
+	  { NULL,    NULL }
 };
 
 

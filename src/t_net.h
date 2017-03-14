@@ -134,3 +134,7 @@ int               t_net_sck_accept   ( lua_State *L, const int pos );
 int               t_net_sck_send     ( lua_State *L, struct t_net_sck *sck, struct sockaddr_in *addr, const char* buf, size_t len );
 int               t_net_sck_recv     ( lua_State *L, struct t_net_sck *sck, struct sockaddr_in *addr,       char *buf, size_t len );
 int               t_net_sck_close    ( lua_State *L, struct t_net_sck *sck );
+int               t_net_sck_setSocketOption( lua_State *L, struct t_net_sck *sck , int sckOpt,
+                                                           const char *sckOptName, int val );
+int               t_net_sck_getSocketOption( lua_State *L, struct t_net_sck *sck, int sckOpt,
+                                                           const char       *sckOptName );

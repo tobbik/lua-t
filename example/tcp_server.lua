@@ -5,12 +5,13 @@ Buffer = t.Buffer
 
 print( ipAddr, port)
 
-tcpsock = t.Net.Socket( 'TCP', 'ip4' )
-ip      = t.Net.IPv4( ipAddr, port )
-tcpsock:bind( ip )
-tcpsock:listen( 5 )
+--tcpsock = t.Net.Socket( 'TCP', 'ip4' )
+--ip      = t.Net.IPv4( ipAddr, port )
+
+--tcpsock:bind( ip )
+--tcpsock:listen( ip, 5 )
 -- --------------- or
---tcpsock,ip = t.Net.TCP.bind( ipAddr, port )
+tcpsock,ip = t.Net.Socket.bind( ipAddr, port )
 -- --------------- or
 --tcpsock, ip = t.Net.TCP.listen( ipAddr, port, 5 )
 --for k,v in pairs(getmetatable(ip)) do print( k, v ) end
