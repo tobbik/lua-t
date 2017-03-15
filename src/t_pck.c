@@ -11,6 +11,9 @@
 #include <string.h>     // memcpy
 
 #include "t.h"
+#include "t_utl.h"            // t_utl stuff
+#include "t_buf.h"            // read/write buffers
+#include "t_oht.h"            // read arguments into struct, write result
 #include "t_pck.h"
 
 // ========== Buffer accessor Helpers
@@ -19,6 +22,13 @@
 	( b = ( (1==v)                              \
 	 ? ((b) | (  (0x01) << (NB-(n)-1)))   \
 	 : ((b) & (~((0x01) << (NB-(n)-1)))) ) )
+
+// ========== Helper for format parser
+#define GNL( L, fmt, dflt, max ) \
+	(t_utl_prsMaxNumber( L, fmt, (dflt), (max), 0 ) * NB )
+
+#define CP( typ, mod, sz ) \
+	t_pck_create_ud( L, T_PCK_##typ, (sz), (mod) );
 
 // global default for T.Pack, can be flipped
 #ifdef IS_LITTLE_ENDIAN
@@ -29,6 +39,73 @@ static int _default_endian = 0;
 
 
 // Function helpers
+/** -------------------------------------------------------------------------
+ * Determines type of Packer from format string.
+ * Returns the Packer, or NULL if unsuccessful.  Leaves created packer on the
+ * stack.
+ * \param   L      Lua state.
+ * \param   char*  format string pointer. moved by this function.
+ * \param   int*   e pointer to current endianess.
+ * \param   int*   bo pointer to current bit offset within byte.
+ * \lreturn ud     T.Pack userdata instance.
+ * \return  struct t_pck* pointer.
+ * TODO: Deal with bit sized Packers:
+ *       - Detect if we are in Bit sized type(o%8 !=0)
+ *       - Detect if fmt switched back to byte style and ERROR
+ *  -------------------------------------------------------------------------*/
+static struct t_pck
+*t_pck_parseFmt( lua_State *L, const char **f, int *e, size_t *bo )
+{
+	int           opt;
+	struct t_pck *p = NULL;
+
+	while (NULL == p)
+	{
+		opt = *((*f)++);
+		//printf("'%c'   %02X\n", opt, opt);
+		switch (opt)
+		{
+			// Integer types
+			case 'b': p = CP( INT,  1==*e, NB                                ); break;
+			case 'B': p = CP( UNT,  1==*e, NB                                ); break;
+			case 'h': p = CP( INT,  1==*e, sizeof( short ) * NB              ); break;
+			case 'H': p = CP( UNT,  1==*e, sizeof( short ) * NB              ); break;
+			case 'l': p = CP( INT,  1==*e, sizeof( long ) * NB               ); break;
+			case 'L': p = CP( UNT,  1==*e, sizeof( long ) * NB               ); break;
+			case 'j': p = CP( INT,  1==*e, sizeof( lua_Integer ) * NB        ); break;
+			case 'J': p = CP( UNT,  1==*e, sizeof( lua_Integer ) * NB        ); break;
+			case 'T': p = CP( INT,  1==*e, sizeof( size_t ) * NB             ); break;
+			case 'i': p = CP( INT,  1==*e, GNL( L, f, sizeof( int ), MXINT ) ); break;
+			case 'I': p = CP( UNT,  1==*e, GNL( L, f, sizeof( int ), MXINT ) ); break;
+
+			// Float typesCP
+			case 'f': p = CP( FLT,  1==*e, sizeof( float ) * NB              ); break;
+			case 'd': p = CP( FLT,  1==*e, sizeof( double ) * NB             ); break;
+			case 'n': p = CP( FLT,  1==*e, sizeof( lua_Number ) * NB         ); break;
+
+			// String typeCP
+			case 'c': p = CP( RAW,  0    , GNL( L, f, 1, 0x1 << NB )         ); break;
+
+			// Bit types
+			case 'r': p = CP( BTS, *bo%NB, GNL( L, f, 1, MXBIT )/NB          ); break;
+			case 'R': p = CP( BTU, *bo%NB, GNL( L, f, 1, MXBIT )/NB          ); break;
+			case 'v': p = CP( BOL, *bo%NB, 1                                 ); break;
+
+			// modifier types
+			case '<': *e = 1; continue;                                        break;
+			case '>': *e = 0; continue;                                        break;
+			case '\0': return NULL;                                            break;
+			default:
+				luaL_error( L, "invalid format option '%c'", opt );
+				return NULL;
+		}
+	}
+	// forward the Bit offset
+	*bo += ((T_PCK_BTU==p->t || T_PCK_BTS==p->t || T_PCK_BOL==p->t) ? p->s : p->s * NB );
+	//printf("%zu:%d\n", p->s, p->m );
+	return p;
+}
+
 /**--------------------------------------------------------------------------
  * Copy byte by byte from one string to another. Honours endianess.
  * \param   dst        char* to write to.
@@ -470,11 +547,11 @@ struct t_pck
 	else // if it is a format string
 	{
 		fmt = luaL_checkstring( L, pos );
-		p   = t_pck_fmt_read( L, &fmt, &l, bo );
+		p   = t_pck_parseFmt( L, &fmt, &l, bo );
 		while (NULL != p )
 		{
 			n++;
-			p = t_pck_fmt_read( L, &fmt, &l, bo );
+			p = t_pck_parseFmt( L, &fmt, &l, bo );
 		}
 		// TODO: actually create the packers and calculate positions
 		if (n > 1)

@@ -51,10 +51,6 @@ int  t_getFromProxyTable( lua_State *L );
 void t_fmtStackItem( lua_State *L, int idx, int no_tostring );
 void t_stackDump   ( lua_State *L );
 void t_stackPrint  ( lua_State *L, int first, int last, int no_tostring );
-void t_printIntBin ( lua_Unsigned i );
-void t_printCharBin ( volatile char *b, size_t sz );
-void t_printIntHex ( lua_Unsigned i );
-void t_printCharHex ( volatile char *b, size_t sz );
 int  t_push_error  ( lua_State *L, const char *fmt, ... );
 int  t_checkTableType( lua_State *L, int pos, int check, const char *type );
 

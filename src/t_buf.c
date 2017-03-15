@@ -216,15 +216,15 @@ t_buf_compare( lua_State *L, char *bA, char *bB, size_t aLen, size_t bLen )
 int
 t_buf_getHexString( lua_State *L, char *b, size_t len )
 {
-	char          hex[] = "0123456789ABCDEF";
 	size_t        n;
+	char          hexChars[] = "0123456789ABCDEF";
 	luaL_Buffer   lB;
 	luaL_buffinit( L, &lB );
 
 	for (n=0; n<len; n++)
 	{
-		luaL_addchar( &lB, hex[ b[n] >> 4 & 0x0F ] );
-		luaL_addchar( &lB, hex[ b[n]      & 0x0F ] );
+		luaL_addchar( &lB, hexChars[ b[n] >> 4 & 0x0F ] );
+		luaL_addchar( &lB, hexChars[ b[n]      & 0x0F ] );
 		luaL_addchar( &lB, ' ' );
 	}
 

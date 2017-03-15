@@ -9,6 +9,7 @@ T_LIB_DYN=t.so
 T_LIB_STA=t.a
 
 T_SRC=t.c \
+	 t_utl.c \
 	 t_net.c \
 	 t_net_sck.c \
 	 t_net_ip4.c \
@@ -23,7 +24,6 @@ T_SRC=t.c \
 	 t_buf_seg.c \
 	 t_pck.c \
 	 t_pck_cmb.c \
-	 t_pck_fmt.c \
 	 t_wsk.c \
 	 t_oht.c \
 	 t_set.c \

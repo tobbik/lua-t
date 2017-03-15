@@ -7,8 +7,6 @@
  * \copyright See Copyright notice at the end of t.h
  */
 
-#include "t_buf.h"            // read/write buffers
-#include "t_oht.h"            // read arguments into struct, write result
 
 #define T_PCK_FLD_NAME  "Field"
 
@@ -111,7 +109,7 @@ int           t_pck_write     ( lua_State *L,       char *b, struct t_pck *p, si
 
 // helpers for the Packers
 struct t_pck *t_pck_getPacker ( lua_State *L, int pos, size_t *bo );
-size_t        t_pck_getSize( lua_State *L,  struct t_pck *p );
+size_t        t_pck_getSize   ( lua_State *L,  struct t_pck *p );
 
 struct t_pck *t_pck_fld_getPackFromStack( lua_State * L, int pos, struct t_pck_fld **pcf );
 
