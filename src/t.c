@@ -14,6 +14,39 @@
 
 #include "t.h"
 
+
+int
+t_getTypeByName( lua_State *L, const int pos, const char *dft, const struct t_typ *types )
+{
+	const char *name  = luaL_optstring( L, pos, dft );
+	int         i     = 0;
+
+	while (NULL != types[i].name)
+	{
+		if (0 == strncmp( name, types[i].name, strlen( types[i].name ) ))
+			return types[i].value;
+		i++;
+	}
+	return luaL_error( L, "illegal type `%s` in argument %d", name, pos );
+}
+
+
+const char
+*t_getTypeByValue( lua_State *L, int value, const struct t_typ *types )
+{
+	int         i     = 0;
+
+	while (NULL != types[i].name)
+	{
+		if (types[i].value == value)
+			return types[i].name;
+		i++;
+	}
+	luaL_error( L, "illegal value %d", value );
+	return NULL;
+}
+
+
 /** -------------------------------------------------------------------------
  * Get the proxy table index onto the stack.
  * Objects that use a proxy table such as T.Test or T.OrderedHashTable have an

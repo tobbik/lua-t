@@ -74,8 +74,8 @@ t_net_ip4_set( lua_State *L, int pos, struct sockaddr_in *ip )
 	memset( (char *) &(*ip), 0, sizeof( ip ) );
 	ip->sin_family = AF_INET;
 
-	// First element is nil assign 0.0.0.0 and no port
-	if (lua_isnoneornil( L, pos+0 ))
+	// No first element -> assign 0.0.0.0 and no port
+	if (lua_isnone( L, pos+0 ))
 	{
 		ip->sin_addr.s_addr = htonl( INADDR_ANY );
 		return;

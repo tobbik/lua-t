@@ -7,7 +7,7 @@ print( tcpsock.reuseaddr, tcpsock.reuseport )
 tcpsock.reuseaddr = true
 tcpsock.reuseport = true
 print( tcpsock.reuseaddr, tcpsock.reuseport )
-_,ip    = tcpsock:listen( ipAddr, port, 5 )
+ip    = tcpsock:listen( ipAddr, port, 5 )
 print( tcpsock, ip )
 rcvd = 0
 
