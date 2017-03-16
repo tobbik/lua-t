@@ -17,6 +17,7 @@ tcpsock,ip = t.Net.Socket.bind( ipAddr, port )
 --for k,v in pairs(getmetatable(ip)) do print( k, v ) end
 --for k,v in pairs(getmetatable(tcpsock)) do print( k, v ) end
 print( tcpsock, ip )
+tcpsock:listen(5)
 consock,cip = tcpsock:accept( )
 length = 0
 len    = 2

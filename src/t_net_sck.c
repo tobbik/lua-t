@@ -32,8 +32,9 @@
 /**--------------------------------------------------------------------------
  * Create a socket and push to LuaStack.
  * \param   L        Lua state.
- * \lparam  protocol string:'TCP', 'UDP', ...
- * \lparam  family   string:'ip4', 'ip6', 'raw'.
+ * \lparam  protocol string: 'TCP', 'UDP' ...
+ * \lparam  family   string: 'ip4', 'ip6', 'raw' ...
+ * \lparam  type     string: 'stream', 'datagram' ...
  * \usage   T.Net.Socket( )                   -> create TCP IPv4 Socket
  *          T.Net.Socket( 'TCP' )             -> create TCP IPv4 Socket
  *          T.Net.Socket( 'TCP', 'ip4' )      -> create TCP IPv4 Socket
@@ -44,22 +45,30 @@
 static int
 lt_net_sck__Call( lua_State *L )
 {
-	lua_remove( L, 1 );         // remove CLASS table
 	struct t_net_sck *sck;
-	int               protocol = t_net_getProtocolByName( L, 1 );
-	int               family   = t_getTypeByName( L, 2, "AF_INET", t_net_familyList );
-	int               type;
 
-	if (LUA_TSTRING == lua_type( L, 3 ))
-		type = t_getTypeByName( L, 3, "SOCK_STREAM", t_net_typeList );
-	else
-		type = (IPPROTO_TCP == protocol)
-		          ? SOCK_STREAM
-		          : (IPPROTO_UDP == protocol)
-		             ? SOCK_DGRAM
-		             : SOCK_RAW;
+	lua_remove( L, 1 );         // remove CLASS table
 
-	sck = t_net_sck_create_ud( L, (AF_UNIX==family) ? 0 :family, protocol, type, 1 );
+	//printf("CREATE PROTO:  "); t_stackDump( L );
+	t_net_getProtocolByName( L, 1, "TCP" );
+	//printf("CREATE FAMILY: "); t_stackDump( L );
+	t_getTypeByName( L, 2, "AF_INET", t_net_familyList );
+	//printf("CREATE TYPE:   "); t_stackDump( L );
+	t_getTypeByName( L, 3,
+	   (IPPROTO_TCP == luaL_checkinteger( L, 1 ))
+	      ? "SOCK_STREAM"
+	      : (IPPROTO_UDP == luaL_checkinteger( L, 1 ))
+	         ? "SOCK_DGRAM"
+	         : "SOCK_RAW",
+	   t_net_typeList );
+
+	//printf("CREATE SOCKET: "); t_stackDump( L );
+
+	sck = t_net_sck_create_ud( L,
+	   (AF_UNIX==luaL_checkinteger( L, 2 )) ? 0 : luaL_checkinteger( L, 2 ),
+	   luaL_checkinteger( L, 3 ),
+	   luaL_checkinteger( L, 1 ),
+	   1 );
 
 	return 1;
 }
@@ -75,21 +84,14 @@ lt_net_sck__Call( lua_State *L )
  * \return  struct t_net_sck* pointer to the socket struct.
  * --------------------------------------------------------------------------*/
 struct t_net_sck
-*t_net_sck_create_ud( lua_State *L, int family, int protocol, int type, int create )
+*t_net_sck_create_ud( lua_State *L, int family, int type, int protocol, int create )
 {
 	struct t_net_sck *sck  = (struct t_net_sck *) lua_newuserdata( L, sizeof( struct t_net_sck ) );
 
-	printf("%d(%s)  %d(%s)  %d(%s)\n",
-			protocol , t_net_getProtocolByValue( L, protocol ),
-			type     , t_getTypeByValue( L, type, t_net_typeList ),
-			family   , t_getTypeByValue( L, family, t_net_familyList ) );
 	if (create)
 		sck->fd = socket( family, type, protocol );
 	if (sck->fd == -1)
 		t_push_error( L, (create) ? "couldn't create socket" : "socket was already closed" );
-	sck->family   = family;
-	sck->protocol = protocol;
-	sck->type     = type;
 	luaL_getmetatable( L, T_NET_SCK_TYPE );
 	lua_setmetatable( L, -2 );
 
@@ -333,7 +335,7 @@ t_net_sck_accept( lua_State *L, const int pos )
 	socklen_t           cli_sz = sizeof( struct sockaddr_in );
 	size_t              one    = 1;
 
-	cli     = t_net_sck_create_ud( L, AF_INET, IPPROTO_TCP, 0, 0 );
+	cli     = t_net_sck_create_ud( L, AF_INET, SOCK_STREAM, IPPROTO_TCP, 0 );
 	si_cli  = t_net_ip4_create_ud( L );
 
 	if ( (cli->fd  =  accept( srv->fd, (struct sockaddr *) &(*si_cli), &cli_sz )) == -1 )
@@ -523,38 +525,6 @@ lt_net_sck_getsockname( lua_State *L )
 
 
 /** -------------------------------------------------------------------------
- * Get Info about a socket (family, proto, type ).
- * \param   L      Lua state.
- * \lparam  ud     T.Net.Socket userdata instance.
- * \lparam  ud     T.Net.Ip4 userdata instance.
- * \lreturn ud     T.Net.Ip4 userdata instance.
- * \return  int    # of values pushed onto the stack.
- *-------------------------------------------------------------------------*/
-static int
-lt_net_sck_getInfo( lua_State *L )
-{
-	struct t_net_sck   *sck    = t_net_sck_check_ud( L, 1, 1 );
-	struct sockaddr     adr;
-	socklen_t           adrLen = sizeof( adr );
-
-	t_net_sck_getSocketOption( L, sck, SO_TYPE, NULL );
-	lua_pushstring( L, t_getTypeByValue( L, lua_tointeger( L, -1 ), t_net_typeList ) );
-
-	t_net_sck_getSocketOption( L, sck, SO_PROTOCOL, NULL );
-	lua_pushstring( L, t_getTypeByValue( L, lua_tointeger( L, -1 ), t_net_protocolList ) );
-
-	if (0 == getsockname( sck->fd, &adr, &adrLen ))
-	{
-		lua_pushinteger( L, adr.sa_family );
-		lua_pushstring( L, t_getTypeByValue( L, lua_tointeger( L, -1 ), t_net_familyList ) );
-		return 6;
-	}
-
-	return 4;
-}
-
-
-/** -------------------------------------------------------------------------
  * Helper to take sockets from Lua tables to FD_SET.
  * Itertates over the table puls out the socket structs and adds the actual
  * sockets to the fd_set.
@@ -659,7 +629,8 @@ int
 t_net_sck_getSocketOption( lua_State *L, struct t_net_sck *sck, int sckOpt,
                                          const char       *sckOptName )
 {
-	//struct sockaddr   adr;
+	struct sockaddr   adr;
+	socklen_t      adrLen = sizeof( adr );
 	int               val;
 	socklen_t         len = sizeof( val );
 
@@ -670,16 +641,13 @@ t_net_sck_getSocketOption( lua_State *L, struct t_net_sck *sck, int sckOpt,
 			lua_pushboolean( L, (-1==val) ? 0 :(val & O_NONBLOCK) == O_NONBLOCK );
 			break;
 
+		// returning integer values
 		case SO_RCVLOWAT:
 		case SO_RCVTIMEO:
 		case SO_SNDBUF:
 		case SO_SNDLOWAT:
 		case SO_SNDTIMEO:
 		case SO_ERROR:
-#ifdef SO_PROTOCOL
-		case SO_PROTOCOL:
-#endif
-		case SO_TYPE:
 		case SO_RCVBUF:
 			if (getsockopt( sck->fd, SOL_SOCKET, sckOpt, &val, &len ) < 0)
 				lua_pushinteger( L, -1 );
@@ -687,6 +655,7 @@ t_net_sck_getSocketOption( lua_State *L, struct t_net_sck *sck, int sckOpt,
 				lua_pushinteger(L, val );
 			break;
 
+		// returning booleans flags
 		case SO_BROADCAST:
 		case SO_DEBUG:
 		case SO_DONTROUTE:
@@ -704,7 +673,37 @@ t_net_sck_getSocketOption( lua_State *L, struct t_net_sck *sck, int sckOpt,
 			else
 				lua_pushboolean(L, val );
 			break;
-		//case T_NET_SO_FAMILY:
+
+		// Special cases returning strings
+		case T_NET_SO_FAMILY:
+			if (0 == getsockname( sck->fd, &adr, &adrLen ))
+			{
+				lua_pushinteger( L, adr.sa_family );
+				t_getTypeByValue( L, -1, -1, t_net_familyList );
+			}
+			else
+				lua_pushnil( L );
+			break;
+#ifdef SO_PROTOCOL
+		case SO_PROTOCOL:
+			if (getsockopt( sck->fd, SOL_SOCKET, sckOpt, &val, &len ) < 0)
+				lua_pushnil( L );
+			else
+			{
+				lua_pushinteger( L, val );
+				t_net_getProtocolByValue ( L, -1, -1 );
+			}
+			break;
+#endif
+		case SO_TYPE:
+			if (getsockopt( sck->fd, SOL_SOCKET, sckOpt, &val, &len ) < 0)
+				lua_pushnil( L );
+			else
+			{
+				lua_pushinteger( L, val );
+				t_getTypeByValue( L, -1, -1, t_net_typeList );
+			}
+			break;
 
 		default:
 			// should never get here
@@ -725,13 +724,16 @@ t_net_sck_getSocketOption( lua_State *L, struct t_net_sck *sck, int sckOpt,
 static int
 lt_net_sck__index( lua_State *L )
 {
-	struct t_net_sck *sck         = t_net_sck_check_ud( L, 1, 1 );
-	int               sck_opt_idx = t_net_testOption( L, 2, t_net_sck_optionNames );
+	struct t_net_sck *sck  = t_net_sck_check_ud( L, 1, 1 );
 
-	if (-1 == sck_opt_idx)
+	lua_pushvalue( L, 2 );   // preserve the key
+	t_getTypeByName( L, -1, NULL, t_net_optionList );
+
+	if (lua_isnil( L, -1 ))
 	{
 		// in case no socket option was requested, relay functions from the
 		// metatable if available (send,recv,accept,bind etc.)
+		lua_pop( L, 1 );   // pop the nil
 		lua_getmetatable( L, 1 );
 		lua_pushvalue( L, 2 );
 		lua_gettable( L, -2 );
@@ -742,7 +744,7 @@ lt_net_sck__index( lua_State *L )
 		return t_net_sck_getSocketOption(
 			L,
 			sck,
-			t_net_sck_options[ sck_opt_idx ],
+			luaL_checkinteger( L, -1 ),
 			lua_tostring( L, 2 ) );
 	}
 }
@@ -773,10 +775,10 @@ t_net_sck_setSocketOption( lua_State *L, struct t_net_sck *sck , int sckOpt,
 				else
 					flags &= ~sckOpt;
 				if (fcntl( sck->fd, F_SETFL, flags ) < 0)
-					t_push_error( L, "Couldn't set socket option" );
+					return t_push_error( L, "Couldn't set socket option" );
 			}
 			else
-				t_push_error( L, "Failed to set socket option" );
+				return t_push_error( L, "Failed to set socket option" );
 			break;
 
 		case SO_RCVLOWAT:
@@ -786,7 +788,7 @@ t_net_sck_setSocketOption( lua_State *L, struct t_net_sck *sck , int sckOpt,
 		case SO_SNDTIMEO:
 		case SO_RCVBUF:
 			if (setsockopt( sck->fd, SOL_SOCKET, sckOpt, &val, sizeof( val ) ) < 0)
-				t_push_error( L, "Couldn't set socket option" );
+				return t_push_error( L, "Couldn't set socket option" );
 			break;
 
 		case SO_BROADCAST:
@@ -802,7 +804,7 @@ t_net_sck_setSocketOption( lua_State *L, struct t_net_sck *sck , int sckOpt,
 		case SO_REUSEPORT:
 #endif
 			if (setsockopt( sck->fd, SOL_SOCKET, sckOpt, &val, sizeof( val ) ) < 0)
-				t_push_error( L, "Couldn't set socket option" );
+				return t_push_error( L, "Couldn't set socket option" );
 			break;
 
 		case SO_ERROR:
@@ -810,10 +812,10 @@ t_net_sck_setSocketOption( lua_State *L, struct t_net_sck *sck , int sckOpt,
 		case SO_PROTOCOL:
 #endif
 		case SO_TYPE:
-			luaL_error( L, "can't set readonly socket option: %s", sckOptName );
+			return luaL_error( L, "can't set readonly socket option: %s", sckOptName );
 		default:
 			// should never get here
-			luaL_error( L, "unknown socket option: %s", sckOptName );
+			return luaL_error( L, "unknown socket option: %s", sckOptName );
 	}
 	return 0;
 }
@@ -830,12 +832,15 @@ t_net_sck_setSocketOption( lua_State *L, struct t_net_sck *sck , int sckOpt,
 static int
 lt_net_sck__newindex( lua_State *L )
 {
-	int               sck_opt_idx = luaL_checkoption( L, 2, NULL, t_net_sck_optionNames );
+	lua_pushvalue( L, 2 );
+	t_getTypeByName( L, 4, NULL, t_net_optionList );
+	if (lua_isnil( L, 4 ))
+		return luaL_error( L, "unknown socket option: %s", lua_tostring( L, 2 ) );
 
 	return t_net_sck_setSocketOption(
 		L,
 		t_net_sck_check_ud( L, 1, 1 ),
-		t_net_sck_options[ sck_opt_idx ],
+		lua_tointeger( L, 4 ),
 		lua_tostring( L, 2 ),
 		(lua_isboolean( L, 3 ))
 			? lua_toboolean( L, 3 )
@@ -885,7 +890,6 @@ static const luaL_Reg t_net_sck_m [] =
 	, { "getsockname" , lt_net_sck_getsockname }
 	// generic net functions -> reuse functions
 	, { "getFd"       , lt_net_sck_getFd }
-	, { "getInfo"     , lt_net_sck_getInfo }
 	//, { "setOption",   lt_net_setoption }
 	, { NULL          , NULL }
 };

@@ -42,32 +42,30 @@
 //#define IS_LITTLE_ENDIAN (*(uint16_t*)"\0\1">>8)
 //#define IS_BIG_ENDIAN (*(uint16_t*)"\1\0">>8)
 
-#define TSWAP(type,a,b) do{type SWAP_tmp= b; b= a; a= SWAP_tmp;}while(0)
+#define TSWAP(type,a,b) do{type SWAP_tmp=b; b=a; a=SWAP_tmp;}while(0)
 
 
 // --------------------------- DATA TYPES --------------------------------------
-// name:integer pairs for grouped constants such as AF_INET or IPPROTO_TCP ...
+// name:integer pairs for grouped constants such as AF_INET, SOCK_STREAM, etc.
 struct t_typ {
 	const char *name;
 	const int   value;
 };
 
 
-
 // global helpers
-void t_getProxyTableIndex( lua_State *L );
-void t_getProxyTable( lua_State *L, int pos );
-int  t_getFromProxyTable( lua_State *L );
-void t_fmtStackItem( lua_State *L, int idx, int no_tostring );
-void t_stackDump   ( lua_State *L );
-void t_stackPrint  ( lua_State *L, int first, int last, int no_tostring );
-int  t_push_error  ( lua_State *L, const char *fmt, ... );
-int  t_checkTableType( lua_State *L, int pos, int check, const char *type );
-int         t_getTypeByName ( lua_State *L, const int pos, const char *dft, const struct t_typ *types );
-const char *t_getTypeByValue( lua_State *L, const int value, const struct t_typ *types );
+void t_getProxyTableIndex ( lua_State *L );
+void t_getProxyTable      ( lua_State *L, int pos );
+int  t_getFromProxyTable  ( lua_State *L );
 
-// global helper functions
-uint16_t get_crc16( const unsigned char *data, size_t size );
+void t_fmtStackItem  ( lua_State *L, int idx, int no_tostring );
+void t_stackDump     ( lua_State *L );
+void t_stackPrint    ( lua_State *L, int first, int last, int no_tostring );
+int  t_push_error    ( lua_State *L, const char *fmt, ... );
+int  t_checkTableType( lua_State *L, int pos, int check, const char *type );
+
+void t_getTypeByName ( lua_State *L, int pos, const char *dft, const struct t_typ *types );
+void t_getTypeByValue( lua_State *L, int pos, const int   dft, const struct t_typ *types );
 
 // sub-types/modules names
 #define T_AEL_NAME "Loop"

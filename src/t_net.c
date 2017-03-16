@@ -31,17 +31,33 @@
 
 
 // ---------------------- HELPERS ---------------------------------------------
-int
-t_net_getProtocolByName( lua_State *L, const int pos )
+
+/**--------------------------------------------------------------------------
+ * Read protocol name from stack and overwrite it with protocol number.
+ * \param   L        Lua state.
+ * \param   pos      Position of name on Lua stack.
+ * \param   dft      char*; Default name if pos is empty.
+ * \lparam  string   Name of protocol.
+ * \lreturn integer  Value of protocol.
+ * --------------------------------------------------------------------------*/
+void
+t_net_getProtocolByName( lua_State *L, int pos, const char *dft )
 {
-	const char      *pName = luaL_optstring( L, pos, "TCP" );
+	const char      *pName = (NULL == dft)
+	                          ? luaL_checkstring( L, pos )
+	                          : luaL_optstring( L, pos, dft );
 	struct protoent  result_buf;
 	struct protoent *result;
+#if defined(__linux__)
 	char             buf[ BUFSIZ ];
+#endif
+	// get absolute stack position
+	pos = (pos < 0) ? lua_gettop( L ) + pos + 1 : pos;
+	luaL_argcheck( L, pos-1 <= lua_gettop( L ), pos, "can't convert protocol name, stack too short" );
 
 #if defined(__linux__)
 	luaL_argcheck( L,
-		getprotobyname_r( pName, &result_buf, buf, sizeof( buf ), &result) == 0,
+		0 == getprotobyname_r( pName, &result_buf, buf, sizeof( buf ), &result ),
 		pos,
 		"unknown protocol name" );
 #else
@@ -49,28 +65,48 @@ t_net_getProtocolByName( lua_State *L, const int pos )
 	luaL_argcheck( L, result != NULL, pos, "unknown protocol name" );
 	result_buf = *result;
 #endif
-	return result_buf.p_proto;
+	lua_pushinteger( L, result_buf.p_proto );
+	if (lua_gettop( L ) > pos)
+		lua_replace( L, pos );
 }
 
 
-char
-*t_net_getProtocolByValue( lua_State *L, const int prot )
+/**--------------------------------------------------------------------------
+ * Read protocol value from stack and overwrite it with protocol name.
+ * \param   L        Lua state.
+ * \param   pos      Position of name on Lua stack.
+ * \param   dft      int*; Default protocol number if pos is empty.
+ * \lparam  string   Value of protocol.
+ * \lreturn integer  Name of protocol.
+ * --------------------------------------------------------------------------*/
+void
+t_net_getProtocolByValue( lua_State *L, int pos, const int dft )
 {
+	const int        val   = (dft < 1)
+	                          ? luaL_checkinteger( L, pos )
+	                          : luaL_optinteger( L, pos, dft );
 	struct protoent  result_buf;
 	struct protoent *result;
+#if defined(__linux__)
 	char             buf[ BUFSIZ ];
+#endif
+	// get absolute stack position
+	pos = (pos < 0) ? lua_gettop( L ) + pos + 1 : pos;
+	luaL_argcheck( L, pos-1 <= lua_gettop( L ), pos, "can't convert protocol, stack too short" );
 
 #if defined(__linux__)
 	luaL_argcheck( L,
-		getprotobynumber_r( prot, &result_buf, buf, sizeof( buf ), &result) == 0,
+		0 == getprotobynumber_r( val, &result_buf, buf, sizeof( buf ), &result),
 		0,
-		"unknown protocol number" );
+		"unknown protocol value" );
 #else
-	result = getprotobyname( prot );
-	luaL_argcheck( L, result != NULL, 0, "unknown protocol value %d" );
+	result = getprotobynumber( val );
+	luaL_argcheck( L, result != NULL, 0, "unknown protocol value" );
 	result_buf = *result;
 #endif
-	return result_buf.p_name;
+	lua_pushstring( L, result_buf.p_name );
+	if (lua_gettop( L ) > pos)
+		lua_replace( L, pos );
 }
 
 
@@ -104,7 +140,7 @@ t_net_getdef( lua_State *L, const int pos, struct t_net_sck **sck, struct sockad
 		// in all shortcuts of listen(ip,port), bind(ip,port), connect(ip,port)
 		// It defaults to IPv4 and TCP, for others Families and Protocols must be
 		// created explicitely
-		*sck = t_net_sck_create_ud( L, AF_INET, IPPROTO_TCP, SOCK_STREAM, 1  );
+		*sck = t_net_sck_create_ud( L, AF_INET, SOCK_STREAM, IPPROTO_TCP, 1  );
 		lua_insert( L, pos+0 );
 		returnables++;
 	}

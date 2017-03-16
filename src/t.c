@@ -2,7 +2,7 @@
 */
 /**
  * \file      t.c
- * \brief     Global wrapper and packer for lua-t library.
+ * \brief     Global setup for lua-t library.
  *            Exports sub libraries. Defines global helper functions.
  * \author    tkieslich
  * \copyright See Copyright notice at the end of t.h
@@ -15,35 +15,73 @@
 #include "t.h"
 
 
-int
-t_getTypeByName( lua_State *L, const int pos, const char *dft, const struct t_typ *types )
+/**--------------------------------------------------------------------------
+ * Read type name from stack and overwrite it with type value.
+ * \param   L        Lua state.
+ * \param   pos      Position of name on Lua stack.
+ * \param   dft      char*; Default type name if pos is empty.
+ * \param   types    array of t_typ*;
+ * \lparam  string   Name of type.
+ * \lreturn integer  Value of type.
+ * --------------------------------------------------------------------------*/
+void
+t_getTypeByName( lua_State *L, int pos, const char *dft, const struct t_typ *types )
 {
-	const char *name  = luaL_optstring( L, pos, dft );
+	const char *name  = (NULL == dft )
+	                     ? luaL_checkstring( L, pos )
+	                     : luaL_optstring( L, pos, dft );
 	int         i     = 0;
+	// get absolute stack position
+	pos = (pos < 0) ? lua_gettop( L ) + pos + 1 : pos;
 
 	while (NULL != types[i].name)
 	{
 		if (0 == strncmp( name, types[i].name, strlen( types[i].name ) ))
-			return types[i].value;
+			break;
 		i++;
 	}
-	return luaL_error( L, "illegal type `%s` in argument %d", name, pos );
+	if (NULL == types[i].name)
+		lua_pushnil( L );
+		//return luaL_error( L, "illegal type `%s` in argument %d", name, pos );
+	else
+		lua_pushinteger( L, types[i].value );
+	if (lua_gettop( L ) > pos)
+		lua_replace( L, pos );
 }
 
 
-const char
-*t_getTypeByValue( lua_State *L, int value, const struct t_typ *types )
+/**--------------------------------------------------------------------------
+ * Read type value from stack and overwrite it with type name.
+ * \param   L        Lua state.
+ * \param   pos      Position of name on Lua stack.
+ * \param   dft      int; Default type value if pos is empty.
+ * \param   types    array of t_typ*;
+ * \lparam  string   Value of type.
+ * \lreturn integer  Name of type.
+ * --------------------------------------------------------------------------*/
+void
+t_getTypeByValue( lua_State *L, int pos, const int dft, const struct t_typ *types )
 {
-	int         i     = 0;
+	const int   val = (dft < 1)
+	                     ? luaL_checkinteger( L, pos )
+	                     : luaL_optinteger( L, pos, dft );
+	int         i   = 0;
+	// get absolute stack position
+	pos = (pos < 0) ? lua_gettop( L ) + pos + 1 : pos;
 
 	while (NULL != types[i].name)
 	{
-		if (types[i].value == value)
-			return types[i].name;
+		if (types[i].value == val)
+			break;
 		i++;
 	}
-	luaL_error( L, "illegal value %d", value );
-	return NULL;
+	if (NULL == types[i].name)
+		lua_pushnil( L );
+		//luaL_error( L, "illegal value %d", value );
+	else
+		lua_pushstring( L, types[i].name );
+	if (lua_gettop( L ) > pos)
+		lua_replace( L, pos );
 }
 
 
