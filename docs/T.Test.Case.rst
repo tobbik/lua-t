@@ -6,7 +6,7 @@ Overview
 ========
 
 T.Test.Case is an internal class providing functionality around functions
-executed within T.Test suites.  A **test**  or **test_cb** named function
+executed within T.Test suites.  A **test_**  or **test_cb_** named function
 handed to a T.Test suite instance will be converted to a T.Test.Case
 instance.
 
@@ -91,7 +91,7 @@ Class Metamembers
 
 ``T.Test.Case tc = T.Test.Case( [ 'test_name', function ] )   [__call]``
   Creates a new T.Test.Case.  Takes ``test_name`` as and the function to be
-  executed.  If the test name starts with ``test_cb`` the test will be
+  executed.  If the test name starts with ``test_cb_`` the test will be
   constructed as callback based Test.Case and during execution time a
   callback will be passed in a second parameter (after ``self``).
 

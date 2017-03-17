@@ -88,9 +88,9 @@ t_tst_getMetrics( lua_State *L )
 	for (idx=0; idx<luaL_len( L, 1 ); idx++)
 	{
 		lua_geti( L, 1, idx+1 );                 //S: ste cse
-		pass  += (t_tst_cse_hasField( L, "pass", 0 )) ? 1 : 0;
-		skip  += (t_tst_cse_hasField( L, "skip", 0 )) ? 1 : 0;
-		todo  += (t_tst_cse_hasField( L, "todo", 0 )) ? 1 : 0;
+		pass  += (t_tst_cse_hasField( L, -1, "pass", 0 )) ? 1 : 0;
+		skip  += (t_tst_cse_hasField( L, -1, "skip", 0 )) ? 1 : 0;
+		todo  += (t_tst_cse_hasField( L, -1, "todo", 0 )) ? 1 : 0;
 		lua_getfield( L, -1, "executionTime" );  //S: ste cse tim
 		since += t_tim_getms( t_tim_check_ud( L, -1, 1 ) );
 		lua_pop( L, 2 );                         //S: ste
@@ -274,7 +274,7 @@ lt_tst__newindex( lua_State *L )
 	t_getProxyTable( L, 1 );              //S: tbl nme fnc
 
 	// insert a testcase
-	if (0==strncasecmp( name, "test", 4 ))
+	if (0==strncasecmp( name, "test_", 5 ))
 	{
 		// assigning a new test
 		if (lua_isfunction( L, 3 ))
@@ -320,15 +320,16 @@ lt_tst__tostring( lua_State *L )
 	for (i=0; i<t_len; i++)
 	{
 		lua_geti( L, 1, i+1 );                //S: ste 1.. cse
-		todo = t_tst_cse_hasField( L, "todo", 0 );
+		todo = t_tst_cse_hasField( L, -1, "todo", 0 );
 		lua_insert( L, 2 );   // make sure the test case is at stackpos 2
 		// passed: ok/not ok/not run
 		lua_getfield( L, 2, "pass" );         //S: ste 1.. cse pss
 		if (lua_isnil( L, -1 ))
 		{
 			lua_pop( L, 1 );             // pop pass nil
-			lua_pushstring( L, "not run" );
-			concat++;
+			lua_pushstring( L, "not run - " );
+			t_tst_cse_getDescription( L, 2 );
+			concat+=2;
 		}
 		else
 		{

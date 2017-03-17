@@ -100,9 +100,9 @@ Constructing a T.Test Suite
 ---------------------------
 
 To create a T.Test.Case in a T.Test suite a function must be assigned to the
-suite which name **must begin** with ``test*``.  When such a function with a
+suite which name **must begin** with ``test_*``.  When such a function with a
 proper name is passed to T.Test it will invoke the T.Test.Case constructor
-with the proper parameters.  If the function name starts with ``test_cb*``
+with the proper parameters.  If the function name starts with ``test_cb_*``
 the constructed T.Test.Case will be able to execute asynchronously because
 the test runner will pass in a ``done`` callback.  Any other value that gets
 assigned to the table will be simply an instance variable that within the
@@ -183,7 +183,7 @@ Instance Members
 ----------------
 
 T.Test instances do not have any special instance members.  Any test that
-gets passed to t as a "test__" named test function gets converted to a
+gets passed to t as a "test_" named test function gets converted to a
 T.Test.Case instance.
 
 

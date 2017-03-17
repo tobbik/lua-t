@@ -196,9 +196,9 @@ t_tst_cse_create( lua_State *L )
 	luaL_argcheck( L, lua_type( L, -1 ) == LUA_TFUNCTION, -1,
 		"testcase value must be a function." );
 	name = luaL_checkstring( L, -2 );
-	if (0==strncasecmp( name, "test_cb", 7 ))
+	if (0==strncasecmp( name, "test_cb_", 8 ))
 		lua_pushstring( L, "callback" );
-	else if (0==strncasecmp( name, "test_cr", 7 ))
+	else if (0==strncasecmp( name, "test_cr_", 8 ))
 		lua_pushstring( L, "coroutine" );
 	else
 		lua_pushstring( L, "standard" );
@@ -299,13 +299,13 @@ t_tst_cse_getDescription( lua_State *L, int pos )
 	// description
 	lua_getfield( L, pos, "description" );    //S: cse dsc
 	concat++;                          //S: … dsc
-	if (t_tst_cse_hasField( L, "skip", 1 ))
+	if (t_tst_cse_hasField( L, pos, "skip", 1 ))
 	{
 		lua_pushstring( L, " # SKIP: " );
 		lua_insert( L, -2 );            //S: … nme skp
 		concat+=2;
 	}
-	if (t_tst_cse_hasField( L, "todo", 1 ))
+	if (t_tst_cse_hasField( L, pos, "todo", 1 ))
 	{
 		lua_pushstring( L, " # TODO: " );
 		lua_insert( L, -2 );            //S: … nme skp
@@ -390,8 +390,8 @@ t_tst_cse_afterEach( lua_State *L )
 	int is_cb, is_todo, is_skip;
 	lua_pushvalue( L, lua_upvalueindex( 2 ) );        //S: cse
 	is_cb   = t_tst_cse_isType( L, 1, "callback" );
-	is_todo = t_tst_cse_hasField( L, "todo", 0 );
-	is_skip = t_tst_cse_hasField( L, "skip", 0 );
+	is_todo = t_tst_cse_hasField( L, -1, "todo", 0 );
+	is_skip = t_tst_cse_hasField( L, -1, "skip", 0 );
 	lua_getfield( L, -1, "pass" );
 	if (lua_isnil( L, -1 ))                           // unless traceback set it to failed
 	{
@@ -547,10 +547,10 @@ lt_tst_cse__call( lua_State *L )
  * \return  int/bool Is it marked as "field"
  * --------------------------------------------------------------------------*/
 int
-t_tst_cse_hasField( lua_State *L, const char *fld, int leave )
+t_tst_cse_hasField( lua_State *L, const int pos, const char *fld, int leave )
 {
 	int retval = 0;
-	lua_getfield( L, -1, fld );
+	lua_getfield( L, pos, fld );
 	if (! lua_isnil(L, -1 ))
 		retval = (lua_isboolean( L, -1 )) ? lua_toboolean( L, -1 ) : 1;
 	if (leave && retval)

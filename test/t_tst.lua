@@ -12,7 +12,12 @@ local tests = {
 			beforeEach   = function( s )   s.something = 1 end,
 			afterEach    = function( s )   s.something = nil end,
 			doStuff      = function( s,x ) s.something = s.something +x end,
-			test_success = function( s ) assert( true,  "This better be true" ) end
+			test_success = function( s )
+				assert( true,  "This better be true" )
+				local a = s.something
+				s:doStuff( 14 )
+				assert( s.something == a+14 )
+			end
 		} )
 	end,
 
@@ -58,18 +63,22 @@ local tests = {
 
 	test_TodoSuccess = function( self, done )
 		Test.Case.describe( "A successful TODO should fail the suite" )
-		self.t.test_Test = function( s ) Test.Case.todo('todo'); assert( true,  "This better works" ) end
+		self.t.test_Test = function( s ) Test.Case.todo('todo me'); assert( true,  "This better works" ) end
 		assert( not self.t(), "Test suite should have failed" )
-		assert( self.t.test_Test.todo == "todo", "Test Todo reason should be set" )
+		assert( self.t.test_Test.todo == "todo me", "Test Todo reason should be set" )
 		assert( self.t.test_Test.pass, "Test.test_Test case suite should have passed" )
+		assert( tostring(self.t.test_Test):match( "# TODO: todo me" ),
+			"`# TODO: __reason__` shall occur in test description" )
 	end,
 
 	test_Skip = function( self, done )
 		Test.Case.describe( "Skip should skip test" )
-		self.t.test_Test = function( s ) Test.Case.skip('skip me'); assert( false,  "This better fails" ) end
+		self.t.test_Test = function( s ) Test.Case.skip('skip me'); assert( false, "This better fails" ) end
 		assert( self.t(), "Test suite should not have failed because failing test got skipped" )
 		assert( self.t.test_Test.skip == "skip me", "Test Skip reason should be set" )
 		assert( self.t.test_Test.pass, "Test.test_Test case suite should have passed" )
+		assert( tostring(self.t.test_Test):match( "# SKIP: skip me" ),
+			"`# SKIP: __reason__` shall occur in test description" )
 	end,
 
 	test_Description = function( self, done )
@@ -78,6 +87,23 @@ local tests = {
 		assert( self.t(), "Test suite should not have failed." )
 		assert( self.t.test_Test.description == "describe me", "Test Description reason should be set" )
 		assert( self.t.test_Test.pass, "Test.test_Test case suite should have passed" )
+	end,
+
+	test_Testype = function( self, done )
+		Test.Case.describe( "naming test_cb, test_cr or test_ should create respective type" )
+		self.t.test_Test    = function( s ) s=2 end
+		self.t.test_cb_Test = function( s, d ) s=3, d() end
+		self.t.test_cr_Test = function( s ) s=4 end
+		self.t.testTest    = function( s ) s=2 end
+		self.t.test_cbTest = function( s ) s=3 end
+		self.t.test_crTest = function( s ) s=4 end
+		--assert( self.t(), "Test suite should not have failed." )
+		assert( self.t.test_Test.testtype    == "standard",  "testtype should be standard -> is " .. self.t.test_Test.testtype)
+		assert( self.t.test_cb_Test.testtype == "callback",  "testtype should be callback -> is " .. self.t.test_cb_Test.testtype)
+		assert( self.t.test_cr_Test.testtype == "coroutine", "testtype should be coroutine -> is " .. self.t.test_cr_Test.testtype)
+		assert( type(self.t.testTest) == "function",  "type should be function -> is " .. type( self.t.testTest ) )
+		assert( self.t.test_cbTest.testtype == "standard",  "testtype should be standard -> is " .. self.t.test_cbTest.testtype)
+		assert( self.t.test_crTest.testtype == "standard", "testtype should be standard -> is " .. self.t.test_crTest.testtype)
 	end,
 }
 
