@@ -17,19 +17,29 @@ API
 General API remarks
 -------------------
 
-Quite a few methods and functions make heavy use of argument type
-inspection.  Notably, bind(), connect() and listen() determine the
-significance of an argument by type:
+The API strives to be both flexible and convienient.  For that reason some
+methods are heavily overloaded.
 
- - If the first argument is a ``T.Net.Address``, bind(), connect() or
-   listen() at that address and just returns the socket.
- - If the first argument is a string, interpret as an IP address, and create
-   an IP address with that value which is returned as second return value.
- - If the first argument is an integer assume it as port and assume the IP
-   address to be either `0.0.0.0` or `localhost` depending on the function.
-   Create the ``T.Net.Address`` instance and return as second value.
 
-Similarly send() and recv() act for both UDP and TDP type sockets.  In case
+Shortcut methods to create Sockets and Adresses
+------------------------------------------------
+
+
+The methods ``bind()``, ``connect()`` and ``listen()`` determine the
+significance of an argument by type.  This allows to use them as methods on
+an already instantiated object or as a classlevelfunction that can create
+objects and perform operations on it in one step.  The reason for the
+flexibility is the underlying functions for bind, listen and connect that
+are called on a class level or on an instance level(method) are the same.
+
+
+Overloaded send() and recv() methods
+------------------------------------
+
+Similarly send() and recv() act for all type of sockets.  In the socket is
+unbound it requieres a ``T.Net.Address`` instance to be passed which is then
+the first parameter.  Otherwise the first parameter is the message to be
+sent.
 of UDP the user is supposed to specify an address to send the datagram to.
 As a result the `send()` function inspects the first argument.  If it is a
 ``T.Net.Address`` it'll be used to send the message to it. If it's ``nil``
@@ -60,35 +70,80 @@ Class Members
   Creates an IPv4 TCP ``T.Net.Socket`` instance which is bound to the
   address requested via the ``ip`` string and ``port`` number. Ip string
   is accepted as **aaa.bbb.ccc.ddd**.  If the ip string is omitted
-  the it will automatically bind to **0.0.0.0**, the IP_ANY interface.  In
-  this case the port is the only argument which is mandatory.
+  the it will automatically bind to **0.0.0.0**, the IP_ANY interface.
 
-``T.Net.Socket sck, T.Net.Address a = T.Net.Socket.bind( T.Net.Address addr )``
+``T.Net.Socket sck = T.Net.Socket.bind( T.Net.Address addr )``
   Creates an IPv4 TCP ``T.Net.Socket`` instance which is bound to the
   T.Net.Address.
 
-``T.Net.Socket sck, T.Net.Address a = T.Net.Socket.listen( [string ip,] int port, int backlog )``
+  .. code:: lua
+  
+    -- meanings: ip,adr -> instances of T.Net.Address
+    --           sck    -> instance of T.Net.Socket
+    --           port   -> integer specifying the port
+    --           host   -> string specifying the IP address
+   
+    sck,adr = Socket.bind(  )               -- Sck IPv4(TCP); Adr 0.0.0.0:(0)
+    sck,adr = Socket.bind( host )           -- Sck IPv4(TCP); Adr host:(0)
+    sck,adr = Socket.bind( host, port )     -- Sck IPv4(TCP); Adr host:port
+    sck,_   = Socket.bind( ip )             -- Sck IPv4(TCP)
+
+
+``T.Net.Socket sck, T.Net.Address a = T.Net.Socket.listen( [string ip, int port, int backlog] )``
   Creates an IPv4 TCP ``T.Net.Socket`` instance which is listening
   connections on the address requested via the ``ip`` string and ``port``
   number. Ip string is accepted as **aaa.bbb.ccc.ddd**.  If the ip string is
-  omitted it will automatically bind to **0.0.0.0**, the IP_ANY interface.
-  In this case the port is the only argument which is mandatory.
-  ``backlog`` is optional and defaults to 5.
+  omitted it will automatically bind to **0.0.0.0**, the INADDR_ANY interface.
 
-``T.Net.Socket sck, T.Net.Address a = T.Net.Socket.listen( T.Net.Address addr, int backlog )``
+``T.Net.Socket sck = T.Net.Socket.listen( [T.Net.Address addr, int backlog] )``
   Creates an IPv4 TCP ``T.Net.Socket`` instance which is listening to the
-  T.Net.Address.  ``backlog`` is optional and defaults to 5.
+  T.Net.Address.  ``backlog`` is optional and defaults to 5.  
+  ``backlog`` is optional and defaults to SOMAXCONN.  Here are all
+  permutations of using the listen() class function:
 
-``T.Net.Socket sck, T.Net.Address a = T.Net.Socket.connect( [string ip,] int port )``
+  .. code:: lua
+  
+    -- meanings: _, __  -> placeholders for nil
+    --           ip,adr -> instances of T.Net.Address
+    --           sck    -> instance of T.Net.Socket
+    --           xxxxx  -> random port number choosen by the system if
+    --                     T.Net.Address didn't have a port specified before
+    --                     listen()
+    --           bl     -> integer specifying the backlog
+    --           port   -> integer specifying the port
+    --           host   -> string specifying the IP address
+   
+    sck,adr = Socket.listen(  )               -- Sck IPv4(TCP); Adr 0.0.0.0:xxxxx
+    sck,adr = Socket.listen( bl )             -- Sck IPv4(TCP); Adr 0.0.0.0:xxxxx
+    sck,adr = Socket.listen( host )           -- Sck IPv4(TCP); Adr host:(0)
+    sck,adr = Socket.listen( host, port )     -- Sck IPv4(TCP); Adr host:port
+    sck,adr = Socket.listen( host, port, bl ) -- Sck IPv4(TCP); Adr host:port
+    sck,_   = Socket.listen( ip )             -- Sck IPv4(TCP)
+    sck,_   = Socket.listen( ip, bl )         -- Sck IPv4(TCP)
+
+
+``T.Net.Socket sck, T.Net.Address a = T.Net.Socket.connect( [string ip, int port] )``
   Creates an IPv4 TCP ``T.Net.Socket`` instance which is connected to the
-  address requested via the ``ip`` string and ``port`` number. Ip string
+  address requested via the ``ip`` string and ``port`` number.  Ip string
   is accepted as **aaa.bbb.ccc.ddd**.  If the ip string is omitted
   the it will automatically connect to **127.0.0.1**, the `localhost`
-  interface.  In this case the port is the only argument which is mandatory.
 
-``T.Net.Socket sck, T.Net.Address a = T.Net.Socket.connect( T.Net.Address addr )``
+``T.Net.Socket sck = T.Net.Socket.connect( T.Net.Address addr )``
   Creates an IPv4 TCP ``T.Net.Socket`` instance which is connected to the
   T.Net.Address.
+
+  .. code:: lua
+  
+    -- meanings: ip,adr -> instances of T.Net.Address
+    --           sck    -> instance of T.Net.Socket
+    --           port   -> integer specifying the port
+    --           host   -> string specifying the IP address
+   
+    sck,adr = Socket.connect(  )           -- Sck IPv4(TCP); Adr 0.0.0.0:(0)
+    sck,adr = Socket.connect( host )       -- Sck IPv4(TCP); Adr host:(0)
+    sck,adr = Socket.connect( host, port ) -- Sck IPv4(TCP); Adr host:port
+    sck,_   = Socket.connect( ip )         -- Sck IPv4(TCP)
+
 
 
 Class Metamembers
@@ -97,25 +152,40 @@ Class Metamembers
 T.Net.Socket has no clone constructor because sockets are system resources
 which can't be duplicated.
 
-``T.Net.Socket sck = T.Net.Socket( [string protocol, string domain] )   [__call]``
+``T.Net.Socket sck = T.Net.Socket( [string protocol, string family, string type] )   [__call]``
   Instantiate a new T.Net.Socket object.  If no arguments are passed it will
   assume *TCP* and *ip4* as default values.  If only one argument is passed
   it will be interpreted as ``protocol`` and *ip4* is assumed as default
-  domain.
+  family.  Type can be ``stream``, ``datagram`` or ``raw`` or any of the `C`
+  based identifiers such as ``SOCK_DCCP`` and others.  If not passed it will
+  be infered from the protocol.
 
 
 Instance Members
 ----------------
 
-``T.Net.Address addr = T.Net.Socket sck:bind( [string ip,] int port )``
+``T.Net.Address addr = T.Net.Socket sck:bind( [string ip, int port ])``
   Creates and returns an ``T.Net.Address`` instance defined by the ``ip``
   string and ``port`` number and binds the ``sck`` instance to it.  Ip string
   is accepted as **aaa.bbb.ccc.ddd**.  If the ip string is omitted it will
-  automatically bind to **0.0.0.0**, the IP_ANY interface.  In this case the
-  port is the only argument which is mandatory.
+  automatically bind to **0.0.0.0**, the IP_ANY interface.
 
 ``T.Net.Socket sck:bind( T.Net.Address addr )``
   Binds the ``T.Net.Socket`` instance to the ``T.Net.Address``.
+
+  .. code:: lua
+    
+    -- meanings: _, __  -> placeholders for nil
+    --           ip,adr -> instances of T.Net.Address
+    --           sck    -> instance of T.Net.Socket
+    --           port   -> integer specifying the port
+    --           host   -> string specifying the IP address
+   
+    _,__    = Socket.bind( sck )             -- just listen; assume bound socket
+    _,__    = Socket.bind( sck, ip )         -- perform bind and listen
+    adr,__  = Socket.bind( sck, host )       -- Adr host:0
+    adr,__  = Socket.bind( sck, host, port ) -- Adr host:port
+
 
 ``T.Net.Address addr = T.Net.Socket sck:connect( [string ip,] int port )``
   Creates and returns an ``T.Net.Address`` instance defined by the ``ip``
@@ -126,6 +196,19 @@ Instance Members
 
 ``T.Net.Socket sck:connect( T.Net.Address addr )``
   Connects the ``T.Net.Socket`` instance to the ``T.Net.Address``.
+
+  .. code:: lua
+    
+    -- meanings: _, __  -> placeholders for nil
+    --           ip,adr -> instances of T.Net.Address
+    --           sck    -> instance of T.Net.Socket
+    --           port   -> integer specifying the port
+    --           host   -> string specifying the IP address
+   
+    _,__    = Socket.connect( sck )                 -- just listen; assume bound socket
+    _,__    = Socket.connect( sck, ip )             -- perform bind and listen
+    adr,__  = Socket.connect( sck, host )           -- Adr host:0
+    adr,__  = Socket.connect( sck, host, port )     -- Adr host:port
 
 ``T.Net.Address addr = T.Net.Socket sck:listen( [string ip,] int port, int backlog )``
   Creates and returns an ``T.Net.Address`` instance defined by the ``ip``
@@ -138,6 +221,27 @@ Instance Members
 ``T.Net.Socket sck:listen( T.Net.Address addr, int backlog )``
   Makes the ``T.Net.Socket`` instance to the ``T.Net.Address``.  Backlog
   defaults to 5.
+
+  .. code:: lua
+    
+    -- meanings: _, __  -> placeholders for nil
+    --           ip,adr -> instances of T.Net.Address
+    --           sck    -> instance of T.Net.Socket
+    --           xxxxx  -> random port number choosen by the system if
+    --                     T.Net.Address didn't have a port specified before
+    --                     listen()
+    --           bl     -> integer specifying the backlog
+    --           port   -> integer specifying the port
+    --           host   -> string specifying the IP address
+   
+    _,__    = Socket.listen( sck )                 -- just listen; assume bound socket
+    _,__    = Socket.listen( sck, bl )             -- just listen; assume bound socket
+    _,__    = Socket.listen( sck, ip )             -- perform bind and listen
+    _,__    = Socket.listen( sck, ip, bl )         -- perform bind and listen
+    adr,__  = Socket.listen( sck, host )           -- Adr host:xxxxx
+    adr,__  = Socket.listen( sck, host, port )     -- Adr host:port
+    adr,__  = Socket.listen( sck, host, port, bl ) -- Adr host:port
+
 
 ``T.Net.Socket client, T.NetAddress addr = T.Net.Socket sck:accept( )``
   Accepts a new connection the ``T.Net.Socket`` instance.  Returns the

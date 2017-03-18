@@ -36,7 +36,7 @@ t_getTypeByName( lua_State *L, int pos, const char *dft, const struct t_typ *typ
 
 	while (NULL != types[i].name)
 	{
-		if (0 == strncmp( name, types[i].name, strlen( types[i].name ) ))
+		if (0 == strncmp( name, types[i].name, strlen( name ) ))
 			break;
 		i++;
 	}
@@ -259,7 +259,7 @@ t_push_error( lua_State *L, const char *fmt, ... )
 		lua_pushvfstring( L, fmt, argp );
 		va_end( argp );
 		if (0==errno) lua_pushstring( L, "\n" );
-		else          lua_pushfstring( L, ": %s\n", strerror( errno ) );
+		else          lua_pushfstring( L, " (%s)\n", strerror( errno ) );
 		lua_concat( L, 3 );
 		return lua_error( L );
 	}

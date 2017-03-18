@@ -65,7 +65,7 @@ lt_net_sck__Call( lua_State *L )
 	//printf("CREATE SOCKET: "); t_stackDump( L );
 
 	sck = t_net_sck_create_ud( L,
-	   (AF_UNIX==luaL_checkinteger( L, 2 )) ? 0 : luaL_checkinteger( L, 2 ),
+	   (AF_UNIX==luaL_checkinteger( L, 2 )) ? 0 : lua_tointeger( L, 2 ),
 	   luaL_checkinteger( L, 3 ),
 	   luaL_checkinteger( L, 1 ),
 	   1 );
@@ -197,33 +197,37 @@ t_net_sck_listen( lua_State *L, const int pos )
 {
 	struct t_net_sck   *sck = t_net_sck_check_ud( L, pos, 0 );
 	struct sockaddr_in *adr = t_net_ip4_check_ud( L, pos+((NULL==sck) ? 0:1), 0 );
-	int                 bl  = SOMAXCONN, returnables = 0, doBind = 0;
+	struct sockaddr_in  bnd;   ///< if needed, the address the port is bound to
+	int                 bl  = SOMAXCONN, returnables = 0;
 
-	if (lua_isinteger( L, -1 ) && LUA_TSTRING != lua_type( L, -2))
+	if (lua_isinteger( L, -1 ) && LUA_TSTRING != lua_type( L, -2 ))
 	{
 		bl = lua_tointeger( L, -1 );
 		lua_pop( L, 1 );
 	}
-	if ((NULL!=sck && lua_isstring( L, pos+1 )) || LUA_TSTRING == lua_type( L, pos ) ||
-       (NULL!=adr) || pos-1 == lua_gettop( L ) || (NULL==sck && NULL==adr))
-	{
-		doBind = 1;
-		printf("%d %d %d - ", pos, lua_gettop(L), doBind ); t_stackDump(L);
+	if (NULL!=sck && 1==lua_gettop( L ))
+		; // No address, or host like info given -> assume it's bound already
+	else
 		returnables += t_net_getdef( L, pos, &sck, &adr );
-	}
-	t_stackDump(L);
 
-	if (doBind)
+	if (adr != NULL)
 	{
-		printf("BINDING sock[%d] to %s:%d\n", sck->fd, inet_ntoa( adr->sin_addr ), ntohs( adr->sin_port ) );
 		if (bind( sck->fd , (struct sockaddr*) &(*adr), sizeof( struct sockaddr ) ) == -1)
 			return t_push_error( L, "ERROR binding socket to %s:%d",
 					 inet_ntoa( adr->sin_addr ),
 					 ntohs( adr->sin_port ) );
 	}
 
-	if (listen( sck->fd, bl ) == -1)
+	if (-1 == listen( sck->fd, bl ))
 		return t_push_error( L, "ERROR listen to socket" );
+
+	// adr is, if created, by t_net_getdef(), which guarantees an unset port to
+	// be 0
+	if (NULL!=adr && 0 == ntohs( adr->sin_port ))
+	{
+		if (t_net_sck_getsockname( sck, &bnd ))
+			adr->sin_port = bnd.sin_port;
+	}
 
 	return returnables;
 }

@@ -111,16 +111,22 @@ t_net_getProtocolByValue( lua_State *L, int pos, const int dft )
 
 
 /**--------------------------------------------------------------------------
- * Evaluate elements on stack to be definitions or instances of sock and ip.
- * This is a helper function to handle possible input scenarios for many
- * functions such as bind, listen, connect etc.
- * possible combinations:
- *  - ...( sck, ip )
- *  - ...( ip )     TODO: FIX THIS
- *  - ...( sck, 'ipString', port )
- *  - ...( sck, port )           -- IP will be 0.0.0.0
- *  - ...( sck, 'ipstring' )     -- Port unassigned
- *  - ...( sck )                 -- Port unassigned, IP 0.0.0.0
+ * Evaluate elements on stack to be definitions or instances of sck and adr.
+ * \detail  This is a helper function to handle possible input scenarios for
+ *          functions bind(), listen() and connect().  Socket.func(sck, ...)
+ *          is the same as sck:func( ... ) -> use same function definition as
+ *          class function and as method.  Possible combinations:
+ *
+ *          IPv4(TCP), Adr 0.0.0.0:(0) = Socket.func( )
+ *          IPv4(TCP)                  = Socket.func( ip )
+ *          IPv4(TCP), ipString:port   = Socket.func( 'ipString', port )
+ *          IPv4(TCP), 0.0.0.0:port    = Socket.func( port )
+ *
+ *          (no retrun values)         = Socket.func( sck, ip )
+ *          Adr ipString:port          = Socket.func( sck, 'ipString', port )
+ *          Adr ipString:(0)           = Socket.func( sck, 'ipstring' )
+ *          Adr 0.0.0.0:port           = Socket.func( sck, port )
+ *          Adr 0.0.0.0:(0)            = Socket.func( sck )
  *
  * \param   L      Lua state.
  * \param   int    Position on the stack.
@@ -134,7 +140,6 @@ t_net_getdef( lua_State *L, const int pos, struct t_net_sck **sck, struct sockad
 	*sck = t_net_sck_check_ud( L, pos+0,                      0 );
 	*adr = t_net_ip4_check_ud( L, pos+((NULL==*sck) ? 0 : 1), 0 );
 
-	t_stackDump(L);
 	if (NULL == *sck)
 	{
 		// in all shortcuts of listen(ip,port), bind(ip,port), connect(ip,port)
@@ -150,32 +155,13 @@ t_net_getdef( lua_State *L, const int pos, struct t_net_sck **sck, struct sockad
 	if (NULL == *adr)
 	{
 		*adr = t_net_ip4_create_ud( L );
-		t_net_ip4_set( L, pos+returnables, *adr );
 		lua_insert( L, pos+returnables );
 		returnables++;
+		t_net_ip4_set( L, pos+returnables, *adr );
 	}
 	else
 		lua_remove( L, pos+returnables );
-	t_stackDump(L);
 	return returnables;
-}
-
-/** -------------------------------------------------------------------------
- * get socket otions from an array like luaL_checkoption but no error
- * \param   L      Lua state.
- * \param   pos    stack position of string to test.
- * \param   lst    NULL Terminated array of strings.
- * \return  idx    index in array where string occurs, -1 if not found.
- *-------------------------------------------------------------------------*/
-int
-t_net_testOption( lua_State *L, int pos, const char *const lst[] )
-{
-	const char *nme = luaL_checkstring( L, pos );
-	int i;
-	for (i=0; lst[i]; i++)
-		if (strcmp( lst[i], nme ) == 0)
-			return i;
-	return -1;
 }
 
 

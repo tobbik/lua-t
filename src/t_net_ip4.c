@@ -71,7 +71,7 @@ t_net_ip4_set( lua_State *L, int pos, struct sockaddr_in *ip )
 	int           port;
 	const char   *ips;      /// IP String aaa.bbb.ccc.ddd
 
-	memset( (char *) &(*ip), 0, sizeof( ip ) );
+	memset( (void *) &(*ip), 0, sizeof( struct sockaddr_in ) );
 	ip->sin_family = AF_INET;
 
 	// No first element -> assign 0.0.0.0 and no port
@@ -104,6 +104,7 @@ t_net_ip4_set( lua_State *L, int pos, struct sockaddr_in *ip )
 		ip->sin_port   = htons( port );
 		lua_remove( L, pos+0 );
 	}
+	// no need to else set .port = 0 because memset( *, 0) at beginning of function
 }
 
 

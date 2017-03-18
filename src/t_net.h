@@ -48,7 +48,6 @@ struct t_net_sck {
 void   t_net_getProtocolByName ( lua_State *L, int pos, const char *dft );
 void   t_net_getProtocolByValue( lua_State *L, int pos, const int val );
 int    t_net_getdef            ( lua_State *L, const int pos, struct t_net_sck **sck, struct sockaddr_in **adr );
-int    t_net_testOption        ( lua_State *L, int pos, const char *const lst[] );
 
 // t_net_ifc.c
 int    luaopen_t_net_ifc   ( lua_State *L );
@@ -91,6 +90,7 @@ static const struct t_typ t_net_familyList[ ] = {
 #ifdef AF_INET
 	{ "AF_INET"           , AF_INET          },     //  2 IP protocol family.
 	{ "ip4"               , AF_INET          },
+	{ "Ip4"               , AF_INET          },
 	{ "IP4"               , AF_INET          },
 	{ "IPv4"              , AF_INET          },
 #endif
@@ -118,6 +118,7 @@ static const struct t_typ t_net_familyList[ ] = {
 #ifdef AF_INET6
 	{ "AF_INET6"          , AF_INET6         },     // 10 IP version 6.
 	{ "ip6"               , AF_INET6         },
+	{ "Ip6"               , AF_INET6         },
 	{ "IP6"               , AF_INET6         },
 	{ "IPv6"              , AF_INET6         },
 #endif
@@ -231,14 +232,23 @@ static const struct t_typ t_net_typeList[ ] = {
 #ifdef SOCK_STREAM
 	{ "SOCK_STREAM"       , SOCK_STREAM      },  // 1         Sequenced, reliable, connection-based byte streams.
 	{ "stream"            , SOCK_STREAM      },
+	{ "Stream"            , SOCK_STREAM      },
+	{ "STREAM"            , SOCK_STREAM      },
 #endif
 #ifdef SOCK_DGRAM
 	{ "SOCK_DGRAM"        , SOCK_DGRAM       },  // 2         Connectionless, unreliable datagrams of fixed maximum length.
+	{ "dgram"             , SOCK_DGRAM       },
+	{ "Dgram"             , SOCK_DGRAM       },
+	{ "DGRAM"             , SOCK_DGRAM       },
 	{ "datagram"          , SOCK_DGRAM       },
+	{ "Datagram"          , SOCK_DGRAM       },
+	{ "DATAGRAM"          , SOCK_DGRAM       },
 #endif
 #ifdef SOCK_RAW
 	{ "SOCK_RAW"          , SOCK_RAW         },  // 3         Raw protocol interface.
 	{ "raw"               , SOCK_RAW         },
+	{ "Raw"               , SOCK_RAW         },
+	{ "RAW"               , SOCK_RAW         },
 #endif
 #ifdef SOCK_RDM
 	{ "SOCK_RDM"          , SOCK_RDM         },  // 4         Reliably-delivered messages
@@ -271,7 +281,7 @@ static const struct t_typ t_net_typeList[ ] = {
 
 static const struct t_typ t_net_optionList[ ] = {
 	// fcntl based options
-	  { "nonblock"          , O_NONBLOCK       },
+	{ "nonblock"          , O_NONBLOCK       },
 
 	// getsockopt/setsockopt integers
 	{ "recvlow"           , SO_RCVLOWAT      },
