@@ -3,6 +3,16 @@
 ---
 -- \file    t_net_sck_bind.lua
 -- \brief   Test assuring Socket.bind() and socket:bind() handles all use cases
+-- \details All tested permutations in this suite
+--          Socket.bind() --> creates a TCP IPv4 Socket and 0.0.0.0:0 address
+--          Socket.bind( port ) --> creates TCP IPv4 Socket and 0.0.0.0:port address
+--          Socket.bind(host,port) --> creates TCP IPv4 Socket and address
+--          Socket.bind(address) --> creates TCP IPv4 Socket but no address
+--          Socket.bind(address) --> returning socket is bound; getsockname()
+--          s:bind() --> creates a 0.0.0.0:0 address
+--          s:bind( port ) --> creates 0.0.0.0:port address
+--          s:bind(host,port) --> creates address
+--          s:bind(address) --> creates nothing but does bind
 
 local T       = require( 't' )
 local Test    = T.Test
