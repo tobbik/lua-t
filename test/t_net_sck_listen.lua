@@ -24,22 +24,9 @@ local T       = require( 't' )
 local Test    = T.Test
 local Socket  = T.Net.Socket
 local Address = T.Net.IPv4
+local assrt   = T.require( 't_net_assert' )
 
 local tests = {
-	assertSocket = function( self, sck, pro, fam, typ )
-		assert( pro == sck.protocol, "Protocol should be "..pro.." but is ".. tostring(sck.protocol) )
-		assert( fam == sck.family  , "Family should be "  ..pro.." but is ".. tostring(sck.family) )
-		assert( typ == sck.type    , "Type should be "    ..pro.." but is ".. tostring(sck.type) )
-	end,
-	assertAddress = function( self, adr, host, port )
-		local h,p = adr:get( )
-		assert( host == h, "Host should be "..host.." but is "..tostring(h) )
-		if type( port ) ~= 'number' then
-			assert( port ~= 0, "Port should not be 0" )
-		else
-			assert( port == p, "Port should be "..port.." but is "..tostring(p) )
-		end
-	end,
 
 	beforeEach = function( self )
 	end,
@@ -55,16 +42,16 @@ local tests = {
 	test_SListenEmpty = function( self )
 		Test.Case.describe( "Socket.listen( ) --> Sck IPv4(TCP); Adr 0.0.0.0:xxxxx" )
 		self.sck,self.adr  = Socket.listen( )
-		self:assertSocket(  self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
-		self:assertAddress( self.adr, '0.0.0.0', 'any' )
+		assrt.Socket(  self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
+		assrt.Address( self.adr, '0.0.0.0', 'any' )
 		assert( self.sck:getsockname() == self.adr, "Bound and returned address should match" )
 	end,
 
 	test_SListenBacklog = function( self )
 		Test.Case.describe( "Socket.listen( 5 ) --> Sck IPv4(TCP); Adr 0.0.0.0:xxxxx" )
 		self.sck,self.adr  = Socket.listen( 5 )
-		self:assertSocket(  self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
-		self:assertAddress( self.adr, '0.0.0.0', 'any' )
+		assrt.Socket(  self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
+		assrt.Address( self.adr, '0.0.0.0', 'any' )
 		assert( self.sck:getsockname() == self.adr, "Bound and returned address should match" )
 	end,
 
@@ -75,7 +62,7 @@ local tests = {
 		local addr      = Address( host, port )
 		self.sck,self._ = Socket.listen( addr )
 		assert( self._ == nil, "Only a socket should have been returned" )
-		self:assertSocket(  self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
+		assrt.Socket(  self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
 		assert( self.sck:getsockname() == addr, "Bound address should equal input" )
 	end,
 
@@ -86,7 +73,7 @@ local tests = {
 		local addr      = Address( host, port )
 		self.sck,self._ = Socket.listen( addr, 5 )
 		assert( self._ == nil, "Only a socket should have been returned" )
-		self:assertSocket(  self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
+		assrt.Socket(  self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
 		assert( self.sck:getsockname() == addr, "Bound address should equal input" )
 	end,
 
@@ -94,9 +81,9 @@ local tests = {
 		Test.Case.describe( "Socket.listen( host ) --> Sck IPv4(TCP), Adr host:xxxxx" )
 		local host        = T.Net.Interface( 'default' ).address:get()
 		self.sck,self.adr = Socket.listen( host )
-		self:assertSocket(  self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
-		self:assertAddress( self.adr, host, 'any' )
-		self:assertAddress( self.sck:getsockname(), host, 'any' )
+		assrt.Socket(  self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
+		assrt.Address( self.adr, host, 'any' )
+		assrt.Address( self.sck:getsockname(), host, 'any' )
 	end,
 
 	test_SListenHostAddress = function( self )
@@ -104,8 +91,8 @@ local tests = {
 		local host        = T.Net.Interface( 'default' ).address:get()
 		local port        = 8000
 		self.sck,self.adr = Socket.listen( host, port )
-		self:assertSocket(  self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
-		self:assertAddress( self.adr, host, port )
+		assrt.Socket(  self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
+		assrt.Address( self.adr, host, port )
 		assert( self.sck:getsockname() == self.adr, "Bound and returned address should match" )
 	end,
 
@@ -126,8 +113,8 @@ local tests = {
 		local host        = T.Net.Interface( 'default' ).address:get()
 		local port        = 8000
 		self.sck,self.adr = Socket.listen( host, port, 5 )
-		self:assertSocket(  self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
-		self:assertAddress( self.adr, host, port )
+		assrt.Socket(  self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
+		assrt.Address( self.adr, host, port )
 		assert( self.sck:getsockname() == self.adr, "Bound and returned address should match" )
 	end,
 
@@ -137,12 +124,12 @@ local tests = {
 	-- ##################################################################
 
 	test_sListen = function( self )
-		Test.Case.describe( "sck.listen( ) --> void (Assume Socket isn already bound)" )
+		Test.Case.describe( "sck.listen( ) --> void (Assume Socket is already bound)" )
 		local host        = T.Net.Interface( 'default' ).address:get()
 		local port        = 8000
 		self.sck,self.adr = Socket.bind( host, port )
-		self:assertSocket( self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
-		self:assertAddress( self.adr, host, port )
+		assrt.Socket( self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
+		assrt.Address( self.adr, host, port )
 		self._,self.__  = self.sck:listen( )
 		assert( self._  == nil, "No values should have been returned" )
 		assert( self.__ == nil, "No values should have been returned" )
@@ -150,12 +137,12 @@ local tests = {
 	end,
 
 	test_sListenBacklog = function( self )
-		Test.Case.describe( "sck.listen( backlog ) --> void (Assume Socket isn already bound)" )
+		Test.Case.describe( "sck.listen( backlog ) --> void (Assume Socket is already bound)" )
 		local host        = T.Net.Interface( 'default' ).address:get()
 		local port        = 8000
 		self.sck,self.adr = Socket.bind( host, port )
-		self:assertSocket(  self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
-		self:assertAddress( self.adr, host, port )
+		assrt.Socket(  self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
+		assrt.Address( self.adr, host, port )
 		self._,self.__  = self.sck:listen( 5 )
 		assert( self._  == nil, "No values should have been returned" )
 		assert( self.__ == nil, "No values should have been returned" )
@@ -190,10 +177,10 @@ local tests = {
 		Test.Case.describe( "sck.listen( host ) --> Adr host:xxxxx" )
 		local host       = T.Net.Interface( 'default' ).address:get()
 		self.sck         = Socket( )
-		self:assertSocket(  self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
+		assrt.Socket(  self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
 		self.adr,self._  = self.sck:listen( host )
 		assert( self._  == nil, "No values should have been returned" )
-		self:assertAddress( self.adr, host, 'any' )
+		assrt.Address( self.adr, host, 'any' )
 		assert( self.sck:getsockname() == self.adr, "Bound address should equal input" )
 	end,
 
@@ -202,10 +189,10 @@ local tests = {
 		local host       = T.Net.Interface( 'default' ).address:get()
 		local port       = 8000
 		self.sck        = Socket( )
-		self:assertSocket(  self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
+		assrt.Socket(  self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
 		self.adr,self._  = self.sck:listen( host, port )
 		assert( self._  == nil, "No values should have been returned" )
-		self:assertAddress( self.adr, host, port )
+		assrt.Address( self.adr, host, port )
 		assert( self.sck:getsockname() == self.adr, "Bound address should equal input" )
 	end,
 
@@ -214,10 +201,10 @@ local tests = {
 		local host       = T.Net.Interface( 'default' ).address:get()
 		local port       = 8000
 		self.sck        = Socket( )
-		self:assertSocket(  self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
+		assrt.Socket(  self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
 		self.adr,self._  = self.sck:listen( host, port, 5 )
 		assert( self._  == nil, "No values should have been returned" )
-		self:assertAddress( self.adr, host, port )
+		assrt.Address( self.adr, host, port )
 		assert( self.sck:getsockname() == self.adr, "Bound address should equal input" )
 	end,
 

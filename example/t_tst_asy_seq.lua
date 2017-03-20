@@ -32,8 +32,13 @@ tbl = {
 		print("BEFOREALL")
 		self.a = 10
 		self.b = 20
-		self.loop    = Loop(20)
-		done( self )
+		self.loop  = Loop(20)
+		done( )
+	end,
+	afterAll = function( self, done )
+		print("afterall")
+		self.loop  = nil
+		done( )
 	end,
 	
 	beforeEach_cb = function( self, done )

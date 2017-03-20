@@ -4,23 +4,13 @@
 -- \file    t_net_sck_bind.lua
 -- \brief   Test assuring Socket.bind() and socket:bind() handles all use cases
 
-T       = require( 't' )
-Test    = T.Test
-Socket  = T.Net.Socket
-Address = T.Net.IPv4
+local T       = require( 't' )
+local Test    = T.Test
+local Socket  = T.Net.Socket
+local Address = T.Net.IPv4
+local assrt   = T.require( 't_net_assert' )
 
 local tests = {
-	assertSocket = function( self, sck, pro, fam, typ )
-		assert( pro == sck.protocol, "Protocol should be "..pro.." but is ".. tostring(sck.protocol) )
-		assert( fam == sck.family  , "Family should be "  ..pro.." but is ".. tostring(sck.family) )
-		assert( typ == sck.type    , "Type should be "    ..pro.." but is ".. tostring(sck.type) )
-	end,
-	assertAddress = function( self, adr, host, port )
-		local h,p = adr:get( )
-		assert( host == h, "Host should be "..host.." but is "..tostring(h) )
-		assert( port == p, "Port should be "..port.." but is "..tostring(p) )
-	end,
-
 	beforeEach = function( self )
 	end,
 
@@ -35,8 +25,8 @@ local tests = {
 	test_SBindCreateSockAndInanyAddress = function( self )
 		Test.Case.describe( "Socket.bind() --> creates a TCP IPv4 Socket and 0.0.0.0:0 address" )
 		self.sck, self.address = Socket.bind()
-		self:assertSocket(  self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
-		self:assertAddress( self.address, '0.0.0.0', 0 )
+		assrt.Socket(  self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
+		assrt.Address( self.address, '0.0.0.0', 0 )
 	end,
 
 	test_SBindPrivPortThrowsPermission = function( self )
@@ -55,8 +45,8 @@ local tests = {
 		local port  = 8000
 		self.sck, self.address = Socket.bind( port )
 		local ip,prt = self.address:get()
-		self:assertSocket(  self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
-		self:assertAddress( self.address, '0.0.0.0', port )
+		assrt.Socket(  self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
+		assrt.Address( self.address, '0.0.0.0', port )
 	end,
 
 	test_SBindHostPortCreateSockAndAddress = function( self )
@@ -64,8 +54,8 @@ local tests = {
 		local host   = T.Net.Interface( 'default' ).address:get()
 		local port   = 8000
 		self.sck, self.address = Socket.bind( host, port )
-		self:assertSocket(  self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
-		self:assertAddress( self.address, host, 8000 )
+		assrt.Socket(  self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
+		assrt.Address( self.address, host, 8000 )
 	end,
 
 	test_SBindAddressCreateSockOnly = function( self )
@@ -74,7 +64,7 @@ local tests = {
 		local port   = 8000
 		local addr   = Address( host, port )
 		self.sck, self.__ = Socket.bind( addr )
-		self:assertSocket(  self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
+		assrt.Socket(  self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
 		assert( nil  == self.__, "The address should not be returned" )
 	end,
 
@@ -84,7 +74,7 @@ local tests = {
 		local port   = 8000
 		local addr   = Address( host, port )
 		self.sck, self.address = Socket.bind( addr )
-		self:assertSocket(  self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
+		assrt.Socket(  self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
 		assert( addr  == self.sck:getsockname(), "The addresses should be equal" )
 	end,
 
@@ -97,7 +87,7 @@ local tests = {
 		self.sck     = Socket()
 		self.address, self._ = self.sck:bind()
 		assert( nil  == self._, "The socket should not be returned" )
-		self:assertAddress( self.address, '0.0.0.0', 0 )
+		assrt.Address( self.address, '0.0.0.0', 0 )
 	end,
 
 	test_sBindPortCreateInAnyAddress = function( self )
@@ -106,7 +96,7 @@ local tests = {
 		self.sck             = Socket()
 		self.address, self._ = self.sck:bind( port)
 		assert( nil  == self._, "The socket should not be returned" )
-		self:assertAddress( self.address, '0.0.0.0', 8000 )
+		assrt.Address( self.address, '0.0.0.0', 8000 )
 	end,
 
 	test_sBindHostPortCreateAddress = function( self )
@@ -116,7 +106,7 @@ local tests = {
 		self.sck             = Socket()
 		self.address, self._ = self.sck:bind( host, port )
 		assert( nil  == self._, "The socket should not be returned" )
-		self:assertAddress( self.address, host, 8000 )
+		assrt.Address( self.address, host, 8000 )
 	end,
 
 	test_sBindAddressCreateNothingButBinds = function( self )

@@ -337,7 +337,6 @@ t_net_sck_accept( lua_State *L, const int pos )
 	struct t_net_sck   *cli;                                        // accepted socket
 	struct sockaddr_in *si_cli;                                     // peer address
 	socklen_t           cli_sz = sizeof( struct sockaddr_in );
-	size_t              one    = 1;
 
 	cli     = t_net_sck_create_ud( L, AF_INET, SOCK_STREAM, IPPROTO_TCP, 0 );
 	si_cli  = t_net_ip4_create_ud( L );
@@ -345,8 +344,6 @@ t_net_sck_accept( lua_State *L, const int pos )
 	if ( (cli->fd  =  accept( srv->fd, (struct sockaddr *) &(*si_cli), &cli_sz )) == -1 )
 		return t_push_error( L, "couldn't accept from socket" );
 
-	if (-1 == setsockopt( cli->fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one) ) )
-		return t_push_error( L, "couldn't make client socket reusable" );
 	return 2;
 }
 

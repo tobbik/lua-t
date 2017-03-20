@@ -35,7 +35,7 @@ tbl = {
 		print(tm)
 		self.a = 10
 		self.b = 20
-		self.loop:addTimer( tm, done, self )
+		self.loop:addTimer( tm, done )
 		-- loop:run() blocks further execution but the done function here is the
 		-- test runner itself.  When it get's executed it will loop over all test
 		-- cases which in turn puts all of them on the loop pretty much in parallel
@@ -45,7 +45,7 @@ tbl = {
 	afterAll = function( self, done )
 		self.loop:stop()
 		print("-------------------------------AFTER ALL")
-		done( self )
+		done( )
 	end,
 }
 for i=1,25 do

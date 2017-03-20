@@ -24,7 +24,6 @@ methods are heavily overloaded.
 Shortcut methods to create Sockets and Adresses
 ------------------------------------------------
 
-
 The methods ``bind()``, ``connect()`` and ``listen()`` determine the
 significance of an argument by type.  This allows to use them as methods on
 an already instantiated object or as a classlevelfunction that can create
@@ -82,12 +81,11 @@ Class Members
     --           sck    -> instance of T.Net.Socket
     --           port   -> integer specifying the port
     --           host   -> string specifying the IP address
-   
+    
     sck,adr = Socket.bind(  )               -- Sck IPv4(TCP); Adr 0.0.0.0:(0)
     sck,adr = Socket.bind( host )           -- Sck IPv4(TCP); Adr host:(0)
     sck,adr = Socket.bind( host, port )     -- Sck IPv4(TCP); Adr host:port
     sck,_   = Socket.bind( ip )             -- Sck IPv4(TCP)
-
 
 ``T.Net.Socket sck, T.Net.Address a = T.Net.Socket.listen( [string ip, int port, int backlog] )``
   Creates an IPv4 TCP ``T.Net.Socket`` instance which is listening
@@ -112,7 +110,7 @@ Class Members
     --           bl     -> integer specifying the backlog
     --           port   -> integer specifying the port
     --           host   -> string specifying the IP address
-   
+    
     sck,adr = Socket.listen(  )               -- Sck IPv4(TCP); Adr 0.0.0.0:xxxxx
     sck,adr = Socket.listen( bl )             -- Sck IPv4(TCP); Adr 0.0.0.0:xxxxx
     sck,adr = Socket.listen( host )           -- Sck IPv4(TCP); Adr host:(0)
@@ -120,7 +118,6 @@ Class Members
     sck,adr = Socket.listen( host, port, bl ) -- Sck IPv4(TCP); Adr host:port
     sck,_   = Socket.listen( ip )             -- Sck IPv4(TCP)
     sck,_   = Socket.listen( ip, bl )         -- Sck IPv4(TCP)
-
 
 ``T.Net.Socket sck, T.Net.Address a = T.Net.Socket.connect( [string ip, int port] )``
   Creates an IPv4 TCP ``T.Net.Socket`` instance which is connected to the
@@ -138,12 +135,9 @@ Class Members
     --           sck    -> instance of T.Net.Socket
     --           port   -> integer specifying the port
     --           host   -> string specifying the IP address
-   
-    sck,adr = Socket.connect(  )           -- Sck IPv4(TCP); Adr 0.0.0.0:(0)
-    sck,adr = Socket.connect( host )       -- Sck IPv4(TCP); Adr host:(0)
-    sck,adr = Socket.connect( host, port ) -- Sck IPv4(TCP); Adr host:port
+    
     sck,_   = Socket.connect( ip )         -- Sck IPv4(TCP)
-
+    sck,adr = Socket.connect( host, port ) -- Sck IPv4(TCP); Adr host:port
 
 
 Class Metamembers
@@ -180,12 +174,11 @@ Instance Members
     --           sck    -> instance of T.Net.Socket
     --           port   -> integer specifying the port
     --           host   -> string specifying the IP address
-   
-    _,__    = Socket.bind( sck )             -- just listen; assume bound socket
-    _,__    = Socket.bind( sck, ip )         -- perform bind and listen
-    adr,__  = Socket.bind( sck, host )       -- Adr host:0
-    adr,__  = Socket.bind( sck, host, port ) -- Adr host:port
-
+    
+    adr,_   = sck.bind( )            -- bind to 0.0.0.0:0
+    _,__    = sck.bind( ip )         -- bind Adr
+    adr,__  = sck.bind( host )       -- Adr host:0
+    adr,__  = sck.bind( host, port ) -- Adr host:port
 
 ``T.Net.Address addr = T.Net.Socket sck:connect( [string ip,] int port )``
   Creates and returns an ``T.Net.Address`` instance defined by the ``ip``
@@ -204,11 +197,9 @@ Instance Members
     --           sck    -> instance of T.Net.Socket
     --           port   -> integer specifying the port
     --           host   -> string specifying the IP address
-   
-    _,__    = Socket.connect( sck )                 -- just listen; assume bound socket
-    _,__    = Socket.connect( sck, ip )             -- perform bind and listen
-    adr,__  = Socket.connect( sck, host )           -- Adr host:0
-    adr,__  = Socket.connect( sck, host, port )     -- Adr host:port
+    
+    _,__    = sck.connect( ip )         -- perform bind and listen
+    adr,__  = sck.connect( host, port ) -- Adr host:port
 
 ``T.Net.Address addr = T.Net.Socket sck:listen( [string ip,] int port, int backlog )``
   Creates and returns an ``T.Net.Address`` instance defined by the ``ip``
@@ -233,7 +224,7 @@ Instance Members
     --           bl     -> integer specifying the backlog
     --           port   -> integer specifying the port
     --           host   -> string specifying the IP address
-   
+    
     _,__    = Socket.listen( sck )                 -- just listen; assume bound socket
     _,__    = Socket.listen( sck, bl )             -- just listen; assume bound socket
     _,__    = Socket.listen( sck, ip )             -- perform bind and listen
@@ -241,7 +232,6 @@ Instance Members
     adr,__  = Socket.listen( sck, host )           -- Adr host:xxxxx
     adr,__  = Socket.listen( sck, host, port )     -- Adr host:port
     adr,__  = Socket.listen( sck, host, port, bl ) -- Adr host:port
-
 
 ``T.Net.Socket client, T.NetAddress addr = T.Net.Socket sck:accept( )``
   Accepts a new connection the ``T.Net.Socket`` instance.  Returns the

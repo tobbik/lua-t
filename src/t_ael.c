@@ -146,7 +146,6 @@ void
 t_ael_executehandle( lua_State *L, struct t_ael *ael, int fd, enum t_ael_t t )
 {
 	int n;
-	printf("%d\n", fd);
 
 	//printf( "%d    %d    %d    %d\n", fd,  ael->fd_set[ fd ]->rR ,  ael->fd_set[ fd ]->wR, t );
 	if( t & T_AEL_RD )
@@ -464,9 +463,7 @@ lt_ael_run( lua_State *L )
 	while (ael->run)
 	{
 		if (t_ael_poll_impl( L, ael ) < 0)
-		{
 			return t_push_error( L, "Failed to continue" );
-		}
 		// if there are no events left in the loop stop processing
 		ael->run = (NULL==ael->tm_head && ael->max_fd<1) ? 0 : ael->run;
 	}
