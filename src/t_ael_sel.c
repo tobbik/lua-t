@@ -17,7 +17,14 @@
 #include "t_ael.h"
 
 #include <string.h>           // memcpy
+#include <stdlib.h>           // malloc, free
 
+struct t_ael_ste {
+	fd_set             rfds;
+	fd_set             wfds;
+	fd_set             rfds_w;   ///<
+	fd_set             wfds_w;   ///<
+};
 
 /**--------------------------------------------------------------------------
  * Select() specific initialization of t_ael.
@@ -25,13 +32,25 @@
  * \return  void
  * --------------------------------------------------------------------------*/
 void
-t_ael_create_ud_impl( struct t_ael *ael )
+t_ael_create_ud_impl( lua_State *L, struct t_ael *ael )
 {
-	FD_ZERO( &ael->rfds );
-	FD_ZERO( &ael->wfds );
-	FD_ZERO( &ael->rfds_w );
-	FD_ZERO( &ael->wfds_w );
+	struct t_ael_ste *state = (struct t_ael_ste *) malloc( sizeof( struct t_ael_ste ) );
+	if (NULL == state)
+		luaL_error( L, "couldn't allocate memory for loop" );
+	FD_ZERO( &state->rfds );
+	FD_ZERO( &state->wfds );
+	FD_ZERO( &state->rfds_w );
+	FD_ZERO( &state->wfds_w );
+	ael->state = state;
 }
+
+
+void t_ael_free_impl( struct t_ael *ael )
+{
+	struct t_ael_ste  *state = ael->state;
+	free(  state );
+}
+
 
 
 /**--------------------------------------------------------------------------
@@ -43,8 +62,9 @@ t_ael_create_ud_impl( struct t_ael *ael )
 void
 t_ael_addhandle_impl( struct t_ael *ael, int fd, enum t_ael_t t )
 {
-	if (t & T_AEL_RD)    FD_SET( fd, &ael->rfds );
-	if (t & T_AEL_WR)    FD_SET( fd, &ael->wfds );
+	struct t_ael_ste *state = (struct t_ael_ste *) ael->state;
+	if (t & T_AEL_RD)    FD_SET( fd, &state->rfds );
+	if (t & T_AEL_WR)    FD_SET( fd, &state->wfds );
 }
 
 
@@ -57,8 +77,9 @@ t_ael_addhandle_impl( struct t_ael *ael, int fd, enum t_ael_t t )
 void
 t_ael_removehandle_impl( struct t_ael *ael, int fd, enum t_ael_t t )
 {
-	if (t & T_AEL_RD)    FD_CLR( fd, &ael->rfds );
-	if (t & T_AEL_WR)    FD_CLR( fd, &ael->wfds );
+	struct t_ael_ste *state = (struct t_ael_ste *) ael->state;
+	if (t & T_AEL_RD)    FD_CLR( fd, &state->rfds );
+	if (t & T_AEL_WR)    FD_CLR( fd, &state->wfds );
 }
 
 
@@ -85,18 +106,19 @@ t_ael_removehandle_impl( struct t_ael *ael, int fd, enum t_ael_t t )
 int
 t_ael_poll_impl( lua_State *L, struct t_ael *ael )
 {
-	int              i,r;
-	struct timeval  *tv;
-	struct timeval   rt;           ///< timer to calculate runtime over this poll
-	enum t_ael_t     t;            ///< handle action per fd (read/write/either)
+	int               i,r;
+	struct timeval   *tv;
+	struct timeval    rt;           ///< timer to calculate runtime over this poll
+	enum t_ael_t      t;            ///< handle action per fd (read/write/either)
+	struct t_ael_ste *state = (struct t_ael_ste *) ael->state;
 
 	t_tim_now( &rt, 0 );
 	tv  = (NULL != ael->tm_head) ? ael->tm_head->tv : NULL;
 
-	memcpy( &ael->rfds_w, &ael->rfds, sizeof( fd_set ) );
-	memcpy( &ael->wfds_w, &ael->wfds, sizeof( fd_set ) );
+	memcpy( &state->rfds_w, &state->rfds, sizeof( fd_set ) );
+	memcpy( &state->wfds_w, &state->wfds, sizeof( fd_set ) );
 
-	r = select( ael->max_fd+1, &ael->rfds_w, &ael->wfds_w, NULL, tv );
+	r = select( ael->max_fd+1, &state->rfds_w, &state->wfds_w, NULL, tv );
 	//printf("RESULT: %d\n",r);
 	if (r<0)
 		return r;
@@ -109,9 +131,9 @@ t_ael_poll_impl( lua_State *L, struct t_ael *ael )
 			if (NULL == ael->fd_set[ i ])
 				continue;
 			t = T_AEL_NO;
-			if (ael->fd_set[ i ]->t & T_AEL_RD  &&  FD_ISSET( i, &ael->rfds_w ))
+			if (ael->fd_set[ i ]->t & T_AEL_RD  &&  FD_ISSET( i, &state->rfds_w ))
 				t |= T_AEL_RD;
-			if (ael->fd_set[ i ]->t & T_AEL_WR  &&  FD_ISSET( i, &ael->wfds_w ))
+			if (ael->fd_set[ i ]->t & T_AEL_WR  &&  FD_ISSET( i, &state->wfds_w ))
 				t |= T_AEL_WR;
 			if (T_AEL_NO != t)
 			{

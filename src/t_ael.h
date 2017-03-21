@@ -11,6 +11,7 @@
 #include "t_net.h"
 #include "t_tim.h"
 
+
 enum t_ael_t {
 	// 00000000
 	T_AEL_NO = 0x00,        ///< not set
@@ -42,13 +43,10 @@ struct t_ael_tm {
 
 /// t_ael implementation for select based loops
 struct t_ael {
-	fd_set             rfds;
-	fd_set             wfds;
-	fd_set             rfds_w;   ///<
-	fd_set             wfds_w;   ///<
 	int                run;      ///< boolean indicator to start/stop the loop
 	int                max_fd;   ///< max fd
 	size_t             fd_sz;    ///< how many fd to handle
+	void              *state;    ///< polling API specific data
 	struct t_ael_tm   *tm_head;
 	struct t_ael_fd  **fd_set;   ///< array with pointers to fd_events indexed by fd
 };
@@ -66,7 +64,8 @@ void t_ael_executehandle    ( lua_State *L, struct t_ael *ael, int fd, enum t_ae
 
 
 // t_ael_(impl).c   (Implementation specific functions) INTERFACE
-void t_ael_create_ud_impl   ( struct t_ael *ael );
+void t_ael_create_ud_impl   ( lua_State *L, struct t_ael *ael );
+void t_ael_free_impl        ( struct t_ael *ael );
 void t_ael_addhandle_impl   ( struct t_ael *ael, int fd, enum t_ael_t t );
 void t_ael_removehandle_impl( struct t_ael *ael, int fd, enum t_ael_t t );
 void t_ael_addtimer_impl    ( struct t_ael *ael, struct timeval *tv );

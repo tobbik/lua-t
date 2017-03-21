@@ -198,7 +198,7 @@ struct t_ael
 	ael->tm_head = NULL;
 	ael->fd_set  = (struct t_ael_fd **) malloc( (ael->fd_sz+1) * sizeof( struct t_ael_fd * ) );
 	for (n=0; n<=ael->fd_sz; n++) ael->fd_set[ n ] = NULL;
-	t_ael_create_ud_impl( ael );
+	t_ael_create_ud_impl( L, ael );
 	luaL_getmetatable( L, T_AEL_TYPE );
 	lua_setmetatable( L, -2 );
 	return ael;
@@ -444,6 +444,7 @@ lt_ael__gc( lua_State *L )
 			free( ael->fd_set[ i ] );
 		}
 	}
+	t_ael_free_impl( ael );
 	return 0;
 }
 
