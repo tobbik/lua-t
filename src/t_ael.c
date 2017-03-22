@@ -304,6 +304,7 @@ lt_ael_removehandle( lua_State *L )
 	luaL_Stream      *lS;
 	struct t_net_sck *sck;
 	int               fd  = 0;
+	int                i;
 	struct t_ael     *ael = t_ael_check_ud( L, 1, 1 );
 	luaL_checktype( L, 3, LUA_TBOOLEAN );
 	enum t_ael_msk    msk = lua_toboolean( L, 3 ) ? T_AEL_RD :T_AEL_WR;
@@ -332,6 +333,14 @@ lt_ael_removehandle( lua_State *L )
 		luaL_unref( L, LUA_REGISTRYINDEX, ael->fdSet[ fd ]->hR );
 		free( ael->fdSet[ fd ] );
 		ael->fdSet[ fd ] = NULL;
+
+		// reset the maxFd
+		if (fd = ael->fdMax)
+		{
+			for (i = ael->fdMax-1; i >= 0; i--)
+				if (NULL != ael->fdSet[ i ] && T_AEL_NO != ael->fdSet[ i ]->msk) break;
+			ael->fdMax = i;
+		}
 	}
 
 	return 0;
@@ -458,7 +467,7 @@ lt_ael__gc( lua_State *L )
 
 
 /**--------------------------------------------------------------------------
- * Set up a select call for all events in the T.Loop
+ * Set up a poll call for all events in the T.Loop
  * \param   L    Lua state.
  * \lparam  ud   T.Loop userdata instance.                       // 1
  * \return  int  #stack items returned by function call.
