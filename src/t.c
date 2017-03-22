@@ -37,7 +37,7 @@ t_getTypeByName( lua_State *L, int pos, const char *dft, const struct t_typ *typ
 
 	while (NULL != types[i].name)
 	{
-		if (0 == strncmp( name, types[i].name, strlen( name ) ))
+		if (0 == strcmp( name, types[i].name ))
 			break;
 		i++;
 	}

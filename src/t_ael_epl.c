@@ -160,7 +160,7 @@ t_ael_poll_impl( lua_State *L, struct t_ael *ael )
 	   tv ? (tv->tv_sec*1000 + tv->tv_usec/1000) : -1 );
 
 	if (0==ret) // deal with timer
-		t_ael_executetimer( L, ael, &rt );
+		t_ael_executeHeadTimer( L, &(ael->tmHead), &rt );
 	else
 	{
 		cnt = ret;

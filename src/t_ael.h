@@ -25,6 +25,7 @@ enum t_ael_msk {
 };
 
 
+// definition for file/socket descriptor node
 struct t_ael_fd {
 	enum t_ael_msk     msk;   ///< mask, for unset, readable, writable
 	int                fd;    ///< descriptor
@@ -34,11 +35,12 @@ struct t_ael_fd {
 };
 
 
-struct t_ael_tm {
+// definition for timer node
+struct t_ael_tnd {
 	int                fR;    ///< func/arg table reference in LUA_REGISTRYINDEX
 	int                tR;    ///< T.Time  reference in LUA_REGISTRYINDEX
 	struct timeval    *tv;    ///< time to elapse until fire (timval to work with)
-	struct t_ael_tm   *nxt;   ///< next pointer for linked list
+	struct t_ael_tnd  *nxt;   ///< next pointer for linked list
 };
 
 
@@ -48,7 +50,7 @@ struct t_ael {
 	int                fdMax;    ///< max fd
 	size_t             fdCount;  ///< how many fd to handle
 	void              *state;    ///< polling API specific data
-	struct t_ael_tm   *tmHead;   ///< Head of timers linked list
+	struct t_ael_tnd  *tmHead;   ///< Head of timers linked list
 	struct t_ael_fd  **fdSet;    ///< array with pointers to fd_events indexed by fd
 };
 
@@ -60,7 +62,7 @@ int   lt_ael_addhandle       ( lua_State *L );
 int   lt_ael_removehandle    ( lua_State *L );
 int   lt_ael_showloop        ( lua_State *L );
 
-void t_ael_executetimer     ( lua_State *L, struct t_ael *ael, struct timeval *rt );
+void t_ael_executeHeadTimer ( lua_State *L, struct t_ael_tnd **tHead, struct timeval *rt );
 void t_ael_executehandle    ( lua_State *L, struct t_ael_fd *fd, enum t_ael_msk msk );
 
 // t_ael_(impl).c   (Implementation specific functions) INTERFACE

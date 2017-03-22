@@ -107,7 +107,7 @@ t_ael_poll_impl( lua_State *L, struct t_ael *ael )
 	int               i,r;
 	struct timeval   *tv    = (NULL != ael->tmHead)
 	   ? ael->tmHead->tv
-	   : NULL; ;
+	   : NULL;
 	struct timeval    rt;           ///< timer to calculate runtime over this poll
 	enum t_ael_msk    msk;          ///< handle action per fd (read/write/either)
 	struct t_ael_ste *state = (struct t_ael_ste *) ael->state;
@@ -123,7 +123,7 @@ t_ael_poll_impl( lua_State *L, struct t_ael *ael )
 		return r;
 
 	if (0==r) // deal with timer
-		t_ael_executetimer( L, ael, &rt );
+		t_ael_executeHeadTimer( L, &(ael->tmHead), &rt );
 	else      // deal with sockets/file handles
 		for (i=0; r>0 && i <= ael->fdMax; i++)
 		{
