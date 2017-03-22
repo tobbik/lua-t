@@ -14,7 +14,6 @@ T_SRC=t.c \
 	 t_net_sck.c \
 	 t_net_ip4.c \
 	 t_ael.c \
-	 t_ael_sel.c \
 	 t_tim.c \
 	 t_enc.c \
 	 t_enc_rc4.c \
@@ -37,10 +36,46 @@ T_SRC=t.c \
 
 T_PRE:=
 
+
 ifdef BUILD_EXAMPLE
 T_PRE:=$(T_PRE) -D T_NRY=1
 T_SRC:=$(T_SRC) t_nry.c
 endif
+
+ifeq ($(OS),Windows_NT)
+   CFLAGS += -D WIN32
+   T_SRC:=$(T_SRC) t_ael_sel.c
+   ifeq ($(PROCESSOR_ARCHITEW6432),AMD64)
+      CFLAGS += -D AMD64
+   else
+      ifeq ($(PROCESSOR_ARCHITECTURE),AMD64)
+         CFLAGS += -D AMD64
+      endif
+      ifeq ($(PROCESSOR_ARCHITECTURE),x86)
+         CFLAGS += -D IA32
+      endif
+   endif
+else
+   UNAME_S := $(shell uname -s)
+   ifeq ($(UNAME_S),Linux)
+      CFLAGS += -D LINUX
+      T_SRC:=$(T_SRC) t_ael_epl.c
+   endif
+   ifeq ($(UNAME_S),Darwin)
+      CFLAGS += -D OSX
+   endif
+   UNAME_I := $(shell uname -i)
+   ifeq ($(UNAME_I),x86_64)
+      CFLAGS += -D AMD64
+   endif
+   ifneq ($(filter %86,$(UNAME_I)),)
+      CFLAGS += -D IA32
+   endif
+   ifneq ($(filter arm%,$(UNAME_I)),)
+      CFLAGS += -D ARM
+   endif
+endif
+
 
 #
 LVER=5.3
