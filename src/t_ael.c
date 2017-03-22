@@ -12,9 +12,18 @@
  */
 
 
-#include "t.h"
+#ifdef _WIN32
+#include <Windows.h>
+#else
+//#define _POSIX_SOURCE   1
+#define _POSIX_C_SOURCE 200809L
+//#define _DEFAULT_SOURCE 1
+#endif
+
 #include <stdlib.h>               // malloc, free
 #include <string.h>               // memset
+
+#include "t.h"
 #include "t_ael.h"
 
 

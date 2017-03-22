@@ -7,6 +7,7 @@
  * \copyright See Copyright notice at the end of t.h
  */
 
+#define __USE_MISC
 #include <netdb.h>
 #include <unistd.h>
 #include <fcntl.h>     // O_NONBLOCK,...

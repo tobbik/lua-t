@@ -7,6 +7,9 @@
  * \copyright See Copyright notice at the end of t.h
  */
 
+// this header order makes __USE_MISC visible and hence all the POSIX stuff
+#include "t.h"
+#include "t_net.h"
 
 #ifdef _WIN32
 #include <WinSock2.h>
@@ -26,8 +29,6 @@
 #include <sys/socket.h>
 #endif
 
-#include "t.h"
-#include "t_net.h"
 
 #define IFR_LEN  255
 

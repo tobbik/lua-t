@@ -4,7 +4,19 @@
 # \brief     Makefile for the lua-t library source code
 # \author    tkieslich
 # \copyright See Copyright notice at the end of t.h
-
+#
+LVER=5.3
+PREFIX=$(shell pkg-config --variable=prefix lua)
+INCDIR=$(shell pkg-config --variable=includedir lua)
+#LDFLAGS=$(shell pkg-config --libs lua) -lcrypt
+LDFLAGS:=$(LDFLAGS) -lcrypt
+# clang can be substituted with gcc (command line args compatible)
+CC=clang
+LD=clang
+#CFLAGS:= -Wall -Wextra -O0 -std=c99 -fpic $(MYCFLAGS)
+CFLAGS:= -Wall -Wextra -O0 -std=c99 -fpic $(MYCFLAGS)
+AR=ar rcu
+RANLIB=ranlib
 T_LIB_DYN=t.so
 T_LIB_STA=t.a
 
@@ -34,11 +46,9 @@ T_SRC=t.c \
 	 t_tst.c \
 	 t_tst_cse.c
 
-T_PRE:=
-
 
 ifdef BUILD_EXAMPLE
-T_PRE:=$(T_PRE) -D T_NRY=1
+CFLAGS += -D T_NRY=1
 T_SRC:=$(T_SRC) t_nry.c
 endif
 
@@ -77,19 +87,6 @@ else
 endif
 
 
-#
-LVER=5.3
-PREFIX=$(shell pkg-config --variable=prefix lua)
-INCDIR=$(shell pkg-config --variable=includedir lua)
-#LDFLAGS=$(shell pkg-config --libs lua) -lcrypt
-LDFLAGS:=$(LDFLAGS) -lcrypt
-# clang can be substituted with gcc (command line args compatible)
-CC=clang
-LD=clang
-#CFLAGS:= -Wall -Wextra -O0 -std=c99 -fpic $(MYCFLAGS) $(T_PRE)
-CFLAGS:= -Wall -Wextra -O0 -fpic $(MYCFLAGS) $(T_PRE)
-AR=ar rcu
-RANLIB=ranlib
 
 T_OBJ=$(T_SRC:.c=.o)
 

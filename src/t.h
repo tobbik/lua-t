@@ -8,16 +8,6 @@
  * \copyright See Copyright notice at the end of t.h
  */
 
-#ifdef _WIN32
-#include <Windows.h>
-#else
-//#define _POSIX_SOURCE   1
-//#define _POSIX_C_SOURCE 200809L
-//#define _DEFAULT_SOURCE 1
-#endif
-
-#include <sys/select.h>
-#include <stdint.h>
 
 /* includes the Lua headers */
 #include "lua.h"

@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <string.h>     // strerror,strrchr
 #include <errno.h>      // errno
+#include <stdint.h>     // printf in helpers
 
 #include "t.h"
 

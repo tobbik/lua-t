@@ -9,7 +9,6 @@
  */
 
 
-#include "t.h"
 #ifdef _WIN32
 #include <WinSock2.h>
 #include <winsock.h>
@@ -25,6 +24,8 @@
 #include <sys/socket.h>
 #include <sys/select.h>
 #endif
+
+#include "t.h"
 #include "t_net.h"
 #include "t_buf.h"         // the ability to send and recv buffers
 
