@@ -158,8 +158,8 @@ t_htp_str_addbuffer( lua_State *L, struct t_htp_str *s, size_t l, int last )
 		c->buf_tail = b;
 		// wrote the first line to the buffer, can also happen if
 		// current buffer is flushed but response is incomplete
-		t_ael_addhandle_impl( c->srv->ael, c->sck->fd, T_AEL_WR );
-		c->srv->ael->fd_set[ c->sck->fd ]->t = T_AEL_RW;
+		t_ael_addhandle_impl( L, c->srv->ael, c->sck->fd, T_AEL_WR );
+		c->srv->ael->fdSet[ c->sck->fd ]->msk = T_AEL_RW;
 	}
 	else
 	{

@@ -27,21 +27,18 @@
  * --------------------------------------------------------------------------*/
 static int lt_htp_srv__Call( lua_State *L )
 {
-	struct t_htp_srv *s;
-	struct t_ael     *l;
+	struct t_htp_srv *srv;
+	struct t_ael     *ael;
 
-	lua_remove( L, 1 );
-	if (lua_isfunction( L, -1 ) && (l = t_ael_check_ud( L, -2, 1 )))
-	{
-		s     = t_htp_srv_create_ud( L );
-		lua_insert( L, -3 );
-		s->rR = luaL_ref( L, LUA_REGISTRYINDEX );
+	lua_remove( L, 1 );           // remove the CLASS table
+	luaL_argcheck( L, lua_isfunction( L, 2 ), 2, "callback function required" );
+	ael     = t_ael_check_ud( L, 1, 1 );
+	srv     = t_htp_srv_create_ud( L );
+	lua_insert( L, -3 );
+	srv->rR = luaL_ref( L, LUA_REGISTRYINDEX );
 
-		s->ael = l;
-		s->lR  = luaL_ref( L, LUA_REGISTRYINDEX );
-	}
-	else
-		return t_push_error( L, T_HTP_SRV_TYPE"( func ) requires a function as parameter" );
+	srv->ael = ael;
+	srv->lR  = luaL_ref( L, LUA_REGISTRYINDEX );
 	return 1;
 }
 
@@ -163,7 +160,7 @@ lt_htp_srv_accept( lua_State *L )
 	// since an HTTP msg will bounce back and forth between reading and writing.
 	//S: s,ss,cs,ip,rt,(true/false)
 	//lua_pop( L, 1 );                           // TODO: pop true or false
-	ael->fd_set[ c->sck->fd ]->wR = luaL_ref( L, LUA_REGISTRYINDEX );
+	ael->fdSet[ c->sck->fd ]->wR = luaL_ref( L, LUA_REGISTRYINDEX );
 	return 0;
 }
 

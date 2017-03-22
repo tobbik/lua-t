@@ -187,8 +187,8 @@ t_htp_con_rsp( lua_State *L )
 		{
 			printf( "remove "T_HTP_CON_TYPE" from Loop\n" );
 			// remove this connections socket from evLoop
-			t_ael_removehandle_impl( c->srv->ael, c->sck->fd, T_AEL_WR );
-			c->srv->ael->fd_set[ c->sck->fd ]->t = T_AEL_RD;
+			t_ael_removehandle_impl( L, c->srv->ael, c->sck->fd, T_AEL_WR );
+			c->srv->ael->fdSet[ c->sck->fd ]->msk = T_AEL_RD;
 			// done with current the stream has overall
 			if ( T_HTP_STR_FINISH == str->state || str->rsSl == str->rsBl)
 			{
@@ -307,14 +307,14 @@ lt_htp_con__gc( lua_State *L )
 	if (NULL != c->sck)
 	{
 		printf( "REMOVE Socket %d FROM LOOP ...", c->sck->fd );
-		t_ael_removehandle_impl( c->srv->ael, c->sck->fd, T_AEL_RD );
-		t_ael_removehandle_impl( c->srv->ael, c->sck->fd, T_AEL_WR );
-		c->srv->ael->fd_set[ c->sck->fd ]->t = T_AEL_NO;
-		luaL_unref( L, LUA_REGISTRYINDEX, c->srv->ael->fd_set[ c->sck->fd ]->rR );
-		luaL_unref( L, LUA_REGISTRYINDEX, c->srv->ael->fd_set[ c->sck->fd ]->wR );
-		luaL_unref( L, LUA_REGISTRYINDEX, c->srv->ael->fd_set[ c->sck->fd ]->hR );
-		free( c->srv->ael->fd_set[ c->sck->fd ] );
-		c->srv->ael->fd_set[ c->sck->fd ] = NULL;
+		t_ael_removehandle_impl( L, c->srv->ael, c->sck->fd, T_AEL_RD );
+		t_ael_removehandle_impl( L, c->srv->ael, c->sck->fd, T_AEL_WR );
+		c->srv->ael->fdSet[ c->sck->fd ]->msk = T_AEL_NO;
+		luaL_unref( L, LUA_REGISTRYINDEX, c->srv->ael->fdSet[ c->sck->fd ]->rR );
+		luaL_unref( L, LUA_REGISTRYINDEX, c->srv->ael->fdSet[ c->sck->fd ]->wR );
+		luaL_unref( L, LUA_REGISTRYINDEX, c->srv->ael->fdSet[ c->sck->fd ]->hR );
+		free( c->srv->ael->fdSet[ c->sck->fd ] );
+		c->srv->ael->fdSet[ c->sck->fd ] = NULL;
 
 		t_net_sck_close( L, c->sck );
 		c->sck = NULL;

@@ -12,7 +12,7 @@
 #include "t_tim.h"
 
 
-enum t_ael_t {
+enum t_ael_msk {
 	// 00000000
 	T_AEL_NO = 0x00,        ///< not set
 	// 00000001
@@ -25,7 +25,7 @@ enum t_ael_t {
 
 
 struct t_ael_fd {
-	enum t_ael_t       t;     ///< mask, for unset, readable, writable
+	enum t_ael_msk     msk;   ///< mask, for unset, readable, writable
 	int                fd;    ///< descriptor
 	int                rR;    ///< func/arg table reference for read  event in LUA_REGISTRYINDEX
 	int                wR;    ///< func/arg table reference for write event in LUA_REGISTRYINDEX
@@ -41,14 +41,14 @@ struct t_ael_tm {
 };
 
 
-/// t_ael implementation for select based loops
+// t_ael general implementation; API specifics live behind the *state pointer
 struct t_ael {
 	int                run;      ///< boolean indicator to start/stop the loop
-	int                max_fd;   ///< max fd
-	size_t             fd_sz;    ///< how many fd to handle
+	int                fdMax;    ///< max fd
+	size_t             fdCount;  ///< how many fd to handle
 	void              *state;    ///< polling API specific data
-	struct t_ael_tm   *tm_head;
-	struct t_ael_fd  **fd_set;   ///< array with pointers to fd_events indexed by fd
+	struct t_ael_tm   *tmHead;   ///< Head of timers linked list
+	struct t_ael_fd  **fdSet;    ///< array with pointers to fd_events indexed by fd
 };
 
 
@@ -60,14 +60,13 @@ int   lt_ael_removehandle    ( lua_State *L );
 int   lt_ael_showloop        ( lua_State *L );
 
 void t_ael_executetimer     ( lua_State *L, struct t_ael *ael, struct timeval *rt );
-void t_ael_executehandle    ( lua_State *L, struct t_ael *ael, int fd, enum t_ael_t t );
-
+void t_ael_executehandle    ( lua_State *L, struct t_ael_fd *fd, enum t_ael_msk msk );
 
 // t_ael_(impl).c   (Implementation specific functions) INTERFACE
-void t_ael_create_ud_impl   ( lua_State *L, struct t_ael *ael );
+int  t_ael_create_ud_impl   ( lua_State *L, struct t_ael *ael );
 void t_ael_free_impl        ( struct t_ael *ael );
-void t_ael_addhandle_impl   ( struct t_ael *ael, int fd, enum t_ael_t t );
-void t_ael_removehandle_impl( struct t_ael *ael, int fd, enum t_ael_t t );
+int  t_ael_addhandle_impl   ( lua_State *L, struct t_ael *ael, int fd, enum t_ael_msk msk );
+int  t_ael_removehandle_impl( lua_State *L, struct t_ael *ael, int fd, enum t_ael_msk msk );
 void t_ael_addtimer_impl    ( struct t_ael *ael, struct timeval *tv );
 int  t_ael_poll_impl        ( lua_State *L, struct t_ael *ael );
 

@@ -30,20 +30,20 @@ t_ael_instimer( struct t_ael *ael, struct t_ael_tm *te )
 {
 	struct t_ael_tm *tr;
 
-	if (NULL == ael->tm_head || t_tim_cmp( ael->tm_head->tv, te->tv, > ))
+	if (NULL == ael->tmHead || t_tim_cmp( ael->tmHead->tv, te->tv, > ))
 	{
 #if PRINT_DEBUGS == 1
 		printf( "Make HEAD   {%2ld:%6ld}\t PRE{%2ld:%6ld}\n",
 			te->tv->tv_sec,  te->tv->tv_usec,
-			(NULL != ael->tm_head) ? ael->tm_head->tv->tv_sec  : 0,
-			(NULL != ael->tm_head) ? ael->tm_head->tv->tv_usec : 0);
+			(NULL != ael->tmHead) ? ael->tmHead->tv->tv_sec  : 0,
+			(NULL != ael->tmHead) ? ael->tmHead->tv->tv_usec : 0);
 #endif
-		te->nxt     = ael->tm_head;
-		ael->tm_head = te;
+		te->nxt     = ael->tmHead;
+		ael->tmHead = te;
 	}
 	else
 	{
-		tr = ael->tm_head;
+		tr = ael->tmHead;
 		while (NULL != tr->nxt && t_tim_cmp( tr->nxt->tv, te->tv, < ))
 			tr = tr->nxt;
 #if PRINT_DEBUGS == 1
@@ -66,7 +66,7 @@ t_ael_instimer( struct t_ael *ael, struct t_ael_tm *te )
 static inline void
 t_ael_adjusttimer( struct t_ael *ael, struct timeval *ta )
 {
-	struct t_ael_tm *tr = ael->tm_head;
+	struct t_ael_tm *tr = ael->tmHead;
 	while (NULL != tr)
 	{
 		t_tim_sub( tr->tv, ta, tr->tv );
@@ -109,10 +109,10 @@ t_ael_executetimer( lua_State *L, struct t_ael *ael, struct timeval *rt )
 {
 	struct timeval  *tv;                  ///< timer returned by execution -> if there is
 	
-	struct t_ael_tm *te = ael->tm_head;   ///< timer to execute is tm_head, ALWAYS
+	struct t_ael_tm *te = ael->tmHead;    ///< timer to execute is tmHead, ALWAYS
 	int    n;                             ///< length of arguments to call
 
-	ael->tm_head = ael->tm_head->nxt;
+	ael->tmHead = ael->tmHead->nxt;
 	n = t_ael_getfunc( L, te->fR );
 	lua_call( L, n, 1 );
 	t_tim_since( rt );
@@ -143,21 +143,21 @@ t_ael_executetimer( lua_State *L, struct t_ael *ael, struct timeval *rt )
  * \return  void.
  * --------------------------------------------------------------------------*/
 void
-t_ael_executehandle( lua_State *L, struct t_ael *ael, int fd, enum t_ael_t t )
+t_ael_executehandle( lua_State *L, struct t_ael_fd *fd, enum t_ael_msk msk )
 {
 	int n;
 
-	//printf( "%d    %d    %d    %d\n", fd,  ael->fd_set[ fd ]->rR ,  ael->fd_set[ fd ]->wR, t );
-	if( t & T_AEL_RD )
+	//printf( "%d    %d    %d    %d\n", fd, fd->rR,  fd->wR, msk );
+	if( msk & T_AEL_RD )
 	{
-		n = t_ael_getfunc( L, ael->fd_set[ fd ]->rR );
+		n = t_ael_getfunc( L, fd->rR );
 		lua_call( L, n , 0 );
 		lua_pop( L, 1 );             // remove the table
 	}
-	// since read func can gc the socket, fd_set[fd] can be NULL
-	if( NULL != ael->fd_set[ fd ] && t & T_AEL_WR )
+	// since read func can gc the socket, fd can be NULL
+	if( NULL != fd && msk & T_AEL_WR )
 	{
-		n = t_ael_getfunc( L, ael->fd_set[ fd ]->wR );
+		n = t_ael_getfunc( L, fd->wR );
 		lua_call( L, n , 0 );
 		lua_pop( L, 1 );             // remove the table
 	}
@@ -193,11 +193,11 @@ struct t_ael
 	size_t           n;
 
 	ael = (struct t_ael *) lua_newuserdata( L, sizeof( struct t_ael ) );
-	ael->fd_sz   = sz;
-	ael->max_fd  = 0;
-	ael->tm_head = NULL;
-	ael->fd_set  = (struct t_ael_fd **) malloc( (ael->fd_sz+1) * sizeof( struct t_ael_fd * ) );
-	for (n=0; n<=ael->fd_sz; n++) ael->fd_set[ n ] = NULL;
+	ael->fdCount = sz;
+	ael->fdMax   = 0;
+	ael->tmHead  = NULL;
+	ael->fdSet   = (struct t_ael_fd **) malloc( (ael->fdCount+1) * sizeof( struct t_ael_fd * ) );
+	for (n=0; n<=ael->fdCount; n++) ael->fdSet[ n ] = NULL;
 	t_ael_create_ud_impl( L, ael );
 	luaL_getmetatable( L, T_AEL_TYPE );
 	lua_setmetatable( L, -2 );
@@ -239,7 +239,7 @@ lt_ael_addhandle( lua_State *L )
 	int               fd  = 0;
 	int               n   = lua_gettop( L ) + 1;    ///< iterator for arguments
 	struct t_ael     *ael = t_ael_check_ud( L, 1, 1 );
-	enum t_ael_t      t   = lua_toboolean( L, 3 ) ? T_AEL_RD :T_AEL_WR;
+	enum t_ael_msk    msk = lua_toboolean( L, 3 ) ? T_AEL_RD : T_AEL_WR;
 
 	luaL_checktype( L, 4, LUA_TFUNCTION );
 	lS = (luaL_Stream *) luaL_testudata( L, 2, LUA_FILEHANDLE );
@@ -253,16 +253,15 @@ lt_ael_addhandle( lua_State *L )
 	if (0 == fd)
 		return t_push_error( L, "Argument to addHandle must be file or socket" );
 
-	if (NULL == ael->fd_set[ fd ])
+	if (NULL == ael->fdSet[ fd ])
 	{
-		ael->fd_set[ fd ] = (struct t_ael_fd *) malloc( sizeof( struct t_ael_fd ) );
-		ael->fd_set[ fd ]->t = T_AEL_NO;
+		ael->fdSet[ fd ] = (struct t_ael_fd *) malloc( sizeof( struct t_ael_fd ) );
+		ael->fdSet[ fd ]->msk = T_AEL_NO;
 	}
 
-	ael->fd_set[ fd ]->t |= t;
-
-	ael->max_fd = (fd > ael->max_fd) ? fd : ael->max_fd;
-	t_ael_addhandle_impl( ael, fd, t );
+	t_ael_addhandle_impl( L, ael, fd, msk );
+	ael->fdSet[ fd ]->msk |= msk;
+	ael->fdMax = (fd > ael->fdMax) ? fd : ael->fdMax;
 
 	lua_createtable( L, n-4, 0 );  // create function/parameter table
 	lua_insert( L, 4 );
@@ -270,12 +269,12 @@ lt_ael_addhandle( lua_State *L )
 	while (n > 4)
 		lua_rawseti( L, 4, (n--)-4 );   // add arguments and function (pops each item)
 	// pop the function reference table and assign as read or write function
-	if (T_AEL_RD & t)
-		ael->fd_set[ fd ]->rR = luaL_ref( L, LUA_REGISTRYINDEX );
+	if (T_AEL_RD & msk)
+		ael->fdSet[ fd ]->rR = luaL_ref( L, LUA_REGISTRYINDEX );
 	else
-		ael->fd_set[ fd ]->wR = luaL_ref( L, LUA_REGISTRYINDEX );
+		ael->fdSet[ fd ]->wR = luaL_ref( L, LUA_REGISTRYINDEX );
 	lua_pop( L, 1 ); // pop the read write boolean
-	ael->fd_set[ fd ]->hR = luaL_ref( L, LUA_REGISTRYINDEX );      // keep ref to handle so it doesnt gc
+	ael->fdSet[ fd ]->hR = luaL_ref( L, LUA_REGISTRYINDEX );      // keep ref to handle so it doesnt gc
 
 	return  0;
 }
@@ -298,7 +297,7 @@ lt_ael_removehandle( lua_State *L )
 	int               fd  = 0;
 	struct t_ael     *ael = t_ael_check_ud( L, 1, 1 );
 	luaL_checktype( L, 3, LUA_TBOOLEAN );
-	enum t_ael_t      t   = lua_toboolean( L, 3 ) ? T_AEL_RD :T_AEL_WR;
+	enum t_ael_msk    msk = lua_toboolean( L, 3 ) ? T_AEL_RD :T_AEL_WR;
 
 	lS = (luaL_Stream *) luaL_testudata( L, 2, LUA_FILEHANDLE );
 	if (NULL != lS)
@@ -311,19 +310,19 @@ lt_ael_removehandle( lua_State *L )
 	if (0 == fd)
 		return t_push_error( L, "Argument to addHandle must be file or socket" );
 	// remove function
-	if (T_AEL_RD & t)
-		luaL_unref( L, LUA_REGISTRYINDEX, ael->fd_set[ fd ]->rR );
+	if (T_AEL_RD & msk)
+		luaL_unref( L, LUA_REGISTRYINDEX, ael->fdSet[ fd ]->rR );
 	else
-		luaL_unref( L, LUA_REGISTRYINDEX, ael->fd_set[ fd ]->wR );
-	t_ael_removehandle_impl( ael, fd, t );
+		luaL_unref( L, LUA_REGISTRYINDEX, ael->fdSet[ fd ]->wR );
+	t_ael_removehandle_impl( L, ael, fd, msk );
 	// remove from mask
-	ael->fd_set[ fd ]->t = ael->fd_set[ fd ]-> t & (~t);
+	ael->fdSet[ fd ]->msk = ael->fdSet[ fd ]-> msk & (~msk);
 	// remove from loop if empty
-	if (T_AEL_NO == ael->fd_set[ fd ]->t )
+	if (T_AEL_NO == ael->fdSet[ fd ]->msk )
 	{
-		luaL_unref( L, LUA_REGISTRYINDEX, ael->fd_set[ fd ]->hR );
-		free( ael->fd_set[ fd ] );
-		ael->fd_set[ fd ] = NULL;
+		luaL_unref( L, LUA_REGISTRYINDEX, ael->fdSet[ fd ]->hR );
+		free( ael->fdSet[ fd ] );
+		ael->fdSet[ fd ] = NULL;
 	}
 
 	return 0;
@@ -380,13 +379,13 @@ lt_ael_removetimer( lua_State *L )
 {
 	struct t_ael    *ael = t_ael_check_ud( L, 1, 1 );
 	struct timeval  *tv  = t_tim_check_ud( L, 2, 1 );
-	struct t_ael_tm *tp  = ael->tm_head;
+	struct t_ael_tm *tp  = ael->tmHead;
 	struct t_ael_tm *te  = tp->nxt;       ///< previous Timer event
 
 	// if head is node in question
 	if (NULL != tp  &&  tp->tv == tv)
 	{
-		ael->tm_head = te;
+		ael->tmHead = te;
 		luaL_unref( L, LUA_REGISTRYINDEX, tp->fR );
 		luaL_unref( L, LUA_REGISTRYINDEX, tp->tR );
 		free( tp );
@@ -420,7 +419,7 @@ static int
 lt_ael__gc( lua_State *L )
 {
 	struct t_ael    *ael     = t_ael_check_ud( L, 1, 1 );
-	struct t_ael_tm *tf, *tr = ael->tm_head;
+	struct t_ael_tm *tf, *tr = ael->tmHead;
 	size_t           i;       ///< the iterator for all fields
 
 	while (NULL != tr)
@@ -434,14 +433,14 @@ lt_ael__gc( lua_State *L )
 		free( tf );
 	}
 	//printf("---------");
-	for (i=0; i < ael->fd_sz; i++)
+	for (i=0; i < ael->fdCount; i++)
 	{
-		if (NULL != ael->fd_set[ i ])
+		if (NULL != ael->fdSet[ i ])
 		{
-			luaL_unref( L, LUA_REGISTRYINDEX, ael->fd_set[ i ]->rR );
-			luaL_unref( L, LUA_REGISTRYINDEX, ael->fd_set[ i ]->wR );
-			luaL_unref( L, LUA_REGISTRYINDEX, ael->fd_set[ i ]->hR );
-			free( ael->fd_set[ i ] );
+			luaL_unref( L, LUA_REGISTRYINDEX, ael->fdSet[ i ]->rR );
+			luaL_unref( L, LUA_REGISTRYINDEX, ael->fdSet[ i ]->wR );
+			luaL_unref( L, LUA_REGISTRYINDEX, ael->fdSet[ i ]->hR );
+			free( ael->fdSet[ i ] );
 		}
 	}
 	t_ael_free_impl( ael );
@@ -466,7 +465,7 @@ lt_ael_run( lua_State *L )
 		if (t_ael_poll_impl( L, ael ) < 0)
 			return t_push_error( L, "Failed to continue" );
 		// if there are no events left in the loop stop processing
-		ael->run = (NULL==ael->tm_head && ael->max_fd<1) ? 0 : ael->run;
+		ael->run = (NULL==ael->tmHead && ael->fdMax<1) ? 0 : ael->run;
 	}
 
 	return 0;
@@ -500,7 +499,7 @@ static int
 lt_ael__tostring( lua_State *L )
 {
 	struct t_ael *ael = t_ael_check_ud( L, 1, 1 );
-	lua_pushfstring( L, T_AEL_TYPE"{%d:%d}: %p", ael->fd_sz, ael->max_fd, ael );
+	lua_pushfstring( L, T_AEL_TYPE"{%d:%d}: %p", ael->fdCount, ael->fdMax, ael );
 	return 1;
 }
 
@@ -514,7 +513,7 @@ int
 lt_ael_showloop( lua_State *L )
 {
 	struct t_ael    *ael = t_ael_check_ud( L, 1, 1 );
-	struct t_ael_tm *tr  = ael->tm_head;
+	struct t_ael_tm *tr  = ael->tmHead;
 	int              i   = 0;
 	int              n   = lua_gettop( L );
 	printf( T_AEL_TYPE" %p TIMER LIST:\n", ael );
@@ -530,22 +529,22 @@ lt_ael_showloop( lua_State *L )
 		tr = tr->nxt;
 	}
 	printf( T_AEL_TYPE" %p HANDLE LIST:\n", ael );
-	for( i=0; i<ael->max_fd+1; i++)
+	for( i=0; i<ael->fdMax+1; i++)
 	{
-		if (NULL==ael->fd_set[ i ])
+		if (NULL==ael->fdSet[ i ])
 			continue;
-		if (T_AEL_RD & ael->fd_set[i]->t)
+		if (T_AEL_RD & ael->fdSet[i]->msk)
 		{
 			printf( "%5d  [R]  ", i );
-			t_ael_getfunc( L, ael->fd_set[i]->rR );
+			t_ael_getfunc( L, ael->fdSet[i]->rR );
 			t_stackPrint( L, n+2, lua_gettop( L ), 1 );
 			lua_pop( L, lua_gettop( L ) - n );
 			printf( "\n" );
 		}
-		if (T_AEL_WR & ael->fd_set[i]->t)
+		if (T_AEL_WR & ael->fdSet[i]->msk)
 		{
 			printf( "%5d  [W]  ", i );
-			t_ael_getfunc( L, ael->fd_set[i]->wR );
+			t_ael_getfunc( L, ael->fdSet[i]->wR );
 			t_stackPrint( L, n+2, lua_gettop( L ), 1 );
 			lua_pop( L, lua_gettop( L ) - n );
 			printf( "\n" );

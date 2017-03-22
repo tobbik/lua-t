@@ -26,25 +26,32 @@ struct t_ael_ste {
 	fd_set             wfds_w;   ///<
 };
 
+
 /**--------------------------------------------------------------------------
- * Select() specific initialization of t_ael.
+ * select() specific initialization of t_ael->state.
+ * \param   L      Lua state.
  * \param   struct t_ael * pointer to new userdata on Lua Stack
- * \return  void
+ * \return  int.
  * --------------------------------------------------------------------------*/
-void
+int
 t_ael_create_ud_impl( lua_State *L, struct t_ael *ael )
 {
 	struct t_ael_ste *state = (struct t_ael_ste *) malloc( sizeof( struct t_ael_ste ) );
 	if (NULL == state)
-		luaL_error( L, "couldn't allocate memory for loop" );
+		return luaL_error( L, "couldn't allocate memory for loop" );
 	FD_ZERO( &state->rfds );
 	FD_ZERO( &state->wfds );
 	FD_ZERO( &state->rfds_w );
 	FD_ZERO( &state->wfds_w );
 	ael->state = state;
+	return 1;
 }
 
 
+/**--------------------------------------------------------------------------
+ * select() specific destruction of t_ael->state.
+ * \param   struct t_ael * pointer to new userdata on Lua Stack
+ * --------------------------------------------------------------------------*/
 void t_ael_free_impl( struct t_ael *ael )
 {
 	struct t_ael_ste  *state = ael->state;
@@ -52,49 +59,40 @@ void t_ael_free_impl( struct t_ael *ael )
 }
 
 
-
 /**--------------------------------------------------------------------------
  * Add a File/Socket event handler to the T.Loop.
- * \param   struct t_ael*.
- * \param   int          fd.
- * \param   enum t_ael_t t - direction of socket to be observed.
+ * \param  ael    struct t_ael pointer to loop.
+ * \param  fd     int  Socket/file descriptor.
+ * \param  addmsk enum t_ael_msk - direction of descriptor to be observed.
+ * \return int    success/fail;
  * --------------------------------------------------------------------------*/
-void
-t_ael_addhandle_impl( struct t_ael *ael, int fd, enum t_ael_t t )
+int
+t_ael_addhandle_impl( lua_State *L, struct t_ael *ael, int fd, enum t_ael_msk addmsk )
 {
+	UNUSED( L );
 	struct t_ael_ste *state = (struct t_ael_ste *) ael->state;
-	if (t & T_AEL_RD)    FD_SET( fd, &state->rfds );
-	if (t & T_AEL_WR)    FD_SET( fd, &state->wfds );
+	if (addmsk & T_AEL_RD)    FD_SET( fd, &state->rfds );
+	if (addmsk & T_AEL_WR)    FD_SET( fd, &state->wfds );
+	return 1;
 }
 
 
 /**--------------------------------------------------------------------------
  * Remove a File/Socket event handler to the T.Loop.
- * \param   struct t_ael*.
- * \param   int          fd.
- * \param   enum t_ael_t t - direction of socket to be observed.
+ * \param  ael    struct t_ael pointer to loop.
+ * \param  fd     int  Socket/file descriptor.
+ * \param  delmsk enum t_ael_msk - direction of descriptor to stop observing.
+ * \return int    success/fail;
  * --------------------------------------------------------------------------*/
-void
-t_ael_removehandle_impl( struct t_ael *ael, int fd, enum t_ael_t t )
+int
+t_ael_removehandle_impl( lua_State *L, struct t_ael *ael, int fd, enum t_ael_msk delmsk )
 {
+	UNUSED( L );
 	struct t_ael_ste *state = (struct t_ael_ste *) ael->state;
-	if (t & T_AEL_RD)    FD_CLR( fd, &state->rfds );
-	if (t & T_AEL_WR)    FD_CLR( fd, &state->wfds );
+	if (delmsk & T_AEL_RD)    FD_CLR( fd, &state->rfds );
+	if (delmsk & T_AEL_WR)    FD_CLR( fd, &state->wfds );
+	return 1;
 }
-
-
-/**--------------------------------------------------------------------------
- * Add an Timer event handler to the T.Loop.
- * \param   L    The lua state.
- * \lparam  ud   T.Loop userdata instance.                   // 1
- * \lparam  ud   T.Time userdata instance.                   // 2
- * \lparam  func to be executed when event handler fires.    // 4
- * \lparam  ...  parameters to function when executed.       // 5 ...
- * \return  int  #stack items returned by function call.
- * --------------------------------------------------------------------------*/
-//void t_ael_addtimer_impl( struct t_ael *ael, struct timeval *tv )
-//{
-//}
 
 
 /**--------------------------------------------------------------------------
@@ -107,18 +105,19 @@ int
 t_ael_poll_impl( lua_State *L, struct t_ael *ael )
 {
 	int               i,r;
-	struct timeval   *tv;
+	struct timeval   *tv    = (NULL != ael->tmHead)
+	   ? ael->tmHead->tv
+	   : NULL; ;
 	struct timeval    rt;           ///< timer to calculate runtime over this poll
-	enum t_ael_t      t;            ///< handle action per fd (read/write/either)
+	enum t_ael_msk    msk;          ///< handle action per fd (read/write/either)
 	struct t_ael_ste *state = (struct t_ael_ste *) ael->state;
 
 	t_tim_now( &rt, 0 );
-	tv  = (NULL != ael->tm_head) ? ael->tm_head->tv : NULL;
 
 	memcpy( &state->rfds_w, &state->rfds, sizeof( fd_set ) );
 	memcpy( &state->wfds_w, &state->wfds, sizeof( fd_set ) );
 
-	r = select( ael->max_fd+1, &state->rfds_w, &state->wfds_w, NULL, tv );
+	r = select( ael->fdMax+1, &state->rfds_w, &state->wfds_w, NULL, tv );
 	//printf("RESULT: %d\n",r);
 	if (r<0)
 		return r;
@@ -126,18 +125,18 @@ t_ael_poll_impl( lua_State *L, struct t_ael *ael )
 	if (0==r) // deal with timer
 		t_ael_executetimer( L, ael, &rt );
 	else      // deal with sockets/file handles
-		for (i=0; r>0 && i <= ael->max_fd; i++)
+		for (i=0; r>0 && i <= ael->fdMax; i++)
 		{
-			if (NULL == ael->fd_set[ i ])
+			if (NULL == ael->fdSet[ i ])
 				continue;
-			t = T_AEL_NO;
-			if (ael->fd_set[ i ]->t & T_AEL_RD  &&  FD_ISSET( i, &state->rfds_w ))
-				t |= T_AEL_RD;
-			if (ael->fd_set[ i ]->t & T_AEL_WR  &&  FD_ISSET( i, &state->wfds_w ))
-				t |= T_AEL_WR;
-			if (T_AEL_NO != t)
+			msk = T_AEL_NO;
+			if (ael->fdSet[ i ]->msk & T_AEL_RD  &&  FD_ISSET( i, &state->rfds_w ))
+				msk |= T_AEL_RD;
+			if (ael->fdSet[ i ]->msk & T_AEL_WR  &&  FD_ISSET( i, &state->wfds_w ))
+				msk |= T_AEL_WR;
+			if (T_AEL_NO != msk)
 			{
-				t_ael_executehandle( L, ael, i, t );
+				t_ael_executehandle( L, ael->fdSet[ i ], msk );
 				r--;
 			}
 		}
