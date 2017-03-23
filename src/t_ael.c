@@ -91,8 +91,8 @@ t_ael_adjustTimers( struct t_ael_tnd **tHead, struct timeval *tAdj )
  * Unfolds a Lua function and parameters from a table in LUA_REGISTRYINDEX
  * Takes refPosition and gets table onto the stack.  Leaves function and
  * paramters onto stack ready to be executed.
- * Stack after: {fnc, p1, p2, p3 ... } fnc p1 p2 p3 ...
- * LEAVES TABLE ON STACK -> POP after call!
+ * Stack before: {fnc, p1, p2, p3, ... }
+ * Stack after:   fnc  p1  p2  p3  ...
  * \param   L     Lua state.
  * \param   int   Reference positon.
  * \return  int   Number of arguments to be called by function.
@@ -101,12 +101,15 @@ static inline int
 t_ael_getFunction( lua_State *L, int refPos )
 {
 	int n;      ///< number of arguments + 1(function)
+	int p;      ///< position of pickled function and args
 	int i;
 	lua_rawgeti( L, LUA_REGISTRYINDEX, refPos );
-	n = lua_rawlen( L, -1 );
+	p = lua_gettop( L );
+	n = lua_rawlen( L, p );
 	for (i=0; i<n; i++)
-		lua_rawgeti( L, 2, i+1 );
-	return n-1;
+		lua_rawgeti( L, p, i+1 );
+	lua_remove( L, p );
+	return n-1;  // return number of args
 }
 
 
@@ -149,8 +152,7 @@ t_ael_executeHeadTimer( lua_State *L, struct t_ael_tnd **tHead, struct timeval *
 		}
 		t_ael_insertTimer( tHead, tExc );
 	}
-	lua_pop( L, 2 );   // pop the one value that lua_call allows to be
-	                   // returned and the original reference table
+	lua_pop( L, 1 );   // pop the one value that lua_call allows for
 }
 
 
@@ -175,13 +177,11 @@ t_ael_executehandle( lua_State *L, struct t_ael_fd *fd, enum t_ael_msk msk )
 	{
 		n = t_ael_getFunction( L, rR );
 		lua_call( L, n , 0 );
-		lua_pop( L, 1 );             // remove the table
 	}
 	if( msk & T_AEL_WR )
 	{
 		n = t_ael_getFunction( L, wR );
 		lua_call( L, n , 0 );
-		lua_pop( L, 1 );             // remove the table
 	}
 }
 
@@ -571,7 +571,7 @@ lt_ael_showloop( lua_State *L )
 		{
 			printf( "%5d  [R]  ", i );
 			t_ael_getFunction( L, ael->fdSet[i]->rR );
-			t_stackPrint( L, n+2, lua_gettop( L ), 1 );
+			t_stackPrint( L, n+1, lua_gettop( L ), 1 );
 			lua_pop( L, lua_gettop( L ) - n );
 			printf( "\n" );
 		}
@@ -579,7 +579,7 @@ lt_ael_showloop( lua_State *L )
 		{
 			printf( "%5d  [W]  ", i );
 			t_ael_getFunction( L, ael->fdSet[i]->wR );
-			t_stackPrint( L, n+2, lua_gettop( L ), 1 );
+			t_stackPrint( L, n+1, lua_gettop( L ), 1 );
 			lua_pop( L, lua_gettop( L ) - n );
 			printf( "\n" );
 		}
