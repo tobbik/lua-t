@@ -31,8 +31,11 @@ local tests = {
 
 	test_ConstructorFullSegment = function( self )
 		Test.Case.describe( "Create a segment covering the entire buffer" )
-		local seg = Segment( self.b )
+		local seg         = Segment( self.b )
+		local buf,ofs,len = seg:getBuffer()
 		assert( #seg == #self.b, "Length of T.Buffer.Segment should be "..#self.b.." but was " ..#seg )
+		assert( #seg == len,     "Length of T.Buffer.Segment should be "..#seg.." but was " ..len )
+		assert( ofs  == 1,       "Offset of T.Buffer.Segment should be 1 but was " ..ofs )
 		assert( seg:read() == self.b:read(),
 			"Content of T.Buffer.Segment should be "..self.b:read().." but was "..seg:read() )
 	end,
@@ -54,6 +57,68 @@ local tests = {
 		assert( #seg == len, "Length of T.Buffer.Segment should be "..len.." but was " ..#seg )
 		assert( seg:read() == self.b:read( ofs, len ),
 			"Content of T.Buffer.Segment should be "..self.b:read(ofs, len ).." but was " ..seg:read() )
+	end,
+
+	test_ConstructorPartialSegmentIndexOne = function( self )
+		Test.Case.describe( "Segment starting at index 1 should equal Segment covering full Buffer" )
+		local seg1 = Segment( self.b, 1 )
+		local seg  = Segment( self.b )
+		assert( #seg1 == #seg, "Length of T.Buffer.Segment should be "..#seg.." but was " ..#seg1 )
+		assert( seg1  ==  seg, "T.Buffer.Segments should be eqyual" )
+		assert( seg1:read() == seg:read(),
+			"Content of T.Buffer.Segment should be "..seg:read( ).." but was " ..seg1:read() )
+	end,
+
+	test_ConstructorOffsetOverflowFails = function( self )
+		Test.Case.describe( "Creating Segment with offset higher then #buffer fails" )
+		local f   = function(s) local seg = T.Buffer.Segment( s.b, #s.b+5 ) end
+		local r,e = pcall( f, self )
+		assert( not r, "Segement constructor should have failed" )
+		assert( e:match( "Offset relative to length of T.Buffer out of bound" ), "Wrong Error message: "..e )
+	end,
+
+	test_ConstructorLengthOverflowFails = function( self )
+		Test.Case.describe( "Creating Segment with length higher then #buffer fails" )
+		local f   = function(s) local seg = T.Buffer.Segment( s.b, 1, #s.b+5 ) end
+		local r,e = pcall( f, self )
+		assert( not r, "Segement constructor should have failed" )
+		assert( e:match( "T.Buffer.Segment length out of bound" ), "Wrong Error message: "..e )
+	end,
+
+	test_ConstructorOffsetPlusLengthOverflowFails = function( self )
+		Test.Case.describe( "Creating Segment with offset+length higher then #buffer fails" )
+		local f   = function(s) local seg = T.Buffer.Segment( s.b, #s.b-5, 10 ) end
+		local r,e = pcall( f, self )
+		assert( not r, "Segement constructor should have failed" )
+		assert( e:match( "T.Buffer.Segment length out of bound" ), "Wrong Error message: "..e )
+	end,
+	
+	test_ConstructorZeroPartialLengthSegmentStart = function( self )
+		Test.Case.describe( "Create a 0 bytes long segment starting wherever" )
+		local seg         = Segment( self.b, 1, 0 )
+		local buf,idx,len = seg:getBuffer( )
+		assert( #seg == 0, "Length of T.Buffer.Segment should be "..len.." but was " ..#seg )
+		assert( seg:read() == self.b:read( idx, len ),
+			"Content of T.Buffer.Segment should be "..self.b:read(idx, len ).." but was " ..seg:read() )
+	end,
+	
+	test_ConstructorZeroPartialLengthSegmentMiddle = function( self )
+		local starts = math.random( math.floor(#self.seg/3), #self.b - math.floor(#self.seg/3 ) )
+		Test.Case.describe( "Create a 0 bytes long segment starting wherever" )
+		local seg         = Segment( self.b, start, 0 )
+		local buf,idx,len = seg:getBuffer( )
+		assert( #seg == 0, "Length of T.Buffer.Segment should be "..len.." but was " ..#seg )
+		assert( seg:read() == self.b:read( idx, len ),
+			"Content of T.Buffer.Segment should be "..self.b:read(idx, len ).." but was " ..seg:read() )
+	end,
+
+	test_ConstructorZeroPartialLengthSegmentStart = function( self )
+		Test.Case.describe( "Create a 0 bytes long segment starting wherever" )
+		local seg         = Segment( self.b, #self.b, 0 )
+		local buf,idx,len = seg:getBuffer( )
+		assert( #seg == 0, "Length of T.Buffer.Segment should be "..len.." but was " ..#seg )
+		assert( seg:read() == self.b:read( idx, len ),
+			"Content of T.Buffer.Segment should be "..self.b:read(idx, len ).." but was " ..seg:read() )
 	end,
 
 	test_ClearBufferSegment = function( self )
@@ -85,7 +150,7 @@ local tests = {
 
 	test_ReadIndexOutOfRange = function( self )
 		Test.Case.describe( "Reading from Buffer.Segment past it's length fails" )
-		local f = function(bs,n) return bs:read( n+1 ) end
+		local f = function(bs,n) return bs:read( n+2 ) end
 		assert( not pcall( f, self.seg, #self.seg ),
 			"Can't read from Buffer.Segment on index past it's length" )
 	end,
@@ -168,9 +233,9 @@ local tests = {
 		local oseg = Segment( self.b, ofs+1, len   )
 		local lseg = Segment( self.b, ofs,   len+1 )
 		print(self.seg, oseg, lseg)
-		assert( lseg ~= oseg,     "Different length and offset shall make Segement unequal" )
-		assert( oseg ~= self.seg, "Different offset shall make Segement unequal" )
-		assert( lseg ~= self.seg, "Different length shall make Segement unequal" )
+		assert( lseg ~= oseg,     "Different length and offset shall make Segment unequal" )
+		assert( oseg ~= self.seg, "Different offset shall make Segment unequal" )
+		assert( lseg ~= self.seg, "Different length shall make Segment unequal" )
 	end,
 
 	test_getBuffer = function( self )

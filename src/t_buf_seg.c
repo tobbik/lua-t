@@ -2,8 +2,9 @@
 */
 /**
  * \file      t_buf_seg.c
- * \brief     OOP wrapper for a segment of T.Buffer
- *            can be used for socket communication
+ * \brief     OOP wrapper for a segment of T.Buffer.Segment
+ *            can be used for everything T.Buffer works in
+ *            (T.Pack, T.Net.Socket, ...)
  * \author    tkieslich
  * \copyright See Copyright notice at the end of t.h
  */
@@ -21,63 +22,50 @@
  * \param   L      Lua state.
  * \lparam  CLASS  table Buffer Segment.
  * \lparam  ud     T.Buffer userdata instance.
- * \lparam  ofs    Start of Segment.
+ * \lparam  idx    Index in t_buf->b; Start of Segment.
  * \lparam  len    Length of Segment.
  * \return  int    # of values pushed onto the stack.
  *  -------------------------------------------------------------------------*/
 static int
 lt_buf_seg__Call( lua_State *L )
 {
-	size_t            ofs;
+	size_t            idx;
 	size_t            len;
 	struct t_buf     *buf = t_buf_check_ud( L, 2, 1 );
 	struct t_buf_seg *seg;
 
 	lua_remove( L, 1 );               // remove class table
-	if (lua_isinteger( L, 2 ))
-	{
-		luaL_argcheck( L,
-			1<=lua_tointeger( L, 2 ) && (size_t)lua_tointeger( L, 2 ) <= buf->len,
-			2,
-			"Array offset out of bound" );
-		ofs  = lua_tointeger( L, 2 );
-	}
-	else
-		ofs = 1;
+	idx  = luaL_optinteger( L, 2, 1 ) - 1;
+	luaL_argcheck( L, 0<=idx && (size_t)idx <= buf->len, 2,
+	   "Offset relative to length of "T_BUF_TYPE" out of bound" );
 
-	if (lua_isinteger( L, 3 ))
-	{
-		luaL_argcheck( L,
-			1 <= lua_tointeger( L, 3 ) && (size_t)(ofs+lua_tointeger( L, 3)-1) <= buf->len,
-			2,
-			"ArraySegment length out of bound" );
-		len  = lua_tointeger( L, 3 );
-	}
-	else
-		len = buf->len-ofs + 1;
+	len  = luaL_optinteger( L, 3, buf->len-idx );
+	luaL_argcheck( L, 0 <= len && (size_t)(idx+len) <= buf->len, 3,
+	   T_BUF_SEG_TYPE" length out of bound" );
+
 	while (lua_isinteger( L, -1 ))
 		lua_pop( L, 1 );
-	seg = t_buf_seg_create_ud( L, buf, ofs, len );
+	seg = t_buf_seg_create_ud( L, buf, idx+1, len );
 	return 1;
 }
 
 
 /**--------------------------------------------------------------------------
  * Create a T.Buffer.Segment and push to LuaStack.
- * \param  L  The lua state.
+ * \param  L  Lua state.
  *
  * \return struct t_buf_seg*  pointer to the  t_buf_seg struct
  * --------------------------------------------------------------------------*/
 struct t_buf_seg
-*t_buf_seg_create_ud( lua_State *L, struct t_buf *buf, size_t ofs, size_t len )
+*t_buf_seg_create_ud( lua_State *L, struct t_buf *buf, size_t idx, size_t len )
 {
 	struct t_buf_seg  *seg;
 
 	seg = (struct t_buf_seg *) lua_newuserdata( L, sizeof( struct t_buf_seg ) );
-	seg->ofs =  ofs;
+	seg->idx =  idx;
 	seg->len =  len;
-	seg->b   = &(buf->b[ ofs-1 ]);
-	lua_insert( L, -2 );
+	seg->b   = &(buf->b[ idx-1 ]);
+	lua_insert( L, -2 );       // move Segment before Buffer
 	seg->bR  =  luaL_ref( L, LUA_REGISTRYINDEX );
 
 	luaL_getmetatable( L, T_BUF_SEG_TYPE );
@@ -121,69 +109,6 @@ lt_buf_seg_clear( lua_State *L )
 }
 
 
-// TODO: read() and write() methods share a lot of validation across each other
-//       and with the same methods in the T.Buffer implementation itself.  Try
-//       to consolidate that.
-/**--------------------------------------------------------------------------
- * Read a set of chars from the T.Buffer.Segment at position x of length y.
- * \param   L    Lua state.
- * \lparam  ud   T.Buffer.Segment userdata instance.
- * \lparam  pos  Position in T.Buffer.Segment where reading starts.
- * \lparam  len  How many bytes shall be read from buf.
- * \lreturn val  Lua string.
- * \return  int  # of values pushed onto the stack.
- * --------------------------------------------------------------------------*/
-static int
-lt_buf_seg_read( lua_State *L )
-{
-	struct t_buf_seg *seg = t_buf_seg_check_ud( L, 1, 1 );
-	lua_Integer       idx = (lua_isinteger( L, 2 ))
-		? luaL_checkinteger( L, 2 )
-		: 1;
-	lua_Integer   len = (lua_isinteger( L, 3 ))
-		? luaL_checkinteger( L, 3 )
-		: seg->len+1 - idx;
-
-	luaL_argcheck( L, 1 <= idx && (size_t)idx         <= seg->len, 2, "index out of range" );
-	luaL_argcheck( L, 1 <= len && (size_t)(idx+len-1) <= seg->len, 3, "requested length out of range" );
-
-	lua_pushlstring( L, (const char*) &(seg->b[ idx-1 ]), len );
-	return 1;
-}
-
-
-/**--------------------------------------------------------------------------
- * Write a set of chars to the T.Buffer.Segment at position x of length y.
- * \param   L      Lua state.
- * \lparam  ud     T.Buffer.Segment userdata instance.
- * \lparam  string Lua string to write to T.Buffer.Segment.
- * \lparam  pos    Position in T.Buffer.Segment where writing starts.
- * \lparam  len    How many bytes of val shall be written to buf.
- * \return  int    # of values pushed onto the stack.
- * --------------------------------------------------------------------------*/
-static int
-lt_buf_seg_write( lua_State *L )
-{
-	struct t_buf_seg *seg = t_buf_seg_check_ud( L, 1, 1 );
-	lua_Integer       idx = (lua_isinteger( L, 3 ))
-		? luaL_checkinteger( L, 3 )
-		: 1;
-	size_t        len;
-
-	luaL_checklstring( L, 2, &len );
-
-	luaL_argcheck( L, lua_isnone( L, 4 ) || (lua_isinteger( L, 4 ) && lua_tointeger( L, 4 ) > 0),
-		4, "requested length must be bigger than 0" );
-	len = (lua_isinteger( L, 4 )) ? (size_t) lua_tointeger( L, 4 ) : len;
-
-	luaL_argcheck( L, 1 <= idx && (size_t)idx         <= seg->len, 2, "index out of range" );
-	luaL_argcheck( L, 1 <= len && (size_t)(idx+len-1) <= seg->len, 3, "requested length out of range" );
-
-	memcpy( (char*) &(seg->b[ idx-1 ]), lua_tostring( L, 2 ), len );
-	return 0;
-}
-
-
 /**--------------------------------------------------------------------------
  * Gets the content of the Buffer.Segment as a hexadecimal string.
  * \param   L       Lua state.
@@ -219,7 +144,7 @@ lt_buf_seg_toBinString( lua_State *L )
  * \param   L       Lua state.
  * \lparam  ud      T.Buffer userdata instance.
  * \lreturn ud      T.Buffer reference.
- * \lreturn ofs     Offset within T.Buffer.
+ * \lreturn idx     Start of Segment in T.Buffer.
  * \lreturn len     Length of this segment.
  * \return  int     # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
@@ -228,7 +153,7 @@ lt_buf_seg_getReferences( lua_State *L )
 {
 	struct t_buf_seg *seg   = t_buf_seg_check_ud( L, 1, 1 );
 	lua_rawgeti( L, LUA_REGISTRYINDEX, seg->bR );
-	lua_pushinteger( L, seg->ofs );
+	lua_pushinteger( L, seg->idx );
 	lua_pushinteger( L, seg->len );
 	return 3;
 }
@@ -282,7 +207,7 @@ static int
 lt_buf_seg__tostring( lua_State *L )
 {
 	struct t_buf_seg *seg = t_buf_seg_check_ud( L, 1, 1 );
-	lua_pushfstring( L, T_BUF_SEG_TYPE"[%d:%d]: %p", seg->ofs, seg->ofs+seg->len-1, seg );
+	lua_pushfstring( L, T_BUF_SEG_TYPE"[%d:%d]: %p", seg->idx, seg->idx+seg->len, seg );
 	return 1;
 }
 
@@ -328,8 +253,8 @@ static const luaL_Reg t_buf_seg_m [] = {
 	, { "__gc"         , lt_buf_seg__gc }
 	// instance methods
 	, { "clear"        , lt_buf_seg_clear }
-	, { "read"         , lt_buf_seg_read }
-	, { "write"        , lt_buf_seg_write }
+	, { "read"         , lt_buf_read }
+	, { "write"        , lt_buf_write }
 	, { "getBuffer"    , lt_buf_seg_getReferences }
 	// universal stuff
 	, { "toHex"        , lt_buf_seg_toHexString }

@@ -20,8 +20,8 @@ struct t_buf {
 /// The userdata struct for T.Buffer.Segment
 struct t_buf_seg {
 	int      bR;    ///<  LUA_REGISTRYINDEX reference for t_buf
-	char    *b;     ///<  pointer to t_buf->b[ofs]
-	size_t   ofs;   ///<  offest from buffer start
+	char    *b;     ///<  pointer to t_buf->b[idx-1]
+	size_t   idx;   ///<  offest from buffer start
 	size_t   len;   ///<  length of segment
 };
 
@@ -37,10 +37,12 @@ char         *t_buf_checklstring( lua_State *L, int pos, size_t *len, int *cw );
 int           t_buf_getHexString( lua_State *L, char *b, size_t len );
 int           t_buf_getBinString( lua_State *L, char *b, size_t len );
 int           t_buf_compare( lua_State *L, char *bA, char *bB, size_t aLen, size_t bLen );
+int          lt_buf_write( lua_State *L );
+int          lt_buf_read ( lua_State *L );
 
 // t_buf_seg.c
 // Constructors
 int               luaopen_t_buf_seg   ( lua_State *L );
 struct t_buf_seg *t_buf_seg_check_ud  ( lua_State *L, int pos, int check );
-struct t_buf_seg *t_buf_seg_create_ud ( lua_State *L, struct t_buf *buf, size_t ofs, size_t len );
+struct t_buf_seg *t_buf_seg_create_ud ( lua_State *L, struct t_buf *buf, size_t idx, size_t len );
 

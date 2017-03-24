@@ -31,9 +31,9 @@
 static int
 lt_buf__Call( lua_State *L )
 {
-	size_t                                  sz;
-	struct t_buf  __attribute__ ((unused)) *buf;
-	struct t_buf                           *cpy_buf = t_buf_check_ud( L, -1, 0 );
+	size_t          sz;
+	struct t_buf   *buf;
+	struct t_buf   *cpy_buf = t_buf_check_ud( L, -1, 0 );
 
 	lua_remove( L, 1 );    // remove the T.Buffer Class table
 	if (NULL != cpy_buf)
@@ -287,53 +287,51 @@ lt_buf_clear( lua_State *L )
  * \lreturn val    Lua string.
  * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
-static int
+int
 lt_buf_read( lua_State *L )
 {
-	struct t_buf *buf = t_buf_check_ud( L, 1, 1 );
-	lua_Integer   idx = (lua_isinteger( L, 2 ))
-		? luaL_checkinteger( L, 2 )
-		: 1;
-	lua_Integer   len = (lua_isinteger( L, 3 ))
-		? luaL_checkinteger( L, 3 )
-		: buf->len+1 - idx;
+	size_t        bLen;
+	int           cw   = 0;
+	char         *buf  = t_buf_checklstring( L, 1, &bLen, &cw );
+	lua_Integer   idx  = luaL_optinteger( L, 2, 1 ) - 1;
+	lua_Integer   len  = luaL_optinteger( L, 3, bLen-idx );
 
-	luaL_argcheck( L, 1 <= idx && (size_t)idx         <= buf->len, 2, "index out of range" );
-	luaL_argcheck( L, 1 <= len && (size_t)(idx+len-1) <= buf->len, 3, "requested length out of range" );
+	luaL_argcheck( L, cw != 0, 1, "must be "T_BUF_TYPE" or "T_BUF_SEG_TYPE );
+	luaL_argcheck( L, 0 <= idx && (size_t)idx       <= bLen, 2, "index out of range" );
+	luaL_argcheck( L, 0 <= len && (size_t)(idx+len) <= bLen, 3, "requested length out of range" );
 
-	lua_pushlstring( L, (const char*) &(buf->b[ idx-1 ]), len );
+	lua_pushlstring( L, buf + idx, len );
 	return 1;
 }
 
 
 /**--------------------------------------------------------------------------
- * Write an set of chars to T.Buffer at position x for length y.
+ * Write a set of bytes to T.Buffer at position x for length y.
  * \param   L      Lua state.
- * \lparam  ud     T.Buffer userdata instance.
+ * \lparam  ud     T.Buffer/T.Buffer.Segment userdata instance.
  * \lparam  string Lua string to write to T.Buffer.
  * \lparam  pos    Position in T.Buffer where writing starts.
  * \lparam  len    How many bytes of val shall be written to buf.
  * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
-static int
+int
 lt_buf_write( lua_State *L )
 {
-	struct t_buf *buf = t_buf_check_ud( L, 1, 1 );
-	lua_Integer   idx = (lua_isinteger( L, 3 ))
-		? luaL_checkinteger( L, 3 )
-		: 1;
-	size_t        len;
+	size_t        bLen;
+	size_t        sLen = 0;
+	int           cw   = 0;
+	char         *buf  = t_buf_checklstring( L, 1, &bLen, &cw );
+	lua_Integer   idx  = luaL_optinteger( L, 3, 1 );
 
-	luaL_checklstring( L, 2, &len );
+	luaL_argcheck( L, cw != 0, 1, "must be "T_BUF_TYPE" or "T_BUF_SEG_TYPE );
 
-	luaL_argcheck( L, lua_isnone( L, 4 ) || (lua_isinteger( L, 4 ) && lua_tointeger( L, 4 ) > 0),
-		4, "requested Length must be bigger than 0" );
-	len = (lua_isinteger( L, 4 )) ? (size_t) lua_tointeger( L, 4 ) : len;
+	luaL_checklstring( L, 2, &sLen );
+	sLen = luaL_optinteger( L, 4, sLen );
 
-	luaL_argcheck( L, 1 <= idx && (size_t)idx         <= buf->len, 2, "index out of range" );
-	luaL_argcheck( L, 1 <= len && (size_t)(idx+len-1) <= buf->len, 3, "requested length out of range" );
+	luaL_argcheck( L, 1 <= idx  && (size_t)idx          <= bLen, 2, "index out of range" );
+	luaL_argcheck( L, 1 <= sLen && (size_t)(idx+sLen-1) <= bLen, 3, "requested length out of range" );
 
-	memcpy( (char*) &(buf->b[ idx-1 ]), lua_tostring( L, 2 ), len );
+	memcpy( buf + idx-1, lua_tostring( L, 2 ), sLen );
 	return 0;
 }
 
