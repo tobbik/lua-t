@@ -242,9 +242,9 @@ Instance Members
 Overloaded recv() method
 ........................
 
-The three possible arguments to ``recv()`` **must always** be given in the
-order of: ``T.Buffer/Segment buf, T.Net.Address addr, int max``.  Each of the
-arguments is optional.
+The three possible arguments to ``recv()`` **must always** be in the order
+of: ``T.Net.Address addr, T.Buffer/Segment buf/LuaString str, int max``.
+Only the buf/str argument is mandatory. 
 
 ``string msg, int rcvd, T.NetAddress addr = T.Net.Socket sck:recv( int max )``
   Receives data from the ``T.Net.Socket`` instance.  Returns the
@@ -257,11 +257,12 @@ arguments is optional.
   Writes the ``T.Net.Address`` information of the peer into the instance
   passed into as parameter.
 
-``int rcvd, T.NetAddress addr = T.Net.Socket sck:recv( T.Buffer/Segment buf )``
+``bool rcvd, int cnt = T.Net.Socket sck:recv( T.Buffer/Segment buf )``
   Write the recieved payload into the ``T.Buffer/Segment`` instance instead
-  of allocating a new string.
+  of allocating a new string.  The call to ``rcvd()`` is automatically sized
+  to ``#buf``.
 
-``int rcvd = T.Net.Socket sck:recv( T.Buffer/Segment buf, T.NetAddress addr )``
+``bool rcvd, int cnt = T.Net.Socket sck:recv( T.Net.Address addr, T.Buffer/Segment buf )``
   Writes the ``T.Net.Address`` information of the peer into the instance
   passed into as parameter.  Write the recieved payload into the
   ``T.Buffer/Segment`` instance instead of allocating a new string.

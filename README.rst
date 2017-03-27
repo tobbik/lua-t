@@ -19,18 +19,32 @@ overhead.  This makes programming easier on the Lua side of things as it makes
 for a very consistent way to code.
 
 
+Functionality
+-------------
+
+When faced with writing an increasingly complex simulator I wished I had the
+library lua-t is today.  The particular requirements (Packer, Network,
+Async) of that project drove the features in lua-t for a long time.  Writing
+a lot of code over the years left me with lots of availabe but incoherent
+functionality.  lua-t is the attempt to bring all of it into a
+comprehensive, well tested, well documented and easy to use library.  As
+time progresses and users pick it up the available functionality will be
+made more rounded and more useful.
+
+
 Contents (High level overview)
 -----------------------------
 
- - Networking (t.Socket)  --> TCP,UDP etc
+ - Networking (t.Net.*)   --> TCP,UDP,Addresses etc
  - Buffers (t.Buffer)     --> a buffer of defined length with mutable values
- - Packers (t.Pack)       --> a binary Packer for several types of data
- - Encoding (t.Encoding)  --> En/Decoding, En/Decryption, Hashes etc.
+ - Packers (t.Pack.*)     --> a binary Packer/Parser for several types of data
+ - Encoding (t.Encoding.*)--> En/Decoding, En/Decryption, Hashes etc.
  - Unit Tests (t.Test)    --> comprehensive unit tests
  - HTTP Server (t.Http)   --> An asynchronous HTTP Server implementation
  - Asynchronous (t.Loop)  --> event/select based asynchronous workings
  - OrderedHashTable       --> Hashtable that preserves insertion order
  - Sets (t.Set)           --> Feature rich Set implementation
+ - Time (t.Time)          --> Very simple wrapper defining a duration
 
 
 Compatability

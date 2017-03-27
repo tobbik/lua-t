@@ -1,0 +1,46 @@
+#!../out/bin/lua
+t      = require't'
+host   = t.Net.Interface( 'default' ).address:get( )
+port   = 8888
+l      = t.Loop( 10 )
+msg    = nil
+sSck   = t.Net.Socket( 'udp' )
+sAdr   = t.Net.IPv4( host, port )
+cAdr   = t.Net.IPv4( )
+rcv,lst,cnt = 0,0,0
+
+echo = function( c, close )
+	local snt = 0
+	if close then
+		snt  = c:send( cAdr, '', 0 )
+		print( "GOT BURST:", cnt, lst, rcv )
+		rcv,lst,cnt = 0,0,0
+	else
+		snt  = c:send( cAdr, msg )
+	end
+	l:removeHandle( c, false )
+end
+
+read = function( c )
+	local rcvd = nil
+	msg,rcvd   = c:recv( cAdr  )
+	if msg then
+		local num  = tonumber( msg:sub( 1, 6 ) )
+		cnt = cnt + 1
+		rcv = rcv+rcvd
+		if lst+1 ~=num then
+			print( "MISSED:", cnt, lst+1, num )
+		end
+		lst=num
+		l:addHandle( c, false, echo, c )
+	else
+		l:addHandle( c, false, echo, c, true )
+	end
+end
+
+print( sSck, sAdr, l )
+sSck:bind( sAdr )
+l:addHandle( sSck, true, read, sSck )
+l:run( )
+
+

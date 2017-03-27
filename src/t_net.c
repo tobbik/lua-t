@@ -122,7 +122,7 @@ t_net_getProtocolByValue( lua_State *L, int pos, const int dft )
  *          IPv4(TCP), ipString:port   = Socket.func( 'ipString', port )
  *          IPv4(TCP), 0.0.0.0:port    = Socket.func( port )
  *
- *          (no retrun values)         = Socket.func( sck, ip )
+ *          (no return values)         = Socket.func( sck, ip )
  *          Adr ipString:port          = Socket.func( sck, 'ipString', port )
  *          Adr ipString:(0)           = Socket.func( sck, 'ipstring' )
  *          Adr 0.0.0.0:port           = Socket.func( sck, port )

@@ -13,7 +13,7 @@ LDFLAGS:=$(LDFLAGS) -lcrypt
 # clang can be substituted with gcc (command line args compatible)
 CC=clang
 LD=clang
-#CFLAGS:= -Wall -Wextra -O0 -std=c99 -fpic $(MYCFLAGS)
+#CFLAGS:= -Wall -Wextra -pedantic -O0 -std=c99 -fpic $(MYCFLAGS)
 CFLAGS:= -Wall -Wextra -O0 -std=c99 -fpic $(MYCFLAGS)
 AR=ar rcu
 RANLIB=ranlib
