@@ -43,12 +43,12 @@ local tests = {
 		self.srv, self.adr = Socket.listen( self.host, self.port )
 		print( self.srv, self.adr )
 		self.loop          = Loop( 20 )
-		self.loop:addHandle( self.srv, true, accept, self )
+		self.loop:addHandle( self.srv, 'read', accept, self )
 		done()
 	end,
 
 	afterAll = function( self, done )
-		self.loop:removeHandle( self.srv, true )
+		self.loop:removeHandle( self.srv, 'read' )
 		self.srv:close( )
 		done()
 	end,

@@ -35,21 +35,20 @@ are called on a class level or on an instance level(method) are the same.
 Overloaded send() and recv() methods
 ------------------------------------
 
-Similarly send() and recv() act for all type of sockets.  In the socket is
-unbound it requieres a ``T.Net.Address`` instance to be passed which is then
-the first parameter.  Otherwise the first parameter is the message to be
-sent.
-of UDP the user is supposed to specify an address to send the datagram to.
-As a result the `send()` function inspects the first argument.  If it is a
-``T.Net.Address`` it'll be used to send the message to it. If it's ``nil``
-it will be disregarded.  Any other value will be interpreted as a message to
-be send.  All of the following arguments will move up so that the following
-to functioncalls behave identically.
+Similarly send() and recv() act for all type of sockets.  If the socket is
+unbound/unconnected it requieres a ``T.Net.Address`` instance to be passed
+which is then the first parameter.  Otherwise the first parameter is the
+message to be sent.  of UDP the user is supposed to specify an address to send
+the datagram to.  As a result the `send()` function inspects the first
+argument.  If it is a ``T.Net.Address`` it'll be used to send the message to
+it.  Any other value will be interpreted as a message to be send.  All of
+the following arguments will move up so that the following to function calls
+behave identically.
 
 .. code:: lua
 
-  sent_bytes_count = sck:send( nil, message_string, offset, length )
-  sent_bytes_count = sck:send( message_string, offset, length )
+  sent_bytes_count = sck:send( address, message_string, length )
+  sent_bytes_count = sck:send( message_string, length )
 
 
 Class Members
@@ -225,13 +224,13 @@ Instance Members
     --           port   -> integer specifying the port
     --           host   -> string specifying the IP address
     
-    _,__    = Socket.listen( sck )                 -- just listen; assume bound socket
-    _,__    = Socket.listen( sck, bl )             -- just listen; assume bound socket
-    _,__    = Socket.listen( sck, ip )             -- perform bind and listen
-    _,__    = Socket.listen( sck, ip, bl )         -- perform bind and listen
-    adr,__  = Socket.listen( sck, host )           -- Adr host:xxxxx
-    adr,__  = Socket.listen( sck, host, port )     -- Adr host:port
-    adr,__  = Socket.listen( sck, host, port, bl ) -- Adr host:port
+    _,__    = sck.listen( )                -- just listen; assume bound socket
+    _,__    = sck.listen( bl )             -- just listen; assume bound socket
+    _,__    = sck.listen( ip )             -- perform bind and listen
+    _,__    = sck.listen( ip, bl )         -- perform bind and listen
+    adr,__  = sck.listen( host )           -- Adr host:xxxxx
+    adr,__  = sck.listen( host, port )     -- Adr host:port
+    adr,__  = sck.listen( host, port, bl ) -- Adr host:port
 
 ``T.Net.Socket client, T.NetAddress addr = T.Net.Socket sck:accept( )``
   Accepts a new connection the ``T.Net.Socket`` instance.  Returns the
@@ -243,7 +242,7 @@ Overloaded recv() method
 ........................
 
 The three possible arguments to ``recv()`` **must always** be in the order
-of: ``T.Net.Address addr, T.Buffer/Segment buf/LuaString str, int max``.
+of: ``T.Net.Address addr, T.Buffer/Segment buf, int max``.
 Only the buf/str argument is mandatory. 
 
 ``string msg, int rcvd, T.NetAddress addr = T.Net.Socket sck:recv( int max )``
@@ -272,20 +271,21 @@ Overloaded send() method
 ........................
 
 The three possible arguments to ``send()`` **must always** be given in the
-order of: ``T.Net.Address addr, T.Buffer/Segment buf, int offset``.  The
-`buf` argumnent is mandatory.  Each of the other arguments are optional.
+order of: ``T.Net.Address addr, T.Buffer/Segment buf/LuaString msg, int max``.
+The ``buf/msg`` argument is mandatory.  Each of the other arguments are
+optional.
 
-``int sent = T.Net.Socket sck:recv( T.Net.Address addr, T.Buffer/Segment buf, int offset )``
+``int sent = T.Net.Socket sck:recv( T.Net.Address addr, T.Buffer/Segment buf, int max )``
   Send data via ``T.Net.Socket`` to `addr`.  `buf` can be a Lua string, a
-  ``T.Buffer`` or a ``T.Buffer.Segment``.  If an `offset` is given the data
-  send to the socket will start at `buf` index offset.  It will try to send
-  as many data as possible, potentially until the end of buffer if possible.
+  ``T.Buffer`` or a ``T.Buffer.Segment``.  If an `max` is given the data
+  send to the socket will be a maximum of data tried to be send, else it
+  will try to send until the end of buffer if possible.
 
 
 Instance Metamembers
 --------------------
 
-``string s = tostring( T.Net.Scoket sck )  [__tostring]``
+``string s = tostring( T.Net.Socket sck )  [__tostring]``
   Returns a string representing the T.Net.Socket instance.  The String
   contains type, Socket handle number and memory address information such as
   "T.Net.Socket[TCP,3]: 0xdac2e8", meaning it is a TCP Socket with socket

@@ -3,7 +3,7 @@ t      = require't'
 host   = t.Net.Interface( 'default' ).address:get( )
 port   = 8888
 l      = t.Loop( 10 )
-bInc   = t.Buffer( 1024*8 )
+bInc   = t.Buffer( 1024*20 )
 iCnt   = 0
 
 echo = function( c, close )
