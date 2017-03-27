@@ -83,13 +83,13 @@ int
 t_ael_addhandle_impl( lua_State *L, struct t_ael *ael, int fd, enum t_ael_msk addmsk )
 {
 	struct t_ael_ste  *state = ael->state;
-	struct epoll_event ee;
 	int                msk   = addmsk | ael->fdSet[ fd ]->msk;   // Merge old events
 	// If the fd was already monitored for some event, we need a MOD
 	// operation. Otherwise we need an ADD operation.
 	int                op    = (T_AEL_NO == ael->fdSet[ fd ]->msk)
 	                           ? EPOLL_CTL_ADD
 	                           : EPOLL_CTL_MOD;
+	struct epoll_event ee;
 
 	memset( &ee, 0, sizeof( ee ) ); // avoid valgrind warning
 	ee.events = 0;
@@ -113,13 +113,13 @@ int
 t_ael_removehandle_impl( lua_State *L, struct t_ael *ael, int fd, enum t_ael_msk delmsk )
 {
 	struct t_ael_ste  *state = ael->state;
-	struct epoll_event ee;
 	int                msk   = ael->fdSet[ fd ]->msk & (~delmsk);
 	// If the fd remains monitored for some event, we need a MOD
 	// operation. Otherwise we need an DEL operation.
 	int                op    = (T_AEL_NO != msk)
 	                              ? EPOLL_CTL_MOD
 	                              : EPOLL_CTL_DEL;
+	struct epoll_event ee;
 
 	memset( &ee, 0, sizeof( ee ) ); // avoid valgrind warning
 	ee.events = 0;

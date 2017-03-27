@@ -7,5 +7,6 @@ ip      = t.Net.IPv4( ipAddr, port )
 print( udpsock, ip )
 --for k,v in pairs(getmetatable(udpsock)) do print( k, v ) end
 udpsock:bind( ip )
-msg, len, ip_cli = udpsock:recv()
+ip_cli = t.Net.Socket()
+msg, len = udpsock:recv(ip_cli)
 print( msg, len, ip_cli, "\n" )

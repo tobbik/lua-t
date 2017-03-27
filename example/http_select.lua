@@ -42,7 +42,7 @@ while true do
 	end
 
 	for n,cli in ipairs( wrs ) do
-		local len = cli:send( nil, conns[ cli ].payload )
+		local len = cli:send( conns[ cli ].payload )
 		print('\tsend : ' ..len.. " BYTES FROM:  "..tostring(cli) )
 		conns[ cli ] = nil
 		cli:close( )

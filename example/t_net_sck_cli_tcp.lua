@@ -20,8 +20,8 @@ print( tcpsock, sip, cip )
 buf  = t.Buffer( string.rep( 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz', 1234567 ) )
 sent = 0
 while sent<#buf do
-	local snt = tcpsock:send( nil, buf, sent )
-	print ( "SNT:", snt )
+	local suc,snt = tcpsock:send( t.Buffer.Segment( buf, sent+1 ) )
+	print ( "SUC SNT:", suc, snt )
 	sent = sent + snt
 	print( sent, #buf )
 end

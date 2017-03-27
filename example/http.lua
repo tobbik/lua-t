@@ -34,7 +34,8 @@ end
 
 
 cmd = function( sck )
-	local msg, len, ip_cli = sck:recv()
+	local ip_cli = t.Net.IPv4()
+	local msg, len = sck:recv( ip_cli )
 	local chunk = load( msg )
 	if chunk then
 		local done, msg = pcall( chunk )
@@ -47,7 +48,7 @@ cmd = function( sck )
 end
 
 
-l:addHandle( s, true, cmd, s )
+l:addHandle( s, 'read', cmd, s )
 h=t.Http.Server( l, x )
 sc,ip = h:listen( 8000, 10 )  -- listen on 0.0.0.0 INADDR_ANY
 print( sc, ip, s )

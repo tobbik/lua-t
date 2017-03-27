@@ -17,7 +17,7 @@ read   = function( c )
 		print( "GOT ECHO:", iAdr, cnt, msg:sub( 1, 10 ) )
 	else
 		print( "CLOSE", iAdr )
-		l:removeHandle( c, true )
+		l:removeHandle( c, 'read' )
 		c:close()
 		l:stop()
 	end
@@ -32,14 +32,14 @@ write  = function( c )
 		--print( "SENT: ", snt, ofs, bOut:read(1,6) )
 	else
 		print( "SENT SENTINEL", ofs )
-		l:removeHandle( c, false )
+		l:removeHandle( c, 'write' )
 	end
 end
 
 print( mSck, sAdr, l, bOut )
 mSck.nonblock = true
-l:addHandle( mSck, false, write, mSck )
-l:addHandle( mSck, true, read, mSck )
+l:addHandle( mSck, 'write', write, mSck )
+l:addHandle( mSck, 'read', read, mSck )
 l:run( )
 
 

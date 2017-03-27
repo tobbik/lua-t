@@ -10,13 +10,13 @@ echo = function( c, close )
 	if close then
 		local snt  = c:send( '', 0 )
 		print( "Close Client" )
-		l:removeHandle( c, false )
+		l:removeHandle( c, 'write' )
 		c:shutdown( 'write' )
 		c:close();
 	else
 		local snt  = c:send( bInc )
 		print( "RSPD:", snt, iCnt, bInc:read(1,39) )
-		l:removeHandle( c, false )
+		l:removeHandle( c, 'write' )
 	end
 end
 
@@ -25,12 +25,12 @@ read = function( c )
 	if rcvd then
 		iCnt = iCnt+cnt
 		print( "RCVD:", cnt, iCnt, bInc:read(1,39) )
-		l:addHandle( c, false, echo, c )
+		l:addHandle( c, 'write', echo, c )
 	else
 		print("DONE___")
-		l:removeHandle( c, true )
+		l:removeHandle( c, 'read' )
 		c:shutdown( 'read' )
-		l:addHandle( c, false, echo, c, true )
+		l:addHandle( c, 'write', echo, c, true )
 		iCnt = 0
 	end
 end
@@ -39,13 +39,13 @@ accept = function( s )
 	local c,cAdr = s:accept()
 	c.nonblock = true
 	print( c, cAdr )
-	l:addHandle( c, true, read, c )
+	l:addHandle( c, 'read', read, c )
 end
 
 sSck,sAdr = t.Net.Socket.listen( host, port, 5 )
 sSck.nonblock = true
 print( sSck, sAdr, l )
-l:addHandle( sSck, true, accept, sSck )
+l:addHandle( sSck, 'read', accept, sSck )
 l:run( )
 
 

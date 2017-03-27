@@ -16,7 +16,7 @@ sent  = 0
 while true do
 	local rds, wds = t.Net.Socket.select( {}, conns )
 	if wds.client then
-		local snt = wds.client:send( nil, buf, sent )
+		local suc,snt = wds.client:send( t.Buffer.Segment( buf, sent+1 ) )
 		if snt>0 then
 			sent = sent + snt
 			print( "SENT:", snt, sent, #buf )

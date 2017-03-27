@@ -13,7 +13,7 @@ read   = function( c )
 		print( "GOT ECHO:", cnt, bInc:read( 1,40 ) )
 	else
 		print( "REMOVE HANDLE" )
-		l:removeHandle( c, true )
+		l:removeHandle( c, 'read' )
 		print( "CLOSE" )
 		c:close()
 		l:stop()
@@ -27,7 +27,7 @@ write  = function( c )
 		ofs = ofs + snt
 		print( "SENT: ", snt, ofs, seg:read(1,40) )
 	else
-		l:removeHandle( c, false )
+		l:removeHandle( c, 'write' )
 		print( "DONE SENDING", ofs )
 		c:shutdown( 'write' )
 	end
@@ -36,8 +36,8 @@ end
 cSck,cAdr = t.Net.Socket.connect( host, port )
 cSck.nonblock = true
 print( cSck, cAdr, l, bOut )
-l:addHandle( cSck, false, write, cSck )
-l:addHandle( cSck, true, read, cSck )
+l:addHandle( cSck, 'write', write, cSck )
+l:addHandle( cSck, 'read', read, cSck )
 l:run( )
 
 

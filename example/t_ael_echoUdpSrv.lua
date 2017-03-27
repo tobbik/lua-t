@@ -18,7 +18,7 @@ echo = function( c, close )
 	else
 		snt  = c:send( cAdr, msg )
 	end
-	l:removeHandle( c, false )
+	l:removeHandle( c, 'write' )
 end
 
 read = function( c )
@@ -32,15 +32,15 @@ read = function( c )
 			print( "MISSED:", cnt, lst+1, num )
 		end
 		lst=num
-		l:addHandle( c, false, echo, c )
+		l:addHandle( c, 'write', echo, c )
 	else
-		l:addHandle( c, false, echo, c, true )
+		l:addHandle( c, 'write', echo, c, true )
 	end
 end
 
 print( sSck, sAdr, l )
 sSck:bind( sAdr )
-l:addHandle( sSck, true, read, sSck )
+l:addHandle( sSck, 'read', read, sSck )
 l:run( )
 
 

@@ -30,14 +30,14 @@ ln       = 0;
 x02 = function( msg )
 	msg:writeHead( 200, fSz )
 	local f = io.open( fileName, "r" )
-	l:addHandle( f, true, function( )
+	l:addHandle( f, 'read', function( )
 		local d = f:read( 200 )
 		if d then
 			print( f, #d )
 			msg:write( d )
 		else
 			print( f, "end" )
-			l:removeHandle( f, true )
+			l:removeHandle( f, 'read' )
 			f:close()
 			-- msg:finish()
 		end

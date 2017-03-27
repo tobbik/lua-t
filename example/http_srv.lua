@@ -23,7 +23,7 @@ while true do
 		--print( len, msg, string.byte(msg) )
 		msg, len = cli:recv( )
 	end
-	len = cli:send( nil, payload )
+	len = cli:send( payload )
 	print( '\tsend : ' ..len.. " BYTES VIA:  "..tostring( cli ) )
 	cli:close( )
 	collectgarbage( )

@@ -130,7 +130,7 @@ t_ael_executeHeadTimer( lua_State *L, struct t_ael_tnd **tHead, struct timeval *
 
 	*tHead = (*tHead)->nxt;
 	n      = t_ael_getFunction( L, tExc->fR );
-	lua_call( L, n, 1 );
+	lua_call( L, n, 1 );  // if NO T.Time is return it's a nil
 	t_tim_since( rt );
 	t_ael_adjustTimers( tHead, rt );
 	tv = t_tim_check_ud( L, -1, 0 );
@@ -166,21 +166,17 @@ t_ael_executeHeadTimer( lua_State *L, struct t_ael_tnd **tHead, struct timeval *
 void
 t_ael_executehandle( lua_State *L, struct t_ael_fd *fd, enum t_ael_msk msk )
 {
-	// keep theses values because executing the RD function first may __gc the
-	// fd.  Chances are the wR function will fail anyways but let's give it a
-	// chance anyways.
-	int rR = fd->rR, wR = fd->wR;
 	int n;
 
 	//printf( "%d    %d    %d    %d\n", fd, rR, wR, msk );
-	if( msk & T_AEL_RD )
+	if (NULL != fd && msk & T_AEL_RD & fd->msk)
 	{
-		n = t_ael_getFunction( L, rR );
+		n = t_ael_getFunction( L, fd->rR );
 		lua_call( L, n , 0 );
 	}
-	if( msk & T_AEL_WR )
+	if (NULL != fd && msk & T_AEL_WR & fd->msk)
 	{
-		n = t_ael_getFunction( L, wR );
+		n = t_ael_getFunction( L, fd->wR );
 		lua_call( L, n , 0 );
 	}
 }
@@ -262,7 +258,11 @@ lt_ael_addhandle( lua_State *L )
 	int               fd  = 0;
 	int               n   = lua_gettop( L ) + 1;    ///< iterator for arguments
 	struct t_ael     *ael = t_ael_check_ud( L, 1, 1 );
-	enum t_ael_msk    msk = lua_toboolean( L, 3 ) ? T_AEL_RD : T_AEL_WR;
+	enum t_ael_msk    msk;
+
+	t_getTypeByName( L, 3, NULL, t_ael_directionList );
+	luaL_argcheck( L, ! lua_isnil( L, 3 ), 3, "must specify direction" );
+	msk = luaL_checkinteger( L, 3 );
 
 	luaL_checktype( L, 4, LUA_TFUNCTION );
 	lS = (luaL_Stream *) luaL_testudata( L, 2, LUA_FILEHANDLE );
@@ -320,8 +320,11 @@ lt_ael_removehandle( lua_State *L )
 	int               fd  = 0;
 	int                i;
 	struct t_ael     *ael = t_ael_check_ud( L, 1, 1 );
-	luaL_checktype( L, 3, LUA_TBOOLEAN );
-	enum t_ael_msk    msk = lua_toboolean( L, 3 ) ? T_AEL_RD :T_AEL_WR;
+	enum t_ael_msk    msk;
+
+	t_getTypeByName( L, 3, NULL, t_ael_directionList );
+	luaL_argcheck( L, ! lua_isnil( L, 3 ), 3, "must specify direction" );
+	msk = luaL_checkinteger( L, 3 );
 
 	lS = (luaL_Stream *) luaL_testudata( L, 2, LUA_FILEHANDLE );
 	if (NULL != lS)
@@ -335,12 +338,18 @@ lt_ael_removehandle( lua_State *L )
 		return t_push_error( L, "Argument to addHandle must be file or socket" );
 	// remove function
 	if (T_AEL_RD & msk)
+	{
 		luaL_unref( L, LUA_REGISTRYINDEX, ael->fdSet[ fd ]->rR );
+		ael->fdSet[ fd ]->wR = LUA_REFNIL;
+	}
 	else
+	{
 		luaL_unref( L, LUA_REGISTRYINDEX, ael->fdSet[ fd ]->wR );
+		ael->fdSet[ fd ]->wR = LUA_REFNIL;
+	}
 	t_ael_removehandle_impl( L, ael, fd, msk );
 	// remove from mask
-	ael->fdSet[ fd ]->msk = ael->fdSet[ fd ]-> msk & (~msk);
+	ael->fdSet[ fd ]->msk = ael->fdSet[ fd ]->msk & (~msk);
 	// remove from loop if no observed at all anymore
 	if (T_AEL_NO == ael->fdSet[ fd ]->msk )
 	{

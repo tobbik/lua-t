@@ -74,3 +74,27 @@ void t_ael_addtimer_impl    ( struct t_ael *ael, struct timeval *tv );
 int  t_ael_poll_impl        ( lua_State *L, struct t_ael *ael );
 
 
+static const struct t_typ t_ael_directionList[ ] = {
+	{ "T_AEL_RD"           , T_AEL_RD        },
+	{ "read"               , T_AEL_RD        },
+	{ "rd"                 , T_AEL_RD        },
+	{ "r"                  , T_AEL_RD        },
+	{ "inc"                , T_AEL_RD        },
+	{ "incoming"           , T_AEL_RD        },
+
+	{ "T_AEL_WR"           , T_AEL_WR        },
+	{ "write"              , T_AEL_WR        },
+	{ "wr"                 , T_AEL_WR        },
+	{ "w"                  , T_AEL_WR        },
+	{ "out"                , T_AEL_WR        },
+	{ "outgoing"           , T_AEL_WR        },
+
+	{ "T_AEL_RW"           , T_AEL_RW        },
+	{ "readwrite"          , T_AEL_RW        },
+	{ "rdwr"               , T_AEL_RW        },
+	{ "rw"                 , T_AEL_RW        },
+	{ "both"               , T_AEL_RW        },
+	{ "either"             , T_AEL_RW        },
+
+	{ NULL                , 0                }
+};

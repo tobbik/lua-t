@@ -3,7 +3,7 @@ local t=require('t')
 
 local start_wall_clock = t.Time( )
 local tcpsock,ip = t.Net.Socket.connect( '128.30.52.37', 80 )
-local len     = tcpsock:send( nil, "GET /TR/REC-html32.html HTTP/1.0\r\n\r\n" )
+local len     = tcpsock:send( "GET /TR/REC-html32.html HTTP/1.0\r\n\r\n" )
 local buffer = {}
 local length = 0
 

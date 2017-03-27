@@ -18,8 +18,8 @@ end
 
 for k=1,n do
 	for i=1,n do
-		print( 'send: ', socks1[i]:send( nil, k..' - TCP message from (1:'..i..')\n' ) )
-		print( 'send: ', socks2[i]:send( nil, k..' - TCP message from (2:'..i..')\n' ) )
+		print( 'send: ', socks1[i]:send( k..' - TCP message from (1:'..i..')\n' ) )
+		print( 'send: ', socks2[i]:send( k..' - TCP message from (2:'..i..')\n' ) )
 	end
 	t.Time.sleep( 100 )
 end

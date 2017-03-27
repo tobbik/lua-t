@@ -14,7 +14,8 @@ end
 
 
 function r( s )
-	local msg, len, ip_cli = s:recv( )
+	local ip_cli = t.Net.IPv4()
+	local msg, len = s:recv( ip_cli )
 	print( msg, len, ip_cli, "\n" )
 	if msg:sub( 1, 4 ) == 'exit' then
 		print( "go exit" )
@@ -27,7 +28,7 @@ function r( s )
 		print( "remove timer ".. tonumber( t ) )
 		l:removeTimer( tm[ tonumber( t ) ] )
 	elseif msg:sub( 1, 2 ) == 'rL' then
-		l:removeHandle( s )
+		l:removeHandle( s, 'read' )
 		print( "remove listener -> go exit" )
 		l:stop( )
 	end
@@ -39,6 +40,6 @@ for i=1,n do
 	print( tm[i] )
 	l:addTimer( tm[i], p, "-------Timer " ..i.. "--------", tm[i] )
 end
-l:addHandle( s, true, r, s )
+l:addHandle( s, 'read', r, s )
 
 l:run( )
