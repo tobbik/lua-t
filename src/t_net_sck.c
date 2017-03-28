@@ -84,10 +84,9 @@ struct t_net_sck
 {
 	struct t_net_sck *sck  = (struct t_net_sck *) lua_newuserdata( L, sizeof( struct t_net_sck ) );
 
-	if (create)
-		sck->fd = socket( family, type, protocol );
-	if (sck->fd == -1)
-		t_push_error( L, (create) ? "couldn't create socket" : "socket was already closed" );
+	sck->fd = (create) ? socket( family, type, protocol ) : 0;
+	if (create && sck->fd == -1)
+		t_push_error( L, "couldn't create socket" );
 	luaL_getmetatable( L, T_NET_SCK_TYPE );
 	lua_setmetatable( L, -2 );
 
