@@ -164,19 +164,19 @@ t_ael_executeHeadTimer( lua_State *L, struct t_ael_tnd **tHead, struct timeval *
  * \return  void.
  * --------------------------------------------------------------------------*/
 void
-t_ael_executehandle( lua_State *L, struct t_ael_fd *fd, enum t_ael_msk msk )
+t_ael_executehandle( lua_State *L, struct t_ael_fd *ev, enum t_ael_msk msk )
 {
 	int n;
 
-	//printf( "%d    %d    %d    %d\n", fd, rR, wR, msk );
-	if (NULL != fd && msk & T_AEL_RD & fd->msk)
+	//printf( "%d    %d    %d    %d\n", ev, rR, wR, msk );
+	if (NULL != ev && msk & T_AEL_RD & ev->msk)
 	{
-		n = t_ael_getFunction( L, fd->rR );
+		n = t_ael_getFunction( L, ev->rR );
 		lua_call( L, n , 0 );
 	}
-	if (NULL != fd && msk & T_AEL_WR & fd->msk)
+	if (NULL != ev && msk & T_AEL_WR & ev->msk)
 	{
-		n = t_ael_getFunction( L, fd->wR );
+		n = t_ael_getFunction( L, ev->wR );
 		lua_call( L, n , 0 );
 	}
 }
@@ -335,9 +335,13 @@ lt_ael_removehandle( lua_State *L )
 		fd = sck->fd;
 
 	if (0 == fd)
-		return t_push_error( L, "Argument to addHandle must be file or socket" );
+		return luaL_error( L, "Argument to addHandle must be file or socket" );
+	if (-1 == fd)
+		return luaL_error( L, "Can't remove closed descriptor" );
+	if (NULL != ael->fdSet[ fd ] || T_AEL_NO & ael->fdSet[ fd ]->msk)
+		return luaL_error( L, "Descriptor is not observed in loop" );
 	// remove function
-	if (T_AEL_RD & msk)
+	if (T_AEL_RD & msk & ael->fdSet[ fd ]->msk)
 	{
 		luaL_unref( L, LUA_REGISTRYINDEX, ael->fdSet[ fd ]->rR );
 		ael->fdSet[ fd ]->wR = LUA_REFNIL;

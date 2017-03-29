@@ -28,7 +28,7 @@ local assrt   = T.require( 't_net_assert' )
 accept = function( self )
 	local c, ip = self.srv:accept( )
 	assrt.Socket( c, 'tcp', 'AF_INET', 'SOCK_STREAM' )
-	assrt.Address( ip, self.host2cmp, self.addr2cmp )
+	assrt.Address( ip, self.host2cmp, self.port2cmp )
 	self.sck:close() -- close client first to avoid "Address already in use"
 	                 -- http://hea-www.harvard.edu/~fine/Tech/addrinuse.html
 	c:close( )
@@ -68,38 +68,38 @@ local tests = {
 
 	-- #########################################################################
 	-- Actual Test cases
-	test_cb_SListenHostPort = function( self, done )
+	test_cb_SConnectHostPort = function( self, done )
 		Test.Case.describe( "Socket.connect( host, port ) --> Sck IPv4(TCP), Adr host:port" )
 		self.host2cmp = self.host
-		self.addr2cmp = 'any'
+		self.port2cmp = 'any'
 		self.sck, self.adrc = Socket.connect( self.host, self.port )
 		done( )
 	end,
 
-	test_cb_SListenAddress = function( self, done )
+	test_cb_SConnectAddress = function( self, done )
 		Test.Case.describe( "Socket.connect( adr ) --> Sck IPv4(TCP)" )
 		self.host2cmp    = self.host
-		self.addr2cmp    = 'any'
+		self.port2cmp    = 'any'
 		self.adrc        = Address( self.host, self.port )
 		self.sck, self._ = Socket.connect( self.adrc )
 		assert( self._ == nil, "Only a socket should have been returned" )
 		done( )
 	end,
 
-	test_cb_sListenHostPort = function( self, done )
+	test_cb_sConnectHostPort = function( self, done )
 		Test.Case.describe( "sck:connect( host, port ) --> Adr host:port" )
 		self.host2cmp    = self.host
-		self.addr2cmp    = 'any'
+		self.port2cmp    = 'any'
 		self.sck         = Socket( )
 		self.adrc,self._ = self.sck:connect( self.host, self.port )
 		assert( self._  == nil, "No socket should have been returned" )
 		done( )
 	end,
 
-	test_cb_sListenAddress = function( self, done )
+	test_cb_sConnectAddress = function( self, done )
 		Test.Case.describe( "sck:connect( adr ) --> no return value" )
 		self.host2cmp    = self.host
-		self.addr2cmp    = 'any'
+		self.port2cmp    = 'any'
 		self.adrc        = Address( self.host, self.port )
 		self.sck         = Socket( )
 		self.__,self._   = self.sck:connect( self.adrc )
@@ -108,7 +108,7 @@ local tests = {
 		done( )
 	end,
 
-	test_cb_sListenHostPortBound = function( self, done )
+	test_cb_sConnectHostPortBound = function( self, done )
 		Test.Case.describe( "sck:connect( host, port ) bound --> Adr host:port" )
 		-- bind socket to outgoing interface/port first 
 		self.host2cmp       = self.host
@@ -122,7 +122,7 @@ local tests = {
 		done( )
 	end,
 
-	test_cb_sListenAddressBound = function( self, done )
+	test_cb_sConnectAddressBound = function( self, done )
 		Test.Case.describe( "sck:connect( adr ) bound --> no return value" )
 		-- bind socket to outgoing interface/port first 
 		self.host2cmp       = self.host
