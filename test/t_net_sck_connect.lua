@@ -47,7 +47,9 @@ local tests = {
 		done()
 	end,
 
-	afterAll = function( self, done )
+	afterAlla = function( self, done )
+		print( "++++++++++++++++ RUNNING AFTERALL +++++++++++++++++++++++++++++++++" )
+		self.loop:show()
 		self.loop:removeHandle( self.srv, 'read' )
 		self.srv:close( )
 		done()

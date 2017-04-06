@@ -69,12 +69,42 @@ t_tst_check( lua_State *L, int pos, int check )
 
 
 /**--------------------------------------------------------------------------
+ * Run the beforeAll/afterAll envelope for T.Test suite.
+ * \param   L       Lua state.
+ * \lparam  table   T.Test Lua table instance.
+ * \lparam  cfunc   Function to be executed after envelope() call.
+ * --------------------------------------------------------------------------*/
+static int
+t_tst_callEnvelope( lua_State *L, const char *envelope )
+{
+	lua_getfield( L, 1, envelope );  //S: ste dne env
+	if (! lua_isnil( L, -1 ))
+	{
+		lua_insert( L, -2 );          //S: ste env dne
+		lua_pushvalue( L, 1 );        //S: ste env dne ste
+		lua_insert( L, -2 );          //S: ste env ste dne
+		if (lua_pcall( L, 2, 0, 0 ))
+			return luaL_error( L, "T.Test Suite %s() failed: %s",
+				envelope, lua_tostring( L, -1 ) );
+	}
+	else
+	{
+		lua_pop( L, 1 );              // pop nil
+		lua_pushvalue( L, 1 );        //S: ste dne ste
+		lua_call( L, 1, 0 );
+	}
+	return 1;
+}
+
+
+/**--------------------------------------------------------------------------
  * Evaluates if a test suite has passed or not.
  * \param   L       Lua state.
  * \lparam  table   T.Test Lua table instance.
- * \lreturn pass    Integer counting all passed  test cases in suite.
- * \lreturn skip    Integer counting all skipped test cases in suite.
- * \lreturn todo    Integer counting all todo    test cases in suite.
+ * \lreturn pass    Boolean, has the suite passed.
+ * \lreturn pass    Integer, counting all passed  test cases in suite.
+ * \lreturn skip    Integer, counting all skipped test cases in suite.
+ * \lreturn todo    Integer, counting all todo    test cases in suite.
  * \lreturn since   Long adding up recorded execution times.
  * --------------------------------------------------------------------------*/
 static void
@@ -85,6 +115,7 @@ t_tst_getMetrics( lua_State *L )
 	            skip  = 0,  ///< marked as ran but haven't finished
 	            todo  = 0;  ///< expected to fail
 	lua_Integer since = 0;
+
 	for (idx=0; idx<luaL_len( L, 1 ); idx++)
 	{
 		lua_geti( L, 1, idx+1 );                 //S: ste cse
@@ -113,7 +144,7 @@ t_tst_callFinalize( lua_State *L )
 {
 	size_t      len;
 
-	lua_pushvalue( L, lua_upvalueindex( 1 ) );
+	lua_pushvalue( L, lua_upvalueindex( 1 ) );     //S: ste
 	t_tst_check( L, 1, 1 );
 	len = luaL_len( L, 1 );
 	t_tst_getMetrics( L );   //S: ste bool pass skip todo since
@@ -129,71 +160,39 @@ t_tst_callFinalize( lua_State *L )
 	   , lua_tointeger( L, -3 )
 	   , lua_tointeger( L, -2 )
 	   , len - lua_tointeger( L, -4 )
-	   , (lua_toboolean( L, 5 )) ? "OK" : "FAIL" );
+	   , (lua_toboolean( L, -5 )) ? "OK" : "FAIL" );
 
 	return 0;
 }
 
 
 /**--------------------------------------------------------------------------
- * Run the beforeAll/afterAll envelope for T.Test suite.
- * \param   L        Lua state.
- * \lparam  table    T.Test Lua table instance.
- * \lparam  cfunc    Function to be executed after envelope() call.
- * --------------------------------------------------------------------------*/
-static int
-t_tst_callEnvelope( lua_State *L, const char *envelope )
-{
-	lua_getfield( L, 1, envelope );
-	if (! lua_isnil( L, -1 ))
-	{
-		lua_insert( L, -3 );
-		if (lua_pcall( L, 2, 0, 0 ))
-			return luaL_error( L, "T.Test Suite %s() failed: %s",
-				envelope, lua_tostring( L, -1 ) );
-	}
-	else
-	{
-		lua_pop( L, 1 );
-		lua_insert( L , -2 );
-		lua_call( L, 1, 0 );
-	}
-	return 1;
-}
-
-
-/**--------------------------------------------------------------------------
  * Finish the execution of a T.Test.Case.
- * \param   L        Lua state.
- * \upvale  table    T.Test Lua table instance.
- * \upvale  table    T.Test.Case Lua table instance.
+ * \param    L        Lua state.
+ * \svalue   table    T.Test.Case Lua table instance.
+ * \svalue   table    T.Test Lua table instance.
  * --------------------------------------------------------------------------*/
 int
 t_tst_done( lua_State *L )
 {
-	lua_Integer ran = 0;
+	lua_Integer ran = 0;                       //S: cse ste
 	lua_Integer idx;
 
-	lua_pushvalue( L, lua_upvalueindex( 2 ) );
-	lua_getfield( L, -1, "executionTime" );
-	t_tim_since( t_tim_check_ud( L, -1, 1 ) );
 	t_tst_cse_getDescription( L, 1 );
 	printf( "Executed Test:  %s\n", lua_tostring( L, -1 ) );
-	lua_pop( L, 3 );  // pop Test.Case, executionTime and Description
-	lua_pushvalue( L, lua_upvalueindex( 1 ) );
-	t_tst_check( L, -1, 1 );
-	for (idx=0; idx < luaL_len( L, 1 ); idx++)
+	lua_pop( L, 1 );                           // pop Description
+	t_tst_check( L, 2, 1 );
+	for (idx=0; idx < luaL_len( L, 2 ); idx++)
 	{
-		lua_geti( L, 1, idx+1 );      //S: tbl cse
+		lua_geti( L, 2, idx+1 );                //S: cse ste cseI
 		lua_getfield( L, -1, "pass" );
 		ran += (lua_isnil( L, -1 )) ? 0 : 1;
-		lua_pop( L, 2 );         // pop nil/pass and the T.Test.Case
+		lua_pop( L, 2 );                        // pop nil/pass, cseI
 	}
-	if (luaL_len( L, 1 ) == ran)
+	if (luaL_len( L, 2 ) == ran)
 	{
-		lua_pop( L, 1 );
-		lua_pushvalue( L, lua_upvalueindex( 1 ) );
-		lua_pushvalue( L, -1 );
+		lua_remove( L, 1 );
+		lua_pushvalue( L, 1 );
 		lua_pushcclosure( L, t_tst_callFinalize, 1 );
 		t_tst_callEnvelope( L, "afterAll" );
 		return 1;
@@ -205,14 +204,14 @@ t_tst_done( lua_State *L )
 
 /**--------------------------------------------------------------------------
  * Loops over all cases in Test.Suite and executes them.
- * \param   L        Lua state.
- * \upvalue  table    T.Test Lua table instance.
+ * \param    L      Lua state.
+ * \upvalue  table  T.Test Lua table instance.
  * --------------------------------------------------------------------------*/
 static int
 t_tst_callLoopCases( lua_State *L )
 {
 	lua_Integer idx;
-	lua_pushvalue( L, lua_upvalueindex( 1 ) );
+	lua_pushvalue( L, lua_upvalueindex( 1 ) );     //S: ste
 	t_tst_check( L, 1, 1 );         //S: ste
 	for (idx=0; idx<luaL_len( L, 1 ); idx++)
 	{
@@ -241,7 +240,6 @@ lt_tst__call( lua_State *L )
 		t_tst_cse_prune( L );
 		lua_pop( L, 1 );
 	}
-	lua_pushvalue( L, 1 );
 	lua_pushvalue( L, 1 );
 	lua_pushcclosure( L, t_tst_callLoopCases, 1 );
 	t_tst_callEnvelope( L, "beforeAll" );

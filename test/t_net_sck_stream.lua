@@ -73,13 +73,13 @@ local tests = {
 		self.port            = 8000
 		self.sSck, self.sAdr = Socket.listen( self.host, self.port )
 		self.loop:addHandle( self.sSck, 'read', accept, self )
-		done()
+		done( self )
 	end,
 
 	afterAll = function( self, done )
 		self.loop:removeHandle( self.sSck, 'read' )
 		self.sSck:close( )
-		done()
+		done( self )
 	end,
 
 	beforeEach_cb = function( self, done )
@@ -116,8 +116,8 @@ local tests = {
 			local cnt = s.cSck:send( s.payload )
 			assert( cnt == #self.payload, "Blocking should have sent in single iteration" )
 			s.outCount = cnt
-			s.cSck:shutdown( 'write' )
 			s.loop:removeHandle( s.cSck, 'write' )
+			s.cSck:shutdown( 'write' )
 		end
 		self.done = done
 		self.loop:addHandle( self.cSck, 'write', sender, self )
@@ -136,8 +136,8 @@ local tests = {
 				--print("SENT:", s.outCount)
 				assert( sendCount == math.ceil(s.outCount/128),
 					"expected iterations: "..sendCount.." / ".. math.ceil(s.outCount/128))
-				s.cSck:shutdown( 'write' )
 				s.loop:removeHandle( s.cSck, 'write' )
+				s.cSck:shutdown( 'write' )
 			end
 		end
 		self.done = done
@@ -157,8 +157,8 @@ local tests = {
 			else
 				--print("SENT:", s.outCount)
 				assert( sendCount>1, "Non blocking should have broken up sending "..sendCount)
-				s.cSck:shutdown( 'write' )
 				s.loop:removeHandle( s.cSck, 'write' )
+				s.cSck:shutdown( 'write' )
 			end
 		end
 		self.done = done
@@ -174,8 +174,8 @@ local tests = {
 			local cnt = s.cSck:send( buf )
 			assert( cnt == #buf, "Blocking should have sent in single iteration" )
 			s.outCount = cnt
-			s.cSck:shutdown( 'write' )
 			s.loop:removeHandle( s.cSck, 'write' )
+			s.cSck:shutdown( 'write' )
 		end
 		self.done = done
 		self.loop:addHandle( self.cSck, 'write', sender, self )
@@ -197,8 +197,8 @@ local tests = {
 			else
 				assert( sendCount == math.ceil(s.outCount/128),
 					"expected iterations: "..sendCount.." / ".. math.ceil(s.outCount/128))
-				s.cSck:shutdown( 'write' )
 				s.loop:removeHandle( s.cSck, 'write' )
+				s.cSck:shutdown( 'write' )
 			end
 		end
 		self.done = done
@@ -220,8 +220,8 @@ local tests = {
 			else
 				assert( sendCount == math.ceil(s.outCount/128),
 					"expected iterations: "..sendCount.." / ".. math.ceil(s.outCount/128))
-				s.cSck:shutdown( 'write' )
 				s.loop:removeHandle( s.cSck, 'write' )
+				s.cSck:shutdown( 'write' )
 			end
 		end
 		self.done = done
@@ -243,8 +243,8 @@ local tests = {
 			else
 				--print("SENT:", s.outCount)
 				assert( sendCount>1, "Non blocking should have broken up sending "..sendCount)
-				s.cSck:shutdown( 'write' )
 				s.loop:removeHandle( s.cSck, 'write' )
+				s.cSck:shutdown( 'write' )
 			end
 		end
 		self.done = done

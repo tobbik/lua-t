@@ -287,8 +287,7 @@ lt_ael_addhandle( lua_State *L )
 	ael->fdMax = (fd > ael->fdMax) ? fd : ael->fdMax;
 
 	lua_createtable( L, n-4, 0 );  // create function/parameter table
-	lua_insert( L, 4 );
-	//Stack: ael,fd,read/write,TABLE,func,...
+	lua_insert( L, 4 );                            //S: ael hdl dir tbl fnc …
 	while (n > 4)
 		lua_rawseti( L, 4, (n--)-4 );   // add arguments and function (pops each item)
 	// pop the function reference table and assign as read or write function
@@ -338,7 +337,7 @@ lt_ael_removehandle( lua_State *L )
 		return luaL_error( L, "Argument to addHandle must be file or socket" );
 	if (-1 == fd)
 		return luaL_error( L, "Can't remove closed descriptor" );
-	if (NULL != ael->fdSet[ fd ] || T_AEL_NO & ael->fdSet[ fd ]->msk)
+	if (NULL == ael->fdSet[ fd ] || T_AEL_NO & ael->fdSet[ fd ]->msk)
 		return luaL_error( L, "Descriptor is not observed in loop" );
 	// remove function
 	if (T_AEL_RD & msk & ael->fdSet[ fd ]->msk)

@@ -30,9 +30,9 @@ end
 tbl = {
 	beforeAll = function( self, done )
 		print("BEFOREALL")
-		self.a = 10
-		self.b = 20
-		self.loop  = Loop(20)
+		self.a    = 10
+		self.b    = 20
+		self.loop = Loop(20)
 		done( )
 	end,
 	afterAll = function( self, done )

@@ -232,7 +232,6 @@ local tests = {
 		local buf,ofs,len = self.seg:getBuffer()
 		local oseg = Segment( self.b, ofs+1, len   )
 		local lseg = Segment( self.b, ofs,   len+1 )
-		print(self.seg, oseg, lseg)
 		assert( lseg ~= oseg,     "Different length and offset shall make Segment unequal" )
 		assert( oseg ~= self.seg, "Different offset shall make Segment unequal" )
 		assert( lseg ~= self.seg, "Different length shall make Segment unequal" )

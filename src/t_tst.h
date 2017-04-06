@@ -6,11 +6,19 @@
  * \author    tkieslich
  * \copyright See Copyright notice at the end of t.h
  *-------------------------------------------------------------------------*/
+// Asynchronous test case execution step
+enum t_tst_cse_state {
+	T_TST_CSE_BFE,        ///< beforeEach()
+	T_TST_CSE_EXC,        ///< test case function()
+	T_TST_CSE_AFE,        ///> afterEach()
+	T_TST_CSE_DNE,        ///> done()
+};
+
 
 #define T_TST_CSE_NAME  "Case"
 
 #define T_TST_CSE_TYPE  T_TST_TYPE"."T_TST_CSE_NAME
-#define T_TST_CSE_SKIPINDICATOR  "<test_case_skip_indicator>:"
+#define T_TST_CSE_SKIPINDICATOR  "<test_case_skip_indicator>:" // must have trailing ":"
 
 int    t_tst_create( lua_State *L );
 int    t_tst_check( lua_State *L, int pos, int check );

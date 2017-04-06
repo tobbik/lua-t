@@ -10,7 +10,8 @@ Loop  = T.Loop
 Timer = T.Time
 t_async = function( self, done )
 	Test.Case.describe( 'Running an asynchrounous Timer test' )
-	local rTimeMs = math.random(500,3000)
+	local rTimeMs = math.random( 500, 3000 )
+	print( "SETTIN TIMER: ", rTimeMs)
 	self.loop:addTimer( 
 		Timer( rTimeMs ),
 		function( tm )
@@ -31,6 +32,7 @@ tbl = {
 	beforeAll = function( self, done )
 		self.loop    = Loop(20) 
 		print("+++++++++++++++++++++++++++++++BEFORE ALL")
+		math.randomseed(os.time())
 		local tm = Timer(1)
 		print(tm)
 		self.a = 10
@@ -43,9 +45,9 @@ tbl = {
 		self.loop:run()
 	end,
 	afterAll = function( self, done )
-		self.loop:stop()
 		print("-------------------------------AFTER ALL")
-		done( )
+		self.loop:stop()
+		done( self )
 	end,
 }
 for i=1,25 do

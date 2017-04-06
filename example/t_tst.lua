@@ -6,6 +6,16 @@
 local   Test   = require( 't' ).Test
 
 tc = {
+	beforeAll = function( self, done )  -- not necessary for this suite
+		print( 'RUNNING beforeAll' )
+		done(self)
+	end,
+
+	afterAll = function( self, done )  -- not necessary for this suite
+		print( 'RUNNING afterAll' )
+		done(self)
+	end,
+
 	beforeEach = function( self )
 		self.a    = 10
 		self.b    = 20
@@ -13,10 +23,12 @@ tc = {
 		self.s1   = "This is a String"
 		self.s11  = "This is a String"
 		self.s2   = "This is anonther String"
+		print( 'RUNNING beforeEach' )
 	end,
 
-	--afterEach = function( self )  -- not necessary for this suite
-	--end,
+	afterEach = function( self )  -- not necessary for this suite
+		print( 'RUNNING afterEach' )
+	end,
 
 	test_EqNumbers = function( self )
 		Test.Case.describe( 'Test for equality of numeric values' )
