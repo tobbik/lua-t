@@ -48,9 +48,13 @@ receive = function( self )
 	if msg then
 		assert( cnt == self.msgSize )
 	else
-		print("DONE")
 		self.loop:removeHandle( self.sSck, 'read' )
-		self.done( )
+		if self.done then
+			self.done( )
+			self.done = nil
+		else
+			print("DISREGARDING SENTINEL")
+		end
 	end
 end
 
@@ -67,9 +71,11 @@ local tests = {
 		--print(self.sSck, self.sAdr)
 		-- self.loop:addHandle( self.sSck, 'read', receive, self )
 		assrt.Socket( self.sSck, 'udp', 'AF_INET', 'SOCK_DGRAM' )
-		assrt.Address( self.sAdr, self.host, self.host )
-		self.cSck = Socket( 'udp' )
-		self.cAdr = self.cSck:bind( self.host, self.port+1 )
+		assrt.Address( self.sAdr, self.host, self.port )
+		self.cSck  = Socket( 'udp' )
+		self.cAdr  = self.cSck:bind( self.host, self.port+1 )
+		assrt.Socket( self.cSck, 'udp', 'AF_INET', 'SOCK_DGRAM' )
+		assrt.Address( self.cAdr, self.host, self.port+1 )
 		--print(self.cSck, self.cAdr)
 		done()
 	end,
@@ -90,7 +96,7 @@ local tests = {
 		self.inCount   = 0
 		self.outCount  = 0
 		self.incBuffer = nil
-		print("BEFOREACH", done)
+		self.loop:addHandle( self.sSck, 'read',  receive, self )
 		self.loop:run()
 	end,
 
@@ -104,75 +110,91 @@ local tests = {
 	-- Actual Test cases
 	test_cb_sendFullString = function( self, done )
 		Test.Case.describe( "cnt = sck.send( adr, string )" )
-		self.done    = done
-		self.payload = string.rep( 'Gbivebvbes; RclcTctOCC ;h ;ie ea', 16 )
+		self.payload = string.rep( 'Gbivebvbes; RclcTctOCC ;h ;ie eaF', 16 )
 		self.msgSize = #self.payload
 		local sender = function( s )
-			s.loop:addHandle( s.sSck, 'read', receive, s )
-			local cnt = s.cSck:send( s.sAdr, s.payload )
-			assert( cnt == #self.payload, "Dgram should sent whole message at once" )
-			s.loop:removeHandle( s.cSck, 'write' )
-				print("SENTINEL SENT")
-			local cnt = s.cSck:send( s.sAdr, '' ) --sentinel
+			if 0==s.outCount then
+				s.outCount = s.cSck:send( s.sAdr, s.payload )
+				assert( s.outCount == #s.payload, "Dgram should sent whole message at once" )
+			else
+				s.done    = done
+				s.cSck:send( s.sAdr, '' ) --sentinel
+				s.loop:removeHandle( s.cSck, 'write' )
+			end
 		end
 		self.loop:addHandle( self.cSck, 'write', sender, self )
 	end,
 
 	test_cb_sendSizedString = function( self, done )
 		Test.Case.describe( "cnt = sck.send( adr, string, sz )" )
-		self.done    = done
-		self.msgSize = 512
-		self.payload = string.rep('This is a another test message for Dgram Socket se', self.msgSize )
+		self.msgSize = 498
+		self.payload = string.rep('The sized String Test', self.msgSize )
 		local sender = function( s )
-			s.loop:addHandle( s.sSck, 'read', receive, s )
 			local cnt = s.cSck:send( s.sAdr, s.payload:sub( s.outCount+1 ), s.msgSize )
 			if cnt then
 				assert( cnt == s.msgSize, "Dgram should sent whole sized message at once but was: "..cnt )
 				s.outCount = s.outCount+cnt
 			else
 				s.loop:removeHandle( s.cSck, 'write' )
-				local cnt = s.cSck:send( s.sAdr, '' ) --sentinel
-				print("SENTINEL SENT")
+				s.done    = done
 			end
 		end
+		self.loop:addHandle( self.sSck, 'read',  receive, self )
 		self.loop:addHandle( self.cSck, 'write', sender, self )
 	end,
 
 	test_cb_sendFullBuffer = function( self, done )
-		Test.Case.describe( "cnt = sck.send( adr, buf )" )
-		self.done      = done
+		Test.Case.describe( "cnt = sck.send( adr, buf_seg )" )
 		self.payload   = string.rep( 'Gbivebvbes; RclcTctOCC ;h ;ie ea', 16 )
 		self.outBuffer = Buffer( self.payload )
 		self.msgSize   = #self.payload
 		self.incBuffer = Buffer( #self.payload )
 		local sender = function( s )
-			s.loop:addHandle( s.sSck, 'read', receive, s )
-			local cnt = s.cSck:send( s.sAdr, s.outBuffer )
-			assert( cnt == #self.payload, "Dgram should sent whole message at once" )
-			s.loop:removeHandle( s.cSck, 'write' )
-				print("SENTINEL SENT")
-			local cnt = s.cSck:send( s.sAdr, '' ) --sentinel
+			if 0==s.outCount then
+				s.outCount = s.cSck:send( s.sAdr, Segment( s.outBuffer ) )
+				assert( s.outCount == #s.payload, "Dgram should sent whole message at once" )
+			else
+				s.loop:removeHandle( s.cSck, 'write' )
+				s.done = done
+				s.cSck:send( s.sAdr, '' ) --sentinel
+			end
 		end
 		self.loop:addHandle( self.cSck, 'write', sender, self )
 	end,
 
-	test_cb_sendSizedbuffer = function( self, done )
-		Test.Case.describe( "cnt = sck.send( adr, buf, sz )" )
-		self.done      = done
-		self.msgSize   = 512
-		self.payload   = string.rep('This is a another test message for Dgram Socket se', self.msgSize*50 )
+	test_cb_sendFullBufferSegment = function( self, done )
+		Test.Case.describe( "cnt = sck.send( adr, buf )" )
+		self.payload   = string.rep( 'Gbivebvbes; RclcTctOCC ;h ;ie ea', 16 )
+		self.outBuffer = Buffer( self.payload )
+		self.msgSize   = #self.payload
+		self.incBuffer = Buffer( #self.payload )
+		local sender = function( s )
+			if 0==s.outCount then
+				s.outCount = s.cSck:send( s.sAdr, s.outBuffer )
+				assert( s.outCount == #s.payload, "Dgram should sent whole message at once" )
+			else
+				s.loop:removeHandle( s.cSck, 'write' )
+				s.done = done
+				s.cSck:send( s.sAdr, '' ) --sentinel
+			end
+		end
+		self.loop:addHandle( self.cSck, 'write', sender, self )
+	end,
+
+	test_cb_sendSizedBuffer = function( self, done )
+		Test.Case.describe( "cnt = sck.send( adr, buf_seg, sz )" )
+		self.msgSize   = 555
+		self.payload   = string.rep('The sized Buffer test', self.msgSize )
 		self.outBuffer = Buffer( self.payload )
 		self.incBuffer = Buffer( self.msgSize )
 		local sender = function( s )
-			s.loop:addHandle( s.sSck, 'read', receive, s )
 			local cnt = s.cSck:send( s.sAdr, Segment( s.outBuffer, s.outCount+1 ), s.msgSize )
 			if cnt then
 				assert( cnt == s.msgSize, "Dgram should sent whole sized message at once but was: "..cnt )
 				s.outCount = s.outCount+cnt
 			else
 				s.loop:removeHandle( s.cSck, 'write' )
-				local cnt = s.cSck:send( s.sAdr, '' ) --sentinel
-				print("SENTINEL SENT")
+				s.done     = done
 			end
 		end
 		self.loop:addHandle( self.cSck, 'write', sender, self )
