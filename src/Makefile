@@ -69,7 +69,7 @@ else
    UNAME_S := $(shell uname -s)
    ifeq ($(UNAME_S),Linux)
       CFLAGS += -D LINUX
-      T_SRC:=$(T_SRC) t_ael_epl.c
+      T_SRC:=$(T_SRC) t_ael_epl.c t_net_sck_unx.c
    endif
    ifeq ($(UNAME_S),Darwin)
       CFLAGS += -D OSX
@@ -85,7 +85,6 @@ else
       CFLAGS += -D ARM
    endif
 endif
-
 
 
 T_OBJ=$(T_SRC:.c=.o)
