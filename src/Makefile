@@ -17,8 +17,15 @@ LD=clang
 CFLAGS:= -Wall -Wextra -O0 -std=c99 -fpic $(MYCFLAGS)
 AR=ar rcu
 RANLIB=ranlib
-T_LIB_DYN=t.so
+INSTALL_CMOD=$(PREFIX)/lib/lua/$(LVER)/t
+T_LIB_DYN=core.so
 T_LIB_STA=t.a
+
+# How to install. If your install program does not support "-p", then
+# you may have to run ranlib on the installed t.a
+INSTALL= install -p
+INSTALL_EXEC= $(INSTALL) -m 0755
+INSTALL_DATA= $(INSTALL) -m 0644
 
 T_SRC=t.c \
 	 t_utl.c \
@@ -35,13 +42,13 @@ T_SRC=t.c \
 	 t_buf_seg.c \
 	 t_pck.c \
 	 t_pck_cmb.c \
-	 t_wsk.c \
 	 t_oht.c \
 	 t_set.c \
 	 t_htp.c \
 	 t_htp_srv.c \
 	 t_htp_con.c \
 	 t_htp_str.c \
+	 t_htp_wsk.c \
 	 t_net_ifc.c \
 	 t_tst.c \
 	 t_tst_cse.c
@@ -102,8 +109,8 @@ $(T_LIB_STA): $(T_OBJ)
 	$(CC) $(CFLAGS) $< -o $@
 
 install: $(T_SRC) $(T_LIB_DYN) $(T_LIB_STA)
-	cp $(T_LIB_DYN) $(PREFIX)/lib/lua/$(LVER)/$(T_LIB_DYN)
-	cp $(T_LIB_STA) $(PREFIX)/lib/lua/$(LVER)/$(T_LIB_STA)
+	$(INSTALL_DATA) -D $(T_LIB_DYN) $(INSTALL_CMOD)/$(T_LIB_DYN)
+	$(INSTALL_DATA) -D $(T_LIB_STA) $(INSTALL_CMOD)/../$(T_LIB_STA)
 
 test: $(SRCDIR)
 	$(MAKE) -C $(CURDIR)/test CC=$(CC) LD=$(LD) \

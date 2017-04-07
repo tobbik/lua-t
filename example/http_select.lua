@@ -1,10 +1,10 @@
 #!../out/bin/lua
-local t=require('t')
+local Net=require('t.Net')
 local sport=8005
 
 --srv,ip = t.Net..Socket.bind(sport)
 --srv:listen(5)
-srv,ip = t.Net.Socket.listen( sport, 5 )
+srv,ip = Net.Socket.listen( sport, 5 )
 print( srv, ip )
 x = 0
 remSock = function( t, s)
@@ -16,7 +16,7 @@ rsocks,wsocks  = { srv = srv }, { }
 
 while true do
 	print( #rsocks, #wsocks )
-	local rds, wrs = t.Net.Socket.select( rsocks, wsocks )
+	local rds, wrs = Net.Socket.select( rsocks, wsocks )
 	print( #rds, #wrs )
 	-- new connection
 	if rds.srv then

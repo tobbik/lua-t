@@ -1,6 +1,6 @@
 #!../out/bin/lua
 
-Numarray = require( "t" ).Numarray
+Numarray = require( "t.Numarray" )
 fmt      = string.format
 
 m      = Numarray( 6 )

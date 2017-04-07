@@ -9,14 +9,22 @@
 
 #include "t_ael.h"
 
+#define T_HTP_CON_IDNT     "con"
+#define T_HTP_SRV_IDNT     "srv"
+#define T_HTP_STR_IDNT     "str"
+#define T_HTP_WSK_IDNT     "wsk"
+#define T_HTP_STR_PRX_IDNT "prx"
+
 #define T_HTP_CON_NAME     "Connection"
 #define T_HTP_SRV_NAME     "Server"
 #define T_HTP_STR_NAME     "Stream"
+#define T_HTP_WSK_NAME     "WebSocket"
 #define T_HTP_STR_PRX_NAME "Proxy"
 
 #define T_HTP_CON_TYPE     T_HTP_TYPE"."T_HTP_CON_NAME
 #define T_HTP_SRV_TYPE     T_HTP_TYPE"."T_HTP_SRV_NAME
 #define T_HTP_STR_TYPE     T_HTP_TYPE"."T_HTP_STR_NAME
+#define T_HTP_WSK_TYPE     T_HTP_TYPE"."T_HTP_WSK_NAME
 #define T_HTP_STR_PRX_TYPE T_HTP_TYPE"."T_HTP_STR_PRX_NAME
 
 // _   _ _____ _____ ____
@@ -201,6 +209,7 @@ int               lt_htp_str__gc( lua_State *L );
 LUAMOD_API int luaopen_t_htp_str( lua_State *L );
 LUAMOD_API int luaopen_t_htp_con( lua_State *L );
 LUAMOD_API int luaopen_t_htp_srv( lua_State *L );
+LUAMOD_API int luaopen_t_htp_wsk( lua_State *L );
 
 
 // __        __   _    ____             _        _
@@ -228,7 +237,7 @@ struct t_wsk_msg_h {
 
 
 /// data type tor websocket handling
-struct t_wsk {
+struct t_htp_wsk {
 	int      sR;           /// Lua registry Reference for t_net userdata
 	int      spR;          /// Lua registry Reference for subprotocol string
 	int      fd;           /// copy fd from t_net_sck for direct access
@@ -236,6 +245,6 @@ struct t_wsk {
 };
 
 
-struct t_wsk  *t_wsk_create_ud( lua_State *L );
-struct t_wsk  *t_wsk_check_ud ( lua_State *L, int pos, int check );
+struct t_htp_wsk  *t_htp_wsk_create_ud( lua_State *L );
+struct t_htp_wsk  *t_htp_wsk_check_ud ( lua_State *L, int pos, int check );
 

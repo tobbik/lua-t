@@ -1,8 +1,8 @@
 #!../out/bin/lua
-local t   = require( 't' )
+local Net = require( 't.Net' )
 local fmt = string.format
 
-ipadd     = arg[1] or t.Net.IPv4.localhost
+ipadd     = arg[1] or Net.Address.localhost
 
 -- a client to interact with the loop.lua example
 print_help = function( )
@@ -13,8 +13,8 @@ print_help = function( )
 		show      - make server list all its loop events]] )
 end
 
-s  = t.Net.Socket( 'UDP', 'ip4' )
-ip = t.Net.IPv4( ipadd, 8888 )
+s  = Net.Socket( 'UDP', 'ip4' )
+ip = Net.Address( ipadd, 8888 )
 print( s, ip )
 while true do
 	io.write( "Enter command and type enter ('help' for command list': " )

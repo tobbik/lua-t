@@ -1,8 +1,7 @@
 #!../out/bin/lua
-local t = require( 't' )
+local Crc,Buffer = require't.Encode.Crc' ,require't.Buffer'
 
-b=t.Buffer( 'ABCDEFGHxx' )
-Crc=t.Encode.Crc
+b=Buffer( 'ABCDEFGHxx' )
 print( b:toHex( ) )
 
 b:write( string.char( 0x22, 0x22) , 8 )

@@ -17,13 +17,16 @@
 -- same  process.  Each test will restart the loop, connect, assert and stop the
 -- loop before moving on to the next test.
 
-T       = require( 't' )
-Test    = T.Test
-Timer   = T.Time
-Loop    = T.Loop
-Socket  = T.Net.Socket
-Address = T.Net.IPv4
-assrt   = T.require( 't_net_assert' )
+
+T         = require( 't' )
+Test      = require( "t.Test" )
+Timer     = require( "t.Time" )
+Loop      = require( "t.Loop" )
+Socket    = require( "t.Net.Socket" )
+Address   = require( "t.Net.Address" )
+Interface = require( "t.Net.Interface" )
+Buffer    = require( "t.Buffer" )
+assrt     = T.require( 't_net_assert' )
 
 -- #########################################################################
 -- receive a chunk of data server for each test
@@ -69,7 +72,7 @@ local tests = {
 	-- wrappers for tests
 	beforeAll = function( self, done )
 		self.loop            = Loop( 20 )
-		self.host            = T.Net.Interface( 'default' ).address:get( )
+		self.host            = Interface( 'default' ).address:get( )
 		self.port            = 8000
 		self.sSck, self.sAdr = Socket.listen( self.host, self.port )
 		self.loop:addHandle( self.sSck, 'read', accept, self )
@@ -168,8 +171,8 @@ local tests = {
 	test_cb_sendFullBuffer = function( self, done )
 		Test.Case.describe( "cnt = sck.send( buf ) and receive via buffer" )
 		self.payload   = string.rep( 'THis Is a LittLe Test-MEsSage To bE sEnt ACcroSS the WIrE ...!_', 10000 )
-		local buf      = T.Buffer( self.payload )
-		self.incBuffer = T.Buffer( 1024*50 )
+		local buf      = Buffer( self.payload )
+		self.incBuffer = Buffer( 1024*50 )
 		local sender = function( s )
 			local cnt = s.cSck:send( buf )
 			assert( cnt == #buf, "Blocking should have sent in single iteration" )
@@ -184,12 +187,12 @@ local tests = {
 	test_cb_sendBufferSmallChunks = function( self, done )
 		Test.Case.describe( "cnt = sck.send( buf_seg ) -- small sized chunks" )
 		self.payload    = string.rep( 'THis Is a LittLe Test-MEsSage To bE sEnt ACcroSS the WIrE ...!_', 10000 )
-		local buf       = T.Buffer( self.payload )
-		self.incBuffer  = T.Buffer( 500 )   -- rediculously small incBuffer ... should still work
+		local buf       = Buffer( self.payload )
+		self.incBuffer  = Buffer( 500 )   -- rediculously small incBuffer ... should still work
 		local sendCount = 0
 		local sender = function( s )
-			local seg = s.outCount+1+128 > #buf and T.Buffer.Segment( buf, s.outCount+1 )
-			                                    or  T.Buffer.Segment( buf, s.outCount+1, 128 )
+			local seg = s.outCount+1+128 > #buf and Buffer.Segment( buf, s.outCount+1 )
+			                                    or  Buffer.Segment( buf, s.outCount+1, 128 )
 			local cnt = s.cSck:send( seg )
 			if cnt then
 				sendCount  = sendCount+1
@@ -208,12 +211,12 @@ local tests = {
 	test_cb_sendBufferSizedChunks = function( self, done )
 		Test.Case.describe( "cnt = sck.send( buf_seg, sz ) -- sized chunks" )
 		self.payload    = string.rep( 'THis Is a LittLe Test-MEsSage To bE sEnt ACcroSS the WIrE ...!_', 10000 )
-		local buf       = T.Buffer( self.payload )
-		self.incBuffer  = T.Buffer( 1024*16 )   -- rediculously small incBuffer ... should still work
+		local buf       = Buffer( self.payload )
+		self.incBuffer  = Buffer( 1024*16 )   -- rediculously small incBuffer ... should still work
 		local sendCount = 0
 		local sender = function( s )
 			local sz  = s.outCount+1+128 > #buf and #buf - s.outCount  or 128
-			local cnt = s.cSck:send( T.Buffer.Segment( buf, s.outCount+1 ), sz )
+			local cnt = s.cSck:send( Buffer.Segment( buf, s.outCount+1 ), sz )
 			if cnt then
 				sendCount  = sendCount+1
 				s.outCount = cnt + s.outCount
@@ -231,12 +234,12 @@ local tests = {
 	test_cb_sendBufferNonBlocking = function( self, done )
 		Test.Case.describe( "cnt = sck.send( buf_seg ) on nonblocking socket" )
 		self.payload    = string.rep( 'THis Is a LittLe Test-MEsSage To bE sEnt ACcroSS the WIrE ...!_', 600000 )
-		local buf       = T.Buffer( self.payload )
-		self.incBuffer  = T.Buffer( 1024*64 )
+		local buf       = Buffer( self.payload )
+		self.incBuffer  = Buffer( 1024*64 )
 		local sendCount = 0
 		local sender    = function( s )
 			s.cSck.nonblock = true
-			local cnt = s.cSck:send( T.Buffer.Segment( buf, s.outCount+1 ) )
+			local cnt = s.cSck:send( Buffer.Segment( buf, s.outCount+1 ) )
 			if cnt then
 				sendCount  = sendCount+1
 				s.outCount = cnt + s.outCount

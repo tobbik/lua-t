@@ -4,8 +4,8 @@
 -- \file    t_oht.lua
 -- \brief   Test for the Ordered Hash Table
 local T      = require( 't' )
-local Test   = T.Test
-local Oht    = T.OrderedHashTable
+local Test   = require( "t.Test" )
+local Oht    = require( "t.OrderedHashTable" )
 local Rtvg   = T.require( 'rtvg' )
 
 local tests = {

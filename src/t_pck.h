@@ -8,6 +8,8 @@
  */
 
 
+#define T_PCK_FLD_IDNT  "fld"
+
 #define T_PCK_FLD_NAME  "Field"
 
 #define T_PCK_FLD_TYPE  T_PCK_TYPE"."T_PCK_FLD_NAME

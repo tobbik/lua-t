@@ -23,13 +23,13 @@
  * \lreturn ud     T.Websocket userdata instance.
  * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
-static int lt_wsk__Call( lua_State *L )
+static int lt_htp_wsk__Call( lua_State *L )
 {
-	struct t_wsk  *ws;
+	struct t_htp_wsk  *wsk;
 	//size_t lp;
 	//char         *subp = luaL_checklstring( L, 1, &lp );
 	lua_remove( L, 1 );
-	ws = t_wsk_create_ud( L );
+	wsk = t_htp_wsk_create_ud( L );
 	return 1;
 }
 
@@ -40,12 +40,12 @@ static int lt_wsk__Call( lua_State *L )
  *
  * \return  struct t_ws*  pointer to the  xt_pack struct
  * --------------------------------------------------------------------------*/
-struct t_wsk *t_wsk_create_ud( lua_State *L )
+struct t_htp_wsk *t_htp_wsk_create_ud( lua_State *L )
 {
-	struct t_wsk  *ws;
-	ws = (struct t_wsk *) lua_newuserdata( L, sizeof( struct t_wsk ));
+	struct t_htp_wsk  *ws;
+	ws = (struct t_htp_wsk *) lua_newuserdata( L, sizeof( struct t_htp_wsk ));
 
-	luaL_getmetatable( L, T_WSK_NAME );
+	luaL_getmetatable( L, T_HTP_WSK_NAME );
 	lua_setmetatable( L, -2 );
 	return ws;
 }
@@ -58,11 +58,11 @@ struct t_wsk *t_wsk_create_ud( lua_State *L )
  *
  * \return struct xt_ws* pointer to xt_ws struct
  * --------------------------------------------------------------------------*/
-struct t_wsk *t_wsk_check_ud( lua_State *L, int pos, int check )
+struct t_htp_wsk *t_htp_wsk_check_ud( lua_State *L, int pos, int check )
 {
-	void *ud = luaL_testudata( L, pos, T_WSK_NAME );
-	luaL_argcheck( L, (ud != NULL || !check), pos, "`"T_WSK_NAME"` expected" );
-	return (NULL==ud) ? NULL : (struct t_wsk *) ud;
+	void *ud = luaL_testudata( L, pos, T_HTP_WSK_NAME );
+	luaL_argcheck( L, (ud != NULL || !check), pos, "`"T_HTP_WSK_NAME"` expected" );
+	return (NULL==ud) ? NULL : (struct t_htp_wsk *) ud;
 }
 
 
@@ -74,7 +74,7 @@ struct t_wsk *t_wsk_check_ud( lua_State *L, int pos, int check )
  * \lreturn value from the buffer a packers position according to packer format.
  * \return  int    # of values pushed onto the stack.
  *  -------------------------------------------------------------------------*/
-int t_wsk_rmsg( lua_State *L, struct t_wsk *ws )
+int t_htp_wsk_rmsg( lua_State *L, struct t_htp_wsk *ws )
 {
 	char  buffer[ BUFSIZ ];
 	int   rcvd;
@@ -94,11 +94,11 @@ int t_wsk_rmsg( lua_State *L, struct t_wsk *ws )
  * \lreturn string     formatted string representing packer.
  * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
-static int lt_wsk__tostring( lua_State *L )
+static int lt_htp_wsk__tostring( lua_State *L )
 {
-	struct t_wsk *ws = t_wsk_check_ud( L, 1, 1 );
+	struct t_htp_wsk *ws = t_htp_wsk_check_ud( L, 1, 1 );
 
-	lua_pushfstring( L, T_WSK_NAME": %p", ws );
+	lua_pushfstring( L, T_HTP_WSK_NAME": %p", ws );
 	return 1;
 }
 
@@ -110,9 +110,9 @@ static int lt_wsk__tostring( lua_State *L )
  * \lreturn string     formatted string representing the instance.
  * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
-static int lt_wsk__len( lua_State *L )
+static int lt_htp_wsk__len( lua_State *L )
 {
-	//struct t_wsk *wsk = t_wsk_check_ud( L, 1, 1 );
+	//struct t_htp_wsk *wsk = t_htp_wsk_check_ud( L, 1, 1 );
 	//TODO: something meaningful here?
 	lua_pushinteger( L, 4 );
 	return 1;
@@ -122,8 +122,8 @@ static int lt_wsk__len( lua_State *L )
 /**--------------------------------------------------------------------------
  * Class metamethods library definition
  * --------------------------------------------------------------------------*/
-static const struct luaL_Reg t_wsk_fm [] = {
-	  { "__call",        lt_wsk__Call}
+static const struct luaL_Reg t_htp_wsk_fm [] = {
+	  { "__call",        lt_htp_wsk__Call}
 	, { NULL,    NULL }
 };
 
@@ -131,7 +131,7 @@ static const struct luaL_Reg t_wsk_fm [] = {
 /**--------------------------------------------------------------------------
  * Class functions library definition
  * --------------------------------------------------------------------------*/
-static const struct luaL_Reg t_wsk_cf [] = {
+static const struct luaL_Reg t_htp_wsk_cf [] = {
 	  { NULL,    NULL }
 };
 
@@ -139,9 +139,9 @@ static const struct luaL_Reg t_wsk_cf [] = {
 /**--------------------------------------------------------------------------
  * Objects metamethods library definition
  * --------------------------------------------------------------------------*/
-static const luaL_Reg t_wsk_m [] = {
-	  { "__len",           lt_wsk__len }
-	, { "__tostring",      lt_wsk__tostring }
+static const luaL_Reg t_htp_wsk_m [] = {
+	  { "__len",           lt_htp_wsk__len }
+	, { "__tostring",      lt_htp_wsk__tostring }
 	, { NULL,    NULL }
 };
 
@@ -154,16 +154,16 @@ static const luaL_Reg t_wsk_m [] = {
  * \lreturn table  the library
  * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
-LUAMOD_API int luaopen_t_wsk (lua_State *L)
+LUAMOD_API int luaopen_t_htp_wsk (lua_State *L)
 {
 	// T.Websocket instance metatable
-	luaL_newmetatable( L, T_WSK_NAME );
-	luaL_setfuncs( L, t_wsk_m, 0 );
+	luaL_newmetatable( L, T_HTP_WSK_TYPE );
+	luaL_setfuncs( L, t_htp_wsk_m, 0 );
 	lua_setfield( L, -1, "__index" );
 
 	// T.Websocket class
-	luaL_newlib( L, t_wsk_cf );
-	luaL_newlib( L, t_wsk_fm );
+	luaL_newlib( L, t_htp_wsk_cf );
+	luaL_newlib( L, t_htp_wsk_fm );
 	lua_setmetatable( L, -2 );
 	return 1;
 }

@@ -1,5 +1,5 @@
 #!../out/bin/lua
-t=require('t')
+t=require('t.core')
 
 local print_table = function(name, t)
 	print('ELEMS of ' .. name)
@@ -28,8 +28,6 @@ iter = function (prefix, t) -- ...then define (for recursion)
 	end
 end
 
+iter('t', t)
 iter('_G', _G)
-F=t.Pack('<I6')
-f=t.Pack('>i6')
-s=t.Pack('<c50')
 

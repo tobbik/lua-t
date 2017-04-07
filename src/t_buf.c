@@ -494,7 +494,7 @@ LUAMOD_API int luaopen_t_buf( lua_State *L )
 	// T.Buffer class
 	luaL_newlib( L, t_buf_cf );
 	luaopen_t_buf_seg( L );
-	lua_setfield( L, -2, T_BUF_SEG_NAME );
+	lua_setfield( L, -2, T_BUF_SEG_IDNT );
 	luaL_newlib( L, t_buf_fm );
 	lua_setmetatable( L, -2 );
 	return 1;

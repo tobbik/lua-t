@@ -1,6 +1,6 @@
 T      = require't'
-Pack   = T.Pack
-Buffer = T.Buffer
+Pack   = require( 't.Pack' )
+Buffer = require( 't.Buffer' )
 utl    = T.require('t_pck_utl')
 
 --     0     1     2     3     4     5     6     7

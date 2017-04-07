@@ -14,11 +14,12 @@
 --          s:bind(host,port) --> creates address
 --          s:bind(address) --> creates nothing but does bind
 
-local T       = require( 't' )
-local Test    = T.Test
-local Socket  = T.Net.Socket
-local Address = T.Net.IPv4
-local assrt   = T.require( 't_net_assert' )
+local T         = require( "t" )
+local Test      = require( "t.Test" )
+local Socket    = require( "t.Net.Socket" )
+local Address   = require( "t.Net.Address" )
+local Interface = require( "t.Net.Interface" )
+local assrt     = T.require( 't_net_assert' )
 
 local tests = {
 	beforeEach = function( self )
@@ -61,7 +62,7 @@ local tests = {
 
 	test_SBindHostPortCreateSockAndAddress = function( self )
 		Test.Case.describe( "Socket.bind(host,port) --> creates TCP IPv4 Socket and address" )
-		local host   = T.Net.Interface( 'default' ).address:get()
+		local host   = Interface( 'default' ).address:get()
 		local port   = 8000
 		self.sck, self.address = Socket.bind( host, port )
 		assrt.Socket(  self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
@@ -70,7 +71,7 @@ local tests = {
 
 	test_SBindAddressCreateSockOnly = function( self )
 		Test.Case.describe( "Socket.bind(address) --> creates TCP IPv4 Socket but no address" )
-		local host   = T.Net.Interface( 'default' ).address:get()
+		local host   = Interface( 'default' ).address:get()
 		local port   = 8000
 		local addr   = Address( host, port )
 		self.sck, self.__ = Socket.bind( addr )
@@ -80,7 +81,7 @@ local tests = {
 
 	test_SBindReturnBoundSocke = function( self )
 		Test.Case.describe( "Socket.bind(address) --> returning socket is bound; getsockname()" )
-		local host   = T.Net.Interface( 'default' ).address:get()
+		local host   = Interface( 'default' ).address:get()
 		local port   = 8000
 		local addr   = Address( host, port )
 		self.sck, self.address = Socket.bind( addr )
@@ -111,7 +112,7 @@ local tests = {
 
 	test_sBindHostPortCreateAddress = function( self )
 		Test.Case.describe( "s:bind(host,port) --> creates address" )
-		local host           = T.Net.Interface( 'default' ).address:get()
+		local host           = Interface( 'default' ).address:get()
 		local port           = 8000
 		self.sck             = Socket()
 		self.address, self._ = self.sck:bind( host, port )
@@ -121,7 +122,7 @@ local tests = {
 
 	test_sBindAddressCreateNothingButBinds = function( self )
 		Test.Case.describe( "s:bind(address) --> creates nothing but does bind" )
-		local host      = T.Net.Interface( 'default' ).address:get()
+		local host      = Interface( 'default' ).address:get()
 		local port      = 8000
 		local addr      = Address( host, port )
 		self.sck        = Socket()

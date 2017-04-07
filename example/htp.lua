@@ -1,7 +1,7 @@
 #!../out/bin/lua -i
-t=require't'
+Http,Loop=require't.Http',require't.Loop'
 fmt=string.format
-l=t.Loop(10)
+l=Loop(10)
 l1="This is the first part before we finish. A string te repeated soo man times\n"
 l2="This is the finish line of the response.\n"
 rp  = 30
@@ -46,9 +46,9 @@ x02 = function( msg )
 end
 
 
-h00=t.Http.Server( l, x00 )
-h01=t.Http.Server( l, x01 )
-h02=t.Http.Server( l, x02 )
+h00=Http.Server( l, x00 )
+h01=Http.Server( l, x01 )
+h02=Http.Server( l, x02 )
 sc00,ip00 = h00:listen( 8000, 10 )  -- listen on 0.0.0.0 INADDR_ANY
 sc01,ip01 = h01:listen( 8001, 10 )  -- listen on 0.0.0.0 INADDR_ANY
 sc02,ip02 = h02:listen( 8002, 10 )  -- listen on 0.0.0.0 INADDR_ANY

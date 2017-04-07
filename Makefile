@@ -7,8 +7,10 @@
 
 LVER=5.3
 
-T_LIB_DYN=t.so
+T_LIB_DYN=core.so
 T_LIB_STA=t.a
+INSTALL_CMOD=$(PREFIX)/lib/lua/$(LVER)/t
+INSTALL_LMOD=$(PREFIX)/share/lua/$(LVER)/t
 
 PREFIX=$(shell pkg-config --variable=prefix lua)
 INCDIR=$(shell pkg-config --variable=includedir lua)
@@ -16,6 +18,7 @@ LDFLAGS=$(shell pkg-config --libs lua) -lcrypt
 PLAT=linux
 MYCFLAGS=
 SRCDIR=$(CURDIR)/src
+LUADIR=$(CURDIR)/lua
 
 CC=clang
 LD=clang
@@ -36,11 +39,16 @@ $(SRCDIR)/$(T_LIB_DYN):
 
 install: $(SRCDIR)/$(T_LIB_DYN)
 	$(MAKE) -C $(SRCDIR) CC=$(CC) LD=$(LD) \
+		INSTALL_CMOD=$(INSTALL_CMOD) \
 		T_LIB_DYN="$(T_LIB_DYN)" T_LIB_STA="$(T_LIB_STA)" \
 		LVER=$(LVER) \
 		MYCFLAGS="$(MYCFLAGS)" \
 		LDFLAGS="$(LDFLAGS)" \
 		INCS=$(INCDIR) \
+		PREFIX="$(PREFIX)" install
+	$(MAKE) -C $(LUADIR) \
+		INSTALL_LMOD=$(INSTALL_LMOD) \
+		LVER=$(LVER) \
 		PREFIX="$(PREFIX)" install
 
 test: $(SRCDIR)

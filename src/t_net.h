@@ -12,6 +12,10 @@
 #include <unistd.h>
 #include <fcntl.h>     // O_NONBLOCK,...
 
+#define T_NET_SCK_IDNT   "sck"
+#define T_NET_IP4_IDNT   "ip4"
+#define T_NET_IFC_IDNT   "ifc"
+
 #define T_NET_SCK_NAME   "Socket"
 #define T_NET_IP4_NAME   "IPv4"
 #define T_NET_IFC_NAME   "Interface"

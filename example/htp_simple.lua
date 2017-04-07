@@ -1,8 +1,8 @@
 #!../out/bin/lua -i
-t    = require't'
+Net,Loop,Http    = require't.Net',require't.Loop',require't.Http'
 fmt  = string.format
-l    = t.Loop( 1200 )
-s    = t.Net.Socket( 'UDP', 'ip4' )
+l    = Loop( 1200 )
+s    = Net.Socket( 'UDP' )
 s:bind( 8888 )
 a    = "This is my Answer"
 
@@ -37,7 +37,7 @@ end
 
 
 cmd = function( sck )
-	local ip_cli = t.Net.IPv4()
+	local ip_cli = Net.Address()
 	local msg, len = sck:recv( ip_cli )
 	local chunk = load( msg )
 	if chunk then
@@ -52,7 +52,7 @@ end
 
 
 l:addHandle( s, 'read', cmd, s )
-h     = t.Http.Server( l, x )
+h     = Http.Server( l, x )
 sc,ip = h:listen( 8000, 10 )  -- listen on 0.0.0.0 INADDR_ANY
 print( sc, ip, s )
 --for k,v in pairs( sc ) do print( k,v ) end

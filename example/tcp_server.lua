@@ -1,19 +1,19 @@
 #!../out/bin/lua
-t,fmt=require('t'),string.format
-ipAddr,port=t.Net.Interface( 'default' ).address:get(),8888
-Buffer = t.Buffer
+Net,fmt=require('t.Net'),string.format
+ipAddr,port=Net.Interface( 'default' ).address:get(),8888
+Buffer = require't.Buffer'
 
 print( ipAddr, port)
 
---tcpsock = t.Net.Socket( 'TCP', 'ip4' )
---ip      = t.Net.IPv4( ipAddr, port )
+--tcpsock = Net.Socket( 'TCP', 'ip4' )
+--ip      = Net.IPv4( ipAddr, port )
 
 --tcpsock:bind( ip )
 --tcpsock:listen( ip, 5 )
 -- --------------- or
-tcpsock,ip = t.Net.Socket.bind( ipAddr, port )
+tcpsock,ip = Net.Socket.bind( ipAddr, port )
 -- --------------- or
---tcpsock, ip = t.Net.TCP.listen( ipAddr, port, 5 )
+--tcpsock, ip = Net.TCP.listen( ipAddr, port, 5 )
 --for k,v in pairs(getmetatable(ip)) do print( k, v ) end
 --for k,v in pairs(getmetatable(tcpsock)) do print( k, v ) end
 print( tcpsock, ip )

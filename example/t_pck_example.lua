@@ -1,4 +1,4 @@
-T    = require't'
+Pack,Buffer   = require't.Pack',require't.Buffer'
 sfmt = string.format
 
 --          >I3       <I2   b   B    <I5           <I4          h
@@ -10,11 +10,11 @@ expect = { 6373987, 25924, -61, 188, 311004130124, 1349471853, -18749 }
 p   = { 6373987, 25924, -61, 188, 311004130124,    1349471853, -18749 }
 fmt = '>I3<i2bB>I5<I4h'
 s   = string.pack( fmt, table.unpack( p ) ) --use Lua 5.3 built in to pack
-print( T.Buffer(s):toHex() )
+print( Buffer(s):toHex() )
 
-sq = T.Pack( fmt )          -- autodetect this as multiple packers -> create sequence
+sq = Pack( fmt )          -- autodetect this as multiple packers -> create sequence
 
-st = T.Pack(                -- key/value pairs create Struct 
+st = Pack(                -- key/value pairs create Struct 
 	{ threeUInt  = sq[1] },  -- reuse definitions from sq ..
 	{ twoIntegs  = sq[2] },
 	{ signedByte = sq[3] },
@@ -41,20 +41,20 @@ end
 -- the result of st(s) is a table -> iteration not ordered!
 -- for k,v in pairs( st(s) ) do print( k,v ) end
 
---p=T.Pack(">i2")
---P=T.Pack(">I2")
+--p=Pack(">i2")
+--P=Pack(">I2")
 --for i=0x00,0xFF do  for j=0x00,0xFF do
 --	s=string.char(i,j)
 --	print( string.unpack(">i2",s), string.unpack(">I2", s), p(s), P(s) )
 --end end
 --
-p = T.Pack('R3r5')[2]
+p = Pack('R3r5')[2]
 for c=0,31 do
 	print( c, p(string.char(c)) )
 end
---P= T.Pack('B')
---p= T.Pack('b')
-b= T.Buffer(1)
+--P= Pack('B')
+--p= Pack('b')
+b= Buffer(1)
 b:toHex()
 for c=-16,15 do
 	p(b,c)

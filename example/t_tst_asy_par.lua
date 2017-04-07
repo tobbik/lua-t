@@ -5,9 +5,9 @@
 -- \brief   Asynchronous tests in Lua; running all cases at the same time on
 --          the loop
 T     = require( 't' )
-Test  = T.Test
-Loop  = T.Loop
-Timer = T.Time
+Test  = require't.Test'
+Loop  = require't.Loop'
+Timer = require't.Time'
 t_async = function( self, done )
 	Test.Case.describe( 'Running an asynchrounous Timer test' )
 	local rTimeMs = math.random( 500, 3000 )

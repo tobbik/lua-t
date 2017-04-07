@@ -434,7 +434,7 @@ lt_tst_HasPassed( lua_State *L )
 {
 	t_tst_check( L, 1, 1 );
 	t_tst_getMetrics( L );   //S: ste bool pass skip todo since
-	lua_pop( L, 5 );
+	lua_pop( L, 4 );
 	return 1;
 }
 
@@ -490,7 +490,7 @@ luaopen_t_tst( lua_State *L )
 	// this is avalable as T.Test.<member>
 	luaL_newlib( L, t_tst_cf );
 	luaopen_t_tst_cse( L );
-	lua_setfield( L, -2, T_TST_CSE_NAME );
+	lua_setfield( L, -2, T_TST_CSE_IDNT );
 	luaL_newlib( L, t_tst_fm );
 	lua_setmetatable( L, -2 );
 	return 1;

@@ -14,13 +14,14 @@
 -- same  process.  Each test will restart the loop, connect, assert and stop the
 -- loop before moving on to the next test.
 
-local T       = require( 't' )
-local Test    = T.Test
-local Timer   = T.Time
-local Loop    = T.Loop
-local Socket  = T.Net.Socket
-local Address = T.Net.IPv4
-local assrt   = T.require( 't_net_assert' )
+local T         = require( "t" )
+local Test      = require( "t.Test" )
+local Timer     = require( "t.Time" )
+local Loop      = require( "t.Loop" )
+local Interface = require( "t.Net.Interface" )
+local Socket    = require( "t.Net.Socket" )
+local Address   = require( "t.Net.Address" )
+local assrt     = T.require( 't_net_assert' )
 
 
 -- #########################################################################
@@ -38,18 +39,16 @@ local tests = {
 	-- #########################################################################
 	-- wrappers for tests
 	beforeAll = function( self, done )
-		self.host          = T.Net.Interface( 'default' ).address:get()
+		self.host          = Interface( 'default' ).address:get()
 		self.port          = 8000
 		self.srv, self.adr = Socket.listen( self.host, self.port )
-		print( self.srv, self.adr )
+		--print( self.srv, self.adr )
 		self.loop          = Loop( 20 )
 		self.loop:addHandle( self.srv, 'read', accept, self )
 		done()
 	end,
 
-	afterAlla = function( self, done )
-		print( "++++++++++++++++ RUNNING AFTERALL +++++++++++++++++++++++++++++++++" )
-		self.loop:show()
+	afterAll = function( self, done )
 		self.loop:removeHandle( self.srv, 'read' )
 		self.srv:close( )
 		done()

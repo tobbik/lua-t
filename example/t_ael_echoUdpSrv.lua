@@ -1,12 +1,12 @@
 #!../out/bin/lua
-t      = require't'
-host   = t.Net.Interface( 'default' ).address:get( )
-port   = 8888
-l      = t.Loop( 10 )
-msg    = nil
-sSck   = t.Net.Socket( 'udp' )
-sAdr   = t.Net.IPv4( host, port )
-cAdr   = t.Net.IPv4( )
+Net,Loop = require't.Net',require't.Loop'
+host     = Net.Interface( 'default' ).address:get( )
+port     = 8888
+l        = Loop( 10 )
+msg      = nil
+sSck     = Net.Socket( 'udp' )
+sAdr     = Net.Address( host, port )
+cAdr     = Net.Address( )
 rcv,lst,cnt = 0,0,0
 
 echo = function( c, close )

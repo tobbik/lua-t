@@ -17,15 +17,16 @@
 -- same  process.  Each test will restart the loop, connect, assert and stop the
 -- loop before moving on to the next test.
 
-T       = require( 't' )
-Test    = T.Test
-Timer   = T.Time
-Loop    = T.Loop
-Socket  = T.Net.Socket
-Address = T.Net.IPv4
-Buffer  = T.Buffer
-Segment = T.Buffer.Segment
-assrt   = T.require( 't_net_assert' )
+T         = require( 't' )
+Test      = require( "t.Test" )
+Timer     = require( "t.Time" )
+Loop      = require( "t.Loop" )
+Socket    = require( "t.Net.Socket" )
+Address   = require( "t.Net.Address" )
+Interface = require( "t.Net.Interface" )
+Buffer    = require( "t.Buffer" )
+Segment   = require( "t.Buffer.Segment" )
+assrt     = T.require( 't_net_assert' )
 
 -- #########################################################################
 -- receive a chunk of data server for each test
@@ -64,7 +65,7 @@ local tests = {
 	-- wrappers for tests
 	beforeAll = function( self, done )
 		self.loop  = Loop( 20 )
-		self.host  = T.Net.Interface( 'default' ).address:get( )
+		self.host  = Interface( 'default' ).address:get( )
 		self.port  = 8000
 		self.sSck  = Socket( 'udp' )
 		self.sAdr  = self.sSck:bind( self.host, self.port )

@@ -19,6 +19,16 @@ overhead.  This makes programming easier on the Lua side of things as it makes
 for a very consistent way to code.
 
 
+Lua vs C
+--------
+
+lua-t started out as a pure monolithic C-library.  This design allowed to
+have C-based functions that can be reused within the framework itself.  It
+since moved to a layer of Lua libraries on top of the C-Monolioth which
+provides the C-functions that can't be implemented in Lua.  It makes the
+monolith significantly smaller.
+
+
 Functionality
 -------------
 

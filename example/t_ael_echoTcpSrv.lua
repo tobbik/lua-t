@@ -1,9 +1,9 @@
 #!../out/bin/lua
-t      = require't'
-host   = t.Net.Interface( 'default' ).address:get( )
+Net,Buffer,Loop  = require't.Net',require't.Buffer',require't.Loop'
+host   = Net.Interface( 'default' ).address:get( )
 port   = 8888
-l      = t.Loop( 10 )
-bInc   = t.Buffer( 1024*20 )
+l      = Loop( 10 )
+bInc   = Buffer( 1024*20 )
 iCnt   = 0
 
 echo = function( c, close )
@@ -42,7 +42,7 @@ accept = function( s )
 	l:addHandle( c, 'read', read, c )
 end
 
-sSck,sAdr = t.Net.Socket.listen( host, port, 5 )
+sSck,sAdr = Net.Socket.listen( host, port, 5 )
 sSck.nonblock = true
 print( sSck, sAdr, l )
 l:addHandle( sSck, 'read', accept, sSck )

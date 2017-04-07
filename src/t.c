@@ -95,15 +95,16 @@ t_getTypeByValue( lua_State *L, int pos, const int dft, const struct t_typ *type
  * T.proxyTableIndex = {}    -- a globally (to T) defined empty table
  * oht = Oht()               -- oht is the table instance with the metamethods
  * oht[ T.proxyTableIndex ]  -- this is the table that actually contains the
- *                           -- values
- * \param   L        The Lua intepretter object.
- * \lreturn {}       The empty table used as index for proxy tables
+ *                           -- values which are accessd and controlled by oht
+ *                              __index and __newindex metamethods
+ * \param   L    Lua state.
+ * \lreturn {}   The empty table used as index for proxy tables.
  *-------------------------------------------------------------------------*/
 void
 t_getProxyTableIndex( lua_State *L )
 {
 	luaL_getsubtable( L, LUA_REGISTRYINDEX, "_LOADED" );
-	lua_getfield( L, -1, "t" );
+	lua_getfield( L, -1, "t.core" );
 	lua_getfield( L, -1, T_PROXYTABLEINDEX );      //S: … loaded t {}
 	lua_insert( L, -3 );                           //S: … {} loaded t
 	lua_pop( L, 2 );                               //S: … {}
@@ -379,34 +380,32 @@ static const luaL_Reg l_t_lib [] =
  * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 LUAMOD_API int
-luaopen_t( lua_State *L )
+luaopen_t_core( lua_State *L )
 {
 	luaL_newlib( L, l_t_lib );
 	luaopen_t_ael( L );
-	lua_setfield( L, -2, T_AEL_NAME );
+	lua_setfield( L, -2, T_AEL_IDNT );
 	luaopen_t_tim( L );
-	lua_setfield( L, -2, T_TIM_NAME );
+	lua_setfield( L, -2, T_TIM_IDNT );
 	luaopen_t_net( L );
-	lua_setfield( L, -2, T_NET_NAME );
+	lua_setfield( L, -2, T_NET_IDNT );
 	luaopen_t_buf( L );
-	lua_setfield( L, -2, T_BUF_NAME );
+	lua_setfield( L, -2, T_BUF_IDNT );
 	luaopen_t_pck( L );
-	lua_setfield( L, -2, T_PCK_NAME );
+	lua_setfield( L, -2, T_PCK_IDNT );
 	luaopen_t_enc( L );
-	lua_setfield( L, -2, T_ENC_NAME );
+	lua_setfield( L, -2, T_ENC_IDNT );
 	luaopen_t_tst( L );
-	lua_setfield( L, -2, T_TST_NAME );
+	lua_setfield( L, -2, T_TST_IDNT );
 	luaopen_t_oht( L );
-	lua_setfield( L, -2, T_OHT_NAME );
+	lua_setfield( L, -2, T_OHT_IDNT );
 	luaopen_t_set( L );
-	lua_setfield( L, -2, T_SET_NAME );
-	luaopen_t_wsk( L );
-	lua_setfield( L, -2, T_WSK_NAME );
+	lua_setfield( L, -2, T_SET_IDNT );
 	luaopen_t_htp( L );
-	lua_setfield( L, -2, T_HTP_NAME );
+	lua_setfield( L, -2, T_HTP_IDNT );
 #ifdef T_NRY
 	luaopen_t_nry( L );
-	lua_setfield( L, -2, T_NRY_NAME );
+	lua_setfield( L, -2, T_NRY_IDNT );
 #endif
 	lua_newtable( L );
 	lua_setfield( L, -2, T_PROXYTABLEINDEX );

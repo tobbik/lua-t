@@ -5,9 +5,9 @@
 -- \brief   Test assuring Socket() constructor handles all intended use cases
 
 local T       = require( 't' )
-local Test    = T.Test
-local Socket  = T.Net.Socket
-local Address = T.Net.IPv4
+local Test    = require( "t.Test" )
+local Socket  = require( "t.Net.Socket" )
+local Address = require( "t.Net.Address" )
 local assrt   = T.require( 't_net_assert' )
 
 local tests = {

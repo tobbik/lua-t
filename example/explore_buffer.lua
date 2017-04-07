@@ -1,13 +1,13 @@
-t = require( 't' )
+Buffer = require( 't.Buffer' )
 
-bf = t.Buffer( "This is a buffer" )
-print( t.Buffer, "Members:" )
-for k,v in pairs( t.Buffer ) do
+bf = Buffer( "This is a buffer" )
+print( Buffer, "Members:" )
+for k,v in pairs( Buffer ) do
 	print( '', k, type( v ), v )
 end
 
-print( t.Buffer, "Meta-Members:" )
-for k,v in pairs( getmetatable( t.Buffer ) ) do
+print( Buffer, "Meta-Members:" )
+for k,v in pairs( getmetatable( Buffer ) ) do
 	print( '', k, type( v ), v )
 end
 

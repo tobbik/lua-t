@@ -1,5 +1,5 @@
 T   = require( 't' )
-Oht = T.OrderedHashTable
+Oht = require( "t.OrderedHashTable" )
 
 o   = Oht(
 	  { one   = 'first   position' }

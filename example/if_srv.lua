@@ -1,14 +1,14 @@
 #!../out/bin/lua
-t=require('t')
-sip,sport=t.Net.Interface( 'default' ).address:get(),8888
+Net=require('t.Net')
+sip,sport=Net.Interface( 'default' ).address:get(),8888
 
-tcpsock,ip = t.Net.Socket.listen( sip, sport, 5 )
+tcpsock,ip = Net.Socket.listen( sip, sport, 5 )
 -- tcpsock:listen( 5 )
 print( tcpsock, ip )
 
 conns  = { tcpsock }
 while true do
-	res = t.Net.Socket.select( conns, {} )
+	res = Net.Socket.select( conns, {} )
 	io.write('LOOP['..#res..']:')
 	for n,cli in ipairs( res ) do
 		io.write( '  '..tostring( cli )..'' )

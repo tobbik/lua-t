@@ -1,10 +1,10 @@
 #!../out/bin/lua
-t      = require( 't' )
+Net      = require( 't.Net' )
 
 s_port = 8003
 answer = 'This is my answer'
 
-srv,ip = t.Net.Socket.listen( s_port, 5 )
+srv,ip = Net.Socket.listen( s_port, 5 )
 ipAdd, port   = ip:get( )
 assert( ipAdd, port )
 print( tostring(srv) .. " listening on '" ..ipAdd.. ":" ..port.. "' (" ..tostring( ip ).. ")..."  )

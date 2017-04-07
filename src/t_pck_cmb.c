@@ -199,7 +199,7 @@ lt_pck_fld__index( lua_State *L )
 		{
 			lua_pop( L, 1 );
 			ipc = t_pck_create_ud( L, ipc->t, ipc->s,
-				((opf->o + ipc->s*(idx-1)) % NB ) );
+				((npf->o + ipc->s*(idx-1)) % NB ) );
 		}
 		npf->o += t_pck_getSize( L, ipc ) * (idx-1) ;
 	}

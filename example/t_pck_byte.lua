@@ -1,7 +1,7 @@
-T      = require't'
-Pack   = T.Pack
-Buffer = T.Buffer
-utl    = T.require('t_pck_utl')
+T      = require( "t" )
+Pack   = require( "t.Pack" )
+Buffer = require( "t.Buffer" )
+utl    = T.require( "t_pck_utl" )
 
 --          >I3       <i2   b   B    >I5           <I4          h
 --          aBc       De      ü      HiJkL         mNoP         ö

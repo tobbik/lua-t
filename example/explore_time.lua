@@ -1,13 +1,13 @@
-t = require( 't' )
+Time = require( 't.Time' )
 
-tm = t.Time( 200 )
-print( t.Time, "Members:" )
-for k,v in pairs( t.Time ) do
+tm = Time( 200 )
+print( Time, "Members:" )
+for k,v in pairs( Time ) do
 	print( '', k, type( v ), v )
 end
 
-print( t.Time, "Meta-Members:" )
-for k,v in pairs( getmetatable( t.Time ) ) do
+print( Time, "Meta-Members:" )
+for k,v in pairs( getmetatable( Time ) ) do
 	print( '', k, type( v ), v )
 end
 

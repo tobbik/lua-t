@@ -1,6 +1,6 @@
 T      = require't'
-Pack   = T.Pack
-Oht    = T.OrderedHashTable
+Pack   = require( "t.Pack" )
+Oht    = require( "t.OrderedHashTable" )
 fmt    = string.format
 wrt    = io.write
 

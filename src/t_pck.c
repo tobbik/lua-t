@@ -370,8 +370,8 @@ struct t_pck
 	int                                     i;
 
 	luaL_getsubtable( L, LUA_REGISTRYINDEX, "_LOADED" );
-	lua_getfield( L, -1, "t" );
-	lua_getfield( L, -1, T_PCK_NAME );
+	lua_getfield( L, -1, "t.core" );
+	lua_getfield( L, -1, T_PCK_IDNT );
 	t_pck_format( L, t, s, m );
 	lua_rawget( L, -2 );           //S: _ld t t.pck pck/nil
 	if (t<T_PCK_ARR || lua_isnil( L, -1 ))        // haven't found in cache -> create it

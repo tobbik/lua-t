@@ -1,4 +1,4 @@
-n = require'numarray'()
+n = require't.Numarray'(6)
 
 n[1] = 100
 n[2] = 200

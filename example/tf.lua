@@ -1,19 +1,20 @@
 #!../out/bin/lua -i
-t  = require't'
+Loop= require't.Loop'
 fmt= string.format
-l  = t.Loop( 10 )
-fileName = 'buf.lua';
+l  = Loop( 10 )
+fileName = arg[1] or 't_buf_pck.lua';
 
 
 function k( )
 	local f = io.open( fileName, "r" )
-	l:addHandle( f, true, function( )
+	l:addHandle( f, 'read', function( )
 		local d = f:read( 200 )
 		if d then
-			print( f, #d, d )
+			print( '----------', f, #d, '-----------------' )
+			print( d )
 		else
 			print( f, "end" )
-			l:removeHandle( f, true )
+			l:removeHandle( f, 'read' )
 			f:close( )
 			l:stop( )
 		end

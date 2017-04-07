@@ -1,6 +1,5 @@
 T      = require't'
-Pack   = T.Pack
---Buffer = T.Buffer
+Pack   = require( "t.Pack" )
 fmt    = string.format
 wrt    = io.write
 

@@ -3,12 +3,12 @@
 ---
 -- \file    t_buf.lua
 -- \brief   Test for the T.Buffer implementation
-T      = require( 't' )
-Test   = T.Test
-Buffer = T.Buffer
+T      = require( "t" )
+Test   = require( "t.Test" )
+Buffer = require( "t.Buffer" )
 Rtvg   = T.require( 'rtvg' )
 
-local tests = {
+tests = {
 	rtvg       = Rtvg( ),
 	beforeEach = function( self )
 		local  n = math.random( 1000,2000 )

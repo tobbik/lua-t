@@ -1,15 +1,15 @@
 #!../out/bin/lua
 fmt    = string.format
-t      = require't'
-host   = arg[1] and arg[1] or t.Net.Interface( 'default' ).address:get()
+Net,Buffer,Loop  = require't.Net',require't.Buffer',require't.Loop'
+host   = arg[1] and arg[1] or Net.Interface( 'default' ).address:get()
 port   = arg[2] and arg[2] or 8888
-l      = t.Loop( 10 )
+l      = Loop( 10 )
 oCnt   = 512
-str    = t.Buffer( "            " .. string.rep( '0123456789', (oCnt//10)-1 ) )
+str    = Buffer( "            " .. string.rep( '0123456789', (oCnt//10)-1 ) )
 ofs,i  = 0,0
-mSck   = t.Net.Socket( 'udp' )
-sAdr   = t.Net.IPv4( host, port )
-iAdr   = t.Net.IPv4()
+mSck   = Net.Socket( 'udp' )
+sAdr   = Net.Address( host, port )
+iAdr   = Net.Address()
 
 read   = function( c )
 	local msg,cnt = c:recv( iAdr )

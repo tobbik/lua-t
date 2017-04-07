@@ -418,9 +418,13 @@ luaopen_t_htp( lua_State *L )
 {
 	luaL_newlib( L, t_htp_lib );
 	luaopen_t_htp_srv( L );
-	lua_setfield( L, -2, T_HTP_SRV_NAME );
+	lua_setfield( L, -2, T_HTP_SRV_IDNT );
+	luaopen_t_htp_wsk( L );
+	lua_setfield( L, -2, T_HTP_WSK_IDNT );
 	luaopen_t_htp_con( L );
+	lua_setfield( L, -2, T_HTP_CON_IDNT );
 	luaopen_t_htp_str( L );
+	lua_setfield( L, -2, T_HTP_STR_IDNT );
 	return 1;
 }
 

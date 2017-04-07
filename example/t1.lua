@@ -1,8 +1,8 @@
 #!../out/bin/lua
-local t=require('t')
+local Socket=require('t.Net.Socket')
 local sport=8003
 
-srv,ip = t.Socket.listen(sport, 5)
+srv,ip = Socket.listen(sport, 5)
 print( srv, ip )
 x=0
 payload= 'HTTP/1.1 200 OK\r\r' ..

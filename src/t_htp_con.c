@@ -17,6 +17,24 @@
 
 static int lt_htp_con__gc( lua_State *L );
 
+/**--------------------------------------------------------------------------
+ * construct an HTTP Connection
+ * \param   L      Lua state.
+ * \lparam  CLASS  table Http.Connection
+ * \lparam  ud     T.Http.Server userdata instance.
+ * \lreturn ud     T.Http.Connection userdata instances.
+ * \return  int    # of values pushed onto the stack.
+ * --------------------------------------------------------------------------*/
+static int lt_htp_con__Call( lua_State *L )
+{
+	struct t_htp_con *con;
+	struct t_htp_srv *srv = t_htp_srv_check_ud( L, -1, 1 );
+
+	lua_remove( L, 1 );           // remove the CLASS table
+	con = t_htp_con_create_ud( L, srv );
+	return 1;
+}
+
 
 /**--------------------------------------------------------------------------
  * create a t_htp_con and push to LuaStack.
@@ -327,6 +345,22 @@ lt_htp_con__gc( lua_State *L )
 }
 
 
+
+/**--------------------------------------------------------------------------
+ * Class metamethods library definition
+ * --------------------------------------------------------------------------*/
+static const struct luaL_Reg t_htp_con_fm [] = {
+	  { "__call",        lt_htp_con__Call }
+	, { NULL,            NULL }
+};
+
+/**--------------------------------------------------------------------------
+ * Class functions library definition
+ * --------------------------------------------------------------------------*/
+static const struct luaL_Reg t_htp_con_cf [] = {
+	{ NULL,   NULL }
+};
+
 /**--------------------------------------------------------------------------
  * Objects metamethods library definition
  * --------------------------------------------------------------------------*/
@@ -351,11 +385,15 @@ static const luaL_Reg t_htp_con_m [] = {
 LUAMOD_API int
 luaopen_t_htp_con( lua_State *L )
 {
-	// T.Http.Server instance metatable
+	// T.Http.Connection instance metatable
 	luaL_newmetatable( L, T_HTP_CON_TYPE );
 	luaL_setfuncs( L, t_htp_con_m, 0 );
 	lua_pop( L, 1 );        // remove metatable from stack
 
-	return 0;
+	// T.Http.Connection class
+	luaL_newlib( L, t_htp_con_cf );
+	luaL_newlib( L, t_htp_con_fm );
+	lua_setmetatable( L, -2 );
+	return 1;
 }
 

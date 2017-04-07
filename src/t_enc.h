@@ -7,6 +7,10 @@
  * \copyright See Copyright notice at the end of t.h
  *-------------------------------------------------------------------------*/
 
+#define T_ENC_RC4_IDNT  "rc4"
+#define T_ENC_CRC_IDNT  "crc"
+#define T_ENC_B64_IDNT  "b64"
+
 #define T_ENC_RC4_NAME  "RC4"
 #define T_ENC_CRC_NAME  "Crc"
 #define T_ENC_B64_NAME  "Base64"

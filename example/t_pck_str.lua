@@ -1,7 +1,7 @@
 T      = require't'
-Pack   = T.Pack
-Buffer = T.Buffer
-Oht    = T.OrderedHashTable
+Pack   = require( "t.Pack" )
+Buffer = require( "t.Buffer" )
+Oht    = require( "t.OrderedHashTable" )
 rep    = string.rep
 utl    = T.require('t_pck_utl')
 

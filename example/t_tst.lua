@@ -3,7 +3,7 @@
 ---
 -- \file    sampleTest.lua
 -- \brief   basic tests to show t.Test
-local   Test   = require( 't' ).Test
+local   Test   = require( 't.Test' )
 
 tc = {
 	beforeAll = function( self, done )  -- not necessary for this suite

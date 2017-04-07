@@ -15,6 +15,8 @@ enum t_tst_cse_state {
 };
 
 
+#define T_TST_CSE_IDNT  "cse"
+
 #define T_TST_CSE_NAME  "Case"
 
 #define T_TST_CSE_TYPE  T_TST_TYPE"."T_TST_CSE_NAME

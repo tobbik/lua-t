@@ -7,6 +7,8 @@
  * \copyright See Copyright notice at the end of t.h
  */
 
+#define T_BUF_SEG_IDNT  "seg"
+
 #define T_BUF_SEG_NAME  "Segment"
 
 #define T_BUF_SEG_TYPE  T_BUF_TYPE"."T_BUF_SEG_NAME

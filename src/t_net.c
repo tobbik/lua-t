@@ -187,10 +187,10 @@ luaopen_t_net( lua_State *L )
 {
 	luaL_newlib( L, t_net_cf );
 	luaopen_t_net_ip4( L );
-	lua_setfield( L, -2, T_NET_IP4_NAME );
+	lua_setfield( L, -2, T_NET_IP4_IDNT );
 	luaopen_t_net_ifc( L );
-	lua_setfield( L, -2, T_NET_IFC_NAME );
+	lua_setfield( L, -2, T_NET_IFC_IDNT );
 	luaopen_t_net_sck( L );
-	lua_setfield( L, -2, T_NET_SCK_NAME );
+	lua_setfield( L, -2, T_NET_SCK_IDNT );
 	return 1;
 }

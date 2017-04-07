@@ -1,6 +1,6 @@
 #!../out/bin/lua
-t  = require't'
-s  = t.Net.Socket( 'UDP', 'ip4' )
+Net,Loop,Time  = require't.Net',require't.Loop',require't.Time'
+s  = Net.Socket( 'UDP', 'ip4' )
 s:bind( 8888 )
 l  = nil
 n  = 9
@@ -14,7 +14,7 @@ end
 
 
 function r( s )
-	local ip_cli = t.Net.IPv4()
+	local ip_cli = Net.Address()
 	local msg, len = s:recv( ip_cli )
 	print( msg, len, ip_cli, "\n" )
 	if msg:sub( 1, 4 ) == 'exit' then
@@ -34,9 +34,9 @@ function r( s )
 	end
 end
 
-l   = t.Loop( 3 )      ---< Loop with n slots for filehandles
+l   = Loop( 3 )      ---< Loop with n slots for filehandles
 for i=1,n do
-	table.insert( tm, t.Time( math.random( n*35, n*3000 ) ) )
+	table.insert( tm, Time( math.random( n*35, n*3000 ) ) )
 	print( tm[i] )
 	l:addTimer( tm[i], p, "-------Timer " ..i.. "--------", tm[i] )
 end

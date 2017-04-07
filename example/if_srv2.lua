@@ -1,15 +1,15 @@
 #!../out/bin/lua
-local t=require('t')
-sip,sport=t.Net.Interface( 'default' ).address:get(),8888
+local Net=require('t.Net')
+sip,sport=Net.Interface( 'default' ).address:get(),8888
 
-tcpsock,ip = t.Net.Socket.listen( sip, sport, 5 )
+tcpsock,ip = Net.Socket.listen( sip, sport, 5 )
 --tcpsock:listen(5)
 print( tcpsock, ip )
 a=0
 
 conns  = { master=tcpsock }
 while a<100 do
-	res = t.Net.selectK( conns, {} )
+	res = Net.select( conns, {} )
 	io.write( 'LOOP['..#res..']:' )
 	for n,cli in pairs( res ) do
 		io.write( '  '..tostring( cli )..'' )

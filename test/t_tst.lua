@@ -3,7 +3,7 @@
 ---
 -- \file    test/t_tst.lua
 -- \brief   Test for T.Test
-local Test  = require( 't' ).Test
+local Test  = require( 't.Test' )
 
 local tests = {
 	beforeEach = function( self )

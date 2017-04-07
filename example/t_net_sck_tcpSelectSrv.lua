@@ -1,8 +1,8 @@
 #!../out/bin/lua
-t,fmt=require('t'),string.format
-ipAddr,port=t.Net.Interface( 'default' ).address:get(),8888
+Net,fmt=require('t.Net'),string.format
+ipAddr,port=Net.Interface( 'default' ).address:get(),8888
 
-tcpsock = t.Net.Socket( 'TCP' ) --ip4 implied
+tcpsock = Net.Socket( 'TCP' ) --ip4 implied
 print( tcpsock.reuseaddr, tcpsock.reuseport )
 tcpsock.reuseaddr = true
 tcpsock.reuseport = true
@@ -13,7 +13,7 @@ rcvd = 0
 
 conns = {master = tcpsock}
 while true do
-	rds = t.Net.Socket.select( conns, {} )
+	rds = Net.Socket.select( conns, {} )
 	--print( #rds, tcpsock )
 	if rds.master then
 		local s,a = tcpsock:accept( )

@@ -6,10 +6,10 @@
 --          The tests are largely the same as T.Buffer since the interface
 --          between the two classes is unified to provide usage across T.Net
 --          and T.Pack
-T       = require( 't' )
-Test    = T.Test
-Buffer  = T.Buffer
-Segment = T.Buffer.Segment
+T       = require( "t" )
+Test    = require( "t.Test" )
+Buffer  = require( "t.Buffer" )
+Segment = Buffer.Segment
 Rtvg    = T.require( 'rtvg' )
 --math.randomseed(os.time())
 
@@ -71,7 +71,7 @@ local tests = {
 
 	test_ConstructorOffsetOverflowFails = function( self )
 		Test.Case.describe( "Creating Segment with offset higher then #buffer fails" )
-		local f   = function(s) local seg = T.Buffer.Segment( s.b, #s.b+5 ) end
+		local f   = function(s) local seg = Segment( s.b, #s.b+5 ) end
 		local r,e = pcall( f, self )
 		assert( not r, "Segement constructor should have failed" )
 		assert( e:match( "Offset relative to length of T.Buffer out of bound" ), "Wrong Error message: "..e )
@@ -79,7 +79,7 @@ local tests = {
 
 	test_ConstructorLengthOverflowFails = function( self )
 		Test.Case.describe( "Creating Segment with length higher then #buffer fails" )
-		local f   = function(s) local seg = T.Buffer.Segment( s.b, 1, #s.b+5 ) end
+		local f   = function(s) local seg = Segment( s.b, 1, #s.b+5 ) end
 		local r,e = pcall( f, self )
 		assert( not r, "Segement constructor should have failed" )
 		assert( e:match( "T.Buffer.Segment length out of bound" ), "Wrong Error message: "..e )
@@ -87,7 +87,7 @@ local tests = {
 
 	test_ConstructorOffsetPlusLengthOverflowFails = function( self )
 		Test.Case.describe( "Creating Segment with offset+length higher then #buffer fails" )
-		local f   = function(s) local seg = T.Buffer.Segment( s.b, #s.b-5, 10 ) end
+		local f   = function(s) local seg = Segment( s.b, #s.b-5, 10 ) end
 		local r,e = pcall( f, self )
 		assert( not r, "Segement constructor should have failed" )
 		assert( e:match( "T.Buffer.Segment length out of bound" ), "Wrong Error message: "..e )

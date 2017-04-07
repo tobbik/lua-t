@@ -1,4 +1,4 @@
-Set = require( 't' ).Set
+Set = require( 't.Set' )
 
 function p( s ) return #s, Set.toString( s )  end
 

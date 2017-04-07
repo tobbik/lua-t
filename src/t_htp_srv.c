@@ -193,7 +193,7 @@ lt_htp_srv_listen( lua_State *L )
 	lua_rawgeti( L, LUA_REGISTRYINDEX, s->lR );
 	t_ael_check_ud( L, -1, 1 );
 	lua_rawgeti( L, LUA_REGISTRYINDEX, s->sR );
-	lua_pushboolean( L, 1 );                    //S: srv addhandle ael sck true
+	lua_pushstring( L, "read" );                //S: srv addhandle ael sck true
 	lua_pushcfunction( L, lt_htp_srv_accept );  //S: srv addhandle ael sck true accept
 
 	lua_pushvalue( L, 1 );                      //S: srv addhandle ael sck true accept srv

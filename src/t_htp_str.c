@@ -15,6 +15,23 @@
 #include "t_htp.h"
 
 /**--------------------------------------------------------------------------
+ * construct an HTTP Stream
+ * \param   L      Lua state.
+ * \lparam  CLASS  table Http.Stream
+ * \lparam  ud     T.Http.Connection userdata instance.
+ * \lreturn ud     T.Http.Stream userdata instances.
+ * \return  int    # of values pushed onto the stack.
+ * --------------------------------------------------------------------------*/
+static int lt_htp_str__Call( lua_State *L )
+{
+	struct t_htp_str *str;
+	struct t_htp_con *con = t_htp_con_check_ud( L, -1, 1 );
+
+	lua_remove( L, 1 );           // remove the CLASS table
+	str = t_htp_str_create_ud( L, con );
+	return 1;
+}
+/**--------------------------------------------------------------------------
  * create a t_htp_str and push to LuaStack.
  * \param   L  The lua state.
  *
@@ -566,6 +583,22 @@ lt_htp_str__gc( lua_State *L )
 	return 0;
 }
 
+
+/**--------------------------------------------------------------------------
+ * Class metamethods library definition
+ * --------------------------------------------------------------------------*/
+static const struct luaL_Reg t_htp_str_fm [] = {
+	  { "__call",        lt_htp_str__Call }
+	, { NULL,            NULL }
+};
+
+/**--------------------------------------------------------------------------
+ * Class functions library definition
+ * --------------------------------------------------------------------------*/
+static const struct luaL_Reg t_htp_str_cf [] = {
+	{ NULL,   NULL }
+};
+
 /**--------------------------------------------------------------------------
  * Objects metamethods library definition
  * --------------------------------------------------------------------------*/
@@ -607,9 +640,14 @@ luaopen_t_htp_str( lua_State *L )
 	luaL_setfuncs( L, t_htp_str_m, 0 );
 	lua_pop( L, 1 );        // remove metatable T.Http.Stream from stack
 
-	luaL_newmetatable( L, T_HTP_STR_PRX_NAME );
+	luaL_newmetatable( L, T_HTP_STR_PRX_TYPE );
 	luaL_setfuncs( L, t_htp_str_prx_s, 0 );
 	lua_setfield( L, -1, "__index" );
-	return 0;
+
+	// T.Http.Stream class
+	luaL_newlib( L, t_htp_str_cf );
+	luaL_newlib( L, t_htp_str_fm );
+	lua_setmetatable( L, -2 );
+	return 1;
 }
 

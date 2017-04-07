@@ -58,9 +58,19 @@ void t_getTypeByName ( lua_State *L, int pos, const char *dft, const struct t_ty
 void t_getTypeByValue( lua_State *L, int pos, const int   dft, const struct t_typ *types );
 
 // sub-types/modules names
+#define T_AEL_IDNT "ael"
+#define T_TIM_IDNT "tim"
+#define T_NET_IDNT "net"
+#define T_BUF_IDNT "buf"
+#define T_PCK_IDNT "pck"
+#define T_ENC_IDNT "enc"
+#define T_TST_IDNT "tst"
+#define T_OHT_IDNT "oht"
+#define T_SET_IDNT "set"
+#define T_HTP_IDNT "htp"
+
 #define T_AEL_NAME "Loop"
 #define T_TIM_NAME "Time"
-#define T_SCK_NAME "Socket"
 #define T_NET_NAME "Net"
 #define T_BUF_NAME "Buffer"
 #define T_PCK_NAME "Pack"
@@ -68,12 +78,10 @@ void t_getTypeByValue( lua_State *L, int pos, const int   dft, const struct t_ty
 #define T_TST_NAME "Test"
 #define T_OHT_NAME "OrderedHashTable"
 #define T_SET_NAME "Set"
-#define T_WSK_NAME "Websocket"
 #define T_HTP_NAME "Http"
 
 #define T_AEL_TYPE "T."T_AEL_NAME
 #define T_TIM_TYPE "T."T_TIM_NAME
-#define T_SCK_TYPE "T."T_SCK_NAME
 #define T_NET_TYPE "T."T_NET_NAME
 #define T_BUF_TYPE "T."T_BUF_NAME
 #define T_PCK_TYPE "T."T_PCK_NAME
@@ -81,10 +89,10 @@ void t_getTypeByValue( lua_State *L, int pos, const int   dft, const struct t_ty
 #define T_TST_TYPE "T."T_TST_NAME
 #define T_OHT_TYPE "T."T_OHT_NAME
 #define T_SET_TYPE "T."T_SET_NAME
-#define T_WSK_TYPE "T."T_WSK_NAME
 #define T_HTP_TYPE "T."T_HTP_NAME
 
 #ifdef T_NRY
+#define T_NRY_IDNT "nry"
 #define T_NRY_NAME "Numarray"
 #define T_NRY_TYPE "T."T_NRY_NAME
 #endif
@@ -102,8 +110,7 @@ LUAMOD_API int luaopen_t_tst( lua_State *L );
 LUAMOD_API int luaopen_t_oht( lua_State *L );
 LUAMOD_API int luaopen_t_set( lua_State *L );
 LUAMOD_API int luaopen_t_htp( lua_State *L );
-LUAMOD_API int luaopen_t_wsk( lua_State *L );
-LUAMOD_API int luaopen_t    ( lua_State *L );
+LUAMOD_API int luaopen_t_core ( lua_State *L );
 #ifdef T_NRY
 LUAMOD_API int luaopen_t_nry( lua_State *L );
 #endif
