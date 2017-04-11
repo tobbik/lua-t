@@ -36,6 +36,7 @@ T_SRC=Buffer.lua \
    Pack.lua \
    Pack/Field.lua \
    Set.lua \
+   Table.lua \
    Test.lua \
    Test/Case.lua \
    Time.lua

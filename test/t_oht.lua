@@ -12,6 +12,7 @@ local tests = {
 	len   = math.random( 700, 2000 ),
 	beforeEach = function( self )
 		self.rtvg   = Rtvg( )
+		-- rtvg.getVals() guarantees disjoint arrays!
 		self.keys   = self.rtvg:getKeys( self.len )
 		self.vals   = self.rtvg:getVals( self.len )
 		self.o, len = Oht( ), 0

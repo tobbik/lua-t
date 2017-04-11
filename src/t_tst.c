@@ -15,6 +15,7 @@
 #include "t.h"
 #include "t_tst.h"
 #include "t_tim.h"
+#include "t_utl.h"
 
 static int lt_tst__newindex( lua_State *L );
 
@@ -371,57 +372,6 @@ lt_tst__len( lua_State *L )
 
 
 /** ---------------------------------------------------------------------------
- * Compares the last two values on the stack (deep table compare; recursive)
- * Work on negative inices ONLY for recursive use
- * \param   L        Lua state
- * \lparam  value    valueA to compare
- * \lparam  value    valueB to compare
- * \return  int/bool 1 or 0
- *--------------------------------------------------------------------------- */
-int
-t_tst_isReallyEqual( lua_State *L )
-{
-	// if lua considers them equal ---> true
-	// catches value, reference an meta.__eq
-	if (lua_compare( L, -2, -1, LUA_OPEQ )) return 1;
-	// metamethod prevails
-	if (luaL_getmetafield( L, -2, "__eq" )) return lua_compare( L, -2, -1, LUA_OPEQ );
-	if (LUA_TTABLE != lua_type( L, -2 ))    return 0;
-	if (lua_rawlen( L, -1 ) != lua_rawlen( L, -2)) return 0;
-	lua_pushnil( L );           //S: tblA tblB  nil
-	while (lua_next( L, -3 ))   //S: tblA tblB  keyA  valA
-	{
-		lua_pushvalue( L, -2 );  //S: tblA tblB  keyA  valA  keyA
-		lua_gettable( L, -4 );   //S: tblA tblB  keyA  valA  valB
-		if (! t_tst_isReallyEqual( L ))
-		{
-			lua_pop( L, 3 );      //S: tblA tblB
-			return 0;
-		}
-		// pop valueA and valueB
-		lua_pop( L, 2 );         //S: tblA tblB  keyA
-	}
-	return 1;
-}
-
-
-/** ---------------------------------------------------------------------------
- * Compares the last two values on the stack (deep table compare; recursive)
- * \param   L        Lua state
- * \lparam  value    valueA to compare
- * \lparam  value    valueB to compare
- * \return  int/bool 1 or 0
- * TODO: push an expressive error message onto the stack
- *--------------------------------------------------------------------------- */
-static int
-lt_tst_IsReallyEqual( lua_State *L )
-{
-	lua_pushboolean( L, t_tst_isReallyEqual( L ) );
-	return 1;
-}
-
-
-/** ---------------------------------------------------------------------------
  * Test if a T.Test.Suite has run successfully.
  * Note that test case marked as TODO must fail else the suite will fail.
  * \param   L       Lua state
@@ -452,8 +402,7 @@ static const struct luaL_Reg t_tst_fm [] = {
  * Class functions library definition
  * --------------------------------------------------------------------------*/
 static const struct luaL_Reg t_tst_cf [] = {
-	  { "equal"              , lt_tst_IsReallyEqual }
-	, { "hasPassed"          , lt_tst_HasPassed }
+	  { "hasPassed"          , lt_tst_HasPassed }
 	, { NULL,  NULL }
 };
 

@@ -23,7 +23,7 @@
 
 #include "t.h"
 #include "t_oht.h"
-#include "t_tst.h"
+#include "t_utl.h"
 
 static int lt_oht__Call( lua_State *L );
 /**--------------------------------------------------------------------------
@@ -582,7 +582,7 @@ lt_oht__eq( lua_State *L )
 {
 	t_oht_check( L, 1, 1 );
 	t_oht_check( L, 2, 1 );
-	lua_pushboolean( L, t_tst_isReallyEqual( L ) );
+	lua_pushboolean( L, t_utl_deepEqual( L ) );
 	return 1;
 }
 

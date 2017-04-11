@@ -399,10 +399,10 @@ luaopen_t_core( lua_State *L )
 	lua_setfield( L, -2, T_TST_IDNT );
 	luaopen_t_oht( L );
 	lua_setfield( L, -2, T_OHT_IDNT );
-	luaopen_t_set( L );
-	lua_setfield( L, -2, T_SET_IDNT );
 	luaopen_t_htp( L );
 	lua_setfield( L, -2, T_HTP_IDNT );
+	luaopen_t_utl( L );
+	lua_setfield( L, -2, T_UTL_IDNT );
 #ifdef T_NRY
 	luaopen_t_nry( L );
 	lua_setfield( L, -2, T_NRY_IDNT );

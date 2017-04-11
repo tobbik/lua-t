@@ -140,3 +140,80 @@ t_utl_printIntHex( lua_Unsigned i )
 		printf( "%02llX ", (i >> (n-1)*CHAR_BIT) & 0X00000000000000FF );
 	printf("\n");
 }
+
+
+/** ---------------------------------------------------------------------------
+ * Compares the last two values on the stack (deep table compare; recursive)
+ * Work on negative inices ONLY for recursive use
+ * \param   L        Lua state
+ * \lparam  value    valueA to compare
+ * \lparam  value    valueB to compare
+ * \return  int/bool 1 or 0
+ *--------------------------------------------------------------------------- */
+int
+t_utl_deepEqual( lua_State *L )
+{
+	// if lua considers them equal ---> true
+	// catches value, reference an meta.__eq
+	if (lua_compare( L, -2, -1, LUA_OPEQ )) return 1;
+	// metamethod prevails
+	if (luaL_getmetafield( L, -2, "__eq" )) return lua_compare( L, -2, -1, LUA_OPEQ );
+	if (LUA_TTABLE != lua_type( L, -2 ))    return 0;
+	if (lua_rawlen( L, -1 ) != lua_rawlen( L, -2)) return 0;
+	lua_pushnil( L );           //S: tblA tblB  nil
+	while (lua_next( L, -3 ))   //S: tblA tblB  keyA  valA
+	{
+		lua_pushvalue( L, -2 );  //S: tblA tblB  keyA  valA  keyA
+		lua_gettable( L, -4 );   //S: tblA tblB  keyA  valA  valB
+		if (! t_utl_deepEqual( L ))
+		{
+			lua_pop( L, 3 );      //S: tblA tblB
+			return 0;
+		}
+		// pop valueA and valueB
+		lua_pop( L, 2 );         //S: tblA tblB  keyA
+	}
+	return 1;
+}
+
+
+/** ---------------------------------------------------------------------------
+ * Compares the last two values on the stack (deep table compare; recursive)
+ * \param   L        Lua state
+ * \lparam  value    valueA to compare
+ * \lparam  value    valueB to compare
+ * \return  int/bool 1 or 0
+ * TODO: push an expressive error message onto the stack
+ *--------------------------------------------------------------------------- */
+static int
+lt_utl_equals( lua_State *L )
+{
+	lua_pushboolean( L, t_utl_deepEqual( L ) );
+	return 1;
+}
+
+
+/**--------------------------------------------------------------------------
+ * Class functions library definition
+ * --------------------------------------------------------------------------*/
+static const struct luaL_Reg t_utl_cf [] = {
+	  { "equals"       , lt_utl_equals    }
+	, { NULL           , NULL }
+};
+
+
+/**--------------------------------------------------------------------------
+ * Pushes this library onto the stack.
+ *          - creates Metatable with functions
+ *          - creates metatable with methods
+ * \param   L      The lua state.
+ * \lreturn table  the library
+ * \return  int    # of values pushed onto the stack.
+ * --------------------------------------------------------------------------*/
+LUAMOD_API int luaopen_t_utl( lua_State *L )
+{
+	// T.Util class
+	luaL_newlib( L, t_utl_cf );
+	return 1;
+}
+

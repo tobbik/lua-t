@@ -25,8 +25,8 @@ int   t_oht_check    ( lua_State *L, int pos, int check );
 int   t_oht_create   ( lua_State *L );
 
 void  t_oht_getElement( lua_State *L, int pos );
-void  t_oht_addElement( lua_State *L, int pos );
+void  t_oht_addElement( lua_State *L, int pos );            // reused in pck
 void  t_oht_deleteElement( lua_State *L, int pos );
 void  t_oht_insertElement( lua_State *L, int pos );
-void  t_oht_readArguments( lua_State *L, int sp, int ep );
+void  t_oht_readArguments( lua_State *L, int sp, int ep );  // reused in pck
 void  t_oht_getTable( lua_State *L, int type );

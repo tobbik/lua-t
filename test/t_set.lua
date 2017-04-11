@@ -12,6 +12,7 @@ local   tests = {
 	len   = math.random( 700, 2000 ),
 	beforeEach = function( self )
 		self.rtvg = Rtvg( )
+		-- rtvg.getVals() guarantees disjoint arrays!
 		self.aryA = self.rtvg:getVals( self.len )
 		self.aryB = self.rtvg:getVals( self.len )
 		assert( self.len == #self.aryA, "Length of initial values must be the same" )
@@ -32,9 +33,6 @@ local   tests = {
 		end
 		return part1, part2
 	end,
-
-	--afterEach = function( self )  -- not necessary for this suite
-	--end,
 
 	-- -----------------------------------------------------------------------
 	-- Constructor Tests
@@ -61,10 +59,10 @@ local   tests = {
 
 	test_ConstructorFromArray = function( self )
 		Test.Case.describe( "Construct Set from Array" )
-		-- self.setA got constructed from self.aryA in self.setUp()
-		assert( #self.setA == #self.aryA, "Length must be equal number of elements in array" )
+		local set = Set( self.aryA )
+		assert( #set == #self.aryA, "Length must be equal number of elements in array" )
 		for i,v in ipairs( self.aryA ) do
-			assert( self.setA[ v ], "Element '"..tostring(v).."' must exist in set" )
+			assert( set[ v ], "Element '"..tostring(v).."' must exist in set" )
 		end
 	end,
 
@@ -103,7 +101,7 @@ local   tests = {
 
 	test_ConstructorRoundTrip = function( self )
 		Test.Case.describe( "Turn Set into table and construct an equal Set from table" )
-		local tbl = Set.getTable( self.setA )
+		local tbl = Set.values( self.setA )
 		assert( #self.setA == #tbl, "Table length must be equal number elements in original set" )
 		for i,v in ipairs( tbl ) do
 			assert( self.setA[ v ], "Element '"..tostring(v).."' must exist in set" )
@@ -247,7 +245,7 @@ local   tests = {
 	test_IsTrueSubset = function( self )
 		Test.Case.describe( "Test set for being a true subset" )
 		local aSet      = Set( self.setA ) -- clone Set
-		local _,removeA = self.splitArray(self.aryA)
+		local _,removeA = self.splitArray( self.aryA )
 
 		assert( #self.setA == #aSet, "Length of both sets must be equal" )
 		for i,v in pairs( removeA ) do self.setA[ v ] = nil end

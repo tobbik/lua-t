@@ -16,3 +16,8 @@ void    t_utl_printIntBin  ( lua_Unsigned i );
 void    t_utl_printCharBin ( volatile char *b, size_t sz );
 void    t_utl_printIntHex  ( lua_Unsigned i );
 void    t_utl_printCharHex ( volatile char *b, size_t sz );
+
+
+
+int     t_utl_contains( lua_State *L, int disjunct );
+int     t_utl_deepEqual( lua_State *L );

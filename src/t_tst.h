@@ -35,5 +35,4 @@ int    t_tst_cse_hasField( lua_State *L, const int pos, const char *fld, int lea
 int    t_tst_cse_isType( lua_State *L, int pos, const char *typeName );
 int    lt_tst_cse__call( lua_State *L );
 int    t_tst_cse_prune( lua_State *L );
-int    t_tst_isReallyEqual( lua_State *L );
 LUA_API int luaopen_t_tst_cse( lua_State *L );
