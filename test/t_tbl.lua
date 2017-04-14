@@ -5,10 +5,11 @@
 -- \brief   Test for extended Table functions
 -- \author  tkieslich
 
-local T     = require( 't' )
-local Test  = require( "t.Test" )
-local Table = require( "t.Table" )
-local Rtvg  = T.require( 'rtvg' )
+local T      = require( 't' )
+local Test   = require( "t.Test" )
+local Table  = require( "t.Table" )
+local equals = require( 't.core' ).utl.equals
+local Rtvg   = T.require( 'rtvg' )
 
 -- \param  n  true if check for existent key else assert non existence
 local checkElm = function( t, e, n )
@@ -195,6 +196,20 @@ local   tests = {
 		         " but was: " .. cnt(clone) )
 		for k,v in pairs(clone) do assert( v == tbl[k], k.." key should exist in original" ) end
 		for k,v in pairs(tbl) do assert( v == clone[k], k.." key should exist in clone" ) end
+	end,
+
+	test_deepClone = function( self )
+		Test.Case.describe( "Table.clone( tbl, true ) -> deep clone table" )
+		local tbl = { a=1, b=2, c=3, d=4, e=5, f=6, g=7, h=8,  9,10,11,12,13,14 }
+		tbl.tbl   = { k=11,l=12,m=13,n=14,o=15,p=16,q=17,r=18, 19,20,21,22,23,24 }
+		local clone = Table.clone( tbl, true );
+		assert( #tbl == #clone, "#clone should be: " .. #tbl .. " but was: " .. #clone )
+		assert( #tbl.tbl == #clone.tbl, "#clone should be: " .. #tbl .. " but was: " .. #clone )
+		assert( cnt(tbl) == cnt(clone), "cnt(clone) should be: " .. cnt(tbl) ..
+		         " but was: " .. cnt(clone) )
+		assert( cnt(tbl.tbl) == cnt(clone.tbl), "cnt(clone) should be: " .. cnt(tbl.tbl) ..
+		         " but was: " .. cnt(clone.tbl) )
+		assert( equals( tbl, clone), "Orginal and deep clone should be equal" )
 	end,
 
 	test_countAndIsempty = function( self )

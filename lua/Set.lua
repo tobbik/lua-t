@@ -65,13 +65,13 @@ _mt = {       -- local _mt at top of file
 	__eq  = function( self, othr )   -- is equal
 		return  t_contains( self, othr, false ) and     t_contains( othr, self, false )
 	end,
-	__lt  = function( self, othr )   -- is subset BUT NOT equal
+	__lt  = function( self, othr )   -- is subset AND NOT equal
 		return  t_contains( othr, self, false ) and not t_contains( self, othr, false )
 	end,
 	__le  = function( self, othr )   -- is subset OR equal
 		return  t_contains( othr, self, false )
 	end,
-	__mod = function( self, othr )   -- is disjoint
+	__mod = function( self, othr )   -- is disjunct
 		return  t_contains( self, othr, true )
 	end,
 }
