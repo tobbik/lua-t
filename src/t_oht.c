@@ -663,13 +663,13 @@ static const struct luaL_Reg t_oht_fm [] = {
  * Class functions library definition
  * --------------------------------------------------------------------------*/
 static const struct luaL_Reg t_oht_cf [] = {
-	  { "getIndex"     , lt_oht_GetIndex }
-	, { "getKey"       , lt_oht_GetKey }
+	  { "index"        , lt_oht_GetIndex }
+	, { "key"          , lt_oht_GetKey }
 	, { "insert"       , lt_oht_Insert }
 	, { "concat"       , lt_oht_Concat }
-	, { "getTable"     , lt_oht_GetTable }
-	, { "getValues"    , lt_oht_GetValues }
-	, { "getKeys"      , lt_oht_GetKeys }
+	, { "table"        , lt_oht_GetTable }
+	, { "values"       , lt_oht_GetValues }
+	, { "keys"         , lt_oht_GetKeys }
 	, { NULL           , NULL }
 };
 

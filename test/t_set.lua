@@ -1,5 +1,3 @@
-#!../out/bin/lua
-
 ---
 -- \file    t_set.lua
 -- \brief   Test for the Set functionality
@@ -9,7 +7,7 @@ local Set   = require( "t.Set" )
 local Rtvg  = T.require( 'rtvg' )
 
 local   tests = {
-	len   = math.random( 700, 2000 ),
+	len        = 5000,
 	beforeEach = function( self )
 		self.rtvg = Rtvg( )
 		-- rtvg.getVals() guarantees disjoint arrays!
