@@ -13,7 +13,6 @@
 #include "t.h"
 #include "t_utl.h"            // t_utl stuff
 #include "t_buf.h"            // read/write buffers
-#include "t_oht.h"            // read arguments into struct, write result
 #include "t_pck.h"
 
 // ========== Buffer accessor Helpers
@@ -564,6 +563,47 @@ struct t_pck
 }
 
 
+/**--------------------------------------------------------------------------
+ * Read all arguments from Stack.
+ * \param   L        Lua state.
+ * \param   int      sp First stack index for first parameter table.
+ * \param   int      ep Last  stack index for last  parameter table.
+ * \lparam  mult     Sequence of tables with one key/value pair.
+ * \lreturn table    Table filled according to oht structure.
+ * \return  void.
+ * --------------------------------------------------------------------------*/
+static void
+t_pck_readArguments( lua_State *L, int sp, int ep )
+{
+	size_t  i  = 0;         ///< iterator for going through the arguments
+	size_t  n  = ep-sp + 1; ///< process how many arguments
+
+	lua_createtable( L, n, n );
+	while (i < n)
+	{
+		luaL_argcheck( L, lua_istable( L, sp ), i+1,
+			"Arguments must be tables with a single key/value pair" );
+		// get key/value from table
+		lua_pushnil( L );                //S: sp … ep … tbl nil
+		luaL_argcheck( L, lua_next( L, sp ), ep-n-1,
+			"The table argument must contain one key/value pair." );
+		lua_remove( L, sp );             // remove the table now key/pck pair is on stack
+		lua_pushvalue( L, -2 );          //S: sp … ep … tbl key val key
+		lua_rawget( L, -4 );             //S: sp … ep … tbl key val valold?
+		if (lua_isnil( L, -1 ))    // add a new value to the table
+		{
+			lua_pop( L, 1 );
+			lua_pushvalue( L, -2 );       //S: sp … ep … tbl key val key
+			lua_rawseti( L, -4, lua_rawlen( L, -4 )+1 );
+			lua_rawset( L, -3 );
+		}
+		else
+			luaL_error( L, "No duplicates for Pack keys allowed");
+
+		i++;
+	}
+}
+
 //###########################################################################
 //   ____                _                   _
 //  / ___|___  _ __  ___| |_ _ __ _   _  ___| |_ ___  _ __
@@ -592,7 +632,7 @@ static int lt_pck__Call( lua_State *L )
 	lua_remove( L, 1 );                     // remove the T.Pack Class table
 	if (lua_istable( L, 1 ))                // Oht style constructor -> struct
 	{
-		t_oht_readArguments( L, 1, lua_gettop( L ) );
+		t_pck_readArguments( L, 1, lua_gettop( L ) );
 		p = t_pck_str_create( L );                            //S: pck tbl
 	}
 	else
@@ -804,10 +844,19 @@ t_pck_fld__callread( lua_State *L, struct t_pck *pc, const char *b, size_t ofs )
 			p   = t_pck_fld_getPackFromStack( L, -1, &pf );
 			ofs = t_pck_fld__callread( L, p, b, ofs );//S:… res tbl key pck val
 			lua_remove( L, -2 );               //S:… res tbl key val
-			t_oht_addElement( L, -4 );
+			lua_pushvalue( L, -2 );            //S:… res tbl key val key
+			lua_rawseti( L, -5, lua_rawlen( L, -5 )+1 );
+			lua_rawset( L, -3 );
 		}
 		lua_pop( L, 1 );                      //S:… res
-		t_oht_create( L );                    //S:… oht
+
+		lua_newtable( L );                    //S:… res oht
+		lua_insert( L, -2 );                  //S:… oht res
+		t_getProxyTableIndex( L );            //S:… oht res {}
+		lua_insert( L, -2 );                  //S:… oht {} res
+		lua_rawset( L, -3 );                  //S:… oht
+		luaL_getmetatable( L, "t.OrderedHashTable" );
+		lua_setmetatable( L, -2 );
 		return ofs;
 	}
 	lua_pushnil( L );
