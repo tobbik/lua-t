@@ -34,9 +34,6 @@ local getPrx     = function( oht )
 	assert( _mt == getmetatable( oht ), "Expected `OrderedHashTable`" )
 	return oht[ prxTblIdx ]
 end
-local makeOht    = function( prx )
-	return setmetatable( { [ prxTblIdx ] = prx }, _mt )
-end
 local getValues  = function( tbl )
 	local ret = { }
 	for i=1,#tbl do t_insert( ret, tbl[ tbl[i] ] ) end
@@ -58,7 +55,7 @@ cloneTable       = function( tbl )
 	local ret = { }
 	for k,v in pairs( tbl ) do
 		if _mt == getmetatable( v ) then
-			ret[ k ] = makeOht( cloneTable( getPrx( v ) ) )
+			ret[ k ] = setmetatable( { [ prxTblIdx ] = cloneTable( getPrx( v ) ) }, _mt )
 		else
 			ret[ k ] = v
 		end
@@ -153,7 +150,7 @@ return setmetatable( {
 		else
 			prx = { }
 		end
-		return makeOht( prx )
+		return setmetatable( { [ prxTblIdx ] = prx }, _mt )
 	end
 } )
 
