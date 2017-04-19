@@ -89,21 +89,21 @@ local tests = {
 		assert( self.t.test_Test.pass, "Test.test_Test case suite should have passed" )
 	end,
 
-	test_Testype = function( self, done )
+	test_TestType = function( self, done )
 		Test.Case.describe( "naming test_cb, test_cr or test_ should create respective type" )
 		self.t.test_Test    = function( s ) s=2 end
 		self.t.test_cb_Test = function( s, d ) s=3, d() end
 		self.t.test_cr_Test = function( s ) s=4 end
-		self.t.testTest    = function( s ) s=2 end
-		self.t.test_cbTest = function( s ) s=3 end
-		self.t.test_crTest = function( s ) s=4 end
+		self.t.testTest     = function( s ) s=2 end
+		self.t.test_cbTest  = function( s ) s=3 end
+		self.t.test_crTest  = function( s ) s=4 end
 		--assert( self.t(), "Test suite should not have failed." )
-		assert( self.t.test_Test.testtype    == "standard",  "testtype should be standard -> is " .. self.t.test_Test.testtype)
-		assert( self.t.test_cb_Test.testtype == "callback",  "testtype should be callback -> is " .. self.t.test_cb_Test.testtype)
+		assert( self.t.test_Test.testtype    == "standard",  "testtype should be standard  -> is " .. self.t.test_Test.testtype)
+		assert( self.t.test_cb_Test.testtype == "callback",  "testtype should be callback  -> is " .. self.t.test_cb_Test.testtype)
 		assert( self.t.test_cr_Test.testtype == "coroutine", "testtype should be coroutine -> is " .. self.t.test_cr_Test.testtype)
-		assert( type(self.t.testTest) == "function",  "type should be function -> is " .. type( self.t.testTest ) )
-		assert( self.t.test_cbTest.testtype == "standard",  "testtype should be standard -> is " .. self.t.test_cbTest.testtype)
-		assert( self.t.test_crTest.testtype == "standard", "testtype should be standard -> is " .. self.t.test_crTest.testtype)
+		assert( self.t.test_cbTest.testtype  == "standard",  "testtype should be standard  -> is " .. self.t.test_cbTest.testtype)
+		assert( self.t.test_crTest.testtype  == "standard",  "testtype should be standard  -> is " .. self.t.test_crTest.testtype)
+		assert( type(self.t.testTest)        == "function",  "type should be function -> is " .. type( self.t.testTest ) )
 	end,
 }
 

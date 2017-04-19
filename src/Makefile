@@ -47,9 +47,7 @@ T_SRC=t.c \
 	 t_htp_con.c \
 	 t_htp_str.c \
 	 t_htp_wsk.c \
-	 t_net_ifc.c \
-	 t_tst.c \
-	 t_tst_cse.c
+	 t_net_ifc.c
 
 
 ifdef BUILD_EXAMPLE

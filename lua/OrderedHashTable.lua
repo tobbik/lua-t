@@ -117,7 +117,7 @@ end
 -- ---------------------------- Instance metatable --------------------
 -- essentials
 _mt = {       -- local _mt at top of file
-	__name     = "t.OrderedHashTable1",
+	__name     = "t.OrderedHashTable",
 	__len      = function( self )           return #(getPrx( self )) end,
 	__index    = function( self, key )      return getElement( getPrx( self ), key ) end,
 	__newindex = function( self, key, val ) setElement( getPrx( self ), key, val) end,
@@ -139,6 +139,10 @@ return setmetatable( {
 	concat   = function( oht, sep, i, j )
 		return t_concat( getValues( getPrx( oht )) , sep, i, j )
 	end,
+	-- allow other to use Oht style semantics
+	getElement = getElement,
+	setElement = setElement,
+	iters      = iters,
 }, {
 	__call   = function( self, tbl, ... )
 		local prx

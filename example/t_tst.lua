@@ -138,11 +138,16 @@ end
 
 t.test_busy = function( self )
 	Test.Case.describe( 'do a dummy loop to eat time' )
-	self.num = 1234567
-	for i=1,2*self.num do
-		self.num = math.ceil( (self.num+i)%256 )
-	end
+	self.num = 2345678
+	for i=1,3456789 do self.num = (self.num+i)%256 end
 	assert( self.num<256, "Modulo shall never exceed its operand" )
+end
+
+t.test_busy_local = function( self )
+	Test.Case.describe( 'do a dummy loop to eat time' )
+	local num = 2345678
+	for i=1,98765432 do num = (num+i)%256 end
+	assert( num<256, "Modulo shall never exceed its operand" )
 end
 
 t( )

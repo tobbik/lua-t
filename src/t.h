@@ -64,7 +64,6 @@ void t_getTypeByValue( lua_State *L, int pos, const int   dft, const struct t_ty
 #define T_BUF_IDNT "buf"
 #define T_PCK_IDNT "pck"
 #define T_ENC_IDNT "enc"
-#define T_TST_IDNT "tst"
 #define T_HTP_IDNT "htp"
 #define T_UTL_IDNT "utl"
 
@@ -74,7 +73,6 @@ void t_getTypeByValue( lua_State *L, int pos, const int   dft, const struct t_ty
 #define T_BUF_NAME "Buffer"
 #define T_PCK_NAME "Pack"
 #define T_ENC_NAME "Encode"
-#define T_TST_NAME "Test"
 #define T_HTP_NAME "Http"
 #define T_UTL_NAME "Util"
 
@@ -84,7 +82,6 @@ void t_getTypeByValue( lua_State *L, int pos, const int   dft, const struct t_ty
 #define T_BUF_TYPE "T."T_BUF_NAME
 #define T_PCK_TYPE "T."T_PCK_NAME
 #define T_ENC_TYPE "T."T_ENC_NAME
-#define T_TST_TYPE "T."T_TST_NAME
 #define T_HTP_TYPE "T."T_HTP_NAME
 #define T_UTL_TYPE "T."T_UTL_NAME
 
@@ -103,7 +100,6 @@ LUAMOD_API int luaopen_t_net( lua_State *L );
 LUAMOD_API int luaopen_t_enc( lua_State *L );
 LUAMOD_API int luaopen_t_buf( lua_State *L );
 LUAMOD_API int luaopen_t_pck( lua_State *L );
-LUAMOD_API int luaopen_t_tst( lua_State *L );
 LUAMOD_API int luaopen_t_htp( lua_State *L );
 LUAMOD_API int luaopen_t_utl( lua_State *L );
 LUAMOD_API int luaopen_t_core ( lua_State *L );

@@ -395,8 +395,6 @@ luaopen_t_core( lua_State *L )
 	lua_setfield( L, -2, T_PCK_IDNT );
 	luaopen_t_enc( L );
 	lua_setfield( L, -2, T_ENC_IDNT );
-	luaopen_t_tst( L );
-	lua_setfield( L, -2, T_TST_IDNT );
 	luaopen_t_htp( L );
 	lua_setfield( L, -2, T_HTP_IDNT );
 	luaopen_t_utl( L );

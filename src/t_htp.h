@@ -218,6 +218,8 @@ LUAMOD_API int luaopen_t_htp_wsk( lua_State *L );
 //   \ V  V /  __/ |_) |__) | (_) | (__|   <  __/ |_
 //    \_/\_/ \___|_.__/____/ \___/ \___|_|\_\___|\__|
 
+// check  https://github.com/arcapos
+
 /// parser helper for websocket header
 //  http://www.johnmccutchan.com/2012/01/writing-your-own-websocket-server.html
 struct t_wsk_msg_h {
