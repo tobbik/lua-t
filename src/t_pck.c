@@ -77,12 +77,12 @@ static struct t_pck
 			case 'i': p = CP( INT,  1==*e, GNL( L, f, sizeof( int ), MXINT ) ); break;
 			case 'I': p = CP( UNT,  1==*e, GNL( L, f, sizeof( int ), MXINT ) ); break;
 
-			// Float typesCP
+			// Float types
 			case 'f': p = CP( FLT,  1==*e, sizeof( float ) * NB              ); break;
 			case 'd': p = CP( FLT,  1==*e, sizeof( double ) * NB             ); break;
 			case 'n': p = CP( FLT,  1==*e, sizeof( lua_Number ) * NB         ); break;
 
-			// String typeCP
+			// String type
 			case 'c': p = CP( RAW,  0    , GNL( L, f, 1, 0x1 << NB )         ); break;
 
 			// Bit types
@@ -104,6 +104,7 @@ static struct t_pck
 	//printf("%zu:%d\n", p->s, p->m );
 	return p;
 }
+
 
 /**--------------------------------------------------------------------------
  * Copy byte by byte from one string to another. Honours endianess.
@@ -868,7 +869,7 @@ t_pck_fld__callread( lua_State *L, struct t_pck *pc, const char *b, size_t ofs )
  * __call (#) for a an T.Pack.Field/Struct instance.
  *          This is used to either read from or write to a string or T.Buffer.
  *          one argument means read, two arguments mean write.
- * \param   L     lua Virtual Machine.
+ * \param   L         Lua state.
  * \lparam  ud        T.Pack.Field instance.
  * \lparam  ud,string T.Buffer, t.Buffer.Segment or Lua string.
  * \lparam  T.Buffer or Lua string.

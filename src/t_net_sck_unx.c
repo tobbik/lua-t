@@ -44,7 +44,7 @@ t_net_sck_createHandle( lua_State *L, struct t_net_sck *sck, int family, int typ
 {
 	sck->fd = socket( family, type, protocol );
 	if (-1 == sck->fd)
-		t_push_error( L, "couldn't create socket" );
+		t_push_error( L, "Can't create socket" );
 }
 
 
@@ -95,33 +95,17 @@ t_net_sck_shutDown( lua_State *L, struct t_net_sck *sck, int shutVal )
  * \return  int    # of values pushed onto the stack.
  *-------------------------------------------------------------------------*/
 int
-t_net_sck_listen( lua_State *L, const int pos )
+t_net_sck_listen( lua_State *L, struct t_net_sck *sck, struct sockaddr_in *adr, const int bl )
 {
-	struct t_net_sck   *sck = t_net_sck_check_ud( L, pos, 0 );
-	struct sockaddr_in *adr = t_net_ip4_check_ud( L, pos+((NULL==sck) ? 0:1), 0 );
 	struct sockaddr_in  bnd;   ///< if needed, the address the port is bound to
-	int                 bl  = SOMAXCONN, returnables = 0;
 
-	if (lua_isinteger( L, -1 ) && LUA_TSTRING != lua_type( L, -2 ))
-	{
-		bl = lua_tointeger( L, -1 );
-		lua_pop( L, 1 );
-	}
-	if (NULL!=sck && 1==lua_gettop( L ))
-		; // No address, or host like info given -> assume it's bound already
-	else
-		returnables += t_net_getdef( L, pos, &sck, &adr );
-
-	if (adr != NULL)
-	{
-		if (bind( sck->fd , (struct sockaddr*) &(*adr), sizeof( struct sockaddr ) ) == -1)
-			return t_push_error( L, "ERROR binding socket to %s:%d",
-					 inet_ntoa( adr->sin_addr ),
-					 ntohs( adr->sin_port ) );
-	}
+	if (NULL!=adr && -1 == bind( sck->fd , (struct sockaddr*) &(*adr), sizeof( struct sockaddr ) ))
+		return t_push_error( L, "Can't bind socket to %s:%d before listen()",
+				 inet_ntoa( adr->sin_addr ),
+				 ntohs( adr->sin_port ) );
 
 	if (-1 == listen( sck->fd, bl ))
-		return t_push_error( L, "ERROR listen to socket" );
+		return t_push_error( L, "Can't listen() on socket" );
 
 	// adr is, if created, by t_net_getdef(), which guarantees an unset port to
 	// be 0
@@ -131,7 +115,7 @@ t_net_sck_listen( lua_State *L, const int pos )
 			adr->sin_port = bnd.sin_port;
 	}
 
-	return returnables;
+	return 1;
 }
 
 
@@ -143,18 +127,14 @@ t_net_sck_listen( lua_State *L, const int pos )
  * \return  int    # of values pushed onto the stack.
  *-------------------------------------------------------------------------*/
 int
-t_net_sck_bind( lua_State *L, const int pos )
+t_net_sck_bind( lua_State *L, struct t_net_sck *sck, struct sockaddr_in *adr )
 {
-	struct t_net_sck   *sck         = NULL;
-	struct sockaddr_in *ip          = NULL;
-	int                 returnables = t_net_getdef( L, pos, &sck, &ip );
-
-	if (bind( sck->fd , (struct sockaddr*) &(*ip), sizeof( struct sockaddr ) ) == -1)
-		return t_push_error( L, "ERROR binding socket to %s:%d",
-					 inet_ntoa( ip->sin_addr ),
-					 ntohs( ip->sin_port ) );
-
-	return returnables;  // socket, ip
+	if (bind( sck->fd , (struct sockaddr*) &(*adr), sizeof( struct sockaddr ) ) == -1)
+		return t_push_error( L, "Can't bind socket to %s:%d",
+					 inet_ntoa( adr->sin_addr ),
+					 ntohs( adr->sin_port ) );
+	else
+		return 1;
 }
 
 
@@ -166,18 +146,14 @@ t_net_sck_bind( lua_State *L, const int pos )
  * \return  int    # of values pushed onto the stack.
  *-------------------------------------------------------------------------*/
 int
-t_net_sck_connect( lua_State *L, const int pos )
+t_net_sck_connect( lua_State *L, struct t_net_sck *sck, struct sockaddr_in *adr )
 {
-	struct t_net_sck   *sck         = NULL;
-	struct sockaddr_in *ip          = NULL;
-	int                 returnables = t_net_getdef( L, pos, &sck, &ip );
-
-	if (connect( sck->fd , (struct sockaddr*) &(*ip), sizeof( struct sockaddr ) ) == -1)
-		return t_push_error( L, "ERROR connecting socket to %s:%d",
-					 inet_ntoa(ip->sin_addr),
-					 ntohs(ip->sin_port) );
-
-	return returnables;
+	if (connect( sck->fd , (struct sockaddr*) &(*adr), sizeof( struct sockaddr ) ) == -1)
+		return t_push_error( L, "Can't connect to socket on %s:%d",
+					 inet_ntoa(adr->sin_addr),
+					 ntohs(adr->sin_port) );
+	else
+		return 1;
 }
 
 
@@ -189,18 +165,12 @@ t_net_sck_connect( lua_State *L, const int pos )
  * \return  t_net* Client pointer.  Leaves cli_sock and cli_IP on stack.
  *-------------------------------------------------------------------------*/
 int
-t_net_sck_accept( lua_State *L, const int pos )
+t_net_sck_accept( lua_State *L, struct t_net_sck *srv, struct t_net_sck *cli, struct sockaddr_in *adr )
 {
-	struct t_net_sck   *srv    = t_net_sck_check_ud( L, pos+0, 1 ); // listening socket
-	struct t_net_sck   *cli;                                        // accepted socket
-	struct sockaddr_in *si_cli;                                     // peer address
-	socklen_t           cli_sz = sizeof( struct sockaddr_in );
+	socklen_t  cl_sz = sizeof( struct sockaddr_in );
 
-	cli     = t_net_sck_create_ud( L, AF_INET, SOCK_STREAM, IPPROTO_TCP, 0 );
-	si_cli  = t_net_ip4_create_ud( L );
-
-	if ( (cli->fd  =  accept( srv->fd, (struct sockaddr *) &(*si_cli), &cli_sz )) == -1 )
-		return t_push_error( L, "couldn't accept from socket" );
+	if ( (cli->fd  =  accept( srv->fd, (struct sockaddr *) &(*adr), &cl_sz )) == -1 )
+		return t_push_error( L, "Can't accept from socket" );
 
 	return 2;
 }
@@ -226,9 +196,9 @@ t_net_sck_send( lua_State *L, struct t_net_sck *sck, struct sockaddr_in *addr, c
 	  (struct sockaddr *) &(*addr), sizeof( struct sockaddr ))))
 	{
 		if (NULL == addr)
-			return t_push_error( L, "Failed to send message" );
+			return t_push_error( L, "Can't send message" );
 		else
-			return t_push_error( L, "Failed to send message to %s:%d",
+			return t_push_error( L, "Can't send message to %s:%d",
 					 inet_ntoa( addr->sin_addr ),
 					 ntohs(     addr->sin_port ) );
 	}
@@ -257,7 +227,7 @@ t_net_sck_recv( lua_State *L, struct t_net_sck *sck, struct sockaddr_in *addr, c
 	  buf, len, 0,
 	  (struct sockaddr *) &(*addr), &sLen)))
 	{
-		return t_push_error( L, "Failed to recieve message" );
+		return t_push_error( L, "Can't recieve message" );
 	}
 	return rcvd;
 }
@@ -435,10 +405,10 @@ t_net_sck_setSocketOption( lua_State *L, struct t_net_sck *sck , int sckOpt,
 				else
 					flags &= ~sckOpt;
 				if (fcntl( sck->fd, F_SETFL, flags ) < 0)
-					return t_push_error( L, "Couldn't set socket option" );
+					return t_push_error( L, "Can't set socket option" );
 			}
 			else
-				return t_push_error( L, "Failed to set socket option" );
+				return t_push_error( L, "Can't set socket option" );
 			break;
 
 		case SO_RCVLOWAT:
@@ -448,7 +418,7 @@ t_net_sck_setSocketOption( lua_State *L, struct t_net_sck *sck , int sckOpt,
 		case SO_SNDTIMEO:
 		case SO_RCVBUF:
 			if (setsockopt( sck->fd, SOL_SOCKET, sckOpt, &val, sizeof( val ) ) < 0)
-				return t_push_error( L, "Couldn't set socket option" );
+				return t_push_error( L, "Can't set socket option" );
 			break;
 
 		case SO_BROADCAST:
@@ -464,7 +434,7 @@ t_net_sck_setSocketOption( lua_State *L, struct t_net_sck *sck , int sckOpt,
 		case SO_REUSEPORT:
 #endif
 			if (setsockopt( sck->fd, SOL_SOCKET, sckOpt, &val, sizeof( val ) ) < 0)
-				return t_push_error( L, "Couldn't set socket option" );
+				return t_push_error( L, "Can't set socket option" );
 			break;
 
 		case SO_ERROR:
@@ -472,7 +442,7 @@ t_net_sck_setSocketOption( lua_State *L, struct t_net_sck *sck , int sckOpt,
 		case SO_PROTOCOL:
 #endif
 		case SO_TYPE:
-			return luaL_error( L, "can't set readonly socket option: %s", sckOptName );
+			return luaL_error( L, "Can't set readonly socket option: %s", sckOptName );
 		default:
 			// should never get here
 			return luaL_error( L, "unknown socket option: %s", sckOptName );

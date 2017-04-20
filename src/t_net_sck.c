@@ -170,7 +170,21 @@ lt_net_sck__tostring( lua_State *L )
 static int
 lt_net_sck_listen( lua_State *L )
 {
-	return t_net_sck_listen( L, 1 );
+	struct t_net_sck   *sck = t_net_sck_check_ud( L, 1, 0 );
+	struct sockaddr_in *adr = t_net_ip4_check_ud( L, 1+((NULL==sck) ? 0:1), 0 );
+	int                 bl  = SOMAXCONN, returnables = 0;
+
+	if (lua_isinteger( L, -1 ) && LUA_TSTRING != lua_type( L, -2 ))
+	{
+		bl = lua_tointeger( L, -1 );
+		lua_pop( L, 1 );
+	}
+	if (NULL!=sck && 1==lua_gettop( L ))
+		; // No address, or host like info given -> assume it's bound already
+	else
+		returnables += t_net_getdef( L, 1, &sck, &adr );
+
+	return (t_net_sck_listen( L, sck, adr, bl )) ? returnables : 0;
 }
 
 
@@ -184,7 +198,10 @@ lt_net_sck_listen( lua_State *L )
 static int
 lt_net_sck_bind( lua_State *L )
 {
-	return t_net_sck_bind( L, 1 );
+	struct t_net_sck   *sck         = NULL;
+	struct sockaddr_in *adr         = NULL;
+	int                 returnables = t_net_getdef( L, 1, &sck, &adr );
+	return (t_net_sck_bind( L, sck, adr )) ? returnables : 0;
 }
 
 
@@ -198,22 +215,28 @@ lt_net_sck_bind( lua_State *L )
 static int
 lt_net_sck_connect( lua_State *L )
 {
-	return t_net_sck_connect( L, 1 );
+	struct t_net_sck   *sck         = NULL;
+	struct sockaddr_in *adr         = NULL;
+	int                 returnables = t_net_getdef( L, 1, &sck, &adr );
+	return (t_net_sck_connect( L, sck, adr )) ? returnables : 0;
 }
 
 
 /** -------------------------------------------------------------------------
  * Accept a (TCP) socket connection.
  * \param   L      Lua state.
- * \lparam  ud     T.Net.Socket(TCP) userdata instance( server socket ).
- * \lreturn ud     T.Net.Socket(TCP) userdata instance( new client socket ).
- * \lreturn ud     T.Net.IpX userdata instance( new client sockaddr ).
+ * \lparam  ud     T.Net.Socket  userdata instance( server socket ).
+ * \lreturn ud     T.Net.Socket  userdata instance( new client socket ).
+ * \lreturn ud     T.Net.Address userdata instance( new client sockaddr ).
  * \return  int    # of values pushed onto the stack.
  *-------------------------------------------------------------------------*/
 static int
 lt_net_sck_accept( lua_State *L )
 {
-	return t_net_sck_accept( L, 1 );
+	struct t_net_sck   *srv = t_net_sck_check_ud( L, 1, 1 ); // listening socket
+	struct t_net_sck   *cli = t_net_sck_create_ud( L, AF_INET, SOCK_STREAM, IPPROTO_TCP, 0 ); // accepted socket
+	struct sockaddr_in *adr = t_net_ip4_create_ud( L );      // peer address
+	return t_net_sck_accept( L, srv, cli, adr );
 }
 
 
@@ -250,7 +273,7 @@ lt_net_sck_send( lua_State *L )
 	int                 snt;
 	size_t              len;
 	char               *msg = t_buf_tolstring( L, (NULL==adr)?2:3, &len, NULL );
-	size_t              sz   = (lua_isinteger( L, -1 ))
+	size_t              sz  = (lua_isinteger( L, -1 ))
 	                           ? lua_tointeger( L, -1 )
 	                           : len;
 
@@ -334,11 +357,11 @@ lt_net_sck_recv( lua_State *L )
 
 
 /** -------------------------------------------------------------------------
- * Recieve IpEndpoint from a (TCP) socket.
+ * Recieve t.Net.Address from a (TCP) socket.
  * \param   L      Lua state.
- * \lparam  ud     T.Net.Socket userdata instance.
- * \lparam  ud     T.Net.Ip4 userdata instance.
- * \lreturn ud     T.Net.Ip4 userdata instance.
+ * \lparam  ud     T.Net.Socket  userdata instance.
+ * \lparam  ud     T.Net.Address userdata instance.
+ * \lreturn ud     T.Net.Address userdata instance.
  * \return  int    # of values pushed onto the stack.
  *-------------------------------------------------------------------------*/
 static int
@@ -371,11 +394,11 @@ lt_net_sck_Select( lua_State *L )
 {
 	fd_set            rfds, wfds;
 	struct t_net_sck *sck;
-	int               readySocks, i;
-	int               rMax          = t_net_sck_mkFdSet( L, 1, &rfds );
-	int               wMax          = t_net_sck_mkFdSet( L, 2, &wfds );
+	int               rdyScks, i;
+	int               rMax       = t_net_sck_mkFdSet( L, 1, &rfds );
+	int               wMax       = t_net_sck_mkFdSet( L, 2, &wfds );
 
-	readySocks = select(
+	rdyScks = select(
 		(wMax > rMax) ? wMax+1 : rMax+1,
 		(-1  != rMax) ? &rfds  : NULL,
 		(-1  != wMax) ? &wfds  : NULL,
@@ -401,7 +424,7 @@ lt_net_sck_Select( lua_State *L )
 					lua_insert( L, -2 );             //S: rdi wri rdr wrr key key sck
 					lua_rawset( L, i+2 );
 				}
-				if (0 == --readySocks)
+				if (0 == --rdyScks)
 				{
 					lua_pop( L, 1 );
 					break;

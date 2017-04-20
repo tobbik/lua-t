@@ -115,18 +115,16 @@ static int
 lt_htp_srv_accept( lua_State *L )
 {
 	struct t_htp_srv   *s     = (struct t_htp_srv *) lua_touserdata( L, 1 );
-	struct sockaddr_in *si_cli;
-	struct t_net_sck   *c_sck;
-	struct t_net_sck   *s_sck;
+	struct sockaddr_in *si_cli= NULL;
+	struct t_net_sck   *c_sck = NULL;
+	struct t_net_sck   *s_sck = NULL;
 	struct t_ael       *ael;    // AELoop
 	struct t_htp_con   *c;      // new message userdata
 
 	lua_rawgeti( L, LUA_REGISTRYINDEX, s->sR );
 	s_sck = t_net_sck_check_ud( L, -1, 1 );
 
-	t_net_sck_accept( L, 2 );   //S: srv,ssck,csck,cip
-	c_sck  = t_net_sck_check_ud( L, -2, 1 );
-	si_cli = t_net_ip4_check_ud( L, -1, 1 );
+	t_net_sck_accept( L, s_sck, c_sck, si_cli );   //S: srv,ssck,csck,cip
 	//t_net_reuseaddr( L, c_sck );
 
 	// prepare the ael_fd->wR table on stack
@@ -178,9 +176,15 @@ lt_htp_srv_listen( lua_State *L )
 	struct t_htp_srv   *s   = t_htp_srv_check_ud( L, 1, 1 );
 	struct t_net_sck   *sc  = NULL;
 	struct sockaddr_in *ip  = NULL;
+	int                 bl  = SOMAXCONN;
 
 	// reuse socket:listen( )
-	t_net_sck_listen( L, 2 );
+	if (lua_isinteger( L, -1 ) && LUA_TSTRING != lua_type( L, -2 ))
+	{
+		bl = lua_tointeger( L, -1 );
+		lua_pop( L, 1 );
+	}
+	t_net_sck_listen( L, sc, ip, bl );
 
 	sc     = t_net_sck_check_ud( L, -2, 1 );
 	ip     = t_net_ip4_check_ud( L, -1, 1 );

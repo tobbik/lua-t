@@ -22,11 +22,10 @@ local Interface = require( "t.Net.Interface" )
 local assrt     = T.require( 't_net_assert' )
 
 local tests = {
-	beforeEach = function( self )
-	end,
 
 	afterEach = function( self )
 		if self.sck then
+			print(self.sck)
 			self.sck:close( )
 			self.sck = nil
 		end

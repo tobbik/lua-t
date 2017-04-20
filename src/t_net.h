@@ -67,10 +67,10 @@ struct t_net_sck *t_net_sck_check_ud ( lua_State *L, int pos, int check );
 
 // t_net_sck_implementation...
 void   t_net_sck_createHandle( lua_State *L, struct t_net_sck *sck, int family, int type, int protocol );
-int    t_net_sck_listen   ( lua_State *L, const int pos );
-int    t_net_sck_bind     ( lua_State *L, const int pos );
-int    t_net_sck_connect  ( lua_State *L, const int pos );
-int    t_net_sck_accept   ( lua_State *L, const int pos );
+int    t_net_sck_listen   ( lua_State *L, struct t_net_sck *sck, struct sockaddr_in *adr, const int bl );
+int    t_net_sck_bind     ( lua_State *L, struct t_net_sck *sck, struct sockaddr_in *adr );
+int    t_net_sck_connect  ( lua_State *L, struct t_net_sck *sck, struct sockaddr_in *adr );
+int    t_net_sck_accept   ( lua_State *L, struct t_net_sck *srv, struct t_net_sck *cli, struct sockaddr_in *adr );
 int    t_net_sck_send     ( lua_State *L, struct t_net_sck *sck, struct sockaddr_in *addr, const char* buf, size_t len );
 int    t_net_sck_recv     ( lua_State *L, struct t_net_sck *sck, struct sockaddr_in *addr,       char *buf, size_t len );
 int    t_net_sck_shutDown ( lua_State *L, struct t_net_sck *sck, int shutVal );
