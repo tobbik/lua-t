@@ -104,7 +104,7 @@ $(T_LIB_STA): $(T_OBJ)
 .c.o:
 	$(CC) $(CFLAGS) $< -o $@
 
-install: $(T_SRC) $(T_LIB_DYN) $(T_LIB_STA)
+install: $(T_SRC) $(T_LIB_DYN) $(T_LIB_STA) SO
 	$(INSTALL_DATA) -D $(T_LIB_DYN) $(INSTALL_CMOD)/$(T_LIB_DYN)
 	$(INSTALL_DATA) -D $(T_LIB_STA) $(INSTALL_CMOD)/../$(T_LIB_STA)
 
@@ -143,3 +143,12 @@ clean:
 	-rm $(T_OBJ) $(T_LIB_DYN) $(T_LIB_STA)
 
 .PHONY: all test clean
+
+
+SO: $(T_OBJ)
+	clang -O -shared t_cmn.o t_pck*o -o pck.so -llua -lm
+	clang -O -shared t_cmn.o t_net*o -o net.so -llua -lm
+	clang -O -shared t_cmn.o t_htp*o -o htp.so -llua -lm
+	clang -O -shared t_cmn.o t_buf*o -o buf.so -llua -lm
+	clang -O -shared t_cmn.o t_enc*o -o enc.so -llua -lm
+	clang -O -shared t_cmn.o t_tim.o t_ael*o -o ael.so -llua -lm

@@ -44,3 +44,70 @@ Check for net module
 https://github.com/spc476/lua-conmanorg
 
 
+SIZES:
+-rwxr-xr-x 1 arch users  51912 Apr 20 15:15 ael.so
+-rwxr-xr-x 1 arch users  33656 Apr 20 15:15 buf.so
+-rwxr-xr-x 1 arch users 276496 Apr 20 15:15 core.so
+-rwxr-xr-x 1 arch users  42872 Apr 20 15:15 enc.so
+-rwxr-xr-x 1 arch users  77968 Apr 20 15:15 htp.so
+-rwxr-xr-x 1 arch users  82840 Apr 20 15:15 net.so
+-rwxr-xr-x 1 arch users  53296 Apr 20 15:15 pck.so
+-rw-r--r-- 1 arch users  25464 Apr 20 15:15 t.o
+-rw-r--r-- 1 arch users  32032 Apr 20 15:15 t_ael.o
+-rw-r--r-- 1 arch users  11952 Apr 20 15:15 t_ael_epl.o
+-rw-r--r-- 1 arch users  19960 Apr 20 15:15 t_buf.o
+-rw-r--r-- 1 arch users  13984 Apr 20 15:15 t_buf_seg.o
+-rw-r--r-- 1 arch users   7840 Apr 20 15:15 t_cmn.o
+-rw-r--r-- 1 arch users   6488 Apr 20 15:15 t_enc.o
+-rw-r--r-- 1 arch users  11608 Apr 20 15:15 t_enc_b64.o
+-rw-r--r-- 1 arch users  18448 Apr 20 15:15 t_enc_crc.o
+-rw-r--r-- 1 arch users  11664 Apr 20 15:15 t_enc_rc4.o
+-rw-r--r-- 1 arch users  40024 Apr 20 15:15 t_htp.o
+-rw-r--r-- 1 arch users  23272 Apr 20 15:15 t_htp_con.o
+-rw-r--r-- 1 arch users  23040 Apr 20 15:15 t_htp_srv.o
+-rw-r--r-- 1 arch users  31152 Apr 20 15:15 t_htp_str.o
+-rw-r--r-- 1 arch users   9504 Apr 20 15:15 t_htp_wsk.o
+-rw-r--r-- 1 arch users  12792 Apr 20 15:15 t_net.o
+-rw-r--r-- 1 arch users  24312 Apr 20 15:15 t_net_ifc.o
+-rw-r--r-- 1 arch users  15624 Apr 20 15:15 t_net_ip4.o
+-rw-r--r-- 1 arch users  32776 Apr 20 15:15 t_net_sck.o
+-rw-r--r-- 1 arch users  23208 Apr 20 15:15 t_net_sck_unx.o
+-rw-r--r-- 1 arch users  15736 Apr 20 15:15 t_nry.o
+-rw-r--r-- 1 arch users  46360 Apr 20 15:15 t_pck.o
+-rw-r--r-- 1 arch users  16320 Apr 20 15:15 t_pck_cmb.o
+-rw-r--r-- 1 arch users  16400 Apr 20 15:15 t_tim.o
+[arch@tk-analytics src]$ strip *.so
+[arch@tk-analytics src]$ ll *o
+-rwxr-xr-x 1 arch users  27136 Apr 20 15:15 ael.so
+-rwxr-xr-x 1 arch users  18768 Apr 20 15:15 buf.so
+-rwxr-xr-x 1 arch users 143120 Apr 20 15:15 core.so
+-rwxr-xr-x 1 arch users  22864 Apr 20 15:15 enc.so
+-rwxr-xr-x 1 arch users  39600 Apr 20 15:15 htp.so
+-rwxr-xr-x 1 arch users  47936 Apr 20 15:15 net.so
+-rwxr-xr-x 1 arch users  31200 Apr 20 15:15 pck.so
+-rw-r--r-- 1 arch users  25464 Apr 20 15:15 t.o
+-rw-r--r-- 1 arch users  32032 Apr 20 15:15 t_ael.o
+-rw-r--r-- 1 arch users  11952 Apr 20 15:15 t_ael_epl.o
+-rw-r--r-- 1 arch users  19960 Apr 20 15:15 t_buf.o
+-rw-r--r-- 1 arch users  13984 Apr 20 15:15 t_buf_seg.o
+-rw-r--r-- 1 arch users   7840 Apr 20 15:15 t_cmn.o
+-rw-r--r-- 1 arch users   6488 Apr 20 15:15 t_enc.o
+-rw-r--r-- 1 arch users  11608 Apr 20 15:15 t_enc_b64.o
+-rw-r--r-- 1 arch users  18448 Apr 20 15:15 t_enc_crc.o
+-rw-r--r-- 1 arch users  11664 Apr 20 15:15 t_enc_rc4.o
+-rw-r--r-- 1 arch users  40024 Apr 20 15:15 t_htp.o
+-rw-r--r-- 1 arch users  23272 Apr 20 15:15 t_htp_con.o
+-rw-r--r-- 1 arch users  23040 Apr 20 15:15 t_htp_srv.o
+-rw-r--r-- 1 arch users  31152 Apr 20 15:15 t_htp_str.o
+-rw-r--r-- 1 arch users   9504 Apr 20 15:15 t_htp_wsk.o
+-rw-r--r-- 1 arch users  12792 Apr 20 15:15 t_net.o
+-rw-r--r-- 1 arch users  24312 Apr 20 15:15 t_net_ifc.o
+-rw-r--r-- 1 arch users  15624 Apr 20 15:15 t_net_ip4.o
+-rw-r--r-- 1 arch users  32776 Apr 20 15:15 t_net_sck.o
+-rw-r--r-- 1 arch users  23208 Apr 20 15:15 t_net_sck_unx.o
+-rw-r--r-- 1 arch users  15736 Apr 20 15:15 t_nry.o
+-rw-r--r-- 1 arch users  46360 Apr 20 15:15 t_pck.o
+-rw-r--r-- 1 arch users  16320 Apr 20 15:15 t_pck_cmb.o
+-rw-r--r-- 1 arch users  16400 Apr 20 15:15 t_tim.o
+[arch@tk-analytics src]$ 
+
