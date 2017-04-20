@@ -7,7 +7,7 @@
  * \copyright See Copyright notice at the end of t.h
  */
 
-#include "t_cmn.h"
+#include "t_buf_cmn.h"
 
 
 // t_buf.c

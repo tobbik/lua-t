@@ -11,7 +11,7 @@
 #include <string.h>     // memcpy
 
 #include "t.h"
-#include "t_cmn.h"
+#include "t_buf_cmn.h"
 #include "t_pck.h"
 
 // ========== Buffer accessor Helpers

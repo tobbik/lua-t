@@ -9,9 +9,6 @@
  */
 
 
-#include "t_tim.h"
-
-
 enum t_ael_msk {
 	// 00000000
 	T_AEL_NO = 0x00,        ///< not set

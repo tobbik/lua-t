@@ -11,6 +11,7 @@
 
 #include "t.h"
 #include "t_net.h"
+#include "t_buf_cmn.h"
 
 /**--------------------------------------------------------------------------
  * Create a socket and push to LuaStack.

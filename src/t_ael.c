@@ -25,7 +25,8 @@
 
 #include "t.h"
 #include "t_ael.h"
-#include "t_cmn.h"
+#include "t_tim_cmn.h"
+#include "t_net_cmn.h"
 
 
 /**----------------------------------------------------------------------------

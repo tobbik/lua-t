@@ -1,20 +1,14 @@
 /* vim: ts=3 sw=3 sts=3 tw=80 sta noet list
 */
 /**
- * \file      t_common.c
- * \brief     Functions shared between all modules
+ * \file      t_buf_cmn.c
+ * \brief     t_buf_* functions shared between all modules
  * \author    tkieslich
  * \copyright See Copyright notice at the end of t.h
  */
 
 #include "t.h"
-#include "t_cmn.h"
-
-//  _     ____         __  __
-// | |_  | __ ) _   _ / _|/ _| ___ _ __
-// | __| |  _ \| | | | |_| |_ / _ \ '__|
-// | |_ _| |_) | |_| |  _|  _|  __/ |
-//  \__(_)____/ \__,_|_| |_|  \___|_|
+#include "t_buf_cmn.h"
 
 /**--------------------------------------------------------------------------
  * Check if the item on stack position pos is an t_buf struct and return it
@@ -109,28 +103,6 @@ char
 	luaL_argcheck( L, (b != NULL), pos,
 		 "`"T_BUF_SEG_TYPE"` or `"T_BUF_SEG_TYPE"` or string expected" );
 	return b;
-}
-
-
-
-//  _     _   _      _
-// | |_  | \ | | ___| |_
-// | __| |  \| |/ _ \ __|
-// | |_ _| |\  |  __/ |_
-//  \__(_)_| \_|\___|\__|
-
-/**--------------------------------------------------------------------------
- * Check a value on the stack for being a struct t_net.
- * \param   L      Lua state.
- * \param   int    position on the stack.
- * \return  struct t_net_sck*  pointer to the struct t_net_sck.
- * --------------------------------------------------------------------------*/
-struct t_net_sck
-*t_net_sck_check_ud( lua_State *L, int pos, int check )
-{
-	void *ud = luaL_testudata( L, pos, T_NET_SCK_TYPE );
-	luaL_argcheck( L, (ud != NULL || !check), pos, "`"T_NET_SCK_TYPE"` expected" );
-	return (NULL==ud) ? NULL : (struct t_net_sck *) ud;
 }
 
 

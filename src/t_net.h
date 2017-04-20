@@ -12,7 +12,7 @@
 #include <unistd.h>
 #include <fcntl.h>     // O_NONBLOCK,...
 
-#include "t_cmn.h"
+#include "t_net_cmn.h"
 
 #define T_NET_IP4_IDNT  "ip4"
 #define T_NET_IFC_IDNT  "ifc"

@@ -28,19 +28,21 @@ INSTALL_EXEC= $(INSTALL) -m 0755
 INSTALL_DATA= $(INSTALL) -m 0644
 
 T_SRC=t.c \
-	 t_cmn.c \
 	 t_net.c \
+	 t_net_cmn.c \
 	 t_net_sck.c \
 	 t_net_ip4.c \
 	 t_net_ifc.c \
 	 t_ael.c \
 	 t_tim.c \
+	 t_tim_cmn.c \
 	 t_enc.c \
 	 t_enc_rc4.c \
 	 t_enc_crc.c \
 	 t_enc_b64.c \
 	 t_buf.c \
 	 t_buf_seg.c \
+	 t_buf_cmn.c \
 	 t_pck.c \
 	 t_pck_cmb.c \
 	 t_htp.c \
@@ -146,9 +148,11 @@ clean:
 
 
 SO: $(T_OBJ)
-	clang -O -shared t_cmn.o t_pck*o -o pck.so -llua -lm
-	clang -O -shared t_cmn.o t_net*o -o net.so -llua -lm
-	clang -O -shared t_cmn.o t_htp*o -o htp.so -llua -lm
-	clang -O -shared t_cmn.o t_buf*o -o buf.so -llua -lm
-	clang -O -shared t_cmn.o t_enc*o -o enc.so -llua -lm
-	clang -O -shared t_cmn.o t_tim.o t_ael*o -o ael.so -llua -lm
+	clang -O -shared t_buf_cmn.o t_pck*o -o pck.so -llua -lm
+	clang -O -shared t_buf_cmn.o t_net*o -o net.so -llua -lm
+	clang -O -shared t_net_cmn.o t_htp*o -o htp.so -llua -lm
+	clang -O -shared             t_buf*o -o buf.so -llua -lm
+	clang -O -shared             t_tim*o -o tim.so -llua -lm
+	clang -O -shared t_enc*o             -o enc.so -llua -lm
+	clang -O -shared t_net_cmn.o t_tim_cmn.o t_ael*o -o ael.so -llua -lm
+	clang -O -shared t_net_cmn.o t_tim_cmn.o t_ael*o -o ael.so -llua -lm

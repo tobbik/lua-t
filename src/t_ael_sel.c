@@ -15,9 +15,11 @@
 
 #include "t.h"
 #include "t_ael.h"
+#include "t_tim_cmn.h"        // t_tim_now, struct timeval
 
 #include <string.h>           // memcpy
 #include <stdlib.h>           // malloc, free
+
 
 struct t_ael_ste {
 	fd_set             rfds;
