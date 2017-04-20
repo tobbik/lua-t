@@ -28,7 +28,6 @@
 
 #include "t.h"
 #include "t_net.h"
-#include "t_buf.h"         // the ability to send and recv buffers
 
 
 /**--------------------------------------------------------------------------

@@ -83,7 +83,6 @@ void t_getTypeByValue( lua_State *L, int pos, const int   dft, const struct t_ty
 #define T_PCK_TYPE "T."T_PCK_NAME
 #define T_ENC_TYPE "T."T_ENC_NAME
 #define T_HTP_TYPE "T."T_HTP_NAME
-#define T_UTL_TYPE "T."T_UTL_NAME
 
 #ifdef T_NRY
 #define T_NRY_IDNT "nry"
@@ -101,7 +100,6 @@ LUAMOD_API int luaopen_t_enc( lua_State *L );
 LUAMOD_API int luaopen_t_buf( lua_State *L );
 LUAMOD_API int luaopen_t_pck( lua_State *L );
 LUAMOD_API int luaopen_t_htp( lua_State *L );
-LUAMOD_API int luaopen_t_utl( lua_State *L );
 LUAMOD_API int luaopen_t_core ( lua_State *L );
 #ifdef T_NRY
 LUAMOD_API int luaopen_t_nry( lua_State *L );

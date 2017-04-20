@@ -344,6 +344,40 @@ lt_require( lua_State *L )
 }
 
 
+/** ---------------------------------------------------------------------------
+ * Compares the last two values on the stack (deep table compare; recursive)
+ * Work on negative inices ONLY for recursive use
+ * \param   L        Lua state
+ * \lparam  value    valueA to compare
+ * \lparam  value    valueB to compare
+ * \return  int/bool 1 or 0
+ *--------------------------------------------------------------------------- */
+int
+lt_deepEquals( lua_State *L )
+{
+	// if lua considers them equal ---> true
+	// catches value, reference an meta.__eq
+	if (lua_compare( L, -2, -1, LUA_OPEQ )) return 1;
+	// metamethod prevails
+	if (luaL_getmetafield( L, -2, "__eq" )) return lua_compare( L, -2, -1, LUA_OPEQ );
+	if (LUA_TTABLE != lua_type( L, -2 ))    return 0;
+	if (lua_rawlen( L, -1 ) != lua_rawlen( L, -2)) return 0;
+	lua_pushnil( L );           //S: tblA tblB  nil
+	while (lua_next( L, -3 ))   //S: tblA tblB  keyA  valA
+	{
+		lua_pushvalue( L, -2 );  //S: tblA tblB  keyA  valA  keyA
+		lua_gettable( L, -4 );   //S: tblA tblB  keyA  valA  valB
+		if (! lt_deepEquals( L ))
+		{
+			lua_pop( L, 3 );      //S: tblA tblB
+			return 0;
+		}
+		// pop valueA and valueB
+		lua_pop( L, 2 );         //S: tblA tblB  keyA
+	}
+	return 1;
+}
+
 /** -------------------------------------------------------------------------
  * Return T_TYP_TYPE of a table/userdata or fallback to lua type.
  * \param   L      Lua state.
@@ -368,6 +402,7 @@ static const luaL_Reg l_t_lib [] =
 {
 	// t-global methods
 	  { "require"     ,   lt_require }
+	, { "equals"      ,   lt_deepEquals }
 	, { "type"        ,   lt_type }
 	, { NULL          ,   NULL}
 };
@@ -397,8 +432,6 @@ luaopen_t_core( lua_State *L )
 	lua_setfield( L, -2, T_ENC_IDNT );
 	luaopen_t_htp( L );
 	lua_setfield( L, -2, T_HTP_IDNT );
-	luaopen_t_utl( L );
-	lua_setfield( L, -2, T_UTL_IDNT );
 #ifdef T_NRY
 	luaopen_t_nry( L );
 	lua_setfield( L, -2, T_NRY_IDNT );

@@ -28,7 +28,7 @@ INSTALL_EXEC= $(INSTALL) -m 0755
 INSTALL_DATA= $(INSTALL) -m 0644
 
 T_SRC=t.c \
-	 t_utl.c \
+	 t_cmn.c \
 	 t_net.c \
 	 t_net_sck.c \
 	 t_net_ip4.c \

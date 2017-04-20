@@ -74,22 +74,6 @@ struct t_buf_seg
 }
 
 
-/**--------------------------------------------------------------------------
- * Check if the item on stack position pos is an t_buf struct and return it
- * \param  L    the Lua State
- * \param  pos  position on the stack
- *
- * \return struct t_buf* pointer to t_buf struct
- * --------------------------------------------------------------------------*/
-struct t_buf_seg
-*t_buf_seg_check_ud( lua_State *L, int pos, int check )
-{
-	void *ud = luaL_testudata( L, pos, T_BUF_SEG_TYPE );
-	luaL_argcheck( L, (ud != NULL || !check), pos, "`"T_BUF_SEG_TYPE"` expected" );
-	return (NULL==ud) ? NULL : (struct t_buf_seg *) ud;
-}
-
-
 //////////////////////////////////////////////////////////////////////////////////////
 //
 // ================================= GENERIC LUA API========================

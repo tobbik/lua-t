@@ -8,6 +8,7 @@
  */
 
 #include "t_ael.h"
+#include "t_net.h"
 
 #define T_HTP_CON_IDNT     "con"
 #define T_HTP_SRV_IDNT     "srv"

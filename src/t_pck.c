@@ -11,8 +11,7 @@
 #include <string.h>     // memcpy
 
 #include "t.h"
-#include "t_utl.h"            // t_utl stuff
-#include "t_buf.h"            // read/write buffers
+#include "t_cmn.h"
 #include "t_pck.h"
 
 // ========== Buffer accessor Helpers
@@ -23,9 +22,6 @@
 	 : ((b) & (~((0x01) << (NB-(n)-1)))) ) )
 
 // ========== Helper for format parser
-#define GNL( L, fmt, dflt, max ) \
-	(t_utl_prsMaxNumber( L, fmt, (dflt), (max), 0 ) * NB )
-
 #define CP( typ, mod, sz ) \
 	t_pck_create_ud( L, T_PCK_##typ, (sz), (mod) );
 
@@ -36,8 +32,63 @@ static int _default_endian = 1;
 static int _default_endian = 0;
 #endif
 
-
 // Function helpers
+//
+
+// ###########################################################################
+//                                HELPERS adapted from Lua 5.3 Source
+/** -------------------------------------------------------------------------
+ * See if int represents a character which is a digit.
+ * \param     int c
+ * \return    boolean 0:false - 1:true
+ *  -------------------------------------------------------------------------*/
+static int
+is_digit( int c ) {
+	return '0' <= c && c<='9';
+}
+
+
+/** -------------------------------------------------------------------------
+ * reads from string until input is not numeric any more.
+ * \param   char** format string
+ * \param   int    default value
+ * \return  int    read numeric value
+ *  -------------------------------------------------------------------------*/
+static int
+gn( const char **fmt, int df )
+{
+	if (! is_digit(** fmt))    // no number
+		return df;
+	else
+	{
+		int a=0;
+		do
+		{
+			a = a*10+ *((*fmt)++) - '0';
+		} while (is_digit(**fmt) &&  a <(INT_MAX/10 - 10));
+		return a;
+	}
+}
+
+
+/** -------------------------------------------------------------------------
+ * Read an integer from the format parser
+ * raises an error if it is larger than the maximum size for integers.
+ * \param  char* format string
+ * \param  int   default value if no number is in the format string
+ * \param  int   max value allowed for int
+ * \return int   converted integer value in tbit
+ *  -------------------------------------------------------------------------*/
+static int
+gnl( lua_State *L, const char **fmt, int df, int max )
+{
+	int sz = gn( fmt, df );
+	if (sz > max || sz <= 0)
+		luaL_error( L, "size (%d) out of limits [1,%d]", sz, max );
+	return sz * NB;
+}
+
+
 /** -------------------------------------------------------------------------
  * Determines type of Packer from format string.
  * Returns the Packer, or NULL if unsuccessful.  Leaves created packer on the
@@ -74,8 +125,8 @@ static struct t_pck
 			case 'j': p = CP( INT,  1==*e, sizeof( lua_Integer ) * NB        ); break;
 			case 'J': p = CP( UNT,  1==*e, sizeof( lua_Integer ) * NB        ); break;
 			case 'T': p = CP( INT,  1==*e, sizeof( size_t ) * NB             ); break;
-			case 'i': p = CP( INT,  1==*e, GNL( L, f, sizeof( int ), MXINT ) ); break;
-			case 'I': p = CP( UNT,  1==*e, GNL( L, f, sizeof( int ), MXINT ) ); break;
+			case 'i': p = CP( INT,  1==*e, gnl( L, f, sizeof( int ), MXINT ) ); break;
+			case 'I': p = CP( UNT,  1==*e, gnl( L, f, sizeof( int ), MXINT ) ); break;
 
 			// Float types
 			case 'f': p = CP( FLT,  1==*e, sizeof( float ) * NB              ); break;
@@ -83,11 +134,11 @@ static struct t_pck
 			case 'n': p = CP( FLT,  1==*e, sizeof( lua_Number ) * NB         ); break;
 
 			// String type
-			case 'c': p = CP( RAW,  0    , GNL( L, f, 1, 0x1 << NB )         ); break;
+			case 'c': p = CP( RAW,  0    , gnl( L, f, 1, 0x1 << NB )         ); break;
 
 			// Bit types
-			case 'r': p = CP( BTS, *bo%NB, GNL( L, f, 1, MXBIT )/NB          ); break;
-			case 'R': p = CP( BTU, *bo%NB, GNL( L, f, 1, MXBIT )/NB          ); break;
+			case 'r': p = CP( BTS, *bo%NB, gnl( L, f, 1, MXBIT )/NB          ); break;
+			case 'R': p = CP( BTU, *bo%NB, gnl( L, f, 1, MXBIT )/NB          ); break;
 			case 'v': p = CP( BOL, *bo%NB, 1                                 ); break;
 
 			// modifier types
@@ -851,13 +902,6 @@ t_pck_fld__callread( lua_State *L, struct t_pck *pc, const char *b, size_t ofs )
 		}
 		lua_pop( L, 1 );                      //S:… res
 
-		lua_newtable( L );                    //S:… res oht
-		lua_insert( L, -2 );                  //S:… oht res
-		t_getProxyTableIndex( L );            //S:… oht res {}
-		lua_insert( L, -2 );                  //S:… oht {} res
-		lua_rawset( L, -3 );                  //S:… oht
-		luaL_getmetatable( L, "t.OrderedHashTable" );
-		lua_setmetatable( L, -2 );
 		return ofs;
 	}
 	lua_pushnil( L );

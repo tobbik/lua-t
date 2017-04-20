@@ -11,8 +11,6 @@
 
 #include "t.h"
 #include "t_net.h"
-#include "t_buf.h"         // the ability to send and recv buffers
-
 
 /**--------------------------------------------------------------------------
  * Create a socket and push to LuaStack.
@@ -76,21 +74,6 @@ struct t_net_sck
 	lua_setmetatable( L, -2 );
 
 	return sck;
-}
-
-
-/**--------------------------------------------------------------------------
- * Check a value on the stack for being a struct t_net.
- * \param   L      Lua state.
- * \param   int    position on the stack.
- * \return  struct t_net_sck*  pointer to the struct t_net_sck.
- * --------------------------------------------------------------------------*/
-struct t_net_sck
-*t_net_sck_check_ud( lua_State *L, int pos, int check )
-{
-	void *ud = luaL_testudata( L, pos, T_NET_SCK_TYPE );
-	luaL_argcheck( L, (ud != NULL || !check), pos, "`"T_NET_SCK_TYPE"` expected" );
-	return (NULL==ud) ? NULL : (struct t_net_sck *) ud;
 }
 
 

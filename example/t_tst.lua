@@ -4,7 +4,7 @@
 -- \file    sampleTest.lua
 -- \brief   basic tests to show t.Test
 local   Test   = require( 't.Test' )
-local   Util   = require( 't.core' ).utl 
+local   equals = require( 't.core' ).equals
 
 tc = {
 	beforeAll = function( self, done )  -- not necessary for this suite
@@ -71,14 +71,14 @@ tc = {
 		Test.Case.describe( 'Deep table comparison' )
 		local k = {x=1,y=2,z={a=1,b=true,c='string'}}
 		local h = {x=1,y=2,z={a=1,b=true,c='string'}}
-		assert( Util.equals( k, h ), "Deep table comparison" )
+		assert( equals( k, h ), "Deep table comparison" )
 	end,
 
 	test_EqTableNot = function( self )
 		Test.Case.describe( 'Deep table comparison (not equal)' )
 		local k = {x=1,y=2,z={a=1,b=true,c='stringy'}}
 		local h = {x=1,y=2,z={a=1,b=true,c='string'}}
-		assert( not Util.equals( k, h ), "Deep table comparison" )
+		assert( not equals( k, h ), "Deep table comparison" )
 	end,
 
 	test_ToSkip = function( self )
@@ -97,7 +97,7 @@ t.test_EqTableRecursive = function( self )
 	Test.Case.describe( 'Deep table comparison with first table shorter than second' )
 	local h = {6,7,8,9,'str',{'A','B','C','D',{'z','y','x'}    },3,4,5,6}
 	local k = {6,7,8,9,'str',{'A','B','C','D',{'z','y','x','w'}},3,4,5}
-	assert( not Util.equals( h, k ), "Deep table comparison with different table sizes" )
+	assert( not equals( h, k ), "Deep table comparison with different table sizes" )
 end
 
 t.test_MakeFail = function( self )
@@ -112,7 +112,7 @@ t.test_EqTableRevK = function( self )
 	Test.Case.describe( 'Deep table comparison with first table different from second' )
 	local k = {x=1,y=2,z={a=1,b=true,c='string'},d='not in second'}
 	local h = {x=1,y=2,z={a=1,b=true,c='string'}                  }
-	assert( Util.equals( h, k ), "Deep table comparison with different table sizes" )
+	assert( equals( h, k ), "Deep table comparison with different table sizes" )
 end
 
 t.test_EqMeta = function(self)

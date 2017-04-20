@@ -17,6 +17,7 @@
 
 #include <string.h>           // memcpy
 #include <stdlib.h>           // malloc, free
+#include <unistd.h>           // close
 #include <sys/epoll.h>
 
 struct t_ael_ste {
