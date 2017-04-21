@@ -10,18 +10,22 @@
 #include "t_ael.h"
 #include "t_net.h"
 
+
+#define T_HTP_IDNT "htp"
 #define T_HTP_CON_IDNT     "con"
 #define T_HTP_SRV_IDNT     "srv"
 #define T_HTP_STR_IDNT     "str"
 #define T_HTP_WSK_IDNT     "wsk"
 #define T_HTP_STR_PRX_IDNT "prx"
 
+#define T_HTP_NAME "Http"
 #define T_HTP_CON_NAME     "Connection"
 #define T_HTP_SRV_NAME     "Server"
 #define T_HTP_STR_NAME     "Stream"
 #define T_HTP_WSK_NAME     "WebSocket"
 #define T_HTP_STR_PRX_NAME "Proxy"
 
+#define T_HTP_TYPE "T."T_HTP_NAME
 #define T_HTP_CON_TYPE     T_HTP_TYPE"."T_HTP_CON_NAME
 #define T_HTP_SRV_TYPE     T_HTP_TYPE"."T_HTP_SRV_NAME
 #define T_HTP_STR_TYPE     T_HTP_TYPE"."T_HTP_STR_NAME

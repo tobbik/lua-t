@@ -297,7 +297,7 @@ t_pck_read( lua_State *L, const char *b, struct t_pck *p, size_t ofs )
 			lua_pushlstring( L, (const char*) b, p->s/NB );
 			break;
 		default:
-			return t_push_error( L, "Can't read value from unknown packer type" );
+			return luaL_error( L, "Can't read value from unknown packer type" );
 	}
 	return p->s;
 }
@@ -345,7 +345,7 @@ t_pck_write( lua_State *L, char *b, struct t_pck *p, size_t ofs )
 			memcpy( b, strVal, sL );
 			break;
 		default:
-			return t_push_error( L, "Can't pack a value in unknown packer type" );
+			return luaL_error( L, "Can't pack a value in unknown packer type" );
 	}
 	return 0;
 }
@@ -421,7 +421,7 @@ struct t_pck
 	int                                     i;
 
 	luaL_getsubtable( L, LUA_REGISTRYINDEX, "_LOADED" );
-	lua_getfield( L, -1, "t.core" );
+	lua_getfield( L, -1, "t.pck" );
 	lua_getfield( L, -1, T_PCK_IDNT );
 	t_pck_format( L, t, s, m );
 	lua_rawget( L, -2 );           //S: _ld t t.pck pck/nil
@@ -999,7 +999,7 @@ static const luaL_Reg t_pck_m [] = {
  * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 LUAMOD_API int
-luaopen_t_pck( lua_State *L )
+luaopen_pck( lua_State *L )
 {
 	// T.Pack.Field instance metatable
 	luaL_newmetatable( L, T_PCK_FLD_TYPE );  // stack: functions meta

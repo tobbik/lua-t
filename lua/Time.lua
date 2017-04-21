@@ -1,5 +1,3 @@
-local core = require( "t.core" )
-
-local Time = core.tim
+local Time = require( "t.tim" )
 
 return Time

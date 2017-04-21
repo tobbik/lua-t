@@ -13,6 +13,9 @@
 #include <sys/time.h>    // gettimeofday()
 #endif
 
+#define T_TIM_IDNT "tim"
+#define T_TIM_NAME "Time"
+#define T_TIM_TYPE "T."T_TIM_NAME
 
 // Constructors
 // t_tim.c

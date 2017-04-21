@@ -1,5 +1,3 @@
-local core       = require("t.core")
+local Http = require("t.htp")
 
-local Connection = core.htp.con
-
-return Connection
+return Http.con

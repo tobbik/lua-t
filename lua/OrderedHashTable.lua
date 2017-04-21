@@ -18,7 +18,7 @@
 -- \copyright See Copyright notice at the end of src/t.h
 
 local prxTblIdx, Table, equals =
-      require( "t" ).proxyTableIndex, require( "t.Table" ), require"t.core".equals
+      require( "t" ).proxyTableIndex, require( "t.Table" ), require"t".equals
 local t_concat    , t_insert,     t_remove =
       table.concat, table.insert, table.remove
 local getmetatable, setmetatable, pairs, assert, next, type =

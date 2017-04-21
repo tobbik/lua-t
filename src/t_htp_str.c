@@ -487,7 +487,7 @@ lt_htp_str_onbody( lua_State *L )
 		return 0;
 	}
 	else
-		return t_push_error( L, "Argument must be function or nil" );
+		return luaL_error( L, "Argument must be function or nil" );
 }
 
 
@@ -524,7 +524,7 @@ lt_htp_str__newindex( lua_State *L )
 {
 	t_htp_str_check_ud( L, -3, 1 );
 
-	return t_push_error( L, "Can't change values in `"T_HTP_STR_TYPE"`." );
+	return luaL_error( L, "Can't change values in `"T_HTP_STR_TYPE"`." );
 }
 
 

@@ -55,7 +55,7 @@ lt_buf__Call( lua_State *L )
 	}
 	else
 	{
-		t_push_error( L, "can't create "T_BUF_TYPE" because of wrong argument type" );
+		luaL_error( L, "can't create "T_BUF_TYPE" because of wrong argument type" );
 	}
 	return 1;
 }

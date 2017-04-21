@@ -242,7 +242,7 @@ lt_pck_fld__newindex( lua_State *L )
 {
 	struct t_pck *pc = t_pck_fld_getPackFromStack( L, -3, NULL );
 	luaL_argcheck( L, pc->t > T_PCK_RAW, -3, "Atomic "T_PCK_TYPE" type has no fields" );
-	return t_push_error( L, T_PCK_TYPE" is read-only!" );
+	return luaL_error( L, T_PCK_TYPE" is read-only!" );
 }
 
 

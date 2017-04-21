@@ -1,5 +1,3 @@
-local core      = require("t.core")
+local Net = require("t.net")
 
-local Interface = core.net.ifc
-
-return Interface
+return Net.ifc

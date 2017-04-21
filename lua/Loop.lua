@@ -1,5 +1,3 @@
-local core = require( "t.core" )
-
-local Loop = core.ael
+local Loop = require( "t.ael" )
 
 return Loop

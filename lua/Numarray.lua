@@ -1,5 +1,3 @@
-local core = require( "t.core" )
-
-local Numarray = core.nry
+local Numarray = require( "t.nry" )
 
 return Numarray

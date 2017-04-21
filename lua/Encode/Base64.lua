@@ -1,5 +1,3 @@
-local core    = require("t.core")
+local Encode = require("t.buf")
 
-local Base64  = core.enc.b64
-
-return Base64
+return Encode.b64

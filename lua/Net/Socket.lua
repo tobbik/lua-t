@@ -1,5 +1,3 @@
-local core    = require("t.core")
+local Net = require("t.net")
 
-local Socket  = core.net.sck
-
-return Socket
+return Net.sck

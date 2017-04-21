@@ -4,7 +4,7 @@
 -- \file    sampleTest.lua
 -- \brief   basic tests to show t.Test
 local   Test   = require( 't.Test' )
-local   equals = require( 't.core' ).equals
+local   equals = require( 't' ).equals
 
 tc = {
 	beforeAll = function( self, done )  -- not necessary for this suite

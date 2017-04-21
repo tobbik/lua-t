@@ -8,7 +8,7 @@
 local T      = require( 't' )
 local Test   = require( "t.Test" )
 local Table  = require( "t.Table" )
-local equals = require( 't.core' ).equals
+local equals = require( 't' ).equals
 local Rtvg   = T.require( 'rtvg' )
 
 -- \param  n  true if check for existent key else assert non existence

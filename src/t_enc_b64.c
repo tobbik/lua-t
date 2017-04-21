@@ -86,7 +86,7 @@ b64_decode( const char *inbuf, char *outbuf, size_t inbuf_len )
 	}
 }
 
-
+// TODO: use luaL_Buffer instead of manually allocating memory
 /**--------------------------------------------------------------------------
  * Expose Base64 encoding to Lua; wraps native function b64_encode above.
  * \param   L      Lua state.
@@ -102,22 +102,16 @@ t_enc_b64_encode( lua_State *L )
 	char               *res;
 	
 	if ( lua_isstring( L, 1 ) )
-	{
 		body = luaL_checklstring( L, 1, &bLen );
-	}
 	else
-	{
-		return t_push_error( L,
+		return luaL_error( L,
 			    T_ENC_B64_TYPE".encode takes at least one string parameter" );
-	}
 
 	rLen = b64_res_size( bLen, 1 );
-	res = malloc( rLen );
+	res  = malloc( rLen );
 	if (res == NULL)
-	{
-		return t_push_error( L,
+		return luaL_error( L,
 		        T_ENC_B64_TYPE".encode failed due to internal memory allocation problem" );
-	}
 
 	b64_encode( body, res, bLen);
 	lua_pushlstring( L, res, rLen );
@@ -142,22 +136,16 @@ t_enc_b64_decode( lua_State *L )
 	char               *res;
 	
 	if ( lua_isstring( L, 1 ) )
-	{
 		body = luaL_checklstring( L, 1, &bLen );
-	}
 	else
-	{
-		return t_push_error( L,
+		return luaL_error( L,
 			    T_ENC_B64_TYPE".decode takes at least one string parameter" );
-	}
 
 	rLen = b64_res_size( bLen, 0 );
-	res = malloc( rLen );
+	res  = malloc( rLen );
 	if (res == NULL)
-	{
-		return t_push_error( L,
+		return luaL_error( L,
 		        T_ENC_B64_TYPE".decode failed due to internal memory allocation problem" );
-	}
 
 	b64_decode(  body, res, bLen);
 	lua_pushlstring( L, res, rLen );

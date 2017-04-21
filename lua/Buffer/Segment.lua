@@ -1,5 +1,3 @@
-local core    = require("t.core")
+local Buffer = require("t.buf")
 
-local Segment = core.buf.seg
-
-return Segment
+return Buffer.seg

@@ -25,6 +25,7 @@
 
 #include "t.h"
 #include "t_ael.h"
+#include "t_dbg.h"
 #include "t_tim_cmn.h"
 #include "t_net_cmn.h"
 
@@ -276,7 +277,7 @@ lt_ael_addhandle( lua_State *L )
 		fd = sck->fd;
 
 	if (0 == fd)
-		return t_push_error( L, "Argument to addHandle must be file or socket" );
+		return luaL_error( L, "Argument to addHandle must be file or socket" );
 
 	if (NULL == ael->fdSet[ fd ])
 	{

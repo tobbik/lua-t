@@ -1,5 +1,3 @@
-local core    = require("t.core")
+local Net = require("t.net")
 
-local Address = core.net.ip4
-
-return Address
+return Net.ip4

@@ -21,7 +21,7 @@ T_SRC=Buffer.lua \
    Encode.lua \
    Encode/Base64.lua \
    Encode/Crc.lua \
-   Encode/RC4.lua \
+   Encode/Rc4.lua \
    Http.lua \
    Http/Connection.lua \
    Http/Server.lua \

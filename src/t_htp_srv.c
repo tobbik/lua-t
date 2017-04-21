@@ -206,7 +206,7 @@ lt_htp_srv_listen( lua_State *L )
 	lua_call( L, 5, 0 );
 	lua_rawgeti( L, LUA_REGISTRYINDEX, s->sR );
 	lua_rawgeti( L, LUA_REGISTRYINDEX, s->aR );
-	t_stackDump( L );
+	//t_stackDump( L );
 	return  2;
 }
 

@@ -414,7 +414,7 @@ static const luaL_Reg t_htp_lib [ ] =
  * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 LUAMOD_API int
-luaopen_t_htp( lua_State *L )
+luaopen_htp( lua_State *L )
 {
 	luaL_newlib( L, t_htp_lib );
 	luaopen_t_htp_srv( L );

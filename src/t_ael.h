@@ -8,6 +8,9 @@
  * \copyright See Copyright notice at the end of t.h
  */
 
+#define T_AEL_IDNT "ael"
+#define T_AEL_NAME "Loop"
+#define T_AEL_TYPE "T."T_AEL_NAME
 
 enum t_ael_msk {
 	// 00000000

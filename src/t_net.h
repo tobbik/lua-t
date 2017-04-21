@@ -14,14 +14,6 @@
 
 #include "t_net_cmn.h"
 
-#define T_NET_IP4_IDNT  "ip4"
-#define T_NET_IFC_IDNT  "ifc"
-
-#define T_NET_IP4_NAME  "IPv4"
-#define T_NET_IFC_NAME  "Interface"
-
-#define T_NET_IP4_TYPE  T_NET_TYPE"."T_NET_IP4_NAME
-#define T_NET_IFC_TYPE  T_NET_TYPE"."T_NET_IFC_NAME
 
 #define INT_TO_ADDR( _addr ) \
 	(_addr &       0xFF), \

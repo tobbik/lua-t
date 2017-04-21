@@ -1,8 +1,4 @@
-local core  = require( "t.core" )
-local field = require( "t.Pack.Field" )
-
-local Pack  = core.pck
-
-Pack.Field  = field
+local Pack = require( "t.pck" )
+Pack.Field = require( "t.Pack.Field" )
 
 return Pack

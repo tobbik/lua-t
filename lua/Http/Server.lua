@@ -1,5 +1,3 @@
-local core       = require("t.core")
+local Http = require("t.htp")
 
-local Server = core.htp.srv
-
-return Server
+return Http.Srv

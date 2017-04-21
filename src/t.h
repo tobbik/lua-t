@@ -44,66 +44,9 @@ struct t_typ {
 
 
 // global helpers
-void t_getProxyTableIndex ( lua_State *L );
-void t_getProxyTable      ( lua_State *L, int pos );
-int  t_getFromProxyTable  ( lua_State *L );
-
-void t_fmtStackItem  ( lua_State *L, int idx, int no_tostring );
-void t_stackDump     ( lua_State *L );
-void t_stackPrint    ( lua_State *L, int first, int last, int no_tostring );
-int  t_push_error    ( lua_State *L, const char *fmt, ... );
-int  t_checkTableType( lua_State *L, int pos, int check, const char *type );
-
 void t_getTypeByName ( lua_State *L, int pos, const char *dft, const struct t_typ *types );
 void t_getTypeByValue( lua_State *L, int pos, const int   dft, const struct t_typ *types );
-
-// sub-types/modules names
-#define T_AEL_IDNT "ael"
-#define T_TIM_IDNT "tim"
-#define T_NET_IDNT "net"
-#define T_BUF_IDNT "buf"
-#define T_PCK_IDNT "pck"
-#define T_ENC_IDNT "enc"
-#define T_HTP_IDNT "htp"
-#define T_UTL_IDNT "utl"
-
-#define T_AEL_NAME "Loop"
-#define T_TIM_NAME "Time"
-#define T_NET_NAME "Net"
-#define T_BUF_NAME "Buffer"
-#define T_PCK_NAME "Pack"
-#define T_ENC_NAME "Encode"
-#define T_HTP_NAME "Http"
-#define T_UTL_NAME "Util"
-
-#define T_AEL_TYPE "T."T_AEL_NAME
-#define T_TIM_TYPE "T."T_TIM_NAME
-#define T_NET_TYPE "T."T_NET_NAME
-#define T_BUF_TYPE "T."T_BUF_NAME
-#define T_PCK_TYPE "T."T_PCK_NAME
-#define T_ENC_TYPE "T."T_ENC_NAME
-#define T_HTP_TYPE "T."T_HTP_NAME
-
-#ifdef T_NRY
-#define T_NRY_IDNT "nry"
-#define T_NRY_NAME "Numarray"
-#define T_NRY_TYPE "T."T_NRY_NAME
-#endif
-
-#define  T_PROXYTABLEINDEX "proxyTableIndex"
-
-// global sub classes registration
-LUAMOD_API int luaopen_t_ael( lua_State *L );
-LUAMOD_API int luaopen_t_tim( lua_State *L );
-LUAMOD_API int luaopen_t_net( lua_State *L );
-LUAMOD_API int luaopen_t_enc( lua_State *L );
-LUAMOD_API int luaopen_t_buf( lua_State *L );
-LUAMOD_API int luaopen_t_pck( lua_State *L );
-LUAMOD_API int luaopen_t_htp( lua_State *L );
-LUAMOD_API int luaopen_t_core ( lua_State *L );
-#ifdef T_NRY
-LUAMOD_API int luaopen_t_nry( lua_State *L );
-#endif
+int  t_push_error    ( lua_State *L, const char *fmt, ... );
 
 
 /******************************************************************************

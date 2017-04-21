@@ -267,16 +267,16 @@ lt_tim_Sleep( lua_State *L )
  * Class metamethods library definition
  * --------------------------------------------------------------------------*/
 static const struct luaL_Reg t_tim_fm [] = {
-	  { "__call",    lt_tim__Call }
-	, { NULL,   NULL }
+	  { "__call"     , lt_tim__Call }
+	, { NULL         , NULL }
 };
 
 /**--------------------------------------------------------------------------
  * Class functions library definition
  * --------------------------------------------------------------------------*/
 static const luaL_Reg t_tim_cf [] = {
-	  { "sleep",     lt_tim_Sleep }     // can work on class or instance
-	, { NULL,        NULL }
+	  { "sleep"      , lt_tim_Sleep }     // can work on class or instance
+	, { NULL         , NULL }
 };
 
 /**--------------------------------------------------------------------------
@@ -284,17 +284,17 @@ static const luaL_Reg t_tim_cf [] = {
  * --------------------------------------------------------------------------*/
 static const struct luaL_Reg t_tim_m [] = {
 	// metamethods
-	  { "__tostring", lt_tim__tostring }
-	, { "__eq",       lt_tim__eq }
-	, { "__add",      lt_tim__add }
-	, { "__sub",      lt_tim__sub }
+	  { "__tostring" , lt_tim__tostring }
+	, { "__eq"       , lt_tim__eq }
+	, { "__add"      , lt_tim__add }
+	, { "__sub"      , lt_tim__sub }
 	// instance methods
-	, { "set",        lt_tim_set }
-	, { "get",        lt_tim_get }
-	, { "sleep",      lt_tim_Sleep }
-	, { "now",        lt_tim_now }
-	, { "since",      lt_tim_since }
-	, { NULL,   NULL }
+	, { "set"        , lt_tim_set }
+	, { "get"        , lt_tim_get }
+	, { "sleep"      , lt_tim_Sleep }
+	, { "now"        , lt_tim_now }
+	, { "since"      , lt_tim_since }
+	, { NULL         , NULL }
 };
 
 
@@ -316,8 +316,9 @@ luaopen_t_tim( lua_State *L )
 
 	// Push the class onto the stack
 	luaL_newlib( L, t_tim_cf );
+	// set the methods as metatable
+	// this is only avalable a <instance>:func()
 	luaL_newlib( L, t_tim_fm );
 	lua_setmetatable( L, -2 );
 	return 1;
 }
-

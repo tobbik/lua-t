@@ -1,5 +1,3 @@
-local core       = require("t.core")
+local Http = require("t.htp")
 
-local WebSocket  = core.htp.wsk
-
-return WebSocket
+return Http.wsk

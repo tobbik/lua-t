@@ -1,5 +1,3 @@
-local core       = require("t.core")
+local Http = require("t.htp")
 
-local Stream = core.htp.str
-
-return Stream
+return Http.Str

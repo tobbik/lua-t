@@ -7,6 +7,12 @@
  * \copyright See Copyright notice at the end of t.h
  */
 
+#define T_NRY_IDNT "nry"
+
+#define T_NRY_NAME "Numarray"
+
+#define T_NRY_TYPE "T."T_NRY_NAME
+
 /// The userdata struct for T.Numarray
 struct t_nry
 {

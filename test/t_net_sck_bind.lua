@@ -46,8 +46,8 @@ local tests = {
 		local f     = function() self.sck, self.address = Socket.bind(80) end
 		local ran,e = pcall( f )
 		assert( not ran, "Don't run tests a root" )
-		assert( e:match( "ERROR binding socket to 0.0.0.0:"..port.." %(Permission denied%)" ),
-			"Error message should contain permission issue" )
+		assert( e:match( "Can't bind socket to 0.0.0.0:"..port.." %(Permission denied%)" ),
+			"Error message should contain permission issue, but was: ".. e )
 	end,
 
 	test_SBindPortCreateSockAndInanyAddress = function( self )

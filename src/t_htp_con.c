@@ -259,7 +259,7 @@ lt_htp_con__newindex( lua_State *L )
 {
 	t_htp_con_check_ud( L, -3, 1 );
 
-	return t_push_error( L, "Can't change values in `"T_HTP_CON_TYPE"`" );
+	return luaL_error( L, "Can't change values in `"T_HTP_CON_TYPE"`" );
 }
 
 

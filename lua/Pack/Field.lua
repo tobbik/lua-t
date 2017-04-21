@@ -1,5 +1,3 @@
-local core  = require("t.core")
+local Pack = require("t.pck")
 
-local Field = core.pck.fld
-
-return Field
+return Pack.fld

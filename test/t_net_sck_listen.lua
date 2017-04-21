@@ -105,8 +105,10 @@ local tests = {
 		local f     = function(self, host) self.sck, self.adr = Socket.listen( host, 80 ) end
 		local ran,e = pcall( f, self, host )
 		assert( not ran, "Don't run tests a root" )
-		assert( e:match( "ERROR binding socket to "..host..":"..port.." %(Permission denied%)" ),
-			"Error message should contain permission issue" )
+		assert( e:match( "Can't bind socket to "..host..":"..port.." before listen%(%) %(Permission denied%)" ),
+			  "Error message\n"..
+			  "should be:".."Can't bind socket to "..host..":"..port.." before listen() (Permission denied)"..
+			  "\n  but was: "..e )
 	end,
 
 	test_SListenHostAddressBacklog = function( self )
