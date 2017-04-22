@@ -1,6 +1,17 @@
-local base = require( "t.bas" )
-local package, format = require'package', string.format
+local package         , format       , getmetatable, type =
+      require'package', string.format, getmetatable, type
 
+local equals
+equals= function( o1, o2 )
+	if o1 == o2 then return true end
+	local m1,m2,t1,t2 = getmetatable( o1 ),getmetatable( o2 ), type( o1 ), type( o2 )
+	if (m1 and m1.__eq) or "table" ~= t1 or t1 ~= t2 then return o1==o2 end
+	-- as per condition above only executed for 'table' type
+	if #o1 ~= #o2 then return false end
+	for k1,v1 in pairs( o1 ) do if not equals( o2[ k1 ], v1 ) then return false end end
+	for k2,v2 in pairs( o2 ) do if not equals( o1[ k2 ], v2 ) then return false end end
+	return true
+end
 
 return {
 	require  = function( name )
@@ -12,7 +23,7 @@ return {
 		package.path, package.cpath = path, cpath
 		return loaded
 	end,
-	equals  = base.equals,
+	equals  = equals,
 	type    = function( obj )
 		local mt   = getmetatable( obj )
 		local name = (nil ~= mt) and mt.__name or nil

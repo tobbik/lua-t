@@ -82,7 +82,6 @@ endif
 
 # ALL OBJECTS
 T_AEL_OBJ=$(T_AEL_SRC:%.c=%.o)
-T_BAS_OBJ=$(T_BAS_SRC:%.c=%.o)
 T_BUF_OBJ=$(T_BUF_SRC:%.c=%.o)
 T_ENC_OBJ=$(T_ENC_SRC:%.c=%.o)
 T_HTP_OBJ=$(T_HTP_SRC:%.c=%.o)
@@ -90,11 +89,10 @@ T_NET_OBJ=$(T_NET_SRC:%.c=%.o)
 T_PCK_OBJ=$(T_PCK_SRC:%.c=%.o)
 T_TIM_OBJ=$(T_TIM_SRC:%.c=%.o)
 
-OBJS=$(T_AEL_OBJ) $(T_BAS_OBJ) $(T_BUF_OBJ) $(T_ENC_OBJ) $(T_HTP_OBJ) $(T_NET_OBJ) $(T_PCK_OBJ) $(T_TIM_OBJ)
+OBJS=$(T_AEL_OBJ) $(T_BUF_OBJ) $(T_ENC_OBJ) $(T_HTP_OBJ) $(T_NET_OBJ) $(T_PCK_OBJ) $(T_TIM_OBJ)
 
 # ALL DYNAMIC OBJECTS
 T_AEL_LIB=ael.so
-T_BAS_LIB=bas.so
 T_BUF_LIB=buf.so
 T_ENC_LIB=enc.so
 T_HTP_LIB=htp.so
@@ -102,7 +100,7 @@ T_NET_LIB=net.so
 T_PCK_LIB=pck.so
 T_TIM_LIB=tim.so
 
-LIBS=$(T_AEL_LIB) $(T_BAS_LIB) $(T_BUF_LIB) $(T_ENC_LIB) $(T_HTP_LIB) $(T_NET_LIB) $(T_PCK_LIB) $(T_TIM_LIB)
+LIBS=$(T_AEL_LIB) $(T_BUF_LIB) $(T_ENC_LIB) $(T_HTP_LIB) $(T_NET_LIB) $(T_PCK_LIB) $(T_TIM_LIB)
 
 T_INSTALL=$(LIBS:%.so=$(INSTALL_CMOD)/%.so)
 
@@ -111,8 +109,6 @@ T_INSTALL=$(LIBS:%.so=$(INSTALL_CMOD)/%.so)
 all: $(OBJS) $(LIBS)
 
 $(T_AEL_LIB): $(T_AEL_OBJ)
-	$(LD) -O -shared $? -o $@ $(LDFLAGS)
-$(T_BAS_LIB): $(T_BAS_OBJ)
 	$(LD) -O -shared $? -o $@ $(LDFLAGS)
 $(T_BUF_LIB): $(T_BUF_OBJ)
 	$(LD) -O -shared $? -o $@ $(LDFLAGS)
@@ -168,12 +164,3 @@ clean:
 
 .PHONY: all test clean
 
-
-SO: $(T_OBJ)
-	clang -O -shared t_net_cmn.o t_tim_cmn.o t_ael*o -o ael.so -llua -lm
-	clang -O -shared             t_buf*o -o buf.so -llua -lm
-	clang -O -shared t_enc*o             -o enc.so -llua -lm
-	clang -O -shared t_net_cmn.o t_htp*o -o htp.so -llua -lm
-	clang -O -shared t_buf_cmn.o t_net*o -o net.so -llua -lm
-	clang -O -shared t_buf_cmn.o t_pck*o -o pck.so -llua -lm
-	clang -O -shared             t_tim*o -o tim.so -llua -lm

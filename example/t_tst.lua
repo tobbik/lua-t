@@ -102,7 +102,6 @@ end
 
 t.test_MakeFail = function( self )
 	Test.Case.describe('Create an error in code')
-	Test.Case.todo( 'Nothing todo here. This test fails to test the test framework' )
 	local x = 5
 	x = x.a + 5
 	assert( x==6 , "This math makes no sense" )
