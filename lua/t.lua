@@ -1,3 +1,8 @@
+-- \file      lua/t.lua
+-- \brief     General helpers for lua-t.
+-- \author    tkieslich
+-- \copyright See Copyright notice at the end of src/t.h
+
 local package         , format       , getmetatable, type =
       require'package', string.format, getmetatable, type
 

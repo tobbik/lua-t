@@ -106,3 +106,29 @@ char
 }
 
 
+/**--------------------------------------------------------------------------
+ * Determine if value at pos can be converted into some sort of a char* buf.
+ * \param   L     Lua state.
+ * \param   pos   position of userdata on stack.
+ * \param  *cw    int pointer determining if char* is writable.
+ * \lparam  buf  T.Buffer userdata instance.
+ *      OR
+ * \lparam  seg  T.Buffer.Segment userdata instance.
+ *      OR
+ * \lparam  b    Lua string.
+ * \return  char*  # of values pushed onto the stack.
+ * --------------------------------------------------------------------------*/
+int
+t_buf_isstring( lua_State *L, int pos, int *cw )
+{
+	struct t_buf     *buf = t_buf_check_ud( L, pos, 0 );
+	struct t_buf_seg *seg = t_buf_seg_check_ud( L, pos, 0 );
+
+	if (NULL != buf || NULL != seg || lua_isstring( L , pos ))
+	{
+		*cw = (lua_isstring( L, pos )) ? 0 : 1;
+		return 1;
+	}
+	else
+		return 0;
+}

@@ -32,7 +32,8 @@ struct t_buf_seg {
 };
 
 /// Functions to check t.Buffer/Segments and retrieve the char* pointer from it
-struct t_buf *t_buf_check_ud  ( lua_State *L, int pos, int check );
+struct t_buf *t_buf_check_ud    ( lua_State *L, int pos, int check );
 char         *t_buf_tolstring   ( lua_State *L, int pos, size_t *len, int *cw );
 char         *t_buf_checklstring( lua_State *L, int pos, size_t *len, int *cw );
+int           t_buf_isstring    ( lua_State *L, int pos, int *cw );
 struct t_buf_seg *t_buf_seg_check_ud  ( lua_State *L, int pos, int check );

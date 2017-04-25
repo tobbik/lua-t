@@ -14,7 +14,7 @@ LDFLAGS:=$(LDFLAGS) -lcrypt
 CC=clang
 LD=clang
 #CFLAGS:= -Wall -Wextra -pedantic -O0 -std=c99 -fpic $(MYCFLAGS)
-CFLAGS:= -Wall -Wextra -O0 -std=c99 -fpic $(MYCFLAGS)
+CFLAGS:= -Wall -Wextra -std=c99 -fpic $(MYCFLAGS)
 LDLIBS:= -llua -lm
 INSTALL_CMOD=$(PREFIX)/lib/lua/$(LVER)/t
 
@@ -109,19 +109,19 @@ T_INSTALL=$(LIBS:%.so=$(INSTALL_CMOD)/%.so)
 all: $(OBJS) $(LIBS)
 
 $(T_AEL_LIB): $(T_AEL_OBJ)
-	$(LD) -O -shared $^ -o $@ $(LDFLAGS)
+	$(LD) -g -shared $^ -o $@ $(LDFLAGS)
 $(T_BUF_LIB): $(T_BUF_OBJ)
-	$(LD) -O -shared $^ -o $@ $(LDFLAGS)
+	$(LD) -g -shared $^ -o $@ $(LDFLAGS)
 $(T_ENC_LIB): $(T_ENC_OBJ)
-	$(LD) -O -shared $^ -o $@ $(LDFLAGS)
+	$(LD) -g -shared $^ -o $@ $(LDFLAGS)
 $(T_HTP_LIB): $(T_HTP_OBJ)
-	$(LD) -O -shared $^ -o $@ $(LDFLAGS)
+	$(LD) -g -shared $^ -o $@ $(LDFLAGS)
 $(T_NET_LIB): $(T_NET_OBJ)
-	$(LD) -O -shared $^ -o $@ $(LDFLAGS)
+	$(LD) -g -shared $^ -o $@ $(LDFLAGS)
 $(T_PCK_LIB): $(T_PCK_OBJ)
-	$(LD) -O -shared $^ -o $@ $(LDFLAGS)
+	$(LD) -g -shared $^ -o $@ $(LDFLAGS)
 $(T_TIM_LIB): $(T_TIM_OBJ)
-	$(LD) -O -shared $^ -o $@ $(LDFLAGS)
+	$(LD) -g -shared $^ -o $@ $(LDFLAGS)
 
 .c.o:
 	$(CC) $(CFLAGS) $< -o $@
