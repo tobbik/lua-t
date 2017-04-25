@@ -156,7 +156,8 @@ lt_net_sck_listen( lua_State *L )
 {
 	struct t_net_sck   *sck = t_net_sck_check_ud( L, 1, 0 );
 	struct sockaddr_in *adr = t_net_ip4_check_ud( L, 1+((NULL==sck) ? 0:1), 0 );
-	int                 bl  = SOMAXCONN, returnables = 0;
+	int                 bl  = SOMAXCONN,
+	                    returnables = 0;
 
 	if (lua_isinteger( L, -1 ) && LUA_TSTRING != lua_type( L, -2 ))
 	{
@@ -281,19 +282,21 @@ lt_net_sck_send( lua_State *L )
  * possible to pass an offset to T.Buffer, instead use a temporary
  * T.Buffer.Segement to compose a bigger Buffer from multiple recv()
  * operations.  The following permutations are possible:
- *      bool,cnt  =  s:recv( ip, buf/seg )
- *      bool,cnt  =  s:recv( buf/seg )
- *      str ,cnt  =  s:recv( ip )
- *      str ,cnt  =  s:recv( )
- *      bool,cnt  =  s:recv( ip, buf/seg, sz )
- *      bool,cnt  =  s:recv( buf/seg, sz )
- *      str ,cnt  =  s:recv( ip, sz )
- *      str ,cnt  =  s:recv( sz )
+ *      bool,int = s:recv( adr, buf/seg )
+ *      bool,int = s:recv( buf/seg )
+ *      str ,int = s:recv( adr )
+ *      str ,int = s:recv( )
+ *      bool,int = s:recv( adr, buf/seg, max )
+ *      bool,int = s:recv( buf/seg, max )
+ *      str ,int = s:recv( adr, max )
+ *      str ,int = s:recv( max )
  * \usage   string msg, int cnt = sck:recv( [T.Net.Address adr, int size ] )
  * \usage   bool rcvd, int cnt  = sck:recv( [T.Net.Address adr,] T.Buffer/Segment buf[, int size ] )
  * \param   L      Lua state.
- * \lparam  ud     T.Net.Socket userdata instance.
- * \lparam  ud     T.Buffer/Segment userdata instance.
+ * \lparam  ud     Net.Socket  userdata instance.       -> mandatory
+ * \lparam  ud     Net.Address userdata instance.       -> optional
+ * \lparam  ud     T.Buffer/Segment userdata instance.  -> optional
+ * \lparam  int    size of msg t be send in bytes.      -> optional
  * \lreturn rcvd   number of bytes recieved.  nil if nothing was received.
  * \lreturn msg    Lua string of received message.
  * \return  int    # of values pushed onto the stack.
@@ -303,39 +306,43 @@ lt_net_sck_recv( lua_State *L )
 {
 	struct t_net_sck   *sck  = t_net_sck_check_ud( L, 1, 1 );
 	struct sockaddr_in *adr  = t_net_ip4_check_ud( L, 2, 0 );
+	size_t              len  = BUFSIZ;  // length of sink
+	size_t              max  = (lua_isinteger( L, -1 )) ? (size_t) lua_tointeger( L, -1 ) : len;
 	int                 rcvd;
-	size_t              len  = 0;  // length of sink
 	int                 psh  = 0;
-	char               *msg  = t_buf_tolstring( L, (NULL==adr)?2:3, &len, NULL );
-	size_t              sz;
+	int                 cw   = 0;
+	char               *msg  = (t_buf_isstring( L, (NULL==adr)?2:3, &cw ) && cw)  // is writable -> buffer
+	                           ? t_buf_checklstring( L, (NULL==adr)?2:3, &len, &cw )
+	                           : NULL;
 
+	luaL_argcheck( L, msg == NULL || cw==1, (NULL==adr) ? 2:3, "provided sink must be t.Buffer/Segment" );
+	luaL_argcheck( L, max<=len,             (NULL==adr) ? 2:3, "max must be smaller than sink" );
+	t_stackDump( L );
+
+	printf("len: %zu max: %zu adr: %s msg: %s\n", len,max,adr,msg);
 	if (NULL == msg)
 	{
-		char buffer[ BUFSIZ ];
+		char buffer[ (max>2048)? max+1 : 2048 ];
+		//char buffer[ max+1 ];
 		msg = &(buffer[0]);
-		len = sizeof( buffer )-1;
 		psh = 1;
 	}
-	sz = (lua_isinteger( L, -1 )) ? lua_tointeger( L, -1 ) : len;
+	memset( msg, 0, len );
+	printf("len: %zu max: %zu adr: %s msg: %s\n", len,max,adr,msg);
 
-	luaL_argcheck( L, sz<=len, (NULL==adr) ? 2:3, "size must be smaller than message" );
 
-	rcvd = t_net_sck_recv( L, sck, adr, msg, (sz>len) ? len : sz );
+	rcvd = t_net_sck_recv( L, sck, adr, msg, max );
+	printf("%d %zu %s %s\n", rcvd,max,adr,msg );
 
 	// push message/nil, length
 	if (psh)
-	{
 		if (0 == rcvd)
 			lua_pushnil( L );
 		else
 			lua_pushlstring( L, msg, rcvd );
-		lua_pushinteger( L, rcvd );
-	}
 	else
-	{
 		lua_pushboolean( L, 0 != rcvd );
-		lua_pushinteger( L, rcvd );
-	}
+	lua_pushinteger( L, rcvd );
 	return 2;
 }
 

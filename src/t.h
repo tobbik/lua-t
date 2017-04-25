@@ -14,6 +14,8 @@
 #include "lualib.h"
 #include "lauxlib.h"
 
+#include "t_dbg.h"
+
 #define MAX_PKT_BYTES     1500
 
 #define PRINT_DEBUGS      0
