@@ -27,6 +27,18 @@ while it intersects with many other existing libraries it still offers some
 very unique features such a bit resolution binary packging.
 
 
+Move code from C only to Lua and C
+----------------------------------
+
+While it was a great exercise to write **everything** in C it made the size
+of the t.so file increase steadily and hence load a lot od code even if just
+one function was needed.  Eventually the code got broken up into modules, a
+single .so file for each and .lua modules to wrap the functionality.  It
+also allowed to re-implement whole modules in Lua such as `OrderedHashTable`
+, `Set` or `Test`.  It improved the managability a lot but complicated the
+build process slightly which was a worthy tradeoff.
+
+
 Where to go
 -----------
 
@@ -44,17 +56,13 @@ Then, each library should get improved by doing the following steps:
    - write or complete documentation
    - improve example files
 
-Next up would be improving portability.  With the asynchronous functionality
-that is no easy task though.
+Next up would be improving platform portability.  With the asynchronous
+functionality that is no easy task though.
 
 
 Roadmap
 -------
 
- - make more classes table based instead of using structs (if possible)
-   this will make it easier to convert whole things to Lua code instead of C
- - write Asynchronous T.Tests (by passing down and handling of a done()
-   method)
  - make the asynchronous event loop handle coroutines in parallel with
    callbacks
  - get the HTTP Server and client working properly

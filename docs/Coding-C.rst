@@ -54,9 +54,9 @@ OOP interface and Meta-Methods
 The majority of this guide will use the example namespace 'nry' which within
 Lua then is known as 'Numarray'.  The Numarray example is explained in
 detail by Roberto Ierusalimschy's book "Programming in Lua', also known as
-PiL.  This guide assumes that lua-t was loaded by::
+PiL.  This guide assumes the Numarray module was loaded by::
 
-  T = require( "t" )
+  Numarray = require( "t.Numarray" )
 
 Constructors
 ------------
@@ -65,13 +65,13 @@ All of lua-t uses the same OOP type according to `Lua-Users style guide`_
 for classes with constructors.  A new instance of the Numarray class would
 be instantiated like this(Python style)::
 
-  myNry = T.Numarray( param )
+  myNry = Numarray( param )
 
 In general cosntructors should offer 3 ways of creating objects:
 
-#. Create an empty object: ``emptyArray = T.Numarray( )``
-#. Create an object from paramters: ``newArray = T.Numarray( 1,2,3,4,5,6 )``
-#. Create a cloned object: ``clonedArray = T.Numarray( newArray )``
+#. Create an empty object: ``emptyArray = Numarray( )``
+#. Create an object from paramters: ``newArray = Numarray( 1,2,3,4,5,6 )``
+#. Create a cloned object: ``clonedArray = Numarray( newArray )``
 
 Applicable metamethods
 ----------------------
