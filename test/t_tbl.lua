@@ -1,9 +1,8 @@
-#!../out/bin/lua
-
 ---
--- \file    test/t_tbl.lua
--- \brief   Test for extended Table functions
--- \author  tkieslich
+-- \file      test/t_tbl.lua
+-- \brief     Test for extended Table functions
+-- \author    tkieslich
+-- \copyright See Copyright notice at the end of src/t.h
 
 local T      = require( 't' )
 local Test   = require( "t.Test" )

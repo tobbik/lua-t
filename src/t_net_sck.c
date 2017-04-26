@@ -306,24 +306,25 @@ lt_net_sck_recv( lua_State *L )
 {
 	struct t_net_sck   *sck  = t_net_sck_check_ud( L, 1, 1 );
 	struct sockaddr_in *adr  = t_net_ip4_check_ud( L, 2, 0 );
-	size_t              max  = (lua_isinteger( L, -1 )) ? (size_t) lua_tointeger( L, -1 ) : BUFSIZ-1;
+	size_t              args = lua_gettop( L );
 	size_t              len  = 0;  // length of sink
+	size_t              max;
 	int                 cw   = 0;  // test buffer to be writeable
 	int                 rcvd = 0;
 	char                buf[ BUFSIZ ];
 	char               *msg;
 
-	if (t_buf_isstring( L, (NULL==adr)?2:3, &cw ) && cw)  // is writable -> buffer
+	if (t_buf_isstring( L, (NULL==adr) ?2 :3, &cw ) && cw)  // is writable -> buffer
 	{
-		msg  = t_buf_checklstring( L, (NULL==adr) ? 2:3, &len, &cw );
-		luaL_argcheck( L, cw==1   , (NULL==adr) ? 2:3, "provided sink must be t.Buffer/Segment" );
-		max  = lua_isinteger( L, -1 ) ? max : len;
-		luaL_argcheck( L, max<=len, (NULL==adr) ? 2:3, "max must be smaller than sink" );
+		msg = t_buf_checklstring( L, (NULL==adr) ?2 :3, &len, &cw );
+		max = (args == ((NULL==adr) ?3 :4)) ? luaL_checkinteger( L, (NULL==adr) ?3 :4 ) : len;
+		luaL_argcheck( L, max<=len, (NULL==adr) ?2 :3, "max must be smaller than sink" );
 		rcvd = t_net_sck_recv( L, sck, adr, msg, max );
 		lua_pushboolean( L, 0 != rcvd );
 	}
 	else
 	{
+		max = (args == ((NULL==adr) ?2 :3)) ? luaL_checkinteger( L, (NULL==adr) ?2 :3 ) : BUFSIZ-1;
 		luaL_argcheck( L, max<BUFSIZ, (NULL==adr) ? 2:3, "max must be smaller than BUFSIZ" );
 		rcvd = t_net_sck_recv( L, sck, adr, buf, max );
 		if (0 == rcvd)

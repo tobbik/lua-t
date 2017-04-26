@@ -18,7 +18,6 @@
 -- same  process.  Each test will restart the loop, connect, assert and stop the
 -- loop before moving on to the next test.
 
-T         = require( 't' )
 Test      = require( "t.Test" )
 Timer     = require( "t.Time" )
 Loop      = require( "t.Loop" )
@@ -27,6 +26,7 @@ Address   = require( "t.Net.Address" )
 Interface = require( "t.Net.Interface" )
 Buffer    = require( "t.Buffer" )
 Segment   = require( "t.Buffer.Segment" )
+T         = require( "t" )
 assrt     = T.require( 't_net_assert' )
 assfmt    = function( cnd, ... ) assert( cnd, string.format( ... ) ) end
 
@@ -167,7 +167,7 @@ local tests = {
 	end,
 
 	test_cb_recvMaxBuffer = function( self, done )
-		Test.Case.describe( "msg,len = sck.recv( buf, max )" )
+		Test.Case.describe( "suc,len = sck.recv( buf, max )" )
 		local payload = string.rep( 'Receiving sized Test Message into Buffer -- ', 12 )
 		local max     = #payload//3
 		local recver  = function( s )
@@ -221,8 +221,9 @@ local tests = {
 		sender( self, payload )
 	end,
 
+	-- Testing the error handling of wrong arguments
 	test_cb_recvStringMaxTooBigFails = function( self, done )
-		Test.Case.describe( "msg,len = sck.recv( max > BUFSIZ ) fails" )
+		Test.Case.describe( "suc,len = sck.recv( max > BUFSIZ ) fails" )
 		local payload = string.rep( 'TestMessage for max too big', 14 )
 		local eMsg    = "bad argument #1 to 'recv' %(max must be smaller than BUFSIZ%)"
 		local recver  = function( s )
@@ -230,8 +231,7 @@ local tests = {
 			local d,e = pcall( r, s )
 			assert( not d, "Call should have failed" )
 			assfmt( e:match( eMsg ), "Error message should contain: `%s`\nut was\n`%s`", eMsg, e )
-			local suc,len = s.sSck:recv( ) -- actually pulling the bytes from socket to allow
-			                               -- to continue Unit test
+			local suc,len = s.sSck:recv( ) -- actually drain socket to allow unit test continue
 			done()
 		end
 		self.loop:addHandle( self.sSck, 'read', recver, self )
@@ -239,7 +239,7 @@ local tests = {
 	end,
 
 	test_cb_recvBufferMaxTooBigFails = function( self, done )
-		Test.Case.describe( "msg,len = sck.recv( buf, max > #buf ) fails" )
+		Test.Case.describe( "suc,len = sck.recv( buf, max > #buf ) fails" )
 		local payload = string.rep( 'TestMessage for max too big for buffer', 14 )
 		local eMsg    = "bad argument #1 to 'recv' %(max must be smaller than sink%)"
 		local recver  = function( s )
@@ -248,9 +248,42 @@ local tests = {
 			local d,e = pcall( r, s )
 			assert( not d, "Call should have failed" )
 			assfmt( e:match( eMsg ), "Error message should contain: `%s`\nut was\n`%s`", eMsg, e )
-			local suc,len = s.sSck:recv( ) -- actually pulling the bytes from socket to allow
-			                               -- to continue Unit test
+			local suc,len = s.sSck:recv( ) -- actually drain socket to allow unit test continue
 			done()
+		end
+		self.loop:addHandle( self.sSck, 'read', recver, self )
+		sender( self, payload )
+	end,
+
+	test_cb_recvWrongArgsFail = function( self, done )
+		Test.Case.describe( "msg,len = sck.recv( [bad arguments] ) fails" )
+		local payload = string.rep( 'TestMessage for wrong arguments', 14 )
+		local recver  = function( s )
+			local buf = Buffer(60)
+			local adr = Buffer(60)
+
+			local r    = function( x ) local suc,len = x.sSck:recv( 'a string' ) end
+			local eMsg = "bad argument #1 to 'recv' %(number expected, got string%)"
+			local d,e  = pcall( r, s )
+			assert( not d, "Call should have failed" )
+			assfmt( e:match( eMsg ), "Error message should contain: `%s`\nbut was\n`%s`", eMsg, e )
+			print( e )
+
+			r    = function( x ) local suc,len = x.sSck:recv( buf, 'a string' ) end
+			eMsg = "bad argument #2 to 'recv' %(number expected, got string%)"
+			local d,e = pcall( r, s )
+			assert( not d, "Call should have failed" )
+			assfmt( e:match( eMsg ), "Error message should contain: `%s`\nbut was\n`%s`", eMsg, e )
+			print( e )
+
+			--[[
+			r  = function( x ) local suc,len = x.sSck:recv( 20, 15 ) end
+			local d,e = pcall( r, s )
+			assert( not d, "Call should have failed" )
+			print( e )
+			--]]
+			local suc,len = s.sSck:recv( ) -- actually drain socket to allow unit test continue
+			done( )
 		end
 		self.loop:addHandle( self.sSck, 'read', recver, self )
 		sender( self, payload )
