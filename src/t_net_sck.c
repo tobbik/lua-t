@@ -306,42 +306,32 @@ lt_net_sck_recv( lua_State *L )
 {
 	struct t_net_sck   *sck  = t_net_sck_check_ud( L, 1, 1 );
 	struct sockaddr_in *adr  = t_net_ip4_check_ud( L, 2, 0 );
-	size_t              len  = BUFSIZ;  // length of sink
-	size_t              max  = (lua_isinteger( L, -1 )) ? (size_t) lua_tointeger( L, -1 ) : len;
-	int                 rcvd;
-	int                 psh  = 0;
-	int                 cw   = 0;
-	char               *msg  = (t_buf_isstring( L, (NULL==adr)?2:3, &cw ) && cw)  // is writable -> buffer
-	                           ? t_buf_checklstring( L, (NULL==adr)?2:3, &len, &cw )
-	                           : NULL;
+	size_t              max  = (lua_isinteger( L, -1 )) ? (size_t) lua_tointeger( L, -1 ) : BUFSIZ-1;
+	size_t              len  = 0;  // length of sink
+	int                 cw   = 0;  // test buffer to be writeable
+	int                 rcvd = 0;
+	char                buf[ BUFSIZ ];
+	char               *msg;
 
-	luaL_argcheck( L, msg == NULL || cw==1, (NULL==adr) ? 2:3, "provided sink must be t.Buffer/Segment" );
-	luaL_argcheck( L, max<=len,             (NULL==adr) ? 2:3, "max must be smaller than sink" );
-	t_stackDump( L );
-
-	printf("len: %zu max: %zu adr: %s msg: %s\n", len,max,adr,msg);
-	if (NULL == msg)
+	if (t_buf_isstring( L, (NULL==adr)?2:3, &cw ) && cw)  // is writable -> buffer
 	{
-		char buffer[ (max>2048)? max+1 : 2048 ];
-		//char buffer[ max+1 ];
-		msg = &(buffer[0]);
-		psh = 1;
+		msg  = t_buf_checklstring( L, (NULL==adr) ? 2:3, &len, &cw );
+		luaL_argcheck( L, cw==1   , (NULL==adr) ? 2:3, "provided sink must be t.Buffer/Segment" );
+		max  = lua_isinteger( L, -1 ) ? max : len;
+		luaL_argcheck( L, max<=len, (NULL==adr) ? 2:3, "max must be smaller than sink" );
+		rcvd = t_net_sck_recv( L, sck, adr, msg, max );
+		lua_pushboolean( L, 0 != rcvd );
 	}
-	memset( msg, 0, len );
-	printf("len: %zu max: %zu adr: %s msg: %s\n", len,max,adr,msg);
-
-
-	rcvd = t_net_sck_recv( L, sck, adr, msg, max );
-	printf("%d %zu %s %s\n", rcvd,max,adr,msg );
-
-	// push message/nil, length
-	if (psh)
+	else
+	{
+		luaL_argcheck( L, max<BUFSIZ, (NULL==adr) ? 2:3, "max must be smaller than BUFSIZ" );
+		rcvd = t_net_sck_recv( L, sck, adr, buf, max );
 		if (0 == rcvd)
 			lua_pushnil( L );
 		else
-			lua_pushlstring( L, msg, rcvd );
-	else
-		lua_pushboolean( L, 0 != rcvd );
+			lua_pushlstring( L, buf, rcvd );
+	}
+
 	lua_pushinteger( L, rcvd );
 	return 2;
 }

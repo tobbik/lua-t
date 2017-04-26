@@ -109,19 +109,19 @@ T_INSTALL=$(LIBS:%.so=$(INSTALL_CMOD)/%.so)
 all: $(OBJS) $(LIBS)
 
 $(T_AEL_LIB): $(T_AEL_OBJ)
-	$(LD) -g -shared $^ -o $@ $(LDFLAGS)
+	$(LD) $(MYCFLAGS) -shared $^ -o $@ $(LDFLAGS)
 $(T_BUF_LIB): $(T_BUF_OBJ)
-	$(LD) -g -shared $^ -o $@ $(LDFLAGS)
+	$(LD) $(MYCFLAGS) -shared $^ -o $@ $(LDFLAGS)
 $(T_ENC_LIB): $(T_ENC_OBJ)
-	$(LD) -g -shared $^ -o $@ $(LDFLAGS)
+	$(LD) $(MYCFLAGS) -shared $^ -o $@ $(LDFLAGS)
 $(T_HTP_LIB): $(T_HTP_OBJ)
-	$(LD) -g -shared $^ -o $@ $(LDFLAGS)
+	$(LD) $(MYCFLAGS) -shared $^ -o $@ $(LDFLAGS)
 $(T_NET_LIB): $(T_NET_OBJ)
-	$(LD) -g -shared $^ -o $@ $(LDFLAGS)
+	$(LD) $(MYCFLAGS) -shared $^ -o $@ $(LDFLAGS)
 $(T_PCK_LIB): $(T_PCK_OBJ)
-	$(LD) -g -shared $^ -o $@ $(LDFLAGS)
+	$(LD) $(MYCFLAGS) -shared $^ -o $@ $(LDFLAGS)
 $(T_TIM_LIB): $(T_TIM_OBJ)
-	$(LD) -g -shared $^ -o $@ $(LDFLAGS)
+	$(LD) $(MYCFLAGS) -shared $^ -o $@ $(LDFLAGS)
 
 .c.o:
 	$(CC) $(CFLAGS) $< -o $@
@@ -136,7 +136,7 @@ test: $(SRCDIR)
 		INCDIR=$(INCDIR)
 
 %.so: %.o
-	$(LD) -O -shared $? -o $@ $(LDFLAGS)
+	$(LD) $(MYCFLAGS) -shared $? -o $@ $(LDFLAGS)
 
 %.o: %.c
 	$(CC) -I$(INCS) $(CFLAGS) -c $< -o $@
