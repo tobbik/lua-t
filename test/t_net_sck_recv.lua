@@ -19,6 +19,7 @@
 -- loop before moving on to the next test.
 
 Test      = require( "t.Test" )
+--Test      = require( "t.tst" )
 Timer     = require( "t.Time" )
 Loop      = require( "t.Loop" )
 Socket    = require( "t.Net.Socket" )
@@ -27,14 +28,13 @@ Interface = require( "t.Net.Interface" )
 Buffer    = require( "t.Buffer" )
 Segment   = require( "t.Buffer.Segment" )
 T         = require( "t" )
-assrt     = T.require( 't_net_assert' )
-assfmt    = function( cnd, ... ) assert( cnd, string.format( ... ) ) end
+asrtHlp   = T.require( "assertHelper" )
 
 
 local sender = function( self, msg )
 	local f
 	f = function(s, msg)
-		local snt = s.cSck:send( s.sAdr, msg )
+		local snt = s.cSck:send( msg, s.sAdr )
 		s.loop:removeHandle( self.cSck, "write" )
 	end
 	self.loop:addHandle( self.cSck, "write", f, self, msg )
@@ -49,10 +49,10 @@ local tests = {
 		self.port  = 8000
 		self.sSck  = Socket( 'udp' )
 		self.sAdr  = self.sSck:bind( self.host, self.port )
-		assrt.Socket( self.sSck, 'udp', 'AF_INET', 'SOCK_DGRAM' )
-		assrt.Address( self.sAdr, self.host, self.port )
+		asrtHlp.Socket( self.sSck, 'udp', 'AF_INET', 'SOCK_DGRAM' )
+		asrtHlp.Address( self.sAdr, self.host, self.port )
 		self.cSck  = Socket( 'udp' )
-		assrt.Socket( self.cSck, 'udp', 'AF_INET', 'SOCK_DGRAM' )
+		asrtHlp.Socket( self.cSck, 'udp', 'AF_INET', 'SOCK_DGRAM' )
 		done()
 	end,
 
@@ -87,10 +87,10 @@ local tests = {
 		local payload = string.rep( 'TestMessage content for recieving full string -- ', 14 )
 		local recver  = function( s )
 			local msg,len = s.sSck:recv( )
-			assfmt( type(msg)=='string',  "Expected\n%s\nbut got\n%s\b", 'string', type(msg) )
-			assfmt( type(len)=='number',  "Expected\n%s\nbut got\n%s\b", 'number', type(len) )
-			assfmt( len==#payload, "Expected %d but got %d bytes", #payload, len)
-			assfmt( msg==payload,  "Expected\n%s\nbut got\n%s\b", payload, msg)
+			T.assert( type(msg)=='string',  "Expected\n%s\nbut got\n%s\b", 'string', type(msg) )
+			T.assert( type(len)=='number',  "Expected\n%s\nbut got\n%s\b", 'number', type(len) )
+			T.assert( len==#payload, "Expected %d but got %d bytes", #payload, len)
+			T.assert( msg==payload,  "Expected\n%s\nbut got\n%s\b", payload, msg)
 			done()
 		end
 		self.loop:addHandle( self.sSck, 'read', recver, self )
@@ -103,10 +103,10 @@ local tests = {
 		local max     = #payload//2
 		local recver  = function( s )
 			local msg,len = s.sSck:recv( max )
-			assfmt( type(msg)=='string',  "Expected\n%s\nbut got\n%s\b", 'string', type(msg) )
-			assfmt( type(len)=='number',  "Expected\n%s\nbut got\n%s\b", 'number', type(len) )
-			assfmt( len==max, "Expected %d but got %d bytes", max, len )
-			assfmt( msg==payload:sub( 1, max ),  "Expected\n%s\nbut got\n%s\b",
+			T.assert( type(msg)=='string',  "Expected\n%s\nbut got\n%s\b", 'string', type(msg) )
+			T.assert( type(len)=='number',  "Expected\n%s\nbut got\n%s\b", 'number', type(len) )
+			T.assert( len==max, "Expected %d but got %d bytes", max, len )
+			T.assert( msg==payload:sub( 1, max ),  "Expected\n%s\nbut got\n%s\b",
 			                                        payload:sub( 1, max ), msg )
 			done()
 		end
@@ -120,11 +120,11 @@ local tests = {
 		local recver  = function( s )
 			local adr     = Address()
 			local msg,len = s.sSck:recv( adr )
-			assrt.Address( adr, self.host, 'any' )
-			assfmt( type(msg)=='string',  "Expected\n%s\nbut got\n%s\b", 'string', type(msg) )
-			assfmt( type(len)=='number',  "Expected\n%s\nbut got\n%s\b", 'number', type(len) )
-			assfmt( len==#payload, "Expected %d but got %d bytes", len, #payload )
-			assfmt( msg==payload,  "Expected\n%s\nbut got\n%s\b", payload, msg )
+			asrtHlp.Address( adr, self.host, 'any' )
+			T.assert( type(msg)=='string',  "Expected\n%s\nbut got\n%s\b", 'string', type(msg) )
+			T.assert( type(len)=='number',  "Expected\n%s\nbut got\n%s\b", 'number', type(len) )
+			T.assert( len==#payload, "Expected %d but got %d bytes", len, #payload )
+			T.assert( msg==payload,  "Expected\n%s\nbut got\n%s\b", payload, msg )
 			done()
 		end
 		self.loop:addHandle( self.sSck, 'read', recver, self )
@@ -138,11 +138,11 @@ local tests = {
 		local recver  = function( s )
 			local adr     = Address()
 			local msg,len = s.sSck:recv( adr, max )
-			assrt.Address( adr, self.host, 'any' )
-			assfmt( type(msg)=='string',  "Expected\n%s\nbut got\n%s\b", 'string', type(msg) )
-			assfmt( type(len)=='number',  "Expected\n%s\nbut got\n%s\b", 'number', type(len) )
-			assfmt( len==max, "Expected %d but got %d bytes", max, len )
-			assfmt( msg==payload:sub( 1, max ),  "Expected\n%s\nbut got\n%s\b",
+			asrtHlp.Address( adr, self.host, 'any' )
+			T.assert( type(msg)=='string',  "Expected\n%s\nbut got\n%s\b", 'string', type(msg) )
+			T.assert( type(len)=='number',  "Expected\n%s\nbut got\n%s\b", 'number', type(len) )
+			T.assert( len==max, "Expected %d but got %d bytes", max, len )
+			T.assert( msg==payload:sub( 1, max ),  "Expected\n%s\nbut got\n%s\b",
 			                                        payload:sub( 1, max ), msg )
 			done()
 		end
@@ -156,10 +156,10 @@ local tests = {
 		local recver  = function( s )
 			local buf     = Buffer( #payload )
 			local suc,len = s.sSck:recv( buf )
-			assfmt( type(suc)=='boolean',  "Expected\n%s\nbut got\n%s\b", 'boolean', type(msg) )
-			assfmt( type(len)=='number',  "Expected\n%s\nbut got\n%s\b", 'number', type(len) )
-			assfmt( len==#payload, "Expected %d but got %d bytes", #payload, len)
-			assfmt( buf:read()==payload,  "Expected\n%s\nbut got\n%s\b", payload, buf:read())
+			T.assert( type(suc)=='boolean',  "Expected\n%s\nbut got\n%s\b", 'boolean', type(msg) )
+			T.assert( type(len)=='number',  "Expected\n%s\nbut got\n%s\b", 'number', type(len) )
+			T.assert( len==#payload, "Expected %d but got %d bytes", #payload, len)
+			T.assert( buf:read()==payload,  "Expected\n%s\nbut got\n%s\b", payload, buf:read())
 			done()
 		end
 		self.loop:addHandle( self.sSck, 'read', recver, self )
@@ -174,10 +174,10 @@ local tests = {
 			local buf     = Buffer( #payload )
 			local suc,len = s.sSck:recv( buf, max )
 			local a,b = buf:read(), payload:sub(1,max)
-			assfmt( type(suc)=='boolean',  "Expected\n%s\nbut got\n%s\b", 'boolean', type(msg) )
-			assfmt( type(len)=='number',  "Expected\n%s\nbut got\n%s\b", 'number', type(len) )
-			assfmt( len==max, "Expected %d but got %d bytes", max, len )
-			assfmt( buf:read(1,max)==payload:sub( 1, max ),  "Expected\n_%s_\nbut got\n_%s_\b",
+			T.assert( type(suc)=='boolean',  "Expected\n%s\nbut got\n%s\b", 'boolean', type(msg) )
+			T.assert( type(len)=='number',  "Expected\n%s\nbut got\n%s\b", 'number', type(len) )
+			T.assert( len==max, "Expected %d but got %d bytes", max, len )
+			T.assert( buf:read(1,max)==payload:sub( 1, max ),  "Expected\n_%s_\nbut got\n_%s_\b",
 			                                        payload:sub( 1, max ), buf:read(1,max) )
 			done()
 		end
@@ -191,11 +191,11 @@ local tests = {
 		local recver  = function( s )
 			local adr,buf = Address(), Buffer( #payload )
 			local suc,len = s.sSck:recv( adr, buf )
-			assrt.Address( adr, self.host, 'any' )
-			assfmt( type(suc)=='boolean',  "Expected\n%s\nbut got\n%s\b", 'boolean', type(msg) )
-			assfmt( type(len)=='number',  "Expected\n%s\nbut got\n%s\b", 'number', type(len) )
-			assfmt( len==#payload, "Expected %d but got %d bytes", #payload, len)
-			assfmt( buf:read()==payload,  "Expected\n%s\nbut got\n%s\b", payload, buf:read())
+			asrtHlp.Address( adr, self.host, 'any' )
+			T.assert( type(suc)=='boolean',  "Expected\n%s\nbut got\n%s\b", 'boolean', type(msg) )
+			T.assert( type(len)=='number',  "Expected\n%s\nbut got\n%s\b", 'number', type(len) )
+			T.assert( len==#payload, "Expected %d but got %d bytes", #payload, len)
+			T.assert( buf:read()==payload,  "Expected\n%s\nbut got\n%s\b", payload, buf:read())
 			done()
 		end
 		self.loop:addHandle( self.sSck, 'read', recver, self )
@@ -209,11 +209,11 @@ local tests = {
 		local recver  = function( s )
 			local adr,buf = Address(), Buffer( #payload )
 			local suc,len = s.sSck:recv( adr, buf, max )
-			assrt.Address( adr, self.host, 'any' )
-			assfmt( type(suc)=='boolean',  "Expected\n%s\nbut got\n%s\b", 'boolean', type(msg) )
-			assfmt( type(len)=='number',  "Expected\n%s\nbut got\n%s\b", 'number', type(len) )
-			assfmt( len==max, "Expected %d but got %d bytes", max, len )
-			assfmt( buf:read(1,max)==payload:sub( 1, max ),  "Expected\n_%s_\nbut got\n_%s_\b",
+			asrtHlp.Address( adr, self.host, 'any' )
+			T.assert( type(suc)=='boolean',  "Expected\n%s\nbut got\n%s\b", 'boolean', type(msg) )
+			T.assert( type(len)=='number',  "Expected\n%s\nbut got\n%s\b", 'number', type(len) )
+			T.assert( len==max, "Expected %d but got %d bytes", max, len )
+			T.assert( buf:read(1,max)==payload:sub( 1, max ),  "Expected\n_%s_\nbut got\n_%s_\b",
 			                                        payload:sub( 1, max ), buf:read(1,max) )
 			done()
 		end
@@ -230,7 +230,7 @@ local tests = {
 			local r   = function( x ) local suc,len = x.sSck:recv( 8192+3 ) end
 			local d,e = pcall( r, s )
 			assert( not d, "Call should have failed" )
-			assfmt( e:match( eMsg ), "Error message should contain: `%s`\nut was\n`%s`", eMsg, e )
+			T.assert( e:match( eMsg ), "Error message should contain: `%s`\nut was\n`%s`", eMsg, e )
 			local suc,len = s.sSck:recv( ) -- actually drain socket to allow unit test continue
 			done()
 		end
@@ -247,7 +247,7 @@ local tests = {
 			local r   = function( x ) local suc,len = x.sSck:recv( buf, #buf+1 ) end
 			local d,e = pcall( r, s )
 			assert( not d, "Call should have failed" )
-			assfmt( e:match( eMsg ), "Error message should contain: `%s`\nut was\n`%s`", eMsg, e )
+			T.assert( e:match( eMsg ), "Error message should contain: `%s`\nut was\n`%s`", eMsg, e )
 			local suc,len = s.sSck:recv( ) -- actually drain socket to allow unit test continue
 			done()
 		end
@@ -266,14 +266,14 @@ local tests = {
 			local eMsg = "bad argument #1 to 'recv' %(number expected, got string%)"
 			local d,e  = pcall( r, s )
 			assert( not d, "Call should have failed" )
-			assfmt( e:match( eMsg ), "Error message should contain: `%s`\nbut was\n`%s`", eMsg, e )
+			T.assert( e:match( eMsg ), "Error message should contain: `%s`\nbut was\n`%s`", eMsg, e )
 			print( e )
 
 			r    = function( x ) local suc,len = x.sSck:recv( buf, 'a string' ) end
 			eMsg = "bad argument #2 to 'recv' %(number expected, got string%)"
 			local d,e = pcall( r, s )
 			assert( not d, "Call should have failed" )
-			assfmt( e:match( eMsg ), "Error message should contain: `%s`\nbut was\n`%s`", eMsg, e )
+			T.assert( e:match( eMsg ), "Error message should contain: `%s`\nbut was\n`%s`", eMsg, e )
 			print( e )
 
 			--[[

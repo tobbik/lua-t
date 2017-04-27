@@ -6,7 +6,7 @@ Overview
 ========
 
 Test.Case is an internal class providing functionality around functions
-executed within ``Test`` suites.  A **test_**  or **test_cb_** named
+executed within ``Test`` suites.  A ``test_``  or ``test_cb_`` named
 function handed to a ``Test`` suite instance will be converted to a
 ``Test.Case`` instance.
 
@@ -18,7 +18,6 @@ Some general information on how to write and invoke ``Test.Case``.
 
 Hooks
 -----
-
 
 ``t.beforeEach = function( self )``
   The hook gets called before executing each test case in the suite.
@@ -114,18 +113,18 @@ Instance Members
   The actual function executed as `Test.Case`.
 
 ``string s = testCaseInstance.description``
-  The name of the `Test.Case`.  It has the value of the function name when
-  created from a `Test` suite.  It can be changed during the execution of
-  the `Test.Case` by calling `Test.Case.describe()`.
+  The name of the ``Test.Case``.  It has the value of the function name when
+  created from a ``Test`` suite.  It can be changed during the execution of
+  the ``Test.Case`` by calling ``Test.Case.describe()``.
 
 ``string t = testCaseInstance.todo``
-  Contains the reason for being a TODO.  If it is `nil` the test case is
-  expected to pass.  If it is set the `Test.Case` execution is expected to
+  Contains the reason for being a TODO.  If it is ``nil`` the test case is
+  expected to pass.  If it is set the ``Test.Case`` execution is expected to
   fail.
 
 ``string s = testCaseInstance.skip``
-  Contains the reason for being skipped.  If it is `nil` the test case will
-  be executed by the runner.  If it has a value it will be skipped.
+  Contains the reason for being skipped.  If it is ``nil`` the test case
+  will be executed by the runner.  If it has a value it will be skipped.
 
 ``string m = testCaseInstance.message``
   If execution fails the message contains the error message.  If a call to
@@ -136,26 +135,26 @@ Instance Members
   virtual machine.
 
 ``string l = testCaseInstance.location``
-  If execution fails the location contains `filepath:linenumber`.
+  If execution fails the location contains ``filepath:linenumber``.
 
 ``string s = testCaseInstance.source``
   Contains the source code of the test case function .
 
 ``boolean p = testCaseInstance.pass``
-  True if the test case passed, false if it failed.  If `p` is `nil` the
+  True if the test case passed, false if it failed.  If ``p`` is ``nil`` the
   test was never executed.
 
 ``string t = testCaseInstance.testtype``
-  Can be `standard` or `callback`.  If it is a `callback` the
-  `testCaseInstance.function` must call the ``done()`` callback to continue
-  execution.
+  Can be ``standard`` or ``callback``.  If it is a ``callback`` the
+  ``testCaseInstance.function`` must call the ``done()`` callback to
+  continue execution.
 
 ``Time t = testCaseInstance.executionTime``
-  A `Time` instance which measures the time to execute the actual
-  `Test.Case` function.  It does **not** include the execution time for
+  A ``Time`` instance which measures the time to execute the actual
+  ``Test.Case`` function.  It does **not** include the execution time for
   hooks and therefor can easily be used as a benchmark tool.  For callback
-  based `Test.Cases`, the `executionTime` is set as the first thing in the
-  `done()` function.
+  based ``Test.Cases``, the ``executionTime`` is set as the first thing in
+  the ``done()`` function.
 
 
 Instance Metamembers
@@ -172,13 +171,15 @@ Instance Metamembers
   ``Test.Case`` instance in ``Test`` and probes it if they had been
   executed.  This way all tests (synchronous and asynchronous) get checked
   and the ``Test`` runner can determine when the execution of a ``Test``
-  suite has completely finished.  **NOTE:** ``beforeEach`` and
-  ``afterEach`` are hooks which are ``Test.Case`` specific and as such are
-  executed when calling the ``Test.Case``.  However, ``beforeAll`` and
-  ``afterAll`` are ``Test`` specific hooks which are only executed when the
-  entire ``Test`` suite is executed.  If you want to execute single a
-  ``Test.Case`` instance wrapped in the ``beforeAll`` and ``afterAll`` hooks
-  use the ``Test`` suite runners pattern matching feature like this:
+  suite has completely finished.
+  
+  **NOTE:** ``beforeEach`` and ``afterEach`` are hooks which are
+  ``Test.Case`` specific and as such are executed when calling the
+  ``Test.Case``.  However, ``beforeAll`` and ``afterAll`` are ``Test``
+  suite specific hooks which are only executed when the entire ``Test``
+  suite is executed.  If you want to execute single a ``Test.Case``
+  instance wrapped in the ``beforeAll`` and ``afterAll`` hooks use the
+  ``Test`` suite runners pattern matching feature like this:
 
   .. code:: lua
 
@@ -220,35 +221,4 @@ Instance Metamembers
       104:        Test.Case.describe('Create an assert error')
       105:        assert( 5==6 , "5==6 is obviously not equal" )
       106: end
-
-
-
-
-
-
-
-
-
-
-
-
-    description : Test Case description
-    testtype: standard
-    pass: false
-    message: Assert Message for failure
-    location: ../lua-t/example/t_tst.lua:75:
-    traceback: stack traceback:
-      [C]: in function 'assert'
-      ../lua-t/example/t_tst.lua:75: in function <../lua-t/example/t_tst.lua:71>
-      [C]: in ?
-      [C]: in global 't'
-      ../lua-t/example/t_tst.lua:116: in main chunk
-      [C]: in ?
-    source:
-      71:   test_Name = function( self )
-      72:      Test.Case.describe( "Test Case Description" )
-      73:      local h = 3
-      74:      local k = 4
-      75:      assert( h == k, "3 really shouldn't be 4, doh ..." )
-      76:   end,
 

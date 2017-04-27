@@ -112,7 +112,7 @@ local tests = {
 			"Content of T.Buffer.Segment should be "..self.b:read(idx, len ).." but was " ..seg:read() )
 	end,
 
-	test_ConstructorZeroPartialLengthSegmentStart = function( self )
+	test_ConstructorZeroPartialLengthSegmentEnd = function( self )
 		Test.Case.describe( "Create a 0 bytes long segment starting wherever" )
 		local seg         = Segment( self.b, #self.b, 0 )
 		local buf,idx,len = seg:getBuffer( )
@@ -133,7 +133,7 @@ local tests = {
 			assert( string.byte( self.seg:read( i, 1 ), 1 ) == 0,
 				"Value in segment at position "..i.. " should be 0" )
 		end
-		for i=ofs,#self.seg do
+		for i=ofs,ofs+#self.seg-1 do
 			assert( string.byte( self.b:read( i, 1 ), 1 ) == 0,
 				"Value in buffer at position "..i.. " should be 0" )
 		end

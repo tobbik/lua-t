@@ -49,7 +49,7 @@ end
 -- ---------------------------- Instance metatable --------------------
 _mt = {       -- local _mt at top of file
 	-- essentials
-	__name     = "T.Set",
+	__name     = "t.Set",
 	__len      = t_count,
 	__pairs    = function( self )           return next, getPrx( self ), nil   end,
 	__index    = function( self, key )      return getPrx( self )[ key ]       end,

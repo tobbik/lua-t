@@ -6,3 +6,8 @@
 *.swo
 *.sln
 *.suo
+research/*.c
+research/*.h
+research/*.o
+research/*.make
+research/Makefile

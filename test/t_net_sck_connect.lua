@@ -21,15 +21,15 @@ local Loop      = require( "t.Loop" )
 local Interface = require( "t.Net.Interface" )
 local Socket    = require( "t.Net.Socket" )
 local Address   = require( "t.Net.Address" )
-local assrt     = T.require( 't_net_assert' )
+local asrtHlp   = T.require( "assertHelper" )
 
 
 -- #########################################################################
 -- accept server for each test
 accept = function( self )
 	local c, ip = self.srv:accept( )
-	assrt.Socket( c, 'tcp', 'AF_INET', 'SOCK_STREAM' )
-	assrt.Address( ip, self.host2cmp, self.port2cmp )
+	asrtHlp.Socket( c, 'tcp', 'AF_INET', 'SOCK_STREAM' )
+	asrtHlp.Address( ip, self.host2cmp, self.port2cmp )
 	self.sck:close() -- close client first to avoid "Address already in use"
 	                 -- http://hea-www.harvard.edu/~fine/Tech/addrinuse.html
 	c:close( )

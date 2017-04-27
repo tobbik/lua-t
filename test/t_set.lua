@@ -39,6 +39,7 @@ local   tests = {
 	test_ConstructEmptySet = function( self )
 		Test.Case.describe( "Construct the Empty Set" )
 		local eSet = Set()
+		assert( "t.Set" == T.type( eSet ), "Type t.Set expected" )
 		assert( #eSet == 0, "Length must be zero" )
 		for i,v in pairs( eSet ) do
 			assert( false, "No iteration over Empty Set" )
@@ -48,6 +49,7 @@ local   tests = {
 	test_ConstructEmptySetFromEmptyTable = function( self )
 		Test.Case.describe( "Construct Empty Set From Empty Array" )
 		local eSet = Set( {} )
+		assert( "t.Set" == T.type( eSet ), "Type t.Set expected" )
 		assert( #eSet == 0, "Length must be zero" )
 		for i,v in pairs( eSet ) do
 			assert( false, "No iteration over Empty Set" )
@@ -58,6 +60,7 @@ local   tests = {
 	test_ConstructorFromArray = function( self )
 		Test.Case.describe( "Construct Set from Array" )
 		local set = Set( self.aryA )
+		assert( "t.Set" == T.type( set ), "Type t.Set expected" )
 		assert( #set == #self.aryA, "Length must be equal number of elements in array" )
 		for i,v in ipairs( self.aryA ) do
 			assert( set[ v ], "Element '"..tostring(v).."' must exist in set" )
@@ -68,6 +71,7 @@ local   tests = {
 		Test.Case.describe( "Construct Set from (Hash) Table" )
 		local tbl = self.rtvg:getHash( self.len )
 		local set = Set( tbl )
+		assert( "t.Set" == T.type( set ), "Type t.Set expected" )
 		assert( #set == self.len, "Length must be ".. self.len )
 		for k,v in pairs( tbl ) do
 			assert( set[ v ], "Element '"..tostring(v).."' must exist in set" )
@@ -79,6 +83,7 @@ local   tests = {
 		local tbl = self.rtvg:getHash( self.len )
 		for k=1,self.len do table.insert( tbl, self.rtvg:getVal() ) end
 		local set = Set( tbl )
+		assert( "t.Set" == T.type( set ), "Type t.Set expected" )
 		assert( #set == self.len*2, "Length must be "..self.len*2 )
 		for k,v in pairs( tbl ) do
 			assert( set[ v ], "Element '"..tostring(v).."' must exist in set" )
@@ -88,6 +93,7 @@ local   tests = {
 	test_ConstructorByCloning = function( self )
 		Test.Case.describe( "Construct Set from existing set" )
 		local lSet = Set( self.setB )
+		assert( "t.Set" == T.type( lSet ), "Type t.Set expected" )
 		local cnt  = 0
 		assert( #self.setB == #lSet, "Length must be equal number elements in original set" )
 		for i,v in ipairs( self.aryB ) do
@@ -105,6 +111,7 @@ local   tests = {
 			assert( self.setA[ v ], "Element '"..tostring(v).."' must exist in set" )
 		end
 		local cSet = Set( tbl )
+		assert( "t.Set" == T.type( cSet ), "Type t.Set expected" )
 		assert( cSet == self.setA, "New set must be equal to original set" )
 	end,
 
@@ -115,6 +122,7 @@ local   tests = {
 		end
 		assert( #self.aryB == 2*self.len, "New values must be double size of original array" )
 		local lSet = Set( self.aryB )
+		assert( "t.Set" == T.type( lSet ), "Type t.Set expected" )
 		assert( #lSet == self.len, "New Set must be size of original array" )
 		assert( lSet == self.setB, "New Set must be equal to setB" )
 	end,

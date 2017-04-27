@@ -17,7 +17,6 @@
 -- same  process.  Each test will restart the loop, connect, assert and stop the
 -- loop before moving on to the next test.
 
-T         = require( 't' )
 Test      = require( "t.Test" )
 Timer     = require( "t.Time" )
 Loop      = require( "t.Loop" )
@@ -26,7 +25,8 @@ Address   = require( "t.Net.Address" )
 Interface = require( "t.Net.Interface" )
 Buffer    = require( "t.Buffer" )
 Segment   = require( "t.Buffer.Segment" )
-assrt     = T.require( 't_net_assert' )
+T         = require( "t" )
+asrtHlp   = T.require( "assertHelper" )
 
 -- #########################################################################
 -- receive a chunk of data server for each test
@@ -45,9 +45,9 @@ receive = function( self )
 		if msg then rcvdMsg = msg end
 	end
 	--print(cAdr,cnt)
-	assrt.Address( cAdr, self.host, 'any' )
+	asrtHlp.Address( cAdr, self.host, 'any' )
 	if msg then
-		assert( cnt == self.msgSize )
+		assert( cnt == self.msgSize, "Expected:".. self.msgSize .." Got:" ..cnt )
 	else
 		self.loop:removeHandle( self.sSck, 'read' )
 		if self.done then
@@ -71,12 +71,12 @@ local tests = {
 		self.sAdr  = self.sSck:bind( self.host, self.port )
 		--print(self.sSck, self.sAdr)
 		-- self.loop:addHandle( self.sSck, 'read', receive, self )
-		assrt.Socket( self.sSck, 'udp', 'AF_INET', 'SOCK_DGRAM' )
-		assrt.Address( self.sAdr, self.host, self.port )
+		asrtHlp.Socket( self.sSck, 'udp', 'AF_INET', 'SOCK_DGRAM' )
+		asrtHlp.Address( self.sAdr, self.host, self.port )
 		self.cSck  = Socket( 'udp' )
 		self.cAdr  = self.cSck:bind( self.host, self.port+1 )
-		assrt.Socket( self.cSck, 'udp', 'AF_INET', 'SOCK_DGRAM' )
-		assrt.Address( self.cAdr, self.host, self.port+1 )
+		asrtHlp.Socket( self.cSck, 'udp', 'AF_INET', 'SOCK_DGRAM' )
+		asrtHlp.Address( self.cAdr, self.host, self.port+1 )
 		--print(self.cSck, self.cAdr)
 		done()
 	end,
@@ -110,16 +110,16 @@ local tests = {
 	-- #########################################################################
 	-- Actual Test cases
 	test_cb_sendFullString = function( self, done )
-		Test.Case.describe( "cnt = sck.send( adr, string )" )
+		Test.Case.describe( "cnt = sck.send( string, adr )" )
 		self.payload = string.rep( 'Gbivebvbes; RclcTctOCC ;h ;ie eaF', 16 )
 		self.msgSize = #self.payload
 		local sender = function( s )
 			if 0==s.outCount then
-				s.outCount = s.cSck:send( s.sAdr, s.payload )
+				s.outCount = s.cSck:send( s.payload, s.sAdr )
 				assert( s.outCount == #s.payload, "Dgram should sent whole message at once" )
 			else
 				s.done    = done
-				s.cSck:send( s.sAdr, '' ) --sentinel
+				s.cSck:send( '', s.sAdr ) --sentinel
 				s.loop:removeHandle( s.cSck, 'write' )
 			end
 		end
@@ -127,11 +127,11 @@ local tests = {
 	end,
 
 	test_cb_sendSizedString = function( self, done )
-		Test.Case.describe( "cnt = sck.send( adr, string, sz )" )
+		Test.Case.describe( "cnt = sck.send( string, adr, sz )" )
 		self.msgSize = 498
 		self.payload = string.rep('The sized String Test', self.msgSize )
 		local sender = function( s )
-			local cnt = s.cSck:send( s.sAdr, s.payload:sub( s.outCount+1 ), s.msgSize )
+			local cnt = s.cSck:send( s.payload:sub( s.outCount+1 ), s.sAdr, s.msgSize )
 			if cnt then
 				assert( cnt == s.msgSize, "Dgram should sent whole sized message at once but was: "..cnt )
 				s.outCount = s.outCount+cnt
@@ -145,51 +145,52 @@ local tests = {
 	end,
 
 	test_cb_sendFullBuffer = function( self, done )
-		Test.Case.describe( "cnt = sck.send( adr, buf_seg )" )
+		Test.Case.describe( "cnt = sck.send( buf_seg, adr )" )
 		self.payload   = string.rep( 'Gbivebvbes; RclcTctOCC ;h ;ie ea', 16 )
 		self.outBuffer = Buffer( self.payload )
 		self.msgSize   = #self.payload
 		self.incBuffer = Buffer( #self.payload )
 		local sender = function( s )
 			if 0==s.outCount then
-				s.outCount = s.cSck:send( s.sAdr, Segment( s.outBuffer ) )
+				s.outCount = s.cSck:send( Segment( s.outBuffer ), s.sAdr )
 				assert( s.outCount == #s.payload, "Dgram should sent whole message at once" )
 			else
 				s.loop:removeHandle( s.cSck, 'write' )
 				s.done = done
-				s.cSck:send( s.sAdr, '' ) --sentinel
+				s.cSck:send( ' ', s.sAdr ) --sentinel
 			end
 		end
 		self.loop:addHandle( self.cSck, 'write', sender, self )
 	end,
 
 	test_cb_sendFullBufferSegment = function( self, done )
-		Test.Case.describe( "cnt = sck.send( adr, buf )" )
+		Test.Case.describe( "cnt = sck.send( buf, adr )" )
 		self.payload   = string.rep( 'Gbivebvbes; RclcTctOCC ;h ;ie ea', 16 )
 		self.outBuffer = Buffer( self.payload )
 		self.msgSize   = #self.payload
 		self.incBuffer = Buffer( #self.payload )
 		local sender = function( s )
 			if 0==s.outCount then
-				s.outCount = s.cSck:send( s.sAdr, s.outBuffer )
+				s.outCount = s.cSck:send( s.outBuffer, s.sAdr )
 				assert( s.outCount == #s.payload, "Dgram should sent whole message at once" )
 			else
 				s.loop:removeHandle( s.cSck, 'write' )
 				s.done = done
-				s.cSck:send( s.sAdr, '' ) --sentinel
+				s.cSck:send( '', s.sAdr ) --sentinel
 			end
 		end
 		self.loop:addHandle( self.cSck, 'write', sender, self )
 	end,
 
 	test_cb_sendSizedBuffer = function( self, done )
-		Test.Case.describe( "cnt = sck.send( adr, buf_seg, sz )" )
+		Test.Case.describe( "cnt = sck.send( buf_seg, adr, sz )" )
 		self.msgSize   = 555
 		self.payload   = string.rep('The sized Buffer test', self.msgSize )
 		self.outBuffer = Buffer( self.payload )
 		self.incBuffer = Buffer( self.msgSize )
 		local sender = function( s )
-			local cnt = s.cSck:send( s.sAdr, Segment( s.outBuffer, s.outCount+1 ), s.msgSize )
+			print(s.outBuffer, s.outCount )
+			local cnt = s.cSck:send( Segment( s.outBuffer, s.outCount+1 ), s.sAdr, s.msgSize )
 			if cnt then
 				assert( cnt == s.msgSize, "Dgram should sent whole sized message at once but was: "..cnt )
 				s.outCount = s.outCount+cnt

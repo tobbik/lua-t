@@ -1,8 +1,9 @@
-#!../out/bin/lua
-
 ---
--- \file   test/t_t_equals.lua
--- \brief   basic tests to show 
+-- \file      test/t_t_equals.lua
+-- \brief     basic tests to show all equality comparisms
+-- \author    tkieslich
+-- \copyright See Copyright notice at the end of src/t.h
+
 local   Test = require( 't.Test' )
 local   Time = require( 't.Time' )
 local   e    = require( 't' ).equals
@@ -21,8 +22,24 @@ local tc = {
 	end,
 
 	test_EqStrings = function( self )
-		Test.Case.describe( 'Test for equality of string values' )
-		local s,n     = "sdGsrTjw rHbtaEdHy ty34qw 5y246j HPgh p7y7 ", 10000
+		Test.Case.describe( 'Test for equality of short string values' )
+		local a,b,c,d = 'abcdefgh','abcdefgh','abcdefghs','abcdefgh-'
+		assert(     a == a, "str == str should be true" )
+		assert(     e(a,a), "Simple equals(str,str) should be true" )
+		assert(     a == b, "str == str` should be true" )
+		assert(     e(a,b), "Simple equals(str,str`) should be true" )
+		-- one string longer
+		assert(     a ~= c, "str ~= strX should be true" )
+		assert( not e(a,c), "Simple equals(str,strX) should be false" )
+		-- last character
+		assert(     c ~= d, "str ~= strX should be true" )
+		assert( not e(c,d), "Simple equals(str,strX) should be false" )
+	end,
+
+	test_EqStringsLong = function( self )
+		-- to test around string interning
+		Test.Case.describe( 'Test for equality of very long string values' )
+		local s,n     = "sdGsrTjw rHbtaEdHy ty34qw 5y246j HPgh p7y7 ", 1000000
 		local a,b,c,d = rep( s, n ), rep( s, n ), rep( s, n ) .. 's', rep( s, n ) .. '-' 
 		assert(     a == a, "str == str should be true" )
 		assert(     e(a,a), "Simple equals(str,str) should be true" )

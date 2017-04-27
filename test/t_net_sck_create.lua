@@ -8,7 +8,7 @@ local T       = require( 't' )
 local Test    = require( "t.Test" )
 local Socket  = require( "t.Net.Socket" )
 local Address = require( "t.Net.Address" )
-local assrt   = T.require( 't_net_assert' )
+local asrtHlp = T.require( "assertHelper" )
 
 local tests = {
 	beforeEach = function( self )
@@ -27,44 +27,44 @@ local tests = {
 	test_EmptyCreatesTcpIp4 = function( self )
 		Test.Case.describe( "Socket() --> creates a TCP IPv4 Socket" )
 		self.sock = Socket()
-		assrt.Socket(  self.sock, 'tcp', 'AF_INET', 'SOCK_STREAM' )
+		asrtHlp.Socket(  self.sock, 'tcp', 'AF_INET', 'SOCK_STREAM' )
 	end,
 
 	test_TcpArgsCreatesTcpSocket = function( self )
 		Test.Case.describe( "Socket('TCP') --> creates a TCP IPv4 Socket" )
 		self.sock = Socket( 'TCP' )
-		assrt.Socket(  self.sock, 'tcp', 'AF_INET', 'SOCK_STREAM' )
+		asrtHlp.Socket(  self.sock, 'tcp', 'AF_INET', 'SOCK_STREAM' )
 	end,
 
 	test_LowerCaseProtocolArgs = function( self )
 		Test.Case.describe( "Socket('tcp') --> creates a TCP IPv4 Socket" )
 		self.sock = Socket( 'tcp' )
-		assrt.Socket(  self.sock, 'tcp', 'AF_INET', 'SOCK_STREAM' )
+		asrtHlp.Socket(  self.sock, 'tcp', 'AF_INET', 'SOCK_STREAM' )
 	end,
 
 	test_UdpArgsCreatesUdpSocket = function( self )
 		Test.Case.describe( "Socket('UDP') --> creates a UDP IPv4 Socket" )
 		self.sock = Socket( 'UDP' )
-		assrt.Socket(  self.sock, 'udp', 'AF_INET', 'SOCK_DGRAM' )
+		asrtHlp.Socket(  self.sock, 'udp', 'AF_INET', 'SOCK_DGRAM' )
 	end,
 
 	test_Ip6ArgsCreatesUdpSocket = function( self )
 		Test.Case.describe( "Socket('UDP', 'AF_INET6') --> creates a UDP IPv6 Socket" )
 		self.sock = Socket( 'UDP', 'Ip6', 'SOCK_DGRAM' )
-		assrt.Socket(  self.sock, 'udp', 'AF_INET6', 'SOCK_DGRAM' )
+		asrtHlp.Socket(  self.sock, 'udp', 'AF_INET6', 'SOCK_DGRAM' )
 	end,
 
 	test_CreatesCongestionControlSocket = function( self )
 		Test.Case.describe( "Socket('DCCP', 'ip6', 'SOCK_DCCP') --> creates a Congestion control IPv6 Socket" )
 		self.sock =  Socket('DCCP', 'ip6', 'SOCK_DCCP' )
-		assrt.Socket(  self.sock, 'dccp', 'AF_INET6', 'SOCK_DCCP' )
+		asrtHlp.Socket(  self.sock, 'dccp', 'AF_INET6', 'SOCK_DCCP' )
 	end,
 
 	test_CreatesWithIp4Aliases = function( self )
 		Test.Case.describe( "Socket(*,'ip4', 'AF_INET4', 'IPv4') --> all create IPv4 Sockets" )
 		for i,f in pairs( { "AF_INET", "ip4", "Ip4", "IP4", "IPv4" } ) do
 			local sock = Socket( 'TCP', f )
-			assrt.Socket(  sock, 'tcp', 'AF_INET', 'SOCK_STREAM' )
+			asrtHlp.Socket(  sock, 'tcp', 'AF_INET', 'SOCK_STREAM' )
 			sock:close()
 		end
 	end,
@@ -73,7 +73,7 @@ local tests = {
 		Test.Case.describe( "Socket(*,'ip6', 'AF_INET6', 'IPv6') --> all create IPv6 Sockets" )
 		for i,f in pairs( { "AF_INET6", "ip6", "Ip6", "IP6", "IPv6" } ) do
 			local sock = Socket( 'TCP', f )
-			assrt.Socket(  sock, 'tcp', 'AF_INET6', 'SOCK_STREAM' )
+			asrtHlp.Socket(  sock, 'tcp', 'AF_INET6', 'SOCK_STREAM' )
 			sock:close()
 		end
 	end,
@@ -82,7 +82,7 @@ local tests = {
 		Test.Case.describe( "Socket(*, *, 'stream', ... ) --> all create Stream Sockets" )
 		for i,t in pairs( { "SOCK_STREAM", "stream", "STREAM" } ) do
 			local sock = Socket( 'TCP', 'ip4', t )
-			assrt.Socket(  sock, 'tcp', 'AF_INET', 'SOCK_STREAM' )
+			asrtHlp.Socket(  sock, 'tcp', 'AF_INET', 'SOCK_STREAM' )
 			sock:close()
 		end
 	end,
@@ -92,7 +92,7 @@ local tests = {
 		Test.Case.skip( "Must be privileged user (root) to execute that" )
 		for i,t in pairs( { "SOCK_RAW", "raw", "RAW" } ) do
 			local sock = Socket( 'TCP', 'ip4', t )
-			assrt.Socket(  sock, 'tcp', 'AF_INET', 'SOCK_RAW' )
+			asrtHlp.Socket(  sock, 'tcp', 'AF_INET', 'SOCK_RAW' )
 			sock:close()
 		end
 	end,
@@ -101,7 +101,7 @@ local tests = {
 		Test.Case.describe( "Socket(*, *, 'dgram', ...) --> all create DGRAM Sockets" )
 		for i,t in pairs( { "SOCK_DGRAM", "dgram", "DGRAM", "Datagram", "datagram", "DATAGRAM" } ) do
 			local sock = Socket( 'UDP', 'ip4', t )
-			assrt.Socket(  sock, 'udp', 'AF_INET', 'SOCK_DGRAM' )
+			asrtHlp.Socket(  sock, 'udp', 'AF_INET', 'SOCK_DGRAM' )
 			sock:close()
 		end
 	end,

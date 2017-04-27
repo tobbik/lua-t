@@ -16,7 +16,8 @@ Summary
  - passing a table of ``test_*`` named functions to the ``Test( )``
    constructor will result in tests running in random order.
  - an actual test case **must start with** ``test_`` as function name.
-   Other names are just gonna be available within the Tests as `self.name`.
+   Other names like ``whatEver`` are just gonna be available within the
+   `Test`` as ``self.whatEver``.
  - when persent, the global test suite hooks ``beforeAll( self, done )`` and
    ``afterAll( self, done )`` **must call** the ``done( )`` callback even
    when all tests in the test suite are of synchronous nature.
@@ -108,16 +109,17 @@ execution of the entire suite will happen in the same random order:
 Constructing a Test Suite
 -------------------------
 
-To create a `Test.Case` in a `Test` suite a function must be assigned to the
-case which name **must begin** with `test_*`.  When such a function with a
-proper name is passed to `Test` it will invoke the `Test.Case` constructor
-with the proper parameters.  If the function name starts with `test_cb_*`
-the constructed `Test.Case` will be able to execute asynchronously because
-the test runner will pass in a `done` callback.  Any other value that gets
-assigned to the table will be simply an instance variable that within the
-test is available by `self.variable_name`.  It is **not possible** to create
-numerically indexed `Test` suite elements because the numeric part of the
-table is reserved to define the execution order.
+To create a ``Test.Case`` in a ``Test`` suite a function must be assigned to
+the case which name **must begin** with ``test_*``.  When such a function
+with a proper name is passed to ``Test`` it will invoke the ``Test.Case``
+constructor with the proper parameters.  If the function name starts with
+``test_cb_*`` the constructed ``Test.Case`` will be able to execute
+asynchronously because the test runner will pass in a ``done`` callback.
+Any other value that gets assigned to the table will be simply an instance
+variable that within the test is available by ``self.variable_name``.  It is
+**not possible** to create numerically indexed ``Test`` suite elements
+because the numeric part of the table is reserved to define the execution
+order.
 
 
 Hooks
@@ -129,7 +131,7 @@ hooks is optional:
 ``t.beforeAll = function( self, done )``
   The hook gets called before executing any test case in the suite.  If this
   hook is present, note that the execution **requires** to be finished by
-  calling the `done( )` callback.  The beforeAll hook is especially useful
+  calling the ``done( )`` callback.  The beforeAll hook is especially useful
   if a Test suite depends on the existence of a remote server or similar
   things when a connection needs to be setup before executing all tests.  If
   no elaborate logic is needed to be performed in the beforeAll hook it is
@@ -153,9 +155,10 @@ hooks is optional:
 ``t.afterAll = function( self, done )``
   The hook gets called after all tests in the suite got executed.  If this
   hook is present, note that the execution **requires** to be finished by
-  calling the `done( )` callback.
+  calling the ``done( )`` callback.
 
-Any hooks for `Test.Case` are described in the `Test.Case` documentation.
+For other hooks (``beforeEach/afterEach``) that are ``Test.Case`` specific
+refer to the separate ``Test.Case`` documentation.
 
 
 Test Execution Filter
@@ -218,7 +221,7 @@ Instance Metamembers
   Executes the `Test t` suite.  Returns true or false depending on weather
   the execution of the test suite was successful.  The boolean return only
   works for synchronous tests.  As soon as there is a single asynchronous
-  test case in the `Test t` the return value is always `true`.  If a
+  test case in the ``Test t`` the return value is always ``true``.  If a
   ``string pattern`` is passed as first parameter only ``Test.Case``
   instances in fields which contain ``string pattern`` will be executed.
   ``string pattern`` is evaluated by Luas own ``string.match()`` function,

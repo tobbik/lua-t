@@ -37,7 +37,6 @@ local getMetrics = function( tst, pattern )
 			pass  = pass + (cse.pass and 1 or 0)
 			skip  = skip + (cse.skip and 1 or 0)
 			todo  = todo + (cse.todo and 1 or 0)
-			print(time, cse.executionTime)
 			time  = time +  cse.executionTime
 		end
 	end

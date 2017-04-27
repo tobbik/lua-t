@@ -19,7 +19,7 @@ local Test      = require( "t.Test" )
 local Socket    = require( "t.Net.Socket" )
 local Address   = require( "t.Net.Address" )
 local Interface = require( "t.Net.Interface" )
-local assrt     = T.require( 't_net_assert' )
+local asrtHlp   = T.require( "assertHelper" )
 
 local tests = {
 
@@ -35,8 +35,8 @@ local tests = {
 	test_SBindCreateSockAndInanyAddress = function( self )
 		Test.Case.describe( "Socket.bind() --> creates a TCP IPv4 Socket and 0.0.0.0:0 address" )
 		self.sck, self.address = Socket.bind()
-		assrt.Socket(  self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
-		assrt.Address( self.address, '0.0.0.0', 0 )
+		asrtHlp.Socket(  self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
+		asrtHlp.Address( self.address, '0.0.0.0', 0 )
 	end,
 
 	test_SBindPrivPortThrowsPermission = function( self )
@@ -55,8 +55,8 @@ local tests = {
 		local port  = 8000
 		self.sck, self.address = Socket.bind( port )
 		local ip,prt = self.address:get()
-		assrt.Socket(  self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
-		assrt.Address( self.address, '0.0.0.0', port )
+		asrtHlp.Socket(  self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
+		asrtHlp.Address( self.address, '0.0.0.0', port )
 	end,
 
 	test_SBindHostPortCreateSockAndAddress = function( self )
@@ -64,8 +64,8 @@ local tests = {
 		local host   = Interface( 'default' ).address:get()
 		local port   = 8000
 		self.sck, self.address = Socket.bind( host, port )
-		assrt.Socket(  self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
-		assrt.Address( self.address, host, 8000 )
+		asrtHlp.Socket(  self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
+		asrtHlp.Address( self.address, host, 8000 )
 	end,
 
 	test_SBindAddressCreateSockOnly = function( self )
@@ -74,7 +74,7 @@ local tests = {
 		local port   = 8000
 		local addr   = Address( host, port )
 		self.sck, self.__ = Socket.bind( addr )
-		assrt.Socket(  self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
+		asrtHlp.Socket(  self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
 		assert( nil  == self.__, "The address should not be returned" )
 	end,
 
@@ -84,7 +84,7 @@ local tests = {
 		local port   = 8000
 		local addr   = Address( host, port )
 		self.sck, self.address = Socket.bind( addr )
-		assrt.Socket(  self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
+		asrtHlp.Socket(  self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
 		assert( addr  == self.sck:getsockname(), "The addresses should be equal" )
 	end,
 
@@ -97,7 +97,7 @@ local tests = {
 		self.sck     = Socket()
 		self.address, self._ = self.sck:bind()
 		assert( nil  == self._, "The socket should not be returned" )
-		assrt.Address( self.address, '0.0.0.0', 0 )
+		asrtHlp.Address( self.address, '0.0.0.0', 0 )
 	end,
 
 	test_sBindPortCreateInAnyAddress = function( self )
@@ -106,7 +106,7 @@ local tests = {
 		self.sck             = Socket()
 		self.address, self._ = self.sck:bind( port)
 		assert( nil  == self._, "The socket should not be returned" )
-		assrt.Address( self.address, '0.0.0.0', 8000 )
+		asrtHlp.Address( self.address, '0.0.0.0', 8000 )
 	end,
 
 	test_sBindHostPortCreateAddress = function( self )
@@ -116,7 +116,7 @@ local tests = {
 		self.sck             = Socket()
 		self.address, self._ = self.sck:bind( host, port )
 		assert( nil  == self._, "The socket should not be returned" )
-		assrt.Address( self.address, host, 8000 )
+		asrtHlp.Address( self.address, host, 8000 )
 	end,
 
 	test_sBindAddressCreateNothingButBinds = function( self )

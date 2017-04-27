@@ -18,7 +18,6 @@
 -- loop before moving on to the next test.
 
 
-T         = require( 't' )
 Test      = require( "t.Test" )
 Timer     = require( "t.Time" )
 Loop      = require( "t.Loop" )
@@ -26,7 +25,8 @@ Socket    = require( "t.Net.Socket" )
 Address   = require( "t.Net.Address" )
 Interface = require( "t.Net.Interface" )
 Buffer    = require( "t.Buffer" )
-assrt     = T.require( 't_net_assert' )
+T         = require( "t" )
+asrtHlp   = T.require( "assertHelper" )
 
 -- #########################################################################
 -- receive a chunk of data server for each test
@@ -62,8 +62,8 @@ accept = function( self )
 	--print("ACCEPT")
 	self.aSck, self.aAdr = self.sSck:accept( )
 	--print( self.aSck, self.aAdr, receive )
-	assrt.Socket( self.aSck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
-	assrt.Address( self.aAdr, self.host, 'any' )
+	asrtHlp.Socket( self.aSck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
+	asrtHlp.Address( self.aAdr, self.host, 'any' )
 	self.loop:addHandle( self.aSck, 'read', receive, self )
 end
 
