@@ -5,23 +5,23 @@ lua-t T.Test - The Unit Test Library
 Overview
 ========
 
-`Test` provides functionality to create and run unit test suites.  `Test`
-allows to write synchronous as well as asynchronous test (callback based) and it
-allows them to be mixed within the same `Test` suite.
+``Test`` provides functionality to create and run unit test suites.
+``Test`` allows to write synchronous as well as asynchronous test (callback
+based) and it allows them to be mixed within the same ``Test`` suite.
 
 
 Summary
 =======
 
- - passing a table of `test_*` named functions to the `Test( )` constructor
-   will result in tests running in random order.
- - an actual test case **must start with** `test_` as function name.  Other
-   names are just gonna be available within the Tests as `self.name`.
+ - passing a table of ``test_*`` named functions to the ``Test( )``
+   constructor will result in tests running in random order.
+ - an actual test case **must start with** ``test_`` as function name.
+   Other names are just gonna be available within the Tests as `self.name`.
  - when persent, the global test suite hooks ``beforeAll( self, done )`` and
    ``afterAll( self, done )`` **must call** the ``done( )`` callback even
    when all tests in the test suite are of synchronous nature.
- - running a `Test` suite and checking for success is as easy as executing
-   it: `success = t()`.
+ - running a ``Test`` suite and checking for success is as easy as executing
+   it: ``success = t()``.
 
 
 Usage
@@ -33,10 +33,10 @@ Some general information on how to write and invoke Test suites.
 Test runner
 -----------
 
-`Test` does not come with a console based runner executable.  This is by
-design because the actual behaviour of a `Test` instance is defined by
-metamethods and once a `Test` suite is instantiated it gets executed by just
-calling it.
+``Test`` does not come with a console based runner executable.  This is by
+design because the actual behaviour of a ``Test`` instance is defined by
+metamethods and once a ``Test`` suite is instantiated it gets executed by
+just calling it.
 
 In order to create a test runner that can handle multiple test suites a
 small Lua script is needed that wraps the test suites.  This way it can be
@@ -53,7 +53,7 @@ get defined as modules:
   )
 
 A test runner would require all the test suites as modules, potentially
-assisted by some directory reader which `requires()` the contents of a
+assisted by some directory reader which ``requires()`` the contents of a
 directory recursively.  Then the runner would iterate over all required
 tests and execute them:
 
@@ -72,12 +72,12 @@ tests and execute them:
 Test Execution Order
 --------------------
 
-`Test` can execute test cases in a guaranteed order or, in true unit testing
-fashion, in random order.  The behaviour can be selected via the way the
-`Test()` constructor gets called.  For guaranteed order, create an empty
-`Test` instance first and then assign test case functions to it.  When
-running the suite tests will get executed in the order they got assigned to
-the `Test` instance:
+``Test`` can execute test cases in a guaranteed order or, in true unit
+testing fashion, in random order.  The behaviour can be selected via the way
+the ``Test( )`` constructor gets called.  For guaranteed order, create an
+empty ``Test`` instance first and then assign test case functions to it.
+When running the suite tests will get executed in the order they got
+assigned to the ``Test`` instance:
 
 .. code:: lua
 
@@ -158,6 +158,27 @@ hooks is optional:
 Any hooks for `Test.Case` are described in the `Test.Case` documentation.
 
 
+Test Execution Filter
+---------------------
+
+Executing the ``Test`` suite can be limited by names of the test functions.
+This allows to group tests or run only single test while the suite will
+still execute all the hooks.
+
+.. code:: lua
+
+  t = Test( {
+     beforeAll  = function( self, done ) ...; done() end,
+     afterAll   = function( self, done ) ...; done() end,
+     test_odd_one   = function( self ) ... end,
+     test_even_two  = function( self ) ... end,
+     test_odd_three = function( self ) ... end
+     test_even_four = function( self ) ... end
+  } )
+  t( 'odd' ) -- this will run the global hooks an all functions that have
+             -- 'odd' in their name
+
+
 API
 ===
 
@@ -177,7 +198,7 @@ Class Metamembers
 -----------------
 
 ``Test tc = Test( [ table t ] )   [__call]``
-  Creates a new `Test` suite instance.  If a table is passed it will be
+  Creates a new ``Test`` suite instance.  If a table is passed it will be
   converted into a unit test.  The table can not contain **ANY** numeric
   keys.
 
@@ -185,23 +206,27 @@ Class Metamembers
 Instance Members
 ----------------
 
-`Test` instances do not have any special instance members.  Any test that
-gets passed to a `Test` instance as a "test_" named test function gets
-converted to a `Test.Case` instance.  They have their own documentation.
+``Test`` instances do not have any special instance members.  Any test that
+gets passed to a ``Test`` instance as a ``test_*`` named test function gets
+converted to a ``Test.Case`` instance.  They have their own documentation.
 
 
 Instance Metamembers
 --------------------
 
-``boolean x = Test t( )  [__call]``
+``boolean x = Test t( [string pattern] )  [__call]``
   Executes the `Test t` suite.  Returns true or false depending on weather
   the execution of the test suite was successful.  The boolean return only
   works for synchronous tests.  As soon as there is a single asynchronous
-  test case in the `Test t` the return value is always `true`.
+  test case in the `Test t` the return value is always `true`.  If a
+  ``string pattern`` is passed as first parameter only ``Test.Case``
+  instances in fields which contain ``string pattern`` will be executed.
+  ``string pattern`` is evaluated by Luas own ``string.match()`` function,
+  hence all Lua patterns apply.
 
 ``string s = tostring( Test t )  [__toString]``
   Returns a string which is a TAP report of the Test suite.
 
 ``int len = #testInstance  [__len]``
-  Returns the number of `Test.Case` instances in this suite.
+  Returns the number of ``Test.Case`` instances in this suite.
 

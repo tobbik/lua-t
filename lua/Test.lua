@@ -29,20 +29,31 @@ local makeTst = function( prx )
 	return setmetatable( { [ prxTblIdx ] = prx }, _mt )
 end
 
-local getMetrics = function( tst )
-	local i,pass,skip,todo,time = 0,0,0,0,Time(1)-Time(1)
-	for i,cse in ipairs( tst ) do
-		pass = pass + (cse.pass and 1 or 0)
-		skip = skip + (cse.skip and 1 or 0)
-		todo = todo + (cse.todo and 1 or 0)
-		time = time +  cse.executionTime
+local getMetrics = function( tst, pattern )
+	local count,pass,skip,todo,time = 0,0,0,0,Time(1)-Time(1)
+	for n,cse,i in pairs( tst ) do
+		if n:match( pattern or '' ) then
+			count = count + 1
+			pass  = pass + (cse.pass and 1 or 0)
+			skip  = skip + (cse.skip and 1 or 0)
+			todo  = todo + (cse.todo and 1 or 0)
+			print(time, cse.executionTime)
+			time  = time +  cse.executionTime
+		end
 	end
-	return #tst == pass+todo, pass, skip, todo, time
+	return {
+		success = (count == pass+todo),
+		count   = count,
+		pass    = pass,
+		skip    = skip,
+		todo    = todo,
+		time    = time
+	}
 end
 
-local finalizer = function( tst )
+local finalizer = function( tst, pattern )
 	return function( )
-		succ,pass,skip,todo,etim = getMetrics( tst );
+		local res = getMetrics( tst, pattern );
 		print( format( "---------------------------------------------------------\n"..
 				  "Handled %d tests in %.3f seconds\n\n"..
 				  "Executed         : %d\n"..
@@ -50,36 +61,46 @@ local finalizer = function( tst )
 				  "Expected to fail : %d\n"..
 				  "Failed           : %d\n"..
 				  "status           : %s\n"
-			, #tst, etim:get()/1000.0
-			, #tst - skip
-			, skip
-			, todo
-			, #tst - pass
-			, succ and "OK" or "FAIL" ) )
+			, res.count, res.time:get()/1000.0
+			, res.count - res.skip
+			, res.skip
+			, res.todo
+			, res.count - res.pass
+			, res.success and "OK" or "FAIL" ) )
 		end
 end
 
 local callEnvelope = function( fnc, tst, run )
 	if fnc and 'function'==type( fnc ) then
 		local r,err = pcall( fnc, tst, run )
-		if not r then print(err);error( "Test failed" ) end
+		if not r then print(err);end
+		--if not r then print(err);error( "Test failed" ) end
 	else
 		run( )
 	end
 end
 
-local done = function( ste, cse )
-	local ran = 0
-	print( "Executed test: " .. cse:getDescription( ) )
-	for i=1,#ste do     ran = ran + (nil==ste[i].pass and 0 or 1 )      end
-	if ran == #ste then
-		callEnvelope( ste.afterAll, ste, finalizer( ste ) )
+local joiner = function( pattern )
+	local pttrn = pattern or ''
+	return function( ste, cse )
+		local ran, cnt = 0, 0
+		print( "Executed test: " .. cse:getDescription( ) )
+		for k,v,i in pairs( ste ) do
+			if k:match( pttrn ) then
+				cnt = cnt + 1
+				ran = ran + (nil==v.pass and 0 or 1 )
+			end
+		end
+		if ran == cnt then
+			callEnvelope( ste.afterAll, ste, finalizer( ste, pattern ) )
+		end
 	end
 end
 
-local caseRunner = function( tst )
+local caseRunner = function( ste, pattern )
+	local pttrn = pattern or ''
 	return function()
-		for i=1,#tst do tst[i]( tst, done ) end
+		for k,v,i in pairs( ste ) do  if  k:match( pttrn ) then v( ste, joiner( pattern ) )   end end
 	end
 end
 
@@ -112,18 +133,19 @@ _mt = {       -- local _mt at top of file
 		end
 		return t_concat( buf, "\n" )
 	end,
-	__call     = function( self )
+	__call     = function( self, pattern )
 		local prx = getPrx( self )
 		for i=1,#self do self[ i ]:prune( ) end
-		callEnvelope( self.beforeAll, self, caseRunner( self ) )
-		return getMetrics( self )
+		callEnvelope( self.beforeAll, self, caseRunner( self, pattern ) )
+		return getMetrics( self, pattern ).success
 	end,
 }
 
 Case.done = done
 return setmetatable( {
-	hasPassed = function( tst ) return getMetrics( tst ) end,
-	Case      = Case,
+	hasPassed  = function( ste, p ) return getMetrics( ste, p ).success end,
+	getMetrics = function( ste, p ) return getMetrics( ste, p ) end,
+	Case       = Case,
 }, {
 	__call   = function( self, tbl )
 		local prx;

@@ -4,12 +4,8 @@
 -- \author    tkieslich
 -- \copyright See Copyright notice at the end of t.h
 
-local prxTblIdx                     , Oht  =
-      require( "t" ).proxyTableIndex, require"t.OrderedHashTable"
 local t_concat    , t_insert    , format       , getmetatable, setmetatable, pairs, assert, type =
       table.concat, table.insert, string.format, getmetatable, setmetatable, pairs, assert, type
-local o_setElement  , o_getElement  , o_iters =
-      Oht.setElement, Oht.getElement, Oht.iters
 local Time = require't.Time'
 
 local _mt
@@ -20,15 +16,8 @@ local STG_AFE = 3
 local STG_DNE = 4
 
 -- ---------------------------- general helpers  --------------------
--- assert Test type and return the proxy table
-local getPrx = function( tst )
-	assert( _mt == getmetatable( tst ), "Expected `Test.Case`" )
-	return tst[ prxTblIdx ]
-end
 -- create a Test.Case instance from a table
 local makeCse = function( prx )
-	--return setmetatable( { [ prxTblIdx ] = prx }, _mt )
-	return setmetatable( prx, _mt )
 end
 
 local setFunctionSource = function( f, b )
@@ -100,7 +89,7 @@ end
 local syncRunner = function( cse, ste, dne )
 	return function( )
 		if ste.beforeEach then ste.beforeEach( ste ) end
-		cse.executionTime = Time()
+		cse.executionTime = Time( )
 		local s,m = xpcall( cse.func, traceback, ste )
 		cse.executionTime:since( )
 		if not s then
@@ -177,6 +166,6 @@ return setmetatable( {
 		if nme:match( "^test_c[rb]_" ) then
 			cse.testtype = nme:match( "^test_cr_" ) and "coroutine" or "callback"
 		end
-		return makeCse( cse )
+		return setmetatable( cse, _mt )
 	end
 } )

@@ -6,18 +6,19 @@ Overview
 ========
 
 Test.Case is an internal class providing functionality around functions
-executed within `Test` suites.  A **test_**  or **test_cb_** named function
-handed to a `Test` suite instance will be converted to a `Test.Case`
-instance.
+executed within ``Test`` suites.  A **test_**  or **test_cb_** named
+function handed to a ``Test`` suite instance will be converted to a
+``Test.Case`` instance.
 
 
 Usage
 =====
 
-Some general information on how to write and invoke `Test.Case`.
+Some general information on how to write and invoke ``Test.Case``.
 
 Hooks
 -----
+
 
 ``t.beforeEach = function( self )``
   The hook gets called before executing each test case in the suite.
@@ -27,10 +28,10 @@ Hooks
 
 ``t.beforeEach_cb = function( self, done )``
   The hook gets called before executing each callback based test case in the
-  suite.  The `done()` callback must be called when the test finishes,
+  suite.  The ``done()`` callback must be called when the test finishes,
   otherwise test execution will be stalled.  The test runner does not fall
-  back to use `t.beforeEach` if `t.beforeEach_cb` is not found.  If your
-  `Test` suite mixes synchronous and callback based tests you can do the
+  back to use ``t.beforeEach`` if ``t.beforeEach_cb`` is not found.  If your
+  ``Test`` suite mixes synchronous and callback based tests you can do the
   following to save code duplication.
 
 .. code:: lua
@@ -43,9 +44,9 @@ Hooks
 
 ``t.afterEach_cb = function( self, done )``
   The hook gets called after executing each callback based test case in the
-  suite.  The `done()` callback must be called when the test finishes,
-  otherwise test execution will be stalled.  Like `t.beforeEach_cb`` there
-  is no fall back to `t.beforeEach`` for callback based test cases.
+  suite.  The ``done()`` callback must be called when the test finishes,
+  otherwise test execution will be stalled.  Like ``t.beforeEach_cb`` there
+  is no fall back to ``t.beforeEach`` for callback based test cases.
 
 
 API
@@ -55,9 +56,10 @@ Class Members
 -------------
 
 ``void Test.Case.describe( 'Rich description for this Test.Case' )``
-  This is meant to be called from within a `Test.Case`.  By default the test
-  is described by the function name that was used to assign it to the `Test`
-  suite.  Calling this function will overwrite that default description.
+  This is meant to be called from within a ``Test.Case``.  By default the
+  test is described by the function name that was used to assign it to the
+  ``Test`` suite.  Calling this function will overwrite that default
+  description.
 
 .. code:: lua
 
@@ -67,25 +69,25 @@ Class Members
   end
 
 ``void Test.Case.todo( 'The reason why this Test.Case shall fail' )``
-  This is meant to be called from within a `Test.Case`.  If a call to
-  `Test.Case.todo()` happens the test runner will expect that the test
-  fails.  If the test succeeds despite the call to `Test.Case.todo()`
-  the test runner will mark the entire `Test` suite as failed.
+  This is meant to be called from within a ``Test.Case``.  If a call to
+  ``Test.Case.todo()`` happens the test runner will expect that the test
+  fails.  If the test succeeds despite the call to ``Test.Case.todo()``
+  the test runner will mark the entire ``Test` suite as failed.
 
 ``void Test.skip( 'The reason why this Test.Case shall be skipped' )``
-  This is meant to be called from within a `Test.Case`.  It will skip the
+  This is meant to be called from within a ``Test.Case``.  It will skip the
   test at the point where it is called and it will set the skip reason so it
   can be displayed in the summary.  The function is implemented as a
-  controlled call to `error()` which will invoke the traceback for the
-  wrapping `xpcall()`.  The traceback will recognize the special invocation
-  and act accordingly.  A side effect of implementing skip as a function
-  call may be that a `Test.Case` can fail before `skip()` gets called.  So
-  it is advisable to call `skip()` early in a test function.  However, it
-  has the advantage to call `skip()` based on a condition:
+  controlled call to ``error()`` which will invoke the traceback for the
+  wrapping ``xpcall()``.  The traceback will recognize the special
+  invocation and act accordingly.  A side effect of implementing skip as a
+  function call may be that a ``Test.Case`` can fail before ``skip()`` gets
+  called.  So it is advisable to call ``skip()`` early in a test function.
+  However, it has the advantage to call ``skip()`` based on a condition:
 
 .. code:: lua
 
-  t.test_SkipWhenCalledTooEarly = function( self )
+  t.test_SkipWhenCalledTooDarnEarly = function( self )
     if os.date('*t').hour < 10 then
       Test.Case.skip("Sorry, I' don't wake before coffee ...")
     end
@@ -97,17 +99,18 @@ Class Metamembers
 -----------------
 
 ``Test.Case tc = Test.Case( [ string 'test_name', function tf, function join ] )   [__call]``
-  Creates a new `Test.Case`.  `test_name` is mandatory and get's set as
+  Creates a new ``Test.Case``.  ``test_name`` is mandatory and get's set as
   description.  If the test name starts with ``test_cb_`` the test will be
   constructed as callback based Test.Case and during execution time a
   callback will be passed in a second parameter (after ``self``).
-  `function tf` is mandatory and get's set as the actual executable test
-  case.  Finally, `function join` is called **after** the test case and
-  `Test` hook afterEach.  The `Test` implementation uses it to iterate over
-  all `Test.Case` instances in a `Test` and probes them if they had been
-  executed.  This way all asynchronous tests get checked and the Test runner
-  can determine whenthe execution of a `Test` suite has finished by testing
-  that **each** `Test.Case` within a `Test` suite has been executed.
+  ``function tf`` is mandatory and get's set as the actual executable test
+  case.  Finally, ``function join`` is called **after** the test case and
+  ``Test`` hook afterEach.  The ``Test`` implementation uses it to iterate
+  over all ``Test.Case`` instances in a ``Test`` and probes them if they had
+  been executed.  This way all asynchronous tests get checked and the Test
+  runner can determine whenthe execution of a ``Test`` suite has finished by
+  testing that **each** ``Test.Case`` within a ``Test`` suite has been
+  executed.
 
 
 Instance Members
@@ -165,17 +168,32 @@ Instance Metamembers
 --------------------
 
 ``boolean x = t.testCase( Test suite )  [__call]``
-  Executes the test case.  `Test suite` must be passed as an argument.
+  Executes the test case.  ``Test suite`` must be passed as an argument.
   Returns true or false depending on weather the execution of the test case
-  was successful unless it was a *callback* `testtype` which always returns
-  `true`.
+  was successful unless it was a *callback* ``testtype`` which always returns
+  ``true``.  **NOTE:** ``beforeEach`` and ``afterEach`` are hooks which are
+  ``Test.Case`` specific and as such are executed when calling the
+  ``Test.Case``.  However, ``beforeAll`` and ``afterAll`` are ``Test``
+  specific hooks which are only executed when the entire ``Test`` suite is
+  executed.  If you want to execute single a ``Test.Case`` instance wrapped
+  in the ``beforeAll`` and ``afterAll`` hooks use the ``Test`` suite runners
+  pattern matchig feature:
+
+  .. code:: lua
+  t = Test( {
+    beforeAll    = function( self, done )   globalSetup();    done() end,
+    afterAll     = function( self, done )   globalTeardown(); done() end,
+    test_cb_this = function( self, done )   doThis();         done() end,
+    test_cb_that = function( self, done )   doThat();         done() end
+  } )
+  t( 'test_cb_this' )   -- execute hooks and only test_cb_this()
 
 ``string s = tostring( Test.Case test_case )  [__toString]``
   Returns a string representing a TAP line for the test case.  Formats extra
   information as YAML.  Extra information will be formatted as Yaml as per
   TAP v13 specifications:
 
-.. code:: yaml
+  .. code:: yaml
 
     description : Test Case description
     testtype: standard
