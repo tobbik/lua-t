@@ -103,7 +103,7 @@ end
 t.test_MakeFail = function( self )
 	Test.Case.describe('Create an error in code')
 	local x = 5
-	x = x.a + 5
+	x = x.a + 5 -- this should create runtime error (attempt index a number)
 	assert( x==6 , "This math makes no sense" )
 end
 
@@ -111,7 +111,7 @@ t.test_EqTableRevK = function( self )
 	Test.Case.describe( 'Deep table comparison with first table different from second' )
 	local k = {x=1,y=2,z={a=1,b=true,c='string'},d='not in second'}
 	local h = {x=1,y=2,z={a=1,b=true,c='string'}                  }
-	assert( equals( h, k ), "Deep table comparison with different table sizes" )
+	assert( not equals( h, k ), "Deep table comparison with different table sizes" )
 end
 
 t.test_EqMeta = function(self)

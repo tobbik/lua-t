@@ -28,11 +28,11 @@ Hooks
 
 ``t.beforeEach_cb = function( self, done )``
   The hook gets called before executing each callback based test case in the
-  suite.  The ``done()`` callback must be called when the test finishes,
-  otherwise test execution will be stalled.  The test runner does not fall
-  back to use ``t.beforeEach`` if ``t.beforeEach_cb`` is not found.  If your
-  ``Test`` suite mixes synchronous and callback based tests you can do the
-  following to save code duplication.
+  suite.  The ``done()`` callback must be called when ``beforeEach_cb()``
+  finishes, otherwise test execution will be stalled.  The test runner does
+  not fall back to use ``t.beforeEach`` if ``t.beforeEach_cb`` is not found.
+  If a ``Test`` suite mixes synchronous and callback based tests you can do
+  the following to save code duplication.
 
 .. code:: lua
 
@@ -43,8 +43,8 @@ Hooks
     end
 
 ``t.afterEach_cb = function( self, done )``
-  The hook gets called after executing each callback based test case in the
-  suite.  The ``done()`` callback must be called when the test finishes,
+  The hook gets called after executing each callback based ``Test.Case`` in
+  the suite.  The ``done()`` callback must be called when the test finishes,
   otherwise test execution will be stalled.  Like ``t.beforeEach_cb`` there
   is no fall back to ``t.beforeEach`` for callback based test cases.
 
@@ -61,18 +61,18 @@ Class Members
   ``Test`` suite.  Calling this function will overwrite that default
   description.
 
-.. code:: lua
+  .. code:: lua
 
-  t.test_WhatEverToTest = function( self )
-    Test.Case.describe( "Explain in nicer words what it does" )
-    ... implementation ...
-  end
+    t.test_WhatEverToTest = function( self )
+      Test.Case.describe( "Explain in nicer words what it does" )
+      ... implementation ...
+    end
 
 ``void Test.Case.todo( 'The reason why this Test.Case shall fail' )``
   This is meant to be called from within a ``Test.Case``.  If a call to
   ``Test.Case.todo()`` happens the test runner will expect that the test
   fails.  If the test succeeds despite the call to ``Test.Case.todo()``
-  the test runner will mark the entire ``Test` suite as failed.
+  the test runner will mark the entire ``Test`` suite as failed.
 
 ``void Test.skip( 'The reason why this Test.Case shall be skipped' )``
   This is meant to be called from within a ``Test.Case``.  It will skip the
@@ -85,32 +85,26 @@ Class Members
   called.  So it is advisable to call ``skip()`` early in a test function.
   However, it has the advantage to call ``skip()`` based on a condition:
 
-.. code:: lua
+  .. code:: lua
 
-  t.test_SkipWhenCalledTooDarnEarly = function( self )
-    if os.date('*t').hour < 10 then
-      Test.Case.skip("Sorry, I' don't wake before coffee ...")
+    t.test_SkipWhenCalledTooDarnEarly = function( self )
+      if os.date('*t').hour < 10 then
+        Test.Case.skip("Sorry, I' don't wake before coffee ...")
+      end
+      ... implementation ...
     end
-    ... implementation ...
-  end
 
 
 Class Metamembers
 -----------------
 
-``Test.Case tc = Test.Case( [ string 'test_name', function tf, function join ] )   [__call]``
+``Test.Case tc = Test.Case( [ string 'test_name', function tf ] )   [__call]``
   Creates a new ``Test.Case``.  ``test_name`` is mandatory and get's set as
   description.  If the test name starts with ``test_cb_`` the test will be
-  constructed as callback based Test.Case and during execution time a
+  constructed as callback based ``Test.Case`` and during execution time a
   callback will be passed in a second parameter (after ``self``).
-  ``function tf`` is mandatory and get's set as the actual executable test
-  case.  Finally, ``function join`` is called **after** the test case and
-  ``Test`` hook afterEach.  The ``Test`` implementation uses it to iterate
-  over all ``Test.Case`` instances in a ``Test`` and probes them if they had
-  been executed.  This way all asynchronous tests get checked and the Test
-  runner can determine whenthe execution of a ``Test`` suite has finished by
-  testing that **each** ``Test.Case`` within a ``Test`` suite has been
-  executed.
+  ``function tf`` is mandatory and gets set as the actual executable test
+  case.
 
 
 Instance Members
@@ -167,33 +161,76 @@ Instance Members
 Instance Metamembers
 --------------------
 
-``boolean x = t.testCase( Test suite )  [__call]``
+``boolean x = t.testCase( Test suite, function join )  [__call]``
   Executes the test case.  ``Test suite`` must be passed as an argument.
   Returns true or false depending on weather the execution of the test case
-  was successful unless it was a *callback* ``testtype`` which always returns
-  ``true``.  **NOTE:** ``beforeEach`` and ``afterEach`` are hooks which are
-  ``Test.Case`` specific and as such are executed when calling the
-  ``Test.Case``.  However, ``beforeAll`` and ``afterAll`` are ``Test``
-  specific hooks which are only executed when the entire ``Test`` suite is
-  executed.  If you want to execute single a ``Test.Case`` instance wrapped
-  in the ``beforeAll`` and ``afterAll`` hooks use the ``Test`` suite runners
-  pattern matchig feature:
+  was successful unless it was a *callback* ``testtype`` which always
+  returns ``true``. ``function join`` is called **after** the ``Test.Case``
+  function and ``Test.Case`` hook ``afterEach`` if that is present.  The
+  ``Test`` implementation shows how this is used.  After the execution of
+  each ``Test.Case`` the ``function join`` iterates over **each**
+  ``Test.Case`` instance in ``Test`` and probes it if they had been
+  executed.  This way all tests (synchronous and asynchronous) get checked
+  and the ``Test`` runner can determine when the execution of a ``Test``
+  suite has completely finished.  **NOTE:** ``beforeEach`` and
+  ``afterEach`` are hooks which are ``Test.Case`` specific and as such are
+  executed when calling the ``Test.Case``.  However, ``beforeAll`` and
+  ``afterAll`` are ``Test`` specific hooks which are only executed when the
+  entire ``Test`` suite is executed.  If you want to execute single a
+  ``Test.Case`` instance wrapped in the ``beforeAll`` and ``afterAll`` hooks
+  use the ``Test`` suite runners pattern matching feature like this:
 
   .. code:: lua
-  t = Test( {
-    beforeAll    = function( self, done )   globalSetup();    done() end,
-    afterAll     = function( self, done )   globalTeardown(); done() end,
-    test_cb_this = function( self, done )   doThis();         done() end,
-    test_cb_that = function( self, done )   doThat();         done() end
-  } )
-  t( 'test_cb_this' )   -- execute hooks and only test_cb_this()
+
+    t = Test( {
+      beforeAll    = function( self, done )   globalSetup();    done() end,
+      afterAll     = function( self, done )   globalTeardown(); done() end,
+      test_cb_this = function( self, done )   doThis();         done() end,
+      test_cb_that = function( self, done )   doThat();         done() end
+    } )
+    t( 'test_cb_this' )   -- execute hooks and only test_cb_this()
 
 ``string s = tostring( Test.Case test_case )  [__toString]``
   Returns a string representing a TAP line for the test case.  Formats extra
-  information as YAML.  Extra information will be formatted as Yaml as per
+  information as YAML.  Extra information will be formatted as YAML as per
   TAP v13 specifications:
 
   .. code:: yaml
+
+    description: Create an assert error
+    testtype: standard
+    pass: False
+    message: 5==6 is obviously not equal
+    location: ../lua-t/example/t_tst.lua:105
+    traceback: stack traceback:
+      out/share/lua/5.3/t/Test/Case.lua:59: in metamethod '__index'
+      ../lua-t/example/t_tst.lua:106: in function <../lua-t/example/t_tst.lua:103>
+      [C]: in function 'xpcall'
+      out/share/lua/5.3/t/Test/Case.lua:93: in function <out/share/lua/5.3/t/Test/Case.lua:90>
+      (...tail calls...)
+      out/share/lua/5.3/t/Test.lua:103: in local 'done'
+      ../lua-t/example/t_tst.lua:12: in function <../lua-t/example/t_tst.lua:10>
+      [C]: in function 'pcall'
+      out/share/lua/5.3/t/Test.lua:75: in upvalue 'callEnvelope'
+      out/share/lua/5.3/t/Test.lua:139: in global 't'
+      ../lua-t/example/t_tst.lua:152: in main chunk
+      [C]: in ?
+    source:
+      103: t.test_MakeFail = function( self )
+      104:        Test.Case.describe('Create an assert error')
+      105:        assert( 5==6 , "5==6 is obviously not equal" )
+      106: end
+
+
+
+
+
+
+
+
+
+
+
 
     description : Test Case description
     testtype: standard

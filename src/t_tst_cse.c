@@ -14,7 +14,6 @@
 
 #include "t.h"
 #include "t_tst.h"
-#include "t_tim.h"
 
 
 /**--------------------------------------------------------------------------
@@ -225,7 +224,29 @@ t_tst_cse_create( lua_State *L )
 int
 t_tst_cse_check( lua_State *L, int pos, int check )
 {
-	return t_checkTableType( L, pos, check, T_TST_CSE_TYPE );
+	if (lua_istable( L, pos) && lua_getmetatable( L, pos ))        // does it have a metatable?
+	{
+		luaL_getmetatable( L, T_TST_CSE_TYPE ); // get correct metatable
+		if (! lua_rawequal( L, -1, -2 ))     // not the same?
+		{
+			lua_pop( L, 2 );
+			if (check)
+				luaL_error( L, "wrong argument, `"T_TST_CSE_TYPE"` expected" );
+			else
+				return 0;
+		}
+		else
+		{
+			lua_pop( L, 2 );
+			return 1;
+		}
+	}
+	else
+		if (check)
+			luaL_error( L, "wrong argument, `"T_TST_CSE_TYPE"` expected" );
+		else
+			return 0;
+	return 1;
 }
 
 
@@ -377,8 +398,6 @@ t_tst_cse_prune( lua_State *L )
 static int
 t_tst_cse_runSync( lua_State *L )
 {
-	struct timeval      *tv;
-
 	lua_pushvalue( L, lua_upvalueindex( 1 ) );          //S: cse
 	lua_pushvalue( L, lua_upvalueindex( 2 ) );          //S: cse ste
 
@@ -394,8 +413,6 @@ t_tst_cse_runSync( lua_State *L )
 	lua_pushcfunction( L, t_tst_cse_traceback );  //S: cse ste tbk
 	lua_getfield( L, 1, "function" );             //S: cse ste tbk exc
 	lua_pushvalue( L, 2 );                        //S: cse ste tbk exc ste
-	tv = t_tim_create_ud( L, 0 );
-	lua_setfield( L, 1, "executionTime" );
 	if (lua_pcall( L, 1, 0, 3 ))
 	{
 		lua_pushnil( L );                          //S: cse ste tbk err nil
@@ -409,7 +426,6 @@ t_tst_cse_runSync( lua_State *L )
 		lua_pushboolean( L, 1 );                   //S: cse ste true
 		lua_setfield( L, 1, "pass" );
 	}
-	t_tim_since( tv );
 
 	lua_getfield( L, 2, "afterEach" );            //S: cse ste afe
 	if (! lua_isnil( L , -1 ))
@@ -447,8 +463,6 @@ t_tst_cse_setupClosure( lua_State *L, int state )
 static int
 t_tst_cse_runAsync( lua_State *L )
 {
-	struct timeval *tv;
-
 	lua_pop( L, lua_gettop( L ) );                      // wipe stack; remove anything passed to done(...)
 	lua_pushvalue( L, lua_upvalueindex( 1 ) );          //S: cse
 	lua_pushvalue( L, lua_upvalueindex( 2 ) );          //S: cse ste
@@ -473,8 +487,6 @@ t_tst_cse_runAsync( lua_State *L )
 			lua_pushcfunction( L, t_tst_cse_traceback );  //S: cse exc cse tbk
 			lua_insert( L, 2 );                           //S: cse tbk exc cse
 			t_tst_cse_setupClosure( L, T_TST_CSE_AFE );   //S: cse tbk exc ste sfe
-			tv = t_tim_create_ud( L, 0 );
-			lua_setfield( L, 1, "executionTime" );
 			if (lua_pcall( L, 2, 0, 2 ))
 			{
 				lua_pushnil( L );                          //S: cse tbk err nil
@@ -491,9 +503,6 @@ t_tst_cse_runAsync( lua_State *L )
 				break;
 			}
 		case T_TST_CSE_AFE:
-			lua_getfield( L, 1, "executionTime" );        //S: cse ste tim
-			tv = t_tim_check_ud( L, -1, 1 );
-			t_tim_since( tv );
 			// set pass=true unless traceback has already handles it
 			lua_getfield( L, 1, "pass" );                 //S: cse ste pss
 			if (lua_isnil( L, -1 ))
@@ -534,7 +543,7 @@ int
 lt_tst_cse__call( lua_State *L )
 {
 	t_tst_cse_check( L, 1, 1 );
-	t_tst_check( L, 2, 1 );                           //S: cse ste
+	t_tst_check( L, 2 );                           //S: cse ste
 	if (t_tst_cse_isType( L, 1, "callback" ))
 	{
 		lua_pushinteger( L, T_TST_CSE_BFE );           //S: cse ste bfe

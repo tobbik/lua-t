@@ -14,7 +14,6 @@
 
 #include "t.h"
 #include "t_tst.h"
-#include "t_tim.h"
 
 static int lt_tst__newindex( lua_State *L );
 
@@ -33,9 +32,9 @@ lt_tst__Call( lua_State *L )
 	lua_newtable( L );                   //S: … tbl
 	luaL_getmetatable( L, T_TST_TYPE );  //S: … tbl met
 	lua_setmetatable( L, -2 );           //S: … ste
-	t_getProxyTableIndex( L );           //S: … ste {}
-	lua_newtable( L );                   //S: … ste {} tbl
-	lua_rawset( L, -3 );                 //S: … ste
+	//t_getProxyTableIndex( L );           //S: … ste {}
+	//lua_newtable( L );                   //S: … ste {} tbl
+	//lua_rawset( L, -3 );                 //S: … ste
 	if( lua_istable( L, 1 ) )
 	{
 		lua_pushnil( L );
@@ -58,13 +57,21 @@ lt_tst__Call( lua_State *L )
  * Check a value on the stack for being a T.Test Suite.
  * \param   L        Lua state.
  * \param   int      position on the stack.
- * \param   int      hardCheck; error out if not a T.Test.
  * \lparam  table    T.Test Lua table instance.
  * --------------------------------------------------------------------------*/
-int
-t_tst_check( lua_State *L, int pos, int check )
+void
+t_tst_check( lua_State *L, int pos )
 {
-	return t_checkTableType( L, pos, check, T_TST_TYPE );
+	luaL_checktype( L, pos, LUA_TTABLE );
+	if (lua_getmetatable( L, pos ))        // does it have a metatable?
+	{
+		luaL_getmetatable( L, T_TST_TYPE ); // get correct metatable
+		if (! lua_rawequal( L, -1, -2 ))     // not the same?
+			luaL_error( L, "wrong argument, `"T_TST_TYPE"` expected" );
+		lua_pop( L, 2 );
+	}
+	else
+		luaL_error( L, "wrong argument, `"T_TST_TYPE"` expected" );
 }
 
 
@@ -114,7 +121,6 @@ t_tst_getMetrics( lua_State *L )
 	lua_Integer pass  = 0,
 	            skip  = 0,  ///< marked as ran but haven't finished
 	            todo  = 0;  ///< expected to fail
-	lua_Integer since = 0;
 
 	for (idx=0; idx<luaL_len( L, 1 ); idx++)
 	{
@@ -122,15 +128,12 @@ t_tst_getMetrics( lua_State *L )
 		pass  += (t_tst_cse_hasField( L, -1, "pass", 0 )) ? 1 : 0;
 		skip  += (t_tst_cse_hasField( L, -1, "skip", 0 )) ? 1 : 0;
 		todo  += (t_tst_cse_hasField( L, -1, "todo", 0 )) ? 1 : 0;
-		lua_getfield( L, -1, "executionTime" );  //S: ste cse tim
-		since += t_tim_getms( t_tim_check_ud( L, -1, 1 ) );
-		lua_pop( L, 2 );                         //S: ste
+		lua_pop( L, 1 );                         //S: ste
 	}
 	lua_pushboolean( L, (idx == pass + todo) ? 1 : 0 );
 	lua_pushinteger( L, pass );
 	lua_pushinteger( L, skip );
 	lua_pushinteger( L, todo );
-	lua_pushinteger( L, since );
 }
 
 
@@ -145,22 +148,22 @@ t_tst_callFinalize( lua_State *L )
 	size_t      len;
 
 	lua_pushvalue( L, lua_upvalueindex( 1 ) );     //S: ste
-	t_tst_check( L, 1, 1 );
+	t_tst_check( L, 1 );
 	len = luaL_len( L, 1 );
 	t_tst_getMetrics( L );   //S: ste bool pass skip todo since
 	printf( "---------------------------------------------------------\n"
-	        "Handled %lu tests in %.3f seconds\n\n"
+	        "Handled %lu tests in ????? seconds\n\n"
 	        "Executed         : %lld\n"
 	        "Skipped          : %lld\n"
 	        "Expected to fail : %lld\n"
 	        "Failed           : %lld\n"
 	        "status           : %s\n"
-	   , len, lua_tointeger( L, -1 )/1000.0
-	   , len - lua_tointeger( L, -3 )
-	   , lua_tointeger( L, -3 )
+	   , len
+	   , len - lua_tointeger( L, -2 )
 	   , lua_tointeger( L, -2 )
-	   , len - lua_tointeger( L, -4 )
-	   , (lua_toboolean( L, -5 )) ? "OK" : "FAIL" );
+	   , lua_tointeger( L, -1 )
+	   , len - lua_tointeger( L, -3 )
+	   , (lua_toboolean( L, -4 )) ? "OK" : "FAIL" );
 
 	return 0;
 }
@@ -181,7 +184,7 @@ t_tst_done( lua_State *L )
 	t_tst_cse_getDescription( L, 1 );
 	printf( "Executed Test:  %s\n", lua_tostring( L, -1 ) );
 	lua_pop( L, 1 );                           // pop Description
-	t_tst_check( L, 2, 1 );
+	t_tst_check( L, 2 );
 	for (idx=0; idx < luaL_len( L, 2 ); idx++)
 	{
 		lua_geti( L, 2, idx+1 );                //S: cse ste cseI
@@ -212,7 +215,7 @@ t_tst_callLoopCases( lua_State *L )
 {
 	lua_Integer idx;
 	lua_pushvalue( L, lua_upvalueindex( 1 ) );     //S: ste
-	t_tst_check( L, 1, 1 );         //S: ste
+	t_tst_check( L, 1 );         //S: ste
 	for (idx=0; idx<luaL_len( L, 1 ); idx++)
 	{
 		lua_pushcfunction( L, lt_tst_cse__call ); //S: ste fnc
@@ -233,7 +236,7 @@ static int
 lt_tst__call( lua_State *L )
 {
 	lua_Integer idx;
-	t_checkTableType( L, 1, 1, T_TST_TYPE );
+	t_tst_check( L, 1 );         //S: ste
 	for (idx=0; idx < luaL_len( L, 1 ); idx++)
 	{
 		lua_geti( L, 1, idx+1 );
@@ -266,10 +269,9 @@ static int
 lt_tst__newindex( lua_State *L )
 {
 	const char *name;
-	t_tst_check( L, 1, 1 );
+	t_tst_check( L, 1 );
 	name = luaL_checkstring( L, 2 );      //S: ste nme fnc
 	luaL_argcheck( L, LUA_TNUMBER != lua_type( L, 1 ), 1, "Can't overwrite numeric indexes" );
-	t_getProxyTable( L, 1 );              //S: tbl nme fnc
 
 	// insert a testcase
 	if (0==strncasecmp( name, "test_", 5 ))
@@ -310,7 +312,7 @@ lt_tst__tostring( lua_State *L )
 	lua_Integer t_len;
 	size_t      concat = 0;
 
-	t_tst_check( L, 1, 1 );
+	t_tst_check( L, 1 );
 	t_len  = luaL_len( L, 1 );
 	luaL_buffinit( L, &lB );
 	lua_pushfstring( L, "1..%d\n", t_len );  //S: ste 1..
@@ -363,8 +365,7 @@ lt_tst__tostring( lua_State *L )
 static int
 lt_tst__len( lua_State *L )
 {
-	t_tst_check( L, 1, 1 );   //S: ste
-	t_getProxyTable( L, 1 );  //S: tbl
+	t_tst_check( L, 1 );   //S: ste
 	lua_pushinteger( L, lua_rawlen( L, 1 ) );
 	return 1;
 }
@@ -432,7 +433,7 @@ lt_tst_IsReallyEqual( lua_State *L )
 static int
 lt_tst_HasPassed( lua_State *L )
 {
-	t_tst_check( L, 1, 1 );
+	t_tst_check( L, 1 );
 	t_tst_getMetrics( L );   //S: ste bool pass skip todo since
 	lua_pop( L, 5 );
 	return 1;
@@ -465,7 +466,6 @@ static const luaL_Reg t_tst_m [] = {
 	  { "__call"             , lt_tst__call }
 	, { "__tostring"         , lt_tst__tostring }
 	, { "__newindex"         , lt_tst__newindex }
-	, { "__index"            , t_getFromProxyTable }
 	, { "__len"              , lt_tst__len }
 	, { NULL                 , NULL }
 };

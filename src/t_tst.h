@@ -14,6 +14,14 @@ enum t_tst_cse_state {
 	T_TST_CSE_DNE,        ///> done()
 };
 
+#define T_TST_IDNT      "tst"
+#define T_TST_CSE_IDNT  "cse"
+
+#define T_TST_NAME      "Test"
+#define T_TST_CSE_NAME  "Case"
+
+#define T_TST_TYPE      "T."T_TST_NAME
+#define T_TST_CSE_TYPE  T_TST_TYPE"."T_TST_CSE_NAME
 
 #define T_TST_CSE_NAME  "Case"
 
@@ -21,7 +29,7 @@ enum t_tst_cse_state {
 #define T_TST_CSE_SKIPINDICATOR  "<test_case_skip_indicator>:" // must have trailing ":"
 
 int    t_tst_create( lua_State *L );
-int    t_tst_check( lua_State *L, int pos, int check );
+void   t_tst_check( lua_State *L, int pos );
 int    t_tst_done( lua_State *L );
 LUA_API int luaopen_t_tst( lua_State *L );
 
