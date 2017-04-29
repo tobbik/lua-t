@@ -29,10 +29,11 @@ local makeTst = function( prx )
 	return setmetatable( { [ prxTblIdx ] = prx }, _mt )
 end
 
-local getMetrics = function( tst, pattern )
+local getMetrics = function( tst, pattern, invert )
 	local count,pass,skip,todo,time = 0,0,0,0,Time(1)-Time(1)
+	local pttrn = pattern or ''
 	for n,cse,i in pairs( tst ) do
-		if n:match( pattern or '' ) then
+		if (not invert and n:match( pttrn )) or (invert and not n:match( pttrn )) then
 			count = count + 1
 			pass  = pass + (cse.pass and 1 or 0)
 			skip  = skip + (cse.skip and 1 or 0)
@@ -50,9 +51,9 @@ local getMetrics = function( tst, pattern )
 	}
 end
 
-local finalizer = function( tst, pattern )
+local finalizer = function( tst, pattern, invert )
 	return function( )
-		local res = getMetrics( tst, pattern );
+		local res = getMetrics( tst, pattern, invert );
 		print( format( "---------------------------------------------------------\n"..
 				  "Handled %d tests in %.3f seconds\n\n"..
 				  "Executed         : %d\n"..
@@ -79,27 +80,31 @@ local callEnvelope = function( fnc, tst, run )
 	end
 end
 
-local joiner = function( pattern )
+local joiner = function( pattern, invert )
 	local pttrn = pattern or ''
 	return function( ste, cse )
 		local ran, cnt = 0, 0
 		print( "Executed test: " .. cse:getDescription( ) )
 		for k,v,i in pairs( ste ) do
-			if k:match( pttrn ) then
+			if (not invert and k:match( pttrn )) or (invert and not k:match( pttrn )) then
 				cnt = cnt + 1
 				ran = ran + (nil==v.pass and 0 or 1 )
 			end
 		end
 		if ran == cnt then
-			callEnvelope( ste.afterAll, ste, finalizer( ste, pattern ) )
+			callEnvelope( ste.afterAll, ste, finalizer( ste, pattern, invert ) )
 		end
 	end
 end
 
-local caseRunner = function( ste, pattern )
+local caseRunner = function( ste, pattern, invert )
 	local pttrn = pattern or ''
 	return function()
-		for k,v,i in pairs( ste ) do  if  k:match( pttrn ) then v( ste, joiner( pattern ) )   end end
+		for k,v,i in pairs( ste ) do
+			if (not invert and k:match( pttrn )) or (invert and not k:match( pttrn )) then
+				v( ste, joiner( pattern, invert ) )
+			end
+		end
 	end
 end
 
@@ -132,18 +137,18 @@ _mt = {       -- local _mt at top of file
 		end
 		return t_concat( buf, "\n" )
 	end,
-	__call     = function( self, pattern )
+	__call     = function( self, pattern, invert )
 		local prx = getPrx( self )
 		for i=1,#self do self[ i ]:prune( ) end
-		callEnvelope( self.beforeAll, self, caseRunner( self, pattern ) )
-		return getMetrics( self, pattern ).success
+		callEnvelope( self.beforeAll, self, caseRunner( self, pattern, invert ) )
+		return getMetrics( self, pattern, invert ).success
 	end,
 }
 
 Case.done = done
 return setmetatable( {
-	hasPassed  = function( ste, p ) return getMetrics( ste, p ).success end,
-	getMetrics = function( ste, p ) return getMetrics( ste, p ) end,
+	hasPassed  = function( ste, p, inv ) return getMetrics( ste, p, inv ).success end,
+	getMetrics = function( ste, p, inv ) return getMetrics( ste, p, inv ) end,
 	Case       = Case,
 }, {
 	__call   = function( self, tbl )
