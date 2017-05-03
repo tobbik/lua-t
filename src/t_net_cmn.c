@@ -20,9 +20,6 @@ struct t_net_sck
 *t_net_sck_check_ud( lua_State *L, int pos, int check )
 {
 	void *ud = luaL_testudata( L, pos, T_NET_SCK_TYPE );
-	luaL_argcheck( L, (ud != NULL || !check), pos, "`"T_NET_SCK_TYPE"` expected" );
+	if (NULL == ud && check) t_typeerror( L , pos, T_NET_SCK_TYPE );
 	return (NULL==ud) ? NULL : (struct t_net_sck *) ud;
 }
-
-
-
