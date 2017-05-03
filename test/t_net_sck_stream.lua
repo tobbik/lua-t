@@ -44,8 +44,9 @@ receive = function( self )
 		if msg then rcvdMsg = msg end
 	end
 	if msg then
-		assert( rcvdMsg == self.payload:sub( self.inCount+1, cnt+self.inCount ),
-			"Received and original should match" )
+		T.assert( rcvdMsg == self.payload:sub( self.inCount+1, cnt+self.inCount ),
+			"%d[%d]Received and original should match:\n%s\n---------------------------\n%s",
+			self.inCount, cnt, rcvdMsg,self.payload:sub( self.inCount+1, cnt+self.inCount  ) )
 		self.inCount = cnt + self.inCount
 	else
 		assert( self.inCount  == self.outCount, "Send and Recv count should be equal" )
@@ -257,5 +258,5 @@ local tests = {
 }
 
 t = Test( tests )
-t( )
+t()
 print( t )

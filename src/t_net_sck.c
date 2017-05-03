@@ -19,11 +19,11 @@
  * \lparam  protocol string: 'TCP', 'UDP' ...
  * \lparam  family   string: 'ip4', 'ip6', 'raw' ...
  * \lparam  type     string: 'stream', 'datagram' ...
- * \usage   T.Net.Socket( )                   -> create TCP IPv4 Socket
- *          T.Net.Socket( 'TCP' )             -> create TCP IPv4 Socket
- *          T.Net.Socket( 'TCP', 'ip4' )      -> create TCP IPv4 Socket
- *          T.Net.Socket( 'UDP', 'ip4' )      -> create UDP IPv4 Socket
- *          T.Net.Socket( 'UDP', 'ip6' )      -> create UDP IPv6 Socket
+ * \usage   Net.Socket( )                   -> create TCP IPv4 Socket
+ *          Net.Socket( 'TCP' )             -> create TCP IPv4 Socket
+ *          Net.Socket( 'TCP', 'ip4' )      -> create TCP IPv4 Socket
+ *          Net.Socket( 'UDP', 'ip4' )      -> create UDP IPv4 Socket
+ *          Net.Socket( 'UDP', 'ip6' )      -> create UDP IPv6 Socket
  * \return  struct t_net_sck pointer to the socket struct.
  * --------------------------------------------------------------------------*/
 static int
@@ -95,7 +95,7 @@ lt_net_sck_close( lua_State *L )
 /** -------------------------------------------------------------------------
  * Shutdown a socket.
  * \param   L    Lua state.
- * \lparam  ud   t_net_sck userdata instance.
+ * \lparam  sck  Net.Socket userdata instance.
  * \return  int  # of values pushed onto the stack.
  *-------------------------------------------------------------------------*/
 static int
@@ -109,8 +109,8 @@ lt_net_sck_shutDown( lua_State *L )
 
 /** -------------------------------------------------------------------------
  * Return the FD int representation of the socket
- * \param   L  The lua state.
- * \lparam  socket socket userdata.
+ * \param   L      Lua state.
+ * \lparam  sck    Net.Socket userdata instance.
  * \lreturn socketFD int.
  * \return  int    # of values pushed onto the stack.
  *-------------------------------------------------------------------------*/
@@ -126,7 +126,7 @@ lt_net_sck_getFd( lua_State *L )
 /**--------------------------------------------------------------------------
  * Prints out the socket.
  * \param   L      Lua state.
- * \lparam  ud     t_net userdata instance.
+ * \lparam  sck    Net.Socket userdata instance.
  * \lreturn string formatted string representing socket.
  * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
@@ -145,8 +145,8 @@ lt_net_sck__tostring( lua_State *L )
 /** -------------------------------------------------------------------------
  * Listen on a socket or create a listening socket.
  * \param   L      Lua state.
- * \lparam  ud     T.Net.Sck userdata instance( socket ).
- * \lparam  ud     T.Net.Ip4 userdata instance( ipaddr ).
+ * \lparam  sck    Net.Sck userdata instance( socket ).
+ * \lparam  adr    Net.Address userdata instance( ipaddr ).
  * \lparam  int    port to listen on.
  * \lparam  int    Backlog connections.
  * \return  int    # of values pushed onto the stack.
@@ -226,43 +226,39 @@ lt_net_sck_accept( lua_State *L )
 
 
 /** -------------------------------------------------------------------------
- * Send a message.
+ * Send data to a socket.
  *
- * If the first parameter is a T.Net.Address it will be passed to sendto and
- * used to address where it goes.  If the first or second parameter is a
- * T.Buffer or a T.Buffer.Segement received data will be written into it.
- * Otherwise a Lua string with the data will be returned as second return
- * value.  If a T.Buffer or T.Buffer.Segement is passed the receiving of data
- * is automatically capped to the buffers/segements defined length.  It is not
- * possible to pass an offset to T.Buffer, instead use a temporary
- * T.Buffer.Segement to compose a bigger Buffer from multiple recv()
- * operations.  The following permutations are possible:
- *     cnt        = s:send( ip, buf/seg/str )
+ * A Buffer, Buffer.Segment or Lua string is mandatory as second parameter.  If
+ * the third parameter is a Net.Address it will be passed to sendto and used
+ * for an unconnected socket to determine where it goes to.  A fourth parameter,
+ * or if Net.Address is omitted a third, is an integer and determines the number
+ * of bytes to send.  The following permutations are possible:
  *     cnt        = s:send( buf/seg/str )
- *     cnt        = s:send( ip, buf/seg/str, sz )
- *     cnt        = s:send( buf/seg/str, sz )
- * \usage   int cnt = sck:send( [T.Net.Address adr, T.Buffer/Segment buf, int size ] )
+ *     cnt        = s:send( buf/seg/str, adr )
+ *     cnt        = s:send( buf/seg/str, max )
+ *     cnt        = s:send( buf/seg/str, adr, max )
+ * \usage   int cnt = sck:send( [Buffer/Segment/string buf, Net.Address adr, int size ] )
  * \param   L      Lua state.
- * \lparam  sck    T.Net.Socket  userdata instance.
- * \lparam  adr    T.Net.Address userdata instance (optional).
- * \lparam  msg    Lua string/T.Buffer/Segement attempting to send.
- * \lparam  sz     number of bytes to send.
+ * \lparam  sck    Net.Socket  userdata instance.       -> mandatory
+ * \lparam  msg    Buffer/Segment/string instance.      -> mandatory
+ * \lparam  adr    Net.Address userdata instance.       -> optional
+ * \lparam  max    size of msg t be send in bytes.      -> optional
  * \lreturn sent   number of bytes sent.
  * \return  int    # of values pushed onto the stack.
  *-------------------------------------------------------------------------*/
 static int
 lt_net_sck_send( lua_State *L )
 {
+	size_t              len; // length of message to send
+	int                 snt; // actually sent bytes
 	struct t_net_sck   *sck = t_net_sck_check_ud( L, 1, 1 );
-	struct sockaddr_in *adr = t_net_ip4_check_ud( L, 2, 0 );
-	int                 snt;
-	size_t              len;
-	char               *msg = t_buf_tolstring( L, (NULL==adr)?2:3, &len, NULL );
-	size_t              sz  = (lua_isinteger( L, -1 ))
-	                           ? lua_tointeger( L, -1 )
-	                           : len;
+	char               *msg = t_buf_checklstring( L, 2, &len, NULL );
+	struct sockaddr_in *adr = t_net_ip4_check_ud( L, 3, 0 );
+	size_t              max = (lua_gettop( L ) == ((NULL==adr) ?3 :4))
+	                          ? luaL_checkinteger( L, (NULL==adr) ?3 :4 )
+	                          : len;
 
-	snt = t_net_sck_send( L, sck, adr, msg, (sz>len) ? len : sz );
+	snt = t_net_sck_send( L, sck, adr, msg, (max<len) ? max : len );
 	if (0==snt)
 		lua_pushnil( L );
 	else
@@ -273,46 +269,47 @@ lt_net_sck_send( lua_State *L )
 
 /** -------------------------------------------------------------------------
  * Recieve some data from a socket.
- * If the first parameter is a T.Net.Address it will be passed to recvfrom and
+ * If the first parameter is a Net.Address it will be passed to recvfrom() and
  * be filled with the peers ip Address.  If the first or second parameter is a
- * T.Buffer or a T.Buffer.Segement received data will be written into it.
- * Otherwise a Lua string with the data will be returned as second return
- * value.  If a T.Buffer or T.Buffer.Segement is passed the receiving of data
- * is automatically capped to the buffers/segements defined length.  It is not
- * possible to pass an offset to T.Buffer, instead use a temporary
- * T.Buffer.Segement to compose a bigger Buffer from multiple recv()
- * operations.  The following permutations are possible:
- *      bool,int = s:recv( adr, buf/seg )
- *      bool,int = s:recv( buf/seg )
- *      str ,int = s:recv( adr )
- *      str ,int = s:recv( )
- *      bool,int = s:recv( adr, buf/seg, max )
- *      bool,int = s:recv( buf/seg, max )
- *      str ,int = s:recv( adr, max )
- *      str ,int = s:recv( max )
- * \usage   string msg, int cnt = sck:recv( [T.Net.Address adr, int size ] )
- * \usage   bool rcvd, int cnt  = sck:recv( [T.Net.Address adr,] T.Buffer/Segment buf[, int size ] )
+ * Buffer or a Buffer.Segement received data will be written into it.
+ * Otherwise a Lua string with the data will be returned as first return value.
+ * If a Buffer or Buffer.Segement is passed the receiving of data is
+ * automatically capped to the buffers/segements defined length.  It is not
+ * possible to pass an offset to Buffer, instead use a temporary Buffer.Segement
+ * to compose a bigger Buffer from multiple recv() operations.  The following
+ * permutations are possible:
+ *      str ,int = sck:recv( )
+ *      str ,int = sck:recv( adr )
+ *      str ,int = sck:recv( max )
+ *      bool,int = sck:recv( buf/seg )
+ *      str ,int = sck:recv( adr, max )
+ *      bool,int = sck:recv( adr, buf/seg )
+ *      bool,int = sck:recv( buf/seg, max )
+ *      bool,int = sck:recv( adr, buf/seg, max )
+ * \usage   string msg, int cnt = sck:recv( [Net.Address adr, int size ] )
+ * \usage   bool rcvd, int cnt  = sck:recv( [Net.Address adr,] Buffer/Segment buf[, int size ] )
  * \param   L      Lua state.
- * \lparam  ud     Net.Socket  userdata instance.       -> mandatory
- * \lparam  ud     Net.Address userdata instance.       -> optional
- * \lparam  ud     T.Buffer/Segment userdata instance.  -> optional
- * \lparam  int    size of msg t be send in bytes.      -> optional
- * \lreturn rcvd   number of bytes recieved.  nil if nothing was received.
- * \lreturn msg    Lua string of received message.
+ * \lparam  sck    Net.Socket  userdata instance.       -> mandatory
+ * \lparam  adr    Net.Address userdata instance.       -> optional
+ * \lparam  buf    Buffer/Segment userdata instance.    -> optional
+ * \lparam  int    size of msg t be received in bytes.  -> optional
+ * \lreturn msg    Lua string of received message or boolean true if written to Buffer.
+ *                 Is nil or false if nothing was received.
+ * \lreturn rcvd   number of bytes recieved.  0 if nothing was received.
  * \return  int    # of values pushed onto the stack.
  *-------------------------------------------------------------------------*/
 static int
 lt_net_sck_recv( lua_State *L )
 {
+	size_t              len  = 0;  // length of sink
+	size_t              max;       // desired or determined size to recv
+	int                 cw   = 0;  // test buffer to be writeable
+	int                 rcvd = 0;  // actually rcvd bytes
+	char                buf[ BUFSIZ ]; // char buffer if no t.Buffer is passed
+	char               *msg;       // char pointer to recv into
+	size_t              args = lua_gettop( L );
 	struct t_net_sck   *sck  = t_net_sck_check_ud( L, 1, 1 );
 	struct sockaddr_in *adr  = t_net_ip4_check_ud( L, 2, 0 );
-	size_t              args = lua_gettop( L );
-	size_t              len  = 0;  // length of sink
-	size_t              max;
-	int                 cw   = 0;  // test buffer to be writeable
-	int                 rcvd = 0;
-	char                buf[ BUFSIZ ];
-	char               *msg;
 
 	if (t_buf_isstring( L, (NULL==adr) ?2 :3, &cw ) && cw)  // is writable -> buffer
 	{
@@ -364,10 +361,10 @@ lt_net_sck_getsockname( lua_State *L )
 /** -------------------------------------------------------------------------
  * Systemcall select() for ready sockets.
  * \param   L      Lua state.
- * \lparam  table  T.Net socket array All sockets to read from.
- * \lparam  table  T.Net socket array All sockets to write to.
- * \lreturn table  T.Net.Socket table of sockets ready to read from.
- * \lreturn table  T.Net.Socket table of sockets ready to write to.
+ * \lparam  table  Net socket table All sockets to read from.
+ * \lparam  table  Net socket table All sockets to write to.
+ * \lreturn table  Net.Socket table of sockets ready to read from.
+ * \lreturn table  Net.Socket table of sockets ready to write to.
  * \return  int    # of values pushed onto the stack.
  * TODO:  Allow for a Time Out to be handed to it
  *-------------------------------------------------------------------------*/
@@ -525,9 +522,7 @@ static const luaL_Reg t_net_sck_m [] =
 	, { "send"        , lt_net_sck_send }
 	, { "recv"        , lt_net_sck_recv }
 	, { "getsockname" , lt_net_sck_getsockname }
-	// generic net functions -> reuse functions
 	, { "getFd"       , lt_net_sck_getFd }
-	//, { "setOption",   lt_net_setoption }
 	, { NULL          , NULL }
 };
 

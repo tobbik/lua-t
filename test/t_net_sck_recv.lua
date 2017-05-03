@@ -13,7 +13,7 @@
 --    msg, len  = sck:recv( adr, buf )
 --    msg, len  = sck:recv( adr, buf, max )
 --
--- These tests run (semi-)asynchronously.  A TCP server socket is listening while each
+-- These tests run (semi-)asynchronously.  A UDP server socket is listening while each
 -- test connect it's own client to it.  This allows for these tests to run within the
 -- same  process.  Each test will restart the loop, connect, assert and stop the
 -- loop before moving on to the next test.
@@ -32,8 +32,7 @@ asrtHlp   = T.require( "assertHelper" )
 
 
 local sender = function( self, msg )
-	local f
-	f = function(s, msg)
+	local f = function(s, msg)
 		local snt = s.cSck:send( msg, s.sAdr )
 		s.loop:removeHandle( self.cSck, "write" )
 	end
@@ -258,23 +257,29 @@ local tests = {
 	test_cb_recvWrongArgsFail = function( self, done )
 		Test.Case.describe( "msg,len = sck.recv( [bad arguments] ) fails" )
 		local payload = string.rep( 'TestMessage for wrong arguments', 14 )
+		local len, f, eMsg, d, e  = #payload, nil, nil, nil, nil
 		local recver  = function( s )
 			local buf = Buffer(60)
 			local adr = Buffer(60)
 
-			local r    = function( x ) local suc,len = x.sSck:recv( 'a string' ) end
-			local eMsg = "bad argument #1 to 'recv' %(number expected, got string%)"
-			local d,e  = pcall( r, s )
+			-- not using sck:send but sck.send
+			f    = function( x ) local msg, rcvd = x.sSck.recv( payload, "something" ) end
+			eMsg = "bad argument #1 to 'recv' %(T.Net.Socket expected, got string%)"
+			d,e  = pcall( f, s )
 			assert( not d, "Call should have failed" )
 			T.assert( e:match( eMsg ), "Error message should contain: `%s`\nbut was\n`%s`", eMsg, e )
-			print( e )
 
-			r    = function( x ) local suc,len = x.sSck:recv( buf, 'a string' ) end
-			eMsg = "bad argument #2 to 'recv' %(number expected, got string%)"
-			local d,e = pcall( r, s )
+			f    = function( x ) local suc,len = x.sSck:recv( 'a string' ) end
+			eMsg = "bad argument #1 to 'recv' %(number expected, got string%)"
+			d,e  = pcall( f, s )
 			assert( not d, "Call should have failed" )
 			T.assert( e:match( eMsg ), "Error message should contain: `%s`\nbut was\n`%s`", eMsg, e )
-			print( e )
+
+			f    = function( x ) local suc,len = x.sSck:recv( buf, 'a string' ) end
+			eMsg = "bad argument #2 to 'recv' %(number expected, got string%)"
+			d,e  = pcall( f, s )
+			assert( not d, "Call should have failed" )
+			T.assert( e:match( eMsg ), "Error message should contain: `%s`\nbut was\n`%s`", eMsg, e )
 
 			--[[
 			r  = function( x ) local suc,len = x.sSck:recv( 20, 15 ) end
