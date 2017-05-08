@@ -85,6 +85,4 @@ local tc = {
 }
 
 -- The tests in tc will be executed in random order
-local t = Test( tc )
-t( )
-print( t )
+return Test( tc )

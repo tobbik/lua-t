@@ -424,6 +424,4 @@ local   tests = {
 	end,
 }
 
-t = Test( tests )
-t( )
-print( t )
+return Test( tests )

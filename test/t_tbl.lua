@@ -226,6 +226,4 @@ local   tests = {
 
 }
 
-t = Test( tests )
-t( )
-print( t )
+return Test( tests )

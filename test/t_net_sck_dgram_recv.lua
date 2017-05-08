@@ -292,8 +292,6 @@ local tests = {
 		makeSender( self, payload )
 	end,
 
-	}
+}
 
-t = Test( tests )
-t( )
-print( t )
+return Test( tests )

@@ -108,7 +108,4 @@ local tests = {
 }
 
 
-t = Test( tests )
-t( )
-print( '\n\n\n\n\n' )
-print( t )
+return Test( tests )
