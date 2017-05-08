@@ -13,34 +13,31 @@ local m = {
 	"t_tst",
 }
 
-local run = function( m_pat, m_inv, t_pat, t_inv )
-	local m_pat = m_pat or ''
+
+local run = function( do_pat, no_pat )
+	local do_pat, no_pat = do_pat                   or ''    , no_pat                   or '^$'
+	local td_pat, tn_pat = do_pat:match( ':(.*)$' ) or ''    , no_pat:match( ':(.*)$' ) or '^$'
+	local do_pat, no_pat = do_pat:match( '^(.*):' ) or do_pat, no_pat:match( '^(.*):' ) or no_pat
 	for k,v in pairs( m ) do
-		if (not m_inv and v:match( m_pat )) or (m_inv and not v:match( m_pat )) then
-			local test = T.require( v )
-			if     t_pat and     t_inv then test( t_pat, t_inv )
-			elseif t_pat and not t_inv then test( t_pat )
-			else                            test( )
+		--local runit =  v:match( do_pat ) and not v:match( no_pat )
+		--print('------', runit,  do_pat, no_pat, v:match( do_pat ), v:match( no_pat ), v )
+		if v:match( do_pat ) and not v:match( no_pat ) then
+			local c_test = T.require( v )
+			if not c_test( td_pat, tn_pat ) then
+				t = c_test --> push test suite into global scope
+				break
 			end
 		end
 	end
 end
 
-local module_pattern        = ''
-local module_pattern_invert = false
-local test_pattern          = ''
-local test_pattern_invert   = false
+local include_pattern = ""
+local exclude_pattern = "^$"
 if arg[ 1 ] then
-	module_pattern = tostring( arg[ 1 ] )
+	include_pattern = tostring( arg[ 1 ] )
 end
-if arg[2] and arg[2]:match( '[tT][rR][uU][eE]' ) or 1==tonumber( arg[2] ) then
-	module_pattern_invert = true
-end
-if arg[ 3 ] then
-	test_pattern = tostring( arg[ 3 ] )
-end
-if arg[4] and arg[4]:match( '[tT][rR][uU][eE]' ) or 1==tonumber( arg[4] ) then
-	test_pattern_invert = true
+if arg[ 2 ] then
+	exclude_pattern = arg[ 2 ]
 end
 
-run( module_pattern, module_pattern_invert, test_pattern, test_pattern_invert )
+run( include_pattern, exclude_pattern )

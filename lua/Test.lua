@@ -10,10 +10,8 @@ local prxTblIdx,                      Table,            Oht  =
       require( "t" ).proxyTableIndex, require"t.Table", require"t.OrderedHashTable"
 local t_concat    , t_insert    , format       , getmetatable, setmetatable, pairs, assert, type =
       table.concat, table.insert, string.format, getmetatable, setmetatable, pairs, assert, type
-local t_merge,     t_complement,     t_contains,     t_count,     t_keys,     t_clone =
-      Table.merge, Table.complement, Table.contains, Table.count, Table.keys, Table.clone
-local o_setElement  , o_getElement  , o_iters =
-      Oht.setElement, Oht.getElement, Oht.iters
+local t_clone     , o_setElement  , o_getElement  , o_iters =
+      Table.clone , Oht.setElement, Oht.getElement, Oht.iters
 local Time = require't.Time'
 
 local _mt
@@ -29,11 +27,11 @@ local makeTst = function( prx )
 	return setmetatable( { [ prxTblIdx ] = prx }, _mt )
 end
 
-local getMetrics = function( tst, pattern, invert )
+local getMetrics = function( tst, inc_pat, exc_pat )
 	local count,pass,skip,todo,time = 0,0,0,0,Time(1)-Time(1)
-	local pttrn = pattern or ''
+	local inc_pat, exc_pat = inc_pat or '', exc_pat or '^$'
 	for n,cse,i in pairs( tst ) do
-		if (not invert and n:match( pttrn )) or (invert and not n:match( pttrn )) then
+		if n:match( inc_pat ) and not n:match( exc_pat ) then
 			count = count + 1
 			pass  = pass + (cse.pass and 1 or 0)
 			skip  = skip + (cse.skip and 1 or 0)
@@ -51,9 +49,9 @@ local getMetrics = function( tst, pattern, invert )
 	}
 end
 
-local finalizer = function( tst, pattern, invert )
+local finalizer = function( tst, inc_pat, exc_pat )
 	return function( )
-		local res = getMetrics( tst, pattern, invert );
+		local res = getMetrics( tst, inc_pat, exc_pat );
 		print( format( "---------------------------------------------------------\n"..
 				  "Handled %d tests in %.3f seconds\n\n"..
 				  "Executed         : %d\n"..
@@ -70,9 +68,9 @@ local finalizer = function( tst, pattern, invert )
 		end
 end
 
-local callEnvelope = function( fnc, tst, run )
+local callEnvelope = function( fnc, self, run )
 	if fnc and 'function'==type( fnc ) then
-		local r,err = pcall( fnc, tst, run )
+		local r,err = pcall( fnc, self, run )
 		if not r then print(err);end
 		--if not r then print(err);error( "Test failed" ) end
 	else
@@ -80,29 +78,28 @@ local callEnvelope = function( fnc, tst, run )
 	end
 end
 
-local joiner = function( pattern, invert )
-	local pttrn = pattern or ''
+local joiner = function( inc_pat, exc_pat )
 	return function( ste, cse )
 		local ran, cnt = 0, 0
-		print( "Executed test: " .. cse:getDescription( ) )
+		print( cse:getDescription( ) )
 		for k,v,i in pairs( ste ) do
-			if (not invert and k:match( pttrn )) or (invert and not k:match( pttrn )) then
+			if k:match( inc_pat or '' ) and not k:match( exc_pat or '^$' ) then
 				cnt = cnt + 1
 				ran = ran + (nil==v.pass and 0 or 1 )
 			end
 		end
 		if ran == cnt then
-			callEnvelope( ste.afterAll, ste, finalizer( ste, pattern, invert ) )
+			callEnvelope( ste.afterAll, ste, finalizer( ste, inc_pat, exc_pat ) )
 		end
 	end
 end
 
-local caseRunner = function( ste, pattern, invert )
-	local pttrn = pattern or ''
+local caseRunner = function( ste, inc_pat, exc_pat, t_name_len )
 	return function()
 		for k,v,i in pairs( ste ) do
-			if (not invert and k:match( pttrn )) or (invert and not k:match( pttrn )) then
-				v( ste, joiner( pattern, invert ) )
+			if k:match( inc_pat or '' ) and not k:match( exc_pat or '^$' ) then
+				io.write( format( "%-"..t_name_len.."s :", k ) )
+				v( ste, joiner( inc_pat, exc_pat ) )
 			end
 		end
 	end
@@ -111,7 +108,7 @@ end
 -- ---------------------------- Instance metatable --------------------
 _mt = {       -- local _mt at top of file
 	-- essentials
-	__name     = "T.Test",
+	__name     = "t.Test",
 	__len      = function( self )      return #getPrx( self ) end,
 	__pairs    = function( self )      return o_iters( getPrx( self ), false )         end,
 	__ipairs   = function( self )      return o_iters( getPrx( self ), true )          end,
@@ -137,18 +134,27 @@ _mt = {       -- local _mt at top of file
 		end
 		return t_concat( buf, "\n" )
 	end,
-	__call     = function( self, pattern, invert )
-		local prx = getPrx( self )
-		for i=1,#self do self[ i ]:prune( ) end
-		callEnvelope( self.beforeAll, self, caseRunner( self, pattern, invert ) )
-		return getMetrics( self, pattern, invert ).success
+	__call     = function( self, inc_pat, exc_pat )
+		local prx, t_name_len = getPrx( self ), 0
+		for k,v,i in pairs( self ) do
+			if k:match( inc_pat or '' ) and not k:match( exc_pat or '^$' ) then
+				v:reset( )
+				t_name_len = #k>t_name_len and #k or t_name_len
+			end
+		end
+		if 0 ~= t_name_len then
+			callEnvelope( self.beforeAll, self, caseRunner( self, inc_pat, exc_pat, t_name_len ) )
+			return getMetrics( self, inc_pat, exc_pat ).success
+		else
+			return true
+		end
 	end,
 }
 
 Case.done = done
 return setmetatable( {
-	hasPassed  = function( ste, p, inv ) return getMetrics( ste, p, inv ).success end,
-	getMetrics = function( ste, p, inv ) return getMetrics( ste, p, inv ) end,
+	hasPassed  = function( ste, inc_pat, exc_pat ) return getMetrics( ste, inc_pat, exc_pat ).success end,
+	getMetrics = function( ste, inc_pat, exc_pat ) return getMetrics( ste, inc_pat, exc_pat ) end,
 	Case       = Case,
 }, {
 	__call   = function( self, tbl )

@@ -47,7 +47,7 @@ local tc = {
 	test_typeLuaObjects = function( self )
 		Test.Case.describe( "type( FILE* ) gives 'usedata' or `FILE*`" )
 		local dir = debug.getinfo( 1, "S" ).short_src:match( "^(.*)/" )
-		local f = io.open( dir .. "/t.lua", "r")
+		local f = io.open( dir .. "/t_t.lua", "r")
 		T.assert( 'userdata' ==   type( f ), "type should be `userdata` but was `%s`",   type(f) )
 		T.assert( 'FILE*'    == T.type( f ), "type should be `FILE*`    but was `%s`", T.type(f) )
 	end,

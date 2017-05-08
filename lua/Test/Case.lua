@@ -84,7 +84,7 @@ local getDescription = function( self )
 	else                  return self.description end
 end
 
-local prune      = function( s )
+local reset      = function( s )
 	s.pass,s.skip,s.todo,s.message,s.location,s.executionTime = nil,nil,nil,nil,nil,nil
 end
 
@@ -152,7 +152,7 @@ _mt = {       -- local _mt at top of file
 	end,
 	addTapDiagnostic = addTapDiagnostic,
 	getDescription   = getDescription,
-	prune            = prune,
+	reset            = reset,
 }
 _mt.__index    = _mt
 

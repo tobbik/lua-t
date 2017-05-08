@@ -92,7 +92,6 @@ local tc = {
 
 	test_EqTableLength = function( self )
 		Test.Case.describe( 'Ensure ALL equality' )
-		Test.Case.todo( 'Make sure recursive runs both ways' )
 		local k = {x=1,y=2,z=4,a=1,b=true,c='string'}
 		local h = {x=1,y=2,z=4,a=1,b=true,c='string',d=5}
 		assert( not e( k, h ), "Make sure subsets not equal" )

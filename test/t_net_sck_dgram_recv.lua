@@ -36,6 +36,8 @@ local makeSender = function( self, msg )
 		local snt = s.cSck:send( msg, s.sAdr )
 		s.loop:removeHandle( self.cSck, "write" )
 	end
+	self.cSck = Socket( 'udp' )
+	asrtHlp.Socket( self.cSck, 'udp', 'AF_INET', 'SOCK_DGRAM' )
 	self.loop:addHandle( self.cSck, "write", f, self, msg )
 end
 
@@ -50,20 +52,16 @@ local tests = {
 		self.sAdr  = self.sSck:bind( self.host, self.port )
 		asrtHlp.Socket( self.sSck, 'udp', 'AF_INET', 'SOCK_DGRAM' )
 		asrtHlp.Address( self.sAdr, self.host, self.port )
-		self.cSck  = Socket( 'udp' )
-		asrtHlp.Socket( self.cSck, 'udp', 'AF_INET', 'SOCK_DGRAM' )
 		done()
 	end,
 
 	afterAll = function( self, done )
-		self.cSck:close( )
 		self.sSck:close( )
 		done()
 	end,
 
 	beforeEach_cb = function( self, done )
 		self.loop:addTimer( Timer( 1 ), done )
-		--self.loop:addHandle( self.sSck, 'read', receive, self )
 		-- loop:run() blocks further execution until the function on the loop
 		-- runs the afterEach_cb and releases the block forcing all tests to be
 		-- executed sequentially
@@ -73,7 +71,7 @@ local tests = {
 	afterEach_cb = function( self, done )
 		self.loop:removeHandle( self.sSck, 'read' )
 		self.loop:stop( )
-		--self.payload = nil
+		self.cSck:close( )
 		done( )
 	end,
 

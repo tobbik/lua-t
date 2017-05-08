@@ -166,7 +166,8 @@ Test Execution Filter
 
 Executing the ``Test`` suite can be limited by names of the test functions.
 This allows to group tests or run only single test while the suite will
-still execute all the hooks.
+still execute all the hooks.  The filters are using ``string.match()`` which
+means Lua pattern apply.
 
 .. code:: lua
 
@@ -178,9 +179,14 @@ still execute all the hooks.
      test_odd_three = function( self ) ... end
      test_even_four = function( self ) ... end
   } )
-  t( 'odd' ) -- this will run the global hooks an all functions that have
-             -- 'odd' in their name
+  t( 'odd' ) -- this will run the global hooks an all functions that match
+             -- the pattern 'odd' in their name
 
+  t( 'even' ) -- this will run the global hooks an all functions that match
+              -- the pattern 'even' in their name
+
+  t( nil, 'even' ) -- this will run the global hooks an all functions that
+                   -- DO NOT match the pattern 'even' in their name
 
 API
 ===
@@ -217,15 +223,17 @@ converted to a ``Test.Case`` instance.  They have their own documentation.
 Instance Metamembers
 --------------------
 
-``boolean x = Test t( [string pattern] )  [__call]``
+``boolean x = Test t( [string include_pattern, string exclude_pattern] )  [__call]``
   Executes the `Test t` suite.  Returns true or false depending on weather
   the execution of the test suite was successful.  The boolean return only
   works for synchronous tests.  As soon as there is a single asynchronous
   test case in the ``Test t`` the return value is always ``true``.  If a
-  ``string pattern`` is passed as first parameter only ``Test.Case``
-  instances in fields which contain ``string pattern`` will be executed.
-  ``string pattern`` is evaluated by Luas own ``string.match()`` function,
-  hence all Lua patterns apply.
+  ``string include_pattern`` is passed as first parameter only ``Test.Case``
+  instances in fields which contain ``string include_pattern`` will be
+  executed.  ``string include_pattern`` is evaluated by Luas own
+  ``string.match()`` function,  hence all Lua patterns apply.  If a second
+  parameter ``string exclude_pattern`` is passed, only ``Test.Case``
+  instances in fields that **DO NOT** match the pattern will be executed.
 
 ``string s = tostring( Test t )  [__toString]``
   Returns a string which is a TAP report of the Test suite.
