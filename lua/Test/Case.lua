@@ -6,7 +6,7 @@
 
 local t_concat    , t_insert    , format       , getmetatable, setmetatable, pairs, assert, type =
       table.concat, table.insert, string.format, getmetatable, setmetatable, pairs, assert, type
-local Time = require't.Time'
+local T,Time = require't', require't.Time'
 
 local _mt
 local T_TST_CSE_SKIPINDICATOR = "<test_case_skip_indicator>:" -- must have trailing ":"
@@ -31,12 +31,14 @@ local setFunctionSource = function( f, b )
 end
 
 local addTapDiagnostic = function( tbl )
-	local f, b = { "description", "testtype", "pass", "skip", "todo", "message",
-	               "location", "traceback" }, { "  ---" }
+	local f, b = { "description", "testtype", "executionTime", "pass", "skip", "todo",
+	               "message", "location", "traceback" }, { "  ---" }
 	for i = 1, #f do
 		if nil ~= tbl[ f[i] ] then
-			if "boolean" == type( tbl[ f[i] ]) then
+			if     "boolean" == T.type( tbl[ f[i] ]) then
 				t_insert( b, format( "\n  %s: %s", f[i], tbl[ f[i] ] and "True" or "False" ) )
+			elseif "T.Time"  == T.type( tbl[ f[i] ]) then
+				t_insert( b, format( "\n  %s: %s", f[i], tbl[ f[i] ] ) )
 			else
 				t_insert( b, format( "\n  %s: %s", f[i], tbl[ f[i] ]:gsub( "\n","\n  ") ) )
 			end
