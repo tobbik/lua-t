@@ -39,7 +39,7 @@
  * \param   type     int SOCK_STREAM, SOCK_DGRAM, ...
  * --------------------------------------------------------------------------*/
 void
-t_net_sck_createHandle( lua_State *L, struct t_net_sck *sck, int family, int type, int protocol )
+p_net_sck_createHandle( lua_State *L, struct t_net_sck *sck, int family, int type, int protocol )
 {
 	sck->fd = socket( family, type, protocol );
 	if (-1 == sck->fd)
@@ -53,7 +53,7 @@ t_net_sck_createHandle( lua_State *L, struct t_net_sck *sck, int family, int typ
  * \param   struct t_net_sck pointer.
  *-------------------------------------------------------------------------*/
 int
-t_net_sck_close( lua_State *L, struct t_net_sck *sck )
+p_net_sck_close( lua_State *L, struct t_net_sck *sck )
 {
 	if (-1 != sck->fd)
 	{
@@ -74,7 +74,7 @@ t_net_sck_close( lua_State *L, struct t_net_sck *sck )
  * \param   shutVal  int; SHUT_* value.
  *-------------------------------------------------------------------------*/
 int
-t_net_sck_shutDown( lua_State *L, struct t_net_sck *sck, int shutVal )
+p_net_sck_shutDown( lua_State *L, struct t_net_sck *sck, int shutVal )
 {
 	if (-1 != sck->fd)
 	{
@@ -94,7 +94,7 @@ t_net_sck_shutDown( lua_State *L, struct t_net_sck *sck, int shutVal )
  * \return  int    # of values pushed onto the stack.
  *-------------------------------------------------------------------------*/
 int
-t_net_sck_listen( lua_State *L, struct t_net_sck *sck, struct sockaddr_in *adr, const int bl )
+p_net_sck_listen( lua_State *L, struct t_net_sck *sck, struct sockaddr_in *adr, const int bl )
 {
 	struct sockaddr_in  bnd;   ///< if needed, the address the port is bound to
 
@@ -110,7 +110,7 @@ t_net_sck_listen( lua_State *L, struct t_net_sck *sck, struct sockaddr_in *adr, 
 	// be 0
 	if (NULL!=adr && 0 == ntohs( adr->sin_port ))
 	{
-		if (t_net_sck_getsockname( sck, &bnd ))
+		if (p_net_sck_getsockname( sck, &bnd ))
 			adr->sin_port = bnd.sin_port;
 	}
 
@@ -126,7 +126,7 @@ t_net_sck_listen( lua_State *L, struct t_net_sck *sck, struct sockaddr_in *adr, 
  * \return  int    # of values pushed onto the stack.
  *-------------------------------------------------------------------------*/
 int
-t_net_sck_bind( lua_State *L, struct t_net_sck *sck, struct sockaddr_in *adr )
+p_net_sck_bind( lua_State *L, struct t_net_sck *sck, struct sockaddr_in *adr )
 {
 	if (bind( sck->fd , (struct sockaddr*) &(*adr), sizeof( struct sockaddr ) ) == -1)
 		return t_push_error( L, "Can't bind socket to %s:%d",
@@ -145,7 +145,7 @@ t_net_sck_bind( lua_State *L, struct t_net_sck *sck, struct sockaddr_in *adr )
  * \return  int    # of values pushed onto the stack.
  *-------------------------------------------------------------------------*/
 int
-t_net_sck_connect( lua_State *L, struct t_net_sck *sck, struct sockaddr_in *adr )
+p_net_sck_connect( lua_State *L, struct t_net_sck *sck, struct sockaddr_in *adr )
 {
 	if (connect( sck->fd , (struct sockaddr*) &(*adr), sizeof( struct sockaddr ) ) == -1)
 		return t_push_error( L, "Can't connect to socket on %s:%d",
@@ -164,7 +164,7 @@ t_net_sck_connect( lua_State *L, struct t_net_sck *sck, struct sockaddr_in *adr 
  * \return  t_net* Client pointer.  Leaves cli_sock and cli_IP on stack.
  *-------------------------------------------------------------------------*/
 int
-t_net_sck_accept( lua_State *L, struct t_net_sck *srv, struct t_net_sck *cli, struct sockaddr_in *adr )
+p_net_sck_accept( lua_State *L, struct t_net_sck *srv, struct t_net_sck *cli, struct sockaddr_in *adr )
 {
 	socklen_t  cl_sz = sizeof( struct sockaddr_in );
 
@@ -185,7 +185,7 @@ t_net_sck_accept( lua_State *L, struct t_net_sck *srv, struct t_net_sck *cli, st
  * \return  sent    int; number of bytes sent out.
  *-------------------------------------------------------------------------*/
 int
-t_net_sck_send( lua_State *L, struct t_net_sck *sck, struct sockaddr_in *addr, const char* buf, size_t len )
+p_net_sck_send( lua_State *L, struct t_net_sck *sck, struct sockaddr_in *addr, const char* buf, size_t len )
 {
 	int sent;
 
@@ -216,7 +216,7 @@ t_net_sck_send( lua_State *L, struct t_net_sck *sck, struct sockaddr_in *addr, c
  * \return  number of bytes received.
  *-------------------------------------------------------------------------*/
 int
-t_net_sck_recv( lua_State *L, struct t_net_sck *sck, struct sockaddr_in *addr, char *buf, size_t len )
+p_net_sck_recv( lua_State *L, struct t_net_sck *sck, struct sockaddr_in *addr, char *buf, size_t len )
 {
 	int          rcvd;
 	unsigned int sLen     = sizeof( addr );
@@ -241,7 +241,7 @@ t_net_sck_recv( lua_State *L, struct t_net_sck *sck, struct sockaddr_in *addr, c
  * \return  int    # of values pushed onto the stack.
  *-------------------------------------------------------------------------*/
 int
-t_net_sck_getsockname( struct t_net_sck *sck, struct sockaddr_in *adr )
+p_net_sck_getsockname( struct t_net_sck *sck, struct sockaddr_in *adr )
 {
 	socklen_t adrLen = sizeof( struct sockaddr_in );
 
@@ -260,7 +260,7 @@ t_net_sck_getsockname( struct t_net_sck *sck, struct sockaddr_in *adr )
  * \return  maxFd  highest FD number in set.
  *-------------------------------------------------------------------------*/
 int
-t_net_sck_mkFdSet( lua_State *L, int pos, fd_set *set )
+p_net_sck_mkFdSet( lua_State *L, int pos, fd_set *set )
 {
 	struct t_net_sck  *sck;
 	int                maxFd = -1;
@@ -292,7 +292,7 @@ t_net_sck_mkFdSet( lua_State *L, int pos, fd_set *set )
  * \return  int    # of values pushed onto the stack.
  *-------------------------------------------------------------------------*/
 int
-t_net_sck_getSocketOption( lua_State *L, struct t_net_sck *sck, int sckOpt,
+p_net_sck_getSocketOption( lua_State *L, struct t_net_sck *sck, int sckOpt,
                                          const char       *sckOptName )
 {
 	struct sockaddr   adr;
@@ -388,7 +388,7 @@ t_net_sck_getSocketOption( lua_State *L, struct t_net_sck *sck, int sckOpt,
  * \return  int    # of values pushed onto the stack.
  *-------------------------------------------------------------------------*/
 int
-t_net_sck_setSocketOption( lua_State *L, struct t_net_sck *sck , int sckOpt,
+p_net_sck_setSocketOption( lua_State *L, struct t_net_sck *sck , int sckOpt,
                                          const char *sckOptName, int val )
 {
 	int    flags;

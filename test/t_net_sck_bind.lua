@@ -25,7 +25,6 @@ local tests = {
 
 	afterEach = function( self )
 		if self.sck then
-			print(self.sck)
 			self.sck:close( )
 			self.sck = nil
 		end

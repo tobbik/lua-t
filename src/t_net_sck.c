@@ -68,7 +68,7 @@ struct t_net_sck
 	struct t_net_sck *sck  = (struct t_net_sck *) lua_newuserdata( L, sizeof( struct t_net_sck ) );
 
 	if (create)
-		t_net_sck_createHandle( L, sck, family, type, protocol );
+		p_net_sck_createHandle( L, sck, family, type, protocol );
 	else
 		sck->fd = 0;
 	luaL_getmetatable( L, T_NET_SCK_TYPE );
@@ -88,7 +88,7 @@ static int
 lt_net_sck_close( lua_State *L )
 {
 	struct t_net_sck *sck = t_net_sck_check_ud( L, 1, 1 );
-	return t_net_sck_close( L, sck );
+	return p_net_sck_close( L, sck );
 }
 
 
@@ -103,7 +103,7 @@ lt_net_sck_shutDown( lua_State *L )
 {
 	struct t_net_sck *sck = t_net_sck_check_ud( L, 1, 1 );
 	t_getTypeByName( L, 2, "SHUT_RD", t_net_shutList );
-	return t_net_sck_shutDown( L, sck, luaL_checkinteger( L, 2 ) );
+	return p_net_sck_shutDown( L, sck, luaL_checkinteger( L, 2 ) );
 }
 
 
@@ -169,7 +169,7 @@ lt_net_sck_listen( lua_State *L )
 	else
 		returnables += t_net_getdef( L, 1, &sck, &adr );
 
-	return (t_net_sck_listen( L, sck, adr, bl )) ? returnables : 0;
+	return (p_net_sck_listen( L, sck, adr, bl )) ? returnables : 0;
 }
 
 
@@ -186,7 +186,7 @@ lt_net_sck_bind( lua_State *L )
 	struct t_net_sck   *sck         = NULL;
 	struct sockaddr_in *adr         = NULL;
 	int                 returnables = t_net_getdef( L, 1, &sck, &adr );
-	return (t_net_sck_bind( L, sck, adr )) ? returnables : 0;
+	return (p_net_sck_bind( L, sck, adr )) ? returnables : 0;
 }
 
 
@@ -203,7 +203,7 @@ lt_net_sck_connect( lua_State *L )
 	struct t_net_sck   *sck         = NULL;
 	struct sockaddr_in *adr         = NULL;
 	int                 returnables = t_net_getdef( L, 1, &sck, &adr );
-	return (t_net_sck_connect( L, sck, adr )) ? returnables : 0;
+	return (p_net_sck_connect( L, sck, adr )) ? returnables : 0;
 }
 
 
@@ -221,7 +221,7 @@ lt_net_sck_accept( lua_State *L )
 	struct t_net_sck   *srv = t_net_sck_check_ud( L, 1, 1 ); // listening socket
 	struct t_net_sck   *cli = t_net_sck_create_ud( L, AF_INET, SOCK_STREAM, IPPROTO_TCP, 0 ); // accepted socket
 	struct sockaddr_in *adr = t_net_ip4_create_ud( L );      // peer address
-	return t_net_sck_accept( L, srv, cli, adr );
+	return p_net_sck_accept( L, srv, cli, adr );
 }
 
 
@@ -258,7 +258,7 @@ lt_net_sck_send( lua_State *L )
 	                          ? luaL_checkinteger( L, (NULL==adr) ?3 :4 )
 	                          : len;
 
-	snt = t_net_sck_send( L, sck, adr, msg, (max<len) ? max : len );
+	snt = p_net_sck_send( L, sck, adr, msg, (max<len) ? max : len );
 	if (0==snt)
 		lua_pushnil( L );
 	else
@@ -316,14 +316,14 @@ lt_net_sck_recv( lua_State *L )
 		msg = t_buf_checklstring( L, (NULL==adr) ?2 :3, &len, &cw );
 		max = (args == ((NULL==adr) ?3 :4)) ? luaL_checkinteger( L, (NULL==adr) ?3 :4 ) : len;
 		luaL_argcheck( L, max<=len, (NULL==adr) ?2 :3, "max must be smaller than sink" );
-		rcvd = t_net_sck_recv( L, sck, adr, msg, max );
+		rcvd = p_net_sck_recv( L, sck, adr, msg, max );
 		lua_pushboolean( L, 0 != rcvd );
 	}
 	else
 	{
 		max = (args == ((NULL==adr) ?2 :3)) ? luaL_checkinteger( L, (NULL==adr) ?2 :3 ) : BUFSIZ-1;
 		luaL_argcheck( L, max<BUFSIZ, (NULL==adr) ? 2:3, "max must be smaller than BUFSIZ" );
-		rcvd = t_net_sck_recv( L, sck, adr, buf, max );
+		rcvd = p_net_sck_recv( L, sck, adr, buf, max );
 		if (0 == rcvd)
 			lua_pushnil( L );
 		else
@@ -352,7 +352,7 @@ lt_net_sck_getsockname( lua_State *L )
 	if (NULL == ip)
 		ip = t_net_ip4_create_ud( L );
 
-	if (! t_net_sck_getsockname( sck, ip))
+	if (! p_net_sck_getsockname( sck, ip))
 		lua_pushnil( L );
 	return 1;  // return no matter what to allow testing for nil
 }
@@ -374,8 +374,8 @@ lt_net_sck_Select( lua_State *L )
 	fd_set            rfds, wfds;
 	struct t_net_sck *sck;
 	int               rdyScks, i;
-	int               rMax       = t_net_sck_mkFdSet( L, 1, &rfds );
-	int               wMax       = t_net_sck_mkFdSet( L, 2, &wfds );
+	int               rMax       = p_net_sck_mkFdSet( L, 1, &rfds );
+	int               wMax       = p_net_sck_mkFdSet( L, 2, &wfds );
 
 	rdyScks = select(
 		(wMax > rMax) ? wMax+1 : rMax+1,
@@ -445,7 +445,7 @@ lt_net_sck__index( lua_State *L )
 	}
 	else
 	{
-		return t_net_sck_getSocketOption(
+		return p_net_sck_getSocketOption(
 			L,
 			sck,
 			luaL_checkinteger( L, -1 ),
@@ -470,7 +470,7 @@ lt_net_sck__newindex( lua_State *L )
 	if (lua_isnil( L, 4 ))
 		return luaL_error( L, "unknown socket option: %s", lua_tostring( L, 2 ) );
 
-	return t_net_sck_setSocketOption(
+	return p_net_sck_setSocketOption(
 		L,
 		t_net_sck_check_ud( L, 1, 1 ),
 		lua_tointeger( L, 4 ),

@@ -101,7 +101,7 @@ t_htp_con_rcv( lua_State *L )
 	int               res;   // return result
 
 	// read
-	rcvd = t_net_sck_recv( L, c->sck, NULL, &(c->buf[ c->read ]), BUFSIZ - c->read );
+	rcvd = p_net_sck_recv( L, c->sck, NULL, &(c->buf[ c->read ]), BUFSIZ - c->read );
 	printf( "RCVD: %d bytes\n", rcvd );
 
 	if (! rcvd)    // peer has closed
@@ -172,7 +172,7 @@ t_htp_con_rsp( lua_State *L )
 	str = t_htp_str_check_ud( L, -1, 1 );
 	//printf( "Send ResponseChunk: %s\n", b );
 
-	snt = t_net_sck_send( L,
+	snt = p_net_sck_send( L,
 			c->sck,
 			NULL,
 			&(b[ buf->sl ]),
@@ -205,7 +205,7 @@ t_htp_con_rsp( lua_State *L )
 		{
 			printf( "remove "T_HTP_CON_TYPE" from Loop\n" );
 			// remove this connections socket from evLoop
-			t_ael_removehandle_impl( L, c->srv->ael, c->sck->fd, T_AEL_WR );
+			p_ael_removehandle_impl( L, c->srv->ael, c->sck->fd, T_AEL_WR );
 			c->srv->ael->fdSet[ c->sck->fd ]->msk = T_AEL_RD;
 			// done with current the stream has overall
 			if ( T_HTP_STR_FINISH == str->state || str->rsSl == str->rsBl)
@@ -325,8 +325,8 @@ lt_htp_con__gc( lua_State *L )
 	if (NULL != c->sck)
 	{
 		printf( "REMOVE Socket %d FROM LOOP ...", c->sck->fd );
-		t_ael_removehandle_impl( L, c->srv->ael, c->sck->fd, T_AEL_RD );
-		t_ael_removehandle_impl( L, c->srv->ael, c->sck->fd, T_AEL_WR );
+		p_ael_removehandle_impl( L, c->srv->ael, c->sck->fd, T_AEL_RD );
+		p_ael_removehandle_impl( L, c->srv->ael, c->sck->fd, T_AEL_WR );
 		c->srv->ael->fdSet[ c->sck->fd ]->msk = T_AEL_NO;
 		luaL_unref( L, LUA_REGISTRYINDEX, c->srv->ael->fdSet[ c->sck->fd ]->rR );
 		luaL_unref( L, LUA_REGISTRYINDEX, c->srv->ael->fdSet[ c->sck->fd ]->wR );
@@ -334,7 +334,7 @@ lt_htp_con__gc( lua_State *L )
 		free( c->srv->ael->fdSet[ c->sck->fd ] );
 		c->srv->ael->fdSet[ c->sck->fd ] = NULL;
 
-		t_net_sck_close( L, c->sck );
+		p_net_sck_close( L, c->sck );
 		c->sck = NULL;
 		printf( "  DONE\n" );
 	}

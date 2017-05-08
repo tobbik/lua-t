@@ -220,7 +220,7 @@ struct t_ael
 	ael->tmHead  = NULL;
 	ael->fdSet   = (struct t_ael_fd **) malloc( (ael->fdCount+1) * sizeof( struct t_ael_fd * ) );
 	for (n=0; n<=ael->fdCount; n++) ael->fdSet[ n ] = NULL;
-	t_ael_create_ud_impl( L, ael );
+	p_ael_create_ud_impl( L, ael );
 	luaL_getmetatable( L, T_AEL_TYPE );
 	lua_setmetatable( L, -2 );
 	return ael;
@@ -285,7 +285,7 @@ lt_ael_addhandle( lua_State *L )
 		ael->fdSet[ fd ]->msk = T_AEL_NO;
 	}
 
-	t_ael_addhandle_impl( L, ael, fd, msk );
+	p_ael_addhandle_impl( L, ael, fd, msk );
 	ael->fdSet[ fd ]->msk |= msk;
 	ael->fdMax = (fd > ael->fdMax) ? fd : ael->fdMax;
 
@@ -353,7 +353,7 @@ lt_ael_removehandle( lua_State *L )
 		luaL_unref( L, LUA_REGISTRYINDEX, ael->fdSet[ fd ]->wR );
 		ael->fdSet[ fd ]->wR = LUA_REFNIL;
 	}
-	t_ael_removehandle_impl( L, ael, fd, msk );
+	p_ael_removehandle_impl( L, ael, fd, msk );
 	// remove from mask
 	ael->fdSet[ fd ]->msk = ael->fdSet[ fd ]->msk & (~msk);
 	// remove from loop if no observed at all anymore
@@ -397,7 +397,7 @@ lt_ael_addtimer( lua_State *L )
 	// Build up the timer element
 	tNew = (struct t_ael_tnd *) malloc( sizeof( struct t_ael_tnd ) );
 	tNew->tv =  tv;
-	//t_ael_addtimer_impl( ael, tv );
+	//p_ael_addtimer_impl( ael, tv );
 	lua_createtable( L, n-3, 0 );  // create function/parameter table
 	lua_insert( L, 3 );
 	// Stack: ael,tv,TABLE,func,...
@@ -492,7 +492,7 @@ lt_ael__gc( lua_State *L )
 			free( ael->fdSet[ i ] );
 		}
 	}
-	t_ael_free_impl( ael );
+	p_ael_free_impl( ael );
 	return 0;
 }
 
@@ -511,7 +511,7 @@ lt_ael_run( lua_State *L )
 
 	while (ael->run)
 	{
-		if (t_ael_poll_impl( L, ael ) < 0)
+		if (p_ael_poll_impl( L, ael ) < 0)
 			return t_push_error( L, "Failed to continue" );
 		// if there are no events left in the loop stop processing
 		ael->run = (NULL==ael->tmHead && ael->fdMax<1) ? 0 : ael->run;

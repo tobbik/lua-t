@@ -33,7 +33,7 @@ struct t_ael_ste {
  * \return  int
  * --------------------------------------------------------------------------*/
 int
-t_ael_create_ud_impl( lua_State *L, struct t_ael *ael )
+p_ael_create_ud_impl( lua_State *L, struct t_ael *ael )
 {
 	struct t_ael_ste *state = (struct t_ael_ste *) malloc( sizeof( struct t_ael_ste ) );
 	if (NULL == state)
@@ -65,7 +65,7 @@ t_ael_create_ud_impl( lua_State *L, struct t_ael *ael )
  * \return  int.
  * --------------------------------------------------------------------------*/
 void
-t_ael_free_impl( struct t_ael *ael )
+p_ael_free_impl( struct t_ael *ael )
 {
 	struct t_ael_ste *state = ael->state;
 	close( state->epfd );
@@ -82,7 +82,7 @@ t_ael_free_impl( struct t_ael *ael )
  * \return int    success/fail;
  * --------------------------------------------------------------------------*/
 int
-t_ael_addhandle_impl( lua_State *L, struct t_ael *ael, int fd, enum t_ael_msk addmsk )
+p_ael_addhandle_impl( lua_State *L, struct t_ael *ael, int fd, enum t_ael_msk addmsk )
 {
 	struct t_ael_ste  *state = ael->state;
 	int                msk   = addmsk | ael->fdSet[ fd ]->msk;   // Merge old events
@@ -112,7 +112,7 @@ t_ael_addhandle_impl( lua_State *L, struct t_ael *ael, int fd, enum t_ael_msk ad
  * \return int    success/fail;
  * --------------------------------------------------------------------------*/
 int
-t_ael_removehandle_impl( lua_State *L, struct t_ael *ael, int fd, enum t_ael_msk delmsk )
+p_ael_removehandle_impl( lua_State *L, struct t_ael *ael, int fd, enum t_ael_msk delmsk )
 {
 	struct t_ael_ste  *state = ael->state;
 	int                msk   = ael->fdSet[ fd ]->msk & (~delmsk);
@@ -141,7 +141,7 @@ t_ael_removehandle_impl( lua_State *L, struct t_ael *ael, int fd, enum t_ael_msk
  * \return  int            number returns from select.
  * --------------------------------------------------------------------------*/
 int
-t_ael_poll_impl( lua_State *L, struct t_ael *ael )
+p_ael_poll_impl( lua_State *L, struct t_ael *ael )
 {
 	struct t_ael_ste   *state    = ael->state;
 	struct epoll_event *e;

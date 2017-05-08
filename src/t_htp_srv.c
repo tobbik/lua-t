@@ -124,7 +124,7 @@ lt_htp_srv_accept( lua_State *L )
 	lua_rawgeti( L, LUA_REGISTRYINDEX, s->sR );
 	s_sck = t_net_sck_check_ud( L, -1, 1 );
 
-	t_net_sck_accept( L, s_sck, c_sck, si_cli );   //S: srv,ssck,csck,cip
+	p_net_sck_accept( L, s_sck, c_sck, si_cli );   //S: srv,ssck,csck,cip
 	//t_net_reuseaddr( L, c_sck );
 
 	// prepare the ael_fd->wR table on stack
@@ -184,7 +184,7 @@ lt_htp_srv_listen( lua_State *L )
 		bl = lua_tointeger( L, -1 );
 		lua_pop( L, 1 );
 	}
-	t_net_sck_listen( L, sc, ip, bl );
+	p_net_sck_listen( L, sc, ip, bl );
 
 	sc     = t_net_sck_check_ud( L, -2, 1 );
 	ip     = t_net_ip4_check_ud( L, -1, 1 );

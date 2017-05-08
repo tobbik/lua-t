@@ -65,12 +65,12 @@ void t_ael_executeHeadTimer ( lua_State *L, struct t_ael_tnd **tHead, struct tim
 void t_ael_executehandle    ( lua_State *L, struct t_ael_fd *fd, enum t_ael_msk msk );
 
 // t_ael_(impl).c   (Implementation specific functions) INTERFACE
-int  t_ael_create_ud_impl   ( lua_State *L, struct t_ael *ael );
-void t_ael_free_impl        ( struct t_ael *ael );
-int  t_ael_addhandle_impl   ( lua_State *L, struct t_ael *ael, int fd, enum t_ael_msk msk );
-int  t_ael_removehandle_impl( lua_State *L, struct t_ael *ael, int fd, enum t_ael_msk msk );
-void t_ael_addtimer_impl    ( struct t_ael *ael, struct timeval *tv );
-int  t_ael_poll_impl        ( lua_State *L, struct t_ael *ael );
+int  p_ael_create_ud_impl   ( lua_State *L, struct t_ael *ael );
+void p_ael_free_impl        ( struct t_ael *ael );
+int  p_ael_addhandle_impl   ( lua_State *L, struct t_ael *ael, int fd, enum t_ael_msk msk );
+int  p_ael_removehandle_impl( lua_State *L, struct t_ael *ael, int fd, enum t_ael_msk msk );
+void p_ael_addtimer_impl    ( struct t_ael *ael, struct timeval *tv );
+int  p_ael_poll_impl        ( lua_State *L, struct t_ael *ael );
 
 
 static const struct t_typ t_ael_directionList[ ] = {
