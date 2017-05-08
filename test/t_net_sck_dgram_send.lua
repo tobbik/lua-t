@@ -1,25 +1,22 @@
 ---
--- \file    t_net_sck_send.lua
+-- \file    test/t_net_sck_dgram_send.lua
 -- \brief   Test assuring sck:send() works in all permutations.
--- \detail  Send and receive data via SOCK_STREAM sockets. All permutations
---          tested in this suite:
+-- \detail  Send data via SOCK_DGRAM sockets. All permutations tested in this
+--          suite:
 --
---    msg, len  = sck:recv( )
---    msg, len  = sck:recv( max )
---    msg, len  = sck:recv( adr )
---    msg, len  = sck:recv( adr,max )
---    msg, len  = sck:recv( buf )
---    msg, len  = sck:recv( buf, max )
---    msg, len  = sck:recv( adr, buf )
---    msg, len  = sck:recv( adr, buf, max )
+--    msg, len  = sck:send( string )
+--    msg, len  = sck:send( buffer )
+--    msg, len  = sck:send( string, max )
+--    msg, len  = sck:send( buffer, max )
+--    msg, len  = sck:send( string, address, max )
+--    msg, len  = sck:send( buffer, address, max )
 --
--- These tests run (semi-)asynchronously.  A TCP server socket is listening while each
+-- These tests run (semi-)asynchronously.  A UDP server socket is listening while each
 -- test connect it's own client to it.  This allows for these tests to run within the
 -- same  process.  Each test will restart the loop, connect, assert and stop the
 -- loop before moving on to the next test.
 
 Test      = require( "t.Test" )
---Test      = require( "t.tst" )
 Timer     = require( "t.Time" )
 Loop      = require( "t.Loop" )
 Socket    = require( "t.Net.Socket" )
@@ -35,7 +32,12 @@ local makeReceiver = function( self, payload, max, done )
 	local f = function( s, msg )
 		local msg, rcvd = s.sSck:recv( )
 		T.assert( rcvd==max   , "Expected %d bytes but got %d", max, rcvd )
-		T.assert( msg==payload, "Expected\n%s\nbut got\n%s\b", payload, msg )
+		if 0==max then
+			T.assert( type(msg) =="nil", "Expected nil` but got `%s`", type(msg) )
+			T.assert( msg==nil,          "Expected `nil` but got\n%s\b", msg )
+		else
+			T.assert( msg==payload, "Expected\n%s\nbut got\n%s\b", payload, msg )
+		end
 		s.loop:removeHandle( s.sSck, "read" )
 		done( )
 	end
@@ -86,6 +88,19 @@ local tests = {
 
 	-- #########################################################################
 	-- Actual Test cases
+
+	test_cb_sendNothing = function( self, done )
+		Test.Case.describe( "snt = sck.send( '' ) -- empty string " )
+		local payload = ''
+		local sender  = function( s )
+			local sent = s.cSck:send( payload )
+			T.assert( type(sent)=="nil", "Expected nil` but got `%s`", type(sent) )
+			s.loop:removeHandle( s.cSck, "write" )
+		end
+		makeReceiver( self, payload, #payload, done )
+		makeSender( self, sender, true )
+	end,
+
 	test_cb_sendString = function( self, done )
 		Test.Case.describe( "snt = sck.send( string )" )
 		local payload = string.rep( "TestMessage content for sending full message -- ", 14 )
