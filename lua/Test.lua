@@ -49,33 +49,21 @@ local getMetrics = function( tst, inc_pat, exc_pat )
 	}
 end
 
-local finalizer = function( tst, inc_pat, exc_pat )
-	return function( )
-		local res = getMetrics( tst, inc_pat, exc_pat );
-		print( format( "---------------------------------------------------------\n"..
-				  "Handled %d tests in %.3f seconds\n\n"..
-				  "Executed         : %d\n"..
-				  "Skipped          : %d\n"..
-				  "Expected to fail : %d\n"..
-				  "Failed           : %d\n"..
-				  "status           : %s\n"
-			, res.count, res.time:get()/1000.0
-			, res.count - res.skip
-			, res.skip
-			, res.todo
-			, res.count - res.pass
-			, res.success and "OK" or "FAIL" ) )
-		end
-end
-
-local callEnvelope = function( fnc, self, run )
-	if fnc and 'function'==type( fnc ) then
-		local r,err = pcall( fnc, self, run )
-		if not r then print(err);end
-		--if not r then print(err);error( "Test failed" ) end
-	else
-		run( )
-	end
+local report = function( self, inc_pat, exc_pat )
+	local res = getMetrics( self, inc_pat, exc_pat );
+	print( format( "---------------------------------------------------------\n"..
+			  "Handled %d tests in %.3f seconds\n\n"..
+			  "Executed         : %d\n"..
+			  "Skipped          : %d\n"..
+			  "Expected to fail : %d\n"..
+			  "Failed           : %d\n"..
+			  "status           : %s\n"
+		, res.count, res.time:get()/1000.0
+		, res.count - res.skip
+		, res.skip
+		, res.todo
+		, res.count - res.pass
+		, res.success and "OK" or "FAIL" ) )
 end
 
 local joiner = function( inc_pat, exc_pat )
@@ -88,19 +76,8 @@ local joiner = function( inc_pat, exc_pat )
 				ran = ran + (nil==v.pass and 0 or 1 )
 			end
 		end
-		if ran == cnt then
-			callEnvelope( ste.afterAll, ste, finalizer( ste, inc_pat, exc_pat ) )
-		end
-	end
-end
-
-local caseRunner = function( ste, inc_pat, exc_pat, t_name_len )
-	return function()
-		for k,v,i in pairs( ste ) do
-			if k:match( inc_pat or '' ) and not k:match( exc_pat or '^$' ) then
-				io.write( format( "%-"..t_name_len.."s :", k ) )
-				v( ste, joiner( inc_pat, exc_pat ) )
-			end
+		if ran == cnt and ste.afterAll and "function" == type( ste.afterAll ) then
+			ste.afterAll( ste, function() end )
 		end
 	end
 end
@@ -136,14 +113,29 @@ _mt = {       -- local _mt at top of file
 	end,
 	__call     = function( self, inc_pat, exc_pat )
 		local prx, t_name_len = getPrx( self ), 0
+		-- reset and prepare
 		for k,v,i in pairs( self ) do
 			if k:match( inc_pat or '' ) and not k:match( exc_pat or '^$' ) then
 				v:reset( )
 				t_name_len = #k>t_name_len and #k or t_name_len
 			end
 		end
-		if 0 ~= t_name_len then
-			callEnvelope( self.beforeAll, self, caseRunner( self, inc_pat, exc_pat, t_name_len ) )
+		--execute
+		if 0 ~= t_name_len then 
+			local runner = function( )
+				for k,v,i in pairs( self ) do
+					if k:match( inc_pat or '' ) and not k:match( exc_pat or '^$' ) then
+						io.write( format( "%-"..t_name_len.."s :", k ) )
+						v( self, joiner( inc_pat, exc_pat ) )
+					end
+				end
+			end
+			if self.beforeAll and "function" == type( self.beforeAll ) then
+				local r,err = pcall( self.beforeAll, self, runner )
+				if not r then print(err);end
+			else
+				runner( )
+			end
 			return getMetrics( self, inc_pat, exc_pat ).success
 		else
 			return true
@@ -151,10 +143,12 @@ _mt = {       -- local _mt at top of file
 	end,
 }
 
+
 Case.done = done
 return setmetatable( {
 	hasPassed  = function( ste, inc_pat, exc_pat ) return getMetrics( ste, inc_pat, exc_pat ).success end,
 	getMetrics = function( ste, inc_pat, exc_pat ) return getMetrics( ste, inc_pat, exc_pat ) end,
+	report     = report,
 	Case       = Case,
 }, {
 	__call   = function( self, tbl )

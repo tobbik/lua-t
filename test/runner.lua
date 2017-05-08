@@ -1,4 +1,4 @@
-local T = require( 't' )
+local T, Test, format = require"t", require"t.Test", string.format
 
 local m = {
 	"t_ael",
@@ -22,11 +22,13 @@ local run = function( do_pat, no_pat )
 		--local runit =  v:match( do_pat ) and not v:match( no_pat )
 		--print('------', runit,  do_pat, no_pat, v:match( do_pat ), v:match( no_pat ), v )
 		if v:match( do_pat ) and not v:match( no_pat ) then
+			print( format( "--------- EXECUTING: %s   ---------", v ) )
 			local c_test = T.require( v )
 			if not c_test( td_pat, tn_pat ) then
 				t = c_test --> push test suite into global scope
 				break
 			end
+			print( format( "--------- Done in : %f s" , Test.getMetrics( c_test ).time:get()/1000 ) )
 		end
 	end
 end
