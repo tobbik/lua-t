@@ -39,6 +39,7 @@ T_SRC=Buffer.lua \
    Table.lua \
    Test.lua \
    Test/Case.lua \
+   Test/Context.lua \
    Time.lua
 
 T_INSTALL=$(T_SRC:%.lua=$(INSTALL_LMOD)/%.lua)

@@ -6,7 +6,7 @@
 
 local t_concat    , t_insert    , format       , getmetatable, setmetatable, pairs, assert, type =
       table.concat, table.insert, string.format, getmetatable, setmetatable, pairs, assert, type
-local T,Time = require't', require't.Time'
+local T,Time,Context = require"t", require"t.Time", require"t.Test.Context"
 
 local _mt
 local T_TST_CSE_SKIPINDICATOR = "<test_case_skip_indicator>:" -- must have trailing ":"

@@ -13,7 +13,6 @@ local m = {
 	"t_tst",
 }
 
-
 local run = function( do_pat, no_pat )
 	local do_pat, no_pat = do_pat                   or ''    , no_pat                   or '^$'
 	local td_pat, tn_pat = do_pat:match( ':(.*)$' ) or ''    , no_pat:match( ':(.*)$' ) or '^$'

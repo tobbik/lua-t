@@ -4,15 +4,15 @@
 -- \author    tkieslich
 -- \copyright See Copyright notice at the end of t.h
 
-local Case = require't.Test.Case'
+local          Case ,                Context ,           Time,          T = 
+require't.Test.Case', require't.Test.Context', require't.Time', require't'
 
-local prxTblIdx,                      Table,            Oht  =
-      require( "t" ).proxyTableIndex, require"t.Table", require"t.OrderedHashTable"
+local prxTblIdx,                   Table,            Oht  =
+      T.proxyTableIndex, require"t.Table", require"t.OrderedHashTable"
 local t_concat    , t_insert    , format       , getmetatable, setmetatable, pairs, assert, type =
       table.concat, table.insert, string.format, getmetatable, setmetatable, pairs, assert, type
 local t_clone     , o_setElement  , o_getElement  , o_iters =
       Table.clone , Oht.setElement, Oht.getElement, Oht.iters
-local Time = require't.Time'
 
 local _mt
 
@@ -27,57 +27,19 @@ local makeTst = function( prx )
 	return setmetatable( { [ prxTblIdx ] = prx }, _mt )
 end
 
-local getMetrics = function( tst, inc_pat, exc_pat )
-	local count,pass,skip,todo,time = 0,0,0,0,Time(1)-Time(1)
-	local inc_pat, exc_pat = inc_pat or '', exc_pat or '^$'
-	for n,cse,i in pairs( tst ) do
-		if n:match( inc_pat ) and not n:match( exc_pat ) then
-			count = count + 1
-			pass  = pass + (cse.pass and 1 or 0)
-			skip  = skip + (cse.skip and 1 or 0)
-			todo  = todo + (cse.todo and 1 or 0)
-			time  = time +  cse.executionTime
-		end
-	end
-	return {
-		success = (count == pass+todo),
-		count   = count,
-		pass    = pass,
-		skip    = skip,
-		todo    = todo,
-		time    = time
-	}
-end
-
-local report = function( self, inc_pat, exc_pat )
-	local res = getMetrics( self, inc_pat, exc_pat );
-	print( format( "---------------------------------------------------------\n"..
-			  "Handled %d tests in %.3f seconds\n\n"..
-			  "Executed         : %d\n"..
-			  "Skipped          : %d\n"..
-			  "Expected to fail : %d\n"..
-			  "Failed           : %d\n"..
-			  "status           : %s\n"
-		, res.count, res.time:get()/1000.0
-		, res.count - res.skip
-		, res.skip
-		, res.todo
-		, res.count - res.pass
-		, res.success and "OK" or "FAIL" ) )
-end
-
-local joiner = function( inc_pat, exc_pat )
+local joiner = function( ctx )
 	return function( ste, cse )
 		local ran, cnt = 0, 0
-		print( cse:getDescription( ) )
+		ctx:p_case_after( cse )
 		for k,v,i in pairs( ste ) do
-			if k:match( inc_pat or '' ) and not k:match( exc_pat or '^$' ) then
+			if ctx:match( k ) then
 				cnt = cnt + 1
 				ran = ran + (nil==v.pass and 0 or 1 )
 			end
 		end
 		if ran == cnt and ste.afterAll and "function" == type( ste.afterAll ) then
 			ste.afterAll( ste, function() end )
+			ctx:p_report( ste )
 		end
 	end
 end
@@ -111,22 +73,23 @@ _mt = {       -- local _mt at top of file
 		end
 		return t_concat( buf, "\n" )
 	end,
-	__call     = function( self, inc_pat, exc_pat )
-		local prx, t_name_len = getPrx( self ), 0
+	__call     = function( self, inc_pat, ... )
+		local prx = getPrx( self )
+		local ctx = 't.Test.Context' == T.type( inc_pat ) or Context( inc_pat, ... )
 		-- reset and prepare
 		for k,v,i in pairs( self ) do
-			if k:match( inc_pat or '' ) and not k:match( exc_pat or '^$' ) then
+			if ctx:match( k ) then
 				v:reset( )
-				t_name_len = #k>t_name_len and #k or t_name_len
+				ctx.name_width = #k>ctx.name_width and #k or ctx.name_width
 			end
 		end
 		--execute
-		if 0 ~= t_name_len then 
+		if 0 ~= ctx.name_width then 
 			local runner = function( )
 				for k,v,i in pairs( self ) do
-					if k:match( inc_pat or '' ) and not k:match( exc_pat or '^$' ) then
-						io.write( format( "%-"..t_name_len.."s :", k ) )
-						v( self, joiner( inc_pat, exc_pat ) )
+					if ctx:match( k ) then
+						ctx:p_case_before( k, v )
+						v( self, joiner( ctx ) )
 					end
 				end
 			end
@@ -136,7 +99,7 @@ _mt = {       -- local _mt at top of file
 			else
 				runner( )
 			end
-			return getMetrics( self, inc_pat, exc_pat ).success
+			return Context.getMetrics( self, ctx.include, ctx.exclude ).success
 		else
 			return true
 		end
@@ -144,11 +107,9 @@ _mt = {       -- local _mt at top of file
 }
 
 
-Case.done = done
 return setmetatable( {
-	hasPassed  = function( ste, inc_pat, exc_pat ) return getMetrics( ste, inc_pat, exc_pat ).success end,
-	getMetrics = function( ste, inc_pat, exc_pat ) return getMetrics( ste, inc_pat, exc_pat ) end,
-	report     = report,
+	hasPassed  = function( ste, inc_pat, exc_pat ) return Context.getMetrics( ste, inc_pat, exc_pat ).success end,
+	getMetrics = function( ste, inc_pat, exc_pat ) return Context.getMetrics( ste, inc_pat, exc_pat ) end,
 	Case       = Case,
 }, {
 	__call   = function( self, tbl )
