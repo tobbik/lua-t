@@ -161,13 +161,13 @@ return setmetatable( {
 	todo     = function( why ) getCaseFromStack().todo        = why           end,
 	describe = function( dsc ) getCaseFromStack().description = dsc           end,
 }, {
-	__call   = function( self, nme, fnc )
-		local cse = { testtype = "standard", description = nme, func = fnc }
+	__call   = function( self, nme, typ, fnc )
 		assert( 'string'   == type( nme ), "`Test.Case` name must be a string" )
+		assert( 'string'   == type( typ ), "`Test.Case` type must be a string" )
+		assert( 'standard' == typ or 'callback' == typ or 'coroutine' == typ,
+			"`Test.Case` type must be 'standard, 'callback', or 'coroutine'" )
 		assert( 'function' == type( fnc ), "`Test.Case` definition must be a function" )
-		if nme:match( "^test_c[rb]_" ) then
-			cse.testtype = nme:match( "^test_cr_" ) and "coroutine" or "callback"
-		end
+		local cse = { testtype = typ, description = nme, func = fnc }
 		return setmetatable( cse, _mt )
 	end
 } )

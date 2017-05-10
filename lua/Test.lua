@@ -61,7 +61,11 @@ _mt = {       -- local _mt at top of file
 		local prx = getPrx( self )
 		if "number"==type(key) then assert( key%1==0, "Can't set or overwrite numeric indices" ) end
 		if "string"==type(key) and key:match( "^test_" ) then
-			o_setElement( prx, key, Case( key, val) )
+			local testtype = "standard"
+			if key:match( "^test_c[rb]_" ) then
+				testtype = key:match( "^test_cr_" ) and "coroutine" or "callback"
+			end
+			o_setElement( prx, key, Case( key, testtype, val ) )
 		else
 			prx[ key ] = val
 		end
