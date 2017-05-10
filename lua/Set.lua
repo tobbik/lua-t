@@ -26,10 +26,11 @@ local _mt
 
 -- ---------------------------- general helpers  --------------------
 -- assert Set type and return the proxy table
-local getPrx = function( set )
-	assert( _mt == getmetatable( set ), "Expected `Set`" )
-	return set[ prxTblIdx ]
+local getPrx     = function( self )
+	T.assert( _mt == getmetatable( self ), "Expected `%s`, got %s", _mt.__name, T.type( self ) )
+	return self[ prxTblIdx ]
 end
+
 -- create a Set instance from a table
 local makeSet = function( prx )
 	return setmetatable( { [ prxTblIdx ] = prx }, _mt )
@@ -39,9 +40,11 @@ end
 local opBor  = function( self, othr )        -- union
 	return makeSet( t_merge( getPrx( self ), getPrx( othr ), true ) )
 end
+
 local opBand  = function( self, othr )       -- intersection
 	return makeSet( t_merge( getPrx( self ), getPrx( othr ), false ) )
 end
+
 local opBxor  = function( self, othr )       -- symmetric difference
 	return makeSet( t_complement( getPrx( self ), getPrx( othr ), true ) )
 end

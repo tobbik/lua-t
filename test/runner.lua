@@ -1,4 +1,4 @@
-local T, Test, format = require"t", require"t.Test", string.format
+local T, Test, Time, format = require"t", require"t.Test", require"t.Time", string.format
 
 local m = {
 	"t_ael",
@@ -18,7 +18,15 @@ local run = function( do_pat, no_pat )
 	local do_pat, no_pat = do_pat                   or ''    , no_pat                   or '^$'
 	local td_pat, tn_pat = do_pat:match( ':(.*)$' ) or ''    , no_pat:match( ':(.*)$' ) or '^$'
 	local do_pat, no_pat = do_pat:match( '^(.*):' ) or do_pat, no_pat:match( '^(.*):' ) or no_pat
-	local ctx = Test.Context( td_pat, tn_pat, nil, nil, nil, function() end )
+	local ctx   = Test.Context( td_pat, tn_pat, nil, nil, nil, function() end )
+	local total = {
+		count   = 0,
+		pass    = 0,
+		skip    = 0,
+		todo    = 0,
+		time    = Time( 1 ) - Time( 1 ),
+		allTime = Time( )
+	}
 	for k,v in pairs( m ) do
 		--local runit =  v:match( do_pat ) and not v:match( no_pat )
 		--print('------', runit,  do_pat, no_pat, v:match( do_pat ), v:match( no_pat ), v )
@@ -29,9 +37,17 @@ local run = function( do_pat, no_pat )
 				t = c_test --> push test suite into global scope
 				break
 			end
-			print( format( "--------- Done in : %.3f s" , Test.getMetrics( c_test ).time:get()/1000 ) )
+			local metrics = ctx:getMetrics( c_test )
+			total.count = total.count + metrics.count
+			total.pass  = total.pass  + metrics.pass
+			total.skip  = total.skip  + metrics.skip 
+			total.todo  = total.todo  + metrics.todo
+			total.time  = total.time  + metrics.time
+			print( format( "--------- Done in : %.3f s" , ctx:getMetrics( c_test ).time:get()/1000 ) )
 		end
 	end
+	total.allTime:since( )
+	print( format( "Executed %d tests in %.3f seconds", total.count, total.allTime:get()/1000 ))
 end
 
 local include_pattern = ""

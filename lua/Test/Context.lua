@@ -7,35 +7,12 @@
 
 local write   , format       , getmetatable, setmetatable, pairs, type =
       io.write, string.format, getmetatable, setmetatable, pairs, type
-local t_clone = require"t.Table".clone
-local Time  = require"t.Time"
+local t_clone, Time = require"t.Table".clone, require"t.Time"
 
 local _mt = {
 	__name   = 't.Test.Context'
 }
 
-
-local getMetrics = function( suite, incl, excl )
-	local count,pass,skip,todo,time = 0,0,0,0,Time(1)-Time(1)
-	local incl, excl = incl or '', excl or '^$'
-	for n,cse,i in pairs( suite ) do
-		if n:match( incl ) and not n:match( excl ) then
-			count = count + 1
-			pass  = pass + (cse.pass and 1 or 0)
-			skip  = skip + (cse.skip and 1 or 0)
-			todo  = todo + (cse.todo and 1 or 0)
-			time  = time +  cse.executionTime
-		end
-	end
-	return {
-		success = (count == pass+todo),
-		count   = count,
-		pass    = pass,
-		skip    = skip,
-		todo    = todo,
-		time    = time
-	}
-end
 
 local beforeEach = function( self, case, suite )
 	write( format( "%-".. (self.name_width) .."s : ", self.current_name ) )
@@ -49,8 +26,8 @@ local beforeAll  = function( self, suite )
 	-- do nothing
 end
 
-local afterAll     = function( self, suite )
-	local res = getMetrics( suite, self.include, self.exclude );
+local afterAll   = function( self, suite )
+	local res = self:getMetrics( suite );
 	print( format( "---------------------------------------------------------\n"..
 			  "Handled %d tests in %.3f seconds\n\n"..
 			  "Executed         : %d\n"..
@@ -67,7 +44,6 @@ local afterAll     = function( self, suite )
 end
 
 return setmetatable( {
-	getMetrics = getMetrics
 }, {
 		__call   = function( self, incl, excl, befE, aftE, befA, aftA )
 		if ctx and mt.__name == T.type( incl ) then
@@ -88,6 +64,27 @@ return setmetatable( {
 					else
 						return false
 					end
+				end
+				, getMetrics = function( self, suite )
+					local count,pass,skip,todo,time = 0,0,0,0,Time(1)-Time(1)
+					local incl, excl = incl or '', excl or '^$'
+					for n,cse,i in pairs( suite ) do
+						if self:match( n ) then
+							count = count + 1
+							pass  = pass + (cse.pass and 1 or 0)
+							skip  = skip + (cse.skip and 1 or 0)
+							todo  = todo + (cse.todo and 1 or 0)
+							time  = time +  cse.executionTime
+						end
+					end
+					return {
+						success = (count == pass+todo),
+						count   = count,
+						pass    = pass,
+						skip    = skip,
+						todo    = todo,
+						time    = time
+					}
 				end
 			}, _mt )
 			return ctx

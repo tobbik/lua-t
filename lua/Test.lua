@@ -18,9 +18,9 @@ local _mt
 
 -- ---------------------------- general helpers  --------------------
 -- assert Test type and return the proxy table
-local getPrx = function( tst )
-	assert( _mt == getmetatable( tst ), "Expected `Test`" )
-	return tst[ prxTblIdx ]
+local getPrx = function( self )
+	T.assert( _mt == getmetatable( self ), "Expected `%s`, got %s", _mt.__name, T.type( self ) )
+	return self[ prxTblIdx ]
 end
 -- create a Test instance from a table
 local makeTst = function( prx )
@@ -44,6 +44,7 @@ local joiner = function( ctx )
 			else
 				ctx:afterAll( ste )
 			end
+			ctx.name_width = 0
 		end
 	end
 end
@@ -78,7 +79,7 @@ _mt = {       -- local _mt at top of file
 		return t_concat( buf, "\n" )
 	end,
 	__call     = function( self, inc_pat, ... )
-		local prx = getPrx( self )
+		T.assert( _mt == getmetatable( self ), "Expected `%s`, got %s", _mt.__name, T.type( self ) )
 		local ctx = 't.Test.Context' == T.type( inc_pat ) and inc_pat or Context( inc_pat, ... )
 		-- reset and prepare
 		for k,v,i in pairs( self ) do
@@ -104,7 +105,7 @@ _mt = {       -- local _mt at top of file
 			else
 				runner( )
 			end
-			return Context.getMetrics( self, ctx.include, ctx.exclude ).success
+			return ctx:getMetrics( self ).success
 		else
 			return true
 		end
@@ -113,8 +114,8 @@ _mt = {       -- local _mt at top of file
 
 
 return setmetatable( {
-	hasPassed  = function( ste, incl, excl ) return Context.getMetrics( ste, incl, excl ).success end,
-	getMetrics = function( ste, incl, excl ) return Context.getMetrics( ste, incl, excl ) end,
+	hasPassed  = function( ste, ctx ) return ctx:getMetrics( ste ).success end,
+	getMetrics = function( ste, ctx ) return ctx:getMetrics( ste ) end,
 	Case       = Case,
 	Context    = Context
 }, {

@@ -223,20 +223,29 @@ converted to a ``Test.Case`` instance.  They have their own documentation.
 Instance Metamembers
 --------------------
 
-``boolean x = Test t( [string include_pattern, string exclude_pattern] )  [__call]``
+``boolean x = Test t( [Test.Context ctx] )  [__call]``
   Executes the `Test t` suite.  Returns true or false depending on weather
   the execution of the test suite was successful.  The boolean return only
   works for synchronous tests.  As soon as there is a single asynchronous
-  test case in the ``Test t`` the return value is always ``true``.  If a
-  ``string include_pattern`` is passed as first parameter only ``Test.Case``
-  instances in fields which contain ``string include_pattern`` will be
-  executed.  ``string include_pattern`` is evaluated by Luas own
-  ``string.match()`` function,  hence all Lua patterns apply.  If a second
-  parameter ``string exclude_pattern`` is passed, only ``Test.Case``
-  instances in fields that **DO NOT** match the pattern will be executed.
+  test case in the ``Test t`` the return value is always ``true``.  If no
+  context is passed, the ``Test`` execution will create an internal
+  ``test.Context`` with default values.
+
+``boolean x = Test t( [string include_pattern, string exclude_pattern] )  [__call]``
+  Executes the `Test t` suite.  Instead of passing in an entire
+  ``Test.Context ctx`` this shortcut allows to pass in only the ``include``
+  and ``exclude`` pattern. This basically is the same as:
+
+  .. code:: lua
+
+    local ctx = Test.Context( include_pattern, exclude_pattern )
+    local x   = t( ctx )
+
+  On details how the include and exclude patterns are evaluated please refer
+  to ``Test.Context`` documentation.
 
 ``string s = tostring( Test t )  [__toString]``
-  Returns a string which is a TAP report of the Test suite.
+  Returns a string which is a TAP report of the ``Test`` suite.
 
 ``int len = #testInstance  [__len]``
   Returns the number of ``Test.Case`` instances in this suite.
