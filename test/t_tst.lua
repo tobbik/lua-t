@@ -4,6 +4,7 @@
 -- \file    test/t_tst.lua
 -- \brief   Test for T.Test
 local Test  = require( 't.Test' )
+local ctx   = Test.Context( nil, nil, function() end, function() end, function() end, function() end )
 
 local tests = {
 	beforeEach = function( self )
@@ -31,7 +32,7 @@ local tests = {
 	test_Success = function( self, done )
 		Test.Case.describe( "Test to success" )
 		self.t.test_Test = function( s ) assert( true, "This better works" ) end
-		assert( self.t(), "Test suite should have succeeded" )
+		assert( self.t( ctx ), "Test suite should have succeeded" )
 		assert( self.t.test_Test.pass, "Test.test_Test case suite should have passed" )
 		assert( self.t.test_Test.message   == nil, "No Message   should be set" )
 		assert( self.t.test_Test.location  == nil, "No Location  should be set" )
@@ -42,7 +43,7 @@ local tests = {
 		Test.Case.describe( "Test to fail" )
 		local errorMsg = "This is supposed to fail !!!"
 		self.t.test_Test = function( s ) assert( false, errorMsg ) end
-		assert( not self.t(), "Test suite should have failed" )
+		assert( not self.t( ctx ), "Test suite should have failed" )
 		assert( not self.t.test_Test.pass, "Test.test_Test case suite should NOT have passed" )
 		assert( self.t.test_Test.message == errorMsg, "Error Message should be set" )
 		assert( self.t.test_Test.location, "Error Location  should be set" )
@@ -56,7 +57,7 @@ local tests = {
 	test_TodoFails = function( self, done )
 		Test.Case.describe( "A failed TODO should NOT fail the suite" )
 		self.t.test_Test = function( s ) Test.Case.todo('todo'); assert( false, "This better fails" ) end
-		assert( self.t(), "Test suite should have succeeded" )
+		assert( self.t( ctx ), "Test suite should have succeeded" )
 		assert( self.t.test_Test.todo == "todo", "Test Todo reason should be set" )
 		assert( not self.t.test_Test.pass, "Test.test_Test case suite should NOT have passed" )
 	end,
@@ -64,7 +65,7 @@ local tests = {
 	test_TodoSuccess = function( self, done )
 		Test.Case.describe( "A successful TODO should fail the suite" )
 		self.t.test_Test = function( s ) Test.Case.todo('todo me'); assert( true,  "This better works" ) end
-		assert( not self.t(), "Test suite should have failed" )
+		assert( not self.t( ctx ), "Test suite should have failed" )
 		assert( self.t.test_Test.todo == "todo me", "Test Todo reason should be set" )
 		assert( self.t.test_Test.pass, "Test.test_Test case suite should have passed" )
 		assert( tostring(self.t.test_Test):match( "# TODO: todo me" ),
@@ -74,7 +75,7 @@ local tests = {
 	test_Skip = function( self, done )
 		Test.Case.describe( "Skip should skip test" )
 		self.t.test_Test = function( s ) Test.Case.skip('skip me'); assert( false, "This better fails" ) end
-		assert( self.t(), "Test suite should not have failed because failing test got skipped" )
+		assert( self.t( ctx ), "Test suite should not have failed because failing test got skipped" )
 		assert( self.t.test_Test.skip == "skip me", "Test Skip reason should be set" )
 		assert( self.t.test_Test.pass, "Test.test_Test case suite should have passed" )
 		assert( tostring(self.t.test_Test):match( "# SKIP: skip me" ),
@@ -84,7 +85,7 @@ local tests = {
 	test_Description = function( self, done )
 		Test.Case.describe( "Test.describe should set test case description" )
 		self.t.test_Test = function( s ) Test.Case.describe('describe me'); assert( true,  "This better works" ) end
-		assert( self.t(), "Test suite should not have failed." )
+		assert( self.t( ctx ), "Test suite should not have failed." )
 		assert( self.t.test_Test.description == "describe me", "Test Description reason should be set" )
 		assert( self.t.test_Test.pass, "Test.test_Test case suite should have passed" )
 	end,
@@ -97,7 +98,7 @@ local tests = {
 		self.t.testTest     = function( s ) s=2 end
 		self.t.test_cbTest  = function( s ) s=3 end
 		self.t.test_crTest  = function( s ) s=4 end
-		--assert( self.t(), "Test suite should not have failed." )
+		--assert( self.t( ctx ), "Test suite should not have failed." )
 		assert( self.t.test_Test.testtype    == "standard",  "testtype should be standard  -> is " .. self.t.test_Test.testtype)
 		assert( self.t.test_cb_Test.testtype == "callback",  "testtype should be callback  -> is " .. self.t.test_cb_Test.testtype)
 		assert( self.t.test_cr_Test.testtype == "coroutine", "testtype should be coroutine -> is " .. self.t.test_cr_Test.testtype)

@@ -30,16 +30,20 @@ end
 local joiner = function( ctx )
 	return function( ste, cse )
 		local ran, cnt = 0, 0
-		ctx:p_case_after( cse )
+		ctx:afterEach( cse, ste )
 		for k,v,i in pairs( ste ) do
 			if ctx:match( k ) then
 				cnt = cnt + 1
 				ran = ran + (nil==v.pass and 0 or 1 )
 			end
 		end
-		if ran == cnt and ste.afterAll and "function" == type( ste.afterAll ) then
-			ste.afterAll( ste, function() end )
-			ctx:p_report( ste )
+		ctx.current_name = nil
+		if ran == cnt then
+			if ste.afterAll and "function" == type( ste.afterAll ) then
+				ste.afterAll( ste, function( ) ctx:afterAll( ste ) end )
+			else
+				ctx:afterAll( ste )
+			end
 		end
 	end
 end
@@ -75,7 +79,7 @@ _mt = {       -- local _mt at top of file
 	end,
 	__call     = function( self, inc_pat, ... )
 		local prx = getPrx( self )
-		local ctx = 't.Test.Context' == T.type( inc_pat ) or Context( inc_pat, ... )
+		local ctx = 't.Test.Context' == T.type( inc_pat ) and inc_pat or Context( inc_pat, ... )
 		-- reset and prepare
 		for k,v,i in pairs( self ) do
 			if ctx:match( k ) then
@@ -88,7 +92,8 @@ _mt = {       -- local _mt at top of file
 			local runner = function( )
 				for k,v,i in pairs( self ) do
 					if ctx:match( k ) then
-						ctx:p_case_before( k, v )
+						ctx.current_name = k
+						ctx:beforeEach( v, self )
 						v( self, joiner( ctx ) )
 					end
 				end
@@ -108,9 +113,10 @@ _mt = {       -- local _mt at top of file
 
 
 return setmetatable( {
-	hasPassed  = function( ste, inc_pat, exc_pat ) return Context.getMetrics( ste, inc_pat, exc_pat ).success end,
-	getMetrics = function( ste, inc_pat, exc_pat ) return Context.getMetrics( ste, inc_pat, exc_pat ) end,
+	hasPassed  = function( ste, incl, excl ) return Context.getMetrics( ste, incl, excl ).success end,
+	getMetrics = function( ste, incl, excl ) return Context.getMetrics( ste, incl, excl ) end,
 	Case       = Case,
+	Context    = Context
 }, {
 	__call   = function( self, tbl )
 		local prx;

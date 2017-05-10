@@ -1,6 +1,6 @@
 ---
 -- \file      test/t.lua
--- \brief     test helper functions in t.lua (exluding equals; see -- t_equals.lua)
+-- \brief     test helper functions in t.lua (excluding equals; see -- t_equals.lua)
 -- \author    tkieslich
 -- \copyright See Copyright notice at the end of src/t.h
 

@@ -13,21 +13,23 @@ local m = {
 	"t_tst",
 }
 
+
 local run = function( do_pat, no_pat )
 	local do_pat, no_pat = do_pat                   or ''    , no_pat                   or '^$'
 	local td_pat, tn_pat = do_pat:match( ':(.*)$' ) or ''    , no_pat:match( ':(.*)$' ) or '^$'
 	local do_pat, no_pat = do_pat:match( '^(.*):' ) or do_pat, no_pat:match( '^(.*):' ) or no_pat
+	local ctx = Test.Context( td_pat, tn_pat, nil, nil, nil, function() end )
 	for k,v in pairs( m ) do
 		--local runit =  v:match( do_pat ) and not v:match( no_pat )
 		--print('------', runit,  do_pat, no_pat, v:match( do_pat ), v:match( no_pat ), v )
 		if v:match( do_pat ) and not v:match( no_pat ) then
 			print( format( "--------- EXECUTING: %s   ---------", v ) )
 			local c_test = T.require( v )
-			if not c_test( td_pat, tn_pat ) then
+			if not c_test( ctx ) then
 				t = c_test --> push test suite into global scope
 				break
 			end
-			print( format( "--------- Done in : %f s" , Test.getMetrics( c_test ).time:get()/1000 ) )
+			print( format( "--------- Done in : %.3f s" , Test.getMetrics( c_test ).time:get()/1000 ) )
 		end
 	end
 end

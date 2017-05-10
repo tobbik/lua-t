@@ -1,4 +1,3 @@
-
 # vim: ts=3 sw=3 st=3 sts=3 sta noet tw=80 list
 #
 # \file      src/Makefile
@@ -13,10 +12,10 @@ INSTALL_LMOD=$(PREFIX)/share/lua/$(LVER)/t
 # How to install. If your install program does not support "-p", then
 # you may have to run ranlib on the installed t.a
 INSTALL= install -p
-INSTALL_EXEC= $(INSTALL) -m 0755
-INSTALL_DATA= $(INSTALL) -m 0644
+INSTALL_DATA= $(INSTALL) -Dm0644
 
-T_SRC=Buffer.lua \
+T_SRC=\
+   Buffer.lua \
    Buffer/Segment.lua \
    Encode.lua \
    Encode/Base64.lua \
@@ -51,18 +50,11 @@ endif
 all: $(T_SRC)
 
 install: $(T_INSTALL)
-	$(INSTALL_DATA) -Dm644 t.lua $(INSTALL_LMOD)/../t.lua
+	$(INSTALL_DATA) t.lua $(INSTALL_LMOD)/../t.lua
 
 $(INSTALL_LMOD)/%.lua: %.lua
-	$(INSTALL_DATA) -Dm644 $< $@
-
-test: $(SRCDIR)
-	$(MAKE) -C $(CURDIR)/test CC=$(CC) LD=$(LD) \
-		LVER=$(LVER) \
-		MYCFLAGS="$(MYCFLAGS)" \
-		LDFLAGS="$(LDFLAGS)" \
-		INCDIR=$(INCDIR)
+	$(INSTALL_DATA) $< $@
 
 clean:
 
-.PHONY: all test clean
+.PHONY: all clean
