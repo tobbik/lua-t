@@ -50,16 +50,16 @@ Instance Members
 
 ``string ctx.include    -- default ''``
   This string controls which test cases get executed upon the execution of a
-  ``Test`` suite.  The default is ``''`` aka. the empty string.  It includes
-  **Every** name in the execution.  The ``string include`` is evaluated by
+  ``Test`` suite.  The **default INCLUDES EVERY** name in the execution.  It
+  is ``''`` aka. the empty string.  The ``string include`` is evaluated by
   Luas own ``string.match()`` function, hence all Lua pattern work out of
   the box.
 
 ``string ctx.exclude    -- default '^$'``
   This string controls which test cases get not executed upon the execution
   of a ``Test`` suite.  ``string exclude`` is only evaluated after ``string
-  include``.  The default is ``'^$'`` aka. the empty line.  It does not
-  exclude **ANY** name in the execution.  Like ``string include`` Luas own
+  include``.  The **default does NOT EXCLUDE ANY** name from execution.  It
+  is ``'^$'`` aka. the empty line.  Like ``string include`` Luas own
   ``string.match()`` also evaluates ``string exclude``, hence all Lua
   pattern work out of the box.
 
