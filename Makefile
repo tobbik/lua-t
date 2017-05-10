@@ -7,8 +7,6 @@
 
 LVER=5.3
 
-T_LIB_DYN=core.so
-T_LIB_STA=t.a
 INSTALL_CMOD=$(PREFIX)/lib/lua/$(LVER)/t
 INSTALL_LMOD=$(PREFIX)/share/lua/$(LVER)/t
 
@@ -26,21 +24,19 @@ LD=clang
 SCREEN_RC=screen.rc
 SCREEN=$(shell which screen)
 
-all: $(SRCDIR)/$(T_LIB_DYN)
+all: $(SRCDIR)/*.so
 
-$(SRCDIR)/$(T_LIB_DYN):
+$(SRCDIR)/*.so:
 	$(MAKE) -C $(SRCDIR) CC=$(CC) LD=$(LD) \
-		T_LIB_DYN="$(T_LIB_DYN)" T_LIB_STA="$(T_LIB_STA)" \
 		LVER="$(LVER)" \
 		MYCFLAGS="$(MYCFLAGS)" \
 		LDFLAGS="$(LDFLAGS)" \
 		INCS="$(INCDIR)" \
 		PREFIX="$(PREFIX)"
 
-install: $(SRCDIR)/$(T_LIB_DYN)
+install: $(SRCDIR)/$(LIBS)
 	$(MAKE) -C $(SRCDIR) CC=$(CC) LD=$(LD) \
 		INSTALL_CMOD=$(INSTALL_CMOD) \
-		T_LIB_DYN="$(T_LIB_DYN)" T_LIB_STA="$(T_LIB_STA)" \
 		LVER=$(LVER) \
 		MYCFLAGS="$(MYCFLAGS)" \
 		LDFLAGS="$(LDFLAGS)" \
@@ -70,7 +66,6 @@ echo:
 
 clean:
 	$(MAKE) -C $(SRCDIR) \
-		T_LIB_DYN="$(T_LIB_DYN)" T_LIB_STA="$(T_LIB_STA)" \
 		clean
 
 start: $(SCREEN_RC)
