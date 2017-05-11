@@ -8,24 +8,26 @@
  */
 
 // this header order makes __USE_MISC visible and hence all the POSIX stuff
-#include "t.h"
-#include "t_net.h"
+#include "t_net_l.h"
+
+#ifdef DEBUG
+#include "t_dbg.h"
+#endif
 
 #ifdef _WIN32
 #include <WinSock2.h>
 #include <winsock.h>
 #include <time.h>
 #include <stdint.h>
-#include <WS2tcpip.h>
 #include <Windows.h>
 #else
 #include <stdio.h>
 #include <string.h>               // strcpy
 #include <unistd.h>
+#include <sys/types.h>
 #include <net/if.h>
 #include <netinet/in.h>
 #include <sys/ioctl.h>
-#include <sys/types.h>
 #include <sys/socket.h>
 #endif
 

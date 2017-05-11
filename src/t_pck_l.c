@@ -10,9 +10,12 @@
  */
 #include <string.h>     // memcpy
 
-#include "t.h"
-#include "t_buf_cmn.h"
-#include "t_pck.h"
+#include "t_pck_l.h"
+#include "t_buf.h"
+
+#ifdef DEBUG
+#include "t_dbg.h"
+#endif
 
 // ========== Buffer accessor Helpers
 #define BIT_GET(b,n)       ( ((b) >> (NB-(n)-1)) & 0x01 )

@@ -12,9 +12,12 @@
  * \copyright See Copyright notice at the end of t.h
  */
 
-#include "t.h"
-#include "t_ael.h"
-#include "t_tim_cmn.h"        // t_tim_now, struct timeval
+#include "t_ael_l.h"
+#include "t_tim.h"            // t_tim_now, struct timeval
+
+#ifdef DEBUG
+#include "t_dbg.h"
+#endif
 
 #include <string.h>           // memcpy
 #include <stdlib.h>           // malloc, free

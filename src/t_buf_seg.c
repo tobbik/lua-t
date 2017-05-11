@@ -14,8 +14,11 @@
 #include <stdio.h>
 #include <string.h>               // memcpy
 
-#include "t.h"
-#include "t_buf.h"
+#include "t_buf_l.h"
+
+#ifdef DEBUG
+#include "t_dbg.h"
+#endif
 
 /** -------------------------------------------------------------------------
  * Constructor - creates the T.Buffer.Segment instance.

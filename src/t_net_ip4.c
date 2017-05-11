@@ -26,8 +26,11 @@
 #include <sys/select.h>
 #endif
 
-#include "t.h"
-#include "t_net.h"
+#include "t_net_l.h"
+
+#ifdef DEBUG
+#include "t_dbg.h"
+#endif
 
 
 /**--------------------------------------------------------------------------

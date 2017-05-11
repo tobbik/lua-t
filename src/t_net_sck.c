@@ -9,9 +9,13 @@
  */
 
 
-#include "t.h"
-#include "t_net.h"
-#include "t_buf_cmn.h"
+#include "t_net_l.h"
+#include "t_buf.h"
+#include "t.h"        //t_getTypeBy*
+
+#ifdef DEBUG
+#include "t_dbg.h"
+#endif
 
 /**--------------------------------------------------------------------------
  * Create a socket and push to LuaStack.

@@ -7,20 +7,14 @@
  * \copyright See Copyright notice at the end of t.h
  */
 
+// includes the Lua headers
+#include "lua.h"
+#include "lualib.h"
+#include "lauxlib.h"
+
 #define T_NRY_IDNT "nry"
 
 #define T_NRY_NAME "Numarray"
 
 #define T_NRY_TYPE "T."T_NRY_NAME
 
-/// The userdata struct for T.Numarray
-struct t_nry
-{
-	size_t         len;
-	lua_Integer    v[ 1 ];  ///< variable part, must be last in struct
-};
-
-// Constructors
-int           luaopen_t_nry  ( lua_State *L );
-struct t_nry *t_nry_check_ud ( lua_State *L, int pos, int check );
-struct t_nry *t_nry_create_ud( lua_State *L, size_t n );

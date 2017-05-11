@@ -11,8 +11,11 @@
 #include <stdlib.h>               // malloc, free
 #include <string.h>               // strchr, ...
 
-#include "t.h"
-#include "t_htp.h"
+#include "t_htp_l.h"
+
+#ifdef DEBUG
+#include "t_dbg.h"
+#endif
 
 
 static int lt_htp_con__gc( lua_State *L );

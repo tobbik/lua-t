@@ -1,12 +1,12 @@
 /* vim: ts=3 sw=3 sts=3 tw=80 sta noet list
 */
-/** -------------------------------------------------------------------------
- * \file      t_enc.c
+/**
+ * \file      t_enc_l.c
  * \brief     Umbrella for various En/Decoding routines
  *            This covers encoding/Encryption
  * \author    tkieslich
  * \copyright See Copyright notice at the end of t.h
- *-------------------------------------------------------------------------*/
+ */
 
 #include <stdio.h>
 #include <string.h>     // strerror
@@ -15,8 +15,11 @@
 #include <crypt.h>      // crypt()
 #include <time.h>       // time()
 
-#include "t.h"
-#include "t_enc.h"
+#include "t_enc_l.h"
+
+#ifdef DEBUG
+#include "t_dbg.h"
+#endif
 
 
 /** -------------------------------------------------------------------------

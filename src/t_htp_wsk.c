@@ -10,8 +10,11 @@
 
 #include <string.h>               // memset
 
-#include "t.h"
-#include "t_htp.h"
+#include "t_htp_l.h"
+
+#ifdef DEBUG
+#include "t_dbg.h"
+#endif
 
 
 /**--------------------------------------------------------------------------

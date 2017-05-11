@@ -15,20 +15,21 @@
 #ifdef _WIN32
 #include <Windows.h>
 #else
-//#define _POSIX_SOURCE   1
-#define _POSIX_C_SOURCE 200809L
-//#define _DEFAULT_SOURCE 1
+#define _POSIX_C_SOURCE 200809L   //fileno()
 #endif
 
 #include <stdlib.h>               // malloc, free
 #include <string.h>               // memset
 
-#include "t.h"
-#include "t_ael.h"
-#include "t_dbg.h"
-#include "t_tim_cmn.h"
-#include "t_net_cmn.h"
+#include "t_tim.h"
+#include "t_net.h"
+#include "t_ael_l.h"
 
+#ifdef DEBUG
+#include "t_dbg.h"
+#endif
+
+#define PRINT_DEBUGS 0
 
 /**----------------------------------------------------------------------------
  * Slot in a timer event into the loops timer event list.

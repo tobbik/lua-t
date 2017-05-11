@@ -1,17 +1,20 @@
 /* vim: ts=3 sw=3 sts=3 tw=80 sta noet list
 */
-/**--------------------------------------------------------------------------
+/**
  * \file      t_enc_b64.c
  * \brief     Base64 Encoding Decoding algorithm
  * \author    tkieslich
  * \copyright See Copyright notice at the end of t.h
- * --------------------------------------------------------------------------*/
+ */
 
 #include <stdio.h>
 #include <stdlib.h>      // calloc
 
-#include "t.h"
-#include "t_enc.h"
+#include "t_enc_l.h"
+
+#ifdef DEBUG
+#include "t_dbg.h"
+#endif
 
 static const unsigned char enc_table[ 64 ] =
 	"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";

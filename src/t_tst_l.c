@@ -12,8 +12,11 @@
 #include <strings.h>           // strncasecmp
 #include <stdlib.h>            // malloc
 
-#include "t.h"
-#include "t_tst.h"
+#include "t_tst_l.h"
+
+#ifdef DEBUG
+#include "t_dbg.h"
+#endif
 
 static int lt_tst__newindex( lua_State *L );
 

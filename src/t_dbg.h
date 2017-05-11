@@ -7,11 +7,17 @@
  * \copyright See Copyright notice at the end of t.h
  */
 
+// includes the Lua headers
+#include "lua.h"
+#include "lualib.h"
+#include "lauxlib.h"
+
 #include <stdio.h>
 #include <string.h>     // strerror,strrchr
 #include <errno.h>      // errno
 #include <stdint.h>     // printf in helpers
 
+#define PRINT_DEBUGS    0
 
 void t_fmtStackItem( lua_State *L, int idx, int no_tostring );
 void t_stackPrint  ( lua_State *L, int idx, int last, int no_tostring );

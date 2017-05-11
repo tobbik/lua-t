@@ -9,8 +9,9 @@ local m = {
 	"t_net_sck_stream_recv" , "t_net_sck_stream_send",
 	"t_oht"                 , "t_set",
 	"t_t"                   , "t_t_equals",
-	"t_tbl",
-	"t_tst",
+	"t_tbl"                 ,
+	"t_tst"                 ,
+	"t_pck"                 ,
 }
 
 

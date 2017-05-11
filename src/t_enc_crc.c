@@ -15,9 +15,12 @@
 #include <stdint.h>
 #include <arpa/inet.h>    // hton*()
 
-#include "t.h"
-#include "t_enc.h"
+#include "t_enc_l.h"
 #include "t_buf.h"
+
+#ifdef DEBUG
+#include "t_dbg.h"
+#endif
 
 #define TLEN            256
 
@@ -245,7 +248,7 @@ lt_enc_crc__Call( lua_State *L )
 			init_32( crc, POLY_32 );
 			break;
 		default:
-			t_push_error( L, "Unknown CRC algorithm" );
+			luaL_error( L, "Unknown CRC algorithm" );
 	}
 	crc->bE = (lua_isboolean( L, 2 )) ? lua_toboolean( L, 2 ) : 1;
 
@@ -301,10 +304,10 @@ struct t_enc_crc
 
 
 /** -------------------------------------------------------------------------
- * Calculate the CRC checksum over a string or T.Buffer.
+ * Calculate the CRC checksum over a string or t.Buffer.
  * \param   L          The Lua state.
  * \lparam  ud         t_enc_crc userdata instance.
- * \lparam  data       luastring or T.Buffer.
+ * \lparam  data       luastring or t.Buffer.
  * \lparam  sta        start index in data.
  * \lparam  end        end index in data.
  * \lreturn crc        the CRC checksum.
@@ -314,7 +317,6 @@ static int
 lt_enc_crc_calc( lua_State *L )
 {
 	struct t_enc_crc  *crc;
-	struct t_buf      *buf;
 	const char        *msg;
 	size_t             len;
 	int                sta;
@@ -322,21 +324,7 @@ lt_enc_crc_calc( lua_State *L )
 
 	crc = t_enc_crc_check_ud( L, 1 );
 	sta = (lua_isnumber( L, 3 )) ? luaL_checkinteger( L, 3 )     : 0;
-	// if string
-	if (lua_isstring( L, 2 ))
-	{
-		msg   = luaL_checklstring( L, 2, &len ) + sta;
-	}
-	else if (lua_isuserdata( L, 2 ))  // t_buf
-	{
-		buf  = t_buf_check_ud( L, 2, 1 );
-		msg  = (const char *) &(buf->b[ sta ]);
-		//msg  =  &(buf->b[ 0 ]);
-		len  = buf->len;
-	}
-	else
-		return t_push_error( L,
-			"ERROR `"T_ENC_CRC_TYPE":calc( msg )` takes `msg` argument." );
+	msg = t_buf_checklstring( L, 2, &len, NULL );
 
 	len = (lua_isnumber( L, 4 )) ? (size_t) luaL_checkinteger( L, 4 )-sta : len - sta;
 

@@ -15,6 +15,10 @@
 
 #include "t.h"
 
+#ifdef DEBUG
+#include "t_dbg.h"
+#endif
+
 
 /**--------------------------------------------------------------------------
  * Read type name from stack and overwrite it with type value.

@@ -10,8 +10,11 @@
  * \copyright See Copyright notice at the end of t.h
  */
 
-#include "t.h"
-#include "t_pck.h"
+#include "t_pck_l.h"
+
+#ifdef DEBUG
+#include "t_dbg.h"
+#endif
 
 
 /**--------------------------------------------------------------------------

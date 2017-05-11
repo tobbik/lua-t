@@ -1,6 +1,6 @@
 /* vim: ts=3 sw=3 sts=3 tw=80 sta noet list
 */
-/**--------------------------------------------------------------------------
+/**
  * \file      t_enc_rc4.c
  * \brief     RC4 Encryption Decryption algorithm.
  *            Yes it's unsafe and considered broken.  Still can be used as a
@@ -8,13 +8,18 @@
  *            algorthm within Lua-t.
  * \author    tkieslich
  * \copyright See Copyright notice at the end of t.h
- * --------------------------------------------------------------------------*/
+ */
 
 #include <stdio.h>
 #include <stdlib.h>      // calloc
 
-#include "t.h"
-#include "t_enc.h"
+#include "t_enc_l.h"
+
+#ifdef DEBUG
+#include "t_dbg.h"
+#endif
+
+#define TYPESWAP(type,a,b) do{type SWAP_tmp=b; b=a; a=SWAP_tmp;}while(0)
 
 
 // ----------------------------- Native RC4 functions
@@ -44,7 +49,7 @@ t_enc_rc4_init( struct t_enc_rc4 *rc4, const unsigned char *key, size_t kLen )
 	for (j = i = 0; i < 256; i++)
 	{
 		j += rc4->prng[i] + key[i % kLen];
-		TSWAP( uint8_t, rc4->prng[i], rc4->prng[j] );
+		TYPESWAP( uint8_t, rc4->prng[i], rc4->prng[j] );
 	}
 }
 
@@ -68,7 +73,7 @@ t_enc_rc4_crypt( struct t_enc_rc4 *rc4, const char *inbuf, char *outbuf, size_t 
 		rc4->i2 += rc4->prng[rc4->i1];
 
 		// Modify PRNG
-		TSWAP (uint8_t,
+		TYPESWAP (uint8_t,
 		        rc4->prng[rc4->i1],
 		        rc4->prng[rc4->i2] );
 
@@ -176,13 +181,9 @@ lt_enc_rc4_crypt( lua_State *L )
 	
 	rc4 = t_enc_rc4_check_ud( L, 1 );
 	if (lua_isstring( L, 2 ))
-	{
 		body = luaL_checklstring( L, 2, &bLen );
-	}
 	else
-	{
-		return t_push_error( L, T_ENC_RC4_TYPE".crypt takes at least one string parameter" );
-	}
+		return luaL_error( L, T_ENC_RC4_TYPE".crypt takes at least one string parameter" );
 	// if a key is provided for encoding,
 	// reset the RC4 state by initializing it with new key
 	if (lua_isstring( L, 3 ))
