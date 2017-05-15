@@ -57,8 +57,8 @@ is_digit( int c ) {
  * \param   int    default value
  * \return  int    read numeric value
  *  -------------------------------------------------------------------------*/
-static int
-gn( const char **fmt, int df )
+static size_t
+gn( const char **fmt, size_t df )
 {
 	if (! is_digit(** fmt))    // no number
 		return df;
@@ -82,12 +82,12 @@ gn( const char **fmt, int df )
  * \param  int   max value allowed for int
  * \return int   converted integer value in tbit
  *  -------------------------------------------------------------------------*/
-static int
-gnl( lua_State *L, const char **fmt, int df, int max )
+static size_t
+gnl( lua_State *L, const char **fmt, int df, size_t max )
 {
-	int sz = gn( fmt, df );
+	size_t sz = gn( fmt, df );
 	if (sz > max || sz <= 0)
-		luaL_error( L, "size (%d) out of limits [1,%d]", sz, max );
+		luaL_error( L, "size (%size_t) out of limits [1,%zu]", sz, max );
 	return sz * NB;
 }
 
@@ -127,7 +127,7 @@ static struct t_pck
 			case 'L': p = CP( UNT,  1==*e, sizeof( long ) * NB               ); break;
 			case 'j': p = CP( INT,  1==*e, sizeof( lua_Integer ) * NB        ); break;
 			case 'J': p = CP( UNT,  1==*e, sizeof( lua_Integer ) * NB        ); break;
-			case 'T': p = CP( INT,  1==*e, sizeof( size_t ) * NB             ); break;
+			case 'T': p = CP( UNT,  1==*e, sizeof( size_t ) * NB             ); break;
 			case 'i': p = CP( INT,  1==*e, gnl( L, f, sizeof( int ), MXINT ) ); break;
 			case 'I': p = CP( UNT,  1==*e, gnl( L, f, sizeof( int ), MXINT ) ); break;
 
@@ -137,7 +137,7 @@ static struct t_pck
 			case 'n': p = CP( FLT,  1==*e, sizeof( lua_Number ) * NB         ); break;
 
 			// String type
-			case 'c': p = CP( RAW,  0    , gnl( L, f, 1, 0x1 << NB )         ); break;
+			case 'c': p = CP( RAW,  0    , gnl( L, f, 1, 0x1 << 30 )         ); break;
 
 			// Bit types
 			case 'r': p = CP( BTS, *bo%NB, gnl( L, f, 1, MXBIT )/NB          ); break;
@@ -378,13 +378,11 @@ t_pck_format( lua_State *L, enum t_pck_t t, size_t s, int m )
 	{
 		case T_PCK_INT:
 		case T_PCK_UNT:
+		case T_PCK_FLT:
 			lua_pushfstring( L, "%d%c", s/NB, (1==m) ? 'L' : 'B' );
 			break;
-		case T_PCK_FLT:
-			lua_pushfstring( L, "%d", s/NB );
-			break;
 		case T_PCK_BOL:
-			lua_pushfstring( L, "%d", m );
+			lua_pushfstring( L, "" );
 			break;
 		case T_PCK_BTS:
 		case T_PCK_BTU:
@@ -424,8 +422,7 @@ struct t_pck
 	int                                     i;
 
 	luaL_getsubtable( L, LUA_REGISTRYINDEX, "_LOADED" );
-	lua_getfield( L, -1, "t.pck" );
-	lua_getfield( L, -1, T_PCK_IDNT );
+	lua_getfield( L, -1, "t."T_PCK_IDNT );
 	t_pck_format( L, t, s, m );
 	lua_rawget( L, -2 );           //S: _ld t t.pck pck/nil
 	if (t<T_PCK_ARR || lua_isnil( L, -1 ))        // haven't found in cache -> create it
@@ -446,7 +443,7 @@ struct t_pck
 		}
 	}
 	p = t_pck_check_ud( L, -1, 1 ); //S: _ld t t.pck pck
-	for (i=0; i<3; i++)
+	for (i=0; i<2; i++)
 		lua_remove( L, -2 );
 
 	return p;                       //S: pck
@@ -509,7 +506,6 @@ t_pck_getSize( lua_State *L, struct t_pck *p )
 				s = 0;
 				for (n=0; n<p->s; n++)
 				{
-					//t_stackDump(L);
 					lua_rawgeti( L, -1, n+1 );
 					lua_rawget( L, -2 );
 					t_pck_fld_getPackFromStack( L, -1, NULL );
@@ -688,7 +684,7 @@ static int lt_pck__Call( lua_State *L )
 	if (lua_istable( L, 1 ))                // Oht style constructor -> struct
 	{
 		t_pck_readArguments( L, 1, lua_gettop( L ) );
-		p = t_pck_str_create( L );                            //S: pck tbl
+		p = t_pck_str_create( L );           //S: pck tbl
 	}
 	else
 	{
@@ -792,7 +788,7 @@ lt_pck__tostring( lua_State *L )
 		lua_pushfstring( L, T_PCK_FLD_TYPE"[%d](", pf->o/NB );
 	t_pck_format( L, pc->t, pc->s, pc->m );
 	if (NULL == pf)
-		lua_pushfstring( L, "): %p", pc );
+		lua_pushfstring( L,  ": %p", pc );
 	else
 		lua_pushfstring( L, "): %p", pf );
 	lua_concat( L, 3 );
@@ -901,7 +897,7 @@ t_pck_fld__callread( lua_State *L, struct t_pck *pc, const char *b, size_t ofs )
 			lua_remove( L, -2 );               //S:… res tbl key val
 			lua_pushvalue( L, -2 );            //S:… res tbl key val key
 			lua_rawseti( L, -5, lua_rawlen( L, -5 )+1 );
-			lua_rawset( L, -3 );
+			lua_rawset( L, -4 );
 		}
 		lua_pop( L, 1 );                      //S:… res
 
@@ -1016,6 +1012,14 @@ luaopen_t_pck( lua_State *L )
 	// Push the class onto the stack
 	// this is avalable as T.Pack.<member>
 	luaL_newlib( L, t_pck_cf );
+	lua_pushinteger( L, NB );
+	lua_setfield( L, -2, "charsize" );
+	lua_pushinteger( L, sizeof( int ) );
+	lua_setfield( L, -2, "intsize" );
+	lua_pushinteger( L, sizeof( lua_Number ) );
+	lua_setfield( L, -2, "luanumsize" );
+	lua_pushinteger( L, MXINT );
+	lua_setfield( L, -2, "luaintsize" );
 	luaL_newlib( L, t_pck_fm );
 	lua_setmetatable( L, -2 );
 	return 1;

@@ -1,3 +1,6 @@
+local T = require('t')
+
+
 return {
 	-- #########################################################################
 	-- assert helpers
@@ -17,4 +20,15 @@ return {
 		end
 	end,
 
+	Packer = function( pck, typ, siz, x )
+		local ext      = ('number' == type(x) ) and ':'..x or x
+		local expect   = 't.Pack.' .. typ .. (siz and siz or '') .. (ext and ext or '')
+		local pck_name = tostring( pck ):match( '(.*):' )
+		--print( 'PCK_NAME:', expect, pck_name )
+		T.assert( expect == pck_name,
+		          "Packer should be '%s' but was '%s'", expect, pck_name )
+		if siz then
+			T.assert( Pack.getSize( pck ) == s, "Expected size %d was %d", s, Pack.getSize( pck ) )
+		end
+	end
 }

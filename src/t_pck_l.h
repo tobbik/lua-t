@@ -75,20 +75,20 @@ static const char *const t_pck_t_lst[] = {
 struct t_pck {
 	enum  t_pck_t  t;                 ///< type of packer
 	/// size of packer -> various meanings
-	///  -- for int/uint float raw = the number of bytes
-	///  -- for bit bits nibble    = the number of bits
-	///  -- for Seq Struct Arr     = the number of elements in this Combinator
+	///  -- int/uint float raw = number of bytes
+	///  -- bit bits nibble    = number of bits
+	///  -- Seq Struct Arr     = number of elements in Combinator
 	size_t         s;
 	/// modifier -> various meanings
-	///  -- for int/uint           = Endian ( 0=Big, 1=Little )
-	///  -- for bit                = Offset from beginning of byte ( bit numbering: MSB 0 )
-	///  -- for raw                = ??? (unused)
-	///  -- for Arr                = LUA_REGISTRYINDEX for packer
-	///  -- for Seq                = LUA_REGISTRYINDEX for table
+	///  -- int/uint float     = Endian ( 0=Big, 1=Little )
+	///  -- bit                = Offset from beginning of byte ( bit numbering: MSB 0 )
+	///  -- raw                = ??? (unused)
+	///  -- Arr                = LUA_REGISTRYINDEX for packer
+	///  -- Seq                = LUA_REGISTRYINDEX for table
 	///        table[ i    ] = Pack.Field (has offset information)
-	///  -- for Struct             = LUA_REGISTRYINDEX for table
-	///        table[ i    ] = name             -- this is the same scheme that
-	///        table[ name ] = Pack.Field       -- OrderedHashTable uses
+	///  -- Struct             = LUA_REGISTRYINDEX for table
+	///        table[ i    ] = name       -- schema of OrderedHashTable
+	///        table[ name ] = Pack.Field
 	int            m;
 };
 

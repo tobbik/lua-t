@@ -11,7 +11,7 @@ local m = {
 	"t_t"                   , "t_t_equals",
 	"t_tbl"                 ,
 	"t_tst"                 ,
-	"t_pck"                 ,
+	"t_pck_fmt"             ,
 }
 
 
@@ -34,7 +34,8 @@ local run = function( do_pat, no_pat )
 		if v:match( do_pat ) and not v:match( no_pat ) then
 			print( format( "--------- EXECUTING: %s   ---------", v ) )
 			local c_test = T.require( v )
-			if not c_test( ctx ) then
+			local success = c_test( ctx )
+			if not success then
 				t = c_test --> push test suite into global scope
 				break
 			end
