@@ -140,6 +140,7 @@ static struct t_pck
 			case 'c': p = CP( RAW,  0    , gnl( L, f, 1, 0x1 << 30 )         ); break;
 
 			// Bit types
+			// TODO: add k and K as nibble and unsigned nibble
 			case 'r': p = CP( BTS, *bo%NB, gnl( L, f, 1, MXBIT )/NB          ); break;
 			case 'R': p = CP( BTU, *bo%NB, gnl( L, f, 1, MXBIT )/NB          ); break;
 			case 'v': p = CP( BOL, *bo%NB, 1                                 ); break;
@@ -205,26 +206,27 @@ t_pck_copyBytes( char *dst, const char *src, size_t sz, int is_little )
 static void
 t_pck_getIntValue( lua_State *L, const char *b, struct t_pck *p, size_t ofs )
 {
-	int     is_signed = (T_PCK_INT==p->t || T_PCK_BTS==p->t);
-	lua_Unsigned  msk = (is_signed) ? (lua_Unsigned) 1  << (p->s - 1) : 0;
-	size_t     a_byte;      ///< how many bytes to copy for ALL bits
-	size_t     l_shft;      ///< how far left to shift the value
-	lua_Unsigned  val = 0;
-	char         *out = (char *) &val;
+	lua_Unsigned  msk    = 0, val = 0;
+	char         *out    = (char *) &val;
+	size_t        bytes;              ///< how many bytes to copy for ALL bits
+	size_t        l_shft;             ///< how far left to shift the value
 
 	if (p->t > T_PCK_UNT)   // for bit style reading
 	{
 		// TODO: Isn't it enough to shift right by offset and &Mask ... might be cheaper
-		a_byte = ((p->s + ofs) / NB) + 1;
-		l_shft = (MXBIT - a_byte*NB + ofs);
-		t_pck_copyBytes( out, b, a_byte, 1 );
-		val = (val << l_shft) >> (MXBIT - p->s);
+		bytes  = ((p->s + ofs) / NB) + 1;
+		t_pck_copyBytes( out, b, bytes, 1 );
+		l_shft = (MXBIT - bytes*NB + ofs);
+		val    = (val << l_shft) >> (MXBIT - p->s);
 	}
 	else
 		t_pck_copyBytes( out, b, p->s/NB, ! p->m );
 
-	if (is_signed)
+	if (T_PCK_INT==p->t || T_PCK_BTS==p->t)  // 2's complement for signed
+	{
+		msk = (lua_Unsigned) 1  << (p->s - 1);
 		lua_pushinteger( L, (lua_Integer) ((val^msk) - msk) );
+	}
 	else
 		lua_pushinteger( L, val );
 }
@@ -244,9 +246,9 @@ t_pck_setIntValue( lua_State *L, char *b, struct t_pck *p, size_t ofs )
 	int     is_signed = ((T_PCK_INT==p->t || T_PCK_BTS==p->t) && iVal<0 && p->s != MXBIT);
 	lua_Unsigned  msk = (is_signed) ? (lua_Unsigned) 1  << (p->s - 1) : 0;
 	lua_Unsigned  val = (is_signed)
-		? (((lua_Unsigned) iVal) + msk) ^ msk
-		: (lua_Unsigned) iVal;
-	size_t         n;
+	                    ? (((lua_Unsigned) iVal) + msk) ^ msk
+	                    : (lua_Unsigned) iVal;
+	size_t          n;
 
 	luaL_argcheck( L,  0 == (val >> p->s) , 2,
 	   "value to pack must be smaller than the maximum value for the packer size" );
@@ -291,7 +293,7 @@ t_pck_read( lua_State *L, const char *b, struct t_pck *p, size_t ofs )
 			lua_pushboolean( L, BIT_GET( *b, ofs ) );
 			break;
 		case T_PCK_FLT:
-			t_pck_copyBytes( (char*) &(u), b, p->s/NB, 0 );
+			t_pck_copyBytes( (char*) &(u), b, p->s/NB, ! p->m );
 			if      (sizeof( u.f ) == p->s/NB) lua_pushnumber( L, (lua_Number) u.f );
 			else if (sizeof( u.d ) == p->s/NB) lua_pushnumber( L, (lua_Number) u.d );
 			else                               lua_pushnumber( L, u.n );

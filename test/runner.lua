@@ -11,7 +11,7 @@ local m = {
 	"t_t"                   , "t_t_equals",
 	"t_tbl"                 ,
 	"t_tst"                 ,
-	"t_pck_fmt"             ,
+	"t_pck_fmt"             , "t_pck_bytes"
 }
 
 
