@@ -2,10 +2,14 @@
 -- \file    test/t_pck_bytes.lua
 -- \brief   Test for t.Pack (binary packing/unpacking)
 --          Packing and unpacking of various types of byte based values.
+
+
+
+
 local T       = require( "t" )
 local Test    = require( "t.Test" )
-local Buffer  = require( "t.Buffer" )
 local Pack    = require( "t.Pack" )
+local Buffer  = require( "t.Buffer" )
 local pAssert = T.require'assertHelper'.Packer
 local        unpack,        char,      random,      tpack,      tremove  =
       string.unpack, string.char, math.random, table.pack, table.remove

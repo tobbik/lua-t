@@ -1,5 +1,4 @@
-local T = require('t')
-
+local T,Pack = require't',require't.Pack'
 
 return {
 	-- #########################################################################
@@ -28,7 +27,7 @@ return {
 		T.assert( expect == pck_name,
 		          "Packer should be '%s' but was '%s'", expect, pck_name )
 		if siz then
-			T.assert( Pack.getSize( pck ) == s, "Expected size %d was %d", s, Pack.getSize( pck ) )
+			T.assert( Pack.getSize( pck ) == siz, "Expected size %d was %d", siz, Pack.getSize( pck ) )
 		end
 	end
 }

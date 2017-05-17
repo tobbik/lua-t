@@ -3,8 +3,9 @@ Pack   = require( "t.Pack" )
 Test   = require( "t.Test" )
 Buffer = require( "t.Buffer" )
 Oht    = require( "t.OrderedHashTable" )
-equals = require( "t.core" ).equals
-prxIdx = require( "t.core" ).proxyTableIndex
+pprint = require( "t.Table" ).pprint
+equals = require( "t" ).equals
+prxIdx = require( "t" ).proxyTableIndex
 utl    = T.require('t_pck_utl')
 
 --     0     1     2     3     4     5     6     7
@@ -71,4 +72,9 @@ utl.set(p,b1,v)
 print( b1:toHex(), '', '', #b1, b1:read() )  -- expecting same as buffer b
 
 x=p(b1)
+print('-----------------')
+pprint(x)
+print('-----------------')
+pprint(val[prxIdx])
+print('-----------------')
 assert( equals( x, val[ prxIdx ] ), "The input and output shall be identical" )

@@ -53,15 +53,15 @@ is_digit( int c ) {
 
 /** -------------------------------------------------------------------------
  * reads from string until input is not numeric any more.
- * \param   char** format string
- * \param   int    default value
- * \return  int    read numeric value
+ * \param   fmt    char**; format string
+ * \param   dft    int   ; default value
+ * \return  a      int   ; read numeric value
  *  -------------------------------------------------------------------------*/
 static size_t
-gn( const char **fmt, size_t df )
+gn( const char **fmt, size_t dft )
 {
 	if (! is_digit(** fmt))    // no number
-		return df;
+		return dft;
 	else
 	{
 		int a=0;
@@ -77,17 +77,17 @@ gn( const char **fmt, size_t df )
 /** -------------------------------------------------------------------------
  * Read an integer from the format parser
  * raises an error if it is larger than the maximum size for integers.
- * \param  char* format string
- * \param  int   default value if no number is in the format string
- * \param  int   max value allowed for int
- * \return int   converted integer value in tbit
+ * \param   fmt    char**; format string
+ * \param   dft    int   ; default value
+ * \param   max    int   ; max value allowed for int
+ * \return  size   int   ; read size converted to bits
  *  -------------------------------------------------------------------------*/
 static size_t
-gnl( lua_State *L, const char **fmt, int df, size_t max )
+gnl( lua_State *L, const char **fmt, int dft, size_t max )
 {
-	size_t sz = gn( fmt, df );
+	size_t sz = gn( fmt, dft );
 	if (sz > max || sz <= 0)
-		luaL_error( L, "size (%size_t) out of limits [1,%zu]", sz, max );
+		luaL_error( L, "size (%s) out of limits [1 .. %zu]", sz, max );
 	return sz * NB;
 }
 
@@ -156,7 +156,6 @@ static struct t_pck
 	}
 	// forward the Bit offset
 	*bo += ((T_PCK_BTU==p->t || T_PCK_BTS==p->t || T_PCK_BOL==p->t) ? p->s : p->s * NB );
-	//printf("%zu:%d\n", p->s, p->m );
 	return p;
 }
 
@@ -213,8 +212,7 @@ t_pck_getIntValue( lua_State *L, const char *b, struct t_pck *p, size_t ofs )
 
 	if (p->t > T_PCK_UNT)   // for bit style reading
 	{
-		// TODO: Isn't it enough to shift right by offset and &Mask ... might be cheaper
-		bytes  = ((p->s + ofs) / NB) + 1;
+		bytes  = ((p->s + ofs - 1) / NB) + 1;
 		t_pck_copyBytes( out, b, bytes, 1 );
 		l_shft = (MXBIT - bytes*NB + ofs);
 		val    = (val << l_shft) >> (MXBIT - p->s);
@@ -396,7 +394,7 @@ t_pck_format( lua_State *L, enum t_pck_t t, size_t s, int m )
 		case T_PCK_ARR:
 		case T_PCK_SEQ:
 		case T_PCK_STR:
-			lua_pushfstring( L, "[%d](%d)", s, m );
+			lua_pushfstring( L, "[%d]", s);
 			break;
 		default:
 			lua_pushfstring( L, "UNKNOWN" );
@@ -564,7 +562,7 @@ struct t_pck
  * Decides if the element on pos is a packer kind of type.
  * It decides between the following options:
  *     - T.Pack type              : just return it
- *     - T.Pack.Field             : return reference packer
+ *     - T.Pack.Field             : return referenced packer
  *     - fmt string of single item: fetch from cache or create
  *     - fmt string of mult items : let Sequence constructor handle and return result
  * \param   L      Lua state.
@@ -577,14 +575,14 @@ struct t_pck
 {
 	struct t_pck *p = NULL; ///< packer
 	int           l = _default_endian;
-	int           n = 0;  ///< counter for packers created from fmt string
+	int           n = 0;    ///< counter for packers created from fmt string
 	int           t = lua_gettop( L );  ///< top of stack before operations
 	const char   *fmt;
 
 	// get absolute stack position
 	pos = (pos < 0) ? lua_gettop( L ) + pos + 1 : pos;
 
-	// if it is a T.Pack or T.Pack.Field
+	// T.Pack or T.Pack.Field at pos
 	if (lua_isuserdata( L, pos ))
 	{
 		p    = t_pck_fld_getPackFromStack( L, pos, NULL );
@@ -596,7 +594,7 @@ struct t_pck
 		}
 		*bo += t_pck_getSize( L, p );
 	}
-	else // if it is a format string
+	else // format string at pos
 	{
 		fmt = luaL_checkstring( L, pos );
 		p   = t_pck_parseFmt( L, &fmt, &l, bo );
@@ -605,7 +603,6 @@ struct t_pck
 			n++;
 			p = t_pck_parseFmt( L, &fmt, &l, bo );
 		}
-		// TODO: actually create the packers and calculate positions
 		if (n > 1)
 			p =  t_pck_seq_create( L, t+1, lua_gettop( L ), bo );
 		else
@@ -691,7 +688,9 @@ static int lt_pck__Call( lua_State *L )
 	else
 	{
 		if (1==lua_gettop( L ))
+		{
 			p = t_pck_getPacker( L, 1, &bo ); // single packer
+		}
 		else
 			if (lua_isinteger( L, 2 ))
 				p = t_pck_arr_create( L );     // if second is number it must be array

@@ -11,7 +11,8 @@ local m = {
 	"t_t"                   , "t_t_equals",
 	"t_tbl"                 ,
 	"t_tst"                 ,
-	"t_pck_fmt"             , "t_pck_bytes"
+	"t_pck_bytes"           , "t_pck_bits",
+	"t_pck_fmt"             ,
 }
 
 
@@ -49,7 +50,7 @@ local run = function( do_pat, no_pat )
 		end
 	end
 	total.allTime:since( )
-	print( format( "Executed %d tests in %.3f seconds", total.count, total.allTime:get()/1000 ))
+	print( format( "Executed %d tests in %.3f seconds", total.count, total.allTime:get()/1000 ) )
 end
 
 local include_pattern = ""

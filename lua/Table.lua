@@ -1,4 +1,4 @@
-local t_insert,t_concat,fmt = table.insert,table.concat,string.format
+local t_insert,t_concat,fmt,rep = table.insert,table.concat,string.format, string.rep
 
 local Table      = { }
 Table.map        = function( tbl, func )
@@ -108,6 +108,24 @@ Table.isempty    = function( tbl )
 	for i = 1, #tbl         do return false end
 	return true
 end
+
+local pprint = nil
+pprint = function( tbl, idnt )
+	idnt = idnt or 0
+	for k, v in pairs( tbl ) do
+		local fmt = rep("  ", idnt) .. k .. ": "
+		if "table" == type(v) then
+			print( fmt )
+			pprint(v, idnt+1)
+		elseif type(v) == 'boolean' then
+			print(fmt .. tostring(v))
+		else
+			print(fmt .. v)
+		end
+	end
+end
+
+Table.pprint     = pprint
 
 
 return Table

@@ -4,6 +4,8 @@
 --          Testing that the various formatting options are creating the
 --          appropriate internal Packer types.  This is only testing atomic
 --          packers.
+
+
 local T       = require( "t" )
 local Test    = require( "t.Test" )
 local Pack    = require( "t.Pack" )
@@ -11,12 +13,12 @@ local pAssert = T.require'assertHelper'.Packer
 
 
 local tests = {
-	byteSize = (math.tointeger( math.log( math.maxinteger, 2 ) ) + 1) // Pack.charsize,
 
 	-- Test cases
 	test_SizedIntegerPacker = function( self )
 		Test.Case.describe( "Test Sized Integer Packers   'i1..n', 'I1..n'" )
-		for i=1,self.byteSize do
+		local byteSize = (math.tointeger( math.log( math.maxinteger, 2 ) ) + 1) // Pack.charsize
+		for i=1,byteSize do
 			for k,v in pairs( { B='>', L='<' } ) do
 				local pi = Pack( v .. 'i' .. i )
 				local pu = Pack( v .. 'I' .. i )
@@ -28,13 +30,14 @@ local tests = {
 
 	test_FloatPacker = function( self )
 		Test.Case.describe( "Test Float Packers     'f', 'd', 'n'" )
+		local byteSize = (math.tointeger( math.log( math.maxinteger, 2 ) ) + 1) // Pack.charsize
 		for k,v in pairs( { B='>', L='<' } ) do
 			local pfl = Pack( v..'f' )
 			local pdb = Pack( v..'d' )
 			local pln = Pack( v..'n' )
 			pAssert( pfl, 'Float', 4, k )
 			pAssert( pdb, 'Float', 8, k )
-			pAssert( pln, 'Float', self.byteSize, k )
+			pAssert( pln, 'Float', byteSize, k )
 		end
 	end,
 
@@ -74,12 +77,13 @@ local tests = {
 	end,
 
 	test_StringPacker = function( self )
-		Test.Case.describe( "Test sized String Packers   'c1,cX,cY,cZ,cMax'" )
+		Test.Case.describe( "Test sized String Packers   'c1, ... ,cMax'" )
 		for i,n in pairs( {1,7,36,583,9523,12845,778293,1234567,87654321,918273645,1073741824} ) do
 			local pc = Pack( 'c' .. n )
 			pAssert( pc,  'Raw', n )
 		end
 	end,
+	--]]
 }
 
 --t =  Test( tests )
