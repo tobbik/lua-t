@@ -8,12 +8,13 @@ Overview
 A Bit and Byte packer using the same kind of formatting string as Lua 5.3
 `string.pack( )` and `string.unpack( )` with two notable exceptions:
 
-   1 it does not deal with alignment
-   2 it can parse and serialize to Bit wide resolution
+   # it does not deal with alignment or variable length strings
+   # it can pack and unpack Bit wide resolution
 
 `Pack` preferably works on `Buffer` objects, because they are mutable.  This
-way for each write the Lua interpreter does not have to create and
-internalize a new string.
+way it is possible to overwrite only parts of a buffer if only selected
+fields should be changed.  This safes memory because it prevents Lua from
+creating and interning  new strings for each write.
 
 t.Pack format strings
 =====================
@@ -26,6 +27,14 @@ For Bit Style packing lua-t introduces the following format strings
    - **R:** an unsigned an unaligned Integer up to native size.  Size is
      defined in bits.  It can span byte boundaries.
 
+The following formats are missing and probably will be implemented at a
+later date:
+
+ - **![n]**  Alignment is not considered yet
+ - **=**     Endianess must be explicitely set
+ - **z**     C-Strings; zero terminated
+ - **s[n]**  Pascal-Strings; prefixed with a interger determining size
+
 
 t.Pack types
 ------------
@@ -36,17 +45,17 @@ collections follows the same syntax as Lua tables.  Items in packer
 collections can be packer collections themselves (nesting).
 
 atomic
-  A single byteType or a single bitType packer which returns a scalar value
-  such as a boolean, Int, float or string.
+  A single byteType or bitType packer which returns a scalar value such as a
+  boolean, integer, float or string.
 
 sequence
   Multiple values that are packed in order defined by the format string.
 
 array
-  A collection of same typed packers with a given length.
+  A collection of *n* packers of the same type.
 
 struct
-  A collection of packers which have named fields.
+  An ordered collection of named packers.
 
 
 Pack identification
@@ -135,10 +144,10 @@ An ordered and named collection of T.Pack objects.
 
 Available methods on t.Pack.Struct s are:
 
-   - pairs( s ) => iterator,    returns  name, t.Pack.Reader
+   - pairs( s ) => iterator,    returns  name, t.Pack.Field
                    Unlike a normal pairs( table ) this function returns values
                    in order!
-   - __index    => t.Pack.Reader, returns a type and position information
+   - __index    => t.Pack.Field, returns a type and position information
    - #struct    => length,      returns number of elements in struct
                    for i=1:#struct do allows numbered iteration (Lua 5.3 style)
    - tostring   => object name,

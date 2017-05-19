@@ -99,7 +99,6 @@ gnl( lua_State *L, const char **fmt, int dft, size_t max )
  * \param   L      Lua state.
  * \param   char*  format string pointer. moved by this function.
  * \param   int*   e pointer to current endianess.
- * \param   int*   bo pointer to current bit offset within byte.
  * \lreturn ud     T.Pack userdata instance.
  * \return  struct t_pck* pointer.
  * TODO: Deal with bit sized Packers:
@@ -107,7 +106,7 @@ gnl( lua_State *L, const char **fmt, int dft, size_t max )
  *       - Detect if fmt switched back to byte style and ERROR
  *  -------------------------------------------------------------------------*/
 static struct t_pck
-*t_pck_parseFmt( lua_State *L, const char **f, int *e, size_t *bo )
+*t_pck_parseFmt( lua_State *L, const char **f, int *e )
 {
 	int           opt;
 	struct t_pck *p = NULL;
@@ -141,21 +140,19 @@ static struct t_pck
 
 			// Bit types
 			// TODO: add k and K as nibble and unsigned nibble
-			case 'r': p = CP( BTS, *bo%NB, gnl( L, f, 1, MXBIT )/NB          ); break;
-			case 'R': p = CP( BTU, *bo%NB, gnl( L, f, 1, MXBIT )/NB          ); break;
-			case 'v': p = CP( BOL, *bo%NB, 1                                 ); break;
+			case 'r': p = CP( BTS, 0, gnl( L, f, 1, MXBIT )/NB               ); break;
+			case 'R': p = CP( BTU, 0, gnl( L, f, 1, MXBIT )/NB               ); break;
+			case 'v': p = CP( BOL, 0, 1                                      ); break;
 
 			// modifier types
-			case '<': *e = 1; continue;                                        break;
-			case '>': *e = 0; continue;                                        break;
-			case '\0': return NULL;                                            break;
+			case '<': *e = 1; continue;                                         break;
+			case '>': *e = 0; continue;                                         break;
+			case '\0': return NULL;                                             break;
 			default:
 				luaL_error( L, "invalid format option '%c'", opt );
 				return NULL;
 		}
 	}
-	// forward the Bit offset
-	*bo += ((T_PCK_BTU==p->t || T_PCK_BTS==p->t || T_PCK_BOL==p->t) ? p->s : p->s * NB );
 	return p;
 }
 
@@ -586,22 +583,16 @@ struct t_pck
 	if (lua_isuserdata( L, pos ))
 	{
 		p    = t_pck_fld_getPackFromStack( L, pos, NULL );
-		// This fixes Bitwise offsets
-		if (T_PCK_BOL == p->t  || T_PCK_BTS == p->t  || T_PCK_BTU == p->t)
-		{
-			p = t_pck_create_ud( L, p->t, p->s, *bo%NB );
-			lua_replace( L, pos );
-		}
 		*bo += t_pck_getSize( L, p );
 	}
 	else // format string at pos
 	{
 		fmt = luaL_checkstring( L, pos );
-		p   = t_pck_parseFmt( L, &fmt, &l, bo );
+		p   = t_pck_parseFmt( L, &fmt, &l );
 		while (NULL != p )
 		{
 			n++;
-			p = t_pck_parseFmt( L, &fmt, &l, bo );
+			p = t_pck_parseFmt( L, &fmt, &l );
 		}
 		if (n > 1)
 			p =  t_pck_seq_create( L, t+1, lua_gettop( L ), bo );
@@ -720,9 +711,29 @@ lt_pck_GetSize( lua_State *L )
 {
 	struct t_pck *p  = t_pck_fld_getPackFromStack( L, 1, NULL );
 	size_t        sz = t_pck_getSize( L, p );
-	lua_pushinteger( L,
-		(T_PCK_BTU==p->t || T_PCK_BTS==p->t || T_PCK_BOL==p->t) ? sz : sz/NB );
-	return 1;
+	lua_pushinteger( L, sz/NB );   // size in bytes
+	lua_pushinteger( L, sz );      // size in bits
+	return 2;
+}
+
+
+/**--------------------------------------------------------------------------
+ * Get offset of a Pack.Field.
+ * \param   L      Lua state.
+ * \lparam  ud     T.Pack.Field userdata instance.
+ * \lreturn bytes  offset from beginning in bytes.
+ * \lreturn bits   offset from beginning in bits.
+ * \return  int    # of values pushed onto the stack.
+ * --------------------------------------------------------------------------*/
+static int
+lt_pck_fld_GetOffset( lua_State *L )
+{
+	struct t_pck_fld *pf = NULL;
+	t_pck_fld_getPackFromStack( L, 1, &pf );
+	luaL_argcheck( L, NULL!=pf, 1, "Expected `"T_PCK_FLD_TYPE"`." );
+	lua_pushinteger( L, pf->o/NB );    // offset in Bytes
+	lua_pushinteger( L, pf->o );       // offset in Bits
+	return 2;
 }
 
 
@@ -747,7 +758,7 @@ lt_pck_SetDefaultEndian( lua_State *L )
 
 
 /**--------------------------------------------------------------------------
- * Get The specific subType of a Packer/Field.
+ * Get the specific subType of a Packer/Field.
  * \param   L      Lua state.
  * \lparam  ud     T.Pack/T.Pack.Field userdata instance.
  * \lreturn string Name of pack type.
@@ -971,7 +982,9 @@ static const struct luaL_Reg t_pck_fm [] = {
 static const struct luaL_Reg t_pck_cf [] = {
 	  { "getSize"        , lt_pck_GetSize }
 	, { "setEndian"      , lt_pck_SetDefaultEndian }
+	, { "setEndian"      , lt_pck_SetDefaultEndian }
 	, { "type"           , lt_pck_Type }
+	, { "getOffset"      , lt_pck_fld_GetOffset }
 	, { NULL             , NULL }
 };
 

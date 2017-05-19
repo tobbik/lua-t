@@ -1,3 +1,10 @@
+---
+-- \file      test/runner.lua
+-- \brief     Test runner for lua-t unit tests call by
+--            lua runner.lua FilePattern:TestPattern
+-- \author    tkieslich
+-- \copyright See Copyright notice at the end of t.h
+
 local T, Test, Time, format = require"t", require"t.Test", require"t.Time", string.format
 
 local m = {
@@ -12,7 +19,7 @@ local m = {
 	"t_tbl"                 ,
 	"t_tst"                 ,
 	"t_pck_bytes"           , "t_pck_bits",
-	"t_pck_fmt"             ,
+	"t_pck_fmt"             , "t_pck_mix",
 }
 
 

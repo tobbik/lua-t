@@ -19,15 +19,15 @@ return {
 		end
 	end,
 
-	Packer = function( pck, typ, siz, x )
+	Packer = function( pck, typ, sizByte, sizBit, x )
 		local ext      = ('number' == type(x) ) and ':'..x or x
-		local expect   = 't.Pack.' .. typ .. (siz and siz or '') .. (ext and ext or '')
+		local expect   = 't.Pack.' .. typ .. (ext and ext or '')
 		local pck_name = tostring( pck ):match( '(.*):' )
 		--print( 'PCK_NAME:', expect, pck_name )
 		T.assert( expect == pck_name,
 		          "Packer should be '%s' but was '%s'", expect, pck_name )
-		if siz then
-			T.assert( Pack.getSize( pck ) == siz, "Expected size %d was %d", siz, Pack.getSize( pck ) )
-		end
+		local sByt,sBit = Pack.getSize( pck )
+		T.assert( sByt == sizByte, "Expected Byte size %d was %d for `%s`", sizByte, sByt, typ )
+		T.assert( sBit == sizBit,  "Expected Bit  size %d was %d for `%s`", sizByte, sBit, typ )
 	end
 }

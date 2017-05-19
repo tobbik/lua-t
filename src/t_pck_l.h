@@ -34,6 +34,59 @@
 // T.Pack is designed to work like Lua 5.3 pack/unpack support.  By the same
 // time it shall have more convienience and be more explicit.
 
+
+// TODO: make the check of enums based on Bit Masks to have subtype grouping
+/* Next gen definitions
+enum t_pck_t {
+	// atomic packer types
+	  T_PCK_ISL      ///< Packer      Integer (signed,     little endian)
+	, T_PCK_ISB      ///< Packer      Integer (signed,     big endian   )
+	, T_PCK_ISN      ///< Packer      Integer (signed,     native endian)
+	, T_PCK_IUL      ///< Packer      Integer (unssigned,  little endian)
+	, T_PCK_IUB      ///< Packer      Integer (unssigned,  big endian   )
+	, T_PCK_IUN      ///< Packer      Integer (unssigned,  native endian)
+
+	, T_PCK_FLL      ///< Packer      Float   (unssigned,  little endian)
+	, T_PCK_FLB      ///< Packer      Float   (unssigned,  big endian   )
+	, T_PCK_FLN      ///< Packer      Float   (unssigned,  native endian)
+
+	, T_PCK_BOL      ///< Packer      Boolean (Single Bit as Lua boolean)
+	, T_PCK_BTS      ///< Packer      Bits    (signed int,   x bit wide )
+	, T_PCK_BTU      ///< Packer      Bits    (unsigned int, x bit wide )
+
+	, T_PCK_RAW      ///< Packer      Raw     (string/utf8/binary)
+	// complex packer types
+	, T_PCK_ARR      ///< Combinator  Array   (n packers of given type)
+	, T_PCK_SEQ      ///< Combinator  Sequence(sequence of packers)
+	, T_PCK_STR      ///< Combinator  Struct  (key:packer struct, ordered)
+};
+
+static const char *const t_pck_t_lst[] = {
+	// atomic packer types
+	  "Int%dsl"      ///< Packer      Integer (signed,     little endian)
+	, "Int%dsb"      ///< Packer      Integer (signed,     big endian   )
+	, "Int%dsn"      ///< Packer      Integer (signed,     native endian)
+	, "Int%dul"      ///< Packer      Integer (unssigned,  little endian)
+	, "Int%dub"      ///< Packer      Integer (unssigned,  big endian   )
+	, "Int%dun"      ///< Packer      Integer (unssigned,  native endian)
+
+	, "Float%dl"     ///< Packer      Float   (unssigned,  little endian)
+	, "Float%db"     ///< Packer      Float   (unssigned,  big endian   )
+	, "Float%dn"     ///< Packer      Float   (unssigned,  native endian)
+
+	, "Bool"         ///< Packer      Boolean (Single Bit translated to Lua)
+	, "Bit%ds"       ///< Packer      Bit     (signed int,   x bit wide  )
+	, "Bit%du"       ///< Packer      Bit     (unsigned int, x bit wide  )
+
+	, "Raw%d"        ///< Packer      Raw     (string/utf8/binary)
+	// complex packer types
+	, "Array"        ///< Combinator  Array   (n packers of given type)
+	, "Sequence"     ///< Combinator  Sequence(sequence of packers)
+	, "Struct"       ///< Combinator  Struct  (key:packer struct, ordered)
+};
+
+*/
+
 // TODO: make the check of enums based on Bit Masks to have subtype grouping
 enum t_pck_t {
 	// atomic packer types
@@ -75,7 +128,7 @@ static const char *const t_pck_t_lst[] = {
 struct t_pck {
 	enum  t_pck_t  t;                 ///< type of packer
 	/// size of packer -> various meanings
-	///  -- int/uint float raw = number of bytes
+	///  -- int/uint float raw = number of bits, NOT bytes
 	///  -- bit bits nibble    = number of bits
 	///  -- Seq Struct Arr     = number of elements in Combinator
 	size_t         s;

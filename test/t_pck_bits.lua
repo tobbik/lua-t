@@ -1,7 +1,9 @@
 ---
--- \file    test/t_pck_bits.lua
--- \brief   Test for t.Pack (binary packing/unpacking)
---          Packing and unpacking of various types of bit based values.
+-- \file      test/t_pck_bits.lua
+-- \brief     Test for t.Pack (binary packing/unpacking)
+--            Packing and unpacking of various types of bit based values.
+-- \author    tkieslich
+-- \copyright See Copyright notice at the end of t.h
 
 
 
@@ -10,10 +12,10 @@ local T       = require( "t" )
 local Test    = require( "t.Test" )
 local Pack    = require( "t.Pack" )
 local Buffer  = require( "t.Buffer" )
-local pAssert = T.require'assertHelper'.Packer
 local        unpack,        char,        rep,        format  =
       string.unpack, string.char, string.rep, string.format
 
+local NB      = Pack.charsize
 
 local tests = {
 	-- Test cases
@@ -33,7 +35,7 @@ local tests = {
 		-- ----------------------------|..........................................
 		-- rx                          |Rn-x
 		local maxBit = math.tointeger( math.log( math.maxinteger, 2 ) ) + 1
-		local buf    = Buffer( rep( char ( 0xFF ), maxBit//Pack.charsize ) ) --1111 1111   1111 1111 ...
+		local buf    = Buffer( rep( char ( 0xFF ), maxBit//NB ) ) --1111 1111   1111 1111 ...
 		-- testing every single permutation
 		for n=1,maxBit-1 do
 			local p = Pack( format( 'r%dR%d', n, maxBit-n ) )
@@ -54,7 +56,7 @@ local tests = {
 		-- rx                          |Rn-x
 		-- p[1]                        |p[2]
 		local maxBit = math.tointeger( math.log( math.maxinteger, 2 ) ) + 1
-		local buf    = Buffer( rep( char ( 0xAA ), maxBit//Pack.charsize ) ) -- 10101010 ...
+		local buf    = Buffer( rep( char ( 0xAA ), maxBit//NB ) ) -- 10101010 ...
 		local x      = unpack('j', buf:read() )
 		-- testing every single permutation
 		for n=1,maxBit-1 do
@@ -70,8 +72,8 @@ local tests = {
 		-- 000000000 11111111 00000000
 		--           |      |
 		--            |       |  ->
-		local s,n = char( 0x00, 0xFF, 0x00 ), Pack.charsize
-		local x,r = math.tointeger(2^n)-1, 0 
+		local s,n = char( 0x00, 0xFF, 0x00 ), NB
+		local x,r = math.tointeger(2^n)-1, 0
 		for i = 0,n do
 			local p = Pack( format( "r%dR%d", n+i, n ) )
 			local a,b,r = p[1](s), p[2](s), math.tointeger(2^i)-1

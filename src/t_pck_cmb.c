@@ -69,7 +69,7 @@ struct t_pck
 *t_pck_seq_create( lua_State *L, int sp, int ep, size_t *bo )
 {
 	size_t            n=0;    ///< iterator for going through the arguments
-	size_t            o=0;    ///< byte offset within the sequence
+	size_t            o=0;    ///< bit offset within the sequence
 	struct t_pck     *p;      ///< temporary packer/struct for iteration
 	struct t_pck     *sq;     ///< the userdata this constructor creates
 	struct t_pck_fld *pf;     ///< userdata for current field
@@ -178,15 +178,11 @@ lt_pck_fld__index( lua_State *L )
 	luaL_argcheck( L, (opc->t < T_PCK_STR && LUA_TNUMBER == lua_type( L, 2 )) || opc->t == T_PCK_STR,
 		2, "Index for "T_PCK_TYPE".Array or "T_PCK_TYPE".Sequence must be numeric." );
 
-	if (LUA_TNUMBER == lua_type( L, 2 ))
+	if (LUA_TNUMBER == lua_type( L, 2 ) && (idx = luaL_checkinteger( L, 2 )) && (idx > opc->s || idx<1))
 	{
-		idx = luaL_checkinteger( L, 2 );
-		if (idx > opc->s || idx<1)
-		{
-			// Array/Sequence out of bound: return nil
-			lua_pushnil( L );
-			return 1;
-		}
+		// Array/Sequence out of bound: return nil
+		lua_pushnil( L );
+		return 1;
 	}
 
 	// push empty field on stack
@@ -198,12 +194,6 @@ lt_pck_fld__index( lua_State *L )
 	if (LUA_TUSERDATA == lua_type( L, -1 ))    // T.Array
 	{
 		ipc = t_pck_check_ud( L, -1, 1 );                   // S: Arr i/k ud Pck
-		if (T_PCK_BOL == ipc->t  || T_PCK_BTS == ipc->t  || T_PCK_BTU == ipc->t)
-		{
-			lua_pop( L, 1 );
-			ipc = t_pck_create_ud( L, ipc->t, ipc->s,
-				((npf->o + ipc->s*(idx-1)) % NB ) );
-		}
 		npf->o += t_pck_getSize( L, ipc ) * (idx-1) ;
 	}
 	else                                       // T.Pack.Struct/Sequence
