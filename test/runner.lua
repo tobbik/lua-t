@@ -20,6 +20,7 @@ local m = {
 	"t_tst"                 ,
 	"t_pck_bytes"           , "t_pck_bits",
 	"t_pck_fmt"             , "t_pck_mix",
+	"t_pck_cmb"             ,
 }
 
 

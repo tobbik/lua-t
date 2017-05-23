@@ -1026,14 +1026,12 @@ luaopen_t_pck( lua_State *L )
 	// Push the class onto the stack
 	// this is avalable as T.Pack.<member>
 	luaL_newlib( L, t_pck_cf );
-	lua_pushinteger( L, NB );
-	lua_setfield( L, -2, "charsize" );
 	lua_pushinteger( L, sizeof( int ) );
 	lua_setfield( L, -2, "intsize" );
-	lua_pushinteger( L, sizeof( lua_Number ) );
-	lua_setfield( L, -2, "luanumsize" );
+	lua_pushinteger( L, NB );
+	lua_setfield( L, -2, "charbits" );
 	lua_pushinteger( L, MXINT );
-	lua_setfield( L, -2, "luaintsize" );
+	lua_setfield( L, -2, "numsize" );
 	luaL_newlib( L, t_pck_fm );
 	lua_setmetatable( L, -2 );
 	return 1;

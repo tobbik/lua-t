@@ -15,7 +15,7 @@ local Buffer  = require( "t.Buffer" )
 local        unpack,        char,        rep,        format  =
       string.unpack, string.char, string.rep, string.format
 
-local NB      = Pack.charsize
+local NB      = Pack.charbits
 
 local tests = {
 	-- Test cases

@@ -13,7 +13,7 @@ local Test    = require( "t.Test" )
 local Pack    = require( "t.Pack" )
 local pAssert = T.require'assertHelper'.Packer
 
-local NB      = Pack.charsize
+local NB      = Pack.charbits
 
 
 local tests = {
@@ -48,8 +48,8 @@ local tests = {
 	test_StandardIntegerPacker = function( self )
 		Test.Case.describe( "Standard Integer Packers 'bB','hH','iI','lL','jJ','T'" )
 		local sizeFormat = { b=1, B=1, h=2, H=2, i=4, I=4, l=8, L=8,
-		                     j=Pack.luanumsize, J=Pack.luanumsize,
-		                     T=self.luaintsize }
+		                     j=Pack.numsize, J=Pack.numsize,
+		                     T=self.numsize }
 		for f,s in pairs( sizeFormat ) do
 			for e,x in pairs( { B='>', L='<' } ) do
 				local pi = Pack( x ..''.. f )
@@ -87,7 +87,26 @@ local tests = {
 			pAssert( pc,  'Raw'..n, n, n*NB )
 		end
 	end,
-	--]]
+
+	test_ConstructorReuse = function( self )
+		Test.Case.describe( "Create Packer from Pack.Field instances" )
+		local fmt = '>I3<i2bB>I5<I4h'
+		local p1  = Pack( fmt )
+		T.assert( 7 == #p1, "Got Packer length: %d; expected:%d", #p1, 7 )
+		local p2  = Pack( p1[1], p1[2], p1[3], p1[4], p1[5], p1[6], p1[7] )
+		T.assert( #p2 == #p1, "Got Packer length: %d; expected:%d", #p2, #p1 )
+		for i=1,#p1 do
+			local s1,s2 = tostring(p1[i]):match("(.*):"), tostring(p2[i]):match("(.*):"), 
+			T.assert( s1 == s2, "Got Packer length: %s; expected:%s", s2, s1 )
+		end
+		-- mix existing t.Pack instances and new format fields
+		local p3  = Pack( ">I3", p1[2], "b", "B", p1[5], p1[6], "h" )
+		T.assert( #p3 == #p1, "Got Packer length: %d; expected:%d", #p3, #p1 )
+		for i=1,#p1 do
+			local s1,s3 = tostring(p1[i]):match("(.*):"), tostring(p3[i]):match("(.*):"), 
+			T.assert( s1 == s3, "Got Packer length: %s; expected:%s", s3, s1 )
+		end
+	end
 }
 
 --t =  Test( tests )
