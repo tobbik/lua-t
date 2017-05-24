@@ -171,14 +171,14 @@ size_t        t_pck_read      ( lua_State *L, const char *b, struct t_pck *p, si
 int           t_pck_write     ( lua_State *L,       char *b, struct t_pck *p, size_t o );
 
 // helpers for the Packers
-struct t_pck *t_pck_getPacker ( lua_State *L, int pos, size_t *bo );
+struct t_pck *t_pck_getPacker ( lua_State *L, int pos );
 size_t        t_pck_getSize   ( lua_State *L,  struct t_pck *p );
 
 struct t_pck *t_pck_fld_getPackFromStack( lua_State * L, int pos, struct t_pck_fld **pcf );
 
 
 struct t_pck *t_pck_str_create( lua_State *L );
-struct t_pck *t_pck_seq_create( lua_State *L, int sp, int ep, size_t *bo );
+struct t_pck *t_pck_seq_create( lua_State *L, int sp, int ep );
 struct t_pck *t_pck_arr_create( lua_State *L );
 
 

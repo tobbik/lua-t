@@ -2,6 +2,7 @@
 -- \file      test/t_pck_seq.lua
 -- \brief     Test for t.Pack Combinators (Array,Sequene,Struct)
 --            make sure that returned size and offsets are correct
+--            make sure bit and byte packer don't clash
 -- \author    tkieslich
 -- \copyright See Copyright notice at the end of t.h
 

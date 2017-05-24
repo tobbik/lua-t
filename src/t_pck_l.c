@@ -572,7 +572,7 @@ struct t_pck
  * \return  struct t_pck* pointer.
  * --------------------------------------------------------------------------*/
 struct t_pck
-*t_pck_getPacker( lua_State *L, int pos, size_t *bo )
+*t_pck_getPacker( lua_State *L, int pos )
 {
 	struct t_pck *p = NULL; ///< packer
 	int           l = _default_endian;
@@ -585,10 +585,7 @@ struct t_pck
 
 	// T.Pack or T.Pack.Field at pos
 	if (lua_isuserdata( L, pos ))
-	{
 		p    = t_pck_fld_getPackFromStack( L, pos, NULL );
-		*bo += t_pck_getSize( L, p );
-	}
 	else // format string at pos
 	{
 		fmt = luaL_checkstring( L, pos );
@@ -599,7 +596,7 @@ struct t_pck
 			p = t_pck_parseFmt( L, &fmt, &l );
 		}
 		if (n > 1)
-			p =  t_pck_seq_create( L, t+1, lua_gettop( L ), bo );
+			p =  t_pck_seq_create( L, t+1, lua_gettop( L ) );
 		else
 			p = t_pck_check_ud( L, -1, 1 );
 		lua_replace( L, pos );
@@ -672,7 +669,6 @@ t_pck_readArguments( lua_State *L, int sp, int ep )
 static int lt_pck__Call( lua_State *L )
 {
 	struct t_pck  *p;                       ///< packer to create
-	size_t         bo  = 0;                 ///< running bit offset
 
 	lua_remove( L, 1 );                     // remove the T.Pack Class table
 	if (lua_istable( L, 1 ))                // Oht style constructor -> struct
@@ -683,14 +679,12 @@ static int lt_pck__Call( lua_State *L )
 	else
 	{
 		if (1==lua_gettop( L ))
-		{
-			p = t_pck_getPacker( L, 1, &bo ); // single packer
-		}
+			p = t_pck_getPacker( L, 1 );      // single packer
 		else
 			if (lua_isinteger( L, 2 ))
 				p = t_pck_arr_create( L );     // if second is number it must be array
 			else
-				p = t_pck_seq_create( L, 1, lua_gettop( L ), &bo );
+				p = t_pck_seq_create( L, 1, lua_gettop( L ) );
 	}
 	return 1;
 }

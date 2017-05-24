@@ -27,7 +27,6 @@ struct t_pck
 *t_pck_str_create( lua_State *L )
 {
 	size_t            n;       ///< iterator for going through the arguments
-	size_t            o  = 0;  ///< runningbyte offset within the sequence
 	size_t            bo = 0;  ///< bit  offset within the sequence
 	struct t_pck     *p;       ///< temporary packer/struct for iteration
 	struct t_pck     *ps;      ///< the packer instance to be created
@@ -36,14 +35,14 @@ struct t_pck
 	for (n=0; n<lua_rawlen( L, -1 ); n++)
 	{
 		lua_rawgeti( L, -1, n+1 );                 //S:… tbl key
-		pf     = t_pck_fld_create_ud( L, o );      //S:… tbl key Fld
+		pf     = t_pck_fld_create_ud( L, bo );     //S:… tbl key Fld
 		lua_rawgeti( L, -3, n+1 );                 //S:… tbl key Fld key
 		lua_rawget( L, -4 );                       //S:… tbl key Fld Pck
-		p      = t_pck_getPacker( L, -1, &bo );    // turn Pck into true packer
+		p      = t_pck_getPacker( L, -1 );         // turn Pck into true packer
 		pf->pR = luaL_ref( L, LUA_REGISTRYINDEX ); // pops the packer from stack
-		o     += t_pck_getSize( L, p );
-		// replace pack with new T.Pack.Field
-		lua_rawset( L, -3 );                       //S:… tbl key Fld
+		bo    += t_pck_getSize( L, p );
+		// replace pack with new Pack.Field
+		lua_rawset( L, -3 );                       //S:… tbl
 	}
 
 	ps    = (struct t_pck *) lua_newuserdata( L, sizeof( struct t_pck ) );
@@ -66,10 +65,9 @@ struct t_pck
  * \return  struct t_pck* pointer.
  * --------------------------------------------------------------------------*/
 struct t_pck
-*t_pck_seq_create( lua_State *L, int sp, int ep, size_t *bo )
+*t_pck_seq_create( lua_State *L, int sp, int ep )
 {
-	size_t            n=0;    ///< iterator for going through the arguments
-	size_t            o=0;    ///< bit offset within the sequence
+	size_t            bo = 0; ///< bit offset within the sequence
 	struct t_pck     *p;      ///< temporary packer/struct for iteration
 	struct t_pck     *sq;     ///< the userdata this constructor creates
 	struct t_pck_fld *pf;     ///< userdata for current field
@@ -79,21 +77,20 @@ struct t_pck
 	sq->s = (ep-sp)+1;
 
 	// create and populate index table
-	lua_createtable( L, sq->s, sq->s ); //S: fmt … Seq tbl
-	while (n < sq->s)
+	lua_createtable( L, sq->s, 0 ); //S: p1 p2 … pn … Seq tbl
+	while (lua_rawlen( L, -1 ) < sq->s)
 	{
-		p      = t_pck_getPacker( L, sp, bo );
+		p      = t_pck_getPacker( L, sp );
 		pf     = (struct t_pck_fld *) lua_newuserdata( L, sizeof( struct t_pck_fld ));
-		lua_pushvalue( L, sp );          //S: fmt … Seq tbl Fld Pck
+		lua_pushvalue( L, sp );      //S: p1 p2 … pn … Seq tbl Fld Pck
 		pf->pR = luaL_ref( L, LUA_REGISTRYINDEX );  // pops the packer from stack
-		pf->o  = o;
+		pf->o  = bo;
 
 		luaL_getmetatable( L, T_PCK_FLD_TYPE );
-		lua_setmetatable( L, -2 );
+		lua_setmetatable( L, -2 );   //S: p1 p2 … pn … Seq tbl Fld
 
-		lua_rawseti( L, -2, n+1 );       //S: fmt … Seq tbl          tbl[i]   = Fld
-		o += t_pck_getSize( L, p );
-		n++;
+		lua_rawseti( L, -2, lua_rawlen( L, -2 )+1 ); // tbl[i] = Fld
+		bo += t_pck_getSize( L, p );
 		lua_remove( L, sp );
 	}
 	sq->m = luaL_ref( L, LUA_REGISTRYINDEX ); // register table
@@ -115,8 +112,7 @@ struct t_pck
 struct t_pck
 *t_pck_arr_create( lua_State *L )
 {
-	size_t                                  bo = 0;
-	struct t_pck  __attribute__ ((unused)) *p  = t_pck_getPacker( L, -2, &bo );  ///< packer
+	struct t_pck  __attribute__ ((unused)) *p  = t_pck_getPacker( L, -2 );  ///< packer
 	struct t_pck     *ap;     ///< array userdata to be created
 
 	ap    = (struct t_pck *) lua_newuserdata( L, sizeof( struct t_pck ) );
