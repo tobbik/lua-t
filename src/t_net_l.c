@@ -121,16 +121,16 @@ t_net_getProtocolByValue( lua_State *L, int pos, const int dft )
  *          is the same as sck:func( ... ) -> use same function definition as
  *          class function and as method.  Possible combinations:
  *
- *          IPv4(TCP), Adr 0.0.0.0:(0) = Socket.func( )
- *          IPv4(TCP)                  = Socket.func( ip )
- *          IPv4(TCP), ipString:port   = Socket.func( 'ipString', port )
- *          IPv4(TCP), 0.0.0.0:port    = Socket.func( port )
+ *          Sock, Adr 0.0.0.0:(0)   = Socket.func( )
+ *          Sock, Adr a.b.c.d:(0)   = Socket.func( ip )
+ *          Sock, Adr a.b.c.d:port  = Socket.func( 'ipString', port )
+ *          Sock, Adr 0.0.0.0:port  = Socket.func( port )
  *
- *          (no return values)         = Socket.func( sck, ip )
- *          Adr ipString:port          = Socket.func( sck, 'ipString', port )
- *          Adr ipString:(0)           = Socket.func( sck, 'ipstring' )
- *          Adr 0.0.0.0:port           = Socket.func( sck, port )
- *          Adr 0.0.0.0:(0)            = Socket.func( sck )
+ *          (no return values)      = Socket.func( sck, ip )
+ *          Adr ipString:port       = Socket.func( sck, 'ipString', port )
+ *          Adr ipString:(0)        = Socket.func( sck, 'ipstring' )
+ *          Adr 0.0.0.0:port        = Socket.func( sck, port )
+ *          Adr 0.0.0.0:(0)         = Socket.func( sck )
  *
  * \param   L      Lua state.
  * \param   int    Position on the stack.
@@ -142,7 +142,7 @@ t_net_getdef( lua_State *L, const int pos, struct t_net_sck **sck, struct sockad
 {
 	int returnables = 0;
 	*sck = t_net_sck_check_ud( L, pos+0,                      0 );
-	*adr = t_net_ip4_check_ud( L, pos+((NULL==*sck) ? 0 : 1), 0 );
+	*adr = t_net_adr_check_ud( L, pos+((NULL==*sck) ? 0 : 1), 0 );
 
 	if (NULL == *sck)
 	{
@@ -158,10 +158,10 @@ t_net_getdef( lua_State *L, const int pos, struct t_net_sck **sck, struct sockad
 
 	if (NULL == *adr)
 	{
-		*adr = t_net_ip4_create_ud( L );
+		*adr = t_net_adr_create_ud( L );
 		lua_insert( L, pos+returnables );
 		returnables++;
-		t_net_ip4_set( L, pos+returnables, *adr );
+		t_net_adr_set( L, pos+returnables, *adr );
 	}
 	else
 		lua_remove( L, pos+returnables );
@@ -190,8 +190,8 @@ LUA_API int
 luaopen_t_net( lua_State *L )
 {
 	luaL_newlib( L, t_net_cf );
-	luaopen_t_net_ip4( L );
-	lua_setfield( L, -2, T_NET_IP4_IDNT );
+	luaopen_t_net_adr( L );
+	lua_setfield( L, -2, T_NET_ADR_IDNT );
 	luaopen_t_net_ifc( L );
 	lua_setfield( L, -2, T_NET_IFC_IDNT );
 	luaopen_t_net_sck( L );

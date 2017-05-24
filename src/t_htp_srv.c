@@ -190,7 +190,7 @@ lt_htp_srv_listen( lua_State *L )
 	p_net_sck_listen( L, sc, ip, bl );
 
 	sc     = t_net_sck_check_ud( L, -2, 1 );
-	ip     = t_net_ip4_check_ud( L, -1, 1 );
+	ip     = t_net_adr_check_ud( L, -1, 1 );
 	s->aR  = luaL_ref( L, LUA_REGISTRYINDEX );
 	s->sck = sc;
 	s->sR  = luaL_ref( L, LUA_REGISTRYINDEX );

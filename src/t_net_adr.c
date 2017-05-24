@@ -1,7 +1,7 @@
 /* vim: ts=3 sw=3 sts=3 tw=80 sta noet list
 */
 /**
- * \file      t_net_ip4.c
+ * \file      t_net_adr.c
  * \brief     OOP wrapper for network addresses
  *            This is a thin wrapper around struct sockaddr_in
  * \author    tkieslich
@@ -34,27 +34,27 @@
 
 
 /**--------------------------------------------------------------------------
- * Construct a T.Net IPv4 Address and return it.
+ * Construct a T.Net.Address and return it.
  * \param   L      Lua state.
- * \lparam  CLASS  table T.Net.Ip4
+ * \lparam  CLASS  table T.Net.Address
  * \lparam  port   Port for the Address.
  * \lparam  string IP address in xxx.xxx.xxx.xxx format.
  * \lreturn ud     sockkaddr_in* userdata instance.
  * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int
-lt_net_ip4__Call( lua_State *L )
+lt_net_adr__Call( lua_State *L )
 {
-	struct sockaddr_in  *ip4;
+	struct sockaddr_in  *adr;
 
 	lua_remove( L, 1 );
-	if (t_net_ip4_is( L, 1 ))
+	if (t_net_adr_is( L, 1 ))
 	{
-		lt_net_ip4_getIpAndPort( L );
+		lt_net_adr_getIpAndPort( L );
 		lua_remove( L, 1 );
 	}
-	ip4 = t_net_ip4_create_ud( L );
-	t_net_ip4_set( L, 1, ip4 );
+	adr = t_net_adr_create_ud( L );
+	t_net_adr_set( L, 1, adr );
 	return 1;
 }
 
@@ -69,7 +69,7 @@ lt_net_ip4__Call( lua_State *L )
  * TODO:  allow for empty endpoints if it makes sense
  * --------------------------------------------------------------------------*/
 void
-t_net_ip4_set( lua_State *L, int pos, struct sockaddr_in *ip )
+t_net_adr_set( lua_State *L, int pos, struct sockaddr_in *ip )
 {
 	int           port;
 	const char   *ips;      /// IP String aaa.bbb.ccc.ddd
@@ -117,15 +117,15 @@ t_net_ip4_set( lua_State *L, int pos, struct sockaddr_in *ip )
  * \return  struct sockaddr_in*  pointer to the sockaddr
  * --------------------------------------------------------------------------*/
 struct sockaddr_in
-*t_net_ip4_create_ud( lua_State *L )
+*t_net_adr_create_ud( lua_State *L )
 {
-	struct sockaddr_in  *ip4;
+	struct sockaddr_in  *adr;
 
-	ip4 = (struct sockaddr_in *) lua_newuserdata( L, sizeof(struct sockaddr_in) );
+	adr = (struct sockaddr_in *) lua_newuserdata( L, sizeof(struct sockaddr_in) );
 
-	luaL_getmetatable( L, T_NET_IP4_TYPE );
+	luaL_getmetatable( L, T_NET_ADR_TYPE );
 	lua_setmetatable( L , -2 );
-	return ip4;
+	return adr;
 }
 
 
@@ -136,10 +136,10 @@ struct sockaddr_in
  * \return  struct sockaddr_in*  pointer to the sockaddr
  * --------------------------------------------------------------------------*/
 struct sockaddr_in
-*t_net_ip4_check_ud( lua_State *L, int pos, int check )
+*t_net_adr_check_ud( lua_State *L, int pos, int check )
 {
-	void *ud = luaL_testudata( L, pos, T_NET_IP4_TYPE );
-	luaL_argcheck( L, (ud != NULL  || !check), pos, "`"T_NET_IP4_TYPE"` expected" );
+	void *ud = luaL_testudata( L, pos, T_NET_ADR_TYPE );
+	luaL_argcheck( L, (ud != NULL  || !check), pos, "`"T_NET_ADR_TYPE"` expected" );
 	return (NULL==ud) ? NULL : (struct sockaddr_in *) ud;
 }
 
@@ -148,16 +148,16 @@ struct sockaddr_in
  * Set Ip and Port of the IP endpoint.
  * \param   L      Lua state.
  * \lparam  ud     sockkaddr_in* userdata instance.
- * \lparam  string IPv4 address.
+ * \lparam  string IP address.
  * \lparam  int    Port number.
  * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int
-lt_net_ip4_setIpAndPort( lua_State *L )
+lt_net_adr_setIpAndPort( lua_State *L )
 {
-	struct sockaddr_in *ip4 = t_net_ip4_check_ud( L, 1, 1 );
+	struct sockaddr_in *adr = t_net_adr_check_ud( L, 1, 1 );
 
-	t_net_ip4_set( L, 1, ip4 );
+	t_net_adr_set( L, 1, adr );
 	return 0;
 }
 
@@ -166,16 +166,16 @@ lt_net_ip4_setIpAndPort( lua_State *L )
  * Get IP and port from the IP endpoint.
  * \param   L      Lua state.
  * \lparam  ud     sockkaddr_in* userdata instance.
- * \lretrun string IPv4 address.
+ * \lretrun string IP address.
  * \lretrun int    Port number.
  * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 int
-lt_net_ip4_getIpAndPort( lua_State *L )
+lt_net_adr_getIpAndPort( lua_State *L )
 {
-	struct sockaddr_in *ip4 = t_net_ip4_check_ud( L, 1, 1 );
-	lua_pushfstring( L, "%d.%d.%d.%d", INT_TO_ADDR( ip4->sin_addr.s_addr ) );
-	lua_pushinteger( L, ntohs( ip4->sin_port ) );
+	struct sockaddr_in *adr = t_net_adr_check_ud( L, 1, 1 );
+	lua_pushfstring( L, "%d.%d.%d.%d", INT_TO_ADDR( adr->sin_addr.s_addr ) );
+	lua_pushinteger( L, ntohs( adr->sin_port ) );
 	return 2;
 }
 
@@ -188,13 +188,13 @@ lt_net_ip4_getIpAndPort( lua_State *L )
  * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int
-lt_net_ip4__tostring( lua_State *L )
+lt_net_adr__tostring( lua_State *L )
 {
-	struct sockaddr_in *ip4 = t_net_ip4_check_ud( L, 1, 1 );
-	lua_pushfstring( L, T_NET_IP4_TYPE"{%d.%d.%d.%d:%d}: %p",
-			INT_TO_ADDR( ip4->sin_addr.s_addr ),
-			ntohs( ip4->sin_port ),
-			ip4 );
+	struct sockaddr_in *adr = t_net_adr_check_ud( L, 1, 1 );
+	lua_pushfstring( L, T_NET_ADR_TYPE"{%d.%d.%d.%d:%d}: %p",
+			INT_TO_ADDR( adr->sin_addr.s_addr ),
+			ntohs( adr->sin_port ),
+			adr );
 	return 1;
 }
 
@@ -208,21 +208,21 @@ lt_net_ip4__tostring( lua_State *L )
  * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int
-lt_net_ip4__eq( lua_State *L )
+lt_net_adr__eq( lua_State *L )
 {
-	struct sockaddr_in *ip4    = t_net_ip4_check_ud( L, 1, 1 );
-	struct sockaddr_in *ip4Cmp = t_net_ip4_check_ud( L, 2, 1 );
+	struct sockaddr_in *adr    = t_net_adr_check_ud( L, 1, 1 );
+	struct sockaddr_in *adrCmp = t_net_adr_check_ud( L, 2, 1 );
 
-	if (ip4->sin_family != ip4Cmp->sin_family)
+	if (adr->sin_family != adrCmp->sin_family)
 	{
 		lua_pushboolean( L, 0 );
 		return 1;
 	}
 
-	if (ip4->sin_family == AF_INET)
+	if (adr->sin_family == AF_INET)
 	{
-		if (ip4->sin_addr.s_addr != ip4Cmp->sin_addr.s_addr ||
-		    ip4->sin_port != ip4Cmp->sin_port)
+		if (adr->sin_addr.s_addr != adrCmp->sin_addr.s_addr ||
+		    adr->sin_port != adrCmp->sin_port)
 		{
 			lua_pushboolean( L, 0 );
 			return 1;
@@ -248,7 +248,7 @@ lt_net_ip4__eq( lua_State *L )
  * TODO: check compile time endianess and reorder the uint8_t array
  * --------------------------------------------------------------------------*/
 static int
-lt_net_ip4_Int2ip( lua_State *L )
+lt_net_adr_Int2ip( lua_State *L )
 {
 	lua_pushfstring( L, "%d.%d.%d.%d", INT_TO_ADDR( luaL_checkinteger( L, -1 ) ) );
 	return 1;
@@ -264,7 +264,7 @@ lt_net_ip4_Int2ip( lua_State *L )
  * TODO: check compile time endianess and reorder the uint8_t array
  * --------------------------------------------------------------------------*/
 static int
-lt_net_ip4_Ip2int( lua_State *L )
+lt_net_adr_Ip2int( lua_State *L )
 {
 	lua_Integer      ip[ 4 ];
 	sscanf( luaL_checkstring( L, 1 ), "%lld.%lld.%lld.%lld",
@@ -278,31 +278,31 @@ lt_net_ip4_Ip2int( lua_State *L )
 /**--------------------------------------------------------------------------
  * Class metamethods library definition
  * --------------------------------------------------------------------------*/
-static const struct luaL_Reg t_net_ip4_fm [] = {
-	  { "__call"     , lt_net_ip4__Call }
+static const struct luaL_Reg t_net_adr_fm [] = {
+	  { "__call"     , lt_net_adr__Call }
 	, { NULL         , NULL }
 };
 
 /**--------------------------------------------------------------------------
  * Class functions library definition
  * --------------------------------------------------------------------------*/
-static const luaL_Reg t_net_ip4_cf [] =
+static const luaL_Reg t_net_adr_cf [] =
 {
-	  { "ip2int"     , lt_net_ip4_Ip2int }
-	, { "int2ip"     , lt_net_ip4_Int2ip }
+	  { "ip2int"     , lt_net_adr_Ip2int }
+	, { "int2ip"     , lt_net_adr_Int2ip }
 	, { NULL         , NULL }
 };
 
 /**--------------------------------------------------------------------------
  * Objects metamethods library definition
  * --------------------------------------------------------------------------*/
-static const struct luaL_Reg t_net_ip4_m [] = {
+static const struct luaL_Reg t_net_adr_m [] = {
 	// metamethods
-	  { "__tostring" , lt_net_ip4__tostring }
-	, { "__eq"       , lt_net_ip4__eq }
+	  { "__tostring" , lt_net_adr__tostring }
+	, { "__eq"       , lt_net_adr__eq }
 	// object methods
-	, { "get"        , lt_net_ip4_getIpAndPort }
-	, { "set"        , lt_net_ip4_setIpAndPort }
+	, { "get"        , lt_net_adr_getIpAndPort }
+	, { "set"        , lt_net_adr_setIpAndPort }
 	, { NULL         , NULL}
 };
 
@@ -314,23 +314,23 @@ static const struct luaL_Reg t_net_ip4_m [] = {
  * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 LUAMOD_API int
-luaopen_t_net_ip4( lua_State *L )
+luaopen_t_net_adr( lua_State *L )
 {
 	// just make metatable known to be able to register and check userdata
 	// this is only avalable a <instance>:func()
-	luaL_newmetatable( L, T_NET_IP4_TYPE );   // stack: functions meta
-	luaL_setfuncs( L, t_net_ip4_m, 0 );
+	luaL_newmetatable( L, T_NET_ADR_TYPE );   // stack: functions meta
+	luaL_setfuncs( L, t_net_adr_m, 0 );
 	lua_setfield( L, -1, "__index" );
 
 	// Push the class onto the stack
 	// this is avalable as T.ip.<member>
-	luaL_newlib( L, t_net_ip4_cf );
+	luaL_newlib( L, t_net_adr_cf );
 	lua_pushstring( L, "127.0.0.1" );
 	lua_setfield( L, -2, "localhost" );
 
 	// set the methods as metatable
 	// this is only avalable a <instance>.<member>
-	luaL_newlib( L, t_net_ip4_fm );
+	luaL_newlib( L, t_net_adr_fm );
 	lua_setmetatable( L, -2 );
 	return 1;
 }

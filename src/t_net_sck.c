@@ -157,7 +157,7 @@ static int
 lt_net_sck_listen( lua_State *L )
 {
 	struct t_net_sck   *sck = t_net_sck_check_ud( L, 1, 0 );
-	struct sockaddr_in *adr = t_net_ip4_check_ud( L, 1+((NULL==sck) ? 0:1), 0 );
+	struct sockaddr_in *adr = t_net_adr_check_ud( L, 1+((NULL==sck) ? 0:1), 0 );
 	int                 bl  = SOMAXCONN,
 	                    returnables = 0;
 
@@ -179,7 +179,7 @@ lt_net_sck_listen( lua_State *L )
  * Bind a socket to an address.
  * \param   L      Lua state.
  * \lparam  ud     t_net_sck userdata instance.
- * \lparam  ud     t_net_ip4 userdata instance.
+ * \lparam  ud     t_net_adr userdata instance.
  * \return  int    # of values pushed onto the stack.
  *-------------------------------------------------------------------------*/
 static int
@@ -196,7 +196,7 @@ lt_net_sck_bind( lua_State *L )
  * Connect a socket to an address.
  * \param   L      Lua state.
  * \lparam  ud     t_net_sck userdata instance.
- * \lparam  ud     t_net_ip4 userdata instance.
+ * \lparam  ud     t_net_adr userdata instance.
  * \return  int    # of values pushed onto the stack.
  *-------------------------------------------------------------------------*/
 static int
@@ -222,7 +222,7 @@ lt_net_sck_accept( lua_State *L )
 {
 	struct t_net_sck   *srv = t_net_sck_check_ud( L, 1, 1 ); // listening socket
 	struct t_net_sck   *cli = t_net_sck_create_ud( L, AF_INET, SOCK_STREAM, IPPROTO_TCP, 0 ); // accepted socket
-	struct sockaddr_in *adr = t_net_ip4_create_ud( L );      // peer address
+	struct sockaddr_in *adr = t_net_adr_create_ud( L );      // peer address
 	return p_net_sck_accept( L, srv, cli, adr );
 }
 
@@ -255,7 +255,7 @@ lt_net_sck_send( lua_State *L )
 	int                 snt; // actually sent bytes
 	struct t_net_sck   *sck = t_net_sck_check_ud( L, 1, 1 );
 	char               *msg = t_buf_checklstring( L, 2, &len, NULL );
-	struct sockaddr_in *adr = t_net_ip4_check_ud( L, 3, 0 );
+	struct sockaddr_in *adr = t_net_adr_check_ud( L, 3, 0 );
 	size_t              max = (lua_gettop( L ) == ((NULL==adr) ?3 :4))
 	                          ? (size_t) luaL_checkinteger( L, (NULL==adr) ?3 :4 )
 	                          : len;
@@ -311,7 +311,7 @@ lt_net_sck_recv( lua_State *L )
 	char               *msg;       // char pointer to recv into
 	size_t              args = lua_gettop( L );
 	struct t_net_sck   *sck  = t_net_sck_check_ud( L, 1, 1 );
-	struct sockaddr_in *adr  = t_net_ip4_check_ud( L, 2, 0 );
+	struct sockaddr_in *adr  = t_net_adr_check_ud( L, 2, 0 );
 
 	if (t_buf_isstring( L, (NULL==adr) ?2 :3, &cw ) && cw)  // is writable -> buffer
 	{
@@ -349,10 +349,10 @@ static int
 lt_net_sck_getsockname( lua_State *L )
 {
 	struct t_net_sck   *sck         = t_net_sck_check_ud( L, 1, 1 );
-	struct sockaddr_in *ip          = t_net_ip4_check_ud( L, 2, 0 );
+	struct sockaddr_in *ip          = t_net_adr_check_ud( L, 2, 0 );
 
 	if (NULL == ip)
-		ip = t_net_ip4_create_ud( L );
+		ip = t_net_adr_create_ud( L );
 
 	if (! p_net_sck_getsockname( sck, ip))
 		lua_pushnil( L );

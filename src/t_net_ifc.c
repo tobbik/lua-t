@@ -36,13 +36,13 @@
 
 
 /**--------------------------------------------------------------------------
- * Parse interface address into a T.Net.Ipv4 struct.
+ * Parse interface address into a T.Net.Address struct.
  * \param   L        Lua state.
  * \param   int      sd Socket Descriptor.
  * \param   ifreq    struct ifreq pointer.
  * \param   int      Type for ioctl() request (SIOCGIFADDR,SIOCGIFBRDADDR,SIOCGIFNETMASK).
  * \param   int*     int pointer to address.
- * \lreturn ud       T.Net.Ipv4 userdata instance.
+ * \lreturn ud       T.Net.Address userdata instance.
  * \return  int/bool 1 if succesful, else 0.
  * --------------------------------------------------------------------------*/
 static int
@@ -52,7 +52,7 @@ t_net_ifc_parseAddr( lua_State *L, int sd, struct ifreq *ifr, int ioctltype, int
 
 	if (ioctl( sd, ioctltype, ifr ) == 0)
 	{
-		addr    = t_net_ip4_create_ud( L );
+		addr    = t_net_adr_create_ud( L );
 		memcpy( addr, (struct sockaddr_in *)(&(ifr)->ifr_addr), sizeof( struct sockaddr_in ) );
 		*ip_int = addr->sin_addr.s_addr;
 		return 1;
@@ -135,9 +135,9 @@ t_net_ifc_parseIfreq( lua_State *L, int sd, struct ifreq *ifr )
 	if (t_net_ifc_parseAddr( L, sd, ifr, SIOCGIFNETMASK, &nmask))
 		lua_setfield( L, -2, "netmask" );
 
-	nw_addr = t_net_ip4_create_ud( L );
+	nw_addr = t_net_adr_create_ud( L );
 	lua_pushfstring( L, "%d.%d.%d.%d", INT_TO_ADDR( addr & nmask ) );
-	t_net_ip4_set( L, -1, nw_addr );
+	t_net_adr_set( L, -1, nw_addr );
 	lua_setfield( L, -2, "network" );
 
 	if (t_net_ifc_parseFlag( L, sd, ifr->ifr_name ))

@@ -25,13 +25,13 @@
 	(_addr >> 24 & 0xFF)
 
 // Constructors
-// t_net_ip4.c
-int                 luaopen_t_net_ip4     ( lua_State *L );
-struct sockaddr_in *t_net_ip4_check_ud    ( lua_State *L, int pos, int check );
-struct sockaddr_in *t_net_ip4_create_ud   ( lua_State *L );
-void                t_net_ip4_set         ( lua_State *L, int pos, struct sockaddr_in *ip );
-int                lt_net_ip4_getIpAndPort( lua_State *L );
-#define t_net_ip4_is( L, pos ) (NULL != t_net_ip4_check_ud( L, pos, 0 ))
+// t_net_adr.c
+int                 luaopen_t_net_adr     ( lua_State *L );
+struct sockaddr_in *t_net_adr_check_ud    ( lua_State *L, int pos, int check );
+struct sockaddr_in *t_net_adr_create_ud   ( lua_State *L );
+void                t_net_adr_set         ( lua_State *L, int pos, struct sockaddr_in *ip );
+int                lt_net_adr_getIpAndPort( lua_State *L );
+#define t_net_adr_is( L, pos ) (NULL != t_net_adr_check_ud( L, pos, 0 ))
 
 
 // ----------------------------- INTERFACES -----------------------------------
