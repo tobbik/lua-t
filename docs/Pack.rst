@@ -6,7 +6,7 @@ Overview
 ========
 
 A Bit and Byte packer using the same kind of formatting string as Lua 5.3
-``string.pack( )`` and ``string.unpack( )`` with two notable exceptions:
+``string.pack( )`` and ``string.unpack( )`` with two notable exceptions::
 
    # it does not deal with alignment or variable length strings
    # it can pack and unpack Bit wide resolution
@@ -92,7 +92,7 @@ atomic
 sequence
   The constructor takes a format string which defines a composition of
   multiple items.  eg. ``p = Pack( '>l<H' )`` defines a sequence of 2
-  elements and is 10 bytes long on a 64 bit system.
+  elements and is 10 bytes long on a 64 bit system::
 
    - p[1]: atomic packer of type (Int8B) 0 bytes offset (1st element)
    - p[2]: atomic packer of type (Int2L) 8 bytes offset (length of p[1])
@@ -102,7 +102,7 @@ array
   combinator) and a number defining how often it gets repeated. 
   eg. p = ``Pack( '>d<H', 4 )`` defines a sequence of 2 elements which is
   10 bytes long, it will get repeated 4 times, making the packer cover 40
-  bytes.
+  bytes::
 
    - p[1]:    is a packer sequence
    - p[2][1]: is an atomic packer of type (float) with an 10 bytes offset
@@ -110,7 +110,7 @@ array
 struct
   The constructor takes a format string which defines a composition of
   multiple items. eg. ``p = Pack( '>l<H' )`` defines a sequence of 2
-  elements and is 10 bytes long on a 64 bit system.
+  elements and is 10 bytes long on a 64 bit system::
 
    - p[1]: is an atomic packer of type (Int8B) with a  0 bytes offset
    - p[2]: is an atomic packer of type (int2L) with an 8 bytes offset
@@ -159,7 +159,7 @@ Class Metamembers
 
 ``Pack p = Pack( string fmt )       [__call]``
   Creates ``Pack.* p`` from a format string.  The following format strings
-  are allowed:
+  are allowed::
 
     - ``<``   : sets little endian
     - ``>``   : sets big endian

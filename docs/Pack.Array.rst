@@ -20,7 +20,7 @@ Class Metamembers (related to Pack.Array)
 
 ``Pack.Array p = Pack( Pack pck, int length)       [__call]``
   Creates ``Pack.Array p`` from a single arguments to ``Pack()`` where pck
-  can be one of the following:
+  can be one of the following::
 
     # ``t.Pack`` format string
     # ``t.Pack`` atomic Packer
@@ -28,6 +28,7 @@ Class Metamembers (related to Pack.Array)
     # ``t.Pack.Field`` Packer field
 
   .. code:: lua
+
     pSeq = Pack("<I2>i2bH")
     p1  = Pack( "r3", 7 )
     p11 = Pack( Pack( "r3"), 7) -- same as p1

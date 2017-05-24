@@ -20,6 +20,7 @@ Class Metamembers (related to Pack.Sequence)
   a format string that defines multiple packers in a row.
 
   .. code:: lua
+
     -- Sequence of UInt5L, Int2B, Int1, int2B, Uint1
     p = Pack("<I5>i2bhB")
 
@@ -29,6 +30,7 @@ Class Metamembers (related to Pack.Sequence)
   format string according to the definition for packers.
 
   .. code:: lua
+
     p1 = Pack("<I5")
     p2 = Pack("<I2>i2")
 
