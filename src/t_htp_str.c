@@ -27,11 +27,10 @@
  * --------------------------------------------------------------------------*/
 static int lt_htp_str__Call( lua_State *L )
 {
-	struct t_htp_str *str;
 	struct t_htp_con *con = t_htp_con_check_ud( L, -1, 1 );
 
 	lua_remove( L, 1 );           // remove the CLASS table
-	str = t_htp_str_create_ud( L, con );
+	t_htp_str_create_ud( L, con );
 	return 1;
 }
 /**--------------------------------------------------------------------------
@@ -294,14 +293,13 @@ lt_htp_str_writeHead( lua_State *L )
 	struct t_htp_str *s = t_htp_str_check_ud( L, 1, 1 );
 	int               i = lua_gettop( L );
 	int               t = (LUA_TTABLE == lua_type( L, i )); // processing headers
-	size_t            c = 0;
 	luaL_Buffer       lB;
 
 	luaL_buffinit( L, &lB );
 	// indicate the Content-Length was provided
 	if (LUA_TNUMBER == lua_type( L, 3 ) || LUA_TNUMBER == lua_type( L, 4 ))
 	{
-		c = t_htp_str_formHeader( L, &lB, s,
+		t_htp_str_formHeader( L, &lB, s,
 			(int) luaL_checkinteger( L, 2 ),   // HTTP Status code
 			(LUA_TSTRING == lua_type( L, 3))   // HTTP Status message
 				? lua_tostring( L, 3 )
@@ -314,7 +312,7 @@ lt_htp_str_writeHead( lua_State *L )
 	}
 	else     // Prepare headers for chunked encoding
 	{
-		c = t_htp_str_formHeader( L, &lB, s,
+		t_htp_str_formHeader( L, &lB, s,
 			(int) luaL_checkinteger( L, 2 ),   // HTTP Status code
 			(LUA_TSTRING == lua_type( L, 3))   // HTTP Status message
 				? lua_tostring( L, 3 )

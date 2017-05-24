@@ -30,11 +30,10 @@ static int lt_htp_con__gc( lua_State *L );
  * --------------------------------------------------------------------------*/
 static int lt_htp_con__Call( lua_State *L )
 {
-	struct t_htp_con *con;
 	struct t_htp_srv *srv = t_htp_srv_check_ud( L, -1, 1 );
 
 	lua_remove( L, 1 );           // remove the CLASS table
-	con = t_htp_con_create_ud( L, srv );
+	t_htp_con_create_ud( L, srv );
 	return 1;
 }
 

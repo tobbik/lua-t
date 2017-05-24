@@ -33,8 +33,6 @@
 static int
 lt_net_sck__Call( lua_State *L )
 {
-	struct t_net_sck *sck;
-
 	lua_remove( L, 1 );         // remove CLASS table
 
 	t_net_getProtocolByName( L, 1, "TCP" );
@@ -47,7 +45,7 @@ lt_net_sck__Call( lua_State *L )
 	         : "SOCK_RAW",
 	   t_net_typeList );
 
-	sck = t_net_sck_create_ud( L,
+	t_net_sck_create_ud( L,
 	   (AF_UNIX==luaL_checkinteger( L, 2 )) ? 0 : lua_tointeger( L, 2 ),
 	   luaL_checkinteger( L, 3 ),
 	   luaL_checkinteger( L, 1 ),
@@ -259,7 +257,7 @@ lt_net_sck_send( lua_State *L )
 	char               *msg = t_buf_checklstring( L, 2, &len, NULL );
 	struct sockaddr_in *adr = t_net_ip4_check_ud( L, 3, 0 );
 	size_t              max = (lua_gettop( L ) == ((NULL==adr) ?3 :4))
-	                          ? luaL_checkinteger( L, (NULL==adr) ?3 :4 )
+	                          ? (size_t) luaL_checkinteger( L, (NULL==adr) ?3 :4 )
 	                          : len;
 
 	snt = p_net_sck_send( L, sck, adr, msg, (max<len) ? max : len );
@@ -318,7 +316,7 @@ lt_net_sck_recv( lua_State *L )
 	if (t_buf_isstring( L, (NULL==adr) ?2 :3, &cw ) && cw)  // is writable -> buffer
 	{
 		msg = t_buf_checklstring( L, (NULL==adr) ?2 :3, &len, &cw );
-		max = (args == ((NULL==adr) ?3 :4)) ? luaL_checkinteger( L, (NULL==adr) ?3 :4 ) : len;
+		max = (args == ((NULL==adr) ?3 :4)) ? (size_t) luaL_checkinteger( L, (NULL==adr) ?3 :4 ) : len;
 		luaL_argcheck( L, max<=len, (NULL==adr) ?2 :3, "max must be smaller than sink" );
 		rcvd = p_net_sck_recv( L, sck, adr, msg, max );
 		lua_pushboolean( L, 0 != rcvd );

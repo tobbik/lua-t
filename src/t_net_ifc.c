@@ -22,7 +22,7 @@
 #include <Windows.h>
 #else
 #include <stdio.h>
-#include <string.h>               // strcpy
+#include <string.h>               // strcpy, strcmp
 #include <unistd.h>
 #include <sys/types.h>
 #include <net/if.h>
@@ -82,8 +82,8 @@ t_net_ifc_parseFlag( lua_State *L, int sd, const char *name )
 	{
 #define IF_FLAG( b ) \
 	if (ifr.ifr_flags & b) { \
-		is_broadcast = (is_broadcast || "IFF_BROADCAST" == #b ""); \
-		is_running   = (is_running   || "IFF_RUNNING"   == #b ""); \
+		is_broadcast = (is_broadcast || 0 == strcmp( "IFF_BROADCAST", #b "" )); \
+		is_running   = (is_running   || 0 == strcmp( "IFF_RUNNING"  , #b "" )); \
 		lua_pushboolean( L, 1 ); \
 		lua_setfield( L, -2, #b "" ); }
 

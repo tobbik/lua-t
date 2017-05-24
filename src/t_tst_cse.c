@@ -138,7 +138,6 @@ t_tst_cse_findOnStack( lua_State *L )
 	lua_Debug   ar;
 	int         i   = 0;
 	int         nu  = 0;
-	const char *nme;
 
 	while ( lua_getstack( L, i++, &ar ))
 	{
@@ -147,7 +146,7 @@ t_tst_cse_findOnStack( lua_State *L )
 		nu  = 0;
 		while (nu++ < ar.nups)
 		{
-			nme = lua_getupvalue( L, -1, nu );
+			lua_getupvalue( L, -1, nu );
 			//printf("   UPV %d - %s  \t-> ", nu, nme); t_stackDump(L);
 			if (t_tst_cse_check( L, -1, 0 ))
 			{

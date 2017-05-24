@@ -27,11 +27,10 @@
  * --------------------------------------------------------------------------*/
 static int lt_htp_wsk__Call( lua_State *L )
 {
-	struct t_htp_wsk  *wsk;
 	//size_t lp;
 	//char         *subp = luaL_checklstring( L, 1, &lp );
 	lua_remove( L, 1 );
-	wsk = t_htp_wsk_create_ud( L );
+	t_htp_wsk_create_ud( L );
 	return 1;
 }
 
