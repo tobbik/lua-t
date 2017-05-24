@@ -36,7 +36,7 @@ struct t_pck
 	for (n=0; n<lua_rawlen( L, -1 ); n++)
 	{
 		lua_rawgeti( L, -1, n+1 );                 //S:… tbl key
-		pf     = t_pck_fld_create_ud( L, o   );    //S:… tbl key Fld
+		pf     = t_pck_fld_create_ud( L, o );      //S:… tbl key Fld
 		lua_rawgeti( L, -3, n+1 );                 //S:… tbl key Fld key
 		lua_rawget( L, -4 );                       //S:… tbl key Fld Pck
 		p      = t_pck_getPacker( L, -1, &bo );    // turn Pck into true packer

@@ -194,6 +194,7 @@ t_pck_copyBytes( char *dst, const char *src, size_t sz, int is_little )
  * \param   L          Lua state.
  * \param   b          char* to read from.
  * \param   p          struct t_pck*.
+ * \param   ofs        int; inner byte offset of bits.
  * \lreturn push value onto stack;
  * \param   L            Lua state.
  * \param   lua_Unsigned num value.
@@ -280,6 +281,7 @@ t_pck_read( lua_State *L, const char *b, struct t_pck *p, size_t ofs )
 	{
 		case T_PCK_INT:
 		case T_PCK_UNT:
+			luaL_argcheck( L, ofs == 0, 1, "Integer Packer must start reading at byte border" );
 		case T_PCK_BTS:
 		case T_PCK_BTU:
 			t_pck_getIntValue( L, b, p, ofs );
@@ -288,12 +290,14 @@ t_pck_read( lua_State *L, const char *b, struct t_pck *p, size_t ofs )
 			lua_pushboolean( L, BIT_GET( *b, ofs ) );
 			break;
 		case T_PCK_FLT:
+			luaL_argcheck( L, ofs == 0, 1, "Float Packer must start reading at byte border" );
 			t_pck_copyBytes( (char*) &(u), b, p->s/NB, ! p->m );
 			if      (sizeof( u.f ) == p->s/NB) lua_pushnumber( L, (lua_Number) u.f );
 			else if (sizeof( u.d ) == p->s/NB) lua_pushnumber( L, (lua_Number) u.d );
 			else                               lua_pushnumber( L, u.n );
 			break;
 		case T_PCK_RAW:
+			luaL_argcheck( L, ofs == 0, 1, "Raw Packer must start reading at byte border" );
 			lua_pushlstring( L, (const char*) b, p->s/NB );
 			break;
 		default:
@@ -610,7 +614,7 @@ struct t_pck
  * \param   int      sp First stack index for first parameter table.
  * \param   int      ep Last  stack index for last  parameter table.
  * \lparam  mult     Sequence of tables with one key/value pair.
- * \lreturn table    Table filled according to oht structure.
+ * \lreturn table    Table filled according to OrderedHashTable structure.
  * \return  void.
  * --------------------------------------------------------------------------*/
 static void
@@ -623,7 +627,7 @@ t_pck_readArguments( lua_State *L, int sp, int ep )
 	while (i < n)
 	{
 		luaL_argcheck( L, lua_istable( L, sp ), i+1,
-			"Arguments must be tables with a single key/value pair" );
+			"Arguments must be a table" );
 		// get key/value from table
 		lua_pushnil( L );                //S: sp … ep … tbl nil
 		luaL_argcheck( L, lua_next( L, sp ), ep-n-1,
