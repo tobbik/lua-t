@@ -48,13 +48,13 @@
 static int
 t_net_ifc_parseAddr( lua_State *L, int sd, struct ifreq *ifr, int ioctltype, int *ip_int )
 {
-	struct sockaddr_in *addr;
+	struct sockaddr_storage *adr;
 
 	if (ioctl( sd, ioctltype, ifr ) == 0)
 	{
-		addr    = t_net_adr_create_ud( L );
-		memcpy( addr, (struct sockaddr_in *)(&(ifr)->ifr_addr), sizeof( struct sockaddr_in ) );
-		*ip_int = addr->sin_addr.s_addr;
+		adr     = t_net_adr_create_ud( L );
+		memcpy( adr, (struct sockaddr_in *)(&(ifr)->ifr_addr), sizeof( struct sockaddr_in ) );
+		*ip_int = SOCK_ADDR_IN4_PTR(adr)->sin_addr.s_addr;
 		return 1;
 	}
 	return 0;
@@ -120,24 +120,24 @@ t_net_ifc_parseFlag( lua_State *L, int sd, const char *name )
 static int
 t_net_ifc_parseIfreq( lua_State *L, int sd, struct ifreq *ifr )
 {
-	struct sockaddr_in *nw_addr;
-	int                 addr, bcast, nmask;
-	int                 is_default = -1;
+	struct sockaddr_storage *nw_adr;
+	int                      addr, bcast, nmask;
+	int                      is_default = -1;
 
 	if (AF_INET != ifr->ifr_addr.sa_family)
 		return 0;
 
 	lua_newtable( L );
-	if (t_net_ifc_parseAddr( L, sd, ifr, SIOCGIFADDR, &addr ))
+	if (t_net_ifc_parseAddr( L, sd, ifr, SIOCGIFADDR,    &addr  ))
 		lua_setfield( L, -2, "address" );
 	if (t_net_ifc_parseAddr( L, sd, ifr, SIOCGIFBRDADDR, &bcast ))
 		lua_setfield( L, -2, "broadcast" );
-	if (t_net_ifc_parseAddr( L, sd, ifr, SIOCGIFNETMASK, &nmask))
+	if (t_net_ifc_parseAddr( L, sd, ifr, SIOCGIFNETMASK, &nmask ))
 		lua_setfield( L, -2, "netmask" );
 
-	nw_addr = t_net_adr_create_ud( L );
+	nw_adr = t_net_adr_create_ud( L );
 	lua_pushfstring( L, "%d.%d.%d.%d", INT_TO_ADDR( addr & nmask ) );
-	t_net_adr_set( L, -1, nw_addr );
+	t_net_adr_set( L, -1, nw_adr );
 	lua_setfield( L, -2, "network" );
 
 	if (t_net_ifc_parseFlag( L, sd, ifr->ifr_name ))

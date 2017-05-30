@@ -273,6 +273,10 @@ local tests = {
 		--makeReceiver( self, payload, len, done )
 		makeSender( self, sender, true )
 	end,
-	}
+}
+
+-- t = Test( tests )
+-- t()
+-- print( t )
 
 return Test( tests )

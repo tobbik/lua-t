@@ -1,4 +1,4 @@
-#!../out/bin/lua
+# !../out/bin/lua
 
 ---
 -- \file    t_net_sck_bind.lua
@@ -42,11 +42,12 @@ local tests = {
 		-- This Test behaves differently when run as Root (it succeeds)
 		Test.Case.describe( "Socket.bind( priviledged port ) --> throws permission error" )
 		local port  = 80
-		local f     = function() self.sck, self.address = Socket.bind(80) end
+		local f     = function() self.sck, self.address = Socket.bind( port ) end
 		local ran,e = pcall( f )
 		assert( not ran, "Don't run tests a root" )
-		assert( e:match( "Can't bind socket to 0.0.0.0:"..port.." %(Permission denied%)" ),
-			"Error message should contain permission issue, but was: ".. e )
+
+		T.assert( e:match( "Can't bind socket to 0.0.0.0:"..port.." %(Permission denied%)" ),
+			"Expected error message:\n%s\n%s", "Can't bind socket to 0.0.0.0:"..port.." (Permission denied)", e )
 	end,
 
 	test_SBindPortCreateSockAndInanyAddress = function( self )
@@ -128,6 +129,7 @@ local tests = {
 		assert( nil  == self._ , "The socket  should not be returned" )
 		assert( nil  == self.__, "The address should not be returned" )
 		assert( addr  == self.sck:getsockname(), "The addresses should be equal" )
+		asrtHlp.Address( addr, host, port )
 	end,
 }
 

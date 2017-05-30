@@ -138,7 +138,8 @@ t_net_getProtocolByValue( lua_State *L, int pos, const int dft )
  *                      function return.
  * --------------------------------------------------------------------------*/
 int
-t_net_getdef( lua_State *L, const int pos, struct t_net_sck **sck, struct sockaddr_in **adr )
+t_net_getdef( lua_State *L, const int pos, struct t_net_sck **sck,
+                            struct sockaddr_storage **adr )
 {
 	int returnables = 0;
 	*sck = t_net_sck_check_ud( L, pos+0,                      0 );

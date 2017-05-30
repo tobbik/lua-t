@@ -156,10 +156,10 @@ lt_net_sck__tostring( lua_State *L )
 static int
 lt_net_sck_listen( lua_State *L )
 {
-	struct t_net_sck   *sck = t_net_sck_check_ud( L, 1, 0 );
-	struct sockaddr_in *adr = t_net_adr_check_ud( L, 1+((NULL==sck) ? 0:1), 0 );
-	int                 bl  = SOMAXCONN,
-	                    returnables = 0;
+	struct t_net_sck        *sck = t_net_sck_check_ud( L, 1, 0 );
+	struct sockaddr_storage *adr = t_net_adr_check_ud( L, 1+((NULL==sck) ? 0:1), 0 );
+	int                      bl  = SOMAXCONN,
+	                 returnables = 0;
 
 	if (lua_isinteger( L, -1 ) && LUA_TSTRING != lua_type( L, -2 ))
 	{
@@ -185,9 +185,9 @@ lt_net_sck_listen( lua_State *L )
 static int
 lt_net_sck_bind( lua_State *L )
 {
-	struct t_net_sck   *sck         = NULL;
-	struct sockaddr_in *adr         = NULL;
-	int                 returnables = t_net_getdef( L, 1, &sck, &adr );
+	struct t_net_sck        *sck         = NULL;
+	struct sockaddr_storage *adr         = NULL;
+	int                      returnables = t_net_getdef( L, 1, &sck, &adr );
 	return (p_net_sck_bind( L, sck, adr )) ? returnables : 0;
 }
 
@@ -202,9 +202,9 @@ lt_net_sck_bind( lua_State *L )
 static int
 lt_net_sck_connect( lua_State *L )
 {
-	struct t_net_sck   *sck         = NULL;
-	struct sockaddr_in *adr         = NULL;
-	int                 returnables = t_net_getdef( L, 1, &sck, &adr );
+	struct t_net_sck        *sck         = NULL;
+	struct sockaddr_storage *adr         = NULL;
+	int                      returnables = t_net_getdef( L, 1, &sck, &adr );
 	return (p_net_sck_connect( L, sck, adr )) ? returnables : 0;
 }
 
@@ -220,9 +220,9 @@ lt_net_sck_connect( lua_State *L )
 static int
 lt_net_sck_accept( lua_State *L )
 {
-	struct t_net_sck   *srv = t_net_sck_check_ud( L, 1, 1 ); // listening socket
-	struct t_net_sck   *cli = t_net_sck_create_ud( L, AF_INET, SOCK_STREAM, IPPROTO_TCP, 0 ); // accepted socket
-	struct sockaddr_in *adr = t_net_adr_create_ud( L );      // peer address
+	struct t_net_sck        *srv = t_net_sck_check_ud( L, 1, 1 ); // listening socket
+	struct t_net_sck        *cli = t_net_sck_create_ud( L, AF_INET, SOCK_STREAM, IPPROTO_TCP, 0 ); // accepted socket
+	struct sockaddr_storage *adr = t_net_adr_create_ud( L );      // peer address
 	return p_net_sck_accept( L, srv, cli, adr );
 }
 
@@ -251,14 +251,14 @@ lt_net_sck_accept( lua_State *L )
 static int
 lt_net_sck_send( lua_State *L )
 {
-	size_t              len; // length of message to send
-	int                 snt; // actually sent bytes
-	struct t_net_sck   *sck = t_net_sck_check_ud( L, 1, 1 );
-	char               *msg = t_buf_checklstring( L, 2, &len, NULL );
-	struct sockaddr_in *adr = t_net_adr_check_ud( L, 3, 0 );
-	size_t              max = (lua_gettop( L ) == ((NULL==adr) ?3 :4))
-	                          ? (size_t) luaL_checkinteger( L, (NULL==adr) ?3 :4 )
-	                          : len;
+	size_t                   len; // length of message to send
+	int                      snt; // actually sent bytes
+	struct t_net_sck        *sck = t_net_sck_check_ud( L, 1, 1 );
+	char                    *msg = t_buf_checklstring( L, 2, &len, NULL );
+	struct sockaddr_storage *adr = t_net_adr_check_ud( L, 3, 0 );
+	size_t                   max = (lua_gettop( L ) == ((NULL==adr) ?3 :4))
+	                               ? (size_t) luaL_checkinteger( L, (NULL==adr) ?3 :4 )
+	                               : len;
 
 	snt = p_net_sck_send( L, sck, adr, msg, (max<len) ? max : len );
 	if (0==snt)
@@ -303,15 +303,15 @@ lt_net_sck_send( lua_State *L )
 static int
 lt_net_sck_recv( lua_State *L )
 {
-	size_t              len  = 0;  // length of sink
-	size_t              max;       // desired or determined size to recv
-	int                 cw   = 0;  // test buffer to be writeable
-	int                 rcvd = 0;  // actually rcvd bytes
-	char                buf[ BUFSIZ ]; // char buffer if no t.Buffer is passed
-	char               *msg;       // char pointer to recv into
-	size_t              args = lua_gettop( L );
-	struct t_net_sck   *sck  = t_net_sck_check_ud( L, 1, 1 );
-	struct sockaddr_in *adr  = t_net_adr_check_ud( L, 2, 0 );
+	size_t                   len  = 0;  // length of sink
+	size_t                   max;       // desired or determined size to recv
+	int                      cw   = 0;  // test buffer to be writeable
+	int                      rcvd = 0;  // actually rcvd bytes
+	char                     buf[ BUFSIZ ]; // char buffer if no t.Buffer is passed
+	char                    *msg;       // char pointer to recv into
+	size_t                   args = lua_gettop( L );
+	struct t_net_sck        *sck  = t_net_sck_check_ud( L, 1, 1 );
+	struct sockaddr_storage *adr  = t_net_adr_check_ud( L, 2, 0 );
 
 	if (t_buf_isstring( L, (NULL==adr) ?2 :3, &cw ) && cw)  // is writable -> buffer
 	{
@@ -348,13 +348,13 @@ lt_net_sck_recv( lua_State *L )
 static int
 lt_net_sck_getsockname( lua_State *L )
 {
-	struct t_net_sck   *sck         = t_net_sck_check_ud( L, 1, 1 );
-	struct sockaddr_in *ip          = t_net_adr_check_ud( L, 2, 0 );
+	struct t_net_sck        *sck  = t_net_sck_check_ud( L, 1, 1 );
+	struct sockaddr_storage *adr  = t_net_adr_check_ud( L, 2, 0 );
 
-	if (NULL == ip)
-		ip = t_net_adr_create_ud( L );
+	if (NULL == adr)
+		adr = t_net_adr_create_ud( L );
 
-	if (! p_net_sck_getsockname( sck, ip))
+	if (! p_net_sck_getsockname( sck, adr ))
 		lua_pushnil( L );
 	return 1;  // return no matter what to allow testing for nil
 }

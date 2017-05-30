@@ -34,6 +34,23 @@
 
 
 /**--------------------------------------------------------------------------
+ * Push Address related error.
+ * \param   L        Lua state.
+ * \param   sck      struct t_net_sck*
+ * \param   family   int AF_INET, AF_INET6, ...
+ * \param   protocol int IPPROTO_UDP, IPPROTO_TCP, ...
+ * \param   type     int SOCK_STREAM, SOCK_DGRAM, ...
+ * --------------------------------------------------------------------------*/
+static int
+p_net_sck_pushError( lua_State *L, struct sockaddr_storage *adr, const char *msg )
+{
+	char                     dst[ INET6_ADDRSTRLEN ];
+	SOCK_ADDR_GET_INET_NTOP( adr, dst );
+	return t_push_error( L, msg, dst, ntohs( SOCK_ADDR_SS_PORT( adr ) ) );
+}
+
+
+/**--------------------------------------------------------------------------
  * Create the actual socket handle.
  * \param   L        Lua state.
  * \param   sck      struct t_net_sck*
@@ -53,7 +70,7 @@ p_net_sck_createHandle( lua_State *L, struct t_net_sck *sck, int family, int typ
 /** -------------------------------------------------------------------------
  * Close a socket.
  * \param   L    Lua state.
- * \param   struct t_net_sck pointer.
+ * \param   sck* struct t_net_sck pointer.
  *-------------------------------------------------------------------------*/
 int
 p_net_sck_close( lua_State *L, struct t_net_sck *sck )
@@ -73,7 +90,7 @@ p_net_sck_close( lua_State *L, struct t_net_sck *sck )
 /** -------------------------------------------------------------------------
  * Shutdown a socket.
  * \param   L        Lua state.
- * \param   struct t_net_sck pointer.
+ * \param   sck*     struct t_net_sck pointer.
  * \param   shutVal  int; SHUT_* value.
  *-------------------------------------------------------------------------*/
 int
@@ -90,31 +107,33 @@ p_net_sck_shutDown( lua_State *L, struct t_net_sck *sck, int shutVal )
 
 /** -------------------------------------------------------------------------
  * Listen on a socket or create a listening socket.
- * \param   L      Lua state.
- * \lparam  int    position on stack where socket might be.
- * \lparam  ud     T.Net.Socket userdata instance.
- * \lparam  int    Backlog connections.
- * \return  int    # of values pushed onto the stack.
+ * \param   L        Lua state.
+ * \param   sck*     struct t_net_sck pointer.
+ * \param   adr*     struct sockaddr_storage pointer.
+ * \param   bl       int; backlog value for listen() syscall.
+ * \return  int      # of values pushed onto the stack.
  *-------------------------------------------------------------------------*/
 int
-p_net_sck_listen( lua_State *L, struct t_net_sck *sck, struct sockaddr_in *adr, const int bl )
+p_net_sck_listen( lua_State *L, struct t_net_sck *sck, struct sockaddr_storage *adr,
+                  const int bl )
 {
-	struct sockaddr_in  bnd;   ///< if needed, the address the port is bound to
+	struct sockaddr_storage  bnd;   ///< if needed, the address the port is bound to
 
-	if (NULL!=adr && -1 == bind( sck->fd , (struct sockaddr*) &(*adr), sizeof( struct sockaddr ) ))
-		return t_push_error( L, "Can't bind socket to %s:%d before listen()",
-				 inet_ntoa( adr->sin_addr ),
-				 ntohs( adr->sin_port ) );
+	if (NULL!=adr && -1 == bind( sck->fd , SOCK_ADDR_PTR( adr ), SOCK_ADDR_SS_LEN( adr ) ))
+		return p_net_sck_pushError( L, adr, "Can't bind socket to %s:%d before listen()" );
 
 	if (-1 == listen( sck->fd, bl ))
 		return t_push_error( L, "Can't listen() on socket" );
 
 	// adr is, if created, by t_net_getdef(), which guarantees an unset port to
 	// be 0
-	if (NULL!=adr && 0 == ntohs( adr->sin_port ))
+	if (NULL != adr  &&  0 == SOCK_ADDR_SS_PORT( adr ))
 	{
 		if (p_net_sck_getsockname( sck, &bnd ))
-			adr->sin_port = bnd.sin_port;
+		{
+			if (AF_INET6 == SOCK_ADDR_SS_FAMILY( adr )) SOCK_ADDR_IN6_PTR( adr )->sin6_port = htons( SOCK_ADDR_SS_PORT( &bnd ));
+			if (AF_INET  == SOCK_ADDR_SS_FAMILY( adr )) SOCK_ADDR_IN4_PTR( adr )->sin_port  = htons( SOCK_ADDR_SS_PORT( &bnd ));
+		}
 	}
 
 	return 1;
@@ -129,12 +148,10 @@ p_net_sck_listen( lua_State *L, struct t_net_sck *sck, struct sockaddr_in *adr, 
  * \return  int    # of values pushed onto the stack.
  *-------------------------------------------------------------------------*/
 int
-p_net_sck_bind( lua_State *L, struct t_net_sck *sck, struct sockaddr_in *adr )
+p_net_sck_bind( lua_State *L, struct t_net_sck *sck, struct sockaddr_storage *adr )
 {
-	if (bind( sck->fd , (struct sockaddr*) &(*adr), sizeof( struct sockaddr ) ) == -1)
-		return t_push_error( L, "Can't bind socket to %s:%d",
-					 inet_ntoa( adr->sin_addr ),
-					 ntohs( adr->sin_port ) );
+	if (-1 == bind( sck->fd, SOCK_ADDR_PTR( adr ), SOCK_ADDR_SS_LEN( adr ) ))
+		return p_net_sck_pushError( L, adr, "Can't bind socket to %s:%d" );
 	else
 		return 1;
 }
@@ -144,16 +161,14 @@ p_net_sck_bind( lua_State *L, struct t_net_sck *sck, struct sockaddr_in *adr )
  * Connect a socket to an address.
  * \param   L      Lua state.
  * \lparam  ud     t_net_sck userdata instance.
- * \lparam  ud     t_net_ip4 userdata instance.
+ * \lparam  ud     sockaddr_storage userdata instance.
  * \return  int    # of values pushed onto the stack.
  *-------------------------------------------------------------------------*/
 int
-p_net_sck_connect( lua_State *L, struct t_net_sck *sck, struct sockaddr_in *adr )
+p_net_sck_connect( lua_State *L, struct t_net_sck *sck, struct sockaddr_storage *adr )
 {
-	if (connect( sck->fd , (struct sockaddr*) &(*adr), sizeof( struct sockaddr ) ) == -1)
-		return t_push_error( L, "Can't connect to socket on %s:%d",
-					 inet_ntoa(adr->sin_addr),
-					 ntohs(adr->sin_port) );
+	if (-1 == connect( sck->fd, SOCK_ADDR_PTR( adr ), SOCK_ADDR_SS_LEN( adr ) ))
+		return p_net_sck_pushError( L, adr, "Can't connect socket to %s:%d" );
 	else
 		return 1;
 }
@@ -163,15 +178,16 @@ p_net_sck_connect( lua_State *L, struct t_net_sck *sck, struct sockaddr_in *adr 
  * Accept a (TCP) socket connection.
  * \param   L      Lua state.
  * \param   int    position of server socket on stack.
- * \lparam  ud     T.Net.Socket userdata instance( server socket ).
+ * \lparam  ud     Net.Socket userdata instance( server socket ).
  * \return  t_net* Client pointer.  Leaves cli_sock and cli_IP on stack.
  *-------------------------------------------------------------------------*/
 int
-p_net_sck_accept( lua_State *L, struct t_net_sck *srv, struct t_net_sck *cli, struct sockaddr_in *adr )
+p_net_sck_accept( lua_State *L, struct t_net_sck *srv, struct t_net_sck *cli,
+                                struct sockaddr_storage *adr )
 {
-	socklen_t  cl_sz = sizeof( struct sockaddr_in );
+	socklen_t adr_len = SOCK_ADDR_SS_LEN( adr );
 
-	if ( (cli->fd  =  accept( srv->fd, (struct sockaddr *) &(*adr), &cl_sz )) == -1 )
+	if (-1 == (cli->fd  =  accept( srv->fd, SOCK_ADDR_PTR( adr ), &adr_len )))
 		return t_push_error( L, "Can't accept from socket" );
 
 	return 2;
@@ -181,53 +197,52 @@ p_net_sck_accept( lua_State *L, struct t_net_sck *srv, struct t_net_sck *cli, st
 /** -------------------------------------------------------------------------
  * Send some data via socket.
  * \param   L       Lua state.
- * \param   sck     struct t_net_sck   pointer userdata.
- * \param   addr    struct sockaddr_in pointer userdata.
+ * \param   sck     struct t_net_sck        pointer userdata.
+ * \param   adr     struct sockaddr_storage pointer userdata.
  * \param   buf     char* buffer.
- * \param   len     size of char buffer.
- * \return  sent    int; number of bytes sent out.
+ * \param   len     how many bytes to send from the buffer.
+ * \return  snt    int; number of bytes sent out.
  *-------------------------------------------------------------------------*/
 int
-p_net_sck_send( lua_State *L, struct t_net_sck *sck, struct sockaddr_in *addr, const char* buf, size_t len )
+p_net_sck_send( lua_State *L, struct t_net_sck *sck, struct sockaddr_storage *adr,
+                              const char* buf, size_t len )
 {
-	int sent;
+	int snt;
 
-	if (-1 == (sent = sendto(
+	if (-1 == (snt = sendto(
 	  sck->fd,
-	  buf, len, 0,
-	  (struct sockaddr *) &(*addr), sizeof( struct sockaddr ))))
+	  buf, len, 0, SOCK_ADDR_PTR( adr ), SOCK_ADDR_SS_LEN( adr ))))
 	{
-		if (NULL == addr)
+		if (NULL == adr)
 			return t_push_error( L, "Can't send message" );
 		else
-			return t_push_error( L, "Can't send message to %s:%d",
-					 inet_ntoa( addr->sin_addr ),
-					 ntohs(     addr->sin_port ) );
+			return p_net_sck_pushError( L, adr, "Can't send message to %s:%d" );
 	}
 
-	return sent;
+	return snt;
 }
 
 
 /** -------------------------------------------------------------------------
  * Recieve some data from socket.
- * \param   L            Lua state.
- * \param   t_net_sck    userdata.
- * \param   sockaddr_in  userdata.
- * \param   buff         char buffer.
- * \param   sz           size of char buffer.
+ * \param   L       Lua state.
+ * \param   sck     struct t_net_sck        pointer userdata.
+ * \param   adr     struct sockaddr_storage pointer userdata.
+ * \param   buf     char* buffer.
+ * \param   len     how many bytes to recieve into the the buffer.
  * \return  number of bytes received.
  *-------------------------------------------------------------------------*/
 int
-p_net_sck_recv( lua_State *L, struct t_net_sck *sck, struct sockaddr_in *addr, char *buf, size_t len )
+p_net_sck_recv( lua_State *L, struct t_net_sck *sck, struct sockaddr_storage *adr,
+                              char *buf, size_t len )
 {
-	int          rcvd;
-	unsigned int sLen     = sizeof( addr );
+	int       rcvd;
+	socklen_t adr_len = SOCK_ADDR_SS_LEN( adr );
 
 	if (-1 == (rcvd = recvfrom(
 	  sck->fd,
 	  buf, len, 0,
-	  (struct sockaddr *) &(*addr), &sLen)))
+	  SOCK_ADDR_PTR( adr ), &adr_len)))
 	{
 		return t_push_error( L, "Can't recieve message" );
 	}
@@ -236,19 +251,19 @@ p_net_sck_recv( lua_State *L, struct t_net_sck *sck, struct sockaddr_in *addr, c
 
 
 /** -------------------------------------------------------------------------
- * Recieve sockaddr_in a socket is bound to.
+ * Recieve sockaddr_storage a socket is bound to.
  * \param   L      Lua state.
- * \param  ud      T.Net.Socket userdata instance.
- * \param  ud      T.Net.Ip4 userdata instance.
+ * \param  ud      Net.Socket userdata instance.
+ * \param  ud      Net.Address userdata instance.
  * \return success bool; was address received.
  * \return  int    # of values pushed onto the stack.
  *-------------------------------------------------------------------------*/
 int
-p_net_sck_getsockname( struct t_net_sck *sck, struct sockaddr_in *adr )
+p_net_sck_getsockname( struct t_net_sck *sck, struct sockaddr_storage *adr )
 {
-	socklen_t adrLen = sizeof( struct sockaddr_in );
+	socklen_t adr_len = SOCK_ADDR_SS_LEN( adr );
 
-	return 0 == getsockname( sck->fd, (struct sockaddr*) &(*adr), &adrLen );
+	return 0 == getsockname( sck->fd, SOCK_ADDR_PTR( adr ), &adr_len );
 }
 
 
@@ -298,10 +313,10 @@ int
 p_net_sck_getSocketOption( lua_State *L, struct t_net_sck *sck, int sckOpt,
                                          const char       *sckOptName )
 {
-	struct sockaddr   adr;
-	socklen_t      adrLen = sizeof( adr );
-	int               val;
-	socklen_t         len = sizeof( val );
+	struct sockaddr_storage   adr;
+	socklen_t                 adr_len = sizeof( adr );
+	int                       val;
+	socklen_t                 val_len = sizeof( val );
 
 	switch (sckOpt)
 	{
@@ -318,7 +333,7 @@ p_net_sck_getSocketOption( lua_State *L, struct t_net_sck *sck, int sckOpt,
 		case SO_SNDTIMEO:
 		case SO_ERROR:
 		case SO_RCVBUF:
-			if (getsockopt( sck->fd, SOL_SOCKET, sckOpt, &val, &len ) < 0)
+			if (getsockopt( sck->fd, SOL_SOCKET, sckOpt, &val, &val_len ) < 0)
 				lua_pushinteger( L, -1 );
 			else
 				lua_pushinteger(L, val );
@@ -337,7 +352,7 @@ p_net_sck_getSocketOption( lua_State *L, struct t_net_sck *sck, int sckOpt,
 #ifdef SO_REUSEPORT
 		case SO_REUSEPORT:
 #endif
-			if (getsockopt( sck->fd, SOL_SOCKET, sckOpt, &val, &len ) < 0)
+			if (getsockopt( sck->fd, SOL_SOCKET, sckOpt, &val, &val_len ) < 0)
 				lua_pushboolean( L, 0 );
 			else
 				lua_pushboolean(L, val );
@@ -345,9 +360,9 @@ p_net_sck_getSocketOption( lua_State *L, struct t_net_sck *sck, int sckOpt,
 
 		// Special cases returning strings
 		case T_NET_SO_FAMILY:
-			if (0 == getsockname( sck->fd, &adr, &adrLen ))
+			if (0 == getsockname( sck->fd, SOCK_ADDR_PTR( &adr ), &adr_len ))
 			{
-				lua_pushinteger( L, adr.sa_family );
+				lua_pushinteger( L, SOCK_ADDR_SS_FAMILY( &adr ) );
 				t_getTypeByValue( L, -1, -1, t_net_familyList );
 			}
 			else
@@ -355,7 +370,7 @@ p_net_sck_getSocketOption( lua_State *L, struct t_net_sck *sck, int sckOpt,
 			break;
 #ifdef SO_PROTOCOL
 		case SO_PROTOCOL:
-			if (getsockopt( sck->fd, SOL_SOCKET, sckOpt, &val, &len ) < 0)
+			if (getsockopt( sck->fd, SOL_SOCKET, sckOpt, &val, &val_len ) < 0)
 				lua_pushnil( L );
 			else
 			{
@@ -365,7 +380,7 @@ p_net_sck_getSocketOption( lua_State *L, struct t_net_sck *sck, int sckOpt,
 			break;
 #endif
 		case SO_TYPE:
-			if (getsockopt( sck->fd, SOL_SOCKET, sckOpt, &val, &len ) < 0)
+			if (getsockopt( sck->fd, SOL_SOCKET, sckOpt, &val, &val_len ) < 0)
 				lua_pushnil( L );
 			else
 			{
