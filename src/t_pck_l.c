@@ -282,6 +282,7 @@ t_pck_read( lua_State *L, const char *b, struct t_pck *p, size_t ofs )
 		case T_PCK_INT:
 		case T_PCK_UNT:
 			luaL_argcheck( L, ofs == 0, 1, "Integer Packer must start reading at byte border" );
+			/* FALLTHRU */   // --> just checking byte border; still get Int value
 		case T_PCK_BTS:
 		case T_PCK_BTU:
 			t_pck_getIntValue( L, b, p, ofs );

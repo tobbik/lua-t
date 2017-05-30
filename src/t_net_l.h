@@ -128,8 +128,10 @@ int    p_net_sck_mkFdSet        ( lua_State *L, int pos, fd_set *set );
    (SOCK_ADDR_SS_PTR(ss)->ss_family == AF_INET6              \
       ? ((struct sockaddr_in6 *)(ss))->sin6_port = port \
       : ((struct sockaddr_in  *)(ss))->sin_port  = port )
-      //? SOCK_ADDR_IN6_PTR( ss )->sin6_port = htons( port) \
-      //: SOCK_ADDR_IN4_PTR( ss )->sin_port  = htons( port) )
+/* TODO:  WHY IS THIS NOT WORKING
+      ? SOCK_ADDR_IN6_PTR( ss )->sin6_port = htons( port) \
+      : SOCK_ADDR_IN4_PTR( ss )->sin_port  = htons( port) )
+*/
 
 #define SOCK_ADDR_EQ_FAMILY(sa, sb) \
    (SOCK_ADDR_SS_FAMILY(sa) == SOCK_ADDR_SS_FAMILY(sb) )
