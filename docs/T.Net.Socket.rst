@@ -136,7 +136,7 @@ Class Members
   accepted as **aaa.bbb.ccc.ddd**.  If ``string ip`` is omitted the it will
   automatically connect to **127.0.0.1**, the ``localhost``
 
-``Net.Socket sck = Net.Socket.connect( Net.Address addr )``
+``Net.Socket sck = Net.Socket.connect( Net.Address adr )``
   Creates an TCP ``Net.Socket`` instance which is connected to the
   ``Net.Address``.
 

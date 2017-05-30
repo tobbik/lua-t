@@ -51,8 +51,7 @@ local addTapDiagnostic = function( tbl )
 end
 
 local traceback = function( tbk )
-	local loc = tbk:match( "^(.*): " )
-	local msg = tbk:match( ": (.*)$" )
+	local loc, msg = tbk:match( '^([^:]*:%d+): (.*)' )
 	if msg then
 		local skipm = msg:match( T_TST_CSE_SKIPINDICATOR .. "(.*)$" )
 		if skipm then
