@@ -17,6 +17,7 @@
 
 #include "t_enc_l.h"
 #include "t_buf.h"
+#include "t.h"            // t_typeerror
 
 #ifdef DEBUG
 #include "t_dbg.h"
@@ -265,7 +266,7 @@ static int
 lt_enc_crc_reset( lua_State *L )
 {
 	struct t_enc_crc  *crc;
-	crc = t_enc_crc_check_ud( L, 1 );
+	crc = t_enc_crc_check_ud( L, 1, 1 );
 	crc->crc32 = crc->init32;
 	return 0;
 }
@@ -295,10 +296,10 @@ struct t_enc_crc
  * \return  struct t_enc_crc*
  * --------------------------------------------------------------------------*/
 struct t_enc_crc
-*t_enc_crc_check_ud( lua_State *L, int pos )
+*t_enc_crc_check_ud( lua_State *L, int pos, int check )
 {
 	void *ud = luaL_testudata( L, pos, T_ENC_CRC_TYPE );
-	luaL_argcheck( L, ud != NULL, pos, "`"T_ENC_CRC_TYPE"` expected" );
+	if (NULL == ud && check) t_typeerror( L , pos, T_ENC_CRC_TYPE );
 	return (NULL==ud) ? NULL : (struct t_enc_crc *) ud;
 }
 
@@ -322,7 +323,7 @@ lt_enc_crc_calc( lua_State *L )
 	int                sta;
 	int                res;
 
-	crc = t_enc_crc_check_ud( L, 1 );
+	crc = t_enc_crc_check_ud( L, 1, 1 );
 	sta = (lua_isnumber( L, 3 )) ? luaL_checkinteger( L, 3 )     : 0;
 	msg = t_buf_checklstring( L, 2, &len, NULL );
 

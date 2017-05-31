@@ -70,11 +70,11 @@ t_tst_check( lua_State *L, int pos )
 	{
 		luaL_getmetatable( L, T_TST_TYPE ); // get correct metatable
 		if (! lua_rawequal( L, -1, -2 ))     // not the same?
-			luaL_error( L, "wrong argument, `"T_TST_TYPE"` expected" );
+			t_typeerror( L , pos, T_TST_TYPE );
 		lua_pop( L, 2 );
 	}
 	else
-		luaL_error( L, "wrong argument, `"T_TST_TYPE"` expected" );
+		t_typeerror( L , pos, T_TST_TYPE );
 }
 
 

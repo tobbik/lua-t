@@ -239,7 +239,7 @@ struct t_ael
 *t_ael_check_ud ( lua_State *L, int pos, int check )
 {
 	void *ud = luaL_testudata( L, pos, T_AEL_TYPE );
-	luaL_argcheck( L, (ud != NULL  || !check), pos, "`"T_AEL_TYPE"` expected" );
+	if (NULL == ud && check) t_typeerror( L , pos, T_AEL_TYPE );
 	return (NULL==ud) ? NULL : (struct t_ael *) ud;
 }
 

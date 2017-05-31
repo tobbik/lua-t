@@ -8,6 +8,7 @@
  */
 
 #include "t_buf.h"
+#include "t.h"           // t_typeerror
 
 #ifdef DEBUG
 #include "t_dbg.h"
@@ -24,7 +25,7 @@ struct t_buf
 *t_buf_check_ud( lua_State *L, int pos, int check )
 {
 	void *ud = luaL_testudata( L, pos, T_BUF_TYPE );
-	luaL_argcheck( L, (ud != NULL || !check), pos, "`"T_BUF_TYPE"` expected" );
+	if (NULL == ud && check) t_typeerror( L , pos, T_BUF_TYPE );
 	return (NULL==ud) ? NULL : (struct t_buf *) ud;
 }
 
@@ -40,7 +41,7 @@ struct t_buf_seg
 *t_buf_seg_check_ud( lua_State *L, int pos, int check )
 {
 	void *ud = luaL_testudata( L, pos, T_BUF_SEG_TYPE );
-	luaL_argcheck( L, (ud != NULL || !check), pos, "`"T_BUF_SEG_TYPE"` expected" );
+	if (NULL == ud && check) t_typeerror( L , pos, T_BUF_SEG_TYPE );
 	return (NULL==ud) ? NULL : (struct t_buf_seg *) ud;
 }
 
@@ -104,7 +105,7 @@ char
 {
 	char *b = t_buf_tolstring( L, pos, len, cw );
 	luaL_argcheck( L, (b != NULL), pos,
-		 "`"T_BUF_SEG_TYPE"` or `"T_BUF_SEG_TYPE"` or string expected" );
+		 "`"T_BUF_TYPE"` or `"T_BUF_SEG_TYPE"` or string expected" );
 	return b;
 }
 

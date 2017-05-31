@@ -62,7 +62,7 @@ struct t_htp_wsk *t_htp_wsk_create_ud( lua_State *L )
 struct t_htp_wsk *t_htp_wsk_check_ud( lua_State *L, int pos, int check )
 {
 	void *ud = luaL_testudata( L, pos, T_HTP_WSK_NAME );
-	luaL_argcheck( L, (ud != NULL || !check), pos, "`"T_HTP_WSK_NAME"` expected" );
+	if (NULL == ud && check) t_typeerror( L , pos, T_HTP_WSK_TYPE );
 	return (NULL==ud) ? NULL : (struct t_htp_wsk *) ud;
 }
 

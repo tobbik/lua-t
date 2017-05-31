@@ -149,4 +149,8 @@ tests = {
 	end,
 }
 
+-- t = Test( tests )
+-- t( "WritePartialString" )
+-- print( t )
+
 return Test( tests )

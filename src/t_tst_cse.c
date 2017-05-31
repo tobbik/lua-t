@@ -233,7 +233,7 @@ t_tst_cse_check( lua_State *L, int pos, int check )
 		{
 			lua_pop( L, 2 );
 			if (check)
-				luaL_error( L, "wrong argument, `"T_TST_CSE_TYPE"` expected" );
+				t_typeerror( L , pos, T_TST_CSE_TYPE );
 			else
 				return 0;
 		}
@@ -245,7 +245,7 @@ t_tst_cse_check( lua_State *L, int pos, int check )
 	}
 	else
 		if (check)
-			luaL_error( L, "wrong argument, `"T_TST_CSE_TYPE"` expected" );
+			t_typeerror( L , pos, T_TST_CSE_TYPE );
 		else
 			return 0;
 	return 1;

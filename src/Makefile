@@ -33,14 +33,14 @@ endif
 # #######################################################################
 # ALL SOURCES
 T_AEL_SRC=$(wildcard t_ael*.c) $(T_DBG_SRC) t_net.c t_tim.c t.c
-T_BUF_SRC=$(wildcard t_buf*.c) $(T_DBG_SRC)
-T_ENC_SRC=$(wildcard t_enc*.c) $(T_DBG_SRC)
+T_BUF_SRC=$(wildcard t_buf*.c) $(T_DBG_SRC) t.c
+T_ENC_SRC=$(wildcard t_enc*.c) $(T_DBG_SRC) t.c
 T_HTP_SRC=$(wildcard t_htp*.c) $(T_DBG_SRC) t_ael_l.c t_net.c t_net_sck.c
 T_NET_SRC=$(wildcard t_net*.c) $(T_DBG_SRC) t_buf.c t.c
-T_NRY_SRC=$(wildcard t_nry*.c) $(T_DBG_SRC)
-T_PCK_SRC=$(wildcard t_pck*.c) $(T_DBG_SRC) t_buf.c
-T_TIM_SRC=$(wildcard t_tim*.c) $(T_DBG_SRC)
-#T_TST_SRC=$(wildcard t_tst*.c) $(T_DBG_SRC) t_tim.c
+T_NRY_SRC=$(wildcard t_nry*.c) $(T_DBG_SRC) t.c
+T_PCK_SRC=$(wildcard t_pck*.c) $(T_DBG_SRC) t.c t_buf.c
+T_TIM_SRC=$(wildcard t_tim*.c) $(T_DBG_SRC) t.c
+#T_TST_SRC=$(wildcard t_tst*.c) $(T_DBG_SRC) t.c t_tim.c
 
 # #######################################################################
 # CONDITIONAL INCLUSION OF SOURCES AND OBJETCS

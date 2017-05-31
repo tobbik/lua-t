@@ -309,11 +309,11 @@ t_net_ifc_check_ud( lua_State *L, int pos )
 	{
 		luaL_getmetatable( L, T_NET_IFC_TYPE ); // get correct metatable */
 		if (! lua_rawequal( L, -1, -2 ))        // not the same?
-			t_push_error( L, "wrong argument, `"T_NET_IFC_TYPE"` expected" );
+			t_typeerror( L , pos, T_NET_IFC_TYPE );
 		lua_pop( L, 2);
 	}
 	else
-		t_push_error( L, "wrong argument, `"T_NET_IFC_TYPE"` expected" );
+		t_typeerror( L , pos, T_NET_IFC_TYPE );
 }
 
 

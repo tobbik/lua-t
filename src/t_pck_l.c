@@ -12,6 +12,7 @@
 
 #include "t_pck_l.h"
 #include "t_buf.h"
+#include "t.h"          // t_typeerror
 
 #ifdef DEBUG
 #include "t_dbg.h"
@@ -464,7 +465,7 @@ struct t_pck
 *t_pck_check_ud( lua_State *L, int pos, int check )
 {
 	void *ud = luaL_testudata( L, pos, T_PCK_TYPE );
-	luaL_argcheck( L, (ud != NULL || !check), pos, "`"T_PCK_TYPE"` expected" );
+	if (NULL == ud && check) t_typeerror( L , pos, T_PCK_TYPE );
 	return (NULL==ud) ? NULL : (struct t_pck *) ud;
 }
 

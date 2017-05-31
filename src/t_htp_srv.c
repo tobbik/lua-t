@@ -77,7 +77,7 @@ struct t_htp_srv
 *t_htp_srv_check_ud( lua_State *L, int pos, int check )
 {
 	void *ud = luaL_testudata( L, pos, T_HTP_SRV_TYPE );
-	luaL_argcheck( L, (ud != NULL || !check), pos, "`"T_HTP_SRV_TYPE"` expected" );
+	if (NULL == ud && check) t_typeerror( L , pos, T_HTP_SRV_TYPE );
 	return (NULL==ud) ? NULL : (struct t_htp_srv *) ud;
 }
 
