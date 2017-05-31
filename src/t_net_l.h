@@ -114,6 +114,17 @@ int    p_net_sck_mkFdSet        ( lua_State *L, int pos, fd_set *set );
       ? SOCK_ADDR_IN6_ADDR_INT(ss) \
       : SOCK_ADDR_IN4_ADDR_INT(ss) )
 
+#ifdef _WIN32
+#define SOCK_ADDR_SET_INET_PTON(ss, ips)                     \
+   (SOCK_ADDR_SS_PTR(ss)->ss_family == AF_INET6              \
+      ? InetPton( AF_INET6, ips, &(SOCK_ADDR_IN6_ADDR( ss ))) \
+      : InetPton( AF_INET,  ips, &(SOCK_ADDR_IN4_ADDR( ss ))) )
+
+#define SOCK_ADDR_GET_INET_NTOP(ss, dst)                     \
+   (SOCK_ADDR_SS_PTR(ss)->ss_family == AF_INET6              \
+      ? InetNtop( AF_INET6, &(SOCK_ADDR_IN6_ADDR( ss )), dst, SOCK_ADDR_SS_LEN( adr )) \
+      : InetNtop( AF_INET,  &(SOCK_ADDR_IN4_ADDR( ss )), dst, SOCK_ADDR_SS_LEN( adr )) )
+#else
 #define SOCK_ADDR_SET_INET_PTON(ss, ips)                     \
    (SOCK_ADDR_SS_PTR(ss)->ss_family == AF_INET6              \
       ? inet_pton( AF_INET6, ips, &(SOCK_ADDR_IN6_ADDR( ss ))) \
@@ -123,15 +134,7 @@ int    p_net_sck_mkFdSet        ( lua_State *L, int pos, fd_set *set );
    (SOCK_ADDR_SS_PTR(ss)->ss_family == AF_INET6              \
       ? inet_ntop( AF_INET6, &(SOCK_ADDR_IN6_ADDR( ss )), dst, SOCK_ADDR_SS_LEN( adr )) \
       : inet_ntop( AF_INET,  &(SOCK_ADDR_IN4_ADDR( ss )), dst, SOCK_ADDR_SS_LEN( adr )) )
-
-#define SOCK_ADDR_SET_PORT(ss, port)                         \
-   (SOCK_ADDR_SS_PTR(ss)->ss_family == AF_INET6              \
-      ? ((struct sockaddr_in6 *)(ss))->sin6_port = port \
-      : ((struct sockaddr_in  *)(ss))->sin_port  = port )
-/* TODO:  WHY IS THIS NOT WORKING
-      ? SOCK_ADDR_IN6_PTR( ss )->sin6_port = htons( port) \
-      : SOCK_ADDR_IN4_PTR( ss )->sin_port  = htons( port) )
-*/
+#endif
 
 #define SOCK_ADDR_EQ_FAMILY(sa, sb) \
    (SOCK_ADDR_SS_FAMILY(sa) == SOCK_ADDR_SS_FAMILY(sb) )

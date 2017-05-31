@@ -2,7 +2,8 @@
 */
 /**
  * \file      t_net_ifs.c
- * \brief     OOP wrapper for network interfaces
+ * \brief     OOP wrapper for network interfaces.  The main limitation here it's
+ *            not IPv6 yet
  * \author    tkieslich
  * \copyright See Copyright notice at the end of t.h
  */
@@ -53,7 +54,7 @@ t_net_ifc_parseAddr( lua_State *L, int sd, struct ifreq *ifr, int ioctltype, int
 	if (ioctl( sd, ioctltype, ifr ) == 0)
 	{
 		adr     = t_net_adr_create_ud( L );
-		memcpy( adr, (struct sockaddr_in *)(&(ifr)->ifr_addr), sizeof( struct sockaddr_in ) );
+		memcpy( SOCK_ADDR_IN4_PTR( adr ), SOCK_ADDR_IN4_PTR(&(ifr)->ifr_addr), sizeof( struct sockaddr_in ) );
 		*ip_int = SOCK_ADDR_IN4_PTR(adr)->sin_addr.s_addr;
 		return 1;
 	}

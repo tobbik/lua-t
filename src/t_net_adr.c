@@ -32,13 +32,43 @@
 #include "t_dbg.h"
 #endif
 
-void SOCK_ADDR_SET_INET_ANY( struct sockaddr_storage *adr )
+
+/**--------------------------------------------------------------------------
+ * IP4/IP6 setting of Address.
+ * \param   L      Lua state.
+ * \param   adr    struct sockaddr_storage*; address to set the IP to.
+ * \param   ips    IP string.
+ * --------------------------------------------------------------------------*/
+static inline void
+t_net_adr_setAddr( lua_State *L, struct sockaddr_storage *adr, const char* ips )
+{
+	if (NULL == ips)
+	{
+		if (AF_INET6 == SOCK_ADDR_SS_FAMILY( adr ))
+			SOCK_ADDR_IN6_ADDR( adr )        = in6addr_any;
+		if (AF_INET  == SOCK_ADDR_SS_FAMILY( adr ))
+			SOCK_ADDR_IN4_ADDR( adr ).s_addr = htonl( INADDR_ANY );
+	}
+	else
+		if (0 == SOCK_ADDR_SET_INET_PTON( adr, ips ) )
+			t_push_error( L, "inet_pton() of %s failed", ips );
+}
+
+
+/**--------------------------------------------------------------------------
+ * IP4/IP6 setting of Port.
+ * \param   adr    struct sockaddr_storage*; address to set the IP to.
+ * \param   port   int.
+ * --------------------------------------------------------------------------*/
+static inline void
+t_net_adr_setPort( struct sockaddr_storage *adr, int port )
 {
 	if (AF_INET6 == SOCK_ADDR_SS_FAMILY( adr ))
-		SOCK_ADDR_IN6_ADDR( adr )        = in6addr_any;
-	else
-		SOCK_ADDR_IN4_ADDR( adr ).s_addr = htonl( INADDR_ANY );
+		SOCK_ADDR_IN6_PTR( adr )->sin6_port = htons( port );
+	if (AF_INET  == SOCK_ADDR_SS_FAMILY( adr ))
+		SOCK_ADDR_IN4_PTR( adr )->sin_port  = htons( port );
 }
+
 
 /**--------------------------------------------------------------------------
  * Construct a Net.Address and return it.
@@ -79,7 +109,6 @@ void
 t_net_adr_set( lua_State *L, int pos, struct sockaddr_storage *adr )
 {
 	int           port;
-	const char   *ips;      /// IP String aaa.bbb.ccc.ddd
 
 	memset( (void *) &(*adr), 0, sizeof( struct sockaddr_storage ) );
 	SOCK_ADDR_SS_FAMILY( adr ) = AF_INET;
@@ -87,37 +116,24 @@ t_net_adr_set( lua_State *L, int pos, struct sockaddr_storage *adr )
 	// No first element -> assign 0.0.0.0 and no port
 	if (lua_isnone( L, pos+0 ))
 	{
-		SOCK_ADDR_SET_INET_ANY( adr );
-		//if (AF_INET == adr->ss_family)
-		//	SOCK_ADDR_IN4_ADDR( adr ).s_addr = htonl( INADDR_ANY );
-		//else
-		//	SOCK_ADDR_IN6_ADDR( adr ) =  in6addr_any;
+		t_net_adr_setAddr( L, adr, NULL );
 		return;
 	}
 	// First element is string -> Assume this is an IP address
 	if (LUA_TSTRING == lua_type( L, pos+0 ))
 	{
-		ips = luaL_checkstring( L, pos+0 );
-#ifdef _WIN32
-		if ( InetPton( SOCK_ADDR_SS_FAMILY( adr ), ips, &(SOCK_ADDR_SS_ADDR( adr )) ) == 0)
-			t_push_error( L, "InetPton() of %s failed", ips );
-#else
-		if (0 == SOCK_ADDR_SET_INET_PTON( adr, ips ) )
-			t_push_error( L, "inet_aton() of %s failed", ips );
-#endif
+		t_net_adr_setAddr( L, adr, luaL_checkstring( L, pos+0 ) );
 		lua_remove( L, pos+0 );
 	}
 	else
-		SOCK_ADDR_SET_INET_ANY( adr );
+		t_net_adr_setAddr( L, adr, NULL );
 
 	if (lua_isnumber( L, pos+0 ))   // pos+0 because previous string was removed if there
 	{
 		port = luaL_checkinteger( L, pos+0 );
 		luaL_argcheck( L, 0 <= port && port <= 65536, pos+1,  // +1 because first was removed
 		               "port number out of range" );
-		if (AF_INET6 == SOCK_ADDR_SS_FAMILY( adr )) SOCK_ADDR_IN6_PTR( adr )->sin6_port = htons( port );
-		if (AF_INET  == SOCK_ADDR_SS_FAMILY( adr )) SOCK_ADDR_IN4_PTR( adr )->sin_port  = htons( port );
-
+		t_net_adr_setPort( adr, port );
 		lua_remove( L, pos+0 );
 	}
 	// no need to else set .port = 0 because memset( *, 0) at beginning of function
