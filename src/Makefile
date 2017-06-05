@@ -63,6 +63,7 @@ else
       CFLAGS += -D LINUX
       T_AEL_SRC:=$(T_AEL_SRC) p_ael_epl.c
       T_NET_SRC:=$(T_NET_SRC) p_net_sck_unx.c
+      T_NET_SRC:=$(T_NET_SRC) p_net_ifc_lnx.c
    endif
    ifeq ($(UNAME_S),Darwin)
       CFLAGS += -D OSX

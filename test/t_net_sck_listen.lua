@@ -58,7 +58,7 @@ local tests = {
 
 	test_SListenAddress = function( self )
 		Test.Case.describe( "Socket.listen( adr ) --> Sck IPv4(TCP)" )
-		local host      = Interface( 'default' ).address:get()
+		local host      = Interface( 'default' ).AF_INET.address:get()
 		local port      = 8000
 		local addr      = Address( host, port )
 		self.sck,self._ = Socket.listen( addr )
@@ -69,7 +69,7 @@ local tests = {
 
 	test_SListenAddressBacklog = function( self )
 		Test.Case.describe( "Socket.listen( adr, backlog ) --> Sck IPv4(TCP)" )
-		local host      = Interface( 'default' ).address:get()
+		local host      = Interface( 'default' ).AF_INET.address:get()
 		local port      = 8000
 		local addr      = Address( host, port )
 		self.sck,self._ = Socket.listen( addr, 5 )
@@ -80,7 +80,7 @@ local tests = {
 
 	test_SListenHost = function( self )
 		Test.Case.describe( "Socket.listen( host ) --> Sck IPv4(TCP), Adr host:xxxxx" )
-		local host        = Interface( 'default' ).address:get()
+		local host        = Interface( 'default' ).AF_INET.address:get()
 		self.sck,self.adr = Socket.listen( host )
 		asrtHlp.Socket(  self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
 		asrtHlp.Address( self.adr, host, 'any' )
@@ -89,7 +89,7 @@ local tests = {
 
 	test_SListenHostAddress = function( self )
 		Test.Case.describe( "Socket.listen( host,port ) --> Sck IPv4(TCP), Adr host:port" )
-		local host        = Interface( 'default' ).address:get()
+		local host        = Interface( 'default' ).AF_INET.address:get()
 		local port        = 8000
 		self.sck,self.adr = Socket.listen( host, port )
 		asrtHlp.Socket(  self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
@@ -100,7 +100,7 @@ local tests = {
 	test_SListenHostPrivPortThrowsPermission = function( self )
 		-- This Test behaves differently when run as Root (it succeeds)
 		Test.Case.describe( "Socket.listen( host, priviledged port ) --> throws permission error" )
-		local host  = Interface( 'default' ).address:get()
+		local host  = Interface( 'default' ).AF_INET.address:get()
 		local port  = 80
 		local f     = function(self, host) self.sck, self.adr = Socket.listen( host, 80 ) end
 		local ran,e = pcall( f, self, host )
@@ -113,7 +113,7 @@ local tests = {
 
 	test_SListenHostAddressBacklog = function( self )
 		Test.Case.describe( "Socket.listen( host,port,backlog ) --> Sck IPv4(TCP), Adr host:port" )
-		local host        = Interface( 'default' ).address:get()
+		local host        = Interface( 'default' ).AF_INET.address:get()
 		local port        = 8000
 		self.sck,self.adr = Socket.listen( host, port, 5 )
 		asrtHlp.Socket(  self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
@@ -128,7 +128,7 @@ local tests = {
 
 	test_sListen = function( self )
 		Test.Case.describe( "sck.listen( ) --> void (Assume Socket is already bound)" )
-		local host        = Interface( 'default' ).address:get()
+		local host        = Interface( 'default' ).AF_INET.address:get()
 		local port        = 8000
 		self.sck,self.adr = Socket.bind( host, port )
 		asrtHlp.Socket( self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
@@ -141,7 +141,7 @@ local tests = {
 
 	test_sListenBacklog = function( self )
 		Test.Case.describe( "sck.listen( backlog ) --> void (Assume Socket is already bound)" )
-		local host        = Interface( 'default' ).address:get()
+		local host        = Interface( 'default' ).AF_INET.address:get()
 		local port        = 8000
 		self.sck,self.adr = Socket.bind( host, port )
 		asrtHlp.Socket(  self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
@@ -154,7 +154,7 @@ local tests = {
 
 	test_sListenAddress = function( self )
 		Test.Case.describe( "sck.listen( adr ) --> void" )
-		local host      = Interface( 'default' ).address:get()
+		local host      = Interface( 'default' ).AF_INET.address:get()
 		local port      = 8000
 		self.adr        = Address( host, port )
 		self.sck        = Socket( )
@@ -166,7 +166,7 @@ local tests = {
 
 	test_sListenAddressBacklog = function( self )
 		Test.Case.describe( "sck.listen( adr, backlog ) --> void" )
-		local host      = Interface( 'default' ).address:get()
+		local host      = Interface( 'default' ).AF_INET.address:get()
 		local port      = 8000
 		self.adr        = Address( host, port )
 		self.sck        = Socket( )
@@ -178,7 +178,7 @@ local tests = {
 
 	test_sListenHost = function( self )
 		Test.Case.describe( "sck.listen( host ) --> Adr host:xxxxx" )
-		local host       = Interface( 'default' ).address:get()
+		local host       = Interface( 'default' ).AF_INET.address:get()
 		self.sck         = Socket( )
 		asrtHlp.Socket(  self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
 		self.adr,self._  = self.sck:listen( host )
@@ -189,7 +189,7 @@ local tests = {
 
 	test_sListenHostPort = function( self )
 		Test.Case.describe( "sck.listen( host, port ) --> Adr host:port" )
-		local host       = Interface( 'default' ).address:get()
+		local host       = Interface( 'default' ).AF_INET.address:get()
 		local port       = 8000
 		self.sck        = Socket( )
 		asrtHlp.Socket(  self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
@@ -201,7 +201,7 @@ local tests = {
 
 	test_sListenHostPortBacklog = function( self )
 		Test.Case.describe( "sck.listen( host, port, backlog ) --> Adr host:port" )
-		local host       = Interface( 'default' ).address:get()
+		local host       = Interface( 'default' ).AF_INET.address:get()
 		local port       = 8000
 		self.sck        = Socket( )
 		asrtHlp.Socket(  self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )

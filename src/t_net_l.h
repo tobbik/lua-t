@@ -44,8 +44,9 @@ int    t_net_getdef            ( lua_State *L, const int pos, struct t_net_sck *
 
 // t_net_ifc.c
 int    luaopen_t_net_ifc   ( lua_State *L );
-void   t_net_ifc_check_ud  ( lua_State *L, int pos );
-int    t_net_ifc_create_ud ( lua_State *L, const char *name );
+void   t_net_ifc_check     ( lua_State *L, int pos );
+int    t_net_ifc_create    ( lua_State *L, const char *name );
+int    p_net_ifc_get       ( lua_State *L, const char *name );
 
 // t_net_sck.c
 int               luaopen_t_net_sck  ( lua_State *L );

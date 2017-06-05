@@ -39,7 +39,7 @@ local tests = {
 	-- #########################################################################
 	-- wrappers for tests
 	beforeAll = function( self, done )
-		self.host          = Interface( 'default' ).address:get()
+		self.host          = Interface( 'default' ).AF_INET.address:get()
 		self.port          = 8000
 		self.srv, self.adr = Socket.listen( self.host, self.port )
 		--print( self.srv, self.adr )

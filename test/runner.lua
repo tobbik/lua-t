@@ -71,3 +71,6 @@ if arg[ 2 ] then
 end
 
 run( include_pattern, exclude_pattern )
+
+--d=debug.getregistry()
+--for k,v in pairs(d) do if type(k) ~= type(v) then print(k,v) end end

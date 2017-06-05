@@ -1,6 +1,6 @@
 #!../out/bin/lua
 Net,Buffer,Loop  = require't.Net',require't.Buffer',require't.Loop'
-host   = Net.Interface( 'default' ).address:get( )
+host   = Net.Interface( 'default' ).AF_INET.address:get( )
 port   = 8888
 l      = Loop( 10 )
 bInc   = Buffer( 1024*20 )

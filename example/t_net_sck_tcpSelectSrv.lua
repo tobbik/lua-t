@@ -1,6 +1,6 @@
 #!../out/bin/lua
 Net,fmt=require('t.Net'),string.format
-ipAddr,port=Net.Interface( 'default' ).address:get(),8888
+ipAddr,port=Net.Interface( 'default' ).AF_INET.address:get(),8888
 
 tcpsock = Net.Socket( 'TCP' ) --ip4 implied
 print( tcpsock.reuseaddr, tcpsock.reuseport )

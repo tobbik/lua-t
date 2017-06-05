@@ -1,6 +1,6 @@
 #!../out/bin/lua
 Net,Buffer,fmt = require't.Net',require't.Buffer',string.format
-ipAddr,port    = Net.Interface( 'default' ).address:get(),8888
+ipAddr,port    = Net.Interface( 'default' ).AF_INET.address:get(),8888
 
 print( ipAddr, port)
 

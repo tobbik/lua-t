@@ -4,7 +4,7 @@
 Socket    = require't.Net.Socket'
 Address   = require't.Net.Address'
 Interface = require't.Net.Interface'
-ipAddr  = Interface( 'default' ).address:get()
+ipAddr  = Interface( 'default' ).AF_INET.address:get()
 port1   = 8001
 port2   = 8002
 port3   = 8003

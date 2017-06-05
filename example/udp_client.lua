@@ -1,6 +1,6 @@
 #!../out/bin/lua
 Net,Buffer,fmt=require('t.Net'),require('t.Buffer'),string.format
-ipAddr = arg[1] and arg[1] or Net.Interface( 'default' ).address:get()
+ipAddr = arg[1] and arg[1] or Net.Interface( 'default' ).AF_INET.address:get()
 port   = arg[2] and arg[2] or 8888
 
 udpsock = Net.Socket( 'UDP' ) --implicit ip4
