@@ -38,8 +38,9 @@
  * \param   L      Lua state.
  * \param   adr    struct sockaddr_storage*; address to set the IP to.
  * \param   ips    IP string.
+ * \param   pos    position of input on stack.
  * --------------------------------------------------------------------------*/
-static inline void
+void
 t_net_adr_setAddr( lua_State *L, struct sockaddr_storage *adr, const char* ips )
 {
 	if (NULL == ips)
@@ -57,12 +58,15 @@ t_net_adr_setAddr( lua_State *L, struct sockaddr_storage *adr, const char* ips )
 
 /**--------------------------------------------------------------------------
  * IP4/IP6 setting of Port.
- * \param   adr    struct sockaddr_storage*; address to set the IP to.
+ * \param   L      Lua state.
+ * \param   adr    struct sockaddr_storage*; address to set the Port to.
  * \param   port   int.
+ * \param   pos    position of input on stack.
  * --------------------------------------------------------------------------*/
-static inline void
-t_net_adr_setPort( struct sockaddr_storage *adr, int port )
+void
+t_net_adr_setPort( lua_State *L, struct sockaddr_storage *adr, const int port, const int pos )
 {
+	luaL_argcheck( L, 0 <= port && port <= 65536, pos, "port number out of range" );
 	if (AF_INET6 == SOCK_ADDR_SS_FAMILY( adr ))
 		SOCK_ADDR_IN6_PTR( adr )->sin6_port = htons( port );
 	if (AF_INET  == SOCK_ADDR_SS_FAMILY( adr ))
@@ -131,9 +135,7 @@ t_net_adr_set( lua_State *L, int pos, struct sockaddr_storage *adr )
 	if (lua_isnumber( L, pos+0 ))   // pos+0 because previous string was removed if there
 	{
 		port = luaL_checkinteger( L, pos+0 );
-		luaL_argcheck( L, 0 <= port && port <= 65536, pos+1,  // +1 because first was removed
-		               "port number out of range" );
-		t_net_adr_setPort( adr, port );
+		t_net_adr_setPort( L, adr, port, pos+1 );
 		lua_remove( L, pos+0 );
 	}
 	// no need to else set .port = 0 because memset( *, 0) at beginning of function

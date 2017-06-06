@@ -162,7 +162,7 @@ p_net_ifs_makeAddress( lua_State *L, struct sockaddr* addr, int *found )
  * Extract addresses of a family type.
  * \param   L        Lua state.
  * \param   ifa      struct ifaddrs instance.
- * \lreturn table    table of t.Net.Address userdata instance.
+ * \lreturn table    table of t.Net.Address userdata instances.
  * \return  int/bool 1 if succesful, else 0.
  * --------------------------------------------------------------------------*/
 static void

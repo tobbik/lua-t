@@ -29,8 +29,9 @@
 int                      luaopen_t_net_adr     ( lua_State *L );
 struct sockaddr_storage *t_net_adr_check_ud    ( lua_State *L, int pos, int check );
 struct sockaddr_storage *t_net_adr_create_ud   ( lua_State *L );
-void                     t_net_adr_set         ( lua_State *L, int pos,
-                                                 struct sockaddr_storage *adr );
+void                     t_net_adr_set         ( lua_State *L, int pos, struct sockaddr_storage *adr );
+void                     t_net_adr_setAddr     ( lua_State *L, struct sockaddr_storage *adr, const char* ips );
+void                     t_net_adr_setPort     ( lua_State *L, struct sockaddr_storage *adr, const int port, const int pos );
 int                     lt_net_adr_getIpAndPort( lua_State *L );
 #define t_net_adr_is( L, pos ) (NULL != t_net_adr_check_ud( L, pos, 0 ))
 

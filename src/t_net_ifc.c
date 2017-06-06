@@ -59,7 +59,7 @@ t_net_ifc_create( lua_State *L, const char *if_name )
  * Check a value on the stack for being a T.Net.Interface
  * \param   L        Lua state.
  * \param   int      position on the stack.
- * \lparam  table    T.Net.Interface Lua table instance.
+ * \lparam  table    t.Net.Interface Lua table instance.
  * \lreturn void
  * --------------------------------------------------------------------------*/
 void
@@ -106,7 +106,7 @@ static const luaL_Reg t_net_ifc_cf [] =
 };
 
 /**--------------------------------------------------------------------------
- * Pushes the T.Net.Interface library onto the stack
+ * Pushes the t.Net.Interface library onto the stack
  * \param   L     The lua state.
  * \lreturn table  the library
  * \return  int    # of values pushed onto the stack.
