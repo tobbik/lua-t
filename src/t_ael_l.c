@@ -264,8 +264,8 @@ lt_ael_addhandle( lua_State *L )
 	struct t_ael     *ael = t_ael_check_ud( L, 1, 1 );
 	enum t_ael_msk    msk;
 
-	t_getTypeByName( L, 3, NULL, t_ael_directionList );
-	luaL_argcheck( L, ! lua_isnil( L, 3 ), 3, "must specify direction" );
+	luaL_argcheck( L, NULL != t_getTypeByName( L, 3, NULL, t_ael_directionList ),
+	      3, "must specify direction" );
 	msk = luaL_checkinteger( L, 3 );
 
 	luaL_checktype( L, 4, LUA_TFUNCTION );
@@ -325,8 +325,8 @@ lt_ael_removehandle( lua_State *L )
 	struct t_ael     *ael = t_ael_check_ud( L, 1, 1 );
 	enum t_ael_msk    msk;
 
-	t_getTypeByName( L, 3, NULL, t_ael_directionList );
-	luaL_argcheck( L, ! lua_isnil( L, 3 ), 3, "must specify direction" );
+	luaL_argcheck( L, NULL != t_getTypeByName( L, 3, NULL, t_ael_directionList ),
+	      3, "must specify direction" );
 	msk = luaL_checkinteger( L, 3 );
 
 	lS = (luaL_Stream *) luaL_testudata( L, 2, LUA_FILEHANDLE );

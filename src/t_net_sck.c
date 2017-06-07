@@ -185,9 +185,9 @@ lt_net_sck_listen( lua_State *L )
 static int
 lt_net_sck_bind( lua_State *L )
 {
-	struct t_net_sck        *sck         = NULL;
-	struct sockaddr_storage *adr         = NULL;
-	int                      returnables = t_net_getdef( L, 1, &sck, &adr );
+	struct t_net_sck        *sck = NULL;
+	struct sockaddr_storage *adr = NULL;
+	int    returnables           = t_net_getdef( L, 1, &sck, &adr );
 	return (p_net_sck_bind( L, sck, adr )) ? returnables : 0;
 }
 
@@ -340,9 +340,9 @@ lt_net_sck_recv( lua_State *L )
 /** -------------------------------------------------------------------------
  * Recieve t.Net.Address from a (TCP) socket.
  * \param   L      Lua state.
- * \lparam  ud     T.Net.Socket  userdata instance.
- * \lparam  ud     T.Net.Address userdata instance.
- * \lreturn ud     T.Net.Address userdata instance.
+ * \lparam  ud     t.Net.Socket  userdata instance.
+ * \lparam  ud     t.Net.Address userdata instance.
+ * \lreturn ud     t.Net.Address userdata instance.
  * \return  int    # of values pushed onto the stack.
  *-------------------------------------------------------------------------*/
 static int
@@ -433,13 +433,10 @@ lt_net_sck__index( lua_State *L )
 	struct t_net_sck *sck  = t_net_sck_check_ud( L, 1, 1 );
 
 	lua_pushvalue( L, 2 );   // preserve the key
-	t_getTypeByName( L, -1, NULL, t_net_optionList );  //S: sck key val opt
-
-	if (lua_isnil( L, -1 ))
+	if (NULL == t_getTypeByName( L, -1, NULL, t_net_optionList ))  //S: sck key val opt
 	{
 		// in case no socket option was requested, relay functions from the
 		// metatable if available (send,recv,accept,bind etc.)
-		lua_pop( L, 1 );   // pop the nil
 		lua_getmetatable( L, 1 );
 		lua_pushvalue( L, 2 );
 		lua_gettable( L, -2 );
@@ -468,8 +465,7 @@ static int
 lt_net_sck__newindex( lua_State *L )
 {
 	lua_pushvalue( L, 2 );
-	t_getTypeByName( L, 4, NULL, t_net_optionList );  //S: sck key val opt
-	if (lua_isnil( L, 4 ))
+	if (NULL == t_getTypeByName( L, 4, NULL, t_net_optionList ))  //S: sck key val opt
 		return luaL_error( L, "unknown socket option: %s", lua_tostring( L, 2 ) );
 
 	return p_net_sck_setSocketOption(

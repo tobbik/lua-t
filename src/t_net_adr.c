@@ -155,6 +155,7 @@ struct sockaddr_storage
 	struct sockaddr_storage  *adr;
 
 	adr = (struct sockaddr_storage *) lua_newuserdata( L, sizeof(struct sockaddr_storage) );
+	memset( (void *) &(*adr), 0, sizeof( struct sockaddr_storage ) );
 
 	luaL_getmetatable( L, T_NET_ADR_TYPE );
 	lua_setmetatable( L , -2 );
