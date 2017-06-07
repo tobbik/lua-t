@@ -33,6 +33,7 @@
 #include "t_dbg.h"
 #endif
 
+int _t_net_default_family = AF_INET;
 
 // ---------------------- HELPERS ---------------------------------------------
 
@@ -142,6 +143,7 @@ t_net_getdef( lua_State *L, const int pos, struct t_net_sck **sck,
                             struct sockaddr_storage **adr )
 {
 	int returnables = 0;
+	int family      = _t_net_default_family;
 	*sck = t_net_sck_check_ud( L, pos+0,                      0 );
 	*adr = t_net_adr_check_ud( L, pos+((NULL==*sck) ? 0 : 1), 0 );
 
@@ -150,7 +152,7 @@ t_net_getdef( lua_State *L, const int pos, struct t_net_sck **sck,
 		// in all shortcuts of listen(ip,port), bind(ip,port), connect(ip,port)
 		// It defaults to IPv4 and TCP, for others Families and Protocols must be
 		// created explicitely
-		*sck = t_net_sck_create_ud( L, AF_INET, SOCK_STREAM, IPPROTO_TCP, 1  );
+		*sck = t_net_sck_create_ud( L, family, SOCK_STREAM, IPPROTO_TCP, 1  );
 		lua_insert( L, pos+0 );
 		returnables++;
 	}

@@ -24,6 +24,12 @@
 	(_addr >> 16 & 0xFF), \
 	(_addr >> 24 & 0xFF)
 
+#ifndef T_NET_DEF_FAM_H
+#define T_NET_DEF_FAM_H
+// Always create sockets or addresses with this family unless specified
+int _t_net_default_family;
+#endif  // T_NET_DEF_FAM_H
+
 // Constructors
 // t_net_adr.c
 int                      luaopen_t_net_adr     ( lua_State *L );
@@ -116,28 +122,38 @@ int    p_net_sck_mkFdSet        ( lua_State *L, int pos, fd_set *set );
       ? SOCK_ADDR_IN6_ADDR_INT(ss) \
       : SOCK_ADDR_IN4_ADDR_INT(ss) )
 
+//     ---------------------------- inet_ntop, inet_pton ...
 #ifdef _WIN32
-#define SOCK_ADDR_SET_INET_PTON(ss, ips)                     \
-   (SOCK_ADDR_SS_PTR(ss)->ss_family == AF_INET6              \
-      ? InetPton( AF_INET6, ips, &(SOCK_ADDR_IN6_ADDR( ss ))) \
-      : InetPton( AF_INET,  ips, &(SOCK_ADDR_IN4_ADDR( ss ))) )
-
-#define SOCK_ADDR_GET_INET_NTOP(ss, dst)                     \
-   (SOCK_ADDR_SS_PTR(ss)->ss_family == AF_INET6              \
-      ? InetNtop( AF_INET6, &(SOCK_ADDR_IN6_ADDR( ss )), dst, SOCK_ADDR_SS_LEN( adr )) \
-      : InetNtop( AF_INET,  &(SOCK_ADDR_IN4_ADDR( ss )), dst, SOCK_ADDR_SS_LEN( adr )) )
+#define INET_PTON InetPton
+#define INET_NTOP InetNtop
 #else
-#define SOCK_ADDR_SET_INET_PTON(ss, ips)                     \
-   (SOCK_ADDR_SS_PTR(ss)->ss_family == AF_INET6              \
-      ? inet_pton( AF_INET6, ips, &(SOCK_ADDR_IN6_ADDR( ss ))) \
-      : inet_pton( AF_INET,  ips, &(SOCK_ADDR_IN4_ADDR( ss ))) )
-
-#define SOCK_ADDR_GET_INET_NTOP(ss, dst)                     \
-   (SOCK_ADDR_SS_PTR(ss)->ss_family == AF_INET6              \
-      ? inet_ntop( AF_INET6, &(SOCK_ADDR_IN6_ADDR( ss )), dst, SOCK_ADDR_SS_LEN( adr )) \
-      : inet_ntop( AF_INET,  &(SOCK_ADDR_IN4_ADDR( ss )), dst, SOCK_ADDR_SS_LEN( adr )) )
+#define INET_PTON inet_pton
+#define INET_NTOP inet_ntop
 #endif
 
+#define SOCK_ADDR_IN6_PTON(ss, ips)                     \
+   INET_PTON( AF_INET6, ips, &(SOCK_ADDR_IN6_ADDR( ss )))
+
+#define SOCK_ADDR_IN4_PTON(ss, ips)                     \
+   INET_PTON( AF_INET, ips, &(SOCK_ADDR_IN4_ADDR( ss )))
+
+#define SOCK_ADDR_IN6_NTOP( ss, dst )                       \
+   INET_NTOP( AF_INET6, &(SOCK_ADDR_IN6_ADDR( ss )), dst, SOCK_ADDR_SS_LEN( adr ))
+
+#define SOCK_ADDR_IN4_NTOP( ss, dst )                       \
+   INET_NTOP( AF_INET,  &(SOCK_ADDR_IN4_ADDR( ss )), dst, SOCK_ADDR_SS_LEN( adr ))
+
+#define SOCK_ADDR_INET_PTON(ss, ips)                     \
+   (SOCK_ADDR_SS_PTR(ss)->ss_family == AF_INET6              \
+      ? SOCK_ADDR_IN6_PTON( ss, ips )                    \
+      : SOCK_ADDR_IN4_PTON( ss, ips ) )
+
+#define SOCK_ADDR_INET_NTOP(ss, dst)                     \
+   (SOCK_ADDR_SS_PTR(ss)->ss_family == AF_INET6              \
+      ? SOCK_ADDR_IN6_NTOP( ss, dst )                    \
+      : SOCK_ADDR_IN4_NTOP( ss, dst ) )
+
+//    -------------------------- address equality
 #define SOCK_ADDR_EQ_FAMILY(sa, sb) \
    (SOCK_ADDR_SS_FAMILY(sa) == SOCK_ADDR_SS_FAMILY(sb) )
 
@@ -161,6 +177,7 @@ int    p_net_sck_mkFdSet        ( lua_State *L, int pos, fd_set *set );
 static const struct t_typ t_net_familyList[ ] = {
 #ifdef AF_UNSPEC
 	{ "AF_UNSPEC"         , AF_UNSPEC        },  //  0 Unspecified.
+	{ "any"               , AF_UNSPEC        },
 #endif
 #ifdef AF_LOCAL
 	{ "AF_LOCAL"          , AF_LOCAL         },  //  1 Local to host (pipes and file-domain).

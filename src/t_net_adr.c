@@ -51,8 +51,10 @@ t_net_adr_setAddr( lua_State *L, struct sockaddr_storage *adr, const char* ips )
 			SOCK_ADDR_IN4_ADDR( adr ).s_addr = htonl( INADDR_ANY );
 	}
 	else
-		if (0 == SOCK_ADDR_SET_INET_PTON( adr, ips ) )
+	{
+		if (0 == SOCK_ADDR_INET_PTON( adr, ips ) )
 			t_push_error( L, "inet_pton() of %s failed", ips );
+	}
 }
 
 
@@ -77,7 +79,7 @@ t_net_adr_setPort( lua_State *L, struct sockaddr_storage *adr, const int port, c
 /**--------------------------------------------------------------------------
  * Construct a Net.Address and return it.
  * \param   L      Lua state.
- * \lparam  CLASS  table T.Net.Address
+ * \lparam  CLASS  table t.Net.Address
  * \lparam  port   Port for the Address.
  * \lparam  string IP address in xxx.xxx.xxx.xxx format.
  * \lreturn ud     sockaddr_storage* userdata instance.
@@ -101,7 +103,7 @@ lt_net_adr__Call( lua_State *L )
 
 
 /**--------------------------------------------------------------------------
- * Evaluate stack parameters to set endpoint criteria.
+ * Evaluate stack parameters to set address criteria.
  * \param   L      Lua state.
  * \param   int    offset  on stack to start reading values
  * \param   struct sockaddr_storage*  pointer to ip where values will be set
@@ -115,9 +117,9 @@ t_net_adr_set( lua_State *L, int pos, struct sockaddr_storage *adr )
 	int           port;
 
 	memset( (void *) &(*adr), 0, sizeof( struct sockaddr_storage ) );
-	SOCK_ADDR_SS_FAMILY( adr ) = AF_INET;
+	SOCK_ADDR_SS_FAMILY( adr ) = _t_net_default_family;
 
-	// No first element -> assign 0.0.0.0 and no port
+	// No first element -> assign INADDR_ANY and no port
 	if (lua_isnone( L, pos+0 ))
 	{
 		t_net_adr_setAddr( L, adr, NULL );
@@ -207,7 +209,7 @@ lt_net_adr_getIpAndPort( lua_State *L )
 	struct sockaddr_storage *adr = t_net_adr_check_ud( L, 1, 1 );
 	char             dst[ INET6_ADDRSTRLEN ];
 
-	SOCK_ADDR_GET_INET_NTOP( adr, dst );
+	SOCK_ADDR_INET_NTOP( adr, dst );
 	lua_pushstring( L, dst );
 	lua_pushinteger( L, ntohs( SOCK_ADDR_SS_PORT( adr ) ) );
 	return 2;

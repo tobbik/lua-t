@@ -104,8 +104,8 @@ char
 *t_buf_checklstring( lua_State *L, int pos, size_t *len, int *cw )
 {
 	char *b = t_buf_tolstring( L, pos, len, cw );
-	luaL_argcheck( L, (b != NULL), pos,
-		 "`"T_BUF_TYPE"` or `"T_BUF_SEG_TYPE"` or string expected" );
+	if (NULL == b)
+		t_typeerror( L , pos, "`"T_BUF_TYPE"`, `"T_BUF_SEG_TYPE"` or Lua string" );
 	return b;
 }
 

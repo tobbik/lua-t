@@ -45,7 +45,7 @@ static int
 p_net_sck_pushError( lua_State *L, struct sockaddr_storage *adr, const char *msg )
 {
 	char                     dst[ INET6_ADDRSTRLEN ];
-	SOCK_ADDR_GET_INET_NTOP( adr, dst );
+	SOCK_ADDR_INET_NTOP( adr, dst );
 	return t_push_error( L, msg, dst, ntohs( SOCK_ADDR_SS_PORT( adr ) ) );
 }
 
@@ -305,7 +305,7 @@ p_net_sck_mkFdSet( lua_State *L, int pos, fd_set *set )
  *-------------------------------------------------------------------------*/
 int
 p_net_sck_getSocketOption( lua_State *L, struct t_net_sck *sck, int sckOpt,
-                                         const char       *sckOptName )
+                                         const char *sckOptName )
 {
 	struct sockaddr_storage   adr;
 	socklen_t                 adr_len = sizeof( adr );

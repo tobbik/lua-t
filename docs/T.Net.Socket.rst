@@ -85,7 +85,7 @@ Class Members
   accepted as **aaa.bbb.ccc.ddd**.  If ``string ip`` is omitted the it will
   automatically bind to **0.0.0.0**, the IP_ANY interface.
 
-``Net.Socket sck = Net.Socket.bind( Net.Address addr )``
+``Net.Socket sck = Net.Socket.bind( Net.Address adr )``
   Creates a TCP ``Net.Socket`` instance which is bound to ``Net.Address``.
 
   .. code:: lua
@@ -114,21 +114,21 @@ Class Members
 
   .. code:: lua
 
-    -- meanings: _      -> placeholders for nil
-    --           ip,adr -> instances of Net.Address
-    --           sck    -> instance of Net.Socket
-    --           xxxxx  -> random port number choosen by the system
-    --           bl     -> integer specifying the backlog
-    --           port   -> integer specifying the port
-    --           host   -> string specifying the IP address
+    -- meanings: _     -> placeholders for nil
+    --           adr   -> instances of Net.Address
+    --           sck   -> instance of Net.Socket
+    --           xxxxx -> random port number choosen by the system
+    --           bl    -> integer specifying the backlog
+    --           port  -> integer specifying the port
+    --           host  -> string specifying the IP address
 
     sck,adr = Socket.listen(  )               -- Sck (TCP); Adr 0.0.0.0:xxxxx
     sck,adr = Socket.listen( bl )             -- Sck (TCP); Adr 0.0.0.0:xxxxx
     sck,adr = Socket.listen( host )           -- Sck (TCP); Adr host:(0)
     sck,adr = Socket.listen( host, port )     -- Sck (TCP); Adr host:port
     sck,adr = Socket.listen( host, port, bl ) -- Sck (TCP); Adr host:port
-    sck,_   = Socket.listen( ip )             -- Sck (TCP)
-    sck,_   = Socket.listen( ip, bl )         -- Sck (TCP)
+    sck,_   = Socket.listen( adr )            -- Sck (TCP)
+    sck,_   = Socket.listen( adr, bl )        -- Sck (TCP)
 
 ``Net.Socket sck, Net.Address adr = Net.Socket.connect( [string ip, int port] )``
   Creates an TCP ``Net.Socket`` instance which is connected to the address
@@ -188,9 +188,9 @@ Instance Members
     --           host   -> string specifying the IP address
 
     adr,_   = sck.bind( )            -- bind to 0.0.0.0:0
-    _,_     = sck.bind( adr )        -- bind Adr
     adr,_   = sck.bind( host )       -- Adr host:0
     adr,_   = sck.bind( host, port ) -- Adr host:port
+    _,_     = sck.bind( adr )        -- bind Adr
 
 ``Net.Address addr = Net.Socket sck:connect( [string ip,] int port )``
   Creates and returns ``Net.Address adr`` instance defined by ``string ip``
