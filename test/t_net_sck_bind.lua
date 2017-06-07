@@ -131,6 +131,16 @@ local tests = {
 		assert( addr  == self.sck:getsockname(), "The addresses should be equal" )
 		asrtHlp.Address( addr, host, port )
 	end,
+
+	test_sBindWrongArgFails = function( self )
+		Test.Case.describe( "sck.bind( adr ) --> fails" )
+		self.sck        = Socket()
+		local eMsg      = "bad argument #1 to 'bind' %(T.Net.Socket expected, got no value%)"
+		local f     = function() local _,__ = self.sck.bind( ) end
+		local ran,e = pcall( f )
+		assert( not ran, "This should have failed" )
+		T.assert( e:match( eMsg), "Expected error message:\n%s\n%s", eMsg:gsub('%%',''), e )
+	end,
 }
 
 return Test( tests )

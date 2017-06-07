@@ -114,7 +114,6 @@ local tests = {
 		-- bind socket to outgoing interface/port first 
 		self.host2cmp       = self.host
 		self.port2cmp       = 11111
-		--self.sck,self.adrb  = Socket.bind( self.host2cmp, self.port2cmp )
 		self.sck            = Socket()
 		self.sck.reuseaddr  = true
 		self.adrb           = self.sck:bind( self.host2cmp, self.port2cmp )
@@ -128,17 +127,26 @@ local tests = {
 		-- bind socket to outgoing interface/port first 
 		self.host2cmp       = self.host
 		self.port2cmp       = 11111
-		--self.sck,self.adrb  = Socket.bind( self.host2cmp, self.port2cmp )
 		self.sck            = Socket()
 		self.sck.reuseaddr  = true
 		self.adrb           = self.sck:bind( self.host2cmp, self.port2cmp )
 		self.adrc           = Address( self.host, self.port )
 		self.__,self._      = self.sck:connect( self.adrc )
-		assert( self.__     == nil, "No socket  should have been returned" )
-		assert( self._      == nil, "No address should have been returned" )
+		assert( self.__ == nil, "No socket  should have been returned" )
+		assert( self._  == nil, "No address should have been returned" )
 		done( )
 	end,
 
+	test_cb_sConnectWrongArgFails = function( self, done )
+		Test.Case.describe( "sck.connect( adr ) --> fails" )
+		self.sck        = Socket()
+		local eMsg      = "bad argument #1 to 'connect' %(T.Net.Socket expected, got no value%)"
+		local f     = function() local _,__ = self.sck.connect( ) end
+		local ran,e = pcall( f )
+		assert( not ran, "This should have failed" )
+		T.assert( e:match( eMsg), "Expected error message:\n%s\n%s", eMsg:gsub('%%',''), e )
+		done( )
+	end,
 }
 
 return  Test( tests )

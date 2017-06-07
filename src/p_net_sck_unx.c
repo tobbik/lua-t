@@ -125,7 +125,7 @@ p_net_sck_listen( lua_State *L, struct t_net_sck *sck, struct sockaddr_storage *
 	if (-1 == listen( sck->fd, bl ))
 		return t_push_error( L, "Can't listen() on socket" );
 
-	// adr is, if created, by t_net_getdef(), which guarantees an unset port to
+	// adr is, if created, by t_net_adr_getFromStack(), which guarantees an unset port to
 	// be 0
 	if (NULL!=adr && 0==SOCK_ADDR_SS_PORT( adr ) && p_net_sck_getsockname( sck, &bnd ))
 		t_net_adr_setPort( L, adr, SOCK_ADDR_SS_PORT( &bnd ), 0 );

@@ -24,6 +24,7 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <sys/select.h>
+#include <sys/un.h>
 #endif
 
 #include "t_net_l.h"
@@ -88,16 +89,14 @@ t_net_adr_setPort( lua_State *L, struct sockaddr_storage *adr, const int port, c
 static int
 lt_net_adr__Call( lua_State *L )
 {
-	struct sockaddr_storage  *adr;
-
+	int returnables = 0;
 	lua_remove( L, 1 );
 	if (t_net_adr_is( L, 1 ))
 	{
-		lt_net_adr_getIpAndPort( L );   //S: adr ip prt
-		lua_remove( L, 1 );             //S: ip prt
+		lt_net_adr_getIpAndPort( L );   //S: adr ips prt
+		lua_remove( L, 1 );             //S: ips prt
 	}
-	adr = t_net_adr_create_ud( L );
-	t_net_adr_set( L, 1, adr );
+	t_net_adr_getFromStack( L, 1, &returnables );
 	return 1;
 }
 
@@ -105,42 +104,59 @@ lt_net_adr__Call( lua_State *L )
 /**--------------------------------------------------------------------------
  * Evaluate stack parameters to set address criteria.
  * \param   L      Lua state.
- * \param   int    offset  on stack to start reading values
- * \param   struct sockaddr_storage*  pointer to ip where values will be set
- * \lparam  string IP address for the socket.
+ * \param   int    offset  on stack to start reading values.
+ * \lparam  string IPv4/IPv6 address for the socket.
  * \lparam  int    port for the socket.
- * TODO:  allow for empty endpoints if it makes sense
  * --------------------------------------------------------------------------*/
-void
-t_net_adr_set( lua_State *L, int pos, struct sockaddr_storage *adr )
+struct sockaddr_storage
+*t_net_adr_getFromStack( lua_State *L, int pos, int *returnables )
 {
-	int           port;
+	struct sockaddr_storage *adr    = t_net_adr_check_ud( L, pos, 0 );
+	int                      port;
+	int                      family = _t_net_default_family;
+	const char              *ipstr;
+	size_t                   strln;
 
-	memset( (void *) &(*adr), 0, sizeof( struct sockaddr_storage ) );
-	SOCK_ADDR_SS_FAMILY( adr ) = _t_net_default_family;
-
-	// No first element -> assign INADDR_ANY and no port
-	if (lua_isnone( L, pos+0 ))
+	if (NULL == adr)
 	{
-		t_net_adr_setAddr( L, adr, NULL );
-		return;
-	}
-	// First element is string -> Assume this is an IP address
-	if (LUA_TSTRING == lua_type( L, pos+0 ))
-	{
-		t_net_adr_setAddr( L, adr, luaL_checkstring( L, pos+0 ) );
-		lua_remove( L, pos+0 );
+		adr = t_net_adr_create_ud( L );
+		(*returnables)++;
 	}
 	else
-		t_net_adr_setAddr( L, adr, NULL );
+		return adr;   // return address as is
 
-	if (lua_isnumber( L, pos+0 ))   // pos+0 because previous string was removed if there
+	// DETERMINE IF ANY ADRRESS STRING WAS GIVEN
+	// if no addr is given assume INADDR_ANY
+	if (LUA_TSTRING != lua_type( L, pos ))
 	{
-		port = luaL_checkinteger( L, pos+0 );
-		t_net_adr_setPort( L, adr, port, pos+1 );
-		lua_remove( L, pos+0 );
+		adr->ss_family = family;
+		t_net_adr_setAddr( L, adr, NULL );
 	}
-	// no need to else set .port = 0 because memset( *, 0) at beginning of function
+	else
+	{
+		// attempt to assign an address
+		ipstr = luaL_checklstring( L, pos, &strln );
+		if (SOCK_ADDR_IN6_PTON( adr, ipstr ))
+			adr->ss_family = AF_INET6;
+		else if (SOCK_ADDR_IN4_PTON( adr, ipstr ))
+			adr->ss_family = AF_INET;
+		else
+		{
+			memcpy( SOCK_ADDR_UNX_PTR( adr )->sun_path, ipstr, strln+1 );
+			adr->ss_family = AF_UNIX;
+		}
+		lua_remove( L, pos );
+	}
+	// DETERMINE IF ANY PORT WAS GIVEN
+	if (lua_isnumber( L, pos ))
+	{
+		port = luaL_checkinteger( L, pos );
+		t_net_adr_setPort( L, adr, port, pos );
+		lua_remove( L, pos );
+	}
+	// put the address into the stack were the parameters used to be
+	lua_insert( L, pos );
+	return adr;
 }
 
 
@@ -191,7 +207,8 @@ lt_net_adr_setIpAndPort( lua_State *L )
 {
 	struct sockaddr_storage *adr = t_net_adr_check_ud( L, 1, 1 );
 
-	t_net_adr_set( L, 1, adr );
+	t_net_adr_setAddr( L, adr, luaL_checkstring( L, 2 ) );
+	t_net_adr_setPort( L, adr, luaL_checkinteger( L, 3 ), 3 );
 	return 0;
 }
 

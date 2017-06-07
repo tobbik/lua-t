@@ -17,11 +17,12 @@
 #include "t_dbg.h"
 #endif
 
+
 /**--------------------------------------------------------------------------
  * Create a socket and push to LuaStack.
  * \param   L        Lua state.
  * \lparam  protocol string: 'TCP', 'UDP' ...
- * \lparam  family   string: 'ip4', 'ip6', 'raw' ...
+ * \lparam  family   string: 'ip4', 'AF_INET6', 'raw' ...
  * \lparam  type     string: 'stream', 'datagram' ...
  * \usage   Net.Socket( )                   -> create TCP IPv4 Socket
  *          Net.Socket( 'TCP' )             -> create TCP IPv4 Socket
@@ -36,14 +37,15 @@ lt_net_sck__Call( lua_State *L )
 	lua_remove( L, 1 );         // remove CLASS table
 
 	t_net_getProtocolByName( L, 1, "TCP" );
-	t_getTypeByName( L, 2, "AF_INET", t_net_familyList );
-	t_getTypeByName( L, 3,
-	   (IPPROTO_TCP == luaL_checkinteger( L, 1 ))
-	      ? "SOCK_STREAM"
-	      : (IPPROTO_UDP == luaL_checkinteger( L, 1 ))
-	         ? "SOCK_DGRAM"
-	         : "SOCK_RAW",
-	   t_net_typeList );
+	if (NULL == t_getTypeByName( L, 2, "AF_INET", t_net_familyList ))
+		lua_pushinteger( L, _t_net_default_family );
+	if (NULL == t_getTypeByName( L, 3, "SOCK_STREAM", t_net_typeList ))
+		lua_pushinteger( L,
+	      (IPPROTO_TCP == luaL_checkinteger( L, 1 ))
+	         ? SOCK_STREAM
+	         : (IPPROTO_UDP == luaL_checkinteger( L, 1 ))
+	            ? SOCK_DGRAM
+	            : SOCK_RAW );
 
 	t_net_sck_create_ud( L,
 	   (AF_UNIX==luaL_checkinteger( L, 2 )) ? 0 : lua_tointeger( L, 2 ),
@@ -145,6 +147,42 @@ lt_net_sck__tostring( lua_State *L )
 
 
 /** -------------------------------------------------------------------------
+ * Create a listening socket.
+ * \param   L      Lua state.
+ * \lparam  adr    userdata; t_net_adr userdata instance.
+ *          OR
+ * \lparam  family string;
+ * \lparam  ipstr  string; string representing IP.
+ * \lparam  port   integer; port number.
+ * \lparam  bl     int; backlog connections.
+ * \return  int    # of values pushed onto the stack.
+ *-------------------------------------------------------------------------*/
+static int
+lt_net_sck_Listen( lua_State *L )
+{
+	struct t_net_sck        *sck = NULL;
+	struct sockaddr_storage *adr = t_net_adr_check_ud( L, 1, 0 );
+	int                      bl  = SOMAXCONN,
+	                 returnables = 1;  //socket is always returned
+
+	// if last arg is int and second to last is int or Net.Address read as bl
+	if (lua_isinteger( L, -1 ) && LUA_TSTRING != lua_type( L, -2 ))
+	{
+		bl = lua_tointeger( L, -1 );
+		lua_pop( L, 1 );
+	}
+	if (NULL == adr)
+		adr = t_net_adr_getFromStack( L, 1, &returnables );
+	else
+		lua_pop( L, 1 );
+	sck = t_net_sck_create_ud( L, SOCK_ADDR_SS_FAMILY( adr ), SOCK_STREAM, IPPROTO_TCP, 1 );
+	lua_insert( L, 1 );
+
+	return (p_net_sck_listen( L, sck, adr, bl )) ? returnables : 0;
+}
+
+
+/** -------------------------------------------------------------------------
  * Listen on a socket or create a listening socket.
  * \param   L      Lua state.
  * \lparam  sck    Net.Sck userdata instance( socket ).
@@ -156,22 +194,49 @@ lt_net_sck__tostring( lua_State *L )
 static int
 lt_net_sck_listen( lua_State *L )
 {
-	struct t_net_sck        *sck = t_net_sck_check_ud( L, 1, 0 );
-	struct sockaddr_storage *adr = t_net_adr_check_ud( L, 1+((NULL==sck) ? 0:1), 0 );
+	struct t_net_sck        *sck = t_net_sck_check_ud( L, 1, 1 );
+	struct sockaddr_storage *adr = t_net_adr_check_ud( L, 2, 0 );
 	int                      bl  = SOMAXCONN,
 	                 returnables = 0;
 
+	// if last arg is int and second to last is int or Net.Address read as bl
 	if (lua_isinteger( L, -1 ) && LUA_TSTRING != lua_type( L, -2 ))
 	{
 		bl = lua_tointeger( L, -1 );
 		lua_pop( L, 1 );
 	}
-	if (NULL!=sck && 1==lua_gettop( L ))
-		; // No address, or host like info given -> assume it's bound already
+	if (NULL == adr && lua_gettop( L ) > 1)
+		adr = t_net_adr_getFromStack( L, 2, &returnables );
 	else
-		returnables += t_net_getdef( L, 1, &sck, &adr );
+		lua_pop( L, 1 );
 
 	return (p_net_sck_listen( L, sck, adr, bl )) ? returnables : 0;
+}
+
+
+/** -------------------------------------------------------------------------
+ * Bind a socket to an address.
+ * \param   L      Lua state.
+ * \lparam  adr    userdata;t_net_adr userdata instance.
+ *          OR
+ * \lparam  family string;
+ * \lparam  ipstr  string; string representing IP.
+ * \lparam  port   integer; port number.
+ * \lreturn adr    userdata;t_net_adr userdata instance (optional).
+ * \return  int    # of values pushed onto the stack.
+ *-------------------------------------------------------------------------*/
+static int
+lt_net_sck_Bind( lua_State *L )
+{
+	int    returnables           = 1;  // at least the socket gets returned
+	// Get address first because the socket inferes the FAMILY from the address
+	struct sockaddr_storage *adr = t_net_adr_getFromStack( L, 1, &returnables );
+	struct t_net_sck        *sck = t_net_sck_create_ud( L,
+	                                 SOCK_ADDR_SS_FAMILY( adr ),
+	                                 SOCK_STREAM, IPPROTO_TCP, 1  );
+
+	if (2==returnables) lua_insert( L, 1 );
+	return (p_net_sck_bind( L, sck, adr )) ? returnables : 0;
 }
 
 
@@ -185,26 +250,59 @@ lt_net_sck_listen( lua_State *L )
 static int
 lt_net_sck_bind( lua_State *L )
 {
-	struct t_net_sck        *sck = NULL;
-	struct sockaddr_storage *adr = NULL;
-	int    returnables           = t_net_getdef( L, 1, &sck, &adr );
+	int    returnables           = 0;
+	struct t_net_sck        *sck = t_net_sck_check_ud( L, 1, 1 );
+	struct sockaddr_storage *adr = t_net_adr_getFromStack( L, 2, &returnables );
+
 	return (p_net_sck_bind( L, sck, adr )) ? returnables : 0;
 }
 
 
 /** -------------------------------------------------------------------------
- * Connect a socket to an address.
+ * Create socket and connect a socket to an address.
+ * \param   L      Lua state.
+ * \lparam  adr    userdata;t_net_adr userdata instance.
+ *          OR
+ * \lparam  family string;
+ * \lparam  ipstr  string; string representing IP.
+ * \lparam  port   integer; port number.
+ * \lreturn adr    userdata; t_net_adr userdata instance (optional).
+ * \return  int    # of values pushed onto the stack.
+ *-------------------------------------------------------------------------*/
+static int
+lt_net_sck_Connect( lua_State *L )
+{
+	int    returnables           = 1;  // at least the socket gets returned
+	// Get address first because the socket inferes the FAMILY from the address
+	struct sockaddr_storage *adr = t_net_adr_getFromStack( L, 1, &returnables );
+	struct t_net_sck        *sck = t_net_sck_create_ud( L,
+	                                 SOCK_ADDR_SS_FAMILY( adr ),
+	                                 SOCK_STREAM, IPPROTO_TCP, 1  );
+
+	if (2==returnables) lua_insert( L, 1 );
+	return (p_net_sck_connect( L, sck, adr )) ? returnables : 0;
+}
+
+
+/** -------------------------------------------------------------------------
+ * Connect an existing socket to an address.
  * \param   L      Lua state.
  * \lparam  ud     t_net_sck userdata instance.
- * \lparam  ud     t_net_adr userdata instance.
+ * \lparam  adr    userdata;t_net_adr userdata instance.
+ *          OR
+ * \lparam  family string;
+ * \lparam  ipstr  string; string representing IP.
+ * \lparam  port   integer; port number.
+ * \lreturn adr    userdata; t_net_adr userdata instance (optional).
  * \return  int    # of values pushed onto the stack.
  *-------------------------------------------------------------------------*/
 static int
 lt_net_sck_connect( lua_State *L )
 {
-	struct t_net_sck        *sck         = NULL;
-	struct sockaddr_storage *adr         = NULL;
-	int                      returnables = t_net_getdef( L, 1, &sck, &adr );
+	int    returnables           = 0;
+	struct t_net_sck        *sck = t_net_sck_check_ud( L, 1, 1 );
+	struct sockaddr_storage *adr = t_net_adr_getFromStack( L, 2, &returnables );
+
 	return (p_net_sck_connect( L, sck, adr )) ? returnables : 0;
 }
 
@@ -212,9 +310,9 @@ lt_net_sck_connect( lua_State *L )
 /** -------------------------------------------------------------------------
  * Accept a (TCP) socket connection.
  * \param   L      Lua state.
- * \lparam  ud     T.Net.Socket  userdata instance( server socket ).
- * \lreturn ud     T.Net.Socket  userdata instance( new client socket ).
- * \lreturn ud     T.Net.Address userdata instance( new client sockaddr ).
+ * \lparam  srv    T.Net.Socket  userdata instance( server socket ).
+ * \lreturn cli    T.Net.Socket  userdata instance( new client socket ).
+ * \lreturn adr    T.Net.Address userdata instance( new client sockaddr ).
  * \return  int    # of values pushed onto the stack.
  *-------------------------------------------------------------------------*/
 static int
@@ -494,9 +592,9 @@ static const struct luaL_Reg t_net_sck_fm [] = {
 static const luaL_Reg t_net_sck_cf [] =
 {
 	  { "select"      , lt_net_sck_Select }
-	, { "bind"        , lt_net_sck_bind }
-	, { "connect"     , lt_net_sck_connect }
-	, { "listen"      , lt_net_sck_listen }
+	, { "bind"        , lt_net_sck_Bind }
+	, { "connect"     , lt_net_sck_Connect }
+	, { "listen"      , lt_net_sck_Listen }
 	, { NULL          , NULL }
 };
 

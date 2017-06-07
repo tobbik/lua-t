@@ -133,7 +133,7 @@ local tests = {
 		self.sck,self.adr = Socket.bind( host, port )
 		asrtHlp.Socket( self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
 		asrtHlp.Address( self.adr, host, port )
-		self._,self.__  = self.sck:listen( )
+		self._,self.__    = self.sck:listen( )
 		assert( self._  == nil, "No values should have been returned" )
 		assert( self.__ == nil, "No values should have been returned" )
 		assert( self.sck:getsockname() == self.adr, "Bound address should equal input" )
@@ -144,9 +144,9 @@ local tests = {
 		local host        = Interface( 'default' ).AF_INET.address:get()
 		local port        = 8000
 		self.sck,self.adr = Socket.bind( host, port )
-		asrtHlp.Socket(  self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
+		asrtHlp.Socket( self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
 		asrtHlp.Address( self.adr, host, port )
-		self._,self.__  = self.sck:listen( 5 )
+		self._,self.__    = self.sck:listen( 5 )
 		assert( self._  == nil, "No values should have been returned" )
 		assert( self.__ == nil, "No values should have been returned" )
 		assert( self.sck:getsockname() == self.adr, "Bound address should equal input" )
@@ -178,10 +178,10 @@ local tests = {
 
 	test_sListenHost = function( self )
 		Test.Case.describe( "sck.listen( host ) --> Adr host:xxxxx" )
-		local host       = Interface( 'default' ).AF_INET.address:get()
-		self.sck         = Socket( )
+		local host      = Interface( 'default' ).AF_INET.address:get()
+		self.sck        = Socket( )
 		asrtHlp.Socket(  self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
-		self.adr,self._  = self.sck:listen( host )
+		self.adr,self._ = self.sck:listen( host )
 		assert( self._  == nil, "No values should have been returned" )
 		asrtHlp.Address( self.adr, host, 'any' )
 		assert( self.sck:getsockname() == self.adr, "Bound address should equal input" )
@@ -189,11 +189,11 @@ local tests = {
 
 	test_sListenHostPort = function( self )
 		Test.Case.describe( "sck.listen( host, port ) --> Adr host:port" )
-		local host       = Interface( 'default' ).AF_INET.address:get()
-		local port       = 8000
+		local host      = Interface( 'default' ).AF_INET.address:get()
+		local port      = 8000
 		self.sck        = Socket( )
-		asrtHlp.Socket(  self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
-		self.adr,self._  = self.sck:listen( host, port )
+		asrtHlp.Socket( self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
+		self.adr,self._ = self.sck:listen( host, port )
 		assert( self._  == nil, "No values should have been returned" )
 		asrtHlp.Address( self.adr, host, port )
 		assert( self.sck:getsockname() == self.adr, "Bound address should equal input" )
@@ -201,14 +201,24 @@ local tests = {
 
 	test_sListenHostPortBacklog = function( self )
 		Test.Case.describe( "sck.listen( host, port, backlog ) --> Adr host:port" )
-		local host       = Interface( 'default' ).AF_INET.address:get()
-		local port       = 8000
+		local host      = Interface( 'default' ).AF_INET.address:get()
+		local port      = 8000
 		self.sck        = Socket( )
-		asrtHlp.Socket(  self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
-		self.adr,self._  = self.sck:listen( host, port, 5 )
+		asrtHlp.Socket( self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
+		self.adr,self._ = self.sck:listen( host, port, 5 )
 		assert( self._  == nil, "No values should have been returned" )
 		asrtHlp.Address( self.adr, host, port )
 		assert( self.sck:getsockname() == self.adr, "Bound address should equal input" )
+	end,
+
+	test_sListenWrongArgFails = function( self )
+		Test.Case.describe( "sck.listen( adr ) --> fails" )
+		self.sck        = Socket()
+		local eMsg      = "bad argument #1 to 'listen' %(T.Net.Socket expected, got no value%)"
+		local f     = function() local _,__ = self.sck.listen( ) end
+		local ran,e = pcall( f )
+		assert( not ran, "This should have failed" )
+		T.assert( e:match( eMsg), "Expected error message:\n%s\n%s", eMsg:gsub('%%',''), e )
 	end,
 
 }
