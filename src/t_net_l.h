@@ -35,7 +35,7 @@ int _t_net_default_family;
 int                      luaopen_t_net_adr     ( lua_State *L );
 struct sockaddr_storage *t_net_adr_check_ud    ( lua_State *L, int pos, int check );
 struct sockaddr_storage *t_net_adr_create_ud   ( lua_State *L );
-void                     t_net_adr_setAddr     ( lua_State *L, struct sockaddr_storage *adr, const char* ips );
+void                     t_net_adr_setAddr     ( struct sockaddr_storage *adr, const char* ips );
 void                     t_net_adr_setPort     ( lua_State *L, struct sockaddr_storage *adr, const int port, const int pos );
 int                     lt_net_adr_getIpAndPort( lua_State *L );
 struct sockaddr_storage *t_net_adr_getFromStack( lua_State *L, int pos, int *returnables );

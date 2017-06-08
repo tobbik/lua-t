@@ -10,12 +10,11 @@ return {
 	end,
 
 	Address = function( adr, host, port )
-		local h,p = adr:get( )
-		assert( host == h, "Host should be "..host.." but is "..tostring(h) )
+		assert( host == adr.ip, "Host should be "..host.." but is "..tostring( adr.ip ) )
 		if type( port ) ~= 'number' then
 			assert( port ~= 0, "Port should not be 0" )
 		else
-			assert( port == p, "Port should be "..port.." but is "..tostring(p) )
+			assert( port == adr.port, "Port should be "..port.." but is "..tostring( adr.port ) )
 		end
 	end,
 

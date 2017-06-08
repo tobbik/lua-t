@@ -39,10 +39,10 @@
  * \param   L      Lua state.
  * \param   adr    struct sockaddr_storage*; address to set the IP to.
  * \param   ips    IP string.
- * \param   pos    position of input on stack.
  * --------------------------------------------------------------------------*/
 void
-t_net_adr_setAddr( lua_State *L, struct sockaddr_storage *adr, const char* ips )
+//t_net_adr_setAddr( lua_State *L, struct sockaddr_storage *adr, const char* ips )
+t_net_adr_setAddr( struct sockaddr_storage *adr, const char* ips )
 {
 	if (NULL == ips)
 	{
@@ -53,8 +53,16 @@ t_net_adr_setAddr( lua_State *L, struct sockaddr_storage *adr, const char* ips )
 	}
 	else
 	{
-		if (0 == SOCK_ADDR_INET_PTON( adr, ips ) )
-			t_push_error( L, "inet_pton() of %s failed", ips );
+		adr->ss_family = AF_UNSPEC;
+		if (SOCK_ADDR_IN6_PTON( adr, ips ))
+			adr->ss_family = AF_INET6;
+		else if (SOCK_ADDR_IN4_PTON( adr, ips ))
+			adr->ss_family = AF_INET;
+		else
+		{
+			memcpy( SOCK_ADDR_UNX_PTR( adr )->sun_path, ips, strlen( ips )+1 );
+			adr->ss_family = AF_UNIX;
+		}
 	}
 }
 
@@ -89,12 +97,16 @@ t_net_adr_setPort( lua_State *L, struct sockaddr_storage *adr, const int port, c
 static int
 lt_net_adr__Call( lua_State *L )
 {
-	int returnables = 0;
+	int             returnables  = 0;
+	char                     ip[ INET6_ADDRSTRLEN ];
+	struct sockaddr_storage *adr = t_net_adr_check_ud( L, 1, 0 );
 	lua_remove( L, 1 );
-	if (t_net_adr_is( L, 1 ))
+	if (NULL != adr )
 	{
-		lt_net_adr_getIpAndPort( L );   //S: adr ips prt
-		lua_remove( L, 1 );             //S: ips prt
+		lua_remove( L, 1 );
+		SOCK_ADDR_INET_NTOP( adr, ip );
+		lua_pushstring( L, ip );
+		lua_pushinteger( L, SOCK_ADDR_SS_PORT( adr ) );
 	}
 	t_net_adr_getFromStack( L, 1, &returnables );
 	return 1;
@@ -113,7 +125,6 @@ struct sockaddr_storage
 {
 	struct sockaddr_storage *adr    = t_net_adr_check_ud( L, pos, 0 );
 	int                      port;
-	int                      family = _t_net_default_family;
 	const char              *ipstr;
 	size_t                   strln;
 
@@ -129,8 +140,8 @@ struct sockaddr_storage
 	// if no addr is given assume INADDR_ANY
 	if (LUA_TSTRING != lua_type( L, pos ))
 	{
-		adr->ss_family = family;
-		t_net_adr_setAddr( L, adr, NULL );
+		adr->ss_family = _t_net_default_family;
+		t_net_adr_setAddr( adr, NULL );
 	}
 	else
 	{
@@ -195,42 +206,75 @@ struct sockaddr_storage
 
 
 /**--------------------------------------------------------------------------
- * Set Ip and Port of the IP endpoint.
+ * Get properties of t.Net.Address.
  * \param   L      Lua state.
- * \lparam  ud     sockkaddr_in* userdata instance.
- * \lparam  string IP address.
- * \lparam  int    Port number.
+ * \lparam  adr    sockaddr_storage*; t.Net.Address userdata instance.
+ * \lparam  key    string; key of property.
+ * \lretrun value  Property value.
  * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
-static int
-lt_net_adr_setIpAndPort( lua_State *L )
+int
+lt_net_adr__index( lua_State *L )
 {
-	struct sockaddr_storage *adr = t_net_adr_check_ud( L, 1, 1 );
+	struct sockaddr_storage *adr    = t_net_adr_check_ud( L, 1, 1 );
+	char                     ip[ INET6_ADDRSTRLEN ];
+	const char              *key;
+	size_t                   keyLen;
 
-	t_net_adr_setAddr( L, adr, luaL_checkstring( L, 2 ) );
-	t_net_adr_setPort( L, adr, luaL_checkinteger( L, 3 ), 3 );
-	return 0;
+	if (LUA_TSTRING != lua_type( L, 2 ))
+	{
+		lua_pushnil( L );
+		return 1;
+	}
+	else
+		key = luaL_checklstring( L, 2, &keyLen );
+
+	if (0 == strncmp( key, "ip", keyLen ))
+	{
+		SOCK_ADDR_INET_NTOP( adr, ip );
+		lua_pushstring( L, ip );
+	}
+	else if (0 == strncmp( key, "port", keyLen ))
+		lua_pushinteger( L, ntohs( SOCK_ADDR_SS_PORT( adr ) ) );
+	else if (0 == strncmp( key, "family", keyLen ))
+	{
+		lua_pushinteger( L, SOCK_ADDR_SS_FAMILY( adr ) );
+		t_getTypeByValue( L, -1, -1, t_net_familyList );
+	}
+	else
+		lua_pushnil( L );
+	return 1;
 }
 
 
 /**--------------------------------------------------------------------------
- * Get IP and port from the IP endpoint.
+ * Set properties of t.Net.Address.
  * \param   L      Lua state.
- * \lparam  ud     sockkaddr_in* userdata instance.
- * \lretrun string IP address.
- * \lretrun int    Port number.
+ * \lparam  adr    sockaddr_storage*; t.Net.Address userdata instance.
+ * \lparam  key    string; key of property.
+ * \lparam  value  value; value of property.
  * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 int
-lt_net_adr_getIpAndPort( lua_State *L )
+lt_net_adr__newindex( lua_State *L )
 {
-	struct sockaddr_storage *adr = t_net_adr_check_ud( L, 1, 1 );
-	char             dst[ INET6_ADDRSTRLEN ];
+	struct sockaddr_storage *adr    = t_net_adr_check_ud( L, 1, 1 );
+	const char              *key;
+	size_t                   keyLen;
 
-	SOCK_ADDR_INET_NTOP( adr, dst );
-	lua_pushstring( L, dst );
-	lua_pushinteger( L, ntohs( SOCK_ADDR_SS_PORT( adr ) ) );
-	return 2;
+	if (LUA_TSTRING != lua_type( L, 2 ))
+		return 0;
+	else
+		key = luaL_checklstring( L, 2, &keyLen );
+
+	if (0 == strncmp( key, "ip", keyLen ))
+		t_net_adr_setAddr( adr, luaL_checkstring( L, 3 ) );
+	else if (0 == strncmp( key, "port", keyLen ))
+		t_net_adr_setPort( L, adr, luaL_checkinteger( L, 3 ), 3 );
+	else if (0 == strncmp( key, "family", keyLen )
+	      && t_getTypeByName( L, 3, NULL, t_net_familyList ))
+		adr->ss_family = luaL_checkinteger( L, 3 );
+	return 0;
 }
 
 
@@ -245,11 +289,12 @@ static int
 lt_net_adr__tostring( lua_State *L )
 {
 	struct sockaddr_storage *adr = t_net_adr_check_ud( L, 1, 1 );   //S: adr
-	lt_net_adr_getIpAndPort( L );                                   //S: adr ip prt
+	char                     ip[ INET6_ADDRSTRLEN ];
+	SOCK_ADDR_INET_NTOP( adr, ip );
 	if (AF_INET6 == SOCK_ADDR_SS_FAMILY( adr ))
-		lua_pushfstring( L, T_NET_ADR_TYPE"{[%s]:%d}: %p", lua_tostring( L, -2 ), lua_tointeger( L, -1 ), adr );
+		lua_pushfstring( L, T_NET_ADR_TYPE"{[%s]:%d}: %p", ip, SOCK_ADDR_SS_PORT( adr ), adr );
 	else
-		lua_pushfstring( L, T_NET_ADR_TYPE"{%s:%d}: %p",   lua_tostring( L, -2 ), lua_tointeger( L, -1 ), adr );
+		lua_pushfstring( L, T_NET_ADR_TYPE"{%s:%d}: %p",   ip, SOCK_ADDR_SS_PORT( adr ), adr );
 	return 1;
 }
 
@@ -339,9 +384,8 @@ static const struct luaL_Reg t_net_adr_m [] = {
 	// metamethods
 	  { "__tostring" , lt_net_adr__tostring }
 	, { "__eq"       , lt_net_adr__eq }
-	// object methods
-	, { "get"        , lt_net_adr_getIpAndPort }
-	, { "set"        , lt_net_adr_setIpAndPort }
+	, { "__index"    , lt_net_adr__index }
+	, { "__newindex" , lt_net_adr__newindex }
 	, { NULL         , NULL}
 };
 
@@ -359,7 +403,8 @@ luaopen_t_net_adr( lua_State *L )
 	// this is only avalable a <instance>:func()
 	luaL_newmetatable( L, T_NET_ADR_TYPE );   // stack: functions meta
 	luaL_setfuncs( L, t_net_adr_m, 0 );
-	lua_setfield( L, -1, "__index" );
+	//lua_setfield( L, -1, "__index" );
+	lua_pop( L, 1 );
 
 	// Push the class onto the stack
 	// this is avalable as T.ip.<member>

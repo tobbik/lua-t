@@ -1,6 +1,6 @@
 #!../out/bin/lua
 Net,fmt=require('t.Net'),string.format
-ipAddr,port=Net.Interface( 'default' ).AF_INET.address:get(),8888
+ipAddr,port=Net.Interface( 'default' ).AF_INET.address.ip, 8888
 
 local s    = Net.Socket( 'UDP' ) -- implicit ip4
 local ip   = s:bind( ipAddr, port )

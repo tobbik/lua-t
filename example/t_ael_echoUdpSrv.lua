@@ -1,6 +1,6 @@
 #!../out/bin/lua
 Net,Loop = require't.Net',require't.Loop'
-host     = Net.Interface( 'default' ).AF_INET.address:get( )
+host     = Net.Interface( 'default' ).AF_INET.address.ip
 port     = 8888
 l        = Loop( 10 )
 msg      = nil

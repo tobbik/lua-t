@@ -1,19 +1,19 @@
 #!../out/bin/lua
 Net,Buffer,fmt = require't.Net',require't.Buffer',string.format
-ipAddr,port    = Net.Interface( 'default' ).AF_INET.address:get(),8888
+ipAddr,port    = Net.Interface( 'default' ).AF_INET.address.ip,8888
 
 print( ipAddr, port)
 
 --tcpsock = Net.Socket( 'TCP', 'ip4' )
---ip      = Net.Address( ipAddr, port )
-tcpsock, ip = Net.Socket.listen( ipAddr, port, 5 )
---tcpsock:bind( ip )
---tcpsock,ip = Net.Socket.bind( ipAddr, port )
+--adr     = Net.Address( ipAddr, port )
+tcpsock, adr = Net.Socket.listen( ipAddr, port, 5 )
+--tcpsock:bind( adr )
+--tcpsock,adr = Net.Socket.bind( ipAddr, port )
 --tcpsock:listen( 5 )
 -- --------------- or
-for k,v in pairs(getmetatable(ip)) do print( k, v ) end
+for k,v in pairs(getmetatable(adr)) do print( k, v ) end
 for k,v in pairs(getmetatable(tcpsock)) do print( k, v ) end
-print( tcpsock, ip )
+print( tcpsock, adr )
 clisock,cip = tcpsock:accept( )
 length = 0
 len    = 2

@@ -54,14 +54,13 @@ local tests = {
 		Test.Case.describe( "Socket.bind( port ) --> creates TCP IPv4 Socket and 0.0.0.0:port address" )
 		local port  = 8000
 		self.sck, self.address = Socket.bind( port )
-		local ip,prt = self.address:get()
 		asrtHlp.Socket(  self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
 		asrtHlp.Address( self.address, '0.0.0.0', port )
 	end,
 
 	test_SBindHostPortCreateSockAndAddress = function( self )
 		Test.Case.describe( "Socket.bind(host,port) --> creates TCP IPv4 Socket and address" )
-		local host   = Interface( 'default' ).AF_INET.address:get()
+		local host   = Interface( 'default' ).AF_INET.address.ip
 		local port   = 8000
 		self.sck, self.address = Socket.bind( host, port )
 		asrtHlp.Socket(  self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
@@ -70,7 +69,7 @@ local tests = {
 
 	test_SBindAddressCreateSockOnly = function( self )
 		Test.Case.describe( "Socket.bind(address) --> creates TCP IPv4 Socket but no address" )
-		local host   = Interface( 'default' ).AF_INET.address:get()
+		local host   = Interface( 'default' ).AF_INET.address.ip
 		local port   = 8000
 		local addr   = Address( host, port )
 		self.sck, self.__ = Socket.bind( addr )
@@ -80,7 +79,7 @@ local tests = {
 
 	test_SBindReturnBoundSocke = function( self )
 		Test.Case.describe( "Socket.bind(address) --> returning socket is bound; getsockname()" )
-		local host   = Interface( 'default' ).AF_INET.address:get()
+		local host   = Interface( 'default' ).AF_INET.address.ip
 		local port   = 8000
 		local addr   = Address( host, port )
 		self.sck, self.address = Socket.bind( addr )
@@ -111,7 +110,7 @@ local tests = {
 
 	test_sBindHostPortCreateAddress = function( self )
 		Test.Case.describe( "s:bind(host,port) --> creates address" )
-		local host           = Interface( 'default' ).AF_INET.address:get()
+		local host           = Interface( 'default' ).AF_INET.address.ip
 		local port           = 8000
 		self.sck             = Socket()
 		self.address, self._ = self.sck:bind( host, port )
@@ -121,7 +120,7 @@ local tests = {
 
 	test_sBindAddressCreateNothingButBinds = function( self )
 		Test.Case.describe( "s:bind(address) --> creates nothing but does bind" )
-		local host      = Interface( 'default' ).AF_INET.address:get()
+		local host      = Interface( 'default' ).AF_INET.address.ip
 		local port      = 8000
 		local addr      = Address( host, port )
 		self.sck        = Socket()
