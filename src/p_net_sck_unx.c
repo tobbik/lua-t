@@ -128,7 +128,7 @@ p_net_sck_listen( lua_State *L, struct t_net_sck *sck, struct sockaddr_storage *
 	// adr is, if created, by t_net_adr_getFromStack(), which guarantees an unset port to
 	// be 0
 	if (NULL!=adr && 0==SOCK_ADDR_SS_PORT( adr ) && p_net_sck_getsockname( sck, &bnd ))
-		t_net_adr_setPort( L, adr, SOCK_ADDR_SS_PORT( &bnd ), 0 );
+		t_net_adr_setPort( L, adr, ntohs( SOCK_ADDR_SS_PORT( &bnd ) ), 0 );
 
 	return 1;
 }

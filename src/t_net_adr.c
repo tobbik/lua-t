@@ -99,14 +99,14 @@ lt_net_adr__Call( lua_State *L )
 {
 	int             returnables  = 0;
 	char                     ip[ INET6_ADDRSTRLEN ];
-	struct sockaddr_storage *adr = t_net_adr_check_ud( L, 1, 0 );
+	struct sockaddr_storage *adr = t_net_adr_check_ud( L, 2, 0 );
 	lua_remove( L, 1 );
 	if (NULL != adr )
 	{
 		lua_remove( L, 1 );
 		SOCK_ADDR_INET_NTOP( adr, ip );
 		lua_pushstring( L, ip );
-		lua_pushinteger( L, SOCK_ADDR_SS_PORT( adr ) );
+		lua_pushinteger( L, ntohs( SOCK_ADDR_SS_PORT( adr ) ) );
 	}
 	t_net_adr_getFromStack( L, 1, &returnables );
 	return 1;
@@ -292,9 +292,9 @@ lt_net_adr__tostring( lua_State *L )
 	char                     ip[ INET6_ADDRSTRLEN ];
 	SOCK_ADDR_INET_NTOP( adr, ip );
 	if (AF_INET6 == SOCK_ADDR_SS_FAMILY( adr ))
-		lua_pushfstring( L, T_NET_ADR_TYPE"{[%s]:%d}: %p", ip, SOCK_ADDR_SS_PORT( adr ), adr );
+		lua_pushfstring( L, T_NET_ADR_TYPE"{[%s]:%d}: %p", ip, ntohs( SOCK_ADDR_SS_PORT( adr ) ), adr );
 	else
-		lua_pushfstring( L, T_NET_ADR_TYPE"{%s:%d}: %p",   ip, SOCK_ADDR_SS_PORT( adr ), adr );
+		lua_pushfstring( L, T_NET_ADR_TYPE"{%s:%d}: %p",   ip, ntohs( SOCK_ADDR_SS_PORT( adr ) ), adr );
 	return 1;
 }
 
@@ -311,14 +311,14 @@ static int
 lt_net_adr__eq( lua_State *L )
 {
 	struct sockaddr_storage *adr1 = t_net_adr_check_ud( L, 1, 1 );   //S: adr
-	struct sockaddr_storage *adr2 = t_net_adr_check_ud( L, 1, 1 );   //S: adr1 adr2
+	struct sockaddr_storage *adr2 = t_net_adr_check_ud( L, 2, 1 );   //S: adr1 adr2
 
-	if (! SOCK_ADDR_EQ_FAMILY( adr1, adr2 ) ||
-	    ! SOCK_ADDR_EQ_ADDR( adr1, adr2 )   ||
-	    ! SOCK_ADDR_EQ_PORT( adr1, adr2 )  )
-		lua_pushboolean( L, 0 );
-	else
+	if ( SOCK_ADDR_EQ_FAMILY( adr1, adr2 ) &&
+	     SOCK_ADDR_EQ_ADDR( adr1, adr2 )   &&
+	     SOCK_ADDR_EQ_PORT( adr1, adr2 ) )
 		lua_pushboolean( L, 1 );
+	else
+		lua_pushboolean( L, 0 );
 	return 1;
 }
 
