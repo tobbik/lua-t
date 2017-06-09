@@ -60,7 +60,7 @@ local tests = {
 		self.sSck  = Socket( "udp" )
 		self.sAdr  = self.sSck:bind( self.host, self.port )
 		asrtHlp.Socket( self.sSck, "udp", "AF_INET", "SOCK_DGRAM" )
-		asrtHlp.Address( self.sAdr, self.host, self.port )
+		asrtHlp.Address( self.sAdr, "AF_INET", self.host, self.port )
 		done()
 	end,
 

@@ -35,7 +35,7 @@ local tests = {
 		Test.Case.describe( "Socket.bind() --> creates a TCP IPv4 Socket and 0.0.0.0:0 address" )
 		self.sck, self.address = Socket.bind()
 		asrtHlp.Socket(  self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
-		asrtHlp.Address( self.address, '0.0.0.0', 0 )
+		asrtHlp.Address( self.address, "AF_INET", '0.0.0.0', 0 )
 	end,
 
 	test_SBindPrivPortThrowsPermission = function( self )
@@ -55,7 +55,7 @@ local tests = {
 		local port  = 8000
 		self.sck, self.address = Socket.bind( port )
 		asrtHlp.Socket(  self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
-		asrtHlp.Address( self.address, '0.0.0.0', port )
+		asrtHlp.Address( self.address, "AF_INET", '0.0.0.0', port )
 	end,
 
 	test_SBindHostPortCreateSockAndAddress = function( self )
@@ -64,7 +64,7 @@ local tests = {
 		local port   = 8000
 		self.sck, self.address = Socket.bind( host, port )
 		asrtHlp.Socket(  self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
-		asrtHlp.Address( self.address, host, 8000 )
+		asrtHlp.Address( self.address, "AF_INET", host, 8000 )
 	end,
 
 	test_SBindAddressCreateSockOnly = function( self )
@@ -96,7 +96,7 @@ local tests = {
 		self.sck     = Socket()
 		self.address, self._ = self.sck:bind()
 		assert( nil  == self._, "The socket should not be returned" )
-		asrtHlp.Address( self.address, '0.0.0.0', 0 )
+		asrtHlp.Address( self.address, "AF_INET", '0.0.0.0', 0 )
 	end,
 
 	test_sBindPortCreateInAnyAddress = function( self )
@@ -105,7 +105,7 @@ local tests = {
 		self.sck             = Socket()
 		self.address, self._ = self.sck:bind( port)
 		assert( nil  == self._, "The socket should not be returned" )
-		asrtHlp.Address( self.address, '0.0.0.0', 8000 )
+		asrtHlp.Address( self.address, "AF_INET", '0.0.0.0', 8000 )
 	end,
 
 	test_sBindHostPortCreateAddress = function( self )
@@ -115,7 +115,7 @@ local tests = {
 		self.sck             = Socket()
 		self.address, self._ = self.sck:bind( host, port )
 		assert( nil  == self._, "The socket should not be returned" )
-		asrtHlp.Address( self.address, host, 8000 )
+		asrtHlp.Address( self.address, "AF_INET", host, 8000 )
 	end,
 
 	test_sBindAddressCreateNothingButBinds = function( self )
@@ -128,7 +128,7 @@ local tests = {
 		assert( nil  == self._ , "The socket  should not be returned" )
 		assert( nil  == self.__, "The address should not be returned" )
 		assert( addr  == self.sck:getsockname(), "The addresses should be equal" )
-		asrtHlp.Address( addr, host, port )
+		asrtHlp.Address( addr, "AF_INET", host, port )
 	end,
 
 	test_sBindWrongArgFails = function( self )

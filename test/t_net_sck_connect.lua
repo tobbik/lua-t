@@ -29,7 +29,7 @@ local asrtHlp   = T.require( "assertHelper" )
 accept = function( self )
 	local c, ip = self.srv:accept( )
 	asrtHlp.Socket( c, 'tcp', 'AF_INET', 'SOCK_STREAM' )
-	asrtHlp.Address( ip, self.host2cmp, self.port2cmp )
+	asrtHlp.Address( ip, "AF_INET", self.host2cmp, self.port2cmp )
 	self.sck:close() -- close client first to avoid "Address already in use"
 	                 -- http://hea-www.harvard.edu/~fine/Tech/addrinuse.html
 	c:close( )

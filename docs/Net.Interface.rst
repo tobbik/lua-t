@@ -28,7 +28,9 @@ Content of the snapshot whne calling the constructor
 
 Depending on the platform, the following structure can be expected when
 callung ``Interface(name)``:
+
 .. code:: lua
+
   {
     name    :  ens33,
     AF_INET6: {

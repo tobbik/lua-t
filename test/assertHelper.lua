@@ -4,17 +4,18 @@ return {
 	-- #########################################################################
 	-- assert helpers
 	Socket = function( sck, pro, fam, typ )
-		assert( pro == sck.protocol, "Protocol should be "..pro.." but is ".. tostring(sck.protocol) )
-		assert( fam == sck.family  , "Family should be "  ..fam.." but is ".. tostring(sck.family) )
-		assert( typ == sck.type    , "Type should be "    ..typ.." but is ".. tostring(sck.type) )
+		T.assert( pro == sck.protocol, "Protocol should be `%s`but is `%s`", pro, sck.protocol )
+		T.assert( fam == sck.family  , "Family should be `%s` but is `%s`", fam, sck.family )
+		T.assert( typ == sck.type    , "Type should be `%s` but is `%s`", typ, sck.type )
 	end,
 
-	Address = function( adr, host, port )
-		assert( host == adr.ip, "Host should be "..host.." but is "..tostring( adr.ip ) )
+	Address = function( adr, family, ip, port )
+		T.assert( ip     == adr.ip,     "IP should be `%s` but is `%s`",   ip,     adr.ip )
+		T.assert( family == adr.family, "Family should be `%s` but is `%s`", family, adr.family )
 		if type( port ) ~= 'number' then
 			assert( port ~= 0, "Port should not be 0" )
 		else
-			assert( port == adr.port, "Port should be "..port.." but is "..tostring( adr.port ) )
+			T.assert( port == adr.port, "Port should be %d but is %d", port, adr.port )
 		end
 	end,
 

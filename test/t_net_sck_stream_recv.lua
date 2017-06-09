@@ -46,7 +46,7 @@ local makeReceiver = function( self, receiver )
 	local acpt = function( )
 		self.aSck, self.aAdr = self.sSck:accept( )
 		asrtHlp.Socket( self.aSck, "tcp", "AF_INET", "SOCK_STREAM" )
-		asrtHlp.Address( self.aAdr, self.host, "any" )
+		asrtHlp.Address( self.aAdr, "AF_INET", self.host, "any" )
 		self.loop:addHandle( self.aSck, "read", receiver, self )
 	end
 	self.loop:addHandle( self.sSck, "read", acpt )
@@ -62,7 +62,7 @@ local tests = {
 		self.port            = 8000
 		self.sSck, self.sAdr = Socket.listen( self.host, self.port )
 		asrtHlp.Socket( self.sSck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
-		asrtHlp.Address( self.sAdr, self.host, self.port )
+		asrtHlp.Address( self.sAdr, "AF_INET", self.host, self.port )
 		done()
 	end,
 

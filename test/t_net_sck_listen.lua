@@ -44,15 +44,16 @@ local tests = {
 		Test.Case.describe( "Socket.listen( ) --> Sck IPv4(TCP); Adr 0.0.0.0:xxxxx" )
 		self.sck,self.adr  = Socket.listen( )
 		asrtHlp.Socket(  self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
-		asrtHlp.Address( self.adr, '0.0.0.0', 'any' )
-		assert( self.sck:getsockname() == self.adr, "Bound and returned address should match" )
+		asrtHlp.Address( self.adr, "AF_INET", '0.0.0.0', 'any' )
+		T.assert( self.sck:getsockname() == self.adr, "Bound[ %s ] and returned [ %s ]address should match",
+		self.sck:getsockname(), self.adr )
 	end,
 
 	test_SListenBacklog = function( self )
 		Test.Case.describe( "Socket.listen( 5 ) --> Sck IPv4(TCP); Adr 0.0.0.0:xxxxx" )
 		self.sck,self.adr  = Socket.listen( 5 )
 		asrtHlp.Socket(  self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
-		asrtHlp.Address( self.adr, '0.0.0.0', 'any' )
+		asrtHlp.Address( self.adr, "AF_INET", '0.0.0.0', 'any' )
 		assert( self.sck:getsockname() == self.adr, "Bound and returned address should match" )
 	end,
 
@@ -83,8 +84,8 @@ local tests = {
 		local host        = Interface( 'default' ).AF_INET.address.ip
 		self.sck,self.adr = Socket.listen( host )
 		asrtHlp.Socket(  self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
-		asrtHlp.Address( self.adr, host, 'any' )
-		asrtHlp.Address( self.sck:getsockname(), host, 'any' )
+		asrtHlp.Address( self.adr, "AF_INET", host, 'any' )
+		asrtHlp.Address( self.sck:getsockname(), "AF_INET", host, 'any' )
 	end,
 
 	test_SListenHostAddress = function( self )
@@ -93,7 +94,7 @@ local tests = {
 		local port        = 8000
 		self.sck,self.adr = Socket.listen( host, port )
 		asrtHlp.Socket(  self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
-		asrtHlp.Address( self.adr, host, port )
+		asrtHlp.Address( self.adr, "AF_INET", host, port )
 		assert( self.sck:getsockname() == self.adr, "Bound and returned address should match" )
 	end,
 
@@ -117,7 +118,7 @@ local tests = {
 		local port        = 8000
 		self.sck,self.adr = Socket.listen( host, port, 5 )
 		asrtHlp.Socket(  self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
-		asrtHlp.Address( self.adr, host, port )
+		asrtHlp.Address( self.adr, "AF_INET", host, port )
 		assert( self.sck:getsockname() == self.adr, "Bound and returned address should match" )
 	end,
 
@@ -132,7 +133,7 @@ local tests = {
 		local port        = 8000
 		self.sck,self.adr = Socket.bind( host, port )
 		asrtHlp.Socket( self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
-		asrtHlp.Address( self.adr, host, port )
+		asrtHlp.Address( self.adr, "AF_INET", host, port )
 		self._,self.__    = self.sck:listen( )
 		assert( self._  == nil, "No values should have been returned" )
 		assert( self.__ == nil, "No values should have been returned" )
@@ -145,7 +146,7 @@ local tests = {
 		local port        = 8000
 		self.sck,self.adr = Socket.bind( host, port )
 		asrtHlp.Socket( self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
-		asrtHlp.Address( self.adr, host, port )
+		asrtHlp.Address( self.adr, "AF_INET", host, port )
 		self._,self.__    = self.sck:listen( 5 )
 		assert( self._  == nil, "No values should have been returned" )
 		assert( self.__ == nil, "No values should have been returned" )
@@ -183,7 +184,7 @@ local tests = {
 		asrtHlp.Socket(  self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
 		self.adr,self._ = self.sck:listen( host )
 		assert( self._  == nil, "No values should have been returned" )
-		asrtHlp.Address( self.adr, host, 'any' )
+		asrtHlp.Address( self.adr, "AF_INET", host, 'any' )
 		assert( self.sck:getsockname() == self.adr, "Bound address should equal input" )
 	end,
 
@@ -195,7 +196,7 @@ local tests = {
 		asrtHlp.Socket( self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
 		self.adr,self._ = self.sck:listen( host, port )
 		assert( self._  == nil, "No values should have been returned" )
-		asrtHlp.Address( self.adr, host, port )
+		asrtHlp.Address( self.adr, "AF_INET", host, port )
 		assert( self.sck:getsockname() == self.adr, "Bound address should equal input" )
 	end,
 
@@ -207,7 +208,7 @@ local tests = {
 		asrtHlp.Socket( self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
 		self.adr,self._ = self.sck:listen( host, port, 5 )
 		assert( self._  == nil, "No values should have been returned" )
-		asrtHlp.Address( self.adr, host, port )
+		asrtHlp.Address( self.adr, "AF_INET", host, port )
 		assert( self.sck:getsockname() == self.adr, "Bound address should equal input" )
 	end,
 
