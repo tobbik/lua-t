@@ -16,7 +16,7 @@ Class Metamembers (related to Pack.Sequence)
 --------------------------------------------
 
 ``Pack.Sequence p = Pack( string format )       [__call]``
-  Creates ``Pack.Sequence p`` from a siingle argument to ``Pack()`` which is
+  Creates ``Pack.Sequence p`` from a single argument to ``Pack()`` which is
   a format string that defines multiple packers in a row.
 
   .. code:: lua
