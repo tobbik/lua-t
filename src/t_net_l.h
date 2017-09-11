@@ -9,6 +9,7 @@
 
 #define __USE_MISC
 #define _DEFAULT_SOURCE 1
+#include <stdint.h>
 #include <netdb.h>
 #include <unistd.h>
 #include <fcntl.h>       // O_NONBLOCK,...
