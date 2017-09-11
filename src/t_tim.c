@@ -1,8 +1,8 @@
 /* vim: ts=3 sw=3 sts=3 tw=80 sta noet list
 */
 /**
- * \file      t_net_cmn.c
- * \brief     t_net_* functions shared between all modules
+ * \file      src/t_tim.c
+ * \brief     t_tim_* functions available to all t_* modules
  * \author    tkieslich
  * \copyright See Copyright notice at the end of t.h
  */

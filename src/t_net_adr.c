@@ -407,10 +407,8 @@ luaopen_t_net_adr( lua_State *L )
 	lua_pop( L, 1 );
 
 	// Push the class onto the stack
-	// this is avalable as T.ip.<member>
+	// this is avalable as t.Net.Address.<member>
 	luaL_newlib( L, t_net_adr_cf );
-	lua_pushstring( L, "127.0.0.1" );
-	lua_setfield( L, -2, "localhost" );
 
 	// set the methods as metatable
 	// this is only avalable a <instance>.<member>

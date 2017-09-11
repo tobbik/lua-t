@@ -7,19 +7,20 @@
 
 local write   , format       , getmetatable, setmetatable, pairs, type =
       io.write, string.format, getmetatable, setmetatable, pairs, type
-local t_clone, Time = require"t.Table".clone, require"t.Time"
+local t_clone, Time, T = require"t.Table".clone, require"t.Time", require't'
 
 local _mt = {
 	__name   = 't.Test.Context'
 }
-
 
 local beforeEach = function( self, case, suite )
 	write( format( "%-".. (self.name_width) .."s : ", self.current_name ) )
 end
 
 local afterEach  = function( self, case, suite )
-	print( case:getDescription( ) )
+	print( format( "(%s) %s",
+	   nil == case.pass and 'not run' or case.pass and 'pass' or 'fail',
+	   case:getDescription() ) )
 end
 
 local beforeAll  = function( self, suite )
@@ -46,7 +47,8 @@ end
 return setmetatable( {
 }, {
 		__call   = function( self, incl, excl, befE, aftE, befA, aftA )
-		if ctx and mt.__name == T.type( incl ) then
+		-- test first parameter for being a ctx already -> clone and return
+		if incl and _mt.__name == T.type( incl ) then
 			return setmetatable( t_clone( incl ), _mt )
 		else
 			local ctx = setmetatable( {

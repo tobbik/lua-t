@@ -53,10 +53,10 @@ end
 _mt = {       -- local _mt at top of file
 	-- essentials
 	__name     = "t.Test",
-	__len      = function( self )      return #getPrx( self ) end,
-	__pairs    = function( self )      return o_iters( getPrx( self ), false )         end,
-	__ipairs   = function( self )      return o_iters( getPrx( self ), true )          end,
-	__index    = function( self, key ) return o_getElement( getPrx( self ), key )      end,
+	__len      = function( self )      return #getPrx( self )                      end,
+	__pairs    = function( self )      return o_iters( getPrx( self ), false )     end,
+	__ipairs   = function( self )      return o_iters( getPrx( self ), true )      end,
+	__index    = function( self, key ) return o_getElement( getPrx( self ), key )  end,
 	__newindex = function( self, key, val )
 		local prx = getPrx( self )
 		if "number"==type(key) then assert( key%1==0, "Can't set or overwrite numeric indices" ) end
@@ -86,26 +86,30 @@ _mt = {       -- local _mt at top of file
 		T.assert( _mt == getmetatable( self ), "Expected `%s`, got %s", _mt.__name, T.type( self ) )
 		local ctx = 't.Test.Context' == T.type( inc_pat ) and inc_pat or Context( inc_pat, ... )
 		-- reset and prepare
-		for k,v,i in pairs( self ) do
-			if ctx:match( k ) then
-				v:reset( )
-				ctx.name_width = #k>ctx.name_width and #k or ctx.name_width
+		for name,cse,i in pairs( self ) do
+			if ctx:match( name ) then
+				cse:reset( )
+				ctx.name_width = #name > ctx.name_width and #name or ctx.name_width
 			end
 		end
 		--execute
 		if 0 ~= ctx.name_width then 
 			local runner = function( )
-				for k,v,i in pairs( self ) do
-					if ctx:match( k ) then
-						ctx.current_name = k
-						ctx:beforeEach( v, self )
-						v( self, joiner( ctx ) )
+				for name,cse,i in pairs( self ) do
+					if ctx:match( name ) then
+						ctx.current_name = name
+						ctx:beforeEach( cse, self )
+						cse( self, joiner( ctx ) )
 					end
 				end
 			end
 			if self.beforeAll and "function" == type( self.beforeAll ) then
 				local r,err = pcall( self.beforeAll, self, runner )
-				if not r then print(err);end
+				if not r then
+					local tbk_stack = debug.traceback( )
+					print( tbk_stack )
+					print( err )
+				end
 			else
 				runner( )
 			end

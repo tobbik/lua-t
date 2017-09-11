@@ -92,7 +92,7 @@ t_ael_adjustTimers( struct t_ael_tnd **tHead, struct timeval *tAdj )
 
 
 /**----------------------------------------------------------------------------
- * Unfolds a Lua function and parameters from a table in LUA_REGISTRYINDEX
+ *
  * Takes refPosition and gets table onto the stack.  Leaves function and
  * paramters onto stack ready to be executed.
  * Stack before: {fnc, p1, p2, p3, ... }
@@ -127,18 +127,17 @@ t_ael_getFunction( lua_State *L, int refPos )
 void
 t_ael_executeHeadTimer( lua_State *L, struct t_ael_tnd **tHead, struct timeval *rt )
 {
-	struct timeval   *tv;                  ///< timer returned by execution -> if there is
-	
-	struct t_ael_tnd *tExc = *tHead;       ///< timer to execute is tHead, ALWAYS
-	int    n;                              ///< number of arguments to function call
+	struct timeval   *tv;              ///< timer returned by execution -> if there is
+	struct t_ael_tnd *tExc = *tHead;   ///< timer to execute is tHead, ALWAYS
+	int    n;                          ///< number of arguments to function call
 
 	*tHead = (*tHead)->nxt;
 	n      = t_ael_getFunction( L, tExc->fR );
-	lua_call( L, n, 1 );  // if NO T.Time is return it's a nil
+	lua_call( L, n, 1 );               // if NO T.Time is returned, it's a nil
 	t_tim_since( rt );
 	t_ael_adjustTimers( tHead, rt );
 	tv = t_tim_check_ud( L, -1, 0 );
-	if (NULL == tv)   // remove from list
+	if (NULL == tv)                    // remove from list
 	{
 		luaL_unref( L, LUA_REGISTRYINDEX, tExc->fR );
 		luaL_unref( L, LUA_REGISTRYINDEX, tExc->tR );
@@ -157,6 +156,7 @@ t_ael_executeHeadTimer( lua_State *L, struct t_ael_tnd **tHead, struct timeval *
 		t_ael_insertTimer( tHead, tExc );
 	}
 	lua_pop( L, 1 );   // pop the one value that lua_call allows for
+
 }
 
 

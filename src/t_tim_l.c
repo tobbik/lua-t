@@ -1,7 +1,7 @@
 /* vim: ts=3 sw=3 sts=3 tw=80 sta noet list
 */
 /**
- * \file      t_tim.c
+ * \file      src/t_tim_l.c
  * \brief     OOP wrapper for time values(T.Time)
  *            This is a thin wrapper around struct timeval
  * \author    tkieslich
