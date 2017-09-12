@@ -18,6 +18,13 @@ tests = {
 
 	--afterEach = function( self )  -- not necessary for this suite
 	--end,
+	test_ConstantBufsize = function( self )
+		Test.Case.describe( "Check for Buffer.Size (aka. BUFSIZ) being known in lib" )
+		local size   = Buffer.Size
+		T.assert( type(size) == 'number', "`Buffer.Size` should be a `number` but is `%s`", type( size ) )
+		T.assert( size > 0 , "`Buffer.Size` should be a greater than 0 but is `%s`", size )
+	end,
+
 
 	test_ConstructorEmptySizedBuffer = function( self )
 		Test.Case.describe( "Create an empty buffer of certain length" )

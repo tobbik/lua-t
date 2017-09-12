@@ -417,6 +417,8 @@ LUAMOD_API int luaopen_t_buf( lua_State *L )
 
 	// T.Buffer class
 	luaL_newlib( L, t_buf_cf );
+	lua_pushinteger( L, BUFSIZ );
+	lua_setfield( L, -2, "Size" );
 	luaopen_t_buf_seg( L );
 	lua_setfield( L, -2, T_BUF_SEG_IDNT );
 	luaL_newlib( L, t_buf_fm );

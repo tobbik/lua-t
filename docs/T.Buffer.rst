@@ -37,6 +37,10 @@ Class Metamembers
   Instantiate a new `Buffer buf` object with the content of `myString`.  The
   length of `myString` defines the length of the `Buffer buf` instance.
 
+``number  size = Buffer.Size``
+  Recomended Sytem Buffer size which is the same as the C constant
+  ``BUFSIZ`` as defined in ``<stdio.h>``
+
 
 Instance Members
 ----------------
