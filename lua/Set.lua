@@ -16,7 +16,8 @@
 -- \author    tkieslich
 -- \copyright See Copyright notice at the end of src/t.h
 
-local prxTblIdx,Table  = require( "t" ).proxyTableIndex, require( "t.Table" )
+local T, Table  = require( "t" ), require( "t.Table" )
+local prxTblIdx = T.proxyTableIndex
 local t_concat     , getmetatable, setmetatable, pairs, assert, next, type =
       table.concat , getmetatable, setmetatable, pairs, assert, next, type
 local t_merge,     t_complement,     t_contains,     t_count,     t_keys,     t_asstring =

@@ -35,6 +35,7 @@ return {
 		return name and name or type( obj )
 	end,
 	assert  = function( cnd, ... ) assert( cnd, string.format( ... ) ) end,
+	print   = function( fmt, ... ) print( string.format( fmt, ... ) ) end,
 
 --  -------------------------------------------------------------------------
 --  Objects that use a proxy table such as t.Test or t.OrderedHashTable have an

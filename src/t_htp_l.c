@@ -14,6 +14,7 @@
 #include <string.h>               // memset
 
 #include "t_htp_l.h"
+#include "t_buf.h"
 
 #ifdef DEBUG
 #include "t_dbg.h"
@@ -77,7 +78,7 @@ static const char tokens[256] = {
 static inline const char
 *eat_lws( const char *s )
 {
-	while( ' ' == *s ||  '\r' == *s ||   '\n' == *s)
+	while (' ' == *s ||  '\r' == *s ||   '\n' == *s)
 		s++;
 	return s;
 }
@@ -400,37 +401,6 @@ const char
 	return s->con->b;
 }
 
-
-/**--------------------------------------------------------------------------
- * Class functions library definition
- * --------------------------------------------------------------------------*/
-static const luaL_Reg t_htp_lib [ ] =
-{
-	{ NULL,  NULL }
-};
-
-
-/**--------------------------------------------------------------------------
- * Export the t_htp libray to Lua
- * \param   L      The lua state.
- * \lreturn table  the library
- * \return  int    # of values pushed onto the stack.
- * --------------------------------------------------------------------------*/
-LUAMOD_API int
-luaopen_htp( lua_State *L )
-{
-	luaL_newlib( L, t_htp_lib );
-	luaopen_t_htp_srv( L );
-	lua_setfield( L, -2, T_HTP_SRV_IDNT );
-	luaopen_t_htp_wsk( L );
-	lua_setfield( L, -2, T_HTP_WSK_IDNT );
-	luaopen_t_htp_con( L );
-	lua_setfield( L, -2, T_HTP_CON_IDNT );
-	luaopen_t_htp_str( L );
-	lua_setfield( L, -2, T_HTP_STR_IDNT );
-	return 1;
-}
-
 const char
 *t_htp_status( int status )
 {
@@ -480,4 +450,208 @@ const char
 	}
 	return NULL;
 }
+
+
+// ########################## REWRITE
+// TODO: use this to adjust large incoming chnks for headers upto BUFSIZ per
+// line
+/**--------------------------------------------------------------------------
+ * Rewrite unparsed bytes from end of buffer to front.
+ * \param  L                  the Lua State
+ * \param  struct t_htp_str*  pointer to t_htp_str.
+ * \param  const char*        pointer to buffer to process.
+ * \param  size_t             How many bytes are safe to be processed?
+ *
+ * \return const char*        pointer to buffer after processing the first line.
+ * --------------------------------------------------------------------------*/
+void t_htp_adjustBuffer( struct t_buf *buf, size_t index )
+{
+	memcpy( &(buf->b[0]), (const void *) (buf->b + index ), buf->len - index );
+}
+
+
+/**--------------------------------------------------------------------------
+ * Parse Method from the request.
+ * \param  L                  the Lua State
+ * \param  struct t_htp_str*  pointer to t_htp_str.
+ * \param  const char*        pointer to buffer to process.
+ * \param  size_t             How many bytes are safe to be processed?
+ *
+ * \return const char*        pointer to buffer after processing the first line.
+ * --------------------------------------------------------------------------*/
+static int
+lt_htp_parseMethod( lua_State *L )
+{
+	struct t_buf_seg *seg = t_buf_seg_check_ud( L, 1, 1 );
+	size_t            n   = 0;        ///< offset of whitespace after method
+	const char       *r   = seg->b;   ///< runner char
+
+	// Determine HTTP Verb
+	if (seg->len < 11)
+	{
+		lua_pushnil( L );
+		return 1;             // don't change anything
+	}
+	switch (*r)
+	{
+		case 'C':
+			if ('O'==*(r+1) && ' '==*(r+7 )) { lua_pushstring( L, "CONNECT" );     n=7;  }
+			if ('H'==*(r+1) && ' '==*(r+8 )) { lua_pushstring( L, "CHECKOUT" );    n=8;  }
+			if ('O'==*(r+1) && ' '==*(r+4 )) { lua_pushstring( L, "COPY" );        n=4;  }
+			break;
+		case 'D':
+			if ('E'==*(r+1) && ' '==*(r+6 )) { lua_pushstring( L, "DELETE" );      n=6;  }
+			break;
+		case 'G':
+			if ('E'==*(r+1) && ' '==*(r+3 )) { lua_pushstring( L, "GET" );         n=3;  }
+			break;
+		case 'H':
+			if ('E'==*(r+1) && ' '==*(r+4 )) { lua_pushstring( L, "HEAD" );        n=4;  }
+			break;
+		case 'L':
+			if ('O'==*(r+1) && ' '==*(r+4 )) { lua_pushstring( L, "LOCK" );        n=4;  }
+			break;
+		case 'M':
+			if ('K'==*(r+1) && ' '==*(r+5 )) { lua_pushstring( L, "MKCOL" );       n=5;  }
+			if ('K'==*(r+1) && ' '==*(r+10)) { lua_pushstring( L, "MKACTIVITY" );  n=10; }
+			if ('C'==*(r+2) && ' '==*(r+10)) { lua_pushstring( L, "MKCALENDAR" );  n=10; }
+			if ('-'==*(r+1) && ' '==*(r+8 )) { lua_pushstring( L, "MSEARCH" );     n=8;  }
+			if ('E'==*(r+1) && ' '==*(r+5 )) { lua_pushstring( L, "MERGE" );       n=5;  }
+			if ('O'==*(r+1) && ' '==*(r+4 )) { lua_pushstring( L, "MOVE" );        n=4;  }
+			break;
+		case 'N':
+			if ('O'==*(r+1) && ' '==*(r+6 )) { lua_pushstring( L, "NOTIFY" );      n=6;  }
+			break;
+		case 'O':
+			if ('P'==*(r+1) && ' '==*(r+7 )) { lua_pushstring( L, "OPTIONS" );     n=7;  }
+			break;
+		case 'P':
+			if ('O'==*(r+1) && ' '==*(r+4 )) { lua_pushstring( L, "POST" );        n=4;  }
+			if ('U'==*(r+1) && ' '==*(r+3 )) { lua_pushstring( L, "PUT" );         n=3;  }
+			if ('A'==*(r+1) && ' '==*(r+5 )) { lua_pushstring( L, "PATCH" );       n=5;  }
+			if ('U'==*(r+1) && ' '==*(r+5 )) { lua_pushstring( L, "PURGE" );       n=5;  }
+			if ('R'==*(r+1) && ' '==*(r+8 )) { lua_pushstring( L, "PROPFIND" );    n=8;  }
+			if ('R'==*(r+1) && ' '==*(r+9 )) { lua_pushstring( L, "PROPPATCH" );   n=9;  }
+			break;
+		case 'R':
+			if ('E'==*(r+1) && ' '==*(r+6 )) { lua_pushstring( L, "REPORT" );      n=6;  }
+			break;
+		case 'S':
+			if ('U'==*(r+1) && ' '==*(r+9 )) { lua_pushstring( L, "SUBSCRIBE" );   n=9;  }
+			if ('E'==*(r+1) && ' '==*(r+6 )) { lua_pushstring( L, "SEARCH" );      n=6;  }
+			break;
+		case 'T':
+			if ('R'==*(r+1) && ' '==*(r+5 )) { lua_pushstring( L, "TRACE" );       n=5;  }
+			break;
+		case 'U':
+			if ('N'==*(r+1) && ' '==*(r+6 )) { lua_pushstring( L, "UNLOCK" );      n=6;  }
+			if ('N'==*(r+2) && ' '==*(r+11)) { lua_pushstring( L, "UNSUBSCRIBE" ); n=11; }
+			break;
+		default:
+			luaL_error( L, "Illegal HTTP header: Unknown HTTP Method" );
+	}
+	// adjust the buffer segment
+	seg->b    = (char*) eat_lws( seg->b + n );
+	seg->idx += (seg->b - r);
+	seg->len -= (seg->b - r);
+	return 1;
+}
+
+
+static int
+lt_htp_parseUrl( lua_State *L )
+{
+	struct t_buf_seg *seg = t_buf_seg_check_ud( L, 1, 1 );
+	const char       *r   = seg->b;  ///< runner char
+	const char       *q   = seg->b;  ///< runner for query part
+	const char       *v   = seg->b;  ///< value
+	size_t            len = 0;
+
+	lua_newtable( L );               ///< parsed and decoded query parameters
+
+	while (len < seg->len)
+	{
+		switch (*r)
+		{
+			case '/':
+				break;
+			case '?':
+				q = r+1;
+				break;
+			case '=':
+				lua_pushlstring( L, q, r-q ); // push key
+				//TODO: if key exists, create table
+				v = r+1;
+				break;
+			case '&':
+				lua_pushlstring( L, v, r-v ); // push value
+				lua_rawset( L, -3 );
+				q = r+1;
+				break;
+			case ' ':      // last value
+				if (NULL != q)
+				{
+					lua_pushlstring( L, v, r-v ); // push value
+					lua_rawset( L, -3 );
+				}
+				lua_pushlstring( L, seg->b, r-seg->b ); // push full query string
+				// adjust the buffer segment
+				seg->idx += (len+1);
+				seg->len -= (len+1);
+				seg->b    = (char*) eat_lws( seg->b + len);
+				return 2;
+				break;
+			default:           break;
+		}
+		r++;
+		len++;
+	}
+	return 0;
+}
+
+static int
+lt_htp_parseHttpVersion( lua_State *L )
+{
+	struct t_buf_seg *seg = t_buf_seg_check_ud( L, 1, 1 );
+	const char       *r   = seg->b;   ///< runner char
+
+	//TODO: set values based on version default behaviour (eg, KeepAlive for 1.1 etc)
+	//TODO: check for n being big enough
+	switch (*(r+7))
+	{
+		case '1': lua_pushinteger( L, T_HTP_VER_11 ); break;
+		case '0': lua_pushinteger( L, T_HTP_VER_10 ); break;
+		case '9': lua_pushinteger( L, T_HTP_VER_09 ); break;
+		default: luaL_error( L, "ILLEGAL HTTP version in message" ); break;
+	}
+
+	return 1;
+}
+
+
+/**--------------------------------------------------------------------------
+ * Class functions library definition
+ * --------------------------------------------------------------------------*/
+static const luaL_Reg t_htp_lib [ ] =
+{
+	  { "parseMethod"      , lt_htp_parseMethod }
+	, { "parseUrl"         , lt_htp_parseUrl }
+	, { "parseVersion"     , lt_htp_parseHttpVersion }
+	, { NULL               , NULL }
+};
+
+
+/**--------------------------------------------------------------------------
+ * Export the t_htp libray to Lua
+ * \param   L      The lua state.
+ * \lreturn table  the library
+ * \return  int    # of values pushed onto the stack.
+ * --------------------------------------------------------------------------*/
+LUAMOD_API int
+luaopen_t_htp( lua_State *L )
+{
+	luaL_newlib( L, t_htp_lib );
+	return 1;
+}
+
 

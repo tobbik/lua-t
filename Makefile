@@ -68,6 +68,6 @@ clean:
 	$(MAKE) -C $(SRCDIR) \
 		clean
 
-start: $(SCREEN_RC)
+run: $(SCREEN_RC)
 	$(SCREEN) -S lua -c "$(SCREEN_RC)"
 

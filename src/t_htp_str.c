@@ -34,6 +34,8 @@ static int lt_htp_str__Call( lua_State *L )
 	str = t_htp_str_create_ud( L, con );
 	return 1;
 }
+
+
 /**--------------------------------------------------------------------------
  * create a t_htp_str and push to LuaStack.
  * \param   L  The lua state.
