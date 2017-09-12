@@ -96,6 +96,30 @@ lt_buf_seg_clear( lua_State *L )
 }
 
 
+/** -------------------------------------------------------------------------
+ * Set Size of the T.Buffer.Segment instance.
+ * \param   L      Lua state.
+ * \lparam  ud     T.Buffer.Segment userdata instance.
+ * \lparam  len    New length of Buffer.Segment.
+ * \return  int    # of values pushed onto the stack.
+ *  -------------------------------------------------------------------------*/
+static int
+lt_buf_seg_setSize( lua_State *L )
+{
+	struct t_buf_seg *seg = t_buf_seg_check_ud( L, 1, 1 );
+	size_t            len = luaL_checkinteger( L, 2 );
+	struct t_buf     *buf;
+
+	lua_rawgeti( L, LUA_REGISTRYINDEX, seg->bR );
+	buf = t_buf_check_ud( L, -1, 1 );
+
+	luaL_argcheck( L, 0 <= len && (size_t)(seg->idx + len) <= buf->len, 2,
+	   T_BUF_SEG_TYPE" length out of bound" );
+
+	return 0;
+}
+
+
 /**--------------------------------------------------------------------------
  * Gets the content of the Buffer.Segment as a hexadecimal string.
  * \param   L       Lua state.
@@ -243,6 +267,7 @@ static const luaL_Reg t_buf_seg_m [] = {
 	, { "read"         , lt_buf_read }
 	, { "write"        , lt_buf_write }
 	, { "getBuffer"    , lt_buf_seg_getReferences }
+	, { "setSize"      , lt_buf_seg_setSize }
 	// universal stuff
 	, { "toHex"        , lt_buf_seg_toHexString }
 	, { "toBin"        , lt_buf_seg_toBinString }

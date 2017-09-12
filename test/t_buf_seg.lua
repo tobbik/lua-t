@@ -148,14 +148,14 @@ local tests = {
 		end
 	end,
 
-	test_ReadIndexOutOfRange = function( self )
+	test_ReadIndexOutOfRangeFails = function( self )
 		Test.Case.describe( "Reading from Buffer.Segment past it's length fails" )
 		local f = function(bs,n) return bs:read( n+2 ) end
 		assert( not pcall( f, self.seg, #self.seg ),
 			"Can't read from Buffer.Segment on index past it's length" )
 	end,
 
-	test_ReadLengthBeyondSegmentLength = function( self )
+	test_ReadLengthBeyondSegmentLengthFails = function( self )
 		Test.Case.describe( "Reading from Buffer beyond it's length fails" )
 		local f = function(s,n,l) return s:read(n,l) end
 		assert( not pcall( f, self.seg, #self.seg-100, 200 ),
@@ -167,6 +167,43 @@ local tests = {
 		local buf,ofs,len = self.seg:getBuffer()
 		assert( self.seg:read( ) == self.b:read( ofs, len ),
 			"Read data from segment and buffer must be equal" )
+	end,
+
+	test_SetSizeIncreaseLength= function( self )
+		local buf,ofs,len = self.seg:getBuffer()
+		ofs,len = math.floor( ofs + len/3 ), math.ceil( len/2 )
+		local nlen = len + math.floor( len/4 )
+		Test.Case.describe( "Change segment length from "..len.." to " ..nlen )
+		local seg = Segment( self.b, ofs, len )
+		seg:setSize( nlen )
+		T.assert( #seg == nlen, "Length of T.Buffer.Segment should be %d but was %d", len, #seg )
+		T.assert( seg:read() == self.b:read( ofs, nlen ),
+			"Content of T.Buffer.Segment should be %s but wa %s", self.b:read(ofs, len ), seg:read() )
+	end,
+
+	test_SetSizeDecreaseLength= function( self )
+		local buf,ofs,len = self.seg:getBuffer()
+		ofs,len = math.floor( ofs + len/3 ), math.ceil( len/2 )
+		local nlen = len - math.floor( len/3 )
+		Test.Case.describe( "Change segment length from "..len.." to " ..nlen )
+		local seg = Segment( self.b, ofs, len )
+		seg:setSize( nlen )
+		T.assert( #seg == nlen, "Length of T.Buffer.Segment should be %d but was %d", len, #seg )
+		T.assert( seg:read() == self.b:read( ofs, nlen ),
+			"Content of T.Buffer.Segment should be %s but wa %s", self.b:read(ofs, len ), seg:read() )
+	end,
+
+	test_SetSizeIncreaseLengthToMuchFails= function( self )
+		local buf,ofs,len = self.seg:getBuffer()
+		local errMsg      = "T.Buffer.Segment length out of bound"
+		ofs,len = math.floor( ofs + len/3 ), math.ceil( len/2 )
+		local nlen = len*2
+		Test.Case.describe( "Change segment length from "..len.." to " ..nlen )
+		local seg = Segment( self.b, ofs, len )
+		local f   = function(s,l) return s:setSize( l ) end
+		local r,e = pcall( f, self.seg, nlen )
+		assert( not r, "Increasing size past length of Buffer should fail" )
+		T.assert( e:match( errMsg), "Error message should contain `%s`, but was `%s`", errMsg, e )
 	end,
 
 	test_ReadPartialSegment = function( self )
