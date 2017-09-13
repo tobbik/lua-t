@@ -27,7 +27,6 @@ enum t_htp_rs {
 	T_HTP_R_XX,         ///< End of read or end of buffer
 	T_HTP_R_CR,         ///< Carriage return, expect LF next
 	T_HTP_R_LF,         ///< Line Feed, guaranteed end of line
-	T_HTP_R_LB,         ///< Line Feed, guaranteed end of line
 	T_HTP_R_KS,         ///< Reading Key Start
 	T_HTP_R_KY,         ///< Read Key
 	T_HTP_R_VL,         ///< Read value
@@ -78,7 +77,7 @@ static const char tokens[256] = {
 static inline const char
 *eat_lws( const char *s )
 {
-	while (' ' == *s ||  '\r' == *s ||   '\n' == *s)
+	while (' ' == *s || '\r' == *s || '\n' == *s)
 		s++;
 	return s;
 }
@@ -291,7 +290,7 @@ const char
 				rs=T_HTP_R_XX;
 				break;
 			case '\r':
-				if (T_HTP_R_LB != rs) rs=T_HTP_R_CR;
+				if (T_HTP_R_LF != rs) rs=T_HTP_R_CR;
 				break;
 			case '\n':
 				if (' ' == *(r+1))
@@ -299,7 +298,7 @@ const char
 				else
 				{
 					lua_pushlstring( L, k, ke-k );                            // push key
-					lua_pushlstring( L, v, (rs==T_HTP_R_LB)? r-v : r-v-1 );   // push value
+					lua_pushlstring( L, v, (rs==T_HTP_R_LF)? r-v : r-v-1 );   // push value
 					lua_rawset( L, -3 );
 					k  = r+1;
 					rs = T_HTP_R_KS;         // Set Start of key processing
@@ -495,65 +494,42 @@ lt_htp_parseMethod( lua_State *L )
 	switch (*r)
 	{
 		case 'C':
-			if ('O'==*(r+1) && ' '==*(r+7 )) { lua_pushstring( L, "CONNECT" );     n=7;  }
-			if ('H'==*(r+1) && ' '==*(r+8 )) { lua_pushstring( L, "CHECKOUT" );    n=8;  }
-			if ('O'==*(r+1) && ' '==*(r+4 )) { lua_pushstring( L, "COPY" );        n=4;  }
-			break;
-		case 'D':
-			if ('E'==*(r+1) && ' '==*(r+6 )) { lua_pushstring( L, "DELETE" );      n=6;  }
-			break;
-		case 'G':
-			if ('E'==*(r+1) && ' '==*(r+3 )) { lua_pushstring( L, "GET" );         n=3;  }
-			break;
-		case 'H':
-			if ('E'==*(r+1) && ' '==*(r+4 )) { lua_pushstring( L, "HEAD" );        n=4;  }
-			break;
-		case 'L':
-			if ('O'==*(r+1) && ' '==*(r+4 )) { lua_pushstring( L, "LOCK" );        n=4;  }
-			break;
+			if ('O'==*(r+1)) { lua_pushstring( L, "CONNECT" );     n=7;  break; }
+			if ('H'==*(r+1)) { lua_pushstring( L, "CHECKOUT" );    n=8;  break; }
+			if ('O'==*(r+1)) { lua_pushstring( L, "COPY" );        n=4;  break; }
+		case 'D':             lua_pushstring( L, "DELETE" );      n=6;  break;
+		case 'G':             lua_pushstring( L, "GET" );         n=3;  break;
+		case 'H':             lua_pushstring( L, "HEAD" );        n=4;  break;
+		case 'L':             lua_pushstring( L, "LOCK" );        n=4;  break;
 		case 'M':
-			if ('K'==*(r+1) && ' '==*(r+5 )) { lua_pushstring( L, "MKCOL" );       n=5;  }
-			if ('K'==*(r+1) && ' '==*(r+10)) { lua_pushstring( L, "MKACTIVITY" );  n=10; }
-			if ('C'==*(r+2) && ' '==*(r+10)) { lua_pushstring( L, "MKCALENDAR" );  n=10; }
-			if ('-'==*(r+1) && ' '==*(r+8 )) { lua_pushstring( L, "MSEARCH" );     n=8;  }
-			if ('E'==*(r+1) && ' '==*(r+5 )) { lua_pushstring( L, "MERGE" );       n=5;  }
-			if ('O'==*(r+1) && ' '==*(r+4 )) { lua_pushstring( L, "MOVE" );        n=4;  }
-			break;
-		case 'N':
-			if ('O'==*(r+1) && ' '==*(r+6 )) { lua_pushstring( L, "NOTIFY" );      n=6;  }
-			break;
-		case 'O':
-			if ('P'==*(r+1) && ' '==*(r+7 )) { lua_pushstring( L, "OPTIONS" );     n=7;  }
-			break;
+			if ('K'==*(r+1)) { lua_pushstring( L, "MKCOL" );       n=5;  break; }
+			if ('K'==*(r+1)) { lua_pushstring( L, "MKACTIVITY" );  n=10; break; }
+			if ('C'==*(r+2)) { lua_pushstring( L, "MKCALENDAR" );  n=10; break; }
+			if ('-'==*(r+1)) { lua_pushstring( L, "MSEARCH" );     n=8;  break; }
+			if ('E'==*(r+1)) { lua_pushstring( L, "MERGE" );       n=5;  break; }
+			if ('O'==*(r+1)) { lua_pushstring( L, "MOVE" );        n=4;  break; }
+		case 'N':             lua_pushstring( L, "NOTIFY" );      n=6;  break;
+		case 'O':             lua_pushstring( L, "OPTIONS" );     n=7;  break;
 		case 'P':
-			if ('O'==*(r+1) && ' '==*(r+4 )) { lua_pushstring( L, "POST" );        n=4;  }
-			if ('U'==*(r+1) && ' '==*(r+3 )) { lua_pushstring( L, "PUT" );         n=3;  }
-			if ('A'==*(r+1) && ' '==*(r+5 )) { lua_pushstring( L, "PATCH" );       n=5;  }
-			if ('U'==*(r+1) && ' '==*(r+5 )) { lua_pushstring( L, "PURGE" );       n=5;  }
-			if ('R'==*(r+1) && ' '==*(r+8 )) { lua_pushstring( L, "PROPFIND" );    n=8;  }
-			if ('R'==*(r+1) && ' '==*(r+9 )) { lua_pushstring( L, "PROPPATCH" );   n=9;  }
-			break;
-		case 'R':
-			if ('E'==*(r+1) && ' '==*(r+6 )) { lua_pushstring( L, "REPORT" );      n=6;  }
-			break;
+			if ('O'==*(r+1)) { lua_pushstring( L, "POST" );        n=4;  break; }
+			if ('U'==*(r+1)) { lua_pushstring( L, "PUT" );         n=3;  break; }
+			if ('A'==*(r+1)) { lua_pushstring( L, "PATCH" );       n=5;  break; }
+			if ('U'==*(r+1)) { lua_pushstring( L, "PURGE" );       n=5;  break; }
+			if ('R'==*(r+1)) { lua_pushstring( L, "PROPFIND" );    n=8;  break; }
+			if ('R'==*(r+1)) { lua_pushstring( L, "PROPPATCH" );   n=9;  break; }
+		case 'R':             lua_pushstring( L, "REPORT" );      n=6;  break;
 		case 'S':
-			if ('U'==*(r+1) && ' '==*(r+9 )) { lua_pushstring( L, "SUBSCRIBE" );   n=9;  }
-			if ('E'==*(r+1) && ' '==*(r+6 )) { lua_pushstring( L, "SEARCH" );      n=6;  }
-			break;
-		case 'T':
-			if ('R'==*(r+1) && ' '==*(r+5 )) { lua_pushstring( L, "TRACE" );       n=5;  }
-			break;
+			if ('U'==*(r+1)) { lua_pushstring( L, "SUBSCRIBE" );   n=9;  break; }
+			if ('E'==*(r+1)) { lua_pushstring( L, "SEARCH" );      n=6;  break; }
+		case 'T':             lua_pushstring( L, "TRACE" );       n=5;  break;
 		case 'U':
-			if ('N'==*(r+1) && ' '==*(r+6 )) { lua_pushstring( L, "UNLOCK" );      n=6;  }
-			if ('N'==*(r+2) && ' '==*(r+11)) { lua_pushstring( L, "UNSUBSCRIBE" ); n=11; }
-			break;
+			if ('N'==*(r+1)) { lua_pushstring( L, "UNLOCK" );      n=6;  break; }
+			if ('N'==*(r+2)) { lua_pushstring( L, "UNSUBSCRIBE" ); n=11; break; }
 		default:
 			luaL_error( L, "Illegal HTTP header: Unknown HTTP Method" );
 	}
 	// adjust the buffer segment
-	seg->b    = (char*) eat_lws( seg->b + n );
-	seg->idx += (seg->b - r);
-	seg->len -= (seg->b - r);
+	t_buf_seg_moveIndex( seg, n );
 	return 1;
 }
 
@@ -562,14 +538,15 @@ static int
 lt_htp_parseUrl( lua_State *L )
 {
 	struct t_buf_seg *seg = t_buf_seg_check_ud( L, 1, 1 );
-	const char       *r   = seg->b;  ///< runner char
-	const char       *q   = seg->b;  ///< runner for query part
-	const char       *v   = seg->b;  ///< value
-	size_t            len = 0;
+	const char       *r   = eat_lws( seg->b );  ///< runner char
+	const char       *e   = seg->b + seg->len;  ///< ending char
+	const char       *q   = NULL;               ///< runner for query
+	const char       *v   = r;                  ///< value start marker
+	t_buf_seg_moveIndex( seg, r - seg->b );
 
 	lua_newtable( L );               ///< parsed and decoded query parameters
 
-	while (len < seg->len)
+	while (r < e)
 	{
 		switch (*r)
 		{
@@ -595,40 +572,106 @@ lt_htp_parseUrl( lua_State *L )
 					lua_rawset( L, -3 );
 				}
 				lua_pushlstring( L, seg->b, r-seg->b ); // push full query string
-				// adjust the buffer segment
-				seg->idx += (len+1);
-				seg->len -= (len+1);
-				seg->b    = (char*) eat_lws( seg->b + len);
+				t_buf_seg_moveIndex( seg, r - seg->b );
 				return 2;
 				break;
 			default:           break;
 		}
 		r++;
-		len++;
 	}
+	// expensive recovery because we are optimistic to read the entire
+	// header at once
+	// TODO: adjust buffer; clean up stack; return nil
 	return 0;
 }
+
 
 static int
 lt_htp_parseHttpVersion( lua_State *L )
 {
 	struct t_buf_seg *seg = t_buf_seg_check_ud( L, 1, 1 );
-	const char       *r   = seg->b;   ///< runner char
+	const char       *r   = eat_lws( seg->b );  ///< runner char
 
+	t_buf_seg_moveIndex( seg, r - seg->b );
 	//TODO: set values based on version default behaviour (eg, KeepAlive for 1.1 etc)
-	//TODO: check for n being big enough
-	switch (*(r+7))
-	{
-		case '1': lua_pushinteger( L, T_HTP_VER_11 ); break;
-		case '0': lua_pushinteger( L, T_HTP_VER_10 ); break;
-		case '9': lua_pushinteger( L, T_HTP_VER_09 ); break;
-		default: luaL_error( L, "ILLEGAL HTTP version in message" ); break;
-	}
+	//TODO: check for n being big enoughp
+	if ('H'==*(r) && ('\r'==*(r+8 )))
+		switch (*(r+7))
+		{
+			case '1': lua_pushinteger( L, T_HTP_VER_11 ); break;
+			case '0': lua_pushinteger( L, T_HTP_VER_10 ); break;
+			case '9': lua_pushinteger( L, T_HTP_VER_09 ); break;
+			default: luaL_error( L, "ILLEGAL HTTP version in message" ); break;
+		}
+	t_buf_seg_moveIndex( seg, 8 );
 
 	return 1;
 }
 
 
+/**--------------------------------------------------------------------------
+ * Process HTTP Headers for this request.
+ * \param  L                  the Lua State
+ * \param  struct t_htp_str*  pointer to t_htp_str.
+ * \param  const char*        pointer to buffer to process.
+ *
+ * \return const char*        pointer to buffer after processing the headers.
+ * --------------------------------------------------------------------------*/
+static int
+lt_htp_parseHeaders( lua_State *L )
+{
+	struct t_buf_seg *seg = t_buf_seg_check_ud( L, 1, 1 );
+	const char       *r   = eat_lws( seg->b );  ///< runner char
+	const char       *e   = seg->b + seg->len;  ///< ending char
+
+	enum t_htp_rs     rs  = T_HTP_R_KY;         ///< local parse state = New Line Beginning
+	const char       *s   = r;                  ///< marks start of string
+
+	t_buf_seg_moveIndex( seg, r - seg->b );
+
+	lua_newtable( L );                          ///< parsed headers
+
+	while (r<e)
+	{
+		switch (*r)
+		{
+			case '\n':
+				if ((r+1) < e) // else case is the same as leaving the while loop
+				{
+					if (' ' == *(r+1)) // Value Continuation
+					{
+						break;
+					}
+					lua_pushlstring( L, s, ('\r' == *(r-1)) ? r-s-1 : r-s );   // push value
+					lua_rawset( L, -3 );
+					rs = T_HTP_R_KY;
+					if ('\n' == *(r+1) || '\r' == *(r+1))  // double newLine -> END OF HEADER
+					{
+						t_buf_seg_moveIndex( seg, (r + (('\n'==*(r+1))? 1 : 2) - seg->b) );
+						return 1;
+					}
+					s  = r+1;
+				}
+				break;
+			case  ':':
+				if (T_HTP_R_KY == rs)
+				{
+					lua_pushlstring( L, s, r-s );                           // push key
+					r  = eat_lws( ++r );
+					s  = r;
+					rs = T_HTP_R_VL;
+				}
+				break;
+			default:
+				break;
+		}
+		r++;
+	}
+	// expensive recovery because we are optimistic to read the entire
+	// header at once
+	// TODO: adjust buffer; clean up stack; return nil
+	return 0;
+}
 /**--------------------------------------------------------------------------
  * Class functions library definition
  * --------------------------------------------------------------------------*/
@@ -637,6 +680,7 @@ static const luaL_Reg t_htp_lib [ ] =
 	  { "parseMethod"      , lt_htp_parseMethod }
 	, { "parseUrl"         , lt_htp_parseUrl }
 	, { "parseVersion"     , lt_htp_parseHttpVersion }
+	, { "parseHeaders"     , lt_htp_parseHeaders }
 	, { NULL               , NULL }
 };
 
@@ -653,5 +697,4 @@ luaopen_t_htp( lua_State *L )
 	luaL_newlib( L, t_htp_lib );
 	return 1;
 }
-
 
