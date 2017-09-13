@@ -540,9 +540,9 @@ lt_htp_parseUrl( lua_State *L )
 	struct t_buf_seg *seg = t_buf_seg_check_ud( L, 1, 1 );
 	const char       *r   = eat_lws( seg->b );  ///< runner char
 	const char       *e   = seg->b + seg->len;  ///< ending char
+	const char       *u   = r;                  ///< start of URI
 	const char       *q   = NULL;               ///< runner for query
 	const char       *v   = r;                  ///< value start marker
-	t_buf_seg_moveIndex( seg, r - seg->b );
 
 	lua_newtable( L );               ///< parsed and decoded query parameters
 
@@ -571,7 +571,7 @@ lt_htp_parseUrl( lua_State *L )
 					lua_pushlstring( L, v, r-v ); // push value
 					lua_rawset( L, -3 );
 				}
-				lua_pushlstring( L, seg->b, r-seg->b ); // push full query string
+				lua_pushlstring( L, u, r-u );    // push full query string
 				t_buf_seg_moveIndex( seg, r - seg->b );
 				return 2;
 				break;
@@ -623,35 +623,29 @@ lt_htp_parseHeaders( lua_State *L )
 	struct t_buf_seg *seg = t_buf_seg_check_ud( L, 1, 1 );
 	const char       *r   = eat_lws( seg->b );  ///< runner char
 	const char       *e   = seg->b + seg->len;  ///< ending char
-
-	enum t_htp_rs     rs  = T_HTP_R_KY;         ///< local parse state = New Line Beginning
 	const char       *s   = r;                  ///< marks start of string
-
-	t_buf_seg_moveIndex( seg, r - seg->b );
+	enum t_htp_rs     rs  = T_HTP_R_KY;         ///< local parse state = New Line Beginning
 
 	lua_newtable( L );                          ///< parsed headers
 
-	while (r<e)
+	// since exit condition is based on r+1 compare for (r+1)
+	while (r+1 < e)
 	{
 		switch (*r)
 		{
 			case '\n':
-				if ((r+1) < e) // else case is the same as leaving the while loop
+				if (' ' == *(r+1)) // Value Continuation
+					break;
+
+				lua_pushlstring( L, s, ('\r' == *(r-1)) ? r-s-1 : r-s );   // push value
+				lua_rawset( L, -3 );
+				rs = T_HTP_R_KY;
+				if ('\n' == *(r+1) || '\r' == *(r+1))  // double newLine -> END OF HEADER
 				{
-					if (' ' == *(r+1)) // Value Continuation
-					{
-						break;
-					}
-					lua_pushlstring( L, s, ('\r' == *(r-1)) ? r-s-1 : r-s );   // push value
-					lua_rawset( L, -3 );
-					rs = T_HTP_R_KY;
-					if ('\n' == *(r+1) || '\r' == *(r+1))  // double newLine -> END OF HEADER
-					{
-						t_buf_seg_moveIndex( seg, (r + (('\n'==*(r+1))? 1 : 2) - seg->b) );
-						return 1;
-					}
-					s  = r+1;
+					t_buf_seg_moveIndex( seg, (r + (('\n'==*(r+1))? 1 : 2) - seg->b) );
+					return 1;
 				}
+				s  = r+1;
 				break;
 			case  ':':
 				if (T_HTP_R_KY == rs)
