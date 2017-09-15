@@ -155,7 +155,7 @@ t_htp_str_rcv( lua_State *L, struct t_htp_str *s, size_t rcvd )
  * buffer head is null, the connections socket must also be added to the
  * EventLoop for outgoing connections.
  * \param   L        The lua state.
- * \param   integer      The string length of the chunk on stack.
+ * \param   integer  The string length of the chunk on stack.
  * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int
@@ -221,11 +221,11 @@ t_htp_str_formHeader( lua_State *L, luaL_Buffer *lB, struct t_htp_str *s,
 			"Date: %s\r\n"
 			"Content-Length: %d\r\n"
 			"%s",
-			(int) code,                               // HTTP Status code
+			(int) code,                                 // HTTP Status code
 			(NULL == msg) ? t_htp_status( code ) : msg, // HTTP Status Message
-			(s->con->kpAlv) ? "Keep-Alive" : "Close", // Keep-Alive or close
-			s->con->srv->fnw,                         // Formatted Date
-			len,                                      // Content-Length
+			(s->con->kpAlv) ? "Keep-Alive" : "Close",   // Keep-Alive or close
+			s->con->srv->fnw,                           // Formatted Date
+			len,                                        // Content-Length
 			(t) ? "" : "\r\n"
 			);
 		s->rsCl = len;
@@ -238,10 +238,10 @@ t_htp_str_formHeader( lua_State *L, luaL_Buffer *lB, struct t_htp_str *s,
 			"Date: %s\r\n"
 			"Transfer-Encoding: chunked\r\n"
 			"%s",
-			(int) code,                               // HTTP Status code
+			(int) code,                                 // HTTP Status code
 			(NULL == msg) ? t_htp_status( code ) : msg, // HTTP Status Message
-			(s->con->kpAlv) ? "Keep-Alive" : "Close", // Keep-Alive or close
-			s->con->srv->fnw,                         // Formatted Date
+			(s->con->kpAlv) ? "Keep-Alive" : "Close",   // Keep-Alive or close
+			s->con->srv->fnw,                           // Formatted Date
 			(t) ? "" : "\r\n"
 			);
 		s->rsCl = len;
@@ -480,7 +480,7 @@ static int
 lt_htp_str_onbody( lua_State *L )
 {
 	struct t_htp_str *m = t_htp_str_check_ud( L, 1, 1 );
-	
+
 	if (lua_isfunction( L, 2 ))
 	{
 		m->bR = luaL_ref( L, LUA_REGISTRYINDEX );

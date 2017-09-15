@@ -5,7 +5,7 @@ l=Loop(1200)
 s=Net.Socket( 'UDP', 'ip4' )
 s:bind( 8888 )
 
-x=function( msg )
+cb=function( msg )
 	print ("Socket:",  msg.socket )
 	print ("Address:", msg.ip )
 	print ("Method:",  msg.method )
@@ -49,7 +49,7 @@ end
 
 
 l:addHandle( s, 'read', cmd, s )
-h=Http.Server( l, x )
+h=Http.Server( l, cb )
 sc,ip = h:listen( 8000, 10 )  -- listen on 0.0.0.0 INADDR_ANY
 print( sc, ip, s )
 sc:setOption( )

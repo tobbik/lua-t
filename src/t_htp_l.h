@@ -53,6 +53,15 @@ enum t_htp_mth {
 };
 
 
+// Available HTTP versions
+enum t_htp_ver {
+	T_HTP_VER_ILL,
+	T_HTP_VER_09,
+	T_HTP_VER_10,
+	T_HTP_VER_11
+};
+
+
 /// State of the HTTP message
 enum t_htp_srm_s {
 	T_HTP_STR_ZERO,       ///< Nothing done yet
@@ -66,131 +75,6 @@ enum t_htp_srm_s {
 	T_HTP_STR_FINISH,     ///< The last chunk was written into the buffer
 };
 
-
-// Available HTTP versions
-enum t_htp_ver {
-	T_HTP_VER_09,
-	T_HTP_VER_10,
-	T_HTP_VER_11
-};
-
-
-// ____        _          ____  _                   _
-//|  _ \  __ _| |_ __ _  / ___|| |_ _ __ _   _  ___| |_ _   _ _ __ ___  ___
-//| | | |/ _` | __/ _` | \___ \| __| '__| | | |/ __| __| | | | '__/ _ \/ __|
-//| |_| | (_| | || (_| |  ___) | |_| |  | |_| | (__| |_| |_| | | |  __/\__ \
-//|____/ \__,_|\__\__,_| |____/ \__|_|   \__,_|\___|\__|\__,_|_|  \___||___/
-/// The userdata struct for T.Http.Server
-struct t_htp_srv {
-	struct t_net_sck *sck;    ///< t_net_sck socket (must be tcp)
-	struct t_ael     *ael;    ///< t_ael event loop
-	int               sR;     ///< Lua registry reference for t.Net.TCP instance
-	int               aR;     ///< Lua registry reference for t.Net.IP4 instance (struct sockaddr_in)
-	int               lR;     ///< Lua registry reference for t.Loop instance
-	int               rR;     ///< Lua registry reference to request handler function
-	time_t            nw;     ///< Current time on the server
-	char              fnw[30];///< Formatted Date time in HTTP format
-};
-
-
-/// The userdata struct for T.Http.Connection ( Server:accept() )
-struct t_htp_con {
-/////////////////////////////////////////////////////////////////////////////
-	int               pR;     ///< Lua registry reference for proxy table
-	int               sR;     ///< Lua registry reference to the stream table
-	int               cnt;    ///< count requests (streams) handled in this con
-
-	// onBody() handler; anytime a read-event is fired AFTER the header was
-	// received this gets executed; Can be LUA_NOREF which discards incoming data
-	int               bR;     ///< Lua registry reference to body handler function
-	struct t_net_sck *sck;    ///< pointer to the actual socket
-	struct t_htp_srv *srv;    ///< pointer to the HTTP-Server
-
-	int               kpAlv;  ///< keepalive value in seconds -> 0==no Keepalive
-	int               upgrade;///< shall the connection be upgraded?
-	enum t_htp_ver    ver;    ///< HTTP version
-
-	size_t            read;   ///< How many byte processed
-	char              buf[ BUFSIZ ];   ///< reading buffer
-	const char       *b;      ///< Current start of buffer to process
-
-	// output buffer handling with linked list (FiFo), this has significant
-	// advantages in HTTP 2.0 because the stream identifiers are atomic to the
-	// linked list chunks
-	struct t_htp_buf *buf_head; ///< Head for the linked list
-	struct t_htp_buf *buf_tail; ///< Tail for the linked list
-};
-
-
-/// userdata for a single request-response (HTTP stream)
-struct t_htp_str {
-	// Proxy contains lua readable items such as headers, length, status code etc
-	int               pR;     ///< Lua registry reference for proxy table
-	int               rqCl;   ///< request  content length
-	int               rsCl;   ///< response content length
-	int               rsBl;   ///< response buffer length (headers + rsCl)
-	int               rsSl;   ///< response buffer sent length (if rsBl==rsSl; stream is done)
-	int               bR;     ///< Lua registry reference to body handler function
-	int               expect; ///< shall the connection return an expected thingy?
-	enum t_htp_srm_s  state;  ///< HTTP Message state
-	enum t_htp_mth    mth;    ///< HTTP Method for this request
-	enum t_htp_ver    ver;    ///< HTTP version
-	struct t_htp_con *con;    ///< pointer to the T.Http.Connection
-	// in HTTP1.1 the connections counter will provide the id, in HTTP2.0
-	// the ID gets provided in the protocol by the client
-	int               cntId;  ///< id inherited from count in connection
-};
-
-
-/// userdata for HTTP connection output buffer chunk
-struct t_htp_buf {
-	int                bR;    ///< string reference within luaState
-	int                sR;    ///< string reference within luaState
-	size_t             bl;    ///< Outgoing Buffer Length (content+header)
-	size_t             sl;    ///< Outgoing Sent
-	char               last;  ///< Boolean to signify the last buffer for a stream
-	struct t_htp_str  *str;   ///< stream this buffer is made for
-	struct t_htp_buf  *prv;   ///< previous pointer for linked list
-	struct t_htp_buf  *nxt;   ///< next pointer for linked list
-};
-
-
-
-// t_htp.c
-const char       *t_htp_pReqFirstLine( lua_State *L, struct t_htp_str *s, size_t n );
-const char       *t_htp_pHeaderLine  ( lua_State *L, struct t_htp_str *s, size_t n );
-const char       *t_htp_status       ( int status );
-
-
-// t_htp_srv.c
-// Constructors
-struct t_htp_srv *t_htp_srv_check_ud ( lua_State *L, int pos, int check );
-struct t_htp_srv *t_htp_srv_create_ud( lua_State *L );
-void              t_htp_srv_setnow( struct t_htp_srv *s, int force );
-
-
-// HTTP Connection specific methods
-// Constructors
-struct t_htp_con *t_htp_con_check_ud ( lua_State *L, int pos, int check );
-struct t_htp_con *t_htp_con_create_ud( lua_State *L, struct t_htp_srv *srv );
-// methods
-int               t_htp_con_rcv    ( lua_State *L );
-int               t_htp_con_rsp    ( lua_State *L );
-void              t_htp_con_adjustbuffer( struct t_htp_con *c, size_t read, const char* rpos );
-
-// HTTP Stream specific methods
-// Constructors
-struct t_htp_str *t_htp_str_check_ud ( lua_State *L, int pos, int check );
-struct t_htp_str *t_htp_str_create_ud( lua_State *L, struct t_htp_con *con );
-// methods
-int               t_htp_str_rcv    ( lua_State *L, struct t_htp_str *s, size_t rcvd );
-int               lt_htp_str__gc( lua_State *L );
-
-
-// library exporters
-LUAMOD_API int luaopen_t_htp_str( lua_State *L );
-LUAMOD_API int luaopen_t_htp_con( lua_State *L );
-LUAMOD_API int luaopen_t_htp_srv( lua_State *L );
 LUAMOD_API int luaopen_t_htp_wsk( lua_State *L );
 
 // __        __   _    ____             _        _

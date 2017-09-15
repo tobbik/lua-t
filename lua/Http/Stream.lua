@@ -25,26 +25,26 @@ local chkStr  = function( self )
 	return self[ T.prxTblIdx ]
 end
 
-local getStream = function( con )
-	-- if HTTP1.0 or HTTP1.1 this is the last, HTTP2.0 has a stream identifier ... TODO:
-	local stream = con.streams[ #con.streams ]
-	if not stream then
-		stream = Http.Stream( con )
-		t_insert( con.streams, stream )
-	end
-	return stream
+local State = {
+	  Method   = 1
+	, Url      = 2
+	, Version  = 3
+	, Header   = 4
+	, Body     = 5
+	, Done     = 6
+}
+
+
+local recv    = function( self )
+	local seg = self.segment
+	self.method            = Http.parseMethod( seg )
+	self.state             = State.Url
+	self.query, self.url   = Http.parseUrl( seg )
+	self.state             = State.Headers
+	self.headers           = Http.parseUrl( seg )
+	self.con.srv.cb( self, Http.Response( self.con, self.id ) )
 end
 
-local recv    = function( stream )
-	local buf  = stream.con.buf
-	local rcvd = con.cli:recv( con.buf, Buffer.Segment( con.buf, con.rcvd+1 ) )
-	T.print( "RCVD: %d bytes\n", rcvd );
-	if not rcvd then
-		--dispose of itself ... clear streams, buffer etc...
-	else
-		local stream = getStream( con )
-	end
-end
 
 --[[
 /**--------------------------------------------------------------------------
@@ -117,8 +117,10 @@ _mt = {       -- local _mt at top of file
 	__name     = "t.Http.Stream"
 }
 
+
 return setmetatable( {
-	toString = function( srv ) return _mt.__name end
+	  State  = State
+	, Method = Method
 }, {
 	__call   = function( self, con )
 		assert( T.type( con ) == 't.Http.Connection',  "`t.Http.Connection` is required" )
@@ -127,7 +129,7 @@ return setmetatable( {
 			, rsCLen     = 0   -- response Length as calculated or set by application
 			, rsBLen     = 0   -- size of Response Buffer
 			, cb         = nil -- request handler function( callback )
-			, state      = Http.Stream.Zero
+			, state      = State.Zero
 			, method     = Http.Method.Illegal
 			, version    = Http.Version.VER09
 			, conn       = con

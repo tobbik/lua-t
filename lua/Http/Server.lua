@@ -24,6 +24,7 @@ end
 
 local setNow  = function( srv, force )
 	local now = os.time( )
+	-- only update the string if a second or more has passed
 	if now - srv.now > 0 or force then
 		srv.date = os.date( "%a, %d %b %Y %H:%M:%S %Z", now )
 	end
