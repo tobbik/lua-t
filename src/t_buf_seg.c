@@ -113,8 +113,10 @@ lt_buf_seg_setSize( lua_State *L )
 	lua_rawgeti( L, LUA_REGISTRYINDEX, seg->bR );
 	buf = t_buf_check_ud( L, -1, 1 );
 
-	luaL_argcheck( L, 0 <= len && (size_t)(seg->idx + len) <= buf->len, 2,
+	luaL_argcheck( L, 0 <= len && (size_t) (seg->idx + len - 1) <= buf->len, 2,
 	   T_BUF_SEG_TYPE" length out of bound" );
+
+	seg->len = len;
 
 	return 0;
 }

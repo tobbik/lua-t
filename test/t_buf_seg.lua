@@ -11,9 +11,10 @@ Test    = require( "t.Test" )
 Buffer  = require( "t.Buffer" )
 Segment = Buffer.Segment
 Rtvg    = T.require( 'rtvg' )
+format  = string.format
 --math.randomseed(os.time())
 
-local tests = {
+tests = {
 	rtvg       = Rtvg( ),
 	beforeEach = function( self )
 		local  n = math.random( 1000,2000 )
@@ -171,24 +172,32 @@ local tests = {
 
 	test_SetSizeIncreaseLength= function( self )
 		local buf,ofs,len = self.seg:getBuffer()
-		ofs,len = math.floor( ofs + len/3 ), math.ceil( len/2 )
-		local nlen = len + math.floor( len/4 )
-		Test.Case.describe( "Change segment length from "..len.." to " ..nlen )
+		local nlen        = len + math.floor( len/4 )
+		Test.Case.describe( format("Change %s in %s length from %d to %d", self.seg, buf, len, nlen ) )
 		local seg = Segment( self.b, ofs, len )
 		seg:setSize( nlen )
-		T.assert( #seg == nlen, "Length of T.Buffer.Segment should be %d but was %d", len, #seg )
+		T.assert( #seg == nlen, "Length of T.Buffer.Segment should be %d but was %d", nlen, #seg )
 		T.assert( seg:read() == self.b:read( ofs, nlen ),
+			"Content of T.Buffer.Segment should be %s but wa %s", self.b:read(ofs, len ), seg:read() )
+	end,
+
+	test_SetSizeIncreaseToMaxLength= function( self )
+		local buf,ofs,len = self.seg:getBuffer()
+		Test.Case.describe( format("Change length of %s from %d to %d", self.seg, len, len ) )
+		local seg = Segment( self.b, ofs, len )
+		seg:setSize( len )
+		T.assert( #seg == len, "Length of T.Buffer.Segment should be %d but was %d", len, #seg )
+		T.assert( seg:read() == self.b:read( ofs, len ),
 			"Content of T.Buffer.Segment should be %s but wa %s", self.b:read(ofs, len ), seg:read() )
 	end,
 
 	test_SetSizeDecreaseLength= function( self )
 		local buf,ofs,len = self.seg:getBuffer()
-		ofs,len = math.floor( ofs + len/3 ), math.ceil( len/2 )
-		local nlen = len - math.floor( len/3 )
-		Test.Case.describe( "Change segment length from "..len.." to " ..nlen )
+		local nlen        = len - math.floor( len/3 )
+		Test.Case.describe( format("Change %s in %s length from %d to %d", self.seg, buf, len, nlen ) )
 		local seg = Segment( self.b, ofs, len )
 		seg:setSize( nlen )
-		T.assert( #seg == nlen, "Length of T.Buffer.Segment should be %d but was %d", len, #seg )
+		T.assert( #seg == nlen, "Length of T.Buffer.Segment should be %d but was %d", nlen, #seg )
 		T.assert( seg:read() == self.b:read( ofs, nlen ),
 			"Content of T.Buffer.Segment should be %s but wa %s", self.b:read(ofs, len ), seg:read() )
 	end,
@@ -196,9 +205,8 @@ local tests = {
 	test_SetSizeIncreaseLengthToMuchFails= function( self )
 		local buf,ofs,len = self.seg:getBuffer()
 		local errMsg      = "T.Buffer.Segment length out of bound"
-		ofs,len = math.floor( ofs + len/3 ), math.ceil( len/2 )
-		local nlen = len*2
-		Test.Case.describe( "Change segment length from "..len.." to " ..nlen )
+		local nlen        = #buf-ofs+23
+		Test.Case.describe( format("Change %s in %s length from %d to %d should fail", self.seg, buf, len, nlen ) )
 		local seg = Segment( self.b, ofs, len )
 		local f   = function(s,l) return s:setSize( l ) end
 		local r,e = pcall( f, self.seg, nlen )
