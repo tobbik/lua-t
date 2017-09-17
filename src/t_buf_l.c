@@ -34,32 +34,39 @@
 static int
 lt_buf__Call( lua_State *L )
 {
-	size_t          sz;
-	struct t_buf   *buf;
-	struct t_buf   *cpy_buf = t_buf_check_ud( L, -1, 0 );
+	size_t            sz;
+	struct t_buf     *buf     = NULL;
+	struct t_buf     *cpy_buf = t_buf_check_ud( L, -1, 0 );
+	struct t_buf_seg *cpy_seg = t_buf_seg_check_ud( L, -1, 0 );
 
 	lua_remove( L, 1 );    // remove the T.Buffer Class table
-	if (NULL != cpy_buf)
+	if (lua_isinteger( L, 1 ))
+		buf = t_buf_create_ud( L, luaL_checkinteger( L, 1 ) );
+
+	if (NULL != cpy_buf || NULL != cpy_seg)
 	{
-		buf = t_buf_create_ud( L, cpy_buf->len );
-		memcpy( &(buf->b[0]), &(cpy_buf->b[0]), buf->len );
+		if (buf)
+			luaL_argcheck( L, buf->len >= ((cpy_buf) ? cpy_buf->len : cpy_seg->len), 1,
+				T_BUF_TYPE" size must be at least as big as source to copy from" );
+		else
+			buf = t_buf_create_ud( L, (cpy_buf) ? cpy_buf->len : cpy_seg->len );
+		memcpy( &(buf->b[0]), (cpy_buf) ? &(cpy_buf->b[0]) : &(cpy_seg->b[0]), ((cpy_buf) ? cpy_buf->len : cpy_seg->len) );
 		return 1;
 	}
-	if (lua_isinteger( L, -1 ))
+
+	if (LUA_TSTRING == lua_type( L, (buf) ? -2 : -1 ))
 	{
-		sz  = luaL_checkinteger( L, -1 );
-		buf = t_buf_create_ud( L, sz );
+		luaL_checklstring( L, (buf) ? -2 : -1, &sz );
+		if (buf)
+			luaL_argcheck( L, buf->len >= sz, 1,
+				T_BUF_TYPE" size must be at least as big as source to copy from" );
+		else
+			buf = t_buf_create_ud( L, sz );
+		memcpy( (char*) &(buf->b[0]), lua_tostring( L, -2 ), sz );
 	}
-	else if (lua_isstring( L, -1 ))
-	{
-		luaL_checklstring( L, -1, &sz);
-		buf = t_buf_create_ud( L, sz );
-		memcpy( (char*) &(buf->b[0]), luaL_checklstring( L, -2, NULL ), sz );
-	}
-	else
-	{
+
+	if (! buf)
 		luaL_error( L, "can't create "T_BUF_TYPE" because of wrong argument type" );
-	}
 	return 1;
 }
 

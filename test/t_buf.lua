@@ -6,7 +6,9 @@
 T      = require( "t" )
 Test   = require( "t.Test" )
 Buffer = require( "t.Buffer" )
+Segment= require( "t.Buffer.Segment" )
 Rtvg   = T.require( 'rtvg' )
+format = string.format
 
 tests = {
 	rtvg       = Rtvg( ),
@@ -24,7 +26,6 @@ tests = {
 		T.assert( type(size) == 'number', "`Buffer.Size` should be a `number` but is `%s`", type( size ) )
 		T.assert( size > 0 , "`Buffer.Size` should be a greater than 0 but is `%s`", size )
 	end,
-
 
 	test_ConstructorEmptySizedBuffer = function( self )
 		Test.Case.describe( "Create an empty buffer of certain length" )
@@ -49,17 +50,66 @@ tests = {
 		end
 	end,
 
-	test_ConstructorFromString = function( self )
-		Test.Case.describe( "T.Buffer constructed from String must have right length and values" )
-		local s = self.rtvg:getWords( math.random( 1000, 2000 ) )
-		local b = Buffer( s )
-		assert( #b == #s, "Length of T.Buffer should be "..#s.." but was " ..#b )
-		for i=1,#b do
-			assert( string.byte(b:read( i, 1 ),1) == string.byte( s, i ),
+	test_CopyConstructorFromBuffer = function( self )
+		Test.Case.describe( "T.Buffer constructed by copy must match original" )
+		local b = Buffer( self.b )
+		assert( #b == #self.b, "Length of T.Buffer should be "..#self.b.." but was " ..#b )
+		for i=1,#self.b do
+			assert( string.byte(b:read( i,1 ),1) == string.byte( self.s, i ),
 				"Value in buffer at position "..i..
-				" should be ".. string.char( string.byte( s, i ) ) ..
-				" but was ".. string.char( string.byte(b:read( i, 1 ),1 ) ) )
+				" should be ".. string.char( string.byte(self.s,i) ) ..
+				" but was ".. string.char( string.byte(b:read(i, 1),1 ) ) )
 		end
+	end,
+
+	test_ConstructorPartialFromString = function( self )
+		Test.Case.describe( "Buffer( size, string ) must have right length and values" )
+		local b = Buffer( #self.s+1000, self.s )
+		assert( #b      == #self.s+1000,      format( "Length of t.Buffer should be %d but was %d", #self.s+1000, #b ) )
+		assert( self.s  == b:read(1,#self.s), format( "Content of Buffer should be `%s` \n  but was `%s`", self.s, b:read(1, #self.s) ) )
+	end,
+
+	test_ConstructorTooShortPartialFromStringFails = function( self )
+		Test.Case.describe( "Buffer( #string-5, string ) shall fail" )
+		local errMsg = "size must be at least as big as source to copy from"
+		local f      = function( x ) local b = Buffer( #x-5, x ) end
+		local r,e    = pcall( f, self.s )
+		assert( not r, "Creating Buffer should have failed" )
+		assert( e:match( errMsg ), format( "Error message should contain `%s`, but was `%s`", errMsg, e ) )
+	end,
+
+	test_ConstructorPartialFromBuffer = function( self )
+		Test.Case.describe( "Buffer( size, buf ) must have right length and values" )
+		local b = Buffer( #self.b+1000, self.b )
+		assert( #b == #self.b+1000, format( "Length of t.Buffer should be %d but was %d", #self.b+1000, #b ) )
+		assert( self.b:read( )  == self.b:read(1, #self.b), format( "Content of Buffer should be `%s`\n   but was `%s`", self.b:read(), b:read(1, #self.b) ) )
+	end,
+
+	test_ConstructorTooShortPartialFromBufferFails = function( self )
+		Test.Case.describe( "Buffer( #buffer-5, buffer ) shall fail" )
+		local errMsg = "size must be at least as big as source to copy from"
+		local f      = function( x ) local b = Buffer( #x-5, x ) end
+		local r,e    = pcall( f, self.b )
+		assert( not r, "Creating Buffer should have failed" )
+		assert( e:match( errMsg ), format( "Error message should contain `%s`, but was `%s`", errMsg, e ) )
+	end,
+
+	test_ConstructorPartialFromSegment = function( self )
+		Test.Case.describe( "Buffer( size, seg ) must have right length and values" )
+		local s = Segment( self.b, math.floor( #self.b/2 ) )
+		local b = Buffer( #s+123, s )
+		assert( #b == #s+123, format( "Length of t.Buffer should be %d but was %d", #s+123, #b ) )
+		assert( s:read( )  == b:read(1, #s), format( "Content of Buffer should be `%s`\n   but was `%s`", s:read(), b:read(1, #s) ) )
+	end,
+
+	test_ConstructorTooShortPartialFromSegmentFails = function( self )
+		Test.Case.describe( "Buffer( #buffer-5, buffer ) shall fail" )
+		local errMsg = "size must be at least as big as source to copy from"
+		local s      = Segment( self.b, math.floor( #self.b/2 ) )
+		local f      = function( x ) local b = Buffer( #x-5, x ) end
+		local r,e    = pcall( f, s )
+		assert( not r, "Creating Buffer should have failed" )
+		assert( e:match( errMsg ), format( "Error message should contain `%s`, but was `%s`", errMsg, e ) )
 	end,
 
 	test_ClearBuffer = function( self )
@@ -75,7 +125,7 @@ tests = {
 		end
 	end,
 
-	test_ReadLengthBeyondBufferLength = function( self )
+	test_ReadLengthBeyondBufferLengthFails = function( self )
 		Test.Case.describe( "Reading from Buffer past it's length fails" )
 		local f = function(b,n,l) return b:read(n,l) end
 		assert( not pcall( f, self.b, #self.b-100, 200 ),
