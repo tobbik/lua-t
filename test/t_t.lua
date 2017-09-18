@@ -12,7 +12,7 @@ local   t_count = require( 't.Table' ).count
 
 local tc = {
 	test_NormalRequireFails = function( self )
-		Test.Case.describe( "require('a.b' relative to file which calls require fails" )
+		Test.Case.describe( "require('a.b') relative to file which calls fails" )
 		local f    = function(s) local b = require'a.b' end
 		local eMsg = "module 'a.b' not found"
 		local x,e  = pcall( f, self )
@@ -21,7 +21,7 @@ local tc = {
 	end,
 
 	test_tRequiresRelative = function( self )
-		Test.Case.describe( "t.require('a.b') relative to file which calls succeeds" )
+		Test.Case.describe( "t.require('a.b') relative to file which calls" )
 		local b = T.require'a.b'
 		assert( 'table' == type(b), "Required result should be a table" )
 		assert( "I live 'a/b.lua'" == b.content, "should match proper phrase" )
@@ -31,7 +31,7 @@ local tc = {
 	end,
 
 	test_typeNormalObjects = function( self )
-		Test.Case.describe( "type( {} ) gives 'table" )
+		Test.Case.describe( "type( {} ) gives `table`" )
 		local tbl = {}
 		assert( 'table' ==   type( tbl ), "type should be table" )
 		assert( 'table' == T.type( tbl ), "type should be table" )
@@ -45,7 +45,7 @@ local tc = {
 	end,
 
 	test_typeLuaObjects = function( self )
-		Test.Case.describe( "type( FILE* ) gives 'usedata' or `FILE*`" )
+		Test.Case.describe( "type( FILE* ) gives `userdata` or `FILE*`" )
 		local dir = debug.getinfo( 1, "S" ).short_src:match( "^(.*)/" )
 		local f = io.open( dir .. "/t_t.lua", "r")
 		T.assert( 'userdata' ==   type( f ), "type should be `userdata` but was `%s`",   type(f) )
@@ -53,21 +53,21 @@ local tc = {
 	end,
 
 	test_typeLuatObjects = function( self )
-		Test.Case.describe( "type( t.Set() ) gives 't.Set'" )
+		Test.Case.describe( "type( t.Set() ) gives `t.Set` (Lua Table with metatable)" )
 		local set = Set()
 		T.assert( 'table' ==   type( set ), "type should be `table` but was `%s`",   type(set) )
 		T.assert( 't.Set' == T.type( set ), "type should be `t.Set` but was `%s`", T.type(set) )
 	end,
 
 	test_typeLuatUserdata = function( self )
-		Test.Case.describe( "type( t.Time() ) gives 't.Time'" )
+		Test.Case.describe( "type( t.Time() ) gives `t.Time` (userdata with metatable)" )
 		local tim = Time()
 		T.assert( 'userdata' ==   type( tim ), "type should be `userdata` but was `%s`",   type(tim) )
 		T.assert( 'T.Time'   == T.type( tim ), "type should be `T.Time`   but was `%s`", T.type(tim) )
 	end,
 
 	test_proxyTableByIndex = function( self )
-		Test.Case.describe( "set( t.proxyTableIndex ) gives proxytable" )
+		Test.Case.describe( "set( t.proxyTableIndex ) gives proxy table" )
 		local set = Set( {'a','b','c'} )
 		local prx = set[ T.proxyTableIndex ]
 		assert( t_count( prx ) == 3, "proxyTable should have 3 members" )

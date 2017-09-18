@@ -32,10 +32,9 @@
 static int
 lt_buf_seg__Call( lua_State *L )
 {
-	size_t            idx;
-	size_t            len;
+	int               len;
+	int               idx;
 	struct t_buf     *buf = t_buf_check_ud( L, 2, 1 );
-	struct t_buf_seg *seg;
 
 	lua_remove( L, 1 );               // remove class table
 	idx  = luaL_optinteger( L, 2, 1 ) - 1;
@@ -48,7 +47,7 @@ lt_buf_seg__Call( lua_State *L )
 
 	while (lua_isinteger( L, -1 ))
 		lua_pop( L, 1 );
-	seg = t_buf_seg_create_ud( L, buf, idx+1, len );
+	t_buf_seg_create_ud( L, buf, idx+1, len );
 	return 1;
 }
 

@@ -30,11 +30,10 @@ static int lt_htp_con__gc( lua_State *L );
  * --------------------------------------------------------------------------*/
 static int lt_htp_con__Call( lua_State *L )
 {
-	struct t_htp_con *con;
 	struct t_htp_srv *srv = t_htp_srv_check_ud( L, -1, 1 );
 
 	lua_remove( L, 1 );           // remove the CLASS table
-	con = t_htp_con_create_ud( L, srv );
+	t_htp_con_create_ud( L, srv );
 	return 1;
 }
 
@@ -75,7 +74,7 @@ struct t_htp_con
 *t_htp_con_check_ud( lua_State *L, int pos, int check )
 {
 	void *ud = luaL_testudata( L, pos, T_HTP_CON_TYPE );
-	luaL_argcheck( L, (ud != NULL || !check), pos, "`"T_HTP_CON_TYPE"` expected" );
+	if (NULL == ud && check) t_typeerror( L , pos, T_HTP_CON_TYPE );
 	return (NULL==ud) ? NULL : (struct t_htp_con *) ud;
 }
 

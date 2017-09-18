@@ -97,13 +97,19 @@ Class Members
 Class Metamembers
 -----------------
 
-``Test.Case tc = Test.Case( [ string 'test_name', function tf ] )   [__call]``
-  Creates a new ``Test.Case``.  ``test_name`` is mandatory and get's set as
-  description.  If the test name starts with ``test_cb_`` the test will be
-  constructed as callback based ``Test.Case`` and during execution time a
-  callback will be passed in a second parameter (after ``self``).
-  ``function tf`` is mandatory and gets set as the actual executable test
-  case.
+``Test.Case tc = Test.Case( [ string 'description', string 'type' function tf ] )   [__call]``
+  Creates a new ``Test.Case``.  All arguments are mandatory.
+  ``description`` gets set as the ``Test.Case cse.description``. ``type``
+  has to be one of these three values:
+
+  - ``standard``  Test following the regular execution strategy
+  - ``callback``  Test following the callback execution strategy, meaning
+    when the ``Test.case`` gets executed a ``done`` function must be passed
+    to it.
+  - ``coroutine``  Test following the coroutine execution strategy, --not
+    implmented yet--
+  description.  ``function tf`` is mandatory and gets set as the actual
+  executable test case.
 
 
 Instance Members

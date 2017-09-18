@@ -55,12 +55,12 @@ local tests = {
 	-- wrappers for tests
 	beforeAll = function( self, done )
 		self.loop  = Loop( 20 )
-		self.host  = Interface( "default" ).address:get( )
+		self.host  = Interface( "default" ).AF_INET.address.ip
 		self.port  = 8000
 		self.sSck  = Socket( "udp" )
 		self.sAdr  = self.sSck:bind( self.host, self.port )
 		asrtHlp.Socket( self.sSck, "udp", "AF_INET", "SOCK_DGRAM" )
-		asrtHlp.Address( self.sAdr, self.host, self.port )
+		asrtHlp.Address( self.sAdr, "AF_INET", self.host, self.port )
 		done()
 	end,
 
@@ -273,6 +273,10 @@ local tests = {
 		--makeReceiver( self, payload, len, done )
 		makeSender( self, sender, true )
 	end,
-	}
+}
+
+-- t = Test( tests )
+-- t()
+-- print( t )
 
 return Test( tests )

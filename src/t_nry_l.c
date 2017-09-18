@@ -12,9 +12,10 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#include <string.h>               // memset
+#include <string.h>     // memset
 
 #include "t_nry_l.h"
+#include "t.h"          // t_typeerror
 
 #ifdef DEBUG
 #include "t_dbg.h"
@@ -128,7 +129,7 @@ struct t_nry
 *t_nry_check_ud( lua_State *L, int pos, int check )
 {
 	void *ud = luaL_testudata( L, pos, T_NRY_TYPE );
-	luaL_argcheck( L, (ud != NULL || !check), pos, "`"T_NRY_TYPE"` expected" );
+	if (NULL == ud && check) t_typeerror( L , pos, T_NRY_TYPE );
 	return (NULL==ud) ? NULL : (struct t_nry *) ud;
 }
 

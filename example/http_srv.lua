@@ -4,10 +4,8 @@ Net      = require( 't.Net' )
 s_port = 8003
 answer = 'This is my answer'
 
-srv,ip = Net.Socket.listen( s_port, 5 )
-ipAdd, port   = ip:get( )
-assert( ipAdd, port )
-print( tostring(srv) .. " listening on '" ..ipAdd.. ":" ..port.. "' (" ..tostring( ip ).. ")..."  )
+srv,adr = Net.Socket.listen( s_port, 5 )
+print( tostring(srv) .. " listening on '" ..adr.ip.. ":" ..adr.port.. "' (" ..tostring( adr ).. ")..."  )
 x=0
 payload= 'HTTP/1.1 200 OK\r\r' ..
 'Content-Length: ' .. #answer .. '\r\n' ..

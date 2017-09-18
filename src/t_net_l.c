@@ -33,6 +33,7 @@
 #include "t_dbg.h"
 #endif
 
+int _t_net_default_family = AF_INET;
 
 // ---------------------- HELPERS ---------------------------------------------
 
@@ -115,61 +116,6 @@ t_net_getProtocolByValue( lua_State *L, int pos, const int dft )
 
 
 /**--------------------------------------------------------------------------
- * Evaluate elements on stack to be definitions or instances of sck and adr.
- * \detail  This is a helper function to handle possible input scenarios for
- *          functions bind(), listen() and connect().  Socket.func(sck, ...)
- *          is the same as sck:func( ... ) -> use same function definition as
- *          class function and as method.  Possible combinations:
- *
- *          IPv4(TCP), Adr 0.0.0.0:(0) = Socket.func( )
- *          IPv4(TCP)                  = Socket.func( ip )
- *          IPv4(TCP), ipString:port   = Socket.func( 'ipString', port )
- *          IPv4(TCP), 0.0.0.0:port    = Socket.func( port )
- *
- *          (no return values)         = Socket.func( sck, ip )
- *          Adr ipString:port          = Socket.func( sck, 'ipString', port )
- *          Adr ipString:(0)           = Socket.func( sck, 'ipstring' )
- *          Adr 0.0.0.0:port           = Socket.func( sck, port )
- *          Adr 0.0.0.0:(0)            = Socket.func( sck )
- *
- * \param   L      Lua state.
- * \param   int    Position on the stack.
- * \return  returnables int; how many stack items will the caller of this
- *                      function return.
- * --------------------------------------------------------------------------*/
-int
-t_net_getdef( lua_State *L, const int pos, struct t_net_sck **sck, struct sockaddr_in **adr )
-{
-	int returnables = 0;
-	*sck = t_net_sck_check_ud( L, pos+0,                      0 );
-	*adr = t_net_ip4_check_ud( L, pos+((NULL==*sck) ? 0 : 1), 0 );
-
-	if (NULL == *sck)
-	{
-		// in all shortcuts of listen(ip,port), bind(ip,port), connect(ip,port)
-		// It defaults to IPv4 and TCP, for others Families and Protocols must be
-		// created explicitely
-		*sck = t_net_sck_create_ud( L, AF_INET, SOCK_STREAM, IPPROTO_TCP, 1  );
-		lua_insert( L, pos+0 );
-		returnables++;
-	}
-	else
-		lua_remove( L, pos );
-
-	if (NULL == *adr)
-	{
-		*adr = t_net_ip4_create_ud( L );
-		lua_insert( L, pos+returnables );
-		returnables++;
-		t_net_ip4_set( L, pos+returnables, *adr );
-	}
-	else
-		lua_remove( L, pos+returnables );
-	return returnables;
-}
-
-
-/**--------------------------------------------------------------------------
  * Class functions library definition
  * --------------------------------------------------------------------------*/
 static const luaL_Reg t_net_cf [] =
@@ -190,8 +136,8 @@ LUA_API int
 luaopen_t_net( lua_State *L )
 {
 	luaL_newlib( L, t_net_cf );
-	luaopen_t_net_ip4( L );
-	lua_setfield( L, -2, T_NET_IP4_IDNT );
+	luaopen_t_net_adr( L );
+	lua_setfield( L, -2, T_NET_ADR_IDNT );
 	luaopen_t_net_ifc( L );
 	lua_setfield( L, -2, T_NET_IFC_IDNT );
 	luaopen_t_net_sck( L );
