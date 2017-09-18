@@ -22,7 +22,6 @@ Socket    = require( "t.Net.Socket" )
 Address   = require( "t.Net.Address" )
 Interface = require( "t.Net.Interface" )
 Buffer    = require( "t.Buffer" )
-Segment   = require( "t.Buffer.Segment" )
 T         = require( "t" )
 asrtHlp   = T.require( "assertHelper" )
 
@@ -141,7 +140,7 @@ local tests = {
 		local buffer   = Buffer( #payload )
 		local cnt      = 0
 		local receiver = function( s )
-			local msg,len = s.aSck:recv( Segment( buffer, cnt+1 ) )
+			local msg,len = s.aSck:recv( buffer:Segment( cnt+1 ) )
 			T.assert( type(len)=='number',  "Expected `%s` but got `%s`", 'number', type(len) )
 			if msg then
 				T.assert( type(msg)=='boolean',  "Expected `%s` but got `%s`", 'boolean', type(msg) )
@@ -162,8 +161,8 @@ local tests = {
 		local buffer   = Buffer( #payload )
 		local rcvd, sz, cnt  = 0,128, 0
 		local receiver = function( s )
-			local seg     = cnt+1+sz > #buffer and Segment( buffer, cnt+1 )
-			                                   or  Segment( buffer, cnt+1, 128 )
+			local seg     = cnt+1+sz > #buffer and buffer:Segment( cnt+1 )
+			                                   or  buffer:Segment( cnt+1, 128 )
 			local msg,len = s.aSck:recv( seg )
 			T.assert( type(len)=='number',  "Expected `%s` but got `%s`", 'number', type(len) )
 			if msg then

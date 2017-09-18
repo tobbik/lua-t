@@ -6,7 +6,6 @@
 T      = require( "t" )
 Test   = require( "t.Test" )
 Buffer = require( "t.Buffer" )
-Segment= require( "t.Buffer.Segment" )
 Rtvg   = T.require( 'rtvg' )
 format = string.format
 
@@ -96,7 +95,7 @@ tests = {
 
 	test_ConstructorPartialFromSegment = function( self )
 		Test.Case.describe( "Buffer( size, seg ) must have right length and values" )
-		local s = Segment( self.b, math.floor( #self.b/2 ) )
+		local s = self.b:Segment( math.floor( #self.b/2 ) )
 		local b = Buffer( #s+123, s )
 		assert( #b == #s+123, format( "Length of t.Buffer should be %d but was %d", #s+123, #b ) )
 		assert( s:read( )  == b:read(1, #s), format( "Content of Buffer should be `%s`\n   but was `%s`", s:read(), b:read(1, #s) ) )
@@ -105,7 +104,7 @@ tests = {
 	test_ConstructorTooShortPartialFromSegmentFails = function( self )
 		Test.Case.describe( "Buffer( #buffer-5, buffer ) shall fail" )
 		local errMsg = "size must be at least as big as source to copy from"
-		local s      = Segment( self.b, math.floor( #self.b/2 ) )
+		local s      = self.b:Segment( math.floor( #self.b/2 ) )
 		local f      = function( x ) local b = Buffer( #x-5, x ) end
 		local r,e    = pcall( f, s )
 		assert( not r, "Creating Buffer should have failed" )

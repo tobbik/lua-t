@@ -17,7 +17,7 @@
 -- \author    tkieslich
 -- \copyright See Copyright notice at the end of src/t.h
 
-local t, Table   = require( "t" ), require( "t.Table" )
+local T, Table   = require( "t" ), require( "t.Table" )
 local t_concat    , t_insert,     t_remove =
       table.concat, table.insert, table.remove
 local getmetatable, setmetatable, pairs, assert, next, type =

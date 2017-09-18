@@ -26,7 +26,6 @@ Socket    = require( "t.Net.Socket" )
 Address   = require( "t.Net.Address" )
 Interface = require( "t.Net.Interface" )
 Buffer    = require( "t.Buffer" )
-Segment   = require( "t.Buffer.Segment" )
 T         = require( "t" )
 asrtHlp   = T.require( "assertHelper" )
 
@@ -36,7 +35,7 @@ asrtHlp   = T.require( "assertHelper" )
 local makeReceiver = function( self, size, payload, done )
 	local inCount, incBuffer, sck, adr = 0, Buffer( size ), nil, nil
 	local rcv = function( )
-		local seg     = Segment(incBuffer, inCount+1 )
+		local seg     = incBuffer:Segment( inCount+1 )
 		local suc,cnt = sck:recv( seg )
 		if suc then
 			T.assert( incBuffer:read( inCount+1, cnt ) == payload:sub( inCount+1, cnt+inCount ),
@@ -173,8 +172,8 @@ local tests = {
 			string.rep( 'THis Is a LittLe Test-MEsSage To bE sEnt ACcroSS the WIrE ...!_', 50000 )
 		local buf    = Buffer( payload )
 		local sender = function( s )
-			local seg = outCount+1+128 > #buf and Segment( buf, outCount+1 )
-			                                  or  Segment( buf, outCount+1, 128 )
+			local seg = outCount+1+128 > #buf and buf:Segment( outCount+1 )
+			                                  or  buf:Segment( outCount+1, 128 )
 			local cnt = s.cSck:send( seg )
 			if cnt then
 				sendCount = sendCount+1
@@ -196,7 +195,7 @@ local tests = {
 			string.rep( 'THis Is a LittLe Test-MEsSage To bE sEnt ACcroSS the WIrE ...!_', 600000 )
 		local buf    = Buffer( payload )
 		local sender = function( s )
-			local cnt = s.cSck:send( Segment( buf, outCount+1 ) )
+			local cnt = s.cSck:send( buf:Segment( outCount+1 ) )
 			if cnt then
 				sendCount = sendCount+1
 				outCount  = cnt + outCount

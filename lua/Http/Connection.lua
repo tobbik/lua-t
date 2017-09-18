@@ -12,7 +12,7 @@ local t_insert     , getmetatable, setmetatable, pairs, assert, next, type =
 local t_merge,     t_complement,     t_contains,     t_count,     t_keys,     t_asstring =
       Table.merge, Table.complement, Table.contains, Table.count, Table.keys, Table.asstring
 
-local Loop, T, Table, Buffer, Segment = require't.Loop', require't', require't.Table', require't.Buffer', require't.Buffer.Segment'
+local Loop, T, Table, Buffer = require't.Loop', require't', require't.Table', require't.Buffer'
 
 local _mt
 
@@ -34,7 +34,7 @@ local getStream = function( con )
 end
 
 local recv    = function( con )
-	local segm = Buffer.Segment( con.buf, con.rcvd+1 )
+	local segm = con.buf:Segment( con.rcvd+1 )
 	local rcvd = con.cli:recv( segm )
 	t.print( "RCVD: %d bytes\n", rcvd );
 	if not rcvd then

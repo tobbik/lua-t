@@ -376,7 +376,7 @@ lt_buf__tostring( lua_State *L )
  * Class metamethods library definition
  * --------------------------------------------------------------------------*/
 static const struct luaL_Reg t_buf_fm [] = {
-	  {"__call",        lt_buf__Call}
+	  { "__call"       , lt_buf__Call }
 	, { NULL           , NULL }
 };
 
@@ -420,14 +420,14 @@ LUAMOD_API int luaopen_t_buf( lua_State *L )
 	// T.Buffer instance metatable
 	luaL_newmetatable( L, T_BUF_TYPE );
 	luaL_setfuncs( L, t_buf_m, 0 );
+	luaopen_t_buf_seg( L );
+	lua_setfield( L, -2, T_BUF_SEG_NAME );
 	lua_setfield( L, -1, "__index" );
 
 	// T.Buffer class
 	luaL_newlib( L, t_buf_cf );
 	lua_pushinteger( L, BUFSIZ );
 	lua_setfield( L, -2, "Size" );
-	luaopen_t_buf_seg( L );
-	lua_setfield( L, -2, T_BUF_SEG_IDNT );
 	luaL_newlib( L, t_buf_fm );
 	lua_setmetatable( L, -2 );
 	return 1;

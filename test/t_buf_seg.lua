@@ -9,7 +9,6 @@
 T       = require( "t" )
 Test    = require( "t.Test" )
 Buffer  = require( "t.Buffer" )
-Segment = Buffer.Segment
 Rtvg    = T.require( 'rtvg' )
 format  = string.format
 --math.randomseed(os.time())
@@ -24,7 +23,7 @@ tests = {
 		local st = math.random( math.floor(l/6), math.floor(l/2 ) )
 		local ed = math.random( st, l )
 		while ed==st do ed=math.random(st,l) end -- that's a very weird bug
-		self.seg = Segment( self.b, st, ed-st )
+		self.seg = self.b:Segment( st, ed-st )
 	end,
 
 	--afterEach = function( self )  -- not necessary for this suite
@@ -32,7 +31,7 @@ tests = {
 
 	test_ConstructorFullSegment = function( self )
 		Test.Case.describe( "Create a segment covering the entire buffer" )
-		local seg         = Segment( self.b )
+		local seg         = self.b:Segment( )
 		local buf,ofs,len = seg:getBuffer()
 		assert( #seg == #self.b, "Length of T.Buffer.Segment should be "..#self.b.." but was " ..#seg )
 		assert( #seg == len,     "Length of T.Buffer.Segment should be "..#seg.." but was " ..len )
@@ -44,7 +43,7 @@ tests = {
 	test_ConstructorPartialSegment = function( self )
 		local buf,ofs,len = self.seg:getBuffer()
 		Test.Case.describe( "Create a segment starting at "..ofs.." byte of "..tostring(self.b) )
-		local seg = Segment( self.b, ofs )
+		local seg = self.b:Segment( ofs )
 		assert( #seg == #self.b - ofs + 1, "Length of T.Buffer.Segment should be "..(#self.b-ofs+1).." but was "..#seg )
 		assert( seg:read() == self.b:read( ofs ),
 			"Content of T.Buffer.Segment should be "..self.b:read(ofs ).." but was " ..seg:read() )
@@ -54,7 +53,7 @@ tests = {
 		local buf,ofs,len = self.seg:getBuffer()
 		ofs,len = math.floor( ofs + len/3 ), math.ceil( len/2 )
 		Test.Case.describe( "Create a "..len.." bytes long segment starting at "..ofs.." byte of "..tostring(self.b) )
-		local seg = Segment( self.b, ofs, len )
+		local seg = self.b:Segment( ofs, len )
 		assert( #seg == len, "Length of T.Buffer.Segment should be "..len.." but was " ..#seg )
 		assert( seg:read() == self.b:read( ofs, len ),
 			"Content of T.Buffer.Segment should be "..self.b:read(ofs, len ).." but was " ..seg:read() )
@@ -62,8 +61,8 @@ tests = {
 
 	test_ConstructorPartialSegmentIndexOne = function( self )
 		Test.Case.describe( "Segment starting at index 1 should equal Segment covering full Buffer" )
-		local seg1 = Segment( self.b, 1 )
-		local seg  = Segment( self.b )
+		local seg1 = self.b:Segment( 1 )
+		local seg  = self.b:Segment( )
 		assert( #seg1 == #seg, "Length of T.Buffer.Segment should be "..#seg.." but was " ..#seg1 )
 		assert( seg1  ==  seg, "T.Buffer.Segments should be eqyual" )
 		assert( seg1:read() == seg:read(),
@@ -72,7 +71,7 @@ tests = {
 
 	test_ConstructorOffsetOverflowFails = function( self )
 		Test.Case.describe( "Creating Segment with offset higher then #buffer fails" )
-		local f   = function(s) local seg = Segment( s.b, #s.b+5 ) end
+		local f   = function(s) local seg = s.b:Segment( #s.b+5 ) end
 		local r,e = pcall( f, self )
 		assert( not r, "Segement constructor should have failed" )
 		assert( e:match( "Offset relative to length of T.Buffer out of bound" ), "Wrong Error message: "..e )
@@ -80,7 +79,7 @@ tests = {
 
 	test_ConstructorLengthOverflowFails = function( self )
 		Test.Case.describe( "Creating Segment with length higher then #buffer fails" )
-		local f   = function(s) local seg = Segment( s.b, 1, #s.b+5 ) end
+		local f   = function(s) local seg = s.b:Segment( 1, #s.b+5 ) end
 		local r,e = pcall( f, self )
 		assert( not r, "Segement constructor should have failed" )
 		assert( e:match( "T.Buffer.Segment length out of bound" ), "Wrong Error message: "..e )
@@ -88,7 +87,7 @@ tests = {
 
 	test_ConstructorOffsetPlusLengthOverflowFails = function( self )
 		Test.Case.describe( "Creating Segment with offset+length higher then #buffer fails" )
-		local f   = function(s) local seg = Segment( s.b, #s.b-5, 10 ) end
+		local f   = function(s) local seg = s.b:Segment( #s.b-5, 10 ) end
 		local r,e = pcall( f, self )
 		assert( not r, "Segement constructor should have failed" )
 		assert( e:match( "T.Buffer.Segment length out of bound" ), "Wrong Error message: "..e )
@@ -96,7 +95,7 @@ tests = {
 	
 	test_ConstructorZeroPartialLengthSegmentStart = function( self )
 		Test.Case.describe( "Create a 0 bytes long segment starting wherever" )
-		local seg         = Segment( self.b, 1, 0 )
+		local seg         = self.b:Segment( 1, 0 )
 		local buf,idx,len = seg:getBuffer( )
 		assert( #seg == 0, "Length of T.Buffer.Segment should be "..len.." but was " ..#seg )
 		assert( seg:read() == self.b:read( idx, len ),
@@ -106,7 +105,7 @@ tests = {
 	test_ConstructorZeroPartialLengthSegmentMiddle = function( self )
 		local starts = math.random( math.floor(#self.seg/3), #self.b - math.floor(#self.seg/3 ) )
 		Test.Case.describe( "Create a 0 bytes long segment starting wherever" )
-		local seg         = Segment( self.b, start, 0 )
+		local seg         = self.b:Segment( start, 0 )
 		local buf,idx,len = seg:getBuffer( )
 		assert( #seg == 0, "Length of T.Buffer.Segment should be "..len.." but was " ..#seg )
 		assert( seg:read() == self.b:read( idx, len ),
@@ -115,7 +114,7 @@ tests = {
 
 	test_ConstructorZeroPartialLengthSegmentEnd = function( self )
 		Test.Case.describe( "Create a 0 bytes long segment starting wherever" )
-		local seg         = Segment( self.b, #self.b, 0 )
+		local seg         = self.b:Segment( #self.b, 0 )
 		local buf,idx,len = seg:getBuffer( )
 		assert( #seg == 0, "Length of T.Buffer.Segment should be "..len.." but was " ..#seg )
 		assert( seg:read() == self.b:read( idx, len ),
@@ -172,9 +171,9 @@ tests = {
 
 	test_SetSizeIncreaseLength= function( self )
 		local buf,ofs,len = self.seg:getBuffer()
-		local nlen        = len + math.floor( len/4 )
+		local nlen        = len + math.ceil((#buf-len)/2)
 		Test.Case.describe( format("Change %s in %s length from %d to %d", self.seg, buf, len, nlen ) )
-		local seg = Segment( self.b, ofs, len )
+		local seg = self.b:Segment( ofs, len )
 		seg:setSize( nlen )
 		T.assert( #seg == nlen, "Length of T.Buffer.Segment should be %d but was %d", nlen, #seg )
 		T.assert( seg:read() == self.b:read( ofs, nlen ),
@@ -184,7 +183,7 @@ tests = {
 	test_SetSizeIncreaseToMaxLength= function( self )
 		local buf,ofs,len = self.seg:getBuffer()
 		Test.Case.describe( format("Change length of %s from %d to %d", self.seg, len, len ) )
-		local seg = Segment( self.b, ofs, len )
+		local seg = self.b:Segment( ofs, len )
 		seg:setSize( len )
 		T.assert( #seg == len, "Length of T.Buffer.Segment should be %d but was %d", len, #seg )
 		T.assert( seg:read() == self.b:read( ofs, len ),
@@ -195,7 +194,7 @@ tests = {
 		local buf,ofs,len = self.seg:getBuffer()
 		local nlen        = len - math.floor( len/3 )
 		Test.Case.describe( format("Change %s in %s length from %d to %d", self.seg, buf, len, nlen ) )
-		local seg = Segment( self.b, ofs, len )
+		local seg = self.b:Segment( ofs, len )
 		seg:setSize( nlen )
 		T.assert( #seg == nlen, "Length of T.Buffer.Segment should be %d but was %d", nlen, #seg )
 		T.assert( seg:read() == self.b:read( ofs, nlen ),
@@ -207,7 +206,7 @@ tests = {
 		local errMsg      = "T.Buffer.Segment length out of bound"
 		local nlen        = #buf-ofs+23
 		Test.Case.describe( format("Change %s in %s length from %d to %d should fail", self.seg, buf, len, nlen ) )
-		local seg = Segment( self.b, ofs, len )
+		local seg = self.b:Segment( ofs, len )
 		local f   = function(s,l) return s:setSize( l ) end
 		local r,e = pcall( f, self.seg, nlen )
 		assert( not r, "Increasing size past length of Buffer should fail" )
@@ -267,7 +266,7 @@ tests = {
 		Test.Case.describe( "__eq metamethod properly compares for equality" )
 		local buf,ofs,len = self.seg:getBuffer()
 		local rseg = self.seg
-		local nseg = Segment( self.b,ofs,len )
+		local nseg = self.b:Segment( ofs, len )
 		assert( rseg == self.seg, "References and Original must be equal" )
 		assert( nseg == self.seg, "Equal Segment and Original must be equal" )
 	end,
@@ -275,8 +274,8 @@ tests = {
 	test_NotEquals = function( self )
 		Test.Case.describe( "__eq metamethod properly compares for inequality" )
 		local buf,ofs,len = self.seg:getBuffer()
-		local oseg = Segment( self.b, ofs+1, len   )
-		local lseg = Segment( self.b, ofs,   len+1 )
+		local oseg = self.b:Segment( ofs+1, len   )
+		local lseg = self.b:Segment( ofs,   len+1 )
 		assert( lseg ~= oseg,     "Different length and offset shall make Segment unequal" )
 		assert( oseg ~= self.seg, "Different offset shall make Segment unequal" )
 		assert( lseg ~= self.seg, "Different length shall make Segment unequal" )
@@ -287,7 +286,7 @@ tests = {
 		local starts = math.random( math.floor(#self.seg/5), math.floor(#self.seg/2 ) )
 		local ends   = math.random( starts, #self.seg-3 )
 		local nlen   = ends-starts
-		local seg    = Segment( self.b, starts, nlen )
+		local seg    = self.b:Segment( starts, nlen )
 		local buf,ofs,len = seg:getBuffer( )
 		assert( buf == self.b, "Reported T.Buffer must equal original T.Buffer" )
 		-- __tostring reports memory address
