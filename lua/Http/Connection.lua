@@ -20,36 +20,46 @@ local _mt
 -- assert Http.Connection type and return the proxy table
 local chkCon  = function( self )
 	T.assert( _mt == getmetatable( self ), "Expected `%s`, got %s", _mt.__name, T.type( self ) )
-	return self[ T.prxTblIdx ]
+	return self
 end
 
-local getStream = function( con )
+local getStream = function( self )
 	-- if HTTP1.0 or HTTP1.1 this is the last, HTTP2.0 has a stream identifier ... TODO:
-	local stream = cons.streams[ #con.streams ]
+	local stream = self.streams[ #self.streams ]
 	if not stream then
-		stream = Http.Stream( con )
-		t_insert( con.streams, stream )
+		stream = Http.Stream( self )
+		t_insert( self.streams, stream )
 	end
 	return stream
 end
 
-local recv    = function( con )
-	local segm = Buffer.Segment( con.buf, con.rcvd+1 )
-	local rcvd = con.cli:recv( segm )
+local recv    = function( self )
+	local rcvd = self.cli:recv( self.buf )
 	t.print( "RCVD: %d bytes\n", rcvd );
 	if not rcvd then
 		--dispose of itself ... clear streams, buffer etc...
 	else
-		segm:setSize( rcvd );
-		con.segment  = segm
-		local stream = getStream( con )
+		local stream = getStream( self )
+		stream:recv( Buffer.Segment( self.buf, 1, rcvd ) )
+	end
+end
+
+local resp
+resp    = function( self )
+	local stream = self.streams[ #self.streams ]
+	local snt    = self.cli:send( stream )
+	if stream.state == stream.State.Done then
+		self.srv.ael:removeHandle( cli, 'write' )
 	end
 end
 
 -- ---------------------------- Instance metatable --------------------
 _mt = {       -- local _mt at top of file
 	-- essentials
-	__name     = "t.Http.Connection"
+	  __name     = "t.Http.Connection"
+	, __index    = _mt
+	, resp       = resp
+	, recv       = recv
 }
 
 return setmetatable( {
@@ -72,7 +82,7 @@ return setmetatable( {
 
 		srv.ael:addHandle( cli, 'read',  recv, con )
 		srv.ael:addHandle( cli, 'write', resp, con )
-		return setmetatable( { [ T.prxTblIdx ] = con }, _mt )
+		return setmetatable( con, _mt )
 	end
 } )
 
