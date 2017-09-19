@@ -171,10 +171,10 @@ tests = {
 
 	test_SetSizeIncreaseLength= function( self )
 		local buf,ofs,len = self.seg:getBuffer()
-		local nlen        = len + math.ceil((#buf-len)/2)
-		Test.Case.describe( format("Change %s in %s length from %d to %d", self.seg, buf, len, nlen ) )
+		local nlen        = #buf - ofs - 2
+		Test.Case.describe( format("Change length of %s in %s from %d to %d", self.seg, buf, len, nlen ) )
 		local seg = self.b:Segment( ofs, len )
-		seg:setSize( nlen )
+		seg:size( nlen )
 		T.assert( #seg == nlen, "Length of T.Buffer.Segment should be %d but was %d", nlen, #seg )
 		T.assert( seg:read() == self.b:read( ofs, nlen ),
 			"Content of T.Buffer.Segment should be %s but wa %s", self.b:read(ofs, len ), seg:read() )
@@ -184,7 +184,7 @@ tests = {
 		local buf,ofs,len = self.seg:getBuffer()
 		Test.Case.describe( format("Change length of %s from %d to %d", self.seg, len, len ) )
 		local seg = self.b:Segment( ofs, len )
-		seg:setSize( len )
+		seg:size( len )
 		T.assert( #seg == len, "Length of T.Buffer.Segment should be %d but was %d", len, #seg )
 		T.assert( seg:read() == self.b:read( ofs, len ),
 			"Content of T.Buffer.Segment should be %s but wa %s", self.b:read(ofs, len ), seg:read() )
@@ -193,9 +193,9 @@ tests = {
 	test_SetSizeDecreaseLength= function( self )
 		local buf,ofs,len = self.seg:getBuffer()
 		local nlen        = len - math.floor( len/3 )
-		Test.Case.describe( format("Change %s in %s length from %d to %d", self.seg, buf, len, nlen ) )
+		Test.Case.describe( format("Change length of %s in %s from %d to %d", self.seg, buf, len, nlen ) )
 		local seg = self.b:Segment( ofs, len )
-		seg:setSize( nlen )
+		seg:size( nlen )
 		T.assert( #seg == nlen, "Length of T.Buffer.Segment should be %d but was %d", nlen, #seg )
 		T.assert( seg:read() == self.b:read( ofs, nlen ),
 			"Content of T.Buffer.Segment should be %s but wa %s", self.b:read(ofs, len ), seg:read() )
@@ -205,12 +205,55 @@ tests = {
 		local buf,ofs,len = self.seg:getBuffer()
 		local errMsg      = "T.Buffer.Segment length out of bound"
 		local nlen        = #buf-ofs+23
-		Test.Case.describe( format("Change %s in %s length from %d to %d should fail", self.seg, buf, len, nlen ) )
+		Test.Case.describe( format("Change length of %s in %s from %d to %d should fail", self.seg, buf, len, nlen ) )
 		local seg = self.b:Segment( ofs, len )
-		local f   = function(s,l) return s:setSize( l ) end
+		local f   = function(s,l) return s:size( l ) end
 		local r,e = pcall( f, self.seg, nlen )
 		assert( not r, "Increasing size past length of Buffer should fail" )
 		T.assert( e:match( errMsg), "Error message should contain `%s`, but was `%s`", errMsg, e )
+	end,
+
+	test_SetToIncreaseLength= function( self )
+		local buf,ofs,len = self.seg:getBuffer()
+		local nTo         = ofs + len + 6
+		Test.Case.describe( format("Change end of %s in %s length from %d to %d", self.seg, buf, len+ofs, nTo ) )
+		self.seg:to( nTo )
+		local xBuf,xOfs,xLen = self.seg:getBuffer( )
+		assert( xOfs == ofs, "Offset should remain the same" )
+		assert( xLen == len+6, format( "Length should have increased to %d but was %d", len+6, xLen ) )
+		T.assert( self.seg:read() == self.b:read( ofs, xLen ),
+			"Content of T.Buffer.Segment should be %s but wa %s", self.b:read( ofs, xLen ), self.seg:read() )
+	end,
+
+	test_SetToDecreaseLength= function( self )
+		local buf,ofs,len = self.seg:getBuffer()
+		local nTo         = ofs + len - 6
+		Test.Case.describe( format("Change end of %s in %s length from %d to %d", self.seg, buf, len+ofs, nTo ) )
+		self.seg:to( nTo )
+		local xBuf,xOfs,xLen = self.seg:getBuffer( )
+		assert( xOfs == ofs, "Offset should remain the same" )
+		assert( xLen == len-6, format( "Length should have increased to %d but was %d", len+6, xLen ) )
+		T.assert( self.seg:read() == self.b:read( ofs, xLen ),
+			"Content of T.Buffer.Segment should be %s but wa %s", self.b:read( ofs, xLen ), self.seg:read() )
+	end,
+
+	test_ShiftRight= function( self )
+		local buf,ofs,len = self.seg:getBuffer()
+		local shft        = 6
+		Test.Case.describe( format( "Shift %s in %d tothe right", self.seg, shft ) )
+		self.seg:shift( shft )
+		local xBuf,xOfs,xLen = self.seg:getBuffer( )
+		assert( xOfs == ofs+6, "Offset should increase" )
+		assert( xLen == len,   "Length should remain the same" )
+		T.assert( self.seg:read() == self.b:read( xOfs, len ),
+			"Content of T.Buffer.Segment should be %s but wa %s", self.b:read( ofs, xLen ), self.seg:read() )
+	end,
+
+	test_Next= function( self )
+		local seg  = self.b:Segment( 1, math.ceil( #self.b/2 ) )
+		local nxt  = seg:next( )
+		Test.Case.describe( format( "Next Segment %s", seg ) )
+		assert( #seg == #nxt, "nxt should have same length" )
 	end,
 
 	test_ReadPartialSegment = function( self )

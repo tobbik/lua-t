@@ -103,7 +103,7 @@ lt_buf_seg_clear( lua_State *L )
  * \return  int    # of values pushed onto the stack.
  *  -------------------------------------------------------------------------*/
 static int
-lt_buf_seg_setSize( lua_State *L )
+lt_buf_seg_size( lua_State *L )
 {
 	struct t_buf_seg *seg = t_buf_seg_check_ud( L, 1, 1 );
 	size_t            len = luaL_checkinteger( L, 2 );
@@ -118,6 +118,81 @@ lt_buf_seg_setSize( lua_State *L )
 	seg->len = len;
 
 	return 0;
+}
+
+
+/** -------------------------------------------------------------------------
+ * Set upper limit of the T.Buffer.Segment instance.
+ * \param   L      Lua state.
+ * \lparam  ud     T.Buffer.Segment userdata instance.
+ * \lparam  to     New upper limit of Buffer.Segment.
+ * \return  int    # of values pushed onto the stack.
+ *  -------------------------------------------------------------------------*/
+static int
+lt_buf_seg_to( lua_State *L )
+{
+	struct t_buf_seg *seg = t_buf_seg_check_ud( L, 1, 1 );
+	size_t            to  = luaL_checkinteger( L, 2 );
+	struct t_buf     *buf;
+
+	lua_rawgeti( L, LUA_REGISTRYINDEX, seg->bR );
+	buf = t_buf_check_ud( L, -1, 1 );
+
+	luaL_argcheck( L, seg->idx <= to && to <= buf->len, 2,
+	   T_BUF_SEG_TYPE" length out of bound" );
+
+	seg->len = to - seg->idx;
+
+	return 0;
+}
+
+
+/** -------------------------------------------------------------------------
+ * Shift Segment accross T.Buffer instance.
+ * \param   L      Lua state.
+ * \lparam  ud     T.Buffer.Segment userdata instance.
+ * \lparam  shft   Left or right shift.
+ * \return  int    # of values pushed onto the stack.
+ *  -------------------------------------------------------------------------*/
+static int
+lt_buf_seg_shift( lua_State *L )
+{
+	struct t_buf_seg *seg  = t_buf_seg_check_ud( L, 1, 1 );
+	size_t            shft = luaL_checkinteger( L, 2 );
+	struct t_buf     *buf;
+
+	lua_rawgeti( L, LUA_REGISTRYINDEX, seg->bR );
+	buf = t_buf_check_ud( L, -1, 1 );
+
+	luaL_argcheck( L, seg->idx - shft > 0 && (seg->idx + seg->len + shft) < buf->len, 2,
+	   T_BUF_SEG_TYPE" shift value out of bound" );
+
+	seg->idx += shft;
+	seg->b   += shft;
+
+	return 0;
+}
+
+
+/** -------------------------------------------------------------------------
+ * Create T.Buffer.Segment of same size on same buffer offset to right.
+ * \param   L      Lua state.
+ * \lparam  ud     T.Buffer.Segment userdata instance.
+ * \return  int    # of values pushed onto the stack.
+ *  -------------------------------------------------------------------------*/
+static int
+lt_buf_seg_next( lua_State *L )
+{
+	struct t_buf_seg *seg = t_buf_seg_check_ud( L, 1, 1 );
+	struct t_buf     *buf;
+
+	lua_rawgeti( L, LUA_REGISTRYINDEX, seg->bR );
+	buf = t_buf_check_ud( L, -1, 1 );
+	if ((seg->idx + seg->len + seg->len) <= buf->len+1)
+		t_buf_seg_create_ud( L, buf, seg->idx + seg->len, seg->len );
+	else
+		lua_pushnil( L );
+	return 1;
 }
 
 
@@ -182,13 +257,10 @@ lt_buf_seg_getReferences( lua_State *L )
 static int
 lt_buf_seg__eq( lua_State *L )
 {
-	struct t_buf_seg*sA = t_buf_seg_check_ud( L, 1, 1 );
-	struct t_buf_seg*sB = t_buf_seg_check_ud( L, 2, 1 );
+	struct t_buf_seg *sA = t_buf_seg_check_ud( L, 1, 1 );
+	struct t_buf_seg *sB = t_buf_seg_check_ud( L, 2, 1 );
 
-	if (sA == sB)
-		lua_pushboolean( L, 1 );
-	else
-		t_buf_compare( L, sA->b, sB->b, sA->len, sB->len );
+	lua_pushboolean( L, t_buf_compare( sA->b, sB->b, sA->len, sB->len ) );
 	return 1;
 }
 
@@ -268,7 +340,10 @@ static const luaL_Reg t_buf_seg_m [] = {
 	, { "read"         , lt_buf_read }
 	, { "write"        , lt_buf_write }
 	, { "getBuffer"    , lt_buf_seg_getReferences }
-	, { "setSize"      , lt_buf_seg_setSize }
+	, { "size"         , lt_buf_seg_size }
+	, { "to"           , lt_buf_seg_to }
+	, { "next"         , lt_buf_seg_next }
+	, { "shift"        , lt_buf_seg_shift }
 	// universal stuff
 	, { "toHex"        , lt_buf_seg_toHexString }
 	, { "toBin"        , lt_buf_seg_toBinString }

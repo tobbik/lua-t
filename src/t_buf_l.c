@@ -110,28 +110,18 @@ struct t_buf
  * \return  int  # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 int
-t_buf_compare( lua_State *L, char *bA, char *bB, size_t aLen, size_t bLen )
+t_buf_compare( char *bA, char *bB, size_t aLen, size_t bLen )
 {
 	size_t  n;          ///< runner
 
-	if (bA == bB && aLen == bLen )  // points to the same address -> true
-	{
-		lua_pushboolean( L, 1 );
-		return 1;
-	}
 	if (aLen != bLen)    // different length -> false
-	{
-		lua_pushboolean( L, 0 );
+		return 0;
+	if (bA == bB )      // same address and length -> true
 		return 1;
-	}
 	else
 		for( n=0; n<aLen; n++ )
 			if (bA[n] !=  bB[n])
-			{
-				lua_pushboolean( L, 0 );
-				return 1;
-			}
-	lua_pushboolean( L, 1 );
+				return 0;
 	return 1;
 }
 
@@ -311,10 +301,7 @@ lt_buf__eq( lua_State *L )
 	struct t_buf *bA = t_buf_check_ud( L, 1, 1 );
 	struct t_buf *bB = t_buf_check_ud( L, 2, 1 );
 
-	if (bA == bB)
-		lua_pushboolean( L, 1 );
-	else
-		t_buf_compare( L, bA->b, bB->b, bA->len, bB->len );
+	lua_pushboolean( L, t_buf_compare( bA->b, bB->b, bA->len, bB->len ) );
 	return 1;
 }
 
