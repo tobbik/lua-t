@@ -96,6 +96,22 @@ void t_htp_adjustBuffer( struct t_buf *buf, size_t index )
 
 
 /**--------------------------------------------------------------------------
+ * Set start point of Buffer.Segment
+ * This is a dangerous function which doesn't check bounderies!
+ * \param   L     Lua state.
+ * \param   struct t_buf_seg seg.
+ * \param   mv    move start point.
+ * --------------------------------------------------------------------------*/
+static void
+t_buf_seg_moveIndex( struct t_buf_seg *seg, int mv )
+{
+	seg->b   += mv;
+	seg->idx += mv;
+	seg->len -= mv;
+}
+
+
+/**--------------------------------------------------------------------------
  * Parse Method from the request.
  * \param  L                  the Lua State
  * \param  struct t_htp_str*  pointer to t_htp_str.
