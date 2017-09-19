@@ -446,8 +446,8 @@ lt_net_sck_recv( lua_State *L )
 static int
 lt_net_sck_getsockname( lua_State *L )
 {
-	struct t_net_sck        *sck  = t_net_sck_check_ud( L, 1, 1 );
-	struct sockaddr_storage *adr  = t_net_adr_check_ud( L, 2, 0 );
+	struct t_net_sck        *sck = t_net_sck_check_ud( L, 1, 1 );
+	struct sockaddr_storage *adr = t_net_adr_check_ud( L, 2, 0 );
 
 	if (NULL == adr)
 		adr = t_net_adr_create_ud( L );
@@ -528,7 +528,7 @@ lt_net_sck_Select( lua_State *L )
 static int
 lt_net_sck__index( lua_State *L )
 {
-	struct t_net_sck *sck  = t_net_sck_check_ud( L, 1, 1 );
+	struct t_net_sck *sck = t_net_sck_check_ud( L, 1, 1 );
 
 	lua_pushvalue( L, 2 );   // preserve the key
 	if (NULL == t_getTypeByName( L, -1, NULL, t_net_optionList ))  //S: sck key val opt

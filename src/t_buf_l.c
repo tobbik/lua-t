@@ -358,6 +358,59 @@ lt_buf__tostring( lua_State *L )
 	return 1;
 }
 
+/**--------------------------------------------------------------------------
+ * __index method for t.Buffer.
+ * \param   L      Lua state.
+ * \lparam  ud     t.Buffer userdata instance.
+ * \lparam  string Access key value.
+ * \lreturn value  based on what's behind __index.
+ * \return  int    # of values pushed onto the stack.
+ * --------------------------------------------------------------------------*/
+static int
+lt_buf__index( lua_State *L )
+{
+	struct t_buf *buf = t_buf_check_ud( L, 1, 1 );
+	int           idx;
+
+	if (lua_isinteger( L, 2 ))
+	{
+		idx = lua_tointeger( L, 2 );
+		if (idx < 1 || idx > (int) buf->len)
+			lua_pushnil( L );
+		else
+			lua_pushinteger( L, buf->b[ idx-1 ] );
+	}
+	else
+	{
+		lua_getmetatable( L, 1 );  //S: buf key _mt
+		lua_pushvalue( L, 2 );     //S: buf key _mt key
+		lua_gettable( L, -2 );     //S: buf key val
+	}
+	return 1;
+}
+
+
+/**--------------------------------------------------------------------------
+ * __newndex method for Buffer.
+ * \param   L      Lua state.
+ * \lparam  ud     T.Buffer userdata instance.
+ * \lparam  string Access key value.
+ * \lreturn value  based on what's behind __index.
+ * \return  int    # of values pushed onto the stack.
+ * --------------------------------------------------------------------------*/
+static int
+lt_buf__newindex( lua_State *L )
+{
+	struct t_buf *buf = t_buf_check_ud( L, 1, 1 );
+	int           idx = luaL_checkinteger( L, 2 );
+	int           val = luaL_checkinteger( L, 3 );
+
+	luaL_argcheck( L, val >= 0 && idx <= 255, 3, "value out of range" );
+	luaL_argcheck( L, idx >  0 && idx <= (int) buf->len, 2, "index out of bound" );
+	buf->b[ idx ] = val;
+	return 0;
+}
+
 
 /**--------------------------------------------------------------------------
  * Class metamethods library definition
@@ -380,6 +433,8 @@ static const struct luaL_Reg t_buf_cf [] = {
 static const luaL_Reg t_buf_m [] = {
 	// metamethods
 	  { "__tostring"   , lt_buf__tostring }
+	, { "__index"      , lt_buf__index }
+	, { "__newindex"   , lt_buf__newindex }
 	, { "__len"        , lt_buf__len }
 	, { "__eq"         , lt_buf__eq }
 	, { "__add"        , lt_buf__add }
@@ -409,7 +464,6 @@ LUAMOD_API int luaopen_t_buf( lua_State *L )
 	luaL_setfuncs( L, t_buf_m, 0 );
 	luaopen_t_buf_seg( L );
 	lua_setfield( L, -2, T_BUF_SEG_NAME );
-	lua_setfield( L, -1, "__index" );
 
 	// T.Buffer class
 	luaL_newlib( L, t_buf_cf );

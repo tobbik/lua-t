@@ -170,10 +170,10 @@ local tests = {
 		Test.Case.describe( "cnt = sck.send( buf_seg ) -- small sized chunks" )
 		local sendCount, outCount, payload = 0, 0,
 			string.rep( 'THis Is a LittLe Test-MEsSage To bE sEnt ACcroSS the WIrE ...!_', 50000 )
-		local buf    = Buffer( payload )
-		local sender = function( s )
-			local seg = outCount+1+128 > #buf and buf:Segment( outCount+1 )
-			                                  or  buf:Segment( outCount+1, 128 )
+		local buf      = Buffer( payload )
+		local seg      = nil
+		local sender   = function( s )
+			seg           = seg and seg:next() or buf:Segment( 1, 128 )
 			local cnt = s.cSck:send( seg )
 			if cnt then
 				sendCount = sendCount+1

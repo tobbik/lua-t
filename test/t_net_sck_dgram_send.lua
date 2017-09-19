@@ -23,7 +23,6 @@ Socket    = require( "t.Net.Socket" )
 Address   = require( "t.Net.Address" )
 Interface = require( "t.Net.Interface" )
 Buffer    = require( "t.Buffer" )
-Segment   = require( "t.Buffer.Segment" )
 T         = require( "t" )
 asrtHlp   = T.require( "assertHelper" )
 

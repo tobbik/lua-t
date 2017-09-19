@@ -159,10 +159,9 @@ local tests = {
 		Test.Case.describe( "msg,len = sck.recv( buf_seg )  [Small 128 bytes segment]" )
 		local payload  = string.rep( "TestMessage content for recieving bigger buffer -- ", 90000 )
 		local buffer   = Buffer( #payload )
-		local rcvd, sz, cnt  = 0,128, 0
+		local seg, cnt = nil, 0
 		local receiver = function( s )
-			local seg     = cnt+1+sz > #buffer and buffer:Segment( cnt+1 )
-			                                   or  buffer:Segment( cnt+1, 128 )
+			seg           = seg and seg:next() or buffer:Segment( 1, 128 )
 			local msg,len = s.aSck:recv( seg )
 			T.assert( type(len)=='number',  "Expected `%s` but got `%s`", 'number', type(len) )
 			if msg then

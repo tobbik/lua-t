@@ -161,9 +161,9 @@ _mt = {       -- local _mt at top of file
 _mt.__index    = _mt
 
 return setmetatable( {
-	skip     = function( why ) return error( T_TST_CSE_SKIPINDICATOR .. why ) end,
-	todo     = function( why ) getCaseFromStack().todo        = why           end,
-	describe = function( dsc ) getCaseFromStack().description = dsc           end,
+	skip     = function( why, ... ) return error( T_TST_CSE_SKIPINDICATOR .. format( why, ... ) ) end,
+	todo     = function( why, ... ) getCaseFromStack().todo        = format( why, ... ) end,
+	describe = function( dsc, ... ) getCaseFromStack().description = format( dsc, ... ) end,
 }, {
 	__call   = function( self, nme, typ, fnc )
 		assert( 'string'   == type( nme ), "`Test.Case` name must be a string" )
