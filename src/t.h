@@ -28,10 +28,10 @@ struct t_typ {
 
 
 // global helpers
-void t_getTypeByName ( lua_State *L, int pos, const char *dft, const struct t_typ *types );
-void t_getTypeByValue( lua_State *L, int pos, const int   dft, const struct t_typ *types );
-int  t_push_error    ( lua_State *L, const char *fmt, ... );
-int  t_typeerror     ( lua_State *L, int arg, const char *tname );
+const char *t_getTypeByName ( lua_State *L, int pos, const char *dft, const struct t_typ *types );
+const char *t_getTypeByValue( lua_State *L, int pos, const int   dft, const struct t_typ *types );
+int         t_push_error    ( lua_State *L, const char *fmt, ... );
+int         t_typeerror     ( lua_State *L, int arg, const char *tname );
 #endif //T_HELPERLIB_H
 
 

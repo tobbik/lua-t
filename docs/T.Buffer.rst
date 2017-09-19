@@ -5,18 +5,18 @@ lua-t Buffer - The Buffer class
 Overview
 ========
 
-`Buffer` is a simple wrapper around an allocated chunk of memory which is
+``Buffer`` is a simple wrapper around an allocated chunk of memory which is
 handled as a char array.  It provides a definition in length and some
-methods to read and write to it.  Buffer can be utilized as mutable strings.  
+methods to read and write to it.  Buffer can be utilized as mutable strings.
 
 
 USAGE
 =====
 
-`Buffer` can be natively used by `Net` sockets read/write capabilities.  It
-can also be used by `Pack` instances to ether read from or write to them.
-This makes it particularity useful because only parts of the buffer get
-manipulated instead of the entire string having to be rewritten.
+``Buffer`` can be natively used by ``Net`` sockets read/write capabilities.
+It can also be used by ``Pack`` instances to ether read from or write to
+them.  This makes it particularity useful because only parts of the buffer
+get manipulated instead of the entire string having to be rewritten.
 
 
 API
@@ -25,21 +25,46 @@ API
 Class Members
 -------------
 
-None.
+``number size = Buffer.Size``
+  Recomended Sytem Buffer size which is the same as the C constant
+  ``BUFSIZ`` as defined in ``<stdio.h>``
+
 
 Class Metamembers
 -----------------
 
-``Buffer buf = Buffer( int len )   [__call]``
-  Instantiate a new `Buffer` object with a value of `len` bytes.
+``Buffer buf = Buffer( int length )   [__call]``
+  Instantiate a new ``Buffer`` object with a value of ``len`` bytes.
 
 ``Buffer  buf = Buffer( string myString )``
-  Instantiate a new `Buffer buf` object with the content of `myString`.  The
-  length of `myString` defines the length of the `Buffer buf` instance.
+  Instantiate a new ``Buffer buf`` object with the content of ``myString``.
+  The length of ``myString`` defines the length of the ``Buffer buf``
+  instance.
 
-``number  size = Buffer.Size``
-  Recomended Sytem Buffer size which is the same as the C constant
-  ``BUFSIZ`` as defined in ``<stdio.h>``
+``Buffer clone = Buffer( Buffer cpy_buf )``
+  Instantiate a new ``Buffer clone`` object with the content of ``cpy_buf``.
+  The length of ``cpy_buf`` defines the length of the ``Buffer clone``.  The
+  ``Buffer clone`` is NOT a reference but a true copy of ``cpy_buf``.
+
+``Buffer clone = Buffer( Buffer.Segment cpy_seg )``
+  Instantiate a new ``Buffer clone`` object with the content of ``cpy_seg``.
+  The length of ``cpy_seg`` defines the length of the ``Buffer clone``.  The
+  content of ``Buffer clone`` is copied over from ``cpy_seg``.
+
+``Buffer  buf = Buffer( int length, string myString )``
+  Instantiate a new ``Buffer clone`` object with an ``int length`` sized
+  copy of the the content of ``myString``.  ``int length`` bytes from
+  ``myString`` are copied over to ``Buffer clone``.
+
+``Buffer clone = Buffer( int length, Buffer cpy_buf )``
+  Instantiate a new ``Buffer clone`` object with an ``int length`` sized
+  copy of the the content of ``cpy_buf``.  ``int length`` bytes from
+  ``cpy_buf`` are copied over to ``Buffer clone``.
+
+``Buffer clone = Buffer( int length, Buffer.Segment cpy_seg )``
+  Instantiate a new ``Buffer clone`` object with an ``int length`` sized
+  copy of the the content of ``cpy_seg``.  ``int length`` bytes from
+  ``cpy_seg`` are copied over to ``Buffer clone``.
 
 
 Instance Members
@@ -66,8 +91,11 @@ Instance Members
   written to `Buffer buf`.
 
 ``void = buf:clear( )``
-  Overwrites entire `Buffer buf` content with *0* bytes.
+  Overwrites entire ``Buffer buf`` content with *0* bytes.
 
+``Buffer.Segment = buf:Segment( [start, length] )``
+  Creates a new Buffer Segment ``Buffer.Segment seg`` content with given
+  parameters.  More information in ``Buffer.Segment`` dedicated documentation
 
 Instance Metamembers
 --------------------

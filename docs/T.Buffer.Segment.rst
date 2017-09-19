@@ -31,7 +31,7 @@ None.
 Class Metamembers
 -----------------
 
-``Buffer.Segment( Buffer t, [ int ofs, int len ] )   [__call]``
+``Buffer.Segment seg = buf:Segment( [ int ofs, int len ] )   [__call]``
   Instantiate a new `Buffer.Segment` object.  If `int ofs` parameter is
   given the new `Buffer.Segment` will start at the `Buffer buf` offset.  If
   `int len` is given the length of the new `Buffer.Segment` is limited to

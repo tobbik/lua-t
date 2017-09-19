@@ -1,7 +1,7 @@
 #!../out/bin/lua
 fmt    = string.format
 Net,Buffer,Loop  = require't.Net',require't.Buffer',require't.Loop'
-host   = arg[1] and arg[1] or Net.Interface( 'default' ).address:get()
+host   = arg[1] and arg[1] or Net.Interface( 'default' ).AF_INET.address.ip
 port   = arg[2] and arg[2] or 8888
 l      = Loop( 10 )
 oCnt   = 512

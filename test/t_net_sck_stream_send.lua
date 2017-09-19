@@ -26,7 +26,6 @@ Socket    = require( "t.Net.Socket" )
 Address   = require( "t.Net.Address" )
 Interface = require( "t.Net.Interface" )
 Buffer    = require( "t.Buffer" )
-Segment   = require( "t.Buffer.Segment" )
 T         = require( "t" )
 asrtHlp   = T.require( "assertHelper" )
 
@@ -36,7 +35,7 @@ asrtHlp   = T.require( "assertHelper" )
 local makeReceiver = function( self, size, payload, done )
 	local inCount, incBuffer, sck, adr = 0, Buffer( size ), nil, nil
 	local rcv = function( )
-		local seg     = Segment(incBuffer, inCount+1 )
+		local seg     = incBuffer:Segment( inCount+1 )
 		local suc,cnt = sck:recv( seg )
 		if suc then
 			T.assert( incBuffer:read( inCount+1, cnt ) == payload:sub( inCount+1, cnt+inCount ),
@@ -55,7 +54,7 @@ local makeReceiver = function( self, size, payload, done )
 	local acpt = function( )
 		sck, adr = self.sSck:accept( )
 		asrtHlp.Socket( sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
-		asrtHlp.Address( adr, self.host, 'any' )
+		asrtHlp.Address( adr, "AF_INET", self.host, 'any' )
 		self.loop:addHandle( sck, "read", rcv )
 	end
 	self.loop:addHandle( self.sSck, "read", acpt )
@@ -72,7 +71,7 @@ local tests = {
 	-- wrappers for tests
 	beforeAll = function( self, done )
 		self.loop            = Loop( 20 )
-		self.host            = Interface( 'default' ).address:get( )
+		self.host            = Interface( 'default' ).AF_INET.address.ip
 		self.port            = 8000
 		self.sSck, self.sAdr = Socket.listen( self.host, self.port )
 		done( )
@@ -171,10 +170,10 @@ local tests = {
 		Test.Case.describe( "cnt = sck.send( buf_seg ) -- small sized chunks" )
 		local sendCount, outCount, payload = 0, 0,
 			string.rep( 'THis Is a LittLe Test-MEsSage To bE sEnt ACcroSS the WIrE ...!_', 50000 )
-		local buf    = Buffer( payload )
-		local sender = function( s )
-			local seg = outCount+1+128 > #buf and Segment( buf, outCount+1 )
-			                                  or  Segment( buf, outCount+1, 128 )
+		local buf      = Buffer( payload )
+		local seg      = nil
+		local sender   = function( s )
+			seg           = seg and seg:next() or buf:Segment( 1, 128 )
 			local cnt = s.cSck:send( seg )
 			if cnt then
 				sendCount = sendCount+1
@@ -196,7 +195,7 @@ local tests = {
 			string.rep( 'THis Is a LittLe Test-MEsSage To bE sEnt ACcroSS the WIrE ...!_', 600000 )
 		local buf    = Buffer( payload )
 		local sender = function( s )
-			local cnt = s.cSck:send( Segment( buf, outCount+1 ) )
+			local cnt = s.cSck:send( buf:Segment( outCount+1 ) )
 			if cnt then
 				sendCount = sendCount+1
 				outCount  = cnt + outCount

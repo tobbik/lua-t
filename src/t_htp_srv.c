@@ -77,7 +77,7 @@ struct t_htp_srv
 *t_htp_srv_check_ud( lua_State *L, int pos, int check )
 {
 	void *ud = luaL_testudata( L, pos, T_HTP_SRV_TYPE );
-	luaL_argcheck( L, (ud != NULL || !check), pos, "`"T_HTP_SRV_TYPE"` expected" );
+	if (NULL == ud && check) t_typeerror( L , pos, T_HTP_SRV_TYPE );
 	return (NULL==ud) ? NULL : (struct t_htp_srv *) ud;
 }
 
@@ -117,12 +117,12 @@ t_htp_srv_setnow( struct t_htp_srv *s, int force )
 static int
 lt_htp_srv_accept( lua_State *L )
 {
-	struct t_htp_srv   *s     = (struct t_htp_srv *) lua_touserdata( L, 1 );
-	struct sockaddr_in *si_cli= NULL;
-	struct t_net_sck   *c_sck = NULL;
-	struct t_net_sck   *s_sck = NULL;
-	struct t_ael       *ael;    // AELoop
-	struct t_htp_con   *c;      // new message userdata
+	struct t_htp_srv        *s      = (struct t_htp_srv *) lua_touserdata( L, 1 );
+	struct sockaddr_storage *si_cli = NULL;
+	struct t_net_sck        *c_sck  = NULL;
+	struct t_net_sck        *s_sck  = NULL;
+	struct t_ael            *ael;    // AELoop
+	struct t_htp_con        *c;      // new message userdata
 
 	lua_rawgeti( L, LUA_REGISTRYINDEX, s->sR );
 	s_sck = t_net_sck_check_ud( L, -1, 1 );
@@ -176,10 +176,10 @@ lt_htp_srv_accept( lua_State *L )
 static int
 lt_htp_srv_listen( lua_State *L )
 {
-	struct t_htp_srv   *s   = t_htp_srv_check_ud( L, 1, 1 );
-	struct t_net_sck   *sc  = NULL;
-	struct sockaddr_in *ip  = NULL;
-	int                 bl  = SOMAXCONN;
+	struct t_htp_srv        *s   = t_htp_srv_check_ud( L, 1, 1 );
+	struct t_net_sck        *sc  = NULL;
+	struct sockaddr_storage *ip  = NULL;
+	int                      bl  = SOMAXCONN;
 
 	// reuse socket:listen( )
 	if (lua_isinteger( L, -1 ) && LUA_TSTRING != lua_type( L, -2 ))
@@ -190,7 +190,7 @@ lt_htp_srv_listen( lua_State *L )
 	p_net_sck_listen( L, sc, ip, bl );
 
 	sc     = t_net_sck_check_ud( L, -2, 1 );
-	ip     = t_net_ip4_check_ud( L, -1, 1 );
+	ip     = t_net_adr_check_ud( L, -1, 1 );
 	s->aR  = luaL_ref( L, LUA_REGISTRYINDEX );
 	s->sck = sc;
 	s->sR  = luaL_ref( L, LUA_REGISTRYINDEX );

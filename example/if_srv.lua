@@ -1,10 +1,10 @@
 #!../out/bin/lua
 Net=require('t.Net')
-sip,sport=Net.Interface( 'default' ).address:get(),8888
+sip,sport=Net.Interface( 'default' ).AF_INET.address.ip,8888
 
-tcpsock,ip = Net.Socket.listen( sip, sport, 5 )
+tcpsock,adr = Net.Socket.listen( sip, sport, 5 )
 -- tcpsock:listen( 5 )
-print( tcpsock, ip )
+print( tcpsock, adr )
 
 conns  = { tcpsock }
 while true do

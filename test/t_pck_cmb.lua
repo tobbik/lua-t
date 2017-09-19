@@ -2,6 +2,7 @@
 -- \file      test/t_pck_seq.lua
 -- \brief     Test for t.Pack Combinators (Array,Sequene,Struct)
 --            make sure that returned size and offsets are correct
+--            make sure bit and byte packer don't clash
 -- \author    tkieslich
 -- \copyright See Copyright notice at the end of t.h
 
@@ -158,6 +159,17 @@ local tests = {
 			T.assert( oby == cBi//NB, "Int Packer Byte offset was %d; expected: %d", oby, cBi//NB )
 		end
 	end,
+
+	test_UnalignedBytesFailToRead = function( self )
+		Test.Case.describe( "Bytes after Bits fail if not starting at byte border" )
+		local p1,p2,p3 = Pack("r3I2"), Pack("r5d"), Pack("r7c20")
+		local s        = char(0xFF,0x01)
+		local f        = function(p,b) local x = p(b) end
+		T.assert( not pcall( f, p1, s ), "Expected to fail to read Packer %s", p1 )
+		T.assert( not pcall( f, p2, s ), "Expected to fail to read Packer %s", p1 )
+		T.assert( not pcall( f, p3, s ), "Expected to fail to read Packer %s", p1 )
+	end,
+
 }
 
 --t =  Test( tests )

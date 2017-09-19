@@ -51,8 +51,8 @@ local addTapDiagnostic = function( tbl )
 end
 
 local traceback = function( tbk )
-	local loc = tbk:match( "^(.*): " )
-	local msg = tbk:match( ": (.*)$" )
+	local loc, msg = tbk:match( '^([^:]*:%d+): (.*)' )
+	print('\n',tbk,'\n',loc,'\n',msg)
 	if msg then
 		local skipm = msg:match( T_TST_CSE_SKIPINDICATOR .. "(.*)$" )
 		if skipm then
@@ -104,7 +104,6 @@ local syncRunner = function( cse, ste, dne )
 	end
 end
 
-
 local callbackRunner
 local makeClosure = function( stg, cse, ste, dne )
 	return function( )
@@ -121,8 +120,13 @@ callbackRunner = function( stg, cse, ste, dne )
 		end
 	end
 	if STG_EXC == stg then
-		cse.executionTime = Time()
-		local s,m = xpcall( cse.func, traceback, ste, makeClosure( STG_AFE, cse, ste, dne ) )
+		cse.executionTime = Time( )
+		local exc_done = makeClosure( STG_AFE, cse, ste, dne )
+		local s,m = xpcall( cse.func, traceback, ste, exc_done )
+		if not s then
+			for k,v in pairs( m ) do cse[ k ] = v end
+			exc_done( )
+		end
 	end
 	if STG_AFE == stg then
 		cse.executionTime:since( )
@@ -157,9 +161,9 @@ _mt = {       -- local _mt at top of file
 _mt.__index    = _mt
 
 return setmetatable( {
-	skip     = function( why ) return error( T_TST_CSE_SKIPINDICATOR .. why ) end,
-	todo     = function( why ) getCaseFromStack().todo        = why           end,
-	describe = function( dsc ) getCaseFromStack().description = dsc           end,
+	skip     = function( why, ... ) return error( T_TST_CSE_SKIPINDICATOR .. format( why, ... ) ) end,
+	todo     = function( why, ... ) getCaseFromStack().todo        = format( why, ... ) end,
+	describe = function( dsc, ... ) getCaseFromStack().description = format( dsc, ... ) end,
 }, {
 	__call   = function( self, nme, typ, fnc )
 		assert( 'string'   == type( nme ), "`Test.Case` name must be a string" )

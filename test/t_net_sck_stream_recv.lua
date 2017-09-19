@@ -22,7 +22,6 @@ Socket    = require( "t.Net.Socket" )
 Address   = require( "t.Net.Address" )
 Interface = require( "t.Net.Interface" )
 Buffer    = require( "t.Buffer" )
-Segment   = require( "t.Buffer.Segment" )
 T         = require( "t" )
 asrtHlp   = T.require( "assertHelper" )
 
@@ -46,7 +45,7 @@ local makeReceiver = function( self, receiver )
 	local acpt = function( )
 		self.aSck, self.aAdr = self.sSck:accept( )
 		asrtHlp.Socket( self.aSck, "tcp", "AF_INET", "SOCK_STREAM" )
-		asrtHlp.Address( self.aAdr, self.host, "any" )
+		asrtHlp.Address( self.aAdr, "AF_INET", self.host, "any" )
 		self.loop:addHandle( self.aSck, "read", receiver, self )
 	end
 	self.loop:addHandle( self.sSck, "read", acpt )
@@ -58,11 +57,11 @@ local tests = {
 	-- wrappers for tests
 	beforeAll = function( self, done )
 		self.loop            = Loop( 20 )
-		self.host            = Interface( 'default' ).address:get( )
+		self.host            = Interface( 'default' ).AF_INET.address.ip
 		self.port            = 8000
 		self.sSck, self.sAdr = Socket.listen( self.host, self.port )
 		asrtHlp.Socket( self.sSck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
-		asrtHlp.Address( self.sAdr, self.host, self.port )
+		asrtHlp.Address( self.sAdr, "AF_INET", self.host, self.port )
 		done()
 	end,
 
@@ -141,7 +140,7 @@ local tests = {
 		local buffer   = Buffer( #payload )
 		local cnt      = 0
 		local receiver = function( s )
-			local msg,len = s.aSck:recv( Segment( buffer, cnt+1 ) )
+			local msg,len = s.aSck:recv( buffer:Segment( cnt+1 ) )
 			T.assert( type(len)=='number',  "Expected `%s` but got `%s`", 'number', type(len) )
 			if msg then
 				T.assert( type(msg)=='boolean',  "Expected `%s` but got `%s`", 'boolean', type(msg) )
@@ -160,10 +159,9 @@ local tests = {
 		Test.Case.describe( "msg,len = sck.recv( buf_seg )  [Small 128 bytes segment]" )
 		local payload  = string.rep( "TestMessage content for recieving bigger buffer -- ", 90000 )
 		local buffer   = Buffer( #payload )
-		local rcvd, sz, cnt  = 0,128, 0
+		local seg, cnt = nil, 0
 		local receiver = function( s )
-			local seg     = cnt+1+sz > #buffer and Segment( buffer, cnt+1 )
-			                                   or  Segment( buffer, cnt+1, 128 )
+			seg           = seg and seg:next() or buffer:Segment( 1, 128 )
 			local msg,len = s.aSck:recv( seg )
 			T.assert( type(len)=='number',  "Expected `%s` but got `%s`", 'number', type(len) )
 			if msg then

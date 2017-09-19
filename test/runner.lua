@@ -10,6 +10,7 @@ local T, Test, Time, format = require"t", require"t.Test", require"t.Time", stri
 local m = {
 	"t_ael",
 	"t_buf"                 , "t_buf_seg",
+	"t_net_adr"             ,
 	"t_net_sck_create"      , "t_net_sck_bind",
 	"t_net_sck_connect"     , "t_net_sck_listen",
 	"t_net_sck_dgram_recv"  , "t_net_sck_dgram_send",
@@ -71,3 +72,6 @@ if arg[ 2 ] then
 end
 
 run( include_pattern, exclude_pattern )
+
+--d=debug.getregistry()
+--for k,v in pairs(d) do if type(k) ~= type(v) then print(k,v) end end

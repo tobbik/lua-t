@@ -110,28 +110,18 @@ struct t_buf
  * \return  int  # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 int
-t_buf_compare( lua_State *L, char *bA, char *bB, size_t aLen, size_t bLen )
+t_buf_compare( char *bA, char *bB, size_t aLen, size_t bLen )
 {
 	size_t  n;          ///< runner
 
-	if (bA == bB && aLen == bLen )  // points to the same address -> true
-	{
-		lua_pushboolean( L, 1 );
-		return 1;
-	}
 	if (aLen != bLen)    // different length -> false
-	{
-		lua_pushboolean( L, 0 );
+		return 0;
+	if (bA == bB )      // same address and length -> true
 		return 1;
-	}
 	else
 		for( n=0; n<aLen; n++ )
 			if (bA[n] !=  bB[n])
-			{
-				lua_pushboolean( L, 0 );
-				return 1;
-			}
-	lua_pushboolean( L, 1 );
+				return 0;
 	return 1;
 }
 
@@ -311,10 +301,7 @@ lt_buf__eq( lua_State *L )
 	struct t_buf *bA = t_buf_check_ud( L, 1, 1 );
 	struct t_buf *bB = t_buf_check_ud( L, 2, 1 );
 
-	if (bA == bB)
-		lua_pushboolean( L, 1 );
-	else
-		t_buf_compare( L, bA->b, bB->b, bA->len, bB->len );
+	lua_pushboolean( L, t_buf_compare( bA->b, bB->b, bA->len, bB->len ) );
 	return 1;
 }
 
@@ -371,12 +358,65 @@ lt_buf__tostring( lua_State *L )
 	return 1;
 }
 
+/**--------------------------------------------------------------------------
+ * __index method for t.Buffer.
+ * \param   L      Lua state.
+ * \lparam  ud     t.Buffer userdata instance.
+ * \lparam  string Access key value.
+ * \lreturn value  based on what's behind __index.
+ * \return  int    # of values pushed onto the stack.
+ * --------------------------------------------------------------------------*/
+static int
+lt_buf__index( lua_State *L )
+{
+	struct t_buf *buf = t_buf_check_ud( L, 1, 1 );
+	int           idx;
+
+	if (lua_isinteger( L, 2 ))
+	{
+		idx = lua_tointeger( L, 2 );
+		if (idx < 1 || idx > (int) buf->len)
+			lua_pushnil( L );
+		else
+			lua_pushinteger( L, buf->b[ idx-1 ] );
+	}
+	else
+	{
+		lua_getmetatable( L, 1 );  //S: buf key _mt
+		lua_pushvalue( L, 2 );     //S: buf key _mt key
+		lua_gettable( L, -2 );     //S: buf key val
+	}
+	return 1;
+}
+
+
+/**--------------------------------------------------------------------------
+ * __newndex method for Buffer.
+ * \param   L      Lua state.
+ * \lparam  ud     T.Buffer userdata instance.
+ * \lparam  string Access key value.
+ * \lreturn value  based on what's behind __index.
+ * \return  int    # of values pushed onto the stack.
+ * --------------------------------------------------------------------------*/
+static int
+lt_buf__newindex( lua_State *L )
+{
+	struct t_buf *buf = t_buf_check_ud( L, 1, 1 );
+	int           idx = luaL_checkinteger( L, 2 );
+	int           val = luaL_checkinteger( L, 3 );
+
+	luaL_argcheck( L, val >= 0 && idx <= 255, 3, "value out of range" );
+	luaL_argcheck( L, idx >  0 && idx <= (int) buf->len, 2, "index out of bound" );
+	buf->b[ idx ] = val;
+	return 0;
+}
+
 
 /**--------------------------------------------------------------------------
  * Class metamethods library definition
  * --------------------------------------------------------------------------*/
 static const struct luaL_Reg t_buf_fm [] = {
-	  {"__call",        lt_buf__Call}
+	  { "__call"       , lt_buf__Call }
 	, { NULL           , NULL }
 };
 
@@ -393,6 +433,8 @@ static const struct luaL_Reg t_buf_cf [] = {
 static const luaL_Reg t_buf_m [] = {
 	// metamethods
 	  { "__tostring"   , lt_buf__tostring }
+	, { "__index"      , lt_buf__index }
+	, { "__newindex"   , lt_buf__newindex }
 	, { "__len"        , lt_buf__len }
 	, { "__eq"         , lt_buf__eq }
 	, { "__add"        , lt_buf__add }
@@ -420,14 +462,13 @@ LUAMOD_API int luaopen_t_buf( lua_State *L )
 	// T.Buffer instance metatable
 	luaL_newmetatable( L, T_BUF_TYPE );
 	luaL_setfuncs( L, t_buf_m, 0 );
-	lua_setfield( L, -1, "__index" );
+	luaopen_t_buf_seg( L );
+	lua_setfield( L, -2, T_BUF_SEG_NAME );
 
 	// T.Buffer class
 	luaL_newlib( L, t_buf_cf );
 	lua_pushinteger( L, BUFSIZ );
 	lua_setfield( L, -2, "Size" );
-	luaopen_t_buf_seg( L );
-	lua_setfield( L, -2, T_BUF_SEG_IDNT );
 	luaL_newlib( L, t_buf_fm );
 	lua_setmetatable( L, -2 );
 	return 1;

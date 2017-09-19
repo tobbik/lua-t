@@ -14,6 +14,7 @@
 #include <stdlib.h>      // calloc
 
 #include "t_enc_l.h"
+#include "t.h"           // t_typeerror
 
 #ifdef DEBUG
 #include "t_dbg.h"
@@ -151,10 +152,10 @@ struct t_enc_rc4
  * \return  struct   t_enc_rc4*
  * --------------------------------------------------------------------------*/
 struct t_enc_rc4
-*t_enc_rc4_check_ud( lua_State *L, int pos )
+*t_enc_rc4_check_ud( lua_State *L, int pos, int check )
 {
 	void *ud = luaL_testudata( L, pos, T_ENC_RC4_TYPE );
-	luaL_argcheck( L, ud != NULL, pos, "`"T_ENC_RC4_TYPE"` expected" );
+	if (NULL == ud && check) t_typeerror( L , pos, T_ENC_RC4_TYPE );
 	return (NULL==ud) ? NULL : (struct t_enc_rc4 *) ud;
 }
 
@@ -179,7 +180,7 @@ lt_enc_rc4_crypt( lua_State *L )
 	const char          *body;
 	char                *res;
 	
-	rc4 = t_enc_rc4_check_ud( L, 1 );
+	rc4 = t_enc_rc4_check_ud( L, 1, 1 );
 	if (lua_isstring( L, 2 ))
 		body = luaL_checklstring( L, 2, &bLen );
 	else

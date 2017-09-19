@@ -16,7 +16,6 @@ INSTALL_DATA= $(INSTALL) -Dm0644
 
 T_SRC=\
    Buffer.lua \
-   Buffer/Segment.lua \
    Encode.lua \
    Encode/Base64.lua \
    Encode/Crc.lua \

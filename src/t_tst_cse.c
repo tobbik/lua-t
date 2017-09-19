@@ -138,7 +138,6 @@ t_tst_cse_findOnStack( lua_State *L )
 	lua_Debug   ar;
 	int         i   = 0;
 	int         nu  = 0;
-	const char *nme;
 
 	while ( lua_getstack( L, i++, &ar ))
 	{
@@ -147,7 +146,7 @@ t_tst_cse_findOnStack( lua_State *L )
 		nu  = 0;
 		while (nu++ < ar.nups)
 		{
-			nme = lua_getupvalue( L, -1, nu );
+			lua_getupvalue( L, -1, nu );
 			//printf("   UPV %d - %s  \t-> ", nu, nme); t_stackDump(L);
 			if (t_tst_cse_check( L, -1, 0 ))
 			{
@@ -234,7 +233,7 @@ t_tst_cse_check( lua_State *L, int pos, int check )
 		{
 			lua_pop( L, 2 );
 			if (check)
-				luaL_error( L, "wrong argument, `"T_TST_CSE_TYPE"` expected" );
+				t_typeerror( L , pos, T_TST_CSE_TYPE );
 			else
 				return 0;
 		}
@@ -246,7 +245,7 @@ t_tst_cse_check( lua_State *L, int pos, int check )
 	}
 	else
 		if (check)
-			luaL_error( L, "wrong argument, `"T_TST_CSE_TYPE"` expected" );
+			t_typeerror( L , pos, T_TST_CSE_TYPE );
 		else
 			return 0;
 	return 1;

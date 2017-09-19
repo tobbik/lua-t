@@ -29,7 +29,7 @@ local asrtHlp   = T.require( "assertHelper" )
 accept = function( self )
 	local c, ip = self.srv:accept( )
 	asrtHlp.Socket( c, 'tcp', 'AF_INET', 'SOCK_STREAM' )
-	asrtHlp.Address( ip, self.host2cmp, self.port2cmp )
+	asrtHlp.Address( ip, "AF_INET", self.host2cmp, self.port2cmp )
 	self.sck:close() -- close client first to avoid "Address already in use"
 	                 -- http://hea-www.harvard.edu/~fine/Tech/addrinuse.html
 	c:close( )
@@ -39,7 +39,7 @@ local tests = {
 	-- #########################################################################
 	-- wrappers for tests
 	beforeAll = function( self, done )
-		self.host          = Interface( 'default' ).address:get()
+		self.host          = Interface( 'default' ).AF_INET.address.ip
 		self.port          = 8000
 		self.srv, self.adr = Socket.listen( self.host, self.port )
 		--print( self.srv, self.adr )
@@ -114,7 +114,6 @@ local tests = {
 		-- bind socket to outgoing interface/port first 
 		self.host2cmp       = self.host
 		self.port2cmp       = 11111
-		--self.sck,self.adrb  = Socket.bind( self.host2cmp, self.port2cmp )
 		self.sck            = Socket()
 		self.sck.reuseaddr  = true
 		self.adrb           = self.sck:bind( self.host2cmp, self.port2cmp )
@@ -128,17 +127,26 @@ local tests = {
 		-- bind socket to outgoing interface/port first 
 		self.host2cmp       = self.host
 		self.port2cmp       = 11111
-		--self.sck,self.adrb  = Socket.bind( self.host2cmp, self.port2cmp )
 		self.sck            = Socket()
 		self.sck.reuseaddr  = true
 		self.adrb           = self.sck:bind( self.host2cmp, self.port2cmp )
 		self.adrc           = Address( self.host, self.port )
 		self.__,self._      = self.sck:connect( self.adrc )
-		assert( self.__     == nil, "No socket  should have been returned" )
-		assert( self._      == nil, "No address should have been returned" )
+		assert( self.__ == nil, "No socket  should have been returned" )
+		assert( self._  == nil, "No address should have been returned" )
 		done( )
 	end,
 
+	test_cb_sConnectWrongArgFails = function( self, done )
+		Test.Case.describe( "sck.connect( adr ) --> fails" )
+		self.sck        = Socket()
+		local eMsg      = "bad argument #1 to 'connect' %(T.Net.Socket expected, got no value%)"
+		local f     = function() local _,__ = self.sck.connect( ) end
+		local ran,e = pcall( f )
+		assert( not ran, "This should have failed" )
+		T.assert( e:match( eMsg), "Expected error message:\n%s\n%s", eMsg:gsub('%%',''), e )
+		done( )
+	end,
 }
 
 return  Test( tests )

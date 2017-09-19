@@ -1,20 +1,29 @@
 write,fmt = io.write, string.format
 Interface = require"t.Net.Interface"
 
-ifNames = Interface.list( )
-print( table.unpack(ifNames) );
-
-for i, ifName in ipairs( ifNames ) do
-	print( ifName )
-	local ifc = Interface( ifName )
-	print( ifc )
-	for n,v in pairs( ifc ) do
-		write( fmt(  '\t%s:\t%s\n', n, v ) )
+ifs = Interface.list( )
+for ifn, ifc in pairs( ifs ) do
+	print( ifn )
+	for n,t in pairs( ifc ) do
+		write( fmt( '\t%s:\t%s\n', n, t ) )
+		if 'table' == type( t ) then
+			for k,v in pairs( t ) do
+				write( fmt( '\t\t%s:\t%s\n', k, v ) )
+			end
+		end
 	end
 end
 
+
+
 ifc = Interface( "default" )
 print( ifc )
-for n,v in pairs( ifc ) do
-	write( fmt(  '\t%s:\t%s\n', n, v ) )
+for n,t in pairs( ifc ) do
+	write( fmt( '\t%s:\t%s\n', n, t ) )
+	if 'table' == type( t ) then
+		for k,v in pairs( t ) do
+			write( fmt(  '\t\t%s:\t%s\n', k, v ) )
+		end
+	end
 end
+

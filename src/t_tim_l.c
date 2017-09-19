@@ -1,7 +1,7 @@
 /* vim: ts=3 sw=3 sts=3 tw=80 sta noet list
 */
 /**
- * \file      t_tim.c
+ * \file      src/t_tim_l.c
  * \brief     OOP wrapper for time values(T.Time)
  *            This is a thin wrapper around struct timeval
  * \author    tkieslich
@@ -40,16 +40,15 @@ static int lt_tim_get( lua_State *L );  // forward declaration
 static int
 lt_tim__Call( lua_State *L )
 {
-	struct timeval  *tv;
-	int              ms     = 0;
+	int  ms     = 0;
 
 	lua_remove( L, 1 );
 	if (t_tim_is( L, 1 ))
 		lt_tim_get( L );         // pull the ms value of t_tim on the stack
 	if (lua_isnumber( L, -1 ))
-		ms          = luaL_checkinteger( L, -1 );
+		ms = luaL_checkinteger( L, -1 );
 
-	tv = t_tim_create_ud( L, ms );
+	t_tim_create_ud( L, ms );
 
 	return 1;
 }

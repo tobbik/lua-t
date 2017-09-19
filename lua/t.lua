@@ -18,6 +18,9 @@ equals= function( o1, o2 )
 	return true
 end
 
+local proxyTableIndex = { }
+debug.getregistry( )[ 'T.ProxyTableIndex' ] = proxyTableIndex
+
 return {
 	require  = function( name )
 		local dir                                           , path        , cpath =
@@ -47,5 +50,5 @@ return {
 --  oht[ t.proxyTableIndex ]  -- this is the table that actually contains the
 --                            -- values which are accessd and controlled by oht
 --                               __index and __newindex metamethods
-	proxyTableIndex  = { },
+	proxyTableIndex  = proxyTableIndex,
 }

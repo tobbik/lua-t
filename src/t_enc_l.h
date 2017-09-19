@@ -43,12 +43,12 @@ struct t_enc_crc {
 
 // Constructors
 // t_enc_rc4.c
-struct t_enc_rc4  *t_enc_rc4_check_ud ( lua_State *L, int pos );
+struct t_enc_rc4  *t_enc_rc4_check_ud ( lua_State *L, int pos, int check );
 struct t_enc_rc4  *t_enc_rc4_create_ud( lua_State *L );
 int                luaopen_t_enc_rc4  ( lua_State *L );
 
 // t_enc_crc.c
-struct t_enc_crc  *t_enc_crc_check_ud ( lua_State *L, int pos );
+struct t_enc_crc  *t_enc_crc_check_ud ( lua_State *L, int pos, int check );
 struct t_enc_crc  *t_enc_crc_create_ud( lua_State *L );
 int                luaopen_t_enc_crc  ( lua_State *L );
 

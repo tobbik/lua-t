@@ -92,7 +92,7 @@ t_ael_adjustTimers( struct t_ael_tnd **tHead, struct timeval *tAdj )
 
 
 /**----------------------------------------------------------------------------
- * Unfolds a Lua function and parameters from a table in LUA_REGISTRYINDEX
+ *
  * Takes refPosition and gets table onto the stack.  Leaves function and
  * paramters onto stack ready to be executed.
  * Stack before: {fnc, p1, p2, p3, ... }
@@ -127,18 +127,17 @@ t_ael_getFunction( lua_State *L, int refPos )
 void
 t_ael_executeHeadTimer( lua_State *L, struct t_ael_tnd **tHead, struct timeval *rt )
 {
-	struct timeval   *tv;                  ///< timer returned by execution -> if there is
-	
-	struct t_ael_tnd *tExc = *tHead;       ///< timer to execute is tHead, ALWAYS
-	int    n;                              ///< number of arguments to function call
+	struct timeval   *tv;              ///< timer returned by execution -> if there is
+	struct t_ael_tnd *tExc = *tHead;   ///< timer to execute is tHead, ALWAYS
+	int    n;                          ///< number of arguments to function call
 
 	*tHead = (*tHead)->nxt;
 	n      = t_ael_getFunction( L, tExc->fR );
-	lua_call( L, n, 1 );  // if NO T.Time is return it's a nil
+	lua_call( L, n, 1 );               // if NO T.Time is returned, it's a nil
 	t_tim_since( rt );
 	t_ael_adjustTimers( tHead, rt );
 	tv = t_tim_check_ud( L, -1, 0 );
-	if (NULL == tv)   // remove from list
+	if (NULL == tv)                    // remove from list
 	{
 		luaL_unref( L, LUA_REGISTRYINDEX, tExc->fR );
 		luaL_unref( L, LUA_REGISTRYINDEX, tExc->tR );
@@ -157,6 +156,7 @@ t_ael_executeHeadTimer( lua_State *L, struct t_ael_tnd **tHead, struct timeval *
 		t_ael_insertTimer( tHead, tExc );
 	}
 	lua_pop( L, 1 );   // pop the one value that lua_call allows for
+
 }
 
 
@@ -239,7 +239,7 @@ struct t_ael
 *t_ael_check_ud ( lua_State *L, int pos, int check )
 {
 	void *ud = luaL_testudata( L, pos, T_AEL_TYPE );
-	luaL_argcheck( L, (ud != NULL  || !check), pos, "`"T_AEL_TYPE"` expected" );
+	if (NULL == ud && check) t_typeerror( L , pos, T_AEL_TYPE );
 	return (NULL==ud) ? NULL : (struct t_ael *) ud;
 }
 
@@ -264,8 +264,8 @@ lt_ael_addhandle( lua_State *L )
 	struct t_ael     *ael = t_ael_check_ud( L, 1, 1 );
 	enum t_ael_msk    msk;
 
-	t_getTypeByName( L, 3, NULL, t_ael_directionList );
-	luaL_argcheck( L, ! lua_isnil( L, 3 ), 3, "must specify direction" );
+	luaL_argcheck( L, NULL != t_getTypeByName( L, 3, NULL, t_ael_directionList ),
+	      3, "must specify direction" );
 	msk = luaL_checkinteger( L, 3 );
 
 	luaL_checktype( L, 4, LUA_TFUNCTION );
@@ -325,8 +325,8 @@ lt_ael_removehandle( lua_State *L )
 	struct t_ael     *ael = t_ael_check_ud( L, 1, 1 );
 	enum t_ael_msk    msk;
 
-	t_getTypeByName( L, 3, NULL, t_ael_directionList );
-	luaL_argcheck( L, ! lua_isnil( L, 3 ), 3, "must specify direction" );
+	luaL_argcheck( L, NULL != t_getTypeByName( L, 3, NULL, t_ael_directionList ),
+	      3, "must specify direction" );
 	msk = luaL_checkinteger( L, 3 );
 
 	lS = (luaL_Stream *) luaL_testudata( L, 2, LUA_FILEHANDLE );

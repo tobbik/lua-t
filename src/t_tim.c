@@ -1,13 +1,14 @@
 /* vim: ts=3 sw=3 sts=3 tw=80 sta noet list
 */
 /**
- * \file      t_net_cmn.c
- * \brief     t_net_* functions shared between all modules
+ * \file      src/t_tim.c
+ * \brief     t_tim_* functions available to all t_* modules
  * \author    tkieslich
  * \copyright See Copyright notice at the end of t.h
  */
 
 #include "t_tim_l.h"
+#include "t.h"            // t_typeerror
 
 #ifdef DEBUG
 #include "t_dbg.h"
@@ -104,7 +105,7 @@ struct timeval
 *t_tim_check_ud( lua_State *L, int pos, int check )
 {
 	void *ud = luaL_testudata( L, pos, T_TIM_TYPE );
-	luaL_argcheck( L, (ud != NULL  || !check), pos, "`"T_TIM_TYPE"` expected" );
+	if (NULL == ud && check) t_typeerror( L , pos, T_TIM_TYPE );
 	return (NULL==ud) ? NULL : (struct timeval *) ud;
 }
 
