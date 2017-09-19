@@ -911,6 +911,13 @@ t_pck_fld__callread( lua_State *L, struct t_pck *pc, const char *b, size_t ofs )
 		}
 		lua_pop( L, 1 );                      //S:… res
 
+		lua_newtable( L );                    //S:… res tbl
+		luaL_getmetatable( L, "T.ProxyTableIndex" ); //S:… res tbl prx
+		lua_rotate( L, -3, -1 );              //S:… tbl prx res
+		lua_rawset( L, -3 );;                 //S:… tbl
+		luaL_getmetatable( L, "T.OrderedHashTable" );
+		lua_setmetatable( L, -2 );
+
 		return ofs;
 	}
 	lua_pushnil( L );

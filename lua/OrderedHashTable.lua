@@ -25,7 +25,7 @@ local getmetatable, setmetatable, pairs, assert, next, type =
 local t_keys    , t_values    , t_clone    , t_asstring     , equals   , prxTblIdx =
       Table.keys, Table.values, Table.clone, Table.asstring , T.equals , T.proxyTableIndex
 
-local _mt = { }
+local _mt
 
 -- ---------------------------- general helpers  --------------------
 -- assert Oht type and return the proxy table
@@ -135,6 +135,8 @@ _mt = {       -- local _mt at top of file
 -- comparing operations
 	__eq       = function( self, othr )     return equals( getPrx(self), getPrx( othr ) ) end,
 }
+-- allow luaL_getmetatable( L )
+debug.getregistry( )[ 'T.OrderedHashTable' ] = _mt
 
 
 return setmetatable( {
