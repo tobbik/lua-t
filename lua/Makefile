@@ -26,6 +26,9 @@ T_SRC=\
    Http/Request.lua \
    Http/Response.lua \
    Http/WebSocket.lua \
+   Http/Status.lua \
+   Http/Method.lua \
+   Http/Version.lua \
    Loop.lua \
    Net.lua \
    Net/Interface.lua \

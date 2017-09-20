@@ -5,6 +5,7 @@
 
 local t_insert    , t_concat    ,    time,    date,        format, setmetatable, pairs =
       table.insert, table.concat, os.time, os.date, string.format, setmetatable, pairs
+local Status = require't.Http.Status'
 
 local _mt
 
@@ -53,7 +54,7 @@ end
 -- this takes different parameters in different positions
 local writeHead = function( self, stsCde, msg, length, hdr )
 	if self.state > State.Zero then error( "Can't set Head multiple times" ) end
-	local stsMsg  = 'string' == type( msg ) and msg or self.Status[ stsCde ]
+	local stsMsg  = 'string' == type( msg ) and msg or Status[ stsCde ]
 	local cntLen  = 'number' == type( msg ) and msg or length -- can be nil!
 	local headers = 'table'  == type( msg ) and msg or length -- can be nil!
 	headers       = 'table'  == type( headers ) and headers or hdr  -- can be nil
@@ -63,7 +64,7 @@ end
 
 local write = function( self, msg )
 	if self.state < State.HeadDone then
-		self.buf, self.chunked = formHeader( self.version, 200, self.Status[ 200 ], nil, nil, self.keepAlive )
+		self.buf, self.chunked = formHeader( self.version, 200, Status[ 200 ], nil, nil, self.keepAlive )
 	end
 	t_insert( self.buf, self.chunked and format("%X\r\n%s\r\n", #msg, msg) or msg )
 	self.state = State.Send
@@ -71,7 +72,7 @@ end
 
 local finish = function( self, msg )
 	if self.state < State.HeadDone then
-		self.buf,self.chunked = formHeader( self.version, 200, self.Status[ 200 ], (msg and #msg or 0), nil, self.keepAlive )
+		self.buf,self.chunked = formHeader( self.version, 200, Status[ 200 ], (msg and #msg or 0), nil, self.keepAlive )
 	end
 	if msg then
 		t_insert( self.buf, self.chunked and format("%X\r\n%s\r\n", #msg, msg) or msg )
@@ -114,7 +115,6 @@ return setmetatable( {
 			, cLen       = 0   -- Content-Length (Body)
 			, bLen       = 0   -- length of Buffer to send (includes all Headers)
 			, state      = State.Zero
-			, Status     = self.Status
 			, version    = version
 			, chunked    = true
 		}

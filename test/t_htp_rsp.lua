@@ -4,6 +4,7 @@
 local Test     = require( "t.Test" )
 local Http     = require( "t.Http" )
 local Response = Http.Response
+local Method, Version, Status = require't.Http.Method', require't.Http.Version', require't.Http.Status'
 local format   = string.format
 
 -- Mocking socket providing just a fake send method
@@ -27,17 +28,17 @@ local tests = {
 	-- CONSTRUCTOR TESTS
 	test_Constructor = function( self )
 		Test.Case.describe( "Http.Response( id, keepAlive, version ) creates proper Response" )
-		local r = Response( 123, true, Response.Version[3] )
+		local r = Response( 123, true, Version[3] )
 		assert( r.state == Response.State.Zero, format( "State must be %d but was %d", Response.State.Zero, r.state ) )
 		assert( r.keepAlive, "Response must be using keepAlive" )
 		assert( r.id == 123, "Response.id must be 123 but was " .. r.id )
-		assert( r.version == Response.Version[3], format( "Response.version must `%s` but was `%s`", rversion, Response.Version[3] ) )
+		assert( r.version == Version[3], format( "Http.version must `%s` but was `%s`", rversion, Version[3] ) )
 	end,
 
 	--  ##############              WRITE HEAD
 	test_Writehead = function( self )
 		Test.Case.describe( "response:writeHead( status ) HeadBuffer" )
-		local r = Response( 123, true, Response.Version[3] )
+		local r = Response( 123, true, Version[3] )
 		r:writeHead( 200 )
 		assert( r.state   == Response.State.HeadDone, format( "State must be %d but was %d", Response.State.HeadDone, r.state ) )
 		assert( r.chunked, "Response must be chunked" )
@@ -50,7 +51,7 @@ local tests = {
 
 	test_WriteheadLength = function( self )
 		Test.Case.describe( "response:writeHead( status, length ) HeadBuffer" )
-		local r = Response( 123, true, Response.Version[3] )
+		local r = Response( 123, true, Version[3] )
 		local l = 500
 		r:writeHead( 200, l )
 		assert( not r.chunked, "Response must not be chunked" )
@@ -60,8 +61,8 @@ local tests = {
 
 	test_WriteheadStatusCode = function( self )
 		Test.Case.describe( "response:writeHead( status ) Fetches correct status message" )
-		for cde,msg in pairs( Response.Status ) do
-			local r = Response( 123, true, Response.Version[3] )
+		for cde,msg in pairs( Status ) do
+			local r = Response( 123, true, Version[3] )
 			r:writeHead( cde )
 			local term = format( "^HTTP/1.1 %d %s\r\n", cde, msg ):gsub( '%-', '%%-' )
 			assert( r.buf[1]:match( term), format( "Response Buffer should match '%s' but found `%s`", term, r.buf[1] ) )
@@ -70,7 +71,7 @@ local tests = {
 
 	test_WriteheadHeader = function( self )
 		Test.Case.describe( "response:writeHead( status, headers ) HeadBuffer" )
-		local r = Response( 123, true, Response.Version[3] )
+		local r = Response( 123, true, Version[3] )
 		local l = 500
 		r:writeHead( 200, {['Content-Disposition']='attachment; filename="fname.ext"', ['ETag']='"737060cd8c284d8af7ad3082f209582d"'} )
 		local rbuf = table.concat( r.buf )
@@ -83,7 +84,7 @@ local tests = {
 	--  ##############               RESPONSE finish( )
 	test_FinishFinal = function( self )
 		Test.Case.describe( "response:finish( Message ) Sends content with length when called withoud writehead() or write() before" )
-		local r       = Response( 123, true, Response.Version[3] )
+		local r       = Response( 123, true, Version[3] )
 		local payload = '{"random":"data of the payload", "is":true, "just":"A simple JSON content"}'
 		r:finish( payload )
 		assert( not r.chunked, "Response must not be chunked" )

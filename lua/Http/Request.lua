@@ -12,6 +12,7 @@ local t_merge,     t_complement,     t_contains,     t_count,     t_keys,     t_
 
 local Loop, T, Table, Buffer =
       require't.Loop', require't', require't.Table', require't.Buffer'
+local Method, Version = require't.Http.Method', require't.Http.Version'
 
 local _mt
 
@@ -82,7 +83,6 @@ _mt = {       -- local _mt at top of file
 
 return setmetatable( {
 	  State  = State
-	, Method = Method
 }, {
 	__call   = function( self, callback )
 		local request = {
@@ -91,8 +91,8 @@ return setmetatable( {
 			, rsBLen     = 0   -- size of Response Buffer
 			, cb         = nil -- request handler function( callback )
 			, state      = State.Method
-			, method     = self.Method.Illegal
-			, version    = self.Version.VER09
+			, method     = Method.Illegal
+			, version    = Version.VER09
 			, callback   = callback
 		}
 		return setmetatable( request, _mt )
