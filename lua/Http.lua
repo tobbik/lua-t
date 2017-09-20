@@ -1,10 +1,11 @@
 local Http      = require( "t.htp" )
-Http.Connection = require( "t.Http.Connection" )
 Http.Server     = require( "t.Http.Server" )
-Http.Stream     = require( "t.Http.Stream" )
+Http.Connection = require( "t.Http.Connection" )
+Http.Request    = require( "t.Http.Request" )
+Http.Response   = require( "t.Http.Response" )
 --Http.Websocket  = require( "t.Http.WebSocket" )
 
-Http.Version    = {
+local Version    = {
 	  [ 1 ]   = "HTTP/0.9"
 	, [ 2 ]   = "HTTP/1.0"
 	, [ 3 ]   = "HTTP/1.1"
@@ -12,38 +13,7 @@ Http.Version    = {
 }
 
 
-Http.Method     = {
-	  [ 1  ]  = "CONNECT"
-	, [ 2  ]  = "CHECKOUT"
-	, [ 3  ]  = "COPY"
-	, [ 4  ]  = "DELETE"
-	, [ 5  ]  = "GET"
-	, [ 6  ]  = "HEAD"
-	, [ 7  ]  = "LOCK"
-	, [ 8  ]  = "MKCOL"
-	, [ 9  ]  = "MKACTIVITY"
-	, [ 10 ]  = "MKCALENDAR"
-	, [ 11 ]  = "M-SEARCH"
-	, [ 12 ]  = "MERGE"
-	, [ 13 ]  = "MOVE"
-	, [ 14 ]  = "NOTIFY"
-	, [ 15 ]  = "OPTIONS"
-	, [ 16 ]  = "POST"
-	, [ 17 ]  = "PUT"
-	, [ 18 ]  = "PATCH"
-	, [ 19 ]  = "PURGE"
-	, [ 20 ]  = "PROPFIND"
-	, [ 21 ]  = "PROPPATCH"
-	, [ 22 ]  = "REPORT"
-	, [ 23 ]  = "SUBSCRIBE"
-	, [ 24 ]  = "SEARCH"
-	, [ 25 ]  = "TRACE"
-	, [ 26 ]  = "UNLOCK"
-	, [ 27 ]  = "UNSUBSCRIBE"
-}
-
-
-Http.Status     = {
+local Status     = {
 	  [ 100 ] = "Continue"
 	, [ 101 ] = "Switching Protocols"
 	, [ 200 ] = "OK"
@@ -86,6 +56,44 @@ Http.Status     = {
 	, [ 504 ] = "Gateway Timeout"
 	, [ 505 ] = "HTTP Version Not Supported"
 }
+
+local Method     = {
+	  [ 1  ]  = "CONNECT"
+	, [ 2  ]  = "CHECKOUT"
+	, [ 3  ]  = "COPY"
+	, [ 4  ]  = "DELETE"
+	, [ 5  ]  = "GET"
+	, [ 6  ]  = "HEAD"
+	, [ 7  ]  = "LOCK"
+	, [ 8  ]  = "MKCOL"
+	, [ 9  ]  = "MKACTIVITY"
+	, [ 10 ]  = "MKCALENDAR"
+	, [ 11 ]  = "M-SEARCH"
+	, [ 12 ]  = "MERGE"
+	, [ 13 ]  = "MOVE"
+	, [ 14 ]  = "NOTIFY"
+	, [ 15 ]  = "OPTIONS"
+	, [ 16 ]  = "POST"
+	, [ 17 ]  = "PUT"
+	, [ 18 ]  = "PATCH"
+	, [ 19 ]  = "PURGE"
+	, [ 20 ]  = "PROPFIND"
+	, [ 21 ]  = "PROPPATCH"
+	, [ 22 ]  = "REPORT"
+	, [ 23 ]  = "SUBSCRIBE"
+	, [ 24 ]  = "SEARCH"
+	, [ 25 ]  = "TRACE"
+	, [ 26 ]  = "UNLOCK"
+	, [ 27 ]  = "UNSUBSCRIBE"
+}
+
+Http.Request.Method   = Method
+Http.Request.Version  = Version
+Http.Request.Status   = Status
+
+
+Http.Response.Version = Version
+Http.Response.Status  = Status
 
 
 return Http

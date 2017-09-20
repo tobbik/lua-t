@@ -22,14 +22,6 @@ local chkSrv  = function( self )
 	return self
 end
 
-local setNow  = function( self, force )
-	local now = os.time( )
-	-- only update the string if a second or more has passed
-	if now - self.now > 0 or force then
-		self.date = os.date( "%a, %d %b %Y %H:%M:%S %Z", now )
-	end
-end
-
 local accept = function( self )
 	local cli, adr = self.sck:accept( )
 	local con      = Http.Connection( self, cli, adr )
@@ -53,7 +45,6 @@ _mt = {       -- local _mt at top of file
 
 return setmetatable( {
 	  toString = function( srv ) return _mt.__name end
-	, setNow   = setNow
 	, listen   = listen
 }, {
 	__call   = function( self, ael, cb )
@@ -63,7 +54,6 @@ return setmetatable( {
 			  ael = ael
 			, cb  = cb
 		}
-		setNow( srv, true )
 		return setmetatable( srv, _mt )
 	end
 } )

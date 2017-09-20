@@ -12,6 +12,7 @@
 
 
 #include <string.h>               // memset
+#include <time.h>                 // gmtime
 
 #include "t_htp_l.h"
 #include "t_buf.h"
@@ -110,6 +111,42 @@ t_buf_seg_moveIndex( struct t_buf_seg *seg, int mv )
 	seg->len -= mv;
 }
 
+
+/**--------------------------------------------------------------------------
+ * Receive message
+ * This is optimistic.  If a big chunk got received don't waste time moving
+ * everyting between Lua and C.  Just keep parsing and fill the T.Http.Request
+ * object.
+ * \param   L      Lua state.
+ * \param   struct t_buf_seg seg.
+ * \param   mv     move start point.
+ * \lretrun status Parsing status achived.
+ * --------------------------------------------------------------------------
+static int
+t_htp_recv( lua_State *L )
+{
+	struct t_buf_seg *seg = t_buf_seg_check_ud( L, 1, 2 );
+	int                mv = 0;   ///< shifting Segement after parse
+	luaL_checkudata( L, 1, "t.Http.Request" );
+
+	if (0 != (mv = t_htp_parseMethod( L, seg )))
+	{
+		t_buf_seg_moveIndex( seg, mv );
+		lua_setfield( L, 1, "method" );
+	}
+	else
+	{
+		lua_pushinteger( L, T_HTP_REQ_METHOD );
+		lua_setfield( L, 1, "status" );
+		lua_pushboolean( L, 0 );
+		return 1;
+	}
+	if (0 != (mv = lt_htp_parseUrl( L, seg )))
+			if (0 != (mv = lt_htp_parseHttpVersion( L, seg )))
+				if (0 != (mv = lt_htp_parseHeaders( L, seg )))
+	return 1;
+}
+*/
 
 /**--------------------------------------------------------------------------
  * Parse Method from the request.

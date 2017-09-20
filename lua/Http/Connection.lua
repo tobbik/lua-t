@@ -23,33 +23,35 @@ local chkCon  = function( self )
 	return self
 end
 
-local getStream = function( self )
-	-- if HTTP1.0 or HTTP1.1 this is the last, HTTP2.0 has a stream identifier ... TODO:
-	local stream = self.streams[ #self.streams ]
-	if not stream then
-		stream = Http.Stream( self )
-		t_insert( self.streams, stream )
+local getRequest = function( self )
+	-- if HTTP1.0 or HTTP1.1 this is the last, HTTP2.0 has a request identifier ... TODO:
+	local request = self.requests[ #self.requests ]
+	if not request then
+		request = Http.request( self )
+		t_insert( self.requests, request )
 	end
-	return stream
+	return request
 end
 
-local recv    = function( con )
-	local segm = con.buf:Segment( con.rcvd+1 )
-	local rcvd = con.cli:recv( segm )
+local recv    = function( self )
+	local segm = self.buf:Segment( self.rcvd+1 )
+	local rcvd = self.cli:recv( segm )
 	t.print( "RCVD: %d bytes\n", rcvd );
 	if not rcvd then
-		--dispose of itself ... clear streams, buffer etc...
+		--dispose of itself ... clear requests, buffer etc...
 	else
-		local stream = getStream( self )
-		stream:recv( Buffer.Segment( self.buf, 1, rcvd ) )
+		local request = getRequest( self )
+		if not request:recv( Buffer.Segment( self.buf, 1, rcvd ) ) then
+			removeRequest( self, request )
+		end
 	end
 end
 
 local resp
 resp    = function( self )
-	local stream = self.streams[ #self.streams ]
-	local snt    = self.cli:send( stream )
-	if stream.state == stream.State.Done then
+	local request = self.requests[ #self.requests ]
+	local snt    = self.cli:send( request )
+	if request.state == request.State.Done then
 		self.srv.ael:removeHandle( cli, 'write' )
 	end
 end

@@ -1,9 +1,6 @@
--- \file      lua/Http/Stream.lua
--- \brief     Http Stream implementation
--- \detail    References an Http Stream object.  It basically references a
---            single Request/Response interaction   Http2.0 introduced the
---            `Stream` terminology. This however implements it for lower
---            versions(1.1) as well.
+-- \file      lua/Http/Request.lua
+-- \brief     Http Request implementation
+-- \detail    References an Http Request object.
 -- \author    tkieslich
 -- \copyright See Copyright notice at the end of src/t.h
 
@@ -34,14 +31,12 @@ local State = {
 	, Done     = 6
 }
 
-
 local recv    = function( self, seg )
 	local buf
 	if self.buf then
 		buf = Buffer( self.buf:read() .. seg:read( ) )
 		seg = Segment( buf )
 	end
-	local seg = self.segment
 	if State.Method == self.state then
 		self.method            = Http.parseMethod( seg )
 		if self.method then
@@ -58,11 +53,19 @@ local recv    = function( self, seg )
 			self.buf = Buffer( seg )
 		end
 	end
+	if State.Version == self.state then
+		self.version           = Http.parseVersion( seg )
+		if self.version then
+			self.state             = State.Version
+		else
+			self.buf = Buffer( seg )
+		end
+	end
 	if State.Headers == self.state then
 		self.headers           = Http.parseUrl( seg )
 		if self.headers then
-			self.rsp  = Http.Response( self.con, self.id )
-			self.con.srv.cb( self, self.rsp )
+			self.rsp  = Http.Response( self.id, self.version )
+			self.callback( self, self.rsp )
 		else
 			self.buf = Buffer( seg )
 		end
@@ -73,7 +76,7 @@ end
 -- ---------------------------- Instance metatable --------------------
 _mt = {       -- local _mt at top of file
 	-- essentials
-	__name     = "t.Http.Stream"
+	__name     = "t.Http.Request"
 }
 
 
@@ -81,19 +84,18 @@ return setmetatable( {
 	  State  = State
 	, Method = Method
 }, {
-	__call   = function( self, con )
-		assert( T.type( con ) == 't.Http.Connection',  "`t.Http.Connection` is required" )
-		local stream = {
+	__call   = function( self, callback )
+		local request = {
 			  rqCLen     = 0   -- request Length as reported by Header
 			, rsCLen     = 0   -- response Length as calculated or set by application
 			, rsBLen     = 0   -- size of Response Buffer
 			, cb         = nil -- request handler function( callback )
 			, state      = State.Method
-			, method     = Http.Method.Illegal
-			, version    = Http.Version.VER09
-			, con        = con
+			, method     = self.Method.Illegal
+			, version    = self.Version.VER09
+			, callback   = callback
 		}
-		return setmetatable( { [ T.prxTblIdx ] = con }, _mt )
+		return setmetatable( request, _mt )
 	end
 } )
 
