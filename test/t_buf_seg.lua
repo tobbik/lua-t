@@ -235,11 +235,23 @@ tests = {
 
 	test_ShiftRight= function( self )
 		local buf,ofs,len = self.seg.buffer, self.seg.start, self.seg.size
-		local shft        = 6
-		Test.Case.describe( format( "Shift %s in %d tothe right", self.seg, shft ) )
+		local shft        = #buf - self.seg.to - 2
+		Test.Case.describe( format( "Shift %s in %d to the right", self.seg, shft ) )
 		self.seg:shift( shft )
 		local xBuf,xOfs,xLen = self.seg.buffer, self.seg.start, self.seg.size
-		assert( xOfs == ofs+6, "Offset should increase" )
+		assert( xOfs == ofs+shft, "Offset should increase" )
+		assert( xLen == len,   "Length should remain the same" )
+		T.assert( self.seg:read() == self.b:read( xOfs, len ),
+			"Content of T.Buffer.Segment should be %s but wa %s", self.b:read( ofs, xLen ), self.seg:read() )
+	end,
+
+	test_ShiftLeft= function( self )
+		local buf,ofs,len = self.seg.buffer, self.seg.start, self.seg.size
+		local shft        = 0 - ofs + 2
+		Test.Case.describe( format( "Shift %s in %d to the left", self.seg, shft ) )
+		self.seg:shift( shft )
+		local xBuf,xOfs,xLen = self.seg.buffer, self.seg.start, self.seg.size
+		assert( xOfs == ofs+shft, "Offset should increase" )
 		assert( xLen == len,   "Length should remain the same" )
 		T.assert( self.seg:read() == self.b:read( xOfs, len ),
 			"Content of T.Buffer.Segment should be %s but wa %s", self.b:read( ofs, xLen ), self.seg:read() )

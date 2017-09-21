@@ -1,13 +1,8 @@
-local Buffer   = require( "t.buf" )
+local Buffer = require( "t.buf" )
 
-local buf    = Buffer( 1 )
-local seg_mt = getmetatable( buf:Segment( ) )
+local seg_mt = debug.getregistry( )[ "T.Buffer.Segment" ]
 
-seg_mt.shift = function( self, ofs )
-	self.start = self.start + ofs
-end
-
-seg_mt.next = function( self )
+seg_mt.next  = function( self )
 	if self.start + #self + #self <= #self.buffer then
 		nxt = self.buffer:Segment( self.start + #self, #self )
 	else
@@ -16,5 +11,11 @@ seg_mt.next = function( self )
 	return nxt
 end
 
+--[[
+seg_mt.shift = function( self, offset )
+	local start, size = self:getSegment( )
+	self:segSegment( self.start + offset, self.size )
+end
+--]]
 
 return Buffer

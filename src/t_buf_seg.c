@@ -54,6 +54,7 @@ lt_buf_seg__Call( lua_State *L )
 static void
 t_buf_seg_set( lua_State *L, struct t_buf_seg *seg, struct t_buf *buf, size_t idx, size_t len )
 {
+	//printf( "%ld    %ld    %ld\n", idx, len, buf->len );
 	luaL_argcheck( L, 1 <= idx && (size_t) (idx) <= buf->len+1, 1,
 	   "Offset relative to length of "T_BUF_TYPE" out of bound" );
 	luaL_argcheck( L, 0 <= len && (size_t) (idx+len-1) <= buf->len, 2,
@@ -102,6 +103,26 @@ lt_buf_seg_clear( lua_State *L )
 {
 	struct t_buf_seg *seg = t_buf_seg_check_ud( L, 1, 1 );
 	memset( seg->b, 0, seg->len * sizeof( char ) );
+	return 0;
+}
+
+
+/**--------------------------------------------------------------------------
+ * Gets the content of the Buffer.Segment as a hexadecimal string.
+ * \param   L       Lua state.
+ * \lparam  ud      Buffer.Segment userdata instance.
+ * \lparam  start   Segment start index in Buffer.
+ * \lparam  len     Segment length.
+ * \return  int     # of values pushed onto the stack.
+ * --------------------------------------------------------------------------*/
+static int
+lt_buf_seg_shift( lua_State *L )
+{
+	struct t_buf_seg *seg   = t_buf_seg_check_ud( L, 1, 1 );
+	struct t_buf     *buf;
+	lua_rawgeti( L, LUA_REGISTRYINDEX, seg->bR );
+	buf = t_buf_check_ud( L, -1, 1 );
+	t_buf_seg_set( L, seg, buf, seg->idx + luaL_checkinteger( L, 2 ), seg->len );
 	return 0;
 }
 
@@ -278,11 +299,11 @@ lt_buf_seg__newindex( lua_State *L )
 		buf = t_buf_check_ud( L, -1, 1 );
 
 		if (0 == strncmp( key, "start", 5 ) )
-			t_buf_seg_set( L, seg, buf, val, seg->len );
+			t_buf_seg_set( L, seg, buf, val, seg->len + seg->idx - val );
 		else if (0 == strncmp( key, "size", 4 ) )
 			t_buf_seg_set( L, seg, buf, seg->idx, val );
 		else if (0 == strncmp( key, "to", 2 ) )
-			t_buf_seg_set( L, seg, buf, seg->idx, val-seg->idx );
+			t_buf_seg_set( L, seg, buf, seg->idx, val - seg->idx );
 		else
 			luaL_argerror( L, 2, "Can't set this value in "T_BUF_SEG_TYPE );
 	}
@@ -318,6 +339,7 @@ static const luaL_Reg t_buf_seg_m [] = {
 	, { "__gc"         , lt_buf_seg__gc }
 	// instance methods
 	, { "clear"        , lt_buf_seg_clear }
+	, { "shift"        , lt_buf_seg_shift }
 	, { "read"         , lt_buf_read }
 	, { "write"        , lt_buf_write }
 	// universal stuff
