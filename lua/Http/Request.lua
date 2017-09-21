@@ -12,7 +12,7 @@ local t_merge,     t_complement,     t_contains,     t_count,     t_keys,     t_
 
 local Loop, T, Table, Buffer =
       require't.Loop', require't', require't.Table', require't.Buffer'
-local Method, Version = require't.Http.Method', require't.Http.Version'
+local Http, Method, Version, Response = require't.Http', require't.Http.Method', require't.Http.Version', require't.Http.Response'
 
 local _mt
 
@@ -39,7 +39,7 @@ local recv    = function( self, seg )
 		seg = Segment( buf )
 	end
 	if State.Method == self.state then
-		self.method            = Http.parseMethod( seg )
+		self.method               = Http.parseMethod( seg )
 		if self.method then
 			self.state             = State.Url
 		else
@@ -48,8 +48,8 @@ local recv    = function( self, seg )
 	end
 	if State.Url == self.state then
 		self.query, self.url   = Http.parseUrl( seg )
-		if self.query then
-			self.state             = State.Headers
+		if self.url then
+			self.state             = State.Version
 		else
 			self.buf = Buffer( seg )
 		end
@@ -57,7 +57,7 @@ local recv    = function( self, seg )
 	if State.Version == self.state then
 		self.version           = Http.parseVersion( seg )
 		if self.version then
-			self.state             = State.Version
+			self.state             = State.Headers
 		else
 			self.buf = Buffer( seg )
 		end
@@ -65,7 +65,7 @@ local recv    = function( self, seg )
 	if State.Headers == self.state then
 		self.headers           = Http.parseUrl( seg )
 		if self.headers then
-			self.rsp  = Http.Response( self.id, self.version )
+			self.rsp  = Response( self.id, self.version )
 			self.callback( self, self.rsp )
 		else
 			self.buf = Buffer( seg )
@@ -77,22 +77,23 @@ end
 -- ---------------------------- Instance metatable --------------------
 _mt = {       -- local _mt at top of file
 	-- essentials
-	__name     = "t.Http.Request"
+	  __name     = "t.Http.Request"
+	, recv       = recv
 }
 
+_mt.__index     = _mt
 
 return setmetatable( {
 	  State  = State
 }, {
 	__call   = function( self, callback )
 		local request = {
-			  rqCLen     = 0   -- request Length as reported by Header
-			, rsCLen     = 0   -- response Length as calculated or set by application
-			, rsBLen     = 0   -- size of Response Buffer
-			, cb         = nil -- request handler function( callback )
+			  rqCLen     = 0        -- request Length as reported by Header
+			, rsCLen     = 0        -- response Length as calculated or set by application
+			, rsBLen     = 0        -- size of Response Buffer
 			, state      = State.Method
-			, method     = Method.Illegal
-			, version    = Version.VER09
+			, method     = Method.ILLEGAL
+			, version    = Version.ILLEGAL
 			, callback   = callback
 		}
 		return setmetatable( request, _mt )

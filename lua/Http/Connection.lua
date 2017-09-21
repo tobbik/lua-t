@@ -7,8 +7,8 @@
 -- \copyright See Copyright notice at the end of src/t.h
 
 local prxTblIdx,Table  = require( "t" ).proxyTableIndex, require( "t.Table" )
-local t_insert     , getmetatable, setmetatable, pairs, assert, next, type =
-      table.insert , getmetatable, setmetatable, pairs, assert, next, type
+local t_insert    , t_remove    , getmetatable, setmetatable, assert, type =
+      table.insert, table.remove, getmetatable, setmetatable, assert, type
 local t_merge,     t_complement,     t_contains,     t_count,     t_keys,     t_asstring =
       Table.merge, Table.complement, Table.contains, Table.count, Table.keys, Table.asstring
 
@@ -50,10 +50,10 @@ end
 local resp
 resp    = function( self )
 	local request = self.requests[ #self.requests ]
-	local snt    = self.cli:send( request )
-	if request.state == request.State.Done then
-		self.srv.ael:removeHandle( cli, 'write' )
+	if request.response:send( self.cli ) then
+		t_remove( self.requests, request.id )
 	end
+	-- Keep existing if keep-alive (put timer on loop for self destroy)
 end
 
 -- ---------------------------- Instance metatable --------------------

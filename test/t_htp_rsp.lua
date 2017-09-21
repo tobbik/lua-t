@@ -1,9 +1,9 @@
 ---
 -- \file    t_htp_rsp.lua
 -- \brief   Test for the Http Response
-local Test     = require( "t.Test" )
-local Http     = require( "t.Http" )
-local Response = Http.Response
+local Test     = require't.Test'
+local Http     = require't.Http'
+local Response = require't.Http.Response'
 local Method, Version, Status = require't.Http.Method', require't.Http.Version', require't.Http.Status'
 local format   = string.format
 

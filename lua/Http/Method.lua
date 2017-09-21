@@ -1,5 +1,6 @@
-return {
-	  [ 1  ]  = "CONNECT"
+local methods = {
+	  [ 0  ]  = "ILLEGAL"
+	, [ 1  ]  = "CONNECT"
 	, [ 2  ]  = "CHECKOUT"
 	, [ 3  ]  = "COPY"
 	, [ 4  ]  = "DELETE"
@@ -27,3 +28,15 @@ return {
 	, [ 26 ]  = "UNLOCK"
 	, [ 27 ]  = "UNSUBSCRIBE"
 }
+
+local reverse = { }
+
+for k,v in pairs( methods ) do
+	reverse[ v ] = k
+end
+
+for k,v in pairs( reverse ) do
+	methods[ k ] = v
+end
+
+return methods
