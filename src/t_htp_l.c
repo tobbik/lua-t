@@ -77,6 +77,21 @@ static inline const char
 }
 
 
+/**--------------------------------------------------------------------------
+ * Set start point of Buffer.Segment
+ * \param   L     Lua state.
+ * \param   struct t_buf_seg seg.
+ * \param   mv    move start point.
+ * --------------------------------------------------------------------------*/
+void
+t_buf_seg_moveIndex( struct t_buf_seg *seg, int mv )
+{
+	seg->b    = seg->b + mv;
+	seg->idx += mv;
+	seg->len -= mv;
+}
+
+
 // ########################## REWRITE
 // TODO: use this to adjust large incoming chnks for headers upto BUFSIZ per
 // line

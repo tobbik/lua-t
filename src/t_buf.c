@@ -137,17 +137,3 @@ t_buf_isstring( lua_State *L, int pos, int *cw )
 		return 0;
 }
 
-
-/**--------------------------------------------------------------------------
- * Set start point of Buffer.Segment
- * \param   L     Lua state.
- * \param   struct t_buf_seg seg.
- * \param   mv    move start point.
- * --------------------------------------------------------------------------*/
-void
-t_buf_seg_moveIndex( struct t_buf_seg *seg, int mv )
-{
-	seg->b    = seg->b + mv;
-	seg->idx += mv;
-	seg->len -= mv;
-}
