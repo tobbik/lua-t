@@ -117,6 +117,30 @@ local tests = {
 		assert( r.state   == Request.State.Body, format( "State must be %d but was %d", Request.State.Body, r.state ) )
 	end,
 
+	test_ReceiveBadHeaders = function( self )
+		Test.Case.describe( "request:recv() Unparsable Headers will be enumerated" )
+		local r = Request( dummyCb )
+		local t = {
+			HeaderOne   = 'ValueOne',
+			HeaderTwo   = 'ValueTwo;\r\nValueTwo Continuation', -- continuation MUST START WITH whitspace
+			HeaderThree = 'ValueThree' }
+		local h = ''
+		t_map( t, function(v,k) h = h ..k..': '..v.. '\r\n' end )
+		local b = Buffer( "GET /go/index.html HTTP/1.1\r\n" .. h .. '\r\n' )
+		r:receive( b:Segment() )
+		local t1 = {
+			[ 0 ]       = 'ValueTwo Continuation', -- unparsable headers will be enumerated
+			HeaderOne   = 'ValueOne',
+			HeaderTwo   = 'ValueTwo;',
+			HeaderThree = 'ValueThree' }
+		for k,v in pairs( t1 ) do
+			assert( v == r.headers[ k ], format( "req.headers[ %s ] must be `%s` but was `%s`", k, v, r.headers[k] ) )
+		end
+		assert( r.state   == Request.State.Body, format( "State must be %d but was %d", Request.State.Body, r.state ) )
+	end,
+
+
+
 }
 
 return Test( tests )

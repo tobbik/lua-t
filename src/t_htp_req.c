@@ -287,7 +287,10 @@ t_htp_req_parseHeaders( lua_State *L, struct t_buf_seg *seg )
 				if (' ' == *(r+1)) // Value Continuation
 					break;
 				lua_pushlstring( L, s, ('\r' == *(r-1)) ? r-s-1 : r-s );   // push value
-				lua_rawset( L, -3 );
+				if (T_HTP_R_KY == rs)
+					lua_rawseti( L, -2, lua_rawlen( L, -2 ) );
+				else
+					lua_rawset( L, -3 );
 				rs = T_HTP_R_KY;
 				if ('\n' == *(r+1) || '\r' == *(r+1))  // double newLine -> END OF HEADER
 				{
