@@ -31,6 +31,20 @@ local State = {
 	, Done     = 6
 }
 
+local receive = function( self, seg )
+	local buf
+	if self.buf then
+		buf = Buffer( self.buf:read() .. seg:read( ) )
+		seg = buf:Segment( )
+	end
+	self:parse( seg, self.state )
+	if #seg > 0 then
+		self.buf = Buffer( seg )
+	else
+		self.buf = nil
+	end
+end
+
 -- ---------------------------- Instance metatable --------------------
 --_mt = {       -- local _mt at top of file
 --	-- essentials
@@ -39,9 +53,8 @@ local State = {
 --}
 
 --_mt.__index     = _mt
-_mt.recv       = recv
+_mt.receive    = receive
 _mt.__name     = "t.Http.Request"
-for k,v in pairs(_mt) do print(k,v) end
 
 return setmetatable( {
 	  State  = State

@@ -339,9 +339,18 @@ lt_htp_req_receive( lua_State *L )
 	struct t_buf_seg *seg = t_buf_seg_check_ud( L, 2, 1 );
 	size_t          state;
 	//luaL_getmetafield( L, 1, "__name"), "t.Http.Request" );
-	lua_getfield( L, 1, "state" );
+	//lua_getfield( L, 1, "state" );
 	state = (size_t) luaL_checkinteger( L, 3 );
-	lua_pop( L, 1 );
+	lua_pop( L, 1 );  // pop state
+	// check if a buffer exist?
+	/*
+	lua_getfield( L, 1, "buf" );
+	if (! lua_isnil( L, -1 ))
+	{
+		buf = t_buf_check_ud( L, -1, 1 );
+	}
+	lua_pop( L, 2 );  // pop state and buffer/nil
+	*/
 
 	switch (state)
 	{
@@ -360,7 +369,8 @@ lt_htp_req_receive( lua_State *L )
 		default:
 			break;
 	}
-	if (seg->len >0)
+	/*
+	if (seg->len > 0)
 	{
 		// create a t.Buffer object
 		buf = (struct t_buf *) lua_newuserdata( L, sizeof( struct t_buf ) + (seg->len - 1) * sizeof( char ) );
@@ -368,8 +378,11 @@ lt_htp_req_receive( lua_State *L )
 		buf->len = seg->len;
 		luaL_getmetatable( L, T_BUF_TYPE );
 		lua_setmetatable( L, -2 );
-		lua_setfield( L, 1, "buf" );
 	}
+	else
+		lua_pushnil( L );
+	lua_setfield( L, 1, "buf" );
+	*/
 	return 0;
 }
 
@@ -393,7 +406,7 @@ static const struct luaL_Reg t_htp_req_cf [] = {
  * Objects metamethods library definition
  * --------------------------------------------------------------------------*/
 static const luaL_Reg t_htp_req_m [] = {
-	  { "receive"      , lt_htp_req_receive }
+	  { "parse"      , lt_htp_req_receive }
 	, { NULL           , NULL }
 };
 

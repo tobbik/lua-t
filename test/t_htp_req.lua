@@ -2,7 +2,7 @@
 -- \file    t_htp_req.lua
 -- \brief   Test for the Http Request
 local Table    = require't.Table'
-local t_map,t_concat = Table.map, table.concat
+local t_map,t_count,t_concat = Table.map, Table.count, table.concat
 local Test     = require't.Test'
 local Http     = require't.Http'
 local Request  = require't.Http.Request'
@@ -58,6 +58,7 @@ local tests = {
 		assert( r.state   == Request.State.Url, format( "State must be %d but was %d", Request.State.Url, r.state ) )
 		assert( r.method  == Method.GET, format( "Method must be %d but was %d", Method.GET, r.method ) )
 		assert( r.version == Version.ILLEGAL, format( "Version must be %d but was %d", Version.ILLEGAL, r.method ) )
+		print("SEG LEN:", r.buf:toHex())
 	end,
 
 	test_ReceiveUrl = function( self )
@@ -70,6 +71,7 @@ local tests = {
 		assert( r.url       , "URL must exist" )
 		assert( r.url   == u, format( "URL must be %s but was %s", u, r.url ) )
 		assert( nil  == r.query, "Query table mustn't exist" )
+		print("SEG LEN:", r.buf:toHex())
 	end,
 
 	test_ReceiveUrlAndQuery = function( self )
@@ -82,10 +84,11 @@ local tests = {
 		assert( r.url       , "URL must exist" )
 		assert( r.url   == u, format( "URL must be %s but was %s", u, r.url ) )
 		assert( "table" == type( r.query ), "req.query must be a table" )
-		assert( 4       == Table.count( r.query ), "req.query must contain 4 elements" )
+		assert( 4       == t_count( r.query ), "req.query must contain 4 elements" )
 		for k,v in pairs({alpha='1', beta='2', c=gamma, [4]=delta}) do
 			assert( v == r.query[ k ], format( "req.query[ %s ] must be `%s` but was `%s`", k, v, r.query[k] ) )
 		end
+		print("SEG LEN:", r.buf:toHex())
 	end,
 
 	test_ReceiveHttpVersion = function( self )
@@ -98,6 +101,7 @@ local tests = {
 		assert( r.version == Version[ v ]         , format( "Version must be %d but was %d", Version[v], r.version ) )
 		--assert( r.method, "r.method must exist" )
 		assert( r.url, "r.url must exist" )
+		print("SEG LEN:", r.buf:toHex())
 	end,
 
 	test_ReceiveHeaders = function( self )
@@ -115,6 +119,7 @@ local tests = {
 			assert( v == r.headers[ k ], format( "req.headers[ %s ] must be `%s` but was `%s`", k, v, r.headers[k] ) )
 		end
 		assert( r.state   == Request.State.Body, format( "State must be %d but was %d", Request.State.Body, r.state ) )
+		print("SEG LEN:", r.buf:toHex())
 	end,
 
 	test_ReceiveBadHeaders = function( self )
@@ -137,8 +142,28 @@ local tests = {
 			assert( v == r.headers[ k ], format( "req.headers[ %s ] must be `%s` but was `%s`", k, v, r.headers[k] ) )
 		end
 		assert( r.state   == Request.State.Body, format( "State must be %d but was %d", Request.State.Body, r.state ) )
+		print("SEG LEN:", r.buf:toHex())
 	end,
 
+	-- #################################### Continous parsing
+	test_ContinuedUrl = function( self )
+		Test.Case.describe( "request:recv() partial URL and finish parsing" )
+		local r      = Request( dummyCb )
+		local u1, u2 = '/go/wherever/it/wil', 'l/be/index.html'
+		local u      = u1 .. u2
+		local v      = Version[3] -- HTTP/1.1
+		local p1, p2 = 'GET ' .. u1, u2 .. ' ' ..v.. '\r\n'
+		local b1     = Buffer( p1 )
+		r:receive( b1:Segment() )
+		assert( r.state == Request.State.Url, format( "State must be %d but was %d", Request.State.Url, r.state ) )
+		assert( not r.url, "URL mustn't exist" )
+		assert( r.buf:read() == p1:sub(4), format("r.buf shall be `%s` but was `%s", r.buf:read(), p1:sub(4)) )
+		local b2 = Buffer( p2 )
+		r:receive( b2:Segment() )
+		assert( r.url     == u, format( "URL must be `%s` but was `%s`", u, r.url ) )
+		assert( r.version == Version[v], format( "HTTP version must be `%s` but was `%s`", Version[v], r.version ) )
+		print("SEG LEN:", r.buf:toHex())
+	end,
 
 
 }
