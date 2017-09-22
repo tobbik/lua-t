@@ -50,7 +50,9 @@ lt_buf__Call( lua_State *L )
 				T_BUF_TYPE" size must be at least as big as source to copy from" );
 		else
 			buf = t_buf_create_ud( L, (cpy_buf) ? cpy_buf->len : cpy_seg->len );
-		memcpy( &(buf->b[0]), (cpy_buf) ? &(cpy_buf->b[0]) : &(cpy_seg->b[0]), ((cpy_buf) ? cpy_buf->len : cpy_seg->len) );
+		memcpy( &(buf->b[0]),
+			(cpy_buf) ? &(cpy_buf->b[0]) : &(cpy_seg->b[0]),
+			(cpy_buf) ?   cpy_buf->len   :   cpy_seg->len );
 		return 1;
 	}
 
@@ -81,11 +83,9 @@ struct t_buf
 *t_buf_create_ud( lua_State *L, size_t n )
 {
 	struct t_buf  *b;
-	size_t         sz;
 
 	// size = sizof(...) -1 because the array has already one member
-	sz = sizeof( struct t_buf ) + (n - 1) * sizeof( char );
-	b  = (struct t_buf *) lua_newuserdata( L, sz );
+	b  = (struct t_buf *) lua_newuserdata( L, sizeof( struct t_buf ) + (n - 1) * sizeof( char ) );
 	memset( b->b, 0, n * sizeof( char ) );
 
 	b->len = n;

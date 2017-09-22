@@ -2,7 +2,7 @@ local t_insert,t_concat,fmt,rep = table.insert,table.concat,string.format, strin
 
 local Table      = { }
 Table.map        = function( tbl, func )
-	for k,v in pairs( tbl ) do  tbl[ k ] = func( v )  end
+	for k,v in pairs( tbl ) do  tbl[ k ] = func( v, k )  end
 	return tbl
 end
 

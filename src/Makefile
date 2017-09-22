@@ -35,7 +35,7 @@ endif
 T_AEL_SRC=$(wildcard t_ael*.c) $(T_DBG_SRC) t_net.c t_tim.c t.c
 T_BUF_SRC=$(wildcard t_buf*.c) $(T_DBG_SRC) t.c
 T_ENC_SRC=$(wildcard t_enc*.c) $(T_DBG_SRC) t.c
-T_HTP_SRC=$(wildcard t_htp_l.c) $(T_DBG_SRC) t.c t_buf.c
+T_HTP_SRC=$(wildcard t_htp*.c) $(T_DBG_SRC) t.c t_buf.c
 T_NET_SRC=$(wildcard t_net*.c) $(T_DBG_SRC) t.c t_buf.c
 T_NRY_SRC=$(wildcard t_nry*.c) $(T_DBG_SRC) t.c
 T_PCK_SRC=$(wildcard t_pck*.c) $(T_DBG_SRC) t.c t_buf.c

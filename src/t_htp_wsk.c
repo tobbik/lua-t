@@ -78,12 +78,12 @@ struct t_htp_wsk *t_htp_wsk_check_ud( lua_State *L, int pos, int check )
 int t_htp_wsk_rmsg( lua_State *L, struct t_htp_wsk *ws )
 {
 	char  buffer[ BUFSIZ ];
-	int   rcvd;
+	int   rcvd = 0;
 
 	// TODO: Idea
 	// WS is in a state -> empty, receiving, sending
 	// negotiate to read into the buffer initially or into the luaL_Buffer
-	rcvd = p_net_sck_recv( L, ws->sck, NULL, &(buffer[ 0 ]), BUFSIZ );
+	//rcvd = p_net_sck_recv( L, ws->sck, NULL, &(buffer[ 0 ]), BUFSIZ );
 	return rcvd;
 }
 

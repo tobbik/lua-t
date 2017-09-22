@@ -19,6 +19,18 @@
  * |  _  | | |   | | |  __/  | |_) | (_| | |  \__ \  __/ |
  * |_| |_| |_|   |_| |_|     | .__/ \__,_|_|  |___/\___|_|
  *                           |_|                             */
+// this needs to be in sync with the t.Http.Request.State table
+enum t_htp_req_state {
+	T_HTP_REQ_ZERO,
+	T_HTP_REQ_METHOD,
+	T_HTP_REQ_URI,
+	T_HTP_REQ_VERSION,
+	T_HTP_REQ_HEADERS,
+	T_HTP_REQ_BODY,
+	T_HTP_REQ_DONE,
+};
+
+
 
 /// Recognized HTTP Methods
 enum t_htp_mth {
@@ -76,6 +88,7 @@ enum t_htp_srm_s {
 };
 
 LUAMOD_API int luaopen_t_htp_wsk( lua_State *L );
+LUAMOD_API int luaopen_t_htp_req( lua_State *L );
 
 /*  __        __   _    ____             _        _
  *  \ \      / /__| |__/ ___|  ___   ___| | _____| |_
