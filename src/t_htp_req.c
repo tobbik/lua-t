@@ -67,14 +67,15 @@ static const char tokens[256] = {
  * \param   char*  k Header key start.
  * \param   char*  c Colon after the header key (':').
  * \param   char*  v Header value start.
- * \param   char*  e Header value end ('\r').
+ * \param   char*  e Header value end ('\r' or '\n' ... sloppy bastards!).
  * \return  enum   How to parse the heaer value.
  * --------------------------------------------------------------------------*/
 static void
 t_htp_req_identifyHeader( lua_State *L, const char *k, const char *c,
                                         const char *v, const char *e )
 {
-	size_t   l = c-k;
+	size_t   l  = c-k, lv = ('\r' == *e) ? e-v-2 : e-v-1;
+	int      cl, i;     // Content-Length parsing
 	char     x;
 	switch (tokens[ (unsigned char) *k ])
 	{
@@ -97,7 +98,17 @@ t_htp_req_identifyHeader( lua_State *L, const char *k, const char *c,
 			if (11==l) {     lua_pushstring( L, "Content-MD5" );                break; }
 			if (12==l) {     lua_pushstring( L, "Content-Type" );               break; }
 			if (13==l) {     lua_pushstring( L, "Cache-Control" );              break; }
-			if (14==l) {     lua_pushstring( L, "Content-Length" );             break; }
+			if (14==l)
+			{
+				cl = 0;
+				for (i=0; i < (int)lv; ++i)
+					cl = cl*10 + (v[i] - '0');
+				lua_pushstring( L, "contentLength" );
+				lua_pushinteger( L, cl );            //S: req,hed,key,cnl
+				lua_rawset( L, -4 );
+				lua_pushstring( L, "Content-Length" );
+				break;
+			}
 		case 'd':
 			                 lua_pushstring( L, "Date" );                       break;
 		case 'e':
@@ -136,9 +147,9 @@ t_htp_req_identifyHeader( lua_State *L, const char *k, const char *c,
 		case 'w':
 			                 lua_pushstring( L, "Warning" );                    break;
 		default:
-			lua_pushlstring( L, k, c-k );
+			lua_pushlstring( L, k, l );
 	}
-	lua_pushlstring( L, v, ('\r' == *e) ? e-v-2 : e-v-1 );   // push value
+	lua_pushlstring( L, v, lv );   // push value
 	lua_rawset( L, -3 );
 }
 
@@ -186,7 +197,7 @@ t_htp_req_parseMethod( lua_State *L, struct t_buf_seg *seg )
 	int         m = T_HTP_MTH_ILLEGAL; ///< HTTP.Method index
 	const char *r = seg->b;            ///< runner char
 
-	// Determine HTTP Verb
+	// Determine HTTP Verb (METHOD)
 	if (seg->len > 10)
 	{
 		switch (*r)
@@ -314,7 +325,6 @@ t_htp_req_parseHttpVersion( lua_State *L, struct t_buf_seg *seg )
 	int         v = T_HTP_VER_ILL;
 	size_t      l = seg->len - (r - seg->b);
 
-
 	if ((l > 11 && '\r'==*(r+8 )) || (l > 9 && '\n'==*(r+8 )))
 	{
 		switch (*(r+7))
@@ -324,7 +334,6 @@ t_htp_req_parseHttpVersion( lua_State *L, struct t_buf_seg *seg )
 			case '9': v = T_HTP_VER_09; break;
 			default: luaL_error( L, "ILLEGAL HTTP version in message" ); break;
 		}
-		lua_pushinteger( L, v );
 		if (v == T_HTP_VER_11)
 		{
 			lua_pushboolean( L, 1 );
@@ -383,7 +392,10 @@ t_htp_req_parseHeaders( lua_State *L, struct t_buf_seg *seg )
 				{
 					t_buf_seg_moveIndex( seg, (r + (('\n'==*(r+1))? 0 : 1) - seg->b) );
 					lua_pop( L, 1 );  // pop header-table from stack
-					lua_pushinteger( L, T_HTP_REQ_BODY );
+					lua_pushstring( L, "contentLength" );
+					lua_rawget( L, 1 );
+					lua_pushinteger( L, (lua_isnil( L, -1 )) ? T_HTP_REQ_DONE : T_HTP_REQ_BODY );
+					lua_remove( L, -2 );  // pop nil/contentLength
 					lua_setfield( L, 1, "state" );
 					return 1;
 				}
@@ -422,13 +434,13 @@ t_htp_req_parseHeaders( lua_State *L, struct t_buf_seg *seg )
 static int
 lt_htp_req_receive( lua_State *L )
 {
-	struct t_buf     *buf;
+	//struct t_buf     *buf;
 	struct t_buf_seg *seg = t_buf_seg_check_ud( L, 2, 1 );
 	size_t          state;
 	//luaL_getmetafield( L, 1, "__name"), "t.Http.Request" );
 	//lua_getfield( L, 1, "state" );
 	state = (size_t) luaL_checkinteger( L, 3 );
-	lua_pop( L, 1 );  // pop state
+	lua_pop( L, 2 );  // pop state and segment
 	// check if a buffer exist?
 	/*
 	lua_getfield( L, 1, "buf" );

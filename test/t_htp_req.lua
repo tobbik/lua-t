@@ -149,7 +149,6 @@ local tests = {
 			, [ 'Authorization' ]                  = "Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ=="
 			, [ 'Cache-Control' ]                  = "no-cache"
 			, [ 'Connection' ]                     = "keep-alive"
-			, [ 'Connection' ]                     = "Upgrade"
 			, [ 'Cookie' ]                         = "$Version=1; Skin=new;"
 			, [ 'Content-Length' ]                 = "348"
 			, [ 'Content-MD5' ]                    = "Q2hlY2sgSW50ZWdyaXR5IQ=="
@@ -203,7 +202,6 @@ local tests = {
 			, [ 'Authorization' ]                  = "Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ=="
 			, [ 'Cache-Control' ]                  = "no-cache"
 			, [ 'Connection' ]                     = "keep-alive"
-			, [ 'Connection' ]                     = "Upgrade"
 			, [ 'Cookie' ]                         = "$Version=1; Skin=new;"
 			, [ 'Content-Length' ]                 = "348"
 			, [ 'Content-MD5' ]                    = "Q2hlY2sgSW50ZWdyaXR5IQ=="
@@ -247,25 +245,55 @@ local tests = {
 		Test.Case.describe( "request:recv() Unparsable Headers will be enumerated" )
 		local r = Request( dummyCb )
 		local t = {
-			  [ 'TE' ]                             = "trailers, deflate"
-			, [ 'User-Agent' ]                     = "Mozilla/5.0 (X11; Linux x86_64; rv:12.0)\r\n" ..
-			                                         "Gecko/20100101 Firefox/12.0"
-			, [ 'Upgrade' ]                        = "HTTPS/1.3, IRC/6.9, RTA/x11, websocket"
+			  [ 'Content-Length' ] = "12345"
+			, [ 'TE' ]             = "trailers, deflate"
+			, [ 'User-Agent' ]     = "Mozilla/5.0 (X11; Linux x86_64; rv:12.0)\r\n" ..
+			                         "Gecko/20100101 Firefox/12.0"
+			, [ 'Upgrade' ]        = "HTTPS/1.3, IRC/6.9, RTA/x11, websocket"
 		}
 		local h = ''
-		t_map( t, function(v,k) h = h ..k..': '..v.. '\r\n' end )
+		for k,v in pairs(t) do  h = h ..k..': '..v.. '\r\n' end
 		local s = Buffer( "GET /go/index.html HTTP/1.1\r\n" .. h .. '\r\n' ):Segment( )
 		r:receive( s )
 		local t1 = {
-			  [ 'TE' ]           = "trailers, deflate"
-			, [ 'User-Agent' ]   = "Mozilla/5.0 (X11; Linux x86_64; rv:12.0)"
-			, [ 0 ]              = "Gecko/20100101 Firefox/12.0" -- unparsable headers will be enumerated
-			, [ 'Upgrade' ]      = "HTTPS/1.3, IRC/6.9, RTA/x11, websocket"
+			  [ 'Content-Length' ] = "12345"
+			, [ 'TE' ]             = "trailers, deflate"
+			, [ 'User-Agent' ]     = "Mozilla/5.0 (X11; Linux x86_64; rv:12.0)"
+			, [ 0 ]                = "Gecko/20100101 Firefox/12.0" -- unparsable headers will be enumerated
+			, [ 'Upgrade' ]        = "HTTPS/1.3, IRC/6.9, RTA/x11, websocket"
 		}
 		for k,v in pairs( t1 ) do
 			assert( v == r.headers[ k ], format( "req.headers[ %s ] must be `%s` but was `%s`", k, v, r.headers[k] ) )
 		end
 		assert( r.state   == Request.State.Body, format( "State must be %d but was %d", Request.State.Body, r.state ) )
+	end,
+
+	-- #################################### Headers content parsing
+	test_HeaderContentLength = function( self )
+		Test.Case.describe( "Content-Length Header gets parsed" )
+		local r = Request( dummyCb )
+		local s = Buffer( "GET /go/index.html HTTP/1.1\r\nContent-Length: 12345\r\n\r\n" ):Segment( )
+		r:receive( s )
+		assert( 12345 == r.contentLength, format( "req.contentLength must be `%d` but was `%s`", 12345, r.contentLength ) )
+	end,
+
+	test_HeaderNoContentLength = function( self )
+		Test.Case.describe( "No Content-Length finishes as Request.State.Done" )
+		local r = Request( dummyCb )
+		-- taken from Wikipedia examples
+		local t = {
+			  [ 'Accept' ]                         = "text/plain"
+			, [ 'Accept-Charset' ]                 = "utf-8"
+			, [ 'Accept-Encoding' ]                = "gzip, deflate"
+			, [ 'Accept-Language' ]                = "en-US"
+			, [ 'Accept-Datetime' ]                = "Thu, 31 May 2007 20:35:00 GMT"
+		}
+		local h = ''
+		for k,v in pairs(t) do h = h .. k ..': '..v.. '\r\n' end
+		local s = Buffer( "GET /go/index.html HTTP/1.1\r\n" .. h .. '\r\n' ):Segment( )
+		r:receive( s )
+		assert( nil == r.contentLength, format( "req.contentLength must be `nil` but was `%s`", r.contentLength ) )
+		assert( r.state == Request.State.Done, format( "State must be %d but was %d", Request.State.Done, r.state ) )
 	end,
 
 	-- #################################### Continous parsing
