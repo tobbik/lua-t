@@ -150,7 +150,7 @@ t_htp_req_identifyHeader( lua_State *L, const char *k, const char *c,
  * \param   struct t_buf_seg seg.
  * \param   mv               move start point mv bytes to the right.
  * --------------------------------------------------------------------------*/
-static void
+static inline void
 t_buf_seg_moveIndex( struct t_buf_seg *seg, int mv )
 {
 	//printf( "%d  ->  %ld(%ld)   %ld(%ld)\n", mv, seg->idx, seg->idx+mv, seg->len, seg->len-mv );
@@ -310,12 +310,12 @@ t_htp_req_parseUrl( lua_State *L, struct t_buf_seg *seg )
 static int
 t_htp_req_parseHttpVersion( lua_State *L, struct t_buf_seg *seg )
 {
-	const char       *r   = eat_lws( seg->b );  ///< runner char
-	int               v   = T_HTP_VER_ILL;
+	const char *r = eat_lws( seg->b );  ///< runner char
+	int         v = T_HTP_VER_ILL;
+	size_t      l = seg->len - (r - seg->b);
 
-	//TODO: set values based on version default behaviour (eg, KeepAlive for 1.1 etc)
-	//TODO: check for n being big enough
-	if ('H'==*(r) && ('\r'==*(r+8 ) || '\n'==*(r+8)))
+
+	if ((l > 11 && '\r'==*(r+8 )) || (l > 9 && '\n'==*(r+8 )))
 	{
 		switch (*(r+7))
 		{
@@ -332,7 +332,9 @@ t_htp_req_parseHttpVersion( lua_State *L, struct t_buf_seg *seg )
 		}
 		lua_pushinteger( L, v );
 		lua_setfield( L, 1, "version" );
-		lua_pushinteger( L, T_HTP_REQ_HEADERS );
+		lua_pushinteger( L, ((12==l && '\r'==*(r+10)) || (10==l && '\n'==*(r+9)))
+			? T_HTP_REQ_DONE
+			: T_HTP_REQ_HEADERS );
 		lua_setfield( L, 1, "state" );
 		t_buf_seg_moveIndex( seg, r - seg->b + 8 );  // relocate to \r or\n after first line
 
