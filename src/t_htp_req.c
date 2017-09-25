@@ -273,6 +273,9 @@ t_htp_req_parseHeaders( lua_State *L, struct t_buf_seg *seg )
 {
 	const char       *r   = eat_lws( seg->b );  ///< runner char
 	const char       *e   = seg->b + seg->len;  ///< ending char
+	const char       *k   = r;                  ///< marks start of key
+	const char       *c   = r;                  ///< marks colon after key
+	const char       *v   = r;                  ///< marks start of value
 	const char       *s   = r;                  ///< marks start of string
 	enum t_htp_rs     rs  = T_HTP_R_KY;         ///< local parse state = New Line Beginning
 
@@ -286,28 +289,33 @@ t_htp_req_parseHeaders( lua_State *L, struct t_buf_seg *seg )
 			case '\n':
 				if (' ' == *(r+1)) // Value Continuation
 					break;
-				lua_pushlstring( L, s, ('\r' == *(r-1)) ? r-s-1 : r-s );   // push value
 				if (T_HTP_R_KY == rs)
-					lua_rawseti( L, -2, lua_rawlen( L, -2 ) );
+				{
+					lua_pushlstring( L, k, r-k-1 );   // didn't find colon; push entire line
+					lua_rawseti( L, -2, lua_rawlen( L, -2 ) ); // push "key" as enumerated value
+				}
 				else
-					lua_rawset( L, -3 );
+				{
+					lua_pushlstring( L, k, c-k );   // push real key
+					lua_pushlstring( L, v, ('\r' == *(r-1)) ? r-v-1 : r-v );   // push value
+				}
 				rs = T_HTP_R_KY;
 				if ('\n' == *(r+1) || '\r' == *(r+1))  // double newLine -> END OF HEADER
 				{
-					t_buf_seg_moveIndex( seg, (r + (('\n'==*(r+1))? 1 : 2) - seg->b) );
+					t_buf_seg_moveIndex( seg, (r + (('\n'==*(r+1))? 0 : 1) - seg->b) );
 					lua_pop( L, 1 );  // pop header-table from stack
 					lua_pushinteger( L, T_HTP_REQ_BODY );
 					lua_setfield( L, 1, "state" );
 					return 1;
 				}
-				s  = r+1;
+				k = r+1;
 				break;
 			case  ':':
 				if (T_HTP_R_KY == rs)
 				{
-					lua_pushlstring( L, s, r-s );                           // push key
+					c  = r;
 					r  = eat_lws( ++r );
-					s  = r;
+					v  = r;
 					rs = T_HTP_R_VL;
 				}
 				break;
