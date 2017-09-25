@@ -63,6 +63,87 @@ static const char tokens[256] = {
 
 
 /**--------------------------------------------------------------------------
+ * Read registered Request headers. Standardize Casing.
+ * \param   char*  k Header key start.
+ * \param   char*  c Colon after the header key (':').
+ * \param   char*  v Header value start.
+ * \param   char*  e Header value end ('\r').
+ * \return  enum   How to parse the heaer value.
+ * --------------------------------------------------------------------------*/
+static void
+t_htp_req_identifyHeader( lua_State *L, const char *k, const char *c,
+                                        const char *v, const char *e )
+{
+	size_t   l = c-k;
+	char     x;
+	switch (tokens[ (unsigned char) *k ])
+	{
+		case 'a':
+			if (6 ==l) {     lua_pushstring( L, "Accept" );                     break; }
+			if (13==l) {     lua_pushstring( L, "Authorization" );              break; }
+			if (14==l) {     lua_pushstring( L, "Accept-Charset" );             break; }
+			if (15==l) {
+				x = tokens[ (unsigned char) *(k+7) ];
+				if ('e'==x) { lua_pushstring( L, "Accept-Encoding"  );           break; }
+				if ('l'==x) { lua_pushstring( L, "Accept-Language"  );           break; }
+				if ('d'==x) { lua_pushstring( L, "Accept-Datetime" );            break; }
+			}
+			if (29==l) { lua_pushstring( L, "Access-Control-Request-Method" );  break; }
+			if (30==l) { lua_pushstring( L, "Access-Control-Request-Headers" ); break; }
+		case 'c':
+			if (6 ==l) {     lua_pushstring( L, "Cookie" );                     break; }
+
+			if (10==l) {     lua_pushstring( L, "Connection" );                 break; }
+			if (11==l) {     lua_pushstring( L, "Content-MD5" );                break; }
+			if (12==l) {     lua_pushstring( L, "Content-Type" );               break; }
+			if (13==l) {     lua_pushstring( L, "Cache-Control" );              break; }
+			if (14==l) {     lua_pushstring( L, "Content-Length" );             break; }
+		case 'd':
+			                 lua_pushstring( L, "Date" );                       break;
+		case 'e':
+			                 lua_pushstring( L, "Expect" );                     break;
+		case 'f':
+			if (4 ==l) {     lua_pushstring( L, "From" );                       break; }
+			if (9 ==l) {     lua_pushstring( L, "Forwarded" );                  break; }
+		case 'h':
+			                 lua_pushstring( L, "Host" );                       break;
+		case 'i':
+			if (8 ==l) {
+				x = tokens[ (unsigned char) *(k+3) ];
+				if ('m'==x) { lua_pushstring( L, "If-Match"  );                  break; }
+				if ('r'==x) { lua_pushstring( L, "If-Range"  );                  break; }
+			}
+			if (13==l) {     lua_pushstring( L, "If-None-Match" );              break; }
+			if (17==l) {     lua_pushstring( L, "If-Modified-Since" );          break; }
+			if (19==l) {     lua_pushstring( L, "If-Unmodified-Since" );        break; }
+		case 'm':
+			                 lua_pushstring( L, "Max-Forwards" );               break;
+		case 'o':
+			                 lua_pushstring( L, "Origin" );                     break;
+		case 'p':
+			if (6 ==l) {     lua_pushstring( L, "Pragma" );                     break; }
+			if (19==l) {     lua_pushstring( L, "Proxy-Authorization" );        break; }
+		case 'r':
+			if (5 ==l) {     lua_pushstring( L, "Range" );                      break; }
+			if (7 ==l) {     lua_pushstring( L, "Referer" );                    break; }
+		case 't':
+			                 lua_pushstring( L, "TE" );                         break;
+		case 'u':
+			if (7 ==l) {     lua_pushstring( L, "Upgrade" );                    break; }
+			if (10==l) {     lua_pushstring( L, "User-Agent" );                 break; }
+		case 'v':
+			                 lua_pushstring( L, "Via" );                        break;
+		case 'w':
+			                 lua_pushstring( L, "Warning" );                    break;
+		default:
+			lua_pushlstring( L, k, c-k );
+	}
+	lua_pushlstring( L, v, ('\r' == *e) ? e-v-2 : e-v-1 );   // push value
+	lua_rawset( L, -3 );
+}
+
+
+/**--------------------------------------------------------------------------
  * Adjust start point of Buffer.Segment
  * This is a dangerous function which doesn't check bounderies!
  * \param   L                Lua state.
@@ -271,13 +352,12 @@ t_htp_req_parseHttpVersion( lua_State *L, struct t_buf_seg *seg )
 static int
 t_htp_req_parseHeaders( lua_State *L, struct t_buf_seg *seg )
 {
-	const char       *r   = eat_lws( seg->b );  ///< runner char
-	const char       *e   = seg->b + seg->len;  ///< ending char
-	const char       *k   = r;                  ///< marks start of key
-	const char       *c   = r;                  ///< marks colon after key
-	const char       *v   = r;                  ///< marks start of value
-	const char       *s   = r;                  ///< marks start of string
-	enum t_htp_rs     rs  = T_HTP_R_KY;         ///< local parse state = New Line Beginning
+	const char    *r  = eat_lws( seg->b ); ///< runner char
+	const char    *e  = seg->b + seg->len; ///< ending char
+	const char    *k  = r;                 ///< marks start of key
+	const char    *c  = r;                 ///< marks colon after key
+	const char    *v  = r;                 ///< marks start of value
+	enum t_htp_rs  rs = T_HTP_R_KY;        ///< local parse state = New Line Beginning
 
 	lua_getfield( L, 1, "headers" ); // get pre-existing header table -> re-entrent
 
@@ -292,13 +372,10 @@ t_htp_req_parseHeaders( lua_State *L, struct t_buf_seg *seg )
 				if (T_HTP_R_KY == rs)
 				{
 					lua_pushlstring( L, k, r-k-1 );   // didn't find colon; push entire line
-					lua_rawseti( L, -2, lua_rawlen( L, -2 ) ); // push "key" as enumerated value
+					lua_rawseti( L, -2, lua_rawlen( L, -2 ) ); // push entire line as enumerated value
 				}
 				else
-				{
-					lua_pushlstring( L, k, c-k );   // push real key
-					lua_pushlstring( L, v, ('\r' == *(r-1)) ? r-v-1 : r-v );   // push value
-				}
+					t_htp_req_identifyHeader( L, k, c, v, r );
 				rs = T_HTP_R_KY;
 				if ('\n' == *(r+1) || '\r' == *(r+1))  // double newLine -> END OF HEADER
 				{

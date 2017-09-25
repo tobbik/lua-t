@@ -23,7 +23,7 @@
 
 
 // ########################## REWRITE
-// TODO: use this to adjust large incoming chnks for headers upto BUFSIZ per
+// TODO: use this to adjust large incoming chunks for headers upto BUFSIZ per
 // line
 /**--------------------------------------------------------------------------
  * Rewrite unparsed bytes from end of buffer to front.

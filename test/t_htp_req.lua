@@ -26,7 +26,6 @@ local mSck = {
 
 local dummyCb, tReq, tRes
 
-
 local tests = {
 	beforeEach = function( self )
 		dummyCb = function( req, res )
@@ -58,7 +57,6 @@ local tests = {
 		assert( r.state   == Request.State.Url, format( "State must be %d but was %d", Request.State.Url, r.state ) )
 		assert( r.method  == Method.GET, format( "Method must be %d but was %d", Method.GET, r.method ) )
 		assert( r.version == Version.ILLEGAL, format( "Version must be %d but was %d", Version.ILLEGAL, r.method ) )
-		print("SEG LEN:", r.buf:toHex())
 	end,
 
 	test_ReceiveUrl = function( self )
@@ -71,7 +69,6 @@ local tests = {
 		assert( r.url       , "URL must exist" )
 		assert( r.url   == u, format( "URL must be %s but was %s", u, r.url ) )
 		assert( nil  == r.query, "Query table mustn't exist" )
-		print("SEG LEN:", r.buf:toHex())
 	end,
 
 	test_ReceiveUrlAndQuery = function( self )
@@ -88,7 +85,6 @@ local tests = {
 		for k,v in pairs({alpha='1', beta='2', c=gamma, [4]=delta}) do
 			assert( v == r.query[ k ], format( "req.query[ %s ] must be `%s` but was `%s`", k, v, r.query[k] ) )
 		end
-		print("SEG LEN:", r.buf:toHex())
 	end,
 
 	test_ReceiveHttpVersion = function( self )
@@ -101,48 +97,140 @@ local tests = {
 		assert( r.version == Version[ v ]         , format( "Version must be %d but was %d", Version[v], r.version ) )
 		--assert( r.method, "r.method must exist" )
 		assert( r.url, "r.url must exist" )
-		print("SEG LEN:", r.buf:toHex())
 	end,
 
 	test_ReceiveHeaders = function( self )
 		Test.Case.describe( "request:recv() partial parses Headers" )
 		local r = Request( dummyCb )
+		-- taken from Wikipedia examples
 		local t = {
-			HeaderOne   = 'ValueOne',
-			HeaderTwo   = 'ValueTwo;\r\n ValueTwo Continuation',
-			HeaderThree = 'ValueThree' }
+			  [ 'Accept' ]                         = "text/plain"
+			, [ 'Accept-Charset' ]                 = "utf-8"
+			, [ 'Accept-Encoding' ]                = "gzip, deflate"
+			, [ 'Accept-Language' ]                = "en-US"
+			, [ 'Accept-Datetime' ]                = "Thu, 31 May 2007 20:35:00 GMT"
+			, [ 'Access-Control-Request-Method' ]  = "GET"
+			, [ 'Access-Control-Request-Headers' ] = "X-PINGOTHER, Content-Type"
+			, [ 'Authorization' ]                  = "Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ=="
+			, [ 'Cache-Control' ]                  = "no-cache"
+			, [ 'Connection' ]                     = "keep-alive"
+			, [ 'Connection' ]                     = "Upgrade"
+			, [ 'Cookie' ]                         = "$Version=1; Skin=new;"
+			, [ 'Content-Length' ]                 = "348"
+			, [ 'Content-MD5' ]                    = "Q2hlY2sgSW50ZWdyaXR5IQ=="
+			, [ 'Content-Type' ]                   = "application/x-www-form-urlencoded"
+			, [ 'Date' ]                           = "Tue, 15 Nov 1994 08:12:31 GMT"
+			, [ 'Expect' ]                         = "100-continue"
+			, [ 'Forwarded' ]                      = "for=192.0.2.60;proto=http;\r\n" ..
+			                                         " by=203.0.113.43"
+			, [ 'From' ]                           = "user@example.com"
+			, [ 'Host' ]                           = "en.wikipedia.org:8080"
+			, [ 'If-Match' ]                       = '"737060cd8c284d8af7ad3082f209582d"'
+			, [ 'If-Modified-Since' ]              = "Sat, 29 Oct 1994 19:43:31 GMT"
+			, [ 'If-None-Match' ]                  = '"737060cd8c284d8af7ad3082f209582d"'
+			, [ 'If-Range' ]                       = '"737060cd8c284d8af7ad3082f209582d"'
+			, [ 'If-Unmodified-Since' ]            = "Sat, 29 Oct 1994 19:43:31 GMT"
+			, [ 'Max-Forwards' ]                   = "10"
+			, [ 'Origin' ]                         = "http://www.example-social-network.com"
+			, [ 'Pragma' ]                         = "no-cache"
+			, [ 'Proxy-Authorization' ]            = "Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ=="
+			, [ 'Range' ]                          = "bytes=500-999"
+			, [ 'Referer' ]                        = "http://en.wikipedia.org/wiki/Main_Page"
+			, [ 'TE' ]                             = "trailers, deflate"
+			, [ 'User-Agent' ]                     = "Mozilla/5.0 (X11; Linux x86_64; rv:12.0)\r\n" ..
+			                                         "  Gecko/20100101 Firefox/12.0"
+			, [ 'Upgrade' ]                        = "HTTPS/1.3, IRC/6.9, RTA/x11, websocket"
+			, [ 'Via' ]                            = "1.0 fred, 1.1 example.com (Apache/1.1)"
+			, [ 'Warning' ]                        = "199 Miscellaneous warning"
+		}
 		local h = ''
-		t_map( t, function(v,k) h = h ..k..': '..v.. '\r\n' end )
+		for k,v in pairs(t) do h = h .. k ..': '..v.. '\r\n' end
 		local b = Buffer( "GET /go/index.html HTTP/1.1\r\n" .. h .. '\r\n' )
 		r:receive( b:Segment() )
 		for k,v in pairs( t ) do
-			assert( v == r.headers[ k ], format( "req.headers[ %s ] must be `%s` but was `%s`", k, v, r.headers[k] ) )
+			assert( v == r.headers[k], format( "req.headers[ %s ] must be `%s` but was `%s`", k, v, r.headers[k] ) )
 		end
-		assert( r.state   == Request.State.Body, format( "State must be %d but was %d", Request.State.Body, r.state ) )
-		print("SEG LEN:", r.buf:toHex())
+		assert( r.state == Request.State.Body, format( "State must be %d but was %d", Request.State.Body, r.state ) )
 	end,
+
+	test_ReceiveHeadersCorrectCasing = function( self )
+		Test.Case.describe( "request:recv() correct Headers Key Casing" )
+		local r = Request( dummyCb )
+		-- taken from Wikipedia examples
+		local t = {
+			  [ 'Accept' ]                         = "text/plain"
+			, [ 'Accept-Charset' ]                 = "utf-8"
+			, [ 'Accept-Encoding' ]                = "gzip, deflate"
+			, [ 'Accept-Language' ]                = "en-US"
+			, [ 'Accept-Datetime' ]                = "Thu, 31 May 2007 20:35:00 GMT"
+			, [ 'Access-Control-Request-Method' ]  = "GET"
+			, [ 'Access-Control-Request-Headers' ] = "X-PINGOTHER, Content-Type"
+			, [ 'Authorization' ]                  = "Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ=="
+			, [ 'Cache-Control' ]                  = "no-cache"
+			, [ 'Connection' ]                     = "keep-alive"
+			, [ 'Connection' ]                     = "Upgrade"
+			, [ 'Cookie' ]                         = "$Version=1; Skin=new;"
+			, [ 'Content-Length' ]                 = "348"
+			, [ 'Content-MD5' ]                    = "Q2hlY2sgSW50ZWdyaXR5IQ=="
+			, [ 'Content-Type' ]                   = "application/x-www-form-urlencoded"
+			, [ 'Date' ]                           = "Tue, 15 Nov 1994 08:12:31 GMT"
+			, [ 'Expect' ]                         = "100-continue"
+			, [ 'Forwarded' ]                      = "for=192.0.2.60;proto=http;\r\n" ..
+			                                         " by=203.0.113.43"
+			, [ 'From' ]                           = "user@example.com"
+			, [ 'Host' ]                           = "en.wikipedia.org:8080"
+			, [ 'If-Match' ]                       = '"737060cd8c284d8af7ad3082f209582d"'
+			, [ 'If-Modified-Since' ]              = "Sat, 29 Oct 1994 19:43:31 GMT"
+			, [ 'If-None-Match' ]                  = '"737060cd8c284d8af7ad3082f209582d"'
+			, [ 'If-Range' ]                       = '"737060cd8c284d8af7ad3082f209582d"'
+			, [ 'If-Unmodified-Since' ]            = "Sat, 29 Oct 1994 19:43:31 GMT"
+			, [ 'Max-Forwards' ]                   = "10"
+			, [ 'Origin' ]                         = "http://www.example-social-network.com"
+			, [ 'Pragma' ]                         = "no-cache"
+			, [ 'Proxy-Authorization' ]            = "Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ=="
+			, [ 'Range' ]                          = "bytes=500-999"
+			, [ 'Referer' ]                        = "http://en.wikipedia.org/wiki/Main_Page"
+			, [ 'TE' ]                             = "trailers, deflate"
+			, [ 'User-Agent' ]                     = "Mozilla/5.0 (X11; Linux x86_64; rv:12.0)\r\n" ..
+			                                         "  Gecko/20100101 Firefox/12.0"
+			, [ 'Upgrade' ]                        = "HTTPS/1.3, IRC/6.9, RTA/x11, websocket"
+			, [ 'Via' ]                            = "1.0 fred, 1.1 example.com (Apache/1.1)"
+			, [ 'Warning' ]                        = "199 Miscellaneous warning"
+		}
+		local h = ''
+		for k,v in pairs(t) do h = h ..string.lower( k )..': '..v.. '\r\n' end
+		local b = Buffer( "GET /go/index.html HTTP/1.1\r\n" .. h .. '\r\n' )
+		r:receive( b:Segment() )
+		for k,v in pairs( t ) do
+			 assert( v == r.headers[k], format( "req.headers[ %s ] must be `%s` but was `%s`", k, v, r.headers[k] ) )
+		end
+		assert( r.state == Request.State.Body, format( "State must be %d but was %d", Request.State.Body, r.state ) )
+	end,
+
 
 	test_ReceiveBadHeaders = function( self )
 		Test.Case.describe( "request:recv() Unparsable Headers will be enumerated" )
 		local r = Request( dummyCb )
 		local t = {
-			HeaderOne   = 'ValueOne',
-			HeaderTwo   = 'ValueTwo;\r\nValueTwo Continuation', -- continuation MUST START WITH whitspace
-			HeaderThree = 'ValueThree' }
+			  [ 'TE' ]                             = "trailers, deflate"
+			, [ 'User-Agent' ]                     = "Mozilla/5.0 (X11; Linux x86_64; rv:12.0)\r\n" ..
+			                                         "Gecko/20100101 Firefox/12.0"
+			, [ 'Upgrade' ]                        = "HTTPS/1.3, IRC/6.9, RTA/x11, websocket"
+		}
 		local h = ''
 		t_map( t, function(v,k) h = h ..k..': '..v.. '\r\n' end )
 		local b = Buffer( "GET /go/index.html HTTP/1.1\r\n" .. h .. '\r\n' )
 		r:receive( b:Segment() )
 		local t1 = {
-			[ 0 ]       = 'ValueTwo Continuation', -- unparsable headers will be enumerated
-			HeaderOne   = 'ValueOne',
-			HeaderTwo   = 'ValueTwo;',
-			HeaderThree = 'ValueThree' }
+			  [ 'TE' ]           = "trailers, deflate"
+			, [ 'User-Agent' ]   = "Mozilla/5.0 (X11; Linux x86_64; rv:12.0)"
+			, [ 0 ]              = "Gecko/20100101 Firefox/12.0" -- unparsable headers will be enumerated
+			, [ 'Upgrade' ]      = "HTTPS/1.3, IRC/6.9, RTA/x11, websocket"
+		}
 		for k,v in pairs( t1 ) do
 			assert( v == r.headers[ k ], format( "req.headers[ %s ] must be `%s` but was `%s`", k, v, r.headers[k] ) )
 		end
 		assert( r.state   == Request.State.Body, format( "State must be %d but was %d", Request.State.Body, r.state ) )
-		print("SEG LEN:", r.buf:toHex())
 	end,
 
 	-- #################################### Continous parsing
@@ -162,7 +250,6 @@ local tests = {
 		r:receive( b2:Segment() )
 		assert( r.url     == u, format( "URL must be `%s` but was `%s`", u, r.url ) )
 		assert( r.version == Version[v], format( "HTTP version must be `%s` but was `%s`", Version[v], r.version ) )
-		print("SEG LEN:", r.buf:toHex())
 	end,
 
 
