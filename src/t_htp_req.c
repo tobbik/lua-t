@@ -258,13 +258,13 @@ t_htp_req_parseMethod( lua_State *L, struct t_buf_seg *seg )
 static size_t
 t_htp_req_parseUrl( lua_State *L, struct t_buf_seg *seg )
 {
-	const char *r = eat_lws( seg->b );  ///< runner char
-	const char *e = seg->b + seg->len;  ///< ending char
-	const char *u = r;                  ///< start of URI
-	const char *q = NULL;               ///< runner for query
-	const char *v = r;                  ///< value start marker
+	const char *r = eat_lws( seg->b ); ///< runner char
+	const char *e = seg->b + seg->len; ///< ending char
+	const char *u = r;                 ///< start of URI
+	const char *q = NULL;              ///< runner for query
+	const char *v = r;                 ///< value start marker
 
-	lua_newtable( L );                  ///< parsed and decoded query parameters
+	lua_newtable( L );                 ///< parsed and decoded query parameters
 
 	while (r < e)
 	{
@@ -273,6 +273,8 @@ t_htp_req_parseUrl( lua_State *L, struct t_buf_seg *seg )
 			case '/':
 				break;
 			case '?':
+				lua_pushlstring( L, u, r-u );     // push path
+				lua_setfield( L, 1, "path" );
 				q = r+1;
 				break;
 			case '=':
@@ -286,7 +288,7 @@ t_htp_req_parseUrl( lua_State *L, struct t_buf_seg *seg )
 				q = r+1;
 				break;
 			case ' ':                            // last value
-				lua_pushlstring( L, u, r-u );     // push full query string
+				lua_pushlstring( L, u, r-u );     // push full uri string
 				lua_setfield( L, 1, "url" );
 				if (NULL != q)
 				{
@@ -295,7 +297,11 @@ t_htp_req_parseUrl( lua_State *L, struct t_buf_seg *seg )
 					lua_setfield( L, 1, "query" );
 				}
 				else
+				{
 					lua_pop( L, 1 );               // pop empty table
+					lua_pushlstring( L, u, r-u );  // push full uri string as path
+					lua_setfield( L, 1, "path" );
+				}
 
 				lua_pushinteger( L, T_HTP_REQ_VERSION );
 				lua_setfield( L, 1, "state" );
