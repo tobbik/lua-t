@@ -21,8 +21,8 @@ T_SRC=\
    Encode/Crc.lua \
    Encode/Rc4.lua \
    Http.lua \
-   Http/Connection.lua \
    Http/Server.lua \
+   Http/Stream.lua \
    Http/Request.lua \
    Http/Response.lua \
    Http/WebSocket.lua \

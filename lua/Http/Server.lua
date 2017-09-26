@@ -5,54 +5,50 @@
 -- \author    tkieslich
 -- \copyright See Copyright notice at the end of src/t.h
 
-local prxTblIdx,Table  = require( "t" ).proxyTableIndex, require( "t.Table" )
-local t_concat     , getmetatable, setmetatable, pairs, assert, next, type =
-      table.concat , getmetatable, setmetatable, pairs, assert, next, type
-local t_merge,     t_complement,     t_contains,     t_count,     t_keys,     t_asstring =
-      Table.merge, Table.complement, Table.contains, Table.count, Table.keys, Table.asstring
+local getmetatable, setmetatable =
+      getmetatable, setmetatable
 
-local Loop, T, Table = require't.Loop', require't', require't.Table'
+local Stream, Socket = require't.Http.Stream', require't.Net.Socket'
+local t_type  = require't'.type
 
 local _mt
 
 -- ---------------------------- general helpers  --------------------
--- assert Set type and return the proxy table
-local chkSrv  = function( self )
-	T.assert( _mt == getmetatable( self ), "Expected `%s`, got %s", _mt.__name, T.type( self ) )
-	return self
-end
-
 local accept = function( self )
 	local cli, adr = self.sck:accept( )
-	local con      = Http.Connection( self, cli, adr )
+	local con      = Stream( self, cli, adr )
 end
 
 local listen = function( self, host, port, bl )
 	if 'number' == type( host ) then
-		self.sck, self.adr = Net.Socket.listen( host, bl and bl or 5 )
+		self.sck, self.adr = Socket.listen( host, bl and bl or 5 )
 	else
-		self.sck, self.adr = Net.Socket.listen( host, port, bl and bl or 5 )
+		self.sck, self.adr = Socket.listen( host, port, bl and bl or 5 )
 	end
-	self.sck.nonblock  = true
-	self:addHandle( sSck, 'read', accept, self )
+	self.sck.nonblock = true
+	self.ael:addHandle( self.sck, 'read', accept, self )
+	return self.sck, self.adr
 end
 
 -- ---------------------------- Instance metatable --------------------
 _mt = {       -- local _mt at top of file
 	-- essentials
-	__name     = "t.Http.Server"
+	  __name     = "t.Http.Server"
+	, listen     = listen
 }
+
+_mt.__index     = _mt
 
 return setmetatable( {
 	  toString = function( srv ) return _mt.__name end
 	, listen   = listen
 }, {
-	__call   = function( self, ael, cb )
-		assert( T.type( ael ) == 'T.Loop',   "`T.Loop` is required" )
+	__call   = function( self, ael, callback )
+		assert( t_type( ael ) == 'T.Loop',   "`T.Loop` is required" )
 		assert( type( cb )    == 'function', "Callback function required" )
 		local srv = {
-			  ael = ael
-			, cb  = cb
+			  ael      = ael
+			, callback = callback
 		}
 		return setmetatable( srv, _mt )
 	end

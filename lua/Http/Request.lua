@@ -9,6 +9,8 @@ local t_insert     , getmetatable, setmetatable, pairs, assert, next, type =
 
 local Loop, T, Table, Buffer =
       require't.Loop', require't', require't.Table', require't.Buffer'
+
+-- require't.Http' loads the the .so file and puts T.Http.Request metatable into the registry
 local           Http ,                Method ,                Version ,                Response =
       require't.Http', require't.Http.Method', require't.Http.Version', require't.Http.Response'
 
@@ -31,7 +33,7 @@ local State = {
 	, Done     = 6
 }
 
-local receive = function( self, seg )
+local receive = function( self, seg, stream )
 	local buf
 	if self.buf then
 		buf = Buffer( self.buf:read() .. seg:read( ) )
@@ -43,33 +45,36 @@ local receive = function( self, seg )
 	else
 		self.buf = nil
 	end
+	if self.state > State.Headers then
+		local resp = Response( stream, self.id, self.keepAlive, self.version )
+		self.stream.srv.callback( self, resp )
+	end
+	if self.state == State.Done then
+		return false
+	else
+		return true
+	end
 end
 
--- ---------------------------- Instance metatable --------------------
---_mt = {       -- local _mt at top of file
---	-- essentials
---	  __name     = "t.Http.Request"
---	, recv       = recv
---}
-
---_mt.__index     = _mt
-_mt.receive    = receive
-_mt.__name     = "t.Http.Request"
+_mt.receive = receive
+_mt.__name  = "t.Http.Request"  --TODO: Fix naming globally; use lower case 't'
+_mt.__len   = function( self )
+	return self.contentLength
+end
 
 return setmetatable( {
 	  State  = State
 }, {
-	__call   = function( self, callback )
+	__call   = function( self, stream, id )
 		local request = {
-			  rqCLen     = 0        -- request Length as reported by Header
-			, rsCLen     = 0        -- response Length as calculated or set by application
-			, rsBLen     = 0        -- size of Response Buffer
-			, state      = State.Method
-			, method     = Method.ILLEGAL
-			, version    = Version.ILLEGAL
-			, keepAlive  = false
-			, callback   = callback
-			, headers    = { }      -- pre-existent for re-entrant header parsing
+			  stream        = stream
+			, id            = id
+			, state         = State.Method
+			, method        = Method.ILLEGAL
+			, version       = Version.ILLEGAL
+			, contentLength = nil
+			, keepAlive     = false
+			, headers       = { }      -- pre-existent for re-entrant header parsing
 		}
 		return setmetatable( request, _mt )
 	end

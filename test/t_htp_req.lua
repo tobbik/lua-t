@@ -25,6 +25,11 @@ local mSck = {
 }
 
 local dummyCb, tReq, tRes
+local makeRequest = function()
+	return Request( {
+		srv = {callback = dummyCb}
+	}, 1 )
+end
 
 local tests = {
 	beforeEach = function( self )
@@ -42,7 +47,7 @@ local tests = {
 	-- CONSTRUCTOR TESTS
 	test_Constructor = function( self )
 		Test.Case.describe( "Http.Request( callback ) creates proper Request" )
-		local r = Request( dummyCb )
+		local r = makeRequest( )
 		assert( r.state   == Request.State.Method, format( "State must be %d but was %d", Request.State.Method, r.state ) )
 		assert( r.method  == Method.ILLEGAL, format( "Method must be %d but was %d", Method.ILLEGAL, r.method ) )
 		assert( r.version == Version.ILLEGAL, format( "Version must be %d but was %d", Version.ILLEGAL, r.method ) )
@@ -51,7 +56,7 @@ local tests = {
 	-- RECEIVE TESTS
 	test_ReceiveMethod = function( self )
 		Test.Case.describe( "request:recv() partial parses METHOD only" )
-		local r = Request( dummyCb )
+		local r = makeRequest( )
 		local s = Buffer( "GET /index.html?a" ):Segment( )
 		r:receive( s )
 		assert( r.state   == Request.State.Url, format( "State must be %d but was %d", Request.State.Url, r.state ) )
@@ -61,7 +66,7 @@ local tests = {
 
 	test_ReceiveUrl = function( self )
 		Test.Case.describe( "request:recv() partial parses URL without query" )
-		local r = Request( dummyCb )
+		local r = makeRequest( )
 		local u = '/go/wherever/it/wil/be/index.html'
 		local s = Buffer( "GET " ..u.." " ):Segment( )
 		r:receive( s )
@@ -73,7 +78,7 @@ local tests = {
 
 	test_ReceiveUrlAndQuery = function( self )
 		Test.Case.describe( "request:recv() partial parses URL with query" )
-		local r = Request( dummyCb )
+		local r = makeRequest( )
 		local u = '/go/wherever/it/wil/be/index.html?alpha=1&beta=2&c=gamma&4=delta'
 		local s = Buffer( "GET " ..u.." " ):Segment( )
 		r:receive( s )
@@ -90,7 +95,7 @@ local tests = {
 	-- ################################### HTTP VERSION
 	test_NotReceiveHttpVersion = function( self )
 		Test.Case.describe( "Not Trigger HTTP Version parsing before fully recieved line" )
-		local r = Request( dummyCb )
+		local r = makeRequest( )
 		local v = Version[3]                   -- HTTP/1.1
 		-- must have 2 more Bytes if \r\n or 1 more if just \n
 		local s = Buffer( "GET /go/wherever/it/wil/be/index.html " .. v ..'\r\n' ):Segment( )
@@ -101,7 +106,7 @@ local tests = {
 
 	test_ReceiveHttpVersion = function( self )
 		Test.Case.describe( "Full Line triggers parsing of HTTP Version" )
-		local r = Request( dummyCb )
+		local r = makeRequest( )
 		local v = Version[3]                   -- HTTP/1.1
 		-- must have 2 more Bytes if \r\n or 1 more if just \n
 		local s = Buffer( "GET /go/wherever/it/wil/be/index.html " .. v ..'\r\nAc' ):Segment( )
@@ -112,7 +117,7 @@ local tests = {
 
 	test_ReceiveHttpVersionDoubleLFCR = function( self )
 		Test.Case.describe( "HTTP Version trailing double \\r\\n\\r\\n triggers Request DONE" )
-		local r = Request( dummyCb )
+		local r = makeRequest( )
 		local v = Version[3]                   -- HTTP/1.1
 		-- must have 2 more Bytes if \r\n or 1 more if just \n
 		local s = Buffer( "GET /go/wherever/it/wil/be/index.html " .. v ..'\r\n\r\n' ):Segment( )
@@ -123,7 +128,7 @@ local tests = {
 
 	test_ReceiveHttpVersionDoubleLF = function( self )
 		Test.Case.describe( "HTTP Version trailing double \\n\\n triggers Request DONE" )
-		local r = Request( dummyCb )
+		local r = makeRequest( )
 		local v = Version[3]                   -- HTTP/1.1
 		-- must have 2 more Bytes if \r\n or 1 more if just \n
 		local s = Buffer( "GET /go/wherever/it/wil/be/index.html " .. v ..'\n\n' ):Segment( )
@@ -136,7 +141,7 @@ local tests = {
 	-- ################################# HTTP Request Headers
 	test_ReceiveHeaders = function( self )
 		Test.Case.describe( "request:recv() partial parses Headers" )
-		local r = Request( dummyCb )
+		local r = makeRequest( )
 		-- taken from Wikipedia examples
 		local t = {
 			  [ 'Accept' ]                         = "text/plain"
@@ -189,7 +194,7 @@ local tests = {
 
 	test_ReceiveHeadersCorrectCasing = function( self )
 		Test.Case.describe( "request:recv() correct Headers Key Casing" )
-		local r = Request( dummyCb )
+		local r = makeRequest( )
 		-- taken from Wikipedia examples
 		local t = {
 			  [ 'Accept' ]                         = "text/plain"
@@ -243,7 +248,7 @@ local tests = {
 
 	test_ReceiveBadHeaders = function( self )
 		Test.Case.describe( "request:recv() Unparsable Headers will be enumerated" )
-		local r = Request( dummyCb )
+		local r = makeRequest( )
 		local t = {
 			  [ 'Content-Length' ] = "12345"
 			, [ 'TE' ]             = "trailers, deflate"
@@ -271,7 +276,7 @@ local tests = {
 	-- #################################### Headers content parsing
 	test_HeaderContentLength = function( self )
 		Test.Case.describe( "Content-Length Header gets parsed" )
-		local r = Request( dummyCb )
+		local r = makeRequest( )
 		local s = Buffer( "GET /go/index.html HTTP/1.1\r\nContent-Length: 12345\r\n\r\n" ):Segment( )
 		r:receive( s )
 		assert( 12345 == r.contentLength, format( "req.contentLength must be `%d` but was `%s`", 12345, r.contentLength ) )
@@ -279,7 +284,7 @@ local tests = {
 
 	test_HeaderNoContentLength = function( self )
 		Test.Case.describe( "No Content-Length finishes as Request.State.Done" )
-		local r = Request( dummyCb )
+		local r = makeRequest( )
 		-- taken from Wikipedia examples
 		local t = {
 			  [ 'Accept' ]                         = "text/plain"

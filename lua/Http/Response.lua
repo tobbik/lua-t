@@ -5,7 +5,7 @@
 
 local t_insert    , t_concat    ,    time,    date,        format, setmetatable, pairs =
       table.insert, table.concat, os.time, os.date, string.format, setmetatable, pairs
-local Status = require't.Http.Status'
+local Status, Version = require't.Http.Status', require't.Http.Version'
 
 local _mt
 
@@ -29,10 +29,10 @@ local now = (function( )
 	end
 end) ( )
 
-local formHeader = function( httpVersion, statusCode, statusMsg, len, headers, keepAlive )
+local formHeader = function( version, statusCode, statusMsg, len, headers, keepAlive )
 	statusCode = statusCode or 200
 	local headBuffer = {
-		httpVersion .." ".. statusCode .." ".. statusMsg ..
+		Version[ version ] .." ".. statusCode .." ".. statusMsg ..
 		"\r\nDate: ".. now( ) ..
 		"\r\nConnection: " .. (keepAlive and "Keep-Alive" or "Close") ..
 		(len and "\r\nContent-Length: " .. len or "\r\nTransfer-Encoding: chunked") ..
@@ -55,8 +55,8 @@ end
 local writeHead = function( self, stsCde, msg, length, hdr )
 	if self.state > State.Zero then error( "Can't set Head multiple times" ) end
 	local stsMsg  = 'string' == type( msg ) and msg or Status[ stsCde ]
-	local cntLen  = 'number' == type( msg ) and msg or length -- can be nil!
-	local headers = 'table'  == type( msg ) and msg or length -- can be nil!
+	local cntLen  = 'number' == type( msg ) and msg or length       -- can be nil!
+	local headers = 'table'  == type( msg ) and msg or length       -- can be nil!
 	headers       = 'table'  == type( headers ) and headers or hdr  -- can be nil
 	self.buf,self.chunked = formHeader( self.version, stsCde, stsMsg, cntLen, headers, self.keepAlive )
 	self.state    = State.HeadDone
@@ -108,9 +108,10 @@ _mt.__index     = _mt
 return setmetatable( {
 	  State  = State
 }, {
-	__call   = function( self, id, keepAlive, version )
+	__call   = function( self, stream, id, keepAlive, version )
 		local response = {
-			  id         = id    -- StreamId
+			  stream     = stream
+			, id         = id    -- StreamId
 			, keepAlive  = keepAlive
 			, cLen       = 0   -- Content-Length (Body)
 			, bLen       = 0   -- length of Buffer to send (includes all Headers)
