@@ -172,7 +172,7 @@ t_ael_executehandle( lua_State *L, struct t_ael_fd *ev, enum t_ael_msk msk )
 {
 	int n;
 
-	//printf( "%d    %d    %d    %d\n", ev, rR, wR, msk );
+	//printf( "%d    %d    %d \n", ev->rR, ev->wR, msk );
 	if (NULL != ev && msk & T_AEL_RD & ev->msk)
 	{
 		n = t_ael_getFunction( L, ev->rR );
@@ -277,8 +277,8 @@ lt_ael_addhandle( lua_State *L )
 	if (NULL != sck)
 		fd = sck->fd;
 
-	if (0 == fd)
-		return luaL_error( L, "Argument to addHandle must be file or socket" );
+	luaL_argcheck( L, fd>0, 1, "Expected file or socket" );
+	luaL_argcheck( L, fd!=-1, 1, "descriptor mustn't be closed" );
 
 	if (NULL == ael->fdSet[ fd ])
 	{
@@ -337,17 +337,14 @@ lt_ael_removehandle( lua_State *L )
 	if (NULL != sck)
 		fd = sck->fd;
 
-	if (0 == fd)
-		return luaL_error( L, "Argument to addHandle must be file or socket" );
-	if (-1 == fd)
-		return luaL_error( L, "Can't remove closed descriptor" );
-	if (NULL == ael->fdSet[ fd ] || T_AEL_NO & ael->fdSet[ fd ]->msk)
-		return luaL_error( L, "Descriptor is not observed in loop" );
+	luaL_argcheck( L, fd!=-1, 1, "descriptor mustn't be closed" );
+	luaL_argcheck( L, fd>0, 1, "Expected file or socket" );
+	luaL_argcheck( L, NULL != ael->fdSet[ fd ] && ael->fdSet[ fd ]->msk, 1, "Descriptor must be observed in Loop" );
 	// remove function
 	if (T_AEL_RD & msk & ael->fdSet[ fd ]->msk)
 	{
 		luaL_unref( L, LUA_REGISTRYINDEX, ael->fdSet[ fd ]->rR );
-		ael->fdSet[ fd ]->wR = LUA_REFNIL;
+		ael->fdSet[ fd ]->rR = LUA_REFNIL;
 	}
 	else
 	{
