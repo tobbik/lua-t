@@ -47,23 +47,47 @@ local recv = function( self )
 	end
 end
 
-local resp
-resp    = function( self )
-	local request = self.requests[ #self.requests ]
-	if request.response:send( self.cli ) then
-		t_remove( self.requests, request.id )
+local resp = function( self )
+	local count, id = 0, nil
+	for k,v in pairs( self.responses ) do
+		if 0==count then
+			if v:send( self.cli ) then
+				id = v.id
+			end
+			count = count+1
+		else
+			count = count+1
+			-- count == 2 -> more responses
+			break;
+		end
 	end
-	-- Keep existing if keep-alive (put timer on loop for self destroy)
+	if id then self.responses[ id ] = nil end
+	if 1==count then
+		self.srv.ael:removeHandle( self.cli, "write" )
+		self.responding = false
+	end
+end
+
+local addResponse = function( self, response )
+	if not self.responses[ response.id ] then
+		self.responses[ response.id ] = response
+	end
+	if not self.responding then
+		self.srv.ael:addHandle( self.cli, 'write', resp, self )
+		self.responding = true
+	end
 end
 
 -- ---------------------------- Instance metatable --------------------
 _mt = {       -- local _mt at top of file
 	-- essentials
-	  __name     = "t.Http.Stream"
-	, __index    = _mt
-	, resp       = resp
-	, recv       = recv
+	  __name      = "t.Http.Stream"
+	, __index     = _mt
+	, resp        = resp
+	, recv        = recv
+	, addResponse = addResponse
 }
+_mt.__index     = _mt
 
 return setmetatable( {
 }, {

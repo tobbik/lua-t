@@ -60,6 +60,7 @@ local writeHead = function( self, stsCde, msg, length, hdr )
 	headers       = 'table'  == type( headers ) and headers or hdr  -- can be nil
 	self.buf,self.chunked = formHeader( self.version, stsCde, stsMsg, cntLen, headers, self.keepAlive )
 	self.state    = State.HeadDone
+	self.stream:addResponse( self )
 end
 
 local write = function( self, msg )
@@ -68,6 +69,7 @@ local write = function( self, msg )
 	end
 	t_insert( self.buf, self.chunked and format("%X\r\n%s\r\n", #msg, msg) or msg )
 	self.state = State.Send
+	self.stream:addResponse( self )
 end
 
 local finish = function( self, msg )
@@ -79,6 +81,7 @@ local finish = function( self, msg )
 	end
 	if self.chunked then t_insert( self.buf, "0\r\n\r\n" ) end
 	self.state = State.Done
+	self.stream:addResponse( self )
 end
 
 local send = function( self, sck )

@@ -4,12 +4,12 @@ fmt       = string.format
 l         =  Loop( 1200 )
 
 cb = function( req, res )
-	print( "Socket:",             req.stream.cli )
-	print( "Address:",            req.stream.adr )
-	print( "Method:",             req.method )
-	print( "URL:",                req.url )
-	print( "VERSION:",            req.version )
-	print( "Content-Length:",     #req )
+	print( "Socket:",          req.stream.cli )
+	print( "Address:",         req.stream.adr )
+	print( "Method:",          req.method )
+	print( "URL:",             req.url )
+	print( "VERSION:",         req.version )
+	print( "Content-Length:",  #req )
 	if req.query then
 		print( "QUERY:" )
 		for k,v in pairs( req.query ) do print ('',k,v) end
@@ -18,8 +18,8 @@ cb = function( req, res )
 	for k,v in pairs( req.headers ) do print ('',k,'--------',v) end
 	-- msg:sink('./theFile')
 	print( 'REQ:', req )
-	--msg:write( "This is my answer\r" )
-	res:finish( "This is the End of the Answer\r" )
+	res:write( "This is the written() answer" )
+	res:finish( "This is the end() of the Answer" )
 end
 
 h     = Server( l, cb )

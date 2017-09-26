@@ -33,7 +33,7 @@ local State = {
 	, Done     = 6
 }
 
-local receive = function( self, seg, stream )
+local receive = function( self, seg )
 	local buf
 	if self.buf then
 		buf = Buffer( self.buf:read() .. seg:read( ) )
@@ -46,7 +46,7 @@ local receive = function( self, seg, stream )
 		self.buf = nil
 	end
 	if self.state > State.Headers then
-		local resp = Response( stream, self.id, self.keepAlive, self.version )
+		local resp = Response( self.stream, self.id, self.keepAlive, self.version )
 		self.stream.srv.callback( self, resp )
 	end
 	if self.state == State.Done then
