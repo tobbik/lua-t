@@ -11,9 +11,8 @@ local _mt
 
 local State = {
 	  Zero        = 0
-	, HeadDone    = 1
-	, Send        = 2
-	, Done        = 3
+	, Written     = 1
+	, Done        = 2
 }
 
 local now = (function( )
@@ -29,57 +28,74 @@ local now = (function( )
 	end
 end) ( )
 
-local formHeader = function( version, statusCode, statusMsg, len, headers, keepAlive )
-	statusCode = statusCode or 200
-	local headBuffer = {
-		Version[ version ] .." ".. statusCode .." ".. statusMsg ..
+local formHeader = function( self, msg )
+	if self.contentLength then self.chunked = false end
+	self.buf = {
+		Version[ self.version ] .." ".. self.statusCode .." ".. self.statusMessage ..
 		"\r\nDate: ".. now( ) ..
-		"\r\nConnection: " .. (keepAlive and "Keep-Alive" or "Close") ..
-		(len and "\r\nContent-Length: " .. len or "\r\nTransfer-Encoding: chunked") ..
-		"\r\n" .. (headers and '' or '\r\n')
+		"\r\nConnection: " .. (self.keepAlive and "keep-alive" or "close") ..
+		(self.contentLength and "\r\nContent-Length: " .. self.contentLength or "\r\nTransfer-Encoding: chunked") ..
+		"\r\n" .. (self.headers and '' or '\r\n') ..
+		((not self.headers and msg) and (self.chunked and format( "%X\r\n%s\r\n", #msg, msg ) or msg) or '' )
 	}
-	if headers then
-		for k,v in pairs( headers ) do
-			t_insert( headBuffer, k .. ": " ..v.. "\r\n" )
+	if self.headers then
+		for k,v in pairs( self.headers ) do
+			t_insert( self.buf, k .. ": " ..v.. "\r\n" )
 		end
-		t_insert( headBuffer, "\r\n" )
-	end
-	if len then
-		return headBuffer, false
-	else
-		return headBuffer, true
+		t_insert( self.buf, "\r\n" )
 	end
 end
 
 -- this takes different parameters in different positions
-local writeHead = function( self, stsCde, msg, length, hdr )
-	if self.state > State.Zero then error( "Can't set Head multiple times" ) end
-	local stsMsg  = 'string' == type( msg ) and msg or Status[ stsCde ]
-	local cntLen  = 'number' == type( msg ) and msg or length       -- can be nil!
-	local headers = 'table'  == type( msg ) and msg or length       -- can be nil!
-	headers       = 'table'  == type( headers ) and headers or hdr  -- can be nil
-	self.buf,self.chunked = formHeader( self.version, stsCde, stsMsg, cntLen, headers, self.keepAlive )
-	self.state    = State.HeadDone
+local writeHead = function( self, cde, msg, hdr )
+	if self.state > State.Zero    then error( "Can't set Head multiple times" ) end
+	if not cde or not Status[cde] then error( "Must pass a valid status code" ) end
+	self.statusCode    = cde
+	self.statusMessage = 'string' == type( msg ) and msg or Status[ self.statusCode ]
+	local headers      = 'table'  == type( msg ) and msg or hdr                 -- can be nil!
+	if headers then
+		if not self.headers then
+			self.headers = headers
+		else
+			for k,v in headers do
+				self.headers[ k ] = v
+			end
+		end
+	end
+	formHeader( self )
+	self.state         = State.Written
 	self.stream:addResponse( self )
 end
 
 local write = function( self, msg )
-	if self.state < State.HeadDone then
-		self.buf, self.chunked = formHeader( self.version, 200, Status[ 200 ], nil, nil, self.keepAlive )
+	if self.state < State.Written then
+		formHeader( self, msg )
+	else
+		t_insert( self.buf, self.chunked and format( "%X\r\n%s\r\n", #msg, msg ) or msg )
 	end
-	t_insert( self.buf, self.chunked and format("%X\r\n%s\r\n", #msg, msg) or msg )
-	self.state = State.Send
+	self.state = State.Written
 	self.stream:addResponse( self )
 end
 
-local finish = function( self, msg )
-	if self.state < State.HeadDone then
-		self.buf,self.chunked = formHeader( self.version, 200, Status[ 200 ], (msg and #msg or 0), nil, self.keepAlive )
+local finish = function( self, code, msg )
+	if code and 'number' == type( code ) then
+		self.statusCode    = code
+		self.statusMessage = Status[ code ]
+	else
+		msg = code
 	end
-	if msg then
-		t_insert( self.buf, self.chunked and format("%X\r\n%s\r\n", #msg, msg) or msg )
+	if self.state < State.Written then
+		self.contentLength = msg and #msg or 0
+		formHeader( self, msg )
+	else
+		if msg and self.chunked then
+			t_insert( self.buf, format( "%X\r\n%s\r\n0\r\n\r\n", #msg, msg ) )
+		elseif msg then
+			t_insert( self.buf, msg )
+		elseif self.chunked then
+			t_insert( self.buf, "0\r\n\r\n" )
+		end
 	end
-	if self.chunked then t_insert( self.buf, "0\r\n\r\n" ) end
 	self.state = State.Done
 	self.stream:addResponse( self )
 end
@@ -113,14 +129,15 @@ return setmetatable( {
 }, {
 	__call   = function( self, stream, id, keepAlive, version )
 		local response = {
-			  stream     = stream
-			, id         = id    -- StreamId
-			, keepAlive  = keepAlive
-			, cLen       = 0   -- Content-Length (Body)
-			, bLen       = 0   -- length of Buffer to send (includes all Headers)
-			, state      = State.Zero
-			, version    = version
-			, chunked    = true
+			  stream        = stream
+			, id            = id    -- StreamId
+			, keepAlive     = keepAlive
+			, state         = State.Zero
+			, version       = version
+			, chunked       = true
+			, contentLength = nil
+			, statusCode    = 200
+			, statusMessage = Status[ 200 ]
 		}
 		return setmetatable( response, _mt )
 	end

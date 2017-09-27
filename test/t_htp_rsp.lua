@@ -22,7 +22,9 @@ local mSck = {
 }
 
 local makeResonse = function()
-	return Response( {}, 1, true, 3 )
+	return Response( {
+		addResponse = function() end
+	}, 1, true, 3 )
 end
 
 local tests = {
@@ -34,6 +36,7 @@ local tests = {
 		local r = makeResonse( )
 		assert( r.state == Response.State.Zero, format( "State must be %d but was %d", Response.State.Zero, r.state ) )
 		assert( r.keepAlive, "Response must be using keepAlive" )
+		assert( r.chunked,   "Response must use chunked encoding by default" )
 		assert( r.id == 1, "Response.id must be 123 but was " .. r.id )
 		assert( r.version == 3, format( "Http.version must `%s` but was `%s`", r.version, 3 ) )
 	end,
@@ -43,11 +46,11 @@ local tests = {
 		Test.Case.describe( "response:writeHead( status ) HeadBuffer" )
 		local r = makeResonse( )
 		r:writeHead( 200 )
-		assert( r.state   == Response.State.HeadDone, format( "State must be %d but was %d", Response.State.HeadDone, r.state ) )
+		assert( r.state   == Response.State.Written, format( "State must be %d but was %d", Response.State.Written, r.state ) )
 		assert( r.chunked, "Response must be chunked" )
 		assert( #r.buf == 1, "Response Buffer must be length 1 but was " .. #r.buf )
 		assert( r.buf[1]:match("\r\nTransfer%-Encoding: chunked\r\n"), "Response Buffer should match 'Transfer-Encoding: chunked'" )
-		assert( r.buf[1]:match("\r\nConnection: Keep%-Alive\r\n"), "Response Buffer should match 'Connection: Keep-Alive'" )
+		assert( r.buf[1]:match("\r\nConnection: keep%-alive\r\n"), "Response Buffer should match 'Connection: keep-alive'" )
 		local dtStr = "Date: " .. os.date( "%a, %d %b %Y %H:%M:", os.time() )
 		assert( r.buf[1]:match("\r\n" .. dtStr ), format( "Response Buffer should match '%s' but found '%s'", dtStr, r.buf[1] ) )
 	end,
@@ -56,7 +59,8 @@ local tests = {
 		Test.Case.describe( "response:writeHead( status, length ) HeadBuffer" )
 		local r = makeResonse( )
 		local l = 500
-		r:writeHead( 200, l )
+		r.contentLength = l
+		r:writeHead( 200 )
 		assert( not r.chunked, "Response must not be chunked" )
 		assert( not r.buf[1]:match("\r\nTransfer%-Encoding: chunked\r\n"), "Response Buffer should not match 'Transfer-Encoding: chunked'" )
 		assert( r.buf[1]:match("\r\nContent%-Length%: " ..l.. "\r\n"), "Response Buffer should match 'Content-Length: " ..l.. "' but found `%s`", l, r.buf[1] )
@@ -93,7 +97,30 @@ local tests = {
 		assert( not r.chunked, "Response must not be chunked" )
 		assert( r.buf[1]:match("\r\nContent%-Length%: " ..#payload.. "\r\n"),
 			format("Response Buffer should match 'Content-Length: %d' but found `%s`", #payload, r.buf[1] ) )
-		assert( r.buf[2]:match(payload), format( "Response Buffer should match `%s` but found `%s`", payload, r.buf[2]) )
+		assert( r.buf[1]:match(payload), format( "Response Buffer should match `%s` but found `%s`", payload, r.buf[1]) )
+	end,
+
+	test_FinishFinalStatusCode = function( self )
+		Test.Case.describe( "response:finish( Message ) Sends content with length when called withoud writehead() or write() before" )
+		local r = makeResonse( )
+		local payload = "This resource doen't exist"
+		r:finish( 404, payload )
+		assert( 404 == r.statusCode, format( "response.statusCode must be 404 but was `%d`", r.statusCode ) )
+		assert( not r.chunked, "Response must not be chunked" )
+		assert( r.buf[1]:match("\r\nContent%-Length%: " ..#payload.. "\r\n"),
+			format("Response Buffer should match 'Content-Length: %d' but found `%s`", #payload, r.buf[1] ) )
+		assert( r.buf[1]:match(payload), format( "Response Buffer should match `%s` but found `%s`", payload, r.buf[1]) )
+	end,
+
+	test_WriteHeadThenFinish = function( self )
+		Test.Case.describe( "response:writeHead() -> response:finish( Message )" )
+		local r = makeResonse( )
+		local payload = "This is a simple response"
+		r:write( payload )
+		r:finish( )
+		assert( 200 == r.statusCode, format( "response.statusCode must be 200 but was `%d`", r.statusCode ) )
+		assert( r.chunked, "Response must be chunked" )
+		assert( r.buf[1]:match(payload), format( "Response Buffer should match `%s` but found `%s`", payload, r.buf[1]) )
 	end,
 
 
