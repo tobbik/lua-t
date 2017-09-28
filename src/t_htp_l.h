@@ -21,16 +21,14 @@
  *                           |_|                             */
 // this needs to be in sync with the t.Http.Request.State table
 enum t_htp_req_state {
-	T_HTP_REQ_ZERO,
-	T_HTP_REQ_METHOD,
-	T_HTP_REQ_URI,
-	T_HTP_REQ_VERSION,
-	T_HTP_REQ_HEADERS,
-	T_HTP_REQ_PARSED,
-	T_HTP_REQ_BODY,
-	T_HTP_REQ_DONE,
+	T_HTP_REQ_ZERO    = 0,
+	T_HTP_REQ_METHOD  = 1,
+	T_HTP_REQ_URI     = 2,
+	T_HTP_REQ_VERSION = 3,
+	T_HTP_REQ_HEADERS = 4,
+	T_HTP_REQ_BODY    = 5,
+	T_HTP_REQ_DONE    = 6,
 };
-
 
 
 /// Recognized HTTP Methods

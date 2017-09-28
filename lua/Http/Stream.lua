@@ -31,6 +31,7 @@ end
 local removeRequest = function( self, request )
 	t_remove( self.requests, request.id )
 	if 0 == #self.requests and not self.keepAlive then
+		--print("REMOVE read handler", self.cli)
 		self.srv.ael:removeHandle( self.cli, 'read' )
 	end
 end
@@ -38,15 +39,16 @@ end
 local recv = function( self )
 	local succ,rcvd = self.cli:recv( self.buf )
 	if not succ then
-		print( "RECEIVE FAIL", succ, rcvd )
+		--print( "RECEIVE FAIL", succ, rcvd )
 		-- dispose of itself ... clear requests, buffer etc...
 		self.srv.ael:removeHandle( self.cli, 'read' )
 		self.srv.streams[ self.cli ] = nil
 	else
 		local seg = self.buf:Segment( 1, rcvd )
-		print(seg, seg:toHex() )
+		--print(seg, seg:toHex() )
 		local id, request = getRequest( self )
 		if request:receive( seg ) then
+			--print("REMOVE Request:", request)
 			removeRequest( self, request )
 		end
 	end
@@ -66,10 +68,14 @@ local resp = function( self )
 			break;
 		end
 	end
-	print( "runCount:",runCount, "id", id )
+	--print( "runCount:",runCount, "id", id )
 	if id then self.responses[ id ] = nil end
-	if 1==runCount then
+	if 1==runCount then -- no further response in the stream
 		self.srv.ael:removeHandle( self.cli, "write" )
+		if not self.keepAlive then
+			self.cli:close()
+			self.srv.streams[ self.cli ] = nil
+		end
 		self.responding = false
 	end
 end

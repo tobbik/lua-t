@@ -17,6 +17,7 @@ local _mt
 -- ---------------------------- general helpers  --------------------
 local accept = function( self )
 	local cli, adr      = self.sck:accept( )
+	--print("CLIENT:", cli)
 	self.streams[ cli ] = Stream( self, cli, adr )
 end
 

@@ -348,7 +348,7 @@ t_htp_req_parseHttpVersion( lua_State *L, struct t_buf_seg *seg )
 		lua_pushinteger( L, v );
 		lua_setfield( L, 1, "version" );
 		lua_pushinteger( L, ((12==l && '\r'==*(r+10)) || (10==l && '\n'==*(r+9)))
-			? T_HTP_REQ_PARSED
+			? T_HTP_REQ_DONE
 			: T_HTP_REQ_HEADERS );
 		lua_setfield( L, 1, "state" );
 		t_buf_seg_moveIndex( seg, r - seg->b + 8 );  // relocate to \r or\n after first line
@@ -398,7 +398,13 @@ t_htp_req_parseHeaders( lua_State *L, struct t_buf_seg *seg )
 				{
 					t_buf_seg_moveIndex( seg, (r + (('\n'==*(r+1))? 0 : 1) - seg->b) );
 					lua_pop( L, 1 );  // pop header-table from stack
-					lua_pushinteger( L, T_HTP_REQ_PARSED );
+					lua_pushstring( L, "contentLength" );
+					lua_rawget( L, 1 );
+					if (lua_isnil( L, -1 ) || (lua_isinteger( L, -1 ) && 0 == lua_tointeger( L, -1 )))
+						lua_pushinteger( L, T_HTP_REQ_DONE );
+					else
+						lua_pushinteger( L, T_HTP_REQ_BODY );
+					lua_remove( L, -2 );
 					lua_setfield( L, 1, "state" );
 					return 1;
 				}
@@ -457,15 +463,19 @@ lt_htp_req_parse( lua_State *L )
 	switch (state)
 	{
 		case T_HTP_REQ_METHOD:
+			//printf( "Parsing METHOD\n" );
 			if (0 == t_htp_req_parseMethod( L, seg ))
 				break;
 		case T_HTP_REQ_URI:
+			//printf( "Parsing URL\n" );
 			if (0 == t_htp_req_parseUrl( L, seg ))
 				break;
 		case T_HTP_REQ_VERSION:
+			//printf( "Parsing VERSION\n" );
 			if (0 == t_htp_req_parseHttpVersion( L, seg ))
 				break;
 		case T_HTP_REQ_HEADERS:
+			//printf( "Parsing HEADERS\n" );
 			if (0 == t_htp_req_parseHeaders( L, seg ))
 				break;
 		default:
