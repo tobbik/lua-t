@@ -7,9 +7,9 @@
 -- \author    tkieslich
 -- \copyright See Copyright notice at the end of src/t.h
 
-local Loop, T, Buffer = require't.Loop', require't', require't.Buffer'
-local t_insert    , t_remove    , getmetatable, setmetatable, assert, type =
-      table.insert, table.remove, getmetatable, setmetatable, assert, type
+local Loop, T, Buffer, Timer = require't.Loop', require't', require't.Buffer'
+local t_insert    , t_remove    , getmetatable, setmetatable, assert, type,  o_time =
+      table.insert, table.remove, getmetatable, setmetatable, assert, type, os.time
 
 local Request         = require't.Http.Request'
 
@@ -44,6 +44,7 @@ local recv = function( self )
 		self.srv.ael:removeHandle( self.cli, 'read' )
 		self.srv.streams[ self.cli ] = nil
 	else
+		self.lastAction = o_time()
 		local seg = self.buf:Segment( 1, rcvd )
 		--print(seg, seg:toHex() )
 		local id, request = getRequest( self )
@@ -70,13 +71,13 @@ local resp = function( self )
 	end
 	--print( "runCount:",runCount, "id", id )
 	if id then self.responses[ id ] = nil end
-	if 1==runCount then -- no further response in the stream
+	if 1==runCount then      -- no further response in the stream
 		self.srv.ael:removeHandle( self.cli, "write" )
 		if not self.keepAlive then
 			self.cli:close()
 			self.srv.streams[ self.cli ] = nil
+			self.lastAction = o_time()
 		end
-		self.responding = false
 	end
 end
 
@@ -86,7 +87,6 @@ local addResponse = function( self, response )
 	end
 	if not self.responding then
 		self.srv.ael:addHandle( self.cli, 'write', resp, self )
-		self.responding = true
 	end
 end
 

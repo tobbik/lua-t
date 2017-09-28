@@ -8,9 +8,9 @@
 local getmetatable, setmetatable =
       getmetatable, setmetatable
 
-local Stream, Socket = require't.Http.Stream', require't.Net.Socket'
+local Stream, Socket, Timer = require't.Http.Stream', require't.Net.Socket', require't.Time'
 local t_type  = require't'.type
-local format  = string.format
+local format,o_time,t_insert  = string.format,os.time,table.insert
 
 local _mt
 
@@ -36,6 +36,7 @@ local removeStream = function( self, stream )
 	self.streams[ stream.cli ] = nil
 end
 
+
 -- ---------------------------- Instance metatable --------------------
 _mt = {       -- local _mt at top of file
 	-- essentials
@@ -57,6 +58,28 @@ return setmetatable( {
 			, callback = cb
 			, streams  = { }
 		}
+		local remover = (function(s)
+			return function( )
+				local t          = o_time() - 5
+				print(t, s)
+				local candidates = { }
+				for k,v in pairs( s.streams ) do
+					print(v.lastAction, t)
+					if v.lastAction < t then
+						t_insert( candidates, v.cli )
+					end
+				end
+				for k,v in pairs( candidates ) do
+					print("CLOSE:", v)
+					v:close()
+					s.streams[ v ] = nil
+				end
+				s.timer:set( 5000 )
+				return s.timer
+			end
+		end)( srv )
+		srv.timer    = Timer( 5000 )
+		ael:addTimer( srv.timer, remover, srv )
 		return setmetatable( srv, _mt )
 	end
 } )

@@ -93,8 +93,17 @@ t_htp_req_identifyHeader( lua_State *L, const char *k, const char *c,
 			if (30==l) { lua_pushstring( L, "Access-Control-Request-Headers" ); break; }
 		case 'c':
 			if (6 ==l) {     lua_pushstring( L, "Cookie" );                     break; }
-
-			if (10==l) {     lua_pushstring( L, "Connection" );                 break; }
+			if (10==l)
+			{
+				if (lv==10)
+				{
+					lua_pushstring( L, "keepAlive" );
+					lua_pushboolean( L, 1);
+					lua_rawset( L, -4 );
+				}
+				lua_pushstring( L, "Connection" );
+				break;
+			}
 			if (11==l) {     lua_pushstring( L, "Content-MD5" );                break; }
 			if (12==l) {     lua_pushstring( L, "Content-Type" );               break; }
 			if (13==l) {     lua_pushstring( L, "Cache-Control" );              break; }
