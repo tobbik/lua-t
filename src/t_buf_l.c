@@ -146,7 +146,8 @@ t_buf_getHexString( lua_State *L, char *b, size_t len )
 	{
 		luaL_addchar( &lB, hexChars[ b[n] >> 4 & 0x0F ] );
 		luaL_addchar( &lB, hexChars[ b[n]      & 0x0F ] );
-		luaL_addchar( &lB, ' ' );
+		if ( n+1<len)
+			luaL_addchar( &lB, ' ' );
 	}
 
 	luaL_pushresult( &lB );

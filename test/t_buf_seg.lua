@@ -346,6 +346,15 @@ tests = {
 		assert( #seg   == len, "Reported length must equal calculated lenght" )
 		assert( nlen   == len, "Reported length must equal input value" )
 	end,
+
+	test_toHex = function( self )
+		local a = { 65,66,67,68,69,70 }
+		local x = string.char( a[1], a[2], a[3], a[4], a[5], a[6] )
+		local X = format( '%02X %02X %02X %02X %02X %02X',  a[1], a[2], a[3], a[4], a[5], a[6] )
+		local b = Buffer( x )
+		local s = b:Segment( )
+		assert( s:toHex() == X, format( "Expected HexString: `%s` but got `%s`", X, s:toHex() ) )
+	end
 }
 
 return Test( tests )

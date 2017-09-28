@@ -203,6 +203,14 @@ tests = {
 		local bT = bA + bB
 		assert( bT==bR, "Composed buffer should equal buffer from full string" )
 	end,
+
+	test_toHex = function( self )
+		local a = { 65,66,67,68,69,70 }
+		local x = string.char( a[1], a[2], a[3], a[4], a[5], a[6] )
+		local X = format( '%02X %02X %02X %02X %02X %02X',  a[1], a[2], a[3], a[4], a[5], a[6] )
+		local b = Buffer( x )
+		assert( b:toHex() == X, format( "Expected HexString: `%s` but got `%s`", X, b:toHex() ) )
+	end
 }
 
 -- t = Test( tests )
