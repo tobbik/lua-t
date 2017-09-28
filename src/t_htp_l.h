@@ -26,6 +26,7 @@ enum t_htp_req_state {
 	T_HTP_REQ_URI,
 	T_HTP_REQ_VERSION,
 	T_HTP_REQ_HEADERS,
+	T_HTP_REQ_PARSED,
 	T_HTP_REQ_BODY,
 	T_HTP_REQ_DONE,
 };

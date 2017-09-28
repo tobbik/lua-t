@@ -33,6 +33,8 @@ local State = {
 	, Done     = 6
 }
 
+-- receive
+-- @return
 local receive = function( self, seg )
 	local buf
 	if self.buf then
@@ -49,11 +51,8 @@ local receive = function( self, seg )
 		local resp = Response( self.stream, self.id, self.keepAlive, self.version )
 		self.stream.srv.callback( self, resp )
 	end
-	if self.state == State.Done then
-		return false
-	else
-		return true
-	end
+	self.stream.keepAlive = self.keepAlive
+	return self.state == State.Done
 end
 
 _mt.receive = receive

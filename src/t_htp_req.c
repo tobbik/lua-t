@@ -348,7 +348,7 @@ t_htp_req_parseHttpVersion( lua_State *L, struct t_buf_seg *seg )
 		lua_pushinteger( L, v );
 		lua_setfield( L, 1, "version" );
 		lua_pushinteger( L, ((12==l && '\r'==*(r+10)) || (10==l && '\n'==*(r+9)))
-			? T_HTP_REQ_DONE
+			? T_HTP_REQ_PARSED
 			: T_HTP_REQ_HEADERS );
 		lua_setfield( L, 1, "state" );
 		t_buf_seg_moveIndex( seg, r - seg->b + 8 );  // relocate to \r or\n after first line
@@ -398,10 +398,7 @@ t_htp_req_parseHeaders( lua_State *L, struct t_buf_seg *seg )
 				{
 					t_buf_seg_moveIndex( seg, (r + (('\n'==*(r+1))? 0 : 1) - seg->b) );
 					lua_pop( L, 1 );  // pop header-table from stack
-					lua_pushstring( L, "contentLength" );
-					lua_rawget( L, 1 );
-					lua_pushinteger( L, (lua_isnil( L, -1 )) ? T_HTP_REQ_DONE : T_HTP_REQ_BODY );
-					lua_remove( L, -2 );  // pop nil/contentLength
+					lua_pushinteger( L, T_HTP_REQ_PARSED );
 					lua_setfield( L, 1, "state" );
 					return 1;
 				}
@@ -438,7 +435,7 @@ t_htp_req_parseHeaders( lua_State *L, struct t_buf_seg *seg )
  * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int
-lt_htp_req_receive( lua_State *L )
+lt_htp_req_parse( lua_State *L )
 {
 	//struct t_buf     *buf;
 	struct t_buf_seg *seg = t_buf_seg_check_ud( L, 2, 1 );
@@ -511,7 +508,7 @@ static const struct luaL_Reg t_htp_req_cf [] = {
  * Objects metamethods library definition
  * --------------------------------------------------------------------------*/
 static const luaL_Reg t_htp_req_m [] = {
-	  { "parse"      , lt_htp_req_receive }
+	  { "parse"      , lt_htp_req_parse }
 	, { NULL           , NULL }
 };
 

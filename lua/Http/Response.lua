@@ -105,7 +105,7 @@ local send = function( self, sck )
 	local snt = sck:send( buf )
 	if snt == #buf and State.Done == self.state then
 		return true
-	elseif snt == #buf  then
+	elseif snt == #buf then
 		self.buf = { }
 		return false
 	else
