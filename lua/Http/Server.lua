@@ -13,11 +13,25 @@ local t_type  = require't'.type
 local format,o_time,t_insert  = string.format,os.time,table.insert
 
 local _mt
+local timeout = 10000
+
+local dR = function()
+	local d = debug.getregistry()
+	for i=#d,3,-1 do
+		if type(d[i]) =='table' then
+			print( "TABLE", i, d[i] )
+			for k,v in pairs(d[i]) do print('',k,v) end
+		else
+			print( "VALUE", i, d[i] )
+		end
+	end
+	print("-----------------------------------------")
+end
 
 -- ---------------------------- general helpers  --------------------
 local accept = function( self )
 	local cli, adr      = self.sck:accept( )
-	--print("CLIENT:", cli)
+	--print( "CLIENT:", cli )
 	self.streams[ cli ] = Stream( self, cli, adr )
 end
 
@@ -48,7 +62,6 @@ _mt.__index     = _mt
 
 return setmetatable( {
 	  toString = function( srv ) return _mt.__name end
-	, listen   = listen
 }, {
 	__call   = function( self, ael, cb )
 		assert( t_type( ael ) == 'T.Loop',   "`T.Loop` is required" )
@@ -58,28 +71,39 @@ return setmetatable( {
 			, callback = cb
 			, streams  = { }
 		}
-		local remover = (function(s)
+		-- keepAlive handling
+		local timer    = Timer( timeout )
+		local remover = (function(str,tm)
 			return function( )
 				local t          = o_time() - 5
-				print(t, s)
+				dR()
+				--[[
+				if flip then
+					collectgarbage('stop')
+					flip =false
+				else
+					collectgarbage('restart')
+					flip =true
+				end
+				]]--
 				local candidates = { }
-				for k,v in pairs( s.streams ) do
-					print(v.lastAction, t)
+				for k,v in pairs( str ) do
 					if v.lastAction < t then
 						t_insert( candidates, v.cli )
 					end
 				end
 				for k,v in pairs( candidates ) do
-					print("CLOSE:", v)
-					v:close()
-					s.streams[ v ] = nil
+					print("Timeout CLOSE Socket:", v, str[ v ] )
+					if v.reading then ael:removeHandle( v, 'read' ) end
+					v:close( )
+					str[ v ] = nil
 				end
-				s.timer:set( 5000 )
-				return s.timer
+				tm:set( timeout )
+				return tm
 			end
-		end)( srv )
-		srv.timer    = Timer( 5000 )
-		ael:addTimer( srv.timer, remover, srv )
+		end)( srv.streams, timer )
+		ael:addTimer( timer, remover )
+
 		return setmetatable( srv, _mt )
 	end
 } )

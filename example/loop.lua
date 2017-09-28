@@ -12,9 +12,19 @@ p = function( str, t )
 	return (t:get( ) > n*200) and t or nil
 end
 
+dR = function()
+	local d = debug.getregistry()
+	for i=#d,3,-1 do
+		if type(d[i]) =='table' then
+			print( "TABLE", i, d[i] )
+			for k,v in pairs(d[i]) do print('',k,v) end
+		end
+	end
+end
+
 
 function r( s )
-	local ip_cli = Net.Address()
+	local ip_cli   = Net.Address()
 	local msg, len = s:recv( ip_cli )
 	print( msg, len, ip_cli, "\n" )
 	if msg:sub( 1, 4 ) == 'exit' then
@@ -28,9 +38,13 @@ function r( s )
 		print( "remove timer ".. tonumber( t ) )
 		l:removeTimer( tm[ tonumber( t ) ] )
 	elseif msg:sub( 1, 2 ) == 'rL' then
+		dR()
 		l:removeHandle( s, 'read' )
 		print( "remove listener -> go exit" )
+		dR()
 		l:stop( )
+	elseif msg:sub( 1, 3 ) == 'reg' then
+		dR()
 	end
 end
 

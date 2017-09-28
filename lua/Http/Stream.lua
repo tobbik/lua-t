@@ -28,29 +28,37 @@ local getRequest = function( self )
 	return id, request
 end
 
-local removeRequest = function( self, request )
-	t_remove( self.requests, request.id )
-	if 0 == #self.requests and not self.keepAlive then
-		--print("REMOVE read handler", self.cli)
-		self.srv.ael:removeHandle( self.cli, 'read' )
-	end
+local destroy = function( self )
+	print( "DESTROY:", self.buf, self )
+	self.requests  = nil
+	self.responses = nil
+	self.buf = nil
+	self.srv.streams[ self.cli ] = nil
+	self.cli:close( )
+	self.cli = nil
 end
 
 local recv = function( self )
 	local succ,rcvd = self.cli:recv( self.buf )
 	if not succ then
-		--print( "RECEIVE FAIL", succ, rcvd )
+		-- it means the other side hung up; No more responses
+		print( "REMOVE read handler -> RECEIVE FAILURE", self.cli )
 		-- dispose of itself ... clear requests, buffer etc...
 		self.srv.ael:removeHandle( self.cli, 'read' )
-		self.srv.streams[ self.cli ] = nil
+		destroy( self )
 	else
 		self.lastAction = o_time()
 		local seg = self.buf:Segment( 1, rcvd )
 		--print(seg, seg:toHex() )
 		local id, request = getRequest( self )
 		if request:receive( seg ) then
-			--print("REMOVE Request:", request)
-			removeRequest( self, request )
+			--print("REQUEST DONE")
+			t_remove( self.requests, request.id )
+			if 0 == #self.requests and not self.keepAlive then
+				print("REMOVE read handler", self.cli)
+				self.srv.ael:removeHandle( self.cli, 'read' )
+				self.reading = false
+			end
 		end
 	end
 end
@@ -74,9 +82,9 @@ local resp = function( self )
 	if 1==runCount then      -- no further response in the stream
 		self.srv.ael:removeHandle( self.cli, "write" )
 		if not self.keepAlive then
-			self.cli:close()
-			self.srv.streams[ self.cli ] = nil
-			self.lastAction = o_time()
+			destroy( self )
+		else
+			self.lastAction = o_time( )
 		end
 	end
 end
@@ -109,17 +117,20 @@ return setmetatable( {
 		--assert( T.type( adr ) == 'T.Net.Address', "`T.Net.Address` is required" )
 
 		local stream  = {
-			  srv       = srv     -- Server instance
-			, cli       = cli     -- client socket
-			, adr       = adr     -- client Net.Address
-			, buf       = Buffer( Buffer.Size ) -- the read buffer
-			, requests  = { }
-			, responses = { }
-			, strategy  = 1  -- 1=HTTP1.1; 2=HTTP2
-			, keepAlive = false
+			  srv        = srv     -- Server instance
+			, cli        = cli     -- client socket
+			, adr        = adr     -- client Net.Address
+			, buf        = Buffer( Buffer.Size ) -- the read buffer
+			, buf2       = Buffer( Buffer.Size ) -- the read buffer
+			, requests   = { }
+			, responses  = { }
+			, strategy   = 1  -- 1=HTTP1.1; 2=HTTP2
+			, keepAlive  = false
+			, reading    = true
+			, lastAction = o_time()
 		}
 
-		srv.ael:addHandle( cli, 'read',  recv, stream )
+		srv.ael:addHandle( cli, 'read', recv, stream )
 		--srv.ael:addHandle( cli, 'write', resp, stream )
 		return setmetatable( stream, _mt )
 	end

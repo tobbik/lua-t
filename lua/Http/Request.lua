@@ -38,21 +38,22 @@ local State = {
 local receive = function( self, seg )
 	local buf
 	if self.buf then
-		buf = Buffer( self.buf:read() .. seg:read( ) )
+		buf = Buffer( self.buf:read( ) .. seg:read( ) )
 		seg = buf:Segment( )
 	end
 	self:parse( seg, self.state )
-	if #seg > 0 then
-		self.buf = Buffer( seg )
-	else
-		self.buf = nil
-	end
-	if self.state > State.Headers then
-		local resp = Response( self.stream, self.id, self.keepAlive, self.version )
-		self.stream.srv.callback( self, resp )
-	end
 	self.stream.keepAlive = self.keepAlive
-	return self.state == State.Done
+	if self.state > State.Headers then
+		self.stream.srv.callback( self, Response( self.stream, self.id, self.keepAlive, self.version ) )
+	end
+	if self.state == State.Done then
+		self.buf = nil
+		return true
+	else
+		print("NEW BUFFER")
+		self.buf = Buffer( seg )
+		return false
+	end
 end
 
 _mt.receive = receive
