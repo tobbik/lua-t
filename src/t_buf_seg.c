@@ -233,9 +233,10 @@ lt_buf_seg__gc( lua_State *L )
 static int
 lt_buf_seg__index( lua_State *L )
 {
-	struct t_buf_seg *seg = t_buf_seg_check_ud( L, 1, 1 );
+	struct t_buf_seg *seg   = t_buf_seg_check_ud( L, 1, 1 );
 	int               idx;
 	const char       *key;
+	size_t            k_len;
 
 	if (lua_isinteger( L, 2 ))
 	{
@@ -247,14 +248,14 @@ lt_buf_seg__index( lua_State *L )
 	}
 	else
 	{
-		key = lua_tostring( L, 2 );
-		if (0 == strncmp( key, "buffer", 6 ))
+		key = lua_tolstring( L, 2, &k_len );
+		if (6==k_len && 0 == strncmp( key, "buffer", 6 ))
 			lua_rawgeti( L, LUA_REGISTRYINDEX, seg->bR );
-		else if (0 == strncmp( key, "start", 5 ) )
+		else if (5==k_len && 0 == strncmp( key, "start", 5 ) )
 			lua_pushinteger( L, seg->idx );
-		else if (0 == strncmp( key, "size", 4 ) )
+		else if (4 == k_len && 0 == strncmp( key, "size", 4 ) )
 			lua_pushinteger( L, seg->len );
-		else if (0 == strncmp( key, "to", 2 ) )
+		else if (2 == k_len && 0 == strncmp( key, "to", 2 ) )
 			lua_pushinteger( L, seg->idx + seg->len );
 		else
 		{
