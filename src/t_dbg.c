@@ -25,6 +25,8 @@ void
 t_fmtStackItem( lua_State *L, int idx, int no_tostring )
 {
 	int t;
+	size_t l;
+	char *str;
 	if (no_tostring || ! luaL_callmeta( L, idx, "__tostring" ))
 	{
 		t = lua_type( L, idx );
@@ -35,7 +37,16 @@ t_fmtStackItem( lua_State *L, int idx, int no_tostring )
 				break;
 
 			case LUA_TSTRING:    // strings
-				lua_pushfstring( L, "`%s`", lua_tostring( L, idx ) );
+				str = luaL_checklstring( L, idx, &l );
+				if (l > 25)
+				{
+					lua_pushstring( L, "`");
+					lua_pushlstring( L, str, 13);
+					lua_pushfstring( L, " ... %s`", str+l-13 );
+					lua_concat( L, 3 );
+				}
+				else
+					lua_pushfstring( L, "`%s`", lua_tostring( L, idx ) );
 				break;
 
 			case LUA_TBOOLEAN:   // booleans
