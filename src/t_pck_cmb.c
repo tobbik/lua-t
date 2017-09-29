@@ -39,7 +39,7 @@ struct t_pck
 		lua_rawgeti( L, -3, n+1 );                 //S:… tbl key Fld key
 		lua_rawget( L, -4 );                       //S:… tbl key Fld Pck
 		p      = t_pck_getPacker( L, -1 );         // turn Pck into true packer
-		pf->pR = luaLt_ref( L, LUA_REGISTRYINDEX ); // pops the packer from stack
+		pf->pR = luaL_ref( L, LUA_REGISTRYINDEX ); // pops the packer from stack
 		bo    += t_pck_getSize( L, p );
 		// replace pack with new Pack.Field
 		lua_rawset( L, -3 );                       //S:… tbl
@@ -51,7 +51,7 @@ struct t_pck
 	ps->t = T_PCK_STR;
 	ps->s = lua_rawlen( L, -2 );                  //S:… tbl pck
 	lua_insert( L, -2 );                          //S:… pck tbl
-	ps->m = luaLt_ref( L, LUA_REGISTRYINDEX );     // register table
+	ps->m = luaL_ref( L, LUA_REGISTRYINDEX );     // register table
 
 	return ps;
 }
@@ -83,7 +83,7 @@ struct t_pck
 		p      = t_pck_getPacker( L, sp );
 		pf     = (struct t_pck_fld *) lua_newuserdata( L, sizeof( struct t_pck_fld ));
 		lua_pushvalue( L, sp );      //S: p1 p2 … pn … Seq tbl Fld Pck
-		pf->pR = luaLt_ref( L, LUA_REGISTRYINDEX );  // pops the packer from stack
+		pf->pR = luaL_ref( L, LUA_REGISTRYINDEX );  // pops the packer from stack
 		pf->o  = bo;
 
 		luaL_getmetatable( L, T_PCK_FLD_TYPE );
@@ -93,7 +93,7 @@ struct t_pck
 		bo += t_pck_getSize( L, p );
 		lua_remove( L, sp );
 	}
-	sq->m = luaLt_ref( L, LUA_REGISTRYINDEX ); // register table
+	sq->m = luaL_ref( L, LUA_REGISTRYINDEX ); // register table
 
 	luaL_getmetatable( L, T_PCK_TYPE ); //S: … T.Pack
 	lua_setmetatable( L, -2 ) ;
@@ -120,7 +120,7 @@ struct t_pck
 	ap->s = luaL_checkinteger( L, -2 );       // how many elements in array
 
 	lua_pushvalue( L, -3 );                   //S: Pck n Arr Pck
-	ap->m = luaLt_ref( L, LUA_REGISTRYINDEX ); // record reference to packer
+	ap->m = luaL_ref( L, LUA_REGISTRYINDEX ); // record reference to packer
 
 	luaL_getmetatable( L, T_PCK_TYPE );
 	lua_setmetatable( L, -2 ) ;
@@ -211,7 +211,7 @@ lt_pck_fld__index( lua_State *L )
 	//printf("%d-%lu  | ",(T_PCK_BTU==ipc->t || T_PCK_BTS==ipc->t || T_PCK_BOL==ipc->t) ? ipc->m : 0, npf->o % NB );
 	}
 
-	npf->pR  = luaLt_ref( L, LUA_REGISTRYINDEX );            //S: Str i/k Fld
+	npf->pR  = luaL_ref( L, LUA_REGISTRYINDEX );            //S: Str i/k Fld
 	luaL_getmetatable( L, T_PCK_FLD_TYPE );
 	lua_setmetatable( L, -2 );
 	return 1;
@@ -290,7 +290,7 @@ t_pck_fld_iter( lua_State *L )
 		pc     = t_pck_fld_getPackFromStack( L, -1, &pcf );//S: tbl idx ud pck
 		pf->o += pcf->o;
 	}
-	pf->pR = luaLt_ref( L, LUA_REGISTRYINDEX );   //S: tbl/pck idx/key ud
+	pf->pR = luaL_ref( L, LUA_REGISTRYINDEX );   //S: tbl/pck idx/key ud
 	luaL_getmetatable( L, T_PCK_FLD_TYPE );
 	lua_setmetatable( L, -2 );
 	return 2;

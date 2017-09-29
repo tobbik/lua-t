@@ -139,8 +139,8 @@ t_ael_executeHeadTimer( lua_State *L, struct t_ael_tnd **tHead, struct timeval *
 	tv = t_tim_check_ud( L, -1, 0 );
 	if (NULL == tv)                    // remove from list
 	{
-		luaLt_unref( L, LUA_REGISTRYINDEX, tExc->fR );
-		luaLt_unref( L, LUA_REGISTRYINDEX, tExc->tR );
+		luaL_unref( L, LUA_REGISTRYINDEX, tExc->fR );
+		luaL_unref( L, LUA_REGISTRYINDEX, tExc->tR );
 		free( tExc );
 	}
 	else              // re-add node to list if function returned a timer
@@ -149,8 +149,8 @@ t_ael_executeHeadTimer( lua_State *L, struct t_ael_tnd **tHead, struct timeval *
 		// but use new tv reference if tv wasn't reused
 		if (tv != tExc->tv)
 		{
-			luaLt_unref( L, LUA_REGISTRYINDEX, tExc->tR );
-			tExc->tR = luaLt_ref( L, LUA_REGISTRYINDEX );
+			luaL_unref( L, LUA_REGISTRYINDEX, tExc->tR );
+			tExc->tR = luaL_ref( L, LUA_REGISTRYINDEX );
 			tExc->tv = tv;
 		}
 		t_ael_insertTimer( tHead, tExc );
@@ -297,19 +297,19 @@ lt_ael_addhandle( lua_State *L )
 	// pop the function reference table and assign as read or write function
 	if (T_AEL_RD & msk)
 	{
-		ael->fdSet[ fd ]->rR = luaLt_ref( L, LUA_REGISTRYINDEX );
-		printf(" ======ADDING HANDLE(READ): %d(%d) \n", ael->fdSet[ fd ]->rR, fd );
+		ael->fdSet[ fd ]->rR = luaL_ref( L, LUA_REGISTRYINDEX );
+		//printf(" ======ADDING HANDLE(READ): %d(%d) \n", ael->fdSet[ fd ]->rR, fd );
 	}
 	else
 	{
-		ael->fdSet[ fd ]->wR = luaLt_ref( L, LUA_REGISTRYINDEX );
-		printf(" ======ADDING HANDLE(WRITE): %d(%d) \n", ael->fdSet[ fd ]->wR, fd );
+		ael->fdSet[ fd ]->wR = luaL_ref( L, LUA_REGISTRYINDEX );
+		//printf(" ======ADDING HANDLE(WRITE): %d(%d) \n", ael->fdSet[ fd ]->wR, fd );
 	}
 	lua_pop( L, 1 ); // pop the read/write indicator string
 	if (LUA_REFNIL == ael->fdSet[ fd ]->hR)
 	{
-		ael->fdSet[ fd ]->hR = luaLt_ref( L, LUA_REGISTRYINDEX );      // keep ref to handle so it doesnt gc
-		printf(" ======ADDING HANDLE(SOCKET): %d(%d) \n", ael->fdSet[ fd ]->hR, fd );
+		ael->fdSet[ fd ]->hR = luaL_ref( L, LUA_REGISTRYINDEX );      // keep ref to handle so it doesnt gc
+		//printf(" ======ADDING HANDLE(SOCKET): %d(%d) \n", ael->fdSet[ fd ]->hR, fd );
 	}
 
 	return  0;
@@ -353,14 +353,14 @@ lt_ael_removehandle( lua_State *L )
 	// remove function
 	if (T_AEL_RD & msk & ael->fdSet[ fd ]->msk)
 	{
-		printf(" ======REMOVING HANDLE(READ): %d for %d(%d)\n", ael->fdSet[ fd ]->rR, ael->fdSet[ fd ]->hR, fd );
-		luaLt_unref( L, LUA_REGISTRYINDEX, ael->fdSet[ fd ]->rR );
+		//printf(" ======REMOVING HANDLE(READ): %d for %d(%d)\n", ael->fdSet[ fd ]->rR, ael->fdSet[ fd ]->hR, fd );
+		luaL_unref( L, LUA_REGISTRYINDEX, ael->fdSet[ fd ]->rR );
 		ael->fdSet[ fd ]->rR = LUA_REFNIL;
 	}
 	else
 	{
-		printf(" ======REMOVING HANDLE(WRITE): %d for %d(%d)\n", ael->fdSet[ fd ]->wR, ael->fdSet[ fd ]->hR, fd );
-		luaLt_unref( L, LUA_REGISTRYINDEX, ael->fdSet[ fd ]->wR );
+		//printf(" ======REMOVING HANDLE(WRITE): %d for %d(%d)\n", ael->fdSet[ fd ]->wR, ael->fdSet[ fd ]->hR, fd );
+		luaL_unref( L, LUA_REGISTRYINDEX, ael->fdSet[ fd ]->wR );
 		ael->fdSet[ fd ]->wR = LUA_REFNIL;
 	}
 	p_ael_removehandle_impl( L, ael, fd, msk );
@@ -369,8 +369,8 @@ lt_ael_removehandle( lua_State *L )
 	// remove from loop if no observed at all anymore
 	if (T_AEL_NO == ael->fdSet[ fd ]->msk )
 	{
-		printf(" ======REMOVING HANDLE(SOCKET): %d \n", ael->fdSet[ fd ]->hR );
-		luaLt_unref( L, LUA_REGISTRYINDEX, ael->fdSet[ fd ]->hR );
+		//printf(" ======REMOVING HANDLE(SOCKET): %d \n", ael->fdSet[ fd ]->hR );
+		luaL_unref( L, LUA_REGISTRYINDEX, ael->fdSet[ fd ]->hR );
 		free( ael->fdSet[ fd ] );
 		ael->fdSet[ fd ] = NULL;
 
@@ -414,9 +414,9 @@ lt_ael_addtimer( lua_State *L )
 	// Stack: ael,tv,TABLE,func,...
 	while (n > 3)
 		lua_rawseti( L, 3, (n--)-3 );            // add arguments and function (pops each item)
-	tNew->fR = luaLt_ref( L, LUA_REGISTRYINDEX );  // pop the function/parameter table
+	tNew->fR = luaL_ref( L, LUA_REGISTRYINDEX );  // pop the function/parameter table
 	// making the time val part of lua registry guarantees the gc can't destroy it
-	tNew->tR = luaLt_ref( L, LUA_REGISTRYINDEX );  // pop the timeval
+	tNew->tR = luaL_ref( L, LUA_REGISTRYINDEX );  // pop the timeval
 	// insert into ordered linked list of time events
 	t_ael_insertTimer( &(ael->tmHead), tNew );
 
@@ -444,8 +444,8 @@ lt_ael_removetimer( lua_State *L )
 	if (NULL != tCnd  &&  tCnd->tv == tv)
 	{
 		ael->tmHead = tRun;
-		luaLt_unref( L, LUA_REGISTRYINDEX, tCnd->fR );
-		luaLt_unref( L, LUA_REGISTRYINDEX, tCnd->tR );
+		luaL_unref( L, LUA_REGISTRYINDEX, tCnd->fR );
+		luaL_unref( L, LUA_REGISTRYINDEX, tCnd->tR );
 		free( tCnd );
 		return 0;
 	}
@@ -459,8 +459,8 @@ lt_ael_removetimer( lua_State *L )
 	if (NULL!=tRun && tRun->tv == tv)
 	{
 		tCnd->nxt = tRun->nxt;
-		luaLt_unref( L, LUA_REGISTRYINDEX, tRun->fR );
-		luaLt_unref( L, LUA_REGISTRYINDEX, tCnd->tR );
+		luaL_unref( L, LUA_REGISTRYINDEX, tRun->fR );
+		luaL_unref( L, LUA_REGISTRYINDEX, tCnd->tR );
 		free( tRun );
 	}
 
@@ -486,8 +486,8 @@ lt_ael__gc( lua_State *L )
 	{
 		tFre = tRun;
 		//printf( "Start  %p   %d   %d    %p\n", tFre, tFre->fR, tFre->tR, tFre->nxt );
-		luaLt_unref( L, LUA_REGISTRYINDEX, tFre->fR ); // remove func/arg table from registry
-		luaLt_unref( L, LUA_REGISTRYINDEX, tFre->tR ); // remove timeval ref from registry
+		luaL_unref( L, LUA_REGISTRYINDEX, tFre->fR ); // remove func/arg table from registry
+		luaL_unref( L, LUA_REGISTRYINDEX, tFre->tR ); // remove timeval ref from registry
 		tRun = tRun->nxt;
 		//printf( "Free   %p   %d   %d    %p\n", tFre, tFre->fR, tFre->tR, tFre->nxt );
 		free( tFre );
@@ -497,9 +497,9 @@ lt_ael__gc( lua_State *L )
 	{
 		if (NULL != ael->fdSet[ i ])
 		{
-			luaLt_unref( L, LUA_REGISTRYINDEX, ael->fdSet[ i ]->rR );
-			luaLt_unref( L, LUA_REGISTRYINDEX, ael->fdSet[ i ]->wR );
-			luaLt_unref( L, LUA_REGISTRYINDEX, ael->fdSet[ i ]->hR );
+			luaL_unref( L, LUA_REGISTRYINDEX, ael->fdSet[ i ]->rR );
+			luaL_unref( L, LUA_REGISTRYINDEX, ael->fdSet[ i ]->wR );
+			luaL_unref( L, LUA_REGISTRYINDEX, ael->fdSet[ i ]->hR );
 			free( ael->fdSet[ i ] );
 		}
 	}
