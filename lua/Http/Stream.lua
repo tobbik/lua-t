@@ -7,7 +7,7 @@
 -- \author    tkieslich
 -- \copyright See Copyright notice at the end of src/t.h
 
-local Loop, T, Buffer, Timer = require't.Loop', require't', require't.Buffer'
+local Loop, T, Timer = require't.Loop', require't'
 local t_insert    , t_remove    , getmetatable, setmetatable, assert, type,  o_time =
       table.insert, table.remove, getmetatable, setmetatable, assert, type, os.time
 
@@ -29,18 +29,17 @@ local getRequest = function( self )
 end
 
 local destroy = function( self )
-	--print( "DESTROY:", self.buf, self )
+	--print( "DESTROY:", self )
 	self.requests  = nil
 	self.responses = nil
-	self.buf = nil
 	self.srv.streams[ self.cli ] = nil
 	self.cli:close( )
 	self.cli = nil
 end
 
 local recv = function( self )
-	local success,rcvd = self.cli:recv( self.buffer )
-	if not success then
+	local data,rcvd = self.cli:recv( )
+	if not data then
 		-- it means the other side hung up; No more responses
 		--print( "REMOVE read handler -> RECEIVE FAILURE", self.cli )
 		-- dispose of itself ... clear requests, buffer etc...
@@ -49,7 +48,7 @@ local recv = function( self )
 	else
 		self.lastAction = o_time( )
 		local id, request = getRequest( self )
-		if request:receive( self.buffer, rcvd ) then
+		if request:receive( data ) then
 			-- print("REQUEST DONE")
 			t_remove( self.requests, request.id )
 			if 0 == #self.requests and not self.keepAlive then
@@ -118,10 +117,8 @@ return setmetatable( {
 			  srv        = srv     -- Server instance
 			, cli        = cli     -- client socket
 			, adr        = adr     -- client Net.Address
-			, buf        = Buffer( Buffer.Size ) -- the read buffer
 			, requests   = { }
 			, responses  = { }
-			, buffer     = Buffer( Buffer.Size )
 			, strategy   = 1  -- 1=HTTP1.1; 2=HTTP2
 			, keepAlive  = false
 			, reading    = true

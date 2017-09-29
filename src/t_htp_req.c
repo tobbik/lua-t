@@ -434,34 +434,19 @@ t_htp_req_parseHeaders( lua_State *L, const char **data, const char *end )
  * object.
  * \param   L      Lua state.
  * \lparam  table  t.Http.Request userdata.
- * \lparam  ud     Buffer.Segment user data.
+ * \lparam  string Lua string of received data.
  * \lparam  status current parsing status.
  * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int
 lt_htp_req_parse( lua_State *L )
 {
-	const char *data   = t_buf_checklstring( L, 2, NULL, NULL );
-	size_t      d_len  = luaL_checkinteger( L, 3 );
-
-	//size_t      d_len;
-	//const char *data   = luaL_checklstring( L, 2, &d_len );
-	const char  *end   = data + d_len;
-	const char **tail  = &data;
-	size_t      state;
-	//luaL_getmetafield( L, 1, "__name"), "t.Http.Request" );
-	//lua_getfield( L, 1, "state" );
-	state = (size_t) luaL_checkinteger( L, 4 );
-	lua_pop( L, 2 );  // pop state and size
-	// check if a buffer exist?
-	/*
-	lua_getfield( L, 1, "tail" );
-	if (! lua_isnil( L, -1 ))
-	{
-		buf = t_buf_check_ud( L, -1, 1 );
-	}
-	lua_pop( L, 2 );  // pop state and buffer/nil
-	*/
+	size_t      d_len;
+	const char *data  = luaL_checklstring( L, 2, &d_len );
+	const char  *end  = data + d_len;
+	const char **tail = &data;
+	size_t      state = (size_t) luaL_checkinteger( L, 3 );
+	lua_pop( L, 1 );  // pop state
 
 	switch (state)
 	{
