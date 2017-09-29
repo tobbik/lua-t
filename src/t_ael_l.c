@@ -300,7 +300,8 @@ lt_ael_addhandle( lua_State *L )
 	else
 		ael->fdSet[ fd ]->wR = luaL_ref( L, LUA_REGISTRYINDEX );
 	lua_pop( L, 1 ); // pop the read write boolean
-	ael->fdSet[ fd ]->hR = luaL_ref( L, LUA_REGISTRYINDEX );      // keep ref to handle so it doesnt gc
+	if (LUA_REFNIL == ael->fdSet[ fd ]->hR)
+		ael->fdSet[ fd ]->hR = luaL_ref( L, LUA_REGISTRYINDEX );  // keep ref to handle so it doesnt gc
 
 	return  0;
 }
