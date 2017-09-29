@@ -25,33 +25,28 @@ local chkStr  = function( self )
 end
 
 local State = {
-	  Method   = 1
-	, Url      = 2
-	, Version  = 3
-	, Headers  = 4
-	, Body     = 5
-	, Done     = 6
+	  Method  = 1
+	, Url     = 2
+	, Version = 3
+	, Headers = 4
+	, Body    = 5
+	, Done    = 6
 }
 
 -- receive
 -- @return
-local receive = function( self, seg )
-	local buf
-	if self.buf then
-		buf = Buffer( self.buf:read( ) .. seg:read( ) )
-		seg = buf:Segment( )
-	end
-	self:parse( seg, self.state )
-	self.stream.keepAlive = self.keepAlive
+local receive = function( self, data )
+	local tail = self:parse( self.tail and (self.tail .. data) or data, self.state )
 	if self.state > State.Headers then
+		self.stream.keepAlive = self.keepAlive
 		self.stream.srv.callback( self, Response( self.stream, self.id, self.keepAlive, self.version ) )
 	end
 	if self.state == State.Done then
 		self.buf = nil
 		return true
 	else
-		print("NEW BUFFER")
-		self.buf = Buffer( seg )
+		--print("NEW TAIL BUFFER")
+		self.tail = tail or nil
 		return false
 	end
 end

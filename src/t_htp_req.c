@@ -64,6 +64,10 @@ static const char tokens[256] = {
 
 /**--------------------------------------------------------------------------
  * Read registered Request headers. Standardize Casing.
+ * Parses values of connection releavnt headers, such as:
+ *   - Content-Length
+ *   - Connection (close/keepalive/upgrade)
+ *   - Upgrade (WebSocket, ... )
  * \param   char*  k Header key start.
  * \param   char*  c Colon after the header key (':').
  * \param   char*  v Header value start.
@@ -99,7 +103,7 @@ t_htp_req_identifyHeader( lua_State *L, const char *k, const char *c,
 				{
 					lua_pushstring( L, "keepAlive" );
 					lua_pushboolean( L, 1);
-					lua_rawset( L, -4 );
+					lua_rawset( L, -5 );
 				}
 				lua_pushstring( L, "Connection" );
 				break;
@@ -114,7 +118,7 @@ t_htp_req_identifyHeader( lua_State *L, const char *k, const char *c,
 					cl = cl*10 + (v[i] - '0');
 				lua_pushstring( L, "contentLength" );
 				lua_pushinteger( L, cl );            //S: req,hed,key,cnl
-				lua_rawset( L, -4 );
+				lua_rawset( L, -5 );
 				lua_pushstring( L, "Content-Length" );
 				break;
 			}
@@ -163,23 +167,6 @@ t_htp_req_identifyHeader( lua_State *L, const char *k, const char *c,
 }
 
 
-/**--------------------------------------------------------------------------
- * Adjust start point of Buffer.Segment
- * This is a dangerous function which doesn't check bounderies!
- * \param   L                Lua state.
- * \param   struct t_buf_seg seg.
- * \param   mv               move start point mv bytes to the right.
- * --------------------------------------------------------------------------*/
-static inline void
-t_buf_seg_moveIndex( struct t_buf_seg *seg, int mv )
-{
-	//printf( "%d  ->  %ld(%ld)   %ld(%ld)\n", mv, seg->idx, seg->idx+mv, seg->len, seg->len-mv );
-	seg->b   += mv;
-	seg->idx += mv;
-	seg->len -= mv;
-}
-
-
 /**
  * Eat Linear White Space
  */
@@ -195,19 +182,20 @@ static inline const char
 /**--------------------------------------------------------------------------
  * Parse Method from the request.
  * Stack: requesttable
- * \param  L                  the Lua State
- * \param  struct t_buf_seg*  pointer to t_buf_seg.
- * \return n                  buffer offset after parsing. 0 means fail.
+ * \param  lua_State   L.
+ * \param  char **data pointer within to data stream.
+ * \param  char *end   end of data strem.
+ * \return bool        0 means not enough data, 1 means done successfully
  * --------------------------------------------------------------------------*/
 static size_t
-t_htp_req_parseMethod( lua_State *L, struct t_buf_seg *seg )
+t_htp_req_parseMethod( lua_State *L, const char **data, const char *end )
 {
 	size_t      n = 0;                 ///< offset of whitespace after method
 	int         m = T_HTP_MTH_ILLEGAL; ///< HTTP.Method index
-	const char *r = seg->b;            ///< runner char
+	const char *r = *data;             ///< runner char
 
 	// Determine HTTP Verb (METHOD)
-	if (seg->len > 10)
+	if ((end - *data) > 10)
 	{
 		switch (*r)
 		{
@@ -251,7 +239,7 @@ t_htp_req_parseMethod( lua_State *L, struct t_buf_seg *seg )
 		lua_setfield( L, 1, "method" );
 		lua_pushinteger( L, T_HTP_REQ_URI );
 		lua_setfield( L, 1, "state" );
-		t_buf_seg_moveIndex( seg, n );
+		(*data) += n;
 	}
 	return n;
 }
@@ -260,22 +248,22 @@ t_htp_req_parseMethod( lua_State *L, struct t_buf_seg *seg )
 /**--------------------------------------------------------------------------
  * Parse Uri and Query from the request.
  * Stack: requesttable
- * \param  L                  the Lua State
- * \param  struct t_buf_seg*  pointer to t_buf_seg.
- * \return n                  buffer offset after parsing. 0 means fail.
+ * \param  lua_State   L.
+ * \param  char **data pointer within to data stream.
+ * \param  char *end   end of data strem.
+ * \return bool        0 means not enough data, 1 means done successfully
  * --------------------------------------------------------------------------*/
 static size_t
-t_htp_req_parseUrl( lua_State *L, struct t_buf_seg *seg )
+t_htp_req_parseUrl( lua_State *L, const char **data, const char *end )
 {
-	const char *r = eat_lws( seg->b ); ///< runner char
-	const char *e = seg->b + seg->len; ///< ending char
+	const char *r = eat_lws( *data );  ///< runner char
 	const char *u = r;                 ///< start of URI
 	const char *q = NULL;              ///< runner for query
 	const char *v = r;                 ///< value start marker
 
 	lua_newtable( L );                 ///< parsed and decoded query parameters
 
-	while (r < e)
+	while (r < end)
 	{
 		switch (*r)
 		{
@@ -314,8 +302,8 @@ t_htp_req_parseUrl( lua_State *L, struct t_buf_seg *seg )
 
 				lua_pushinteger( L, T_HTP_REQ_VERSION );
 				lua_setfield( L, 1, "state" );
-				t_buf_seg_moveIndex( seg, r - seg->b );
-				return r - u + 1;  //+1 on for spece before URL
+				(*data) = r;
+				return r - u + 1;  //+1 on for space before URL
 				break;
 			default:           break;
 		}
@@ -329,16 +317,17 @@ t_htp_req_parseUrl( lua_State *L, struct t_buf_seg *seg )
 /**--------------------------------------------------------------------------
  * Parse HTTP Version from the request.
  * Stack: requesttable
- * \param  L                  the Lua State
- * \param  struct t_buf_seg*  pointer to t_buf_seg.
- * \return n                  buffer offset after parsing. 0 means fail.
+ * \param  lua_State   L.
+ * \param  char **data pointer within to data stream.
+ * \param  char *end   end of data strem.
+ * \return bool        0 means not enough data, 1 means done successfully
  * --------------------------------------------------------------------------*/
 static int
-t_htp_req_parseHttpVersion( lua_State *L, struct t_buf_seg *seg )
+t_htp_req_parseHttpVersion( lua_State *L, const char **data, const char *end )
 {
-	const char *r = eat_lws( seg->b );  ///< runner char
+	const char *r = eat_lws( *data );  ///< runner char
 	int         v = T_HTP_VER_ILL;
-	size_t      l = seg->len - (r - seg->b);
+	size_t      l = end - r;
 
 	if ((l > 11 && '\r'==*(r+8 )) || (l > 9 && '\n'==*(r+8 )))
 	{
@@ -360,7 +349,7 @@ t_htp_req_parseHttpVersion( lua_State *L, struct t_buf_seg *seg )
 			? T_HTP_REQ_DONE
 			: T_HTP_REQ_HEADERS );
 		lua_setfield( L, 1, "state" );
-		t_buf_seg_moveIndex( seg, r - seg->b + 8 );  // relocate to \r or\n after first line
+		(*data) = r + 8;  // relocate to \r or\n after first line
 
 		return 8;
 	}
@@ -371,15 +360,15 @@ t_htp_req_parseHttpVersion( lua_State *L, struct t_buf_seg *seg )
 /**--------------------------------------------------------------------------
  * Parse HTTP Headers from the request.
  * Stack: requesttable
- * \param  L                  the Lua State
- * \param  struct t_buf_seg*  pointer to t_buf_seg.
- * \return n                  buffer offset after parsing. 0 means fail.
+ * \param  lua_State   L.
+ * \param  char **data pointer within to data stream.
+ * \param  char *end   end of data strem.
+ * \return bool        0 means not enough data, 1 means done successfully
  * --------------------------------------------------------------------------*/
 static int
-t_htp_req_parseHeaders( lua_State *L, struct t_buf_seg *seg )
+t_htp_req_parseHeaders( lua_State *L, const char **data, const char *end )
 {
-	const char    *r  = eat_lws( seg->b ); ///< runner char
-	const char    *e  = seg->b + seg->len; ///< ending char
+	const char    *r  = eat_lws( *data );  ///< runner char
 	const char    *k  = r;                 ///< marks start of key
 	const char    *c  = r;                 ///< marks colon after key
 	const char    *v  = r;                 ///< marks start of value
@@ -388,7 +377,7 @@ t_htp_req_parseHeaders( lua_State *L, struct t_buf_seg *seg )
 	lua_getfield( L, 1, "headers" ); // get pre-existing header table -> re-entrent
 
 	// since exit condition is based on r+1 compare for (r+1)
-	while (r+1 < e)
+	while (r+1 < end)
 	{
 		switch (*r)
 		{
@@ -405,7 +394,7 @@ t_htp_req_parseHeaders( lua_State *L, struct t_buf_seg *seg )
 				rs = T_HTP_R_KY;
 				if ('\n' == *(r+1) || '\r' == *(r+1))  // double newLine -> END OF HEADER
 				{
-					t_buf_seg_moveIndex( seg, (r + (('\n'==*(r+1))? 0 : 1) - seg->b) );
+					(*data) = r + (('\n'==*(r+1))? 0 : 1);
 					lua_pop( L, 1 );  // pop header-table from stack
 					lua_pushstring( L, "contentLength" );
 					lua_rawget( L, 1 );
@@ -452,16 +441,18 @@ t_htp_req_parseHeaders( lua_State *L, struct t_buf_seg *seg )
 static int
 lt_htp_req_parse( lua_State *L )
 {
-	//struct t_buf     *buf;
-	struct t_buf_seg *seg = t_buf_seg_check_ud( L, 2, 1 );
-	size_t          state;
+	size_t      d_len;
+	const char *data   = luaL_checklstring( L, 2, &d_len );
+	const char  *end   = data + d_len;
+	const char **tail  = &data;
+	size_t      state;
 	//luaL_getmetafield( L, 1, "__name"), "t.Http.Request" );
 	//lua_getfield( L, 1, "state" );
 	state = (size_t) luaL_checkinteger( L, 3 );
-	lua_pop( L, 2 );  // pop state and segment
+	lua_pop( L, 1 );  // pop state and segment
 	// check if a buffer exist?
 	/*
-	lua_getfield( L, 1, "buf" );
+	lua_getfield( L, 1, "tail" );
 	if (! lua_isnil( L, -1 ))
 	{
 		buf = t_buf_check_ud( L, -1, 1 );
@@ -473,38 +464,28 @@ lt_htp_req_parse( lua_State *L )
 	{
 		case T_HTP_REQ_METHOD:
 			//printf( "Parsing METHOD\n" );
-			if (0 == t_htp_req_parseMethod( L, seg ))
+			if (0 == t_htp_req_parseMethod( L, tail, end ))
 				break;
 		case T_HTP_REQ_URI:
 			//printf( "Parsing URL\n" );
-			if (0 == t_htp_req_parseUrl( L, seg ))
+			if (0 == t_htp_req_parseUrl( L, tail, end ))
 				break;
 		case T_HTP_REQ_VERSION:
 			//printf( "Parsing VERSION\n" );
-			if (0 == t_htp_req_parseHttpVersion( L, seg ))
+			if (0 == t_htp_req_parseHttpVersion( L, tail, end ))
 				break;
 		case T_HTP_REQ_HEADERS:
 			//printf( "Parsing HEADERS\n" );
-			if (0 == t_htp_req_parseHeaders( L, seg ))
+			if (0 == t_htp_req_parseHeaders( L, tail, end ))
 				break;
 		default:
 			break;
 	}
-	/*
-	if (seg->len > 0)
-	{
-		// create a t.Buffer object
-		buf = (struct t_buf *) lua_newuserdata( L, sizeof( struct t_buf ) + (seg->len - 1) * sizeof( char ) );
-		memcpy( &(buf->b[0]), &(seg->b[0]), seg->len );
-		buf->len = seg->len;
-		luaL_getmetatable( L, T_BUF_TYPE );
-		lua_setmetatable( L, -2 );
-	}
-	else
+	if (*tail == end)
 		lua_pushnil( L );
-	lua_setfield( L, 1, "buf" );
-	*/
-	return 0;
+	else
+		lua_pushlstring( L, *tail, end-*tail );
+	return 1;
 }
 
 

@@ -27,17 +27,16 @@ local mSck = {
 local dummyCb, tReq, tRes
 local makeRequest = function()
 	return Request( {
-		srv = {callback = dummyCb}
+		srv = {
+			callback = function( req, res )
+				tReq = req
+				tRes = res
+			end
+		}
 	}, 1 )
 end
 
 local tests = {
-	beforeEach = function( self )
-		dummyCb = function( req, res )
-			tReq = req
-			tRes = res
-		end
-	end,
 	afterEach = function( self )
 		tReq, tRes = nil,nil
 	end,
@@ -57,7 +56,7 @@ local tests = {
 	test_ReceiveMethod = function( self )
 		Test.Case.describe( "request:recv() partial parses METHOD only" )
 		local r = makeRequest( )
-		local s = Buffer( "GET /index.html?a" ):Segment( )
+		local s = Buffer( "GET /index.html?a" ):Segment( ):read()
 		r:receive( s )
 		assert( r.state   == Request.State.Url, format( "State must be %d but was %d", Request.State.Url, r.state ) )
 		assert( r.method  == Method.GET, format( "Method must be %d but was %d", Method.GET, r.method ) )
@@ -68,7 +67,7 @@ local tests = {
 		Test.Case.describe( "request:recv() partial parses URL without query" )
 		local r = makeRequest( )
 		local u = '/go/wherever/it/wil/be/index.html'
-		local s = Buffer( "GET " ..u.." " ):Segment( )
+		local s = Buffer( "GET " ..u.." " ):Segment( ):read()
 		r:receive( s )
 		assert( r.state == Request.State.Version, format( "State must be %d but was %d", Request.State.Version, r.state ) )
 		assert( r.url       , "URL must exist" )
@@ -80,7 +79,7 @@ local tests = {
 		Test.Case.describe( "request:recv() partial parses URL with query" )
 		local r = makeRequest( )
 		local u = '/go/wherever/it/wil/be/index.html?alpha=1&beta=2&c=gamma&4=delta'
-		local s = Buffer( "GET " ..u.." " ):Segment( )
+		local s = Buffer( "GET " ..u.." " ):Segment( ):read()
 		r:receive( s )
 		assert( r.state == Request.State.Version, format( "State must be %d but was %d", Request.State.Version, r.state ) )
 		assert( r.url       , "URL must exist" )
@@ -98,7 +97,7 @@ local tests = {
 		local r = makeRequest( )
 		local v = Version[3]                   -- HTTP/1.1
 		-- must have 2 more Bytes if \r\n or 1 more if just \n
-		local s = Buffer( "GET /go/wherever/it/wil/be/index.html " .. v ..'\r\n' ):Segment( )
+		local s = Buffer( "GET /go/wherever/it/wil/be/index.html " .. v ..'\r\n' ):Segment( ):read()
 		r:receive( s )
 		assert( r.version == 0                , format( "Version must be %d but was %d", 0, r.version ) )
 		assert( r.state   == Request.State.Version, format( "State must be %d but was %d", Request.State.Version, r.state ) )
@@ -109,7 +108,7 @@ local tests = {
 		local r = makeRequest( )
 		local v = Version[3]                   -- HTTP/1.1
 		-- must have 2 more Bytes if \r\n or 1 more if just \n
-		local s = Buffer( "GET /go/wherever/it/wil/be/index.html " .. v ..'\r\nAc' ):Segment( )
+		local s = Buffer( "GET /go/wherever/it/wil/be/index.html " .. v ..'\r\nAc' ):Segment( ):read()
 		r:receive( s )
 		assert( r.state   == Request.State.Headers, format( "State must be %d but was %d", Request.State.Headers, r.state ) )
 		assert( r.version == Version[ v ]         , format( "Version must be %d but was %d", Version[v], r.version ) )
@@ -120,7 +119,7 @@ local tests = {
 		local r = makeRequest( )
 		local v = Version[3]                   -- HTTP/1.1
 		-- must have 2 more Bytes if \r\n or 1 more if just \n
-		local s = Buffer( "GET /go/wherever/it/wil/be/index.html " .. v ..'\r\n\r\n' ):Segment( )
+		local s = Buffer( "GET /go/wherever/it/wil/be/index.html " .. v ..'\r\n\r\n' ):Segment( ):read()
 		r:receive( s )
 		assert( r.state   == Request.State.Done, format( "State must be %d but was %d", Request.State.Done, r.state ) )
 		assert( r.version == Version[ v ]      , format( "Version must be %d but was %d", Version[v], r.version ) )
@@ -131,7 +130,7 @@ local tests = {
 		local r = makeRequest( )
 		local v = Version[3]                   -- HTTP/1.1
 		-- must have 2 more Bytes if \r\n or 1 more if just \n
-		local s = Buffer( "GET /go/wherever/it/wil/be/index.html " .. v ..'\n\n' ):Segment( )
+		local s = Buffer( "GET /go/wherever/it/wil/be/index.html " .. v ..'\n\n' ):Segment( ):read()
 		r:receive( s )
 		assert( r.state   == Request.State.Done, format( "State must be %d but was %d", Request.State.Done, r.state ) )
 		assert( r.version == Version[ v ]      , format( "Version must be %d but was %d", Version[v], r.version ) )
@@ -184,7 +183,7 @@ local tests = {
 		}
 		local h = ''
 		for k,v in pairs(t) do h = h .. k ..': '..v.. '\r\n' end
-		local s = Buffer( "GET /go/index.html HTTP/1.1\r\n" .. h .. '\r\n' ):Segment( )
+		local s = Buffer( "GET /go/index.html HTTP/1.1\r\n" .. h .. '\r\n' ):Segment( ):read()
 		r:receive( s )
 		for k,v in pairs( t ) do
 			assert( v == r.headers[k], format( "req.headers[ %s ] must be `%s` but was `%s`", k, v, r.headers[k] ) )
@@ -237,7 +236,7 @@ local tests = {
 		}
 		local h = ''
 		for k,v in pairs(t) do h = h ..string.lower( k )..': '..v.. '\r\n' end -- string.lower() for bad casing
-		local s = Buffer( "GET /go/index.html HTTP/1.1\r\n" .. h .. '\r\n' ):Segment( )
+		local s = Buffer( "GET /go/index.html HTTP/1.1\r\n" .. h .. '\r\n' ):Segment( ):read()
 		r:receive( s )
 		for k,v in pairs( t ) do
 			 assert( v == r.headers[k], format( "req.headers[ %s ] must be `%s` but was `%s`", k, v, r.headers[k] ) )
@@ -258,7 +257,7 @@ local tests = {
 		}
 		local h = ''
 		for k,v in pairs(t) do  h = h ..k..': '..v.. '\r\n' end
-		local s = Buffer( "GET /go/index.html HTTP/1.1\r\n" .. h .. '\r\n' ):Segment( )
+		local s = Buffer( "GET /go/index.html HTTP/1.1\r\n" .. h .. '\r\n' ):Segment( ):read()
 		r:receive( s )
 		local t1 = {
 			  [ 'Content-Length' ] = "12345"
@@ -277,7 +276,7 @@ local tests = {
 	test_HeaderContentLength = function( self )
 		Test.Case.describe( "Content-Length Header gets parsed" )
 		local r = makeRequest( )
-		local s = Buffer( "GET /go/index.html HTTP/1.1\r\nContent-Length: 12345\r\n\r\n" ):Segment( )
+		local s = Buffer( "GET /go/index.html HTTP/1.1\r\nContent-Length: 12345\r\n\r\n" ):Segment( ):read()
 		r:receive( s )
 		assert( 12345 == r.contentLength, format( "req.contentLength must be `%d` but was `%s`", 12345, r.contentLength ) )
 	end,
@@ -295,7 +294,7 @@ local tests = {
 		}
 		local h = ''
 		for k,v in pairs(t) do h = h .. k ..': '..v.. '\r\n' end
-		local s = Buffer( "GET /go/index.html HTTP/1.1\r\n" .. h .. '\r\n' ):Segment( )
+		local s = Buffer( "GET /go/index.html HTTP/1.1\r\n" .. h .. '\r\n' ):Segment( ):read()
 		r:receive( s )
 		assert( nil == r.contentLength, format( "req.contentLength must be `nil` but was `%s`", r.contentLength ) )
 		assert( r.state == Request.State.Done, format( "State must be %d but was %d", Request.State.Done, r.state ) )
@@ -309,12 +308,12 @@ local tests = {
 		local u      = u1 .. u2
 		local v      = Version[3] -- HTTP/1.1
 		local p1, p2 = 'GET ' .. u1, u2 .. ' ' ..v.. '\r\nAc'
-		local s1     = Buffer( p1 ):Segment( )
+		local s1     = Buffer( p1 ):Segment( ):read()
 		r:receive( s1 )
 		assert( r.state == Request.State.Url, format( "State must be %d but was %d", Request.State.Url, r.state ) )
 		assert( not r.url, "URL mustn't exist" )
-		assert( r.buf:read() == p1:sub(4), format("r.buf shall be `%s` but was `%s", r.buf:read(), p1:sub(4)) )
-		local s2 = Buffer( p2 ):Segment( )
+		assert( r.tail == p1:sub(4), format("r.buf shall be `%s` but was `%s", r.tail, p1:sub(4)) )
+		local s2 = Buffer( p2 ):Segment( ):read()
 		r:receive( s2 )
 		assert( r.url     == u, format( "URL must be `%s` but was `%s`", u, r.url ) )
 		assert( r.version == Version[v], format( "HTTP version must be `%s` but was `%s`", Version[v], r.version ) )

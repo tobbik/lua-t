@@ -29,7 +29,7 @@ local getRequest = function( self )
 end
 
 local destroy = function( self )
-	print( "DESTROY:", self.buf, self )
+	--print( "DESTROY:", self.buf, self )
 	self.requests  = nil
 	self.responses = nil
 	self.buf = nil
@@ -39,25 +39,21 @@ local destroy = function( self )
 end
 
 local recv = function( self )
-	local succ,rcvd = self.cli:recv( self.buf )
-	if not succ then
+	local data,rcvd = self.cli:recv( )
+	if not data then
 		-- it means the other side hung up; No more responses
-		print( "REMOVE read handler -> RECEIVE FAILURE", self.cli )
+		--print( "REMOVE read handler -> RECEIVE FAILURE", self.cli )
 		-- dispose of itself ... clear requests, buffer etc...
 		self.srv.ael:removeHandle( self.cli, 'read' )
 		destroy( self )
 	else
-		self.lastAction = o_time()
-		print("CREATING SEGMENT")
-		local seg = self.buf:Segment( 1, rcvd )
-		print("CREATED SEGMENT")
-		--print(seg, seg:toHex() )
+		self.lastAction = o_time( )
 		local id, request = getRequest( self )
-		if request:receive(  self.buf:Segment( 1, rcvd ) ) then
-			--print("REQUEST DONE")
+		if request:receive( data ) then
+			-- print("REQUEST DONE")
 			t_remove( self.requests, request.id )
 			if 0 == #self.requests and not self.keepAlive then
-				print("REMOVE read handler", self.cli)
+				--print("REMOVE read handler", self.cli)
 				self.srv.ael:removeHandle( self.cli, 'read' )
 				self.reading = false
 			end
@@ -131,9 +127,9 @@ return setmetatable( {
 			, lastAction = o_time()
 		}
 
-		print( "ADDING HANDLE CLIENT:", cli )
+		--print( "ADDING HANDLE CLIENT:", cli )
 		srv.ael:addHandle( cli, 'read', recv, stream )
-		print( "ADDED HANDLE CLIENT:", cli )
+		--print( "ADDED HANDLE CLIENT:", cli )
 		--srv.ael:addHandle( cli, 'write', resp, stream )
 		return setmetatable( stream, _mt )
 	end
