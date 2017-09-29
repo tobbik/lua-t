@@ -441,15 +441,18 @@ t_htp_req_parseHeaders( lua_State *L, const char **data, const char *end )
 static int
 lt_htp_req_parse( lua_State *L )
 {
-	size_t      d_len;
-	const char *data   = luaL_checklstring( L, 2, &d_len );
+	const char *data   = t_buf_checklstring( L, 2, NULL, NULL );
+	size_t      d_len  = luaL_checkinteger( L, 3 );
+
+	//size_t      d_len;
+	//const char *data   = luaL_checklstring( L, 2, &d_len );
 	const char  *end   = data + d_len;
 	const char **tail  = &data;
 	size_t      state;
 	//luaL_getmetafield( L, 1, "__name"), "t.Http.Request" );
 	//lua_getfield( L, 1, "state" );
-	state = (size_t) luaL_checkinteger( L, 3 );
-	lua_pop( L, 1 );  // pop state and segment
+	state = (size_t) luaL_checkinteger( L, 4 );
+	lua_pop( L, 2 );  // pop state and size
 	// check if a buffer exist?
 	/*
 	lua_getfield( L, 1, "tail" );

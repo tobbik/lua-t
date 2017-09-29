@@ -39,8 +39,8 @@ local destroy = function( self )
 end
 
 local recv = function( self )
-	local data,rcvd = self.cli:recv( )
-	if not data then
+	local success,rcvd = self.cli:recv( self.buffer )
+	if not success then
 		-- it means the other side hung up; No more responses
 		--print( "REMOVE read handler -> RECEIVE FAILURE", self.cli )
 		-- dispose of itself ... clear requests, buffer etc...
@@ -49,7 +49,7 @@ local recv = function( self )
 	else
 		self.lastAction = o_time( )
 		local id, request = getRequest( self )
-		if request:receive( data ) then
+		if request:receive( self.buffer, rcvd ) then
 			-- print("REQUEST DONE")
 			t_remove( self.requests, request.id )
 			if 0 == #self.requests and not self.keepAlive then
@@ -121,6 +121,7 @@ return setmetatable( {
 			, buf        = Buffer( Buffer.Size ) -- the read buffer
 			, requests   = { }
 			, responses  = { }
+			, buffer     = Buffer( Buffer.Size )
 			, strategy   = 1  -- 1=HTTP1.1; 2=HTTP2
 			, keepAlive  = false
 			, reading    = true

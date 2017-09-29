@@ -35,8 +35,12 @@ local State = {
 
 -- receive
 -- @return
-local receive = function( self, data )
-	local tail = self:parse( self.tail and (self.tail .. data) or data, self.state )
+local receive = function( self, data, len )
+	if self.tail then
+		data = Buffer( self.tail .. data:read( 1, len ) )
+		len  = #data
+	end
+	local tail = self:parse( data, len, self.state )
 	if self.state > State.Headers then
 		self.stream.keepAlive = self.keepAlive
 		self.stream.srv.callback( self, Response( self.stream, self.id, self.keepAlive, self.version ) )
