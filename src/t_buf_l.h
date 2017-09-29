@@ -8,6 +8,7 @@
  */
 
 #include "t_buf.h"
+#include "t.h"
 
 
 // t_buf.c

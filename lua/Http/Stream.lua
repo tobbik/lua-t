@@ -48,10 +48,12 @@ local recv = function( self )
 		destroy( self )
 	else
 		self.lastAction = o_time()
+		print("CREATING SEGMENT")
 		local seg = self.buf:Segment( 1, rcvd )
+		print("CREATED SEGMENT")
 		--print(seg, seg:toHex() )
 		local id, request = getRequest( self )
-		if request:receive( seg ) then
+		if request:receive(  self.buf:Segment( 1, rcvd ) ) then
 			--print("REQUEST DONE")
 			t_remove( self.requests, request.id )
 			if 0 == #self.requests and not self.keepAlive then
@@ -121,7 +123,6 @@ return setmetatable( {
 			, cli        = cli     -- client socket
 			, adr        = adr     -- client Net.Address
 			, buf        = Buffer( Buffer.Size ) -- the read buffer
-			, buf2       = Buffer( Buffer.Size ) -- the read buffer
 			, requests   = { }
 			, responses  = { }
 			, strategy   = 1  -- 1=HTTP1.1; 2=HTTP2
@@ -130,7 +131,9 @@ return setmetatable( {
 			, lastAction = o_time()
 		}
 
+		print( "ADDING HANDLE CLIENT:", cli )
 		srv.ael:addHandle( cli, 'read', recv, stream )
+		print( "ADDED HANDLE CLIENT:", cli )
 		--srv.ael:addHandle( cli, 'write', resp, stream )
 		return setmetatable( stream, _mt )
 	end

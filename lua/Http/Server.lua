@@ -19,10 +19,10 @@ local dR = function()
 	local d = debug.getregistry()
 	for i=#d,3,-1 do
 		if type(d[i]) =='table' then
-			print( "TABLE", i, d[i] )
+			print( i, "TABLE", d[i] )
 			for k,v in pairs(d[i]) do print('',k,v) end
 		else
-			print( "VALUE", i, d[i] )
+			print( i, "VALUE", d[i] )
 		end
 	end
 	print("-----------------------------------------")
@@ -31,7 +31,6 @@ end
 -- ---------------------------- general helpers  --------------------
 local accept = function( self )
 	local cli, adr      = self.sck:accept( )
-	--print( "CLIENT:", cli )
 	self.streams[ cli ] = Stream( self, cli, adr )
 end
 
@@ -76,7 +75,6 @@ return setmetatable( {
 		local remover = (function(str,tm)
 			return function( )
 				local t          = o_time() - 5
-				dR()
 				--[[
 				if flip then
 					collectgarbage('stop')
@@ -98,6 +96,8 @@ return setmetatable( {
 					v:close( )
 					str[ v ] = nil
 				end
+				collectgarbage()
+				dR()
 				tm:set( timeout )
 				return tm
 			end

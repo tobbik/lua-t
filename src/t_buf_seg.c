@@ -79,7 +79,7 @@ struct t_buf_seg
 
 	seg = (struct t_buf_seg *) lua_newuserdata( L, sizeof( struct t_buf_seg ) );
 	lua_insert( L, -2 );       // move Segment infront of Buffer
-	seg->bR  =  luaL_ref( L, LUA_REGISTRYINDEX );
+	seg->bR  =  luaLt_ref( L, LUA_REGISTRYINDEX );
 	t_buf_seg_set( L, seg, buf, idx, len );
 
 	luaL_getmetatable( L, T_BUF_SEG_TYPE );
@@ -217,7 +217,7 @@ static int
 lt_buf_seg__gc( lua_State *L )
 {
 	struct t_buf_seg *seg = t_buf_seg_check_ud( L, 1, 1 );
-	luaL_unref( L, LUA_REGISTRYINDEX, seg->bR );
+	luaLt_unref( L, LUA_REGISTRYINDEX, seg->bR );
 	return 0;
 }
 

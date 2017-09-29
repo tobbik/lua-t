@@ -20,6 +20,22 @@
 #endif
 
 
+int luaLt_ref( lua_State *L, int t )
+{
+	t_stackDump( L );
+	int ref = luaL_ref( L, t);
+	printf( "REGISTRY REFERENCE: %d\n", ref);
+	return ref;
+}
+
+void luaLt_unref( lua_State *L, int t, int ref )
+{
+	luaL_unref( L, t, ref);
+	printf( "__remove__REGISTRY REFERENCE: %d\n", ref);
+}
+
+
+
 /**--------------------------------------------------------------------------
  * Read type name from stack and overwrite it with type value.
  * \param   L        Lua state.
