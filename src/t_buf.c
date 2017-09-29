@@ -67,13 +67,15 @@ char
 
 	if (NULL != buf)
 	{
-		*len = buf->len;
+		if (len)
+			*len = buf->len;
 		if (NULL!=cw) *cw  = 1;
 		return (char*) &(buf->b[0]);
 	}
 	else if (NULL != seg)
 	{
-		*len = seg->len;
+		if (len)
+			*len = seg->len;
 		if (NULL!=cw) *cw  = 1;
 		return seg->b;
 	}
