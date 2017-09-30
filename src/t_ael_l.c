@@ -92,28 +92,31 @@ t_ael_adjustTimers( struct t_ael_tnd **tHead, struct timeval *tAdj )
 
 
 /**----------------------------------------------------------------------------
- *
- * Takes refPosition and gets table onto the stack.  Leaves function and
- * paramters onto stack ready to be executed.
+ * Takes refPosition and gets table onto the stack.  Executes function.
  * Stack before: {fnc, p1, p2, p3, ... }
  * Stack after:   fnc  p1  p2  p3  ...
  * \param   L     Lua state.
  * \param   int   Reference positon.
  * \return  int   Number of arguments to be called by function.
  * --------------------------------------------------------------------------*/
-static inline int
-t_ael_getFunction( lua_State *L, int refPos )
+static inline void
+t_ael_doFunction( lua_State *L, int refPos, int exec )
 {
 	int n;      ///< number of arguments + 1(function)
 	int p;      ///< position of pickled function and args
 	int i;
-	lua_rawgeti( L, LUA_REGISTRYINDEX, refPos );
-	p = lua_gettop( L );
-	n = lua_rawlen( L, p );
-	for (i=0; i<n; i++)
-		lua_rawgeti( L, p, i+1 );
-	lua_remove( L, p );
-	return n-1;  // return number of args
+	if (-1 != refPos)
+	{
+		lua_rawgeti( L, LUA_REGISTRYINDEX, refPos );
+		p = lua_gettop( L );
+		n = lua_rawlen( L, p );
+		for (i=0; i<n; i++)
+			lua_rawgeti( L, p, i+1 );
+		lua_remove( L, p );
+		printf( "%d  [%d] -- ", refPos, n-1 ); t_stackDump(L);
+		if (exec>-1)
+			lua_call( L, n-1, exec );
+	}
 }
 
 
@@ -129,11 +132,9 @@ t_ael_executeHeadTimer( lua_State *L, struct t_ael_tnd **tHead, struct timeval *
 {
 	struct timeval   *tv;              ///< timer returned by execution -> if there is
 	struct t_ael_tnd *tExc = *tHead;   ///< timer to execute is tHead, ALWAYS
-	int    n;                          ///< number of arguments to function call
 
 	*tHead = (*tHead)->nxt;
-	n      = t_ael_getFunction( L, tExc->fR );
-	lua_call( L, n, 1 );               // if NO T.Time is returned, it's a nil
+	t_ael_doFunction( L, tExc->fR, 1 );
 	t_tim_since( rt );
 	t_ael_adjustTimers( tHead, rt );
 	tv = t_tim_check_ud( L, -1, 0 );
@@ -170,19 +171,11 @@ t_ael_executeHeadTimer( lua_State *L, struct t_ael_tnd **tHead, struct timeval *
 void
 t_ael_executehandle( lua_State *L, struct t_ael_fd *ev, enum t_ael_msk msk )
 {
-	int n;
-
 	//printf( "%d    %d    %d \n", ev->rR, ev->wR, msk );
 	if (NULL != ev && msk & T_AEL_RD & ev->msk)
-	{
-		n = t_ael_getFunction( L, ev->rR );
-		lua_call( L, n , 0 );
-	}
+		t_ael_doFunction( L, ev->rR, 0 );
 	if (NULL != ev && msk & T_AEL_WR & ev->msk)
-	{
-		n = t_ael_getFunction( L, ev->wR );
-		lua_call( L, n , 0 );
-	}
+		t_ael_doFunction( L, ev->wR, 0 );
 }
 
 
@@ -582,7 +575,7 @@ lt_ael_showloop( lua_State *L )
 		printf( "\t%d\t{%2ld:%6ld}\t%p   ", ++i,
 			tr->tv->tv_sec,  tr->tv->tv_usec,
 			tr->tv );
-		t_ael_getFunction( L, tr->fR );
+		t_ael_doFunction( L, tr->fR, -1 );
 		t_stackPrint( L, n+1, lua_gettop( L ), 1 );
 		lua_pop( L, lua_gettop( L ) - n );
 		printf( "\n" );
@@ -596,7 +589,7 @@ lt_ael_showloop( lua_State *L )
 		if (T_AEL_RD & ael->fdSet[i]->msk)
 		{
 			printf( "%5d  [R]  ", i );
-			t_ael_getFunction( L, ael->fdSet[i]->rR );
+			t_ael_doFunction( L, ael->fdSet[i]->rR, -1 );
 			t_stackPrint( L, n+1, lua_gettop( L ), 1 );
 			lua_pop( L, lua_gettop( L ) - n );
 			printf( "\n" );
@@ -604,7 +597,7 @@ lt_ael_showloop( lua_State *L )
 		if (T_AEL_WR & ael->fdSet[i]->msk)
 		{
 			printf( "%5d  [W]  ", i );
-			t_ael_getFunction( L, ael->fdSet[i]->wR );
+			t_ael_doFunction( L, ael->fdSet[i]->wR, -1 );
 			t_stackPrint( L, n+1, lua_gettop( L ), 1 );
 			lua_pop( L, lua_gettop( L ) - n );
 			printf( "\n" );
