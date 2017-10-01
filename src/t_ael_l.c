@@ -113,7 +113,7 @@ t_ael_doFunction( lua_State *L, int refPos, int exec )
 		for (i=0; i<n; i++)
 			lua_rawgeti( L, p, i+1 );
 		lua_remove( L, p );
-		printf( "%d  [%d] -- ", refPos, n-1 ); t_stackDump(L);
+		//printf( "%d  [%d] -- ", refPos, n-1 ); t_stackDump(L);
 		if (exec>-1)
 			lua_call( L, n-1, exec );
 	}
@@ -169,7 +169,7 @@ t_ael_executeHeadTimer( lua_State *L, struct t_ael_tnd **tHead, struct timeval *
  * \return  void.
  * --------------------------------------------------------------------------*/
 void
-t_ael_executehandle( lua_State *L, struct t_ael_fd *ev, enum t_ael_msk msk )
+t_ael_executehandle( lua_State *L, struct t_ael_fnd *ev, enum t_ael_msk msk )
 {
 	//printf( "%d    %d    %d \n", ev->rR, ev->wR, msk );
 	if (NULL != ev && msk & T_AEL_RD & ev->msk)
@@ -212,7 +212,7 @@ struct t_ael
 	ael->fdCount = sz;
 	ael->fdMax   = 0;
 	ael->tmHead  = NULL;
-	ael->fdSet   = (struct t_ael_fd **) malloc( (ael->fdCount+1) * sizeof( struct t_ael_fd * ) );
+	ael->fdSet   = (struct t_ael_fnd **) malloc( (ael->fdCount+1) * sizeof( struct t_ael_fnd * ) );
 	for (n=0; n<=ael->fdCount; n++) ael->fdSet[ n ] = NULL;
 	p_ael_create_ud_impl( L, ael );
 	luaL_getmetatable( L, T_AEL_TYPE );
@@ -275,8 +275,9 @@ lt_ael_addhandle( lua_State *L )
 
 	if (NULL == ael->fdSet[ fd ])
 	{
-		ael->fdSet[ fd ] = (struct t_ael_fd *) malloc( sizeof( struct t_ael_fd ) );
+		ael->fdSet[ fd ] = (struct t_ael_fnd *) malloc( sizeof( struct t_ael_fnd ) );
 		ael->fdSet[ fd ]->msk = T_AEL_NO;
+		ael->fdSet[ fd ]->hR  = LUA_REFNIL;
 	}
 
 	p_ael_addhandle_impl( L, ael, fd, msk );
@@ -341,7 +342,7 @@ lt_ael_removehandle( lua_State *L )
 		fd = sck->fd;
 
 	luaL_argcheck( L, fd!=-1, 1, "descriptor mustn't be closed" );
-	luaL_argcheck( L, fd>0, 1, "Expected file or socket" );
+	luaL_argcheck( L, fd>0  , 1, "Expected file or socket" );
 	luaL_argcheck( L, NULL != ael->fdSet[ fd ] && ael->fdSet[ fd ]->msk, 1, "Descriptor must be observed in Loop" );
 	// remove function
 	if (T_AEL_RD & msk & ael->fdSet[ fd ]->msk)
@@ -364,6 +365,7 @@ lt_ael_removehandle( lua_State *L )
 	{
 		//printf(" ======REMOVING HANDLE(SOCKET): %d \n", ael->fdSet[ fd ]->hR );
 		luaL_unref( L, LUA_REGISTRYINDEX, ael->fdSet[ fd ]->hR );
+		ael->fdSet[ fd ]->hR = LUA_REFNIL;
 		free( ael->fdSet[ fd ] );
 		ael->fdSet[ fd ] = NULL;
 
