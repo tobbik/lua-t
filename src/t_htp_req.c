@@ -99,12 +99,29 @@ t_htp_req_identifyHeader( lua_State *L, const char *k, const char *c,
 			if (6 ==l) {     lua_pushstring( L, "Cookie" );                     break; }
 			if (10==l)
 			{
-				if (lv==10)
+				x = tokens[ (unsigned char) *(v) ];
+				switch (x)
 				{
-					lua_pushstring( L, "keepAlive" );
-					lua_pushboolean( L, 1);
-					lua_rawset( L, -5 );
+					case 'c':
+						lua_pushstring( L, "keepAlive" );
+						lua_pushboolean( L, 0 );
+						break;
+					case 'k':
+						lua_pushstring( L, "keepAlive" );
+						lua_pushboolean( L, 1 );
+						break;
+					case 't':
+						lua_pushstring( L, "tls" );
+						lua_pushboolean( L, 1 );
+						break;
+					case 'u':
+						lua_pushstring( L, "upgrade" );
+						lua_pushboolean( L, 1 );
+						break;
+					default:
+						break;
 				}
+				lua_rawset( L, -5 );
 				lua_pushstring( L, "Connection" );
 				break;
 			}
@@ -338,9 +355,9 @@ t_htp_req_parseHttpVersion( lua_State *L, const char **data, const char *end )
 			case '9': v = T_HTP_VER_09; break;
 			default: luaL_error( L, "ILLEGAL HTTP version in message" ); break;
 		}
-		if (v == T_HTP_VER_11)
+		if (v < T_HTP_VER_11)
 		{
-			lua_pushboolean( L, 1 );
+			lua_pushboolean( L, 0 );
 			lua_setfield( L, 1, "keepAlive" );
 		}
 		lua_pushinteger( L, v );

@@ -41,7 +41,7 @@ local recv = function( self )
 	local data,rcvd = self.cli:recv( )
 	if not data then
 		-- it means the other side hung up; No more responses
-		--print( "REMOVE read handler -> RECEIVE FAILURE", self.cli )
+		--print( "----------------REMOVE read handler -> RECEIVE FAILURE", self.cli )
 		-- dispose of itself ... clear requests, buffer etc...
 		self.srv.ael:removeHandle( self.cli, 'read' )
 		destroy( self )
@@ -52,9 +52,9 @@ local recv = function( self )
 			-- print("REQUEST DONE")
 			t_remove( self.requests, request.id )
 			if 0 == #self.requests and not self.keepAlive then
-				--print("REMOVE read handler", self.cli)
+				--print( "-----REMOVE read handler", self.cli)
 				self.srv.ael:removeHandle( self.cli, 'read' )
-				self.reading = false
+				self.receiving = false
 			end
 		end
 	end
@@ -77,7 +77,9 @@ local resp = function( self )
 	--print( "runCount:",runCount, "id", id )
 	if id then self.responses[ id ] = nil end
 	if 1==runCount then      -- no further response in the stream
+		--print( "------REMOVING write handler", self.cli)
 		self.srv.ael:removeHandle( self.cli, "write" )
+		self.responding = false
 		if not self.keepAlive then
 			destroy( self )
 		else
@@ -92,6 +94,8 @@ local addResponse = function( self, response )
 	end
 	if not self.responding then
 		self.srv.ael:addHandle( self.cli, 'write', resp, self )
+		self.responding = true
+		--print( "+++++ADDING write handler", self.cli)
 	end
 end
 
@@ -120,15 +124,14 @@ return setmetatable( {
 			, requests   = { }
 			, responses  = { }
 			, strategy   = 1  -- 1=HTTP1.1; 2=HTTP2
-			, keepAlive  = false
-			, reading    = true
+			, keepAlive  = true
+			, receiving  = true
+			, responding = false
 			, lastAction = o_time()
 		}
 
-		--print( "ADDING HANDLE CLIENT:", cli )
+		--print( "+++++ADDING read handler", cli)
 		srv.ael:addHandle( cli, 'read', recv, stream )
-		--print( "ADDED HANDLE CLIENT:", cli )
-		--srv.ael:addHandle( cli, 'write', resp, stream )
 		return setmetatable( stream, _mt )
 	end
 } )

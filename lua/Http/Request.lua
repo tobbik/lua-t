@@ -44,7 +44,7 @@ local receive = function( self, data )
 		self.tail = nil
 		return true
 	else
-		--print("NEW TAIL BUFFER")
+		print("NEW TAIL BUFFER")
 		self.tail = tail or nil
 		return false
 	end
@@ -67,7 +67,7 @@ return setmetatable( {
 			, method        = Method.ILLEGAL
 			, version       = Version.ILLEGAL
 			, contentLength = nil
-			, keepAlive     = false
+			, keepAlive     = true
 			, headers       = { }      -- pre-existent for re-entrant header parsing
 		}
 		return setmetatable( request, _mt )

@@ -13,7 +13,7 @@ local t_type  = require't'.type
 local format,o_time,t_insert  = string.format,os.time,table.insert
 
 local _mt
-local timeout = 10000
+local timeout = 5000
 
 local dR = function()
 	local d = debug.getregistry()
@@ -71,21 +71,14 @@ return setmetatable( {
 			, streams  = { }
 		}
 		-- keepAlive handling
-		local timer    = Timer( timeout )
+		local timer   = Timer( timeout )
 		local remover = (function(str,tm)
 			return function( )
 				local t          = o_time() - 5
-				--[[
-				if flip then
-					collectgarbage('stop')
-					flip =false
-				else
-					collectgarbage('restart')
-					flip =true
-				end
-				]]--
+				print('rinse')
 				local candidates = { }
 				for k,v in pairs( str ) do
+					print(v.lastAction)
 					if v.lastAction < t then
 						t_insert( candidates, v.cli )
 					end
@@ -96,8 +89,7 @@ return setmetatable( {
 					v:close( )
 					str[ v ] = nil
 				end
-				collectgarbage()
-				dR()
+				--dR()
 				tm:set( timeout )
 				return tm
 			end
