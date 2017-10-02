@@ -178,7 +178,7 @@ lt_net_sck_Listen( lua_State *L )
 	sck = t_net_sck_create_ud( L, SOCK_ADDR_SS_FAMILY( adr ), SOCK_STREAM, IPPROTO_TCP, 1 );
 	lua_insert( L, 1 );
 
-	return (p_net_sck_listen( L, sck, adr, bl )) ? returnables : 0;
+	return (p_net_sck_listen( L, sck, adr, bl )) ? returnables : 1;
 }
 
 
@@ -210,7 +210,7 @@ lt_net_sck_listen( lua_State *L )
 	else
 		lua_pop( L, 1 );
 
-	return (p_net_sck_listen( L, sck, adr, bl )) ? returnables : 0;
+	return (p_net_sck_listen( L, sck, adr, bl )) ? returnables : 1;
 }
 
 
@@ -236,7 +236,7 @@ lt_net_sck_Bind( lua_State *L )
 	                                 SOCK_STREAM, IPPROTO_TCP, 1  );
 
 	if (2==returnables) lua_insert( L, 1 );
-	return (p_net_sck_bind( L, sck, adr )) ? returnables : 0;
+	return (p_net_sck_bind( L, sck, adr )) ? returnables : 1;
 }
 
 
@@ -254,7 +254,7 @@ lt_net_sck_bind( lua_State *L )
 	struct t_net_sck        *sck = t_net_sck_check_ud( L, 1, 1 );
 	struct sockaddr_storage *adr = t_net_adr_getFromStack( L, 2, &returnables );
 
-	return (p_net_sck_bind( L, sck, adr )) ? returnables : 0;
+	return (p_net_sck_bind( L, sck, adr )) ? returnables : 1;
 }
 
 
@@ -333,11 +333,11 @@ lt_net_sck_accept( lua_State *L )
  * for an unconnected socket to determine where it goes to.  A fourth parameter,
  * or if Net.Address is omitted a third, is an integer and determines the number
  * of bytes to send.  The following permutations are possible:
- *     cnt        = s:send( buf/seg/str )
- *     cnt        = s:send( buf/seg/str, adr )
- *     cnt        = s:send( buf/seg/str, max )
- *     cnt        = s:send( buf/seg/str, adr, max )
- * \usage   int cnt = sck:send( [Buffer/Segment/string buf, Net.Address adr, int size ] )
+ *     cnt,err = s:send( buf/seg/str )
+ *     cnt,err = s:send( buf/seg/str, adr )
+ *     cnt,err = s:send( buf/seg/str, max )
+ *     cnt,err = s:send( buf/seg/str, adr, max )
+ * \usage   int cnt = sck:send( Buffer/Segment/string buf[, Net.Address adr, int size ] )
  * \param   L      Lua state.
  * \lparam  sck    Net.Socket  userdata instance.       -> mandatory
  * \lparam  msg    Buffer/Segment/string instance.      -> mandatory
@@ -359,10 +359,15 @@ lt_net_sck_send( lua_State *L )
 	                               : len;
 
 	snt = p_net_sck_send( L, sck, adr, msg, (max<len) ? max : len );
-	if (0==snt)
+	if (0==snt || -1 == snt)
 		lua_pushnil( L );
 	else
 		lua_pushinteger( L, snt );
+	if (-1 == snt)               //S: err,nil
+	{
+		lua_rotate( L, -2, -1 );  //S: nil,err
+	}
+
 	return 1;
 }
 
@@ -378,16 +383,16 @@ lt_net_sck_send( lua_State *L )
  * possible to pass an offset to Buffer, instead use a temporary Buffer.Segement
  * to compose a bigger Buffer from multiple recv() operations.  The following
  * permutations are possible:
- *      str ,int = sck:recv( )
- *      str ,int = sck:recv( adr )
- *      str ,int = sck:recv( max )
- *      bool,int = sck:recv( buf/seg )
- *      str ,int = sck:recv( adr, max )
- *      bool,int = sck:recv( adr, buf/seg )
- *      bool,int = sck:recv( buf/seg, max )
- *      bool,int = sck:recv( adr, buf/seg, max )
- * \usage   string msg, int cnt = sck:recv( [Net.Address adr, int size ] )
- * \usage   bool rcvd, int cnt  = sck:recv( [Net.Address adr,] Buffer/Segment buf[, int size ] )
+ *   str ,int,err = sck:recv( )
+ *   str ,int,err = sck:recv( adr )
+ *   str ,int,err = sck:recv( max )
+ *   bool,int,err = sck:recv( buf/seg )
+ *   str ,int,err = sck:recv( adr, max )
+ *   bool,int,err = sck:recv( adr, buf/seg )
+ *   bool,int,err = sck:recv( buf/seg, max )
+ *   bool,int,err = sck:recv( adr, buf/seg, max )
+ * \usage   string msg, int cnt, str err = sck:recv( [Net.Address adr, int size ] )
+ * \usage   bool rcvd, int cnt, str err  = sck:recv( [Net.Address adr,] Buffer/Segment buf[, int size ] )
  * \param   L      Lua state.
  * \lparam  sck    Net.Socket  userdata instance.       -> mandatory
  * \lparam  adr    Net.Address userdata instance.       -> optional
@@ -417,21 +422,27 @@ lt_net_sck_recv( lua_State *L )
 		max = (args == ((NULL==adr) ?3 :4)) ? (size_t) luaL_checkinteger( L, (NULL==adr) ?3 :4 ) : len;
 		luaL_argcheck( L, max<=len, (NULL==adr) ?2 :3, "max must be smaller than sink" );
 		rcvd = p_net_sck_recv( L, sck, adr, msg, max );
-		lua_pushboolean( L, 0 != rcvd );
+		lua_pushboolean( L, 0 != rcvd && -1 != rcvd);
 	}
 	else
 	{
 		max = (args == ((NULL==adr) ?2 :3)) ? luaL_checkinteger( L, (NULL==adr) ?2 :3 ) : BUFSIZ-1;
 		luaL_argcheck( L, max<BUFSIZ, (NULL==adr) ? 2:3, "max must be smaller than BUFSIZ" );
 		rcvd = p_net_sck_recv( L, sck, adr, buf, max );
-		if (0 == rcvd)
+		if (rcvd < 1 )  // 0 for nothing received, -1 for errno being set
 			lua_pushnil( L );
 		else
 			lua_pushlstring( L, buf, rcvd );
 	}
 
 	lua_pushinteger( L, rcvd );
-	return 2;
+	if (-1==rcvd)                //S: err,fls,rcd
+	{
+		lua_rotate( L, -3, -1 );  //S: fls,rcd,err
+		return 3;
+	}
+	else
+		return 2;
 }
 
 

@@ -25,6 +25,7 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <sys/select.h>
+#include <errno.h>      // errno
 
 #include "t_net_l.h"
 
@@ -45,8 +46,14 @@ static int
 p_net_sck_pushError( lua_State *L, struct sockaddr_storage *adr, const char *msg )
 {
 	char                     dst[ INET6_ADDRSTRLEN ];
-	SOCK_ADDR_INET_NTOP( adr, dst );
-	return t_push_error( L, msg, dst, ntohs( SOCK_ADDR_SS_PORT( adr ) ) );
+	if (NULL == adr)
+		lua_pushfstring( L, msg, strerror(errno) );
+	else
+	{
+		SOCK_ADDR_INET_NTOP( adr, dst );
+		lua_pushfstring( L, msg, dst, ntohs( SOCK_ADDR_SS_PORT( adr ) ), strerror(errno) );
+	}
+	return 0;
 }
 
 
@@ -120,10 +127,10 @@ p_net_sck_listen( lua_State *L, struct t_net_sck *sck, struct sockaddr_storage *
 	struct sockaddr_storage  bnd;   ///< if needed, the address the port is bound to
 
 	if (NULL!=adr && -1 == bind( sck->fd , SOCK_ADDR_PTR( adr ), SOCK_ADDR_SS_LEN( adr ) ))
-		return p_net_sck_pushError( L, adr, "Can't bind socket to %s:%d before listen()" );
+		return p_net_sck_pushError( L, adr, "Can't bind socket to %s:%d before listen(); %s" );
 
 	if (-1 == listen( sck->fd, bl ))
-		return t_push_error( L, "Can't listen() on socket" );
+		return p_net_sck_pushError( L, adr, "Can't listen on socket bound to %s:%d; %s" );
 
 	// adr is, if created, by t_net_adr_getFromStack(), which guarantees an unset port to
 	// be 0
@@ -145,7 +152,7 @@ int
 p_net_sck_bind( lua_State *L, struct t_net_sck *sck, struct sockaddr_storage *adr )
 {
 	if (-1 == bind( sck->fd, SOCK_ADDR_PTR( adr ), SOCK_ADDR_SS_LEN( adr ) ))
-		return p_net_sck_pushError( L, adr, "Can't bind socket to %s:%d" );
+		return p_net_sck_pushError( L, adr, "Can't bind socket to %s:%d; %s" );
 	else
 		return 1;
 }
@@ -162,7 +169,7 @@ int
 p_net_sck_connect( lua_State *L, struct t_net_sck *sck, struct sockaddr_storage *adr )
 {
 	if (-1 == connect( sck->fd, SOCK_ADDR_PTR( adr ), SOCK_ADDR_SS_LEN( adr ) ))
-		return p_net_sck_pushError( L, adr, "Can't connect socket to %s:%d" );
+		return p_net_sck_pushError( L, adr, "Can't connect socket to %s:%d; %s" );
 	else
 		return 1;
 }
@@ -170,10 +177,11 @@ p_net_sck_connect( lua_State *L, struct t_net_sck *sck, struct sockaddr_storage 
 
 /** -------------------------------------------------------------------------
  * Accept a (TCP) socket connection.
- * \param   L      Lua state.
- * \param   int    position of server socket on stack.
- * \lparam  ud     Net.Socket userdata instance( server socket ).
- * \return  t_net* Client pointer.  Leaves cli_sock and cli_IP on stack.
+ * \param   lua_State L.
+ * \param   t_net_sck Socket Struct for server.
+ * \param   t_net_sck Socket Struct for client.
+ * \param   t_net_adr Address Struct indication client.
+ * \return  2 == success for client and address; 0 == error;
  *-------------------------------------------------------------------------*/
 int
 p_net_sck_accept( lua_State *L, struct t_net_sck *srv, struct t_net_sck *cli,
@@ -182,7 +190,7 @@ p_net_sck_accept( lua_State *L, struct t_net_sck *srv, struct t_net_sck *cli,
 	socklen_t adr_len = SOCK_ADDR_SS_LEN( adr );
 
 	if (-1 == (cli->fd  =  accept( srv->fd, SOCK_ADDR_PTR( adr ), &adr_len )))
-		return t_push_error( L, "Can't accept from socket" );
+		return p_net_sck_pushError( L, adr, "Can't accept on socket bound to %s:%d; %s" );
 
 	return 2;
 }
@@ -208,9 +216,9 @@ p_net_sck_send( lua_State *L, struct t_net_sck *sck, struct sockaddr_storage *ad
 	  buf, len, 0, SOCK_ADDR_PTR( adr ), SOCK_ADDR_SS_LEN( adr ))))
 	{
 		if (NULL == adr)
-			return t_push_error( L, "Can't send message" );
+			return p_net_sck_pushError( L, NULL, "Can't send message; &s" );
 		else
-			return p_net_sck_pushError( L, adr, "Can't send message to %s:%d" );
+			return p_net_sck_pushError( L, adr, "Can't send message to %s:%d; &s" );
 	}
 
 	return snt;
@@ -238,7 +246,10 @@ p_net_sck_recv( lua_State *L, struct t_net_sck *sck, struct sockaddr_storage *ad
 	  buf, len, 0,
 	  SOCK_ADDR_PTR( adr ), &adr_len)))
 	{
-		return t_push_error( L, "Can't recieve message" );
+		if (NULL == adr)
+			return p_net_sck_pushError( L, NULL, "Can't receive message; &s" );
+		else
+			return p_net_sck_pushError( L, adr, "Can't receive message from %s:%d; &s" );
 	}
 	return rcvd;
 }
