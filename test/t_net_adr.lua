@@ -136,6 +136,7 @@ local tests = {
 	test_EqTestForIpInEquality = function( self )
 		local ip4, port4  = Interface( 'default' ).AF_INET.address.ip, 50000
 		local ip6, port6  = Interface( 'default' ).AF_INET6.address.ip, 8000
+		if ip4 == '127.0.0.1' then Test.Case.skip('Insufficient network setup') end
 		local adr4a = Address( ip4, port4 )
 		local adr4b = Address( '127.0.0.1', port4 )
 		Test.Case.describe( fmt( "%s ~= %s", adr4a, adr4b ) )

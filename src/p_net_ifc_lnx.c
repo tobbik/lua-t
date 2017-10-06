@@ -197,7 +197,6 @@ int
 p_net_ifc_get( lua_State *L, const char *if_name )
 {
 	struct ifaddrs   *all_ifas, *ifa;
-	int               res = 1;
 
 	if (0 != getifaddrs( &all_ifas ))
 		return t_push_error( L, "couldn't retrieve interface information" );
@@ -235,6 +234,6 @@ p_net_ifc_get( lua_State *L, const char *if_name )
 		lua_getfield( L, -1, if_name );
 		lua_remove( L, -2 );
 	}
-	return res;
+	return 1;
 }
 

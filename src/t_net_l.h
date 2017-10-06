@@ -63,7 +63,7 @@ struct t_net_sck *t_net_sck_create_ud( lua_State *L, int family, int type, int p
 
 // t_net_sck_implementation...
 void   p_net_sck_createHandle   ( lua_State *L, struct t_net_sck *sck, int family, int type, int protocol );
-int    p_net_sck_listen         ( lua_State *L, struct t_net_sck *sck, struct sockaddr_storage *adr, const int bl );
+int    p_net_sck_listen         ( lua_State *L, struct t_net_sck *sck, const int bl );
 int    p_net_sck_bind           ( lua_State *L, struct t_net_sck *sck, struct sockaddr_storage *adr );
 int    p_net_sck_connect        ( lua_State *L, struct t_net_sck *sck, struct sockaddr_storage *adr );
 int    p_net_sck_accept         ( lua_State *L, struct t_net_sck *srv, struct t_net_sck *cli, struct sockaddr_storage *adr );

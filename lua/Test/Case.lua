@@ -52,7 +52,7 @@ end
 
 local traceback = function( tbk )
 	local loc, msg = tbk:match( '^([^:]*:%d+): (.*)' )
-	print('\n',tbk,'\n',loc,'\n',msg)
+	--print('\n',tbk,'\n',loc,'\n',msg)
 	if msg then
 		local skipm = msg:match( T_TST_CSE_SKIPINDICATOR .. "(.*)$" )
 		if skipm then

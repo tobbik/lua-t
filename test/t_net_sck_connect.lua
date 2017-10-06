@@ -14,14 +14,14 @@
 -- same  process.  Each test will restart the loop, connect, assert and stop the
 -- loop before moving on to the next test.
 
-local T         = require( "t" )
+local t_assert,t_require  =   require"t".assert, require"t".require
 local Test      = require( "t.Test" )
 local Timer     = require( "t.Time" )
 local Loop      = require( "t.Loop" )
 local Interface = require( "t.Net.Interface" )
 local Socket    = require( "t.Net.Socket" )
 local Address   = require( "t.Net.Address" )
-local asrtHlp   = T.require( "assertHelper" )
+local asrtHlp   = t_require( "assertHelper" )
 
 
 -- #########################################################################
@@ -42,12 +42,11 @@ local tests = {
 		self.host          = Interface( 'default' ).AF_INET.address.ip
 		self.port          = 8000
 		self.srv, self.adr = Socket.listen( self.host, self.port )
-		--print( self.srv, self.adr )
+		print( self.srv, self.adr )
 		self.loop          = Loop( 20 )
 		self.loop:addHandle( self.srv, 'read', accept, self )
 		done()
 	end,
-
 	afterAll = function( self, done )
 		self.loop:removeHandle( self.srv, 'read' )
 		self.srv:close( )
@@ -82,8 +81,8 @@ local tests = {
 		self.host2cmp    = self.host
 		self.port2cmp    = 'any'
 		self.adrc        = Address( self.host, self.port )
-		self.sck, self._ = Socket.connect( self.adrc )
-		assert( self._ == nil, "Only a socket should have been returned" )
+		self.sck, self.a = Socket.connect( self.adrc )
+		assert( self.a == self.adrc, "Returned address `%s` should equal input `%s`", self.a, self.adrc )
 		done( )
 	end,
 
@@ -103,9 +102,9 @@ local tests = {
 		self.port2cmp    = 'any'
 		self.adrc        = Address( self.host, self.port )
 		self.sck         = Socket( )
-		self.__,self._   = self.sck:connect( self.adrc )
-		assert( self.__ == nil, "No socket  should have been returned" )
-		assert( self._  == nil, "No address should have been returned" )
+		local adr,b      = self.sck:connect( self.adrc )
+		assert( b == nil, "No socket  should have been returned" )
+		assert( adr == self.adrc, "Returned address `%s` should equal input `%s`", adr, self.adrc )
 		done( )
 	end,
 
@@ -131,22 +130,23 @@ local tests = {
 		self.sck.reuseaddr  = true
 		self.adrb           = self.sck:bind( self.host2cmp, self.port2cmp )
 		self.adrc           = Address( self.host, self.port )
-		self.__,self._      = self.sck:connect( self.adrc )
-		assert( self.__ == nil, "No socket  should have been returned" )
-		assert( self._  == nil, "No address should have been returned" )
+		local adr, b        = self.sck:connect( self.adrc )
+		assert( b == nil, "Only address should have been returned" )
+		t_assert( adr == self.adrc, "Returned address `%s` should equal input `%s`", adr, self.adrc )
 		done( )
 	end,
 
 	test_cb_sConnectWrongArgFails = function( self, done )
 		Test.Case.describe( "sck.connect( adr ) --> fails" )
-		self.sck        = Socket()
-		local eMsg      = "bad argument #1 to 'connect' %(T.Net.Socket expected, got no value%)"
+		self.sck    = Socket( )
+		local eMsg  = "bad argument #1 to 'connect' %(t.Net.Socket expected, got `nil`%)"
 		local f     = function() local _,__ = self.sck.connect( ) end
 		local ran,e = pcall( f )
 		assert( not ran, "This should have failed" )
-		T.assert( e:match( eMsg), "Expected error message:\n%s\n%s", eMsg:gsub('%%',''), e )
+		t_assert( e:match( eMsg), "Expected error message:\n%s\n%s", eMsg:gsub('%%',''), e )
 		done( )
 	end,
+--]]
 }
 
 return  Test( tests )
