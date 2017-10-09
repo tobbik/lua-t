@@ -24,9 +24,9 @@
 void
 t_fmtStackItem( lua_State *L, int idx, int no_tostring )
 {
-	int t;
-	size_t l;
-	char *str;
+	int         t;
+	size_t      l;
+	const char *str;
 	if (no_tostring || ! luaL_callmeta( L, idx, "__tostring" ))
 	{
 		t = lua_type( L, idx );

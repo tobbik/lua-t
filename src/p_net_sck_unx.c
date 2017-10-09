@@ -52,7 +52,7 @@ p_net_sck_pushErrno( lua_State *L, struct sockaddr_storage *adr, const char *msg
 	{
 		SOCK_ADDR_INET_NTOP( adr, dst );
 		lua_pushfstring( L, "%s %s:%d (%s)", msg, dst,
-		   ntohs( SOCK_ADDR_SS_PORT( adr ) ), strerror(errno) );
+		   ntohs( SOCK_ADDR_SS_PORT( adr ) ), strerror( errno ) );
 	}
 	return 2;
 }
@@ -184,7 +184,7 @@ p_net_sck_accept( lua_State *L, struct t_net_sck *srv, struct t_net_sck *cli,
 {
 	socklen_t adr_len = SOCK_ADDR_SS_LEN( adr );
 
-	if (-1 == (cli->fd  =  accept( srv->fd, SOCK_ADDR_PTR( adr ), &adr_len )))
+	if (-1 == (cli->fd = accept( srv->fd, SOCK_ADDR_PTR( adr ), &adr_len )))
 		return p_net_sck_pushErrno( L, adr, "Can't accept on socket bound" );
 
 	return 2;

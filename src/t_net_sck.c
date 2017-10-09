@@ -34,6 +34,7 @@
 static int
 lt_net_sck__Call( lua_State *L )
 {
+	struct t_net_sck *sck;
 	lua_remove( L, 1 );         // remove CLASS table
 
 	t_net_getProtocolByName( L, 1, "TCP" );
@@ -47,11 +48,11 @@ lt_net_sck__Call( lua_State *L )
 	            ? SOCK_DGRAM
 	            : SOCK_RAW );
 
-	t_net_sck_create_ud( L,
+	sck  = t_net_sck_create_ud( L );
+	p_net_sck_createHandle( L, sck,
 	   (AF_UNIX==luaL_checkinteger( L, 2 )) ? 0 : lua_tointeger( L, 2 ),
 	   luaL_checkinteger( L, 3 ),
-	   luaL_checkinteger( L, 1 ),
-	   1 );
+	   luaL_checkinteger( L, 1 ) );
 
 	return 1;
 }
@@ -67,14 +68,10 @@ lt_net_sck__Call( lua_State *L )
  * \return  struct t_net_sck* pointer to the socket struct.
  * --------------------------------------------------------------------------*/
 struct t_net_sck
-*t_net_sck_create_ud( lua_State *L, int family, int type, int protocol, int create )
+*t_net_sck_create_ud( lua_State *L )
 {
 	struct t_net_sck *sck  = (struct t_net_sck *) lua_newuserdata( L, sizeof( struct t_net_sck ) );
-
-	if (create)
-		p_net_sck_createHandle( L, sck, family, type, protocol );
-	else
-		sck->fd = 0;
+	sck->fd = 0;
 	luaL_getmetatable( L, T_NET_SCK_TYPE );
 	lua_setmetatable( L, -2 );
 
@@ -123,25 +120,6 @@ lt_net_sck_getFd( lua_State *L )
 {
 	struct t_net_sck   *sck = t_net_sck_check_ud( L, 1, 1 );
 	lua_pushinteger( L, sck->fd );
-	return 1;
-}
-
-
-/**--------------------------------------------------------------------------
- * Prints out the socket.
- * \param   L      Lua state.
- * \lparam  sck    Net.Socket userdata instance.
- * \lreturn string formatted string representing socket.
- * \return  int    # of values pushed onto the stack.
- * --------------------------------------------------------------------------*/
-int
-lt_net_sck__tostring( lua_State *L )
-{
-	struct t_net_sck *sck = t_net_sck_check_ud( L, 1, 1 );
-
-	lua_pushfstring( L, T_NET_SCK_TYPE"{%d}: %p"
-		, sck->fd
-		, sck );
 	return 1;
 }
 
@@ -217,9 +195,9 @@ lt_net_sck_connecter( lua_State *L )
 static int
 lt_net_sck_accept( lua_State *L )
 {
-	struct t_net_sck        *srv = t_net_sck_check_ud( L, 1, 1 ); // listening socket
-	struct t_net_sck        *cli = t_net_sck_create_ud( L, AF_INET, SOCK_STREAM, IPPROTO_TCP, 0 ); // accepted socket
-	struct sockaddr_storage *adr = t_net_adr_create_ud( L );      // peer address
+	struct t_net_sck        *srv = t_net_sck_check_ud( L, 1, 1 );// listening socket
+	struct t_net_sck        *cli = t_net_sck_create_ud( L );     // accepted socket
+	struct sockaddr_storage *adr = t_net_adr_create_ud( L );     // peer address
 	return p_net_sck_accept( L, srv, cli, adr );
 }
 
@@ -424,6 +402,25 @@ lt_net_sck_Select( lua_State *L )
 		}
 	}
 	return 2;
+}
+
+
+/**--------------------------------------------------------------------------
+ * Prints out the socket.
+ * \param   L      Lua state.
+ * \lparam  sck    Net.Socket userdata instance.
+ * \lreturn string formatted string representing socket.
+ * \return  int    # of values pushed onto the stack.
+ * --------------------------------------------------------------------------*/
+int
+lt_net_sck__tostring( lua_State *L )
+{
+	struct t_net_sck *sck = t_net_sck_check_ud( L, 1, 1 );
+
+	lua_pushfstring( L, T_NET_SCK_TYPE"{%d}: %p"
+		, sck->fd
+		, sck );
+	return 1;
 }
 
 
