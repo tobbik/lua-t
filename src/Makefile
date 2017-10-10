@@ -32,7 +32,7 @@ endif
 
 # #######################################################################
 # ALL SOURCES
-T_AEL_SRC=$(wildcard t_ael*.c) $(T_DBG_SRC) t_net.c t_tim.c t.c
+T_AEL_SRC=$(wildcard t_ael*.c) $(T_DBG_SRC) t.c t_net.c t_tim.c
 T_BUF_SRC=$(wildcard t_buf*.c) $(T_DBG_SRC) t.c
 T_ENC_SRC=$(wildcard t_enc*.c) $(T_DBG_SRC) t.c
 T_HTP_SRC=$(wildcard t_htp*.c) $(T_DBG_SRC) t.c t_buf.c

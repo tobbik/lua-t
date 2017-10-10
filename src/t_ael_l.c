@@ -121,7 +121,7 @@ t_ael_doFunction( lua_State *L, int refPos, int exec )
 
 
 /**--------------------------------------------------------------------------
- * Pop timer list head, execute and readd if needed.
+ * Pop timer list head, execute and re-add if needed.
  * \param   L        Lua state.
  * \param   **tHead  t_ael_tnd; pointer to Head of timer linked list pointer.
  * \param   *rt      struct timeval; measure how long since last poll fall through
@@ -262,13 +262,16 @@ lt_ael_addhandle( lua_State *L )
 	msk = luaL_checkinteger( L, 3 );
 
 	luaL_checktype( L, 4, LUA_TFUNCTION );
-	lS = (luaL_Stream *) luaL_testudata( L, 2, LUA_FILEHANDLE );
-	if (NULL != lS)
-		fd = fileno( lS->f );
-
 	sck = t_net_sck_check_ud( L, 2, 0 );
 	if (NULL != sck)
 		fd = sck->fd;
+	else
+	{
+		// this is less likely -> else path
+		lS = (luaL_Stream *) luaL_testudata( L, 2, LUA_FILEHANDLE );
+		if (NULL != lS)
+			fd = fileno( lS->f );
+	}
 
 	luaL_argcheck( L, fd>0  , 1, "Expected file or socket" );
 	luaL_argcheck( L, fd!=-1, 1, "descriptor mustn't be closed" );
@@ -278,6 +281,8 @@ lt_ael_addhandle( lua_State *L )
 		ael->fdSet[ fd ] = (struct t_ael_fnd *) malloc( sizeof( struct t_ael_fnd ) );
 		ael->fdSet[ fd ]->msk = T_AEL_NO;
 		ael->fdSet[ fd ]->hR  = LUA_REFNIL;
+		ael->fdSet[ fd ]->rR  = LUA_REFNIL;
+		ael->fdSet[ fd ]->wR  = LUA_REFNIL;
 	}
 
 	p_ael_addhandle_impl( L, ael, fd, msk );
@@ -291,19 +296,23 @@ lt_ael_addhandle( lua_State *L )
 	// pop the function reference table and assign as read or write function
 	if (T_AEL_RD & msk)
 	{
+		if (LUA_REFNIL != ael->fdSet[ fd ]->rR)     // if overwriting -> allow for __gc
+			luaL_unref( L, LUA_REGISTRYINDEX, ael->fdSet[ fd ]->rR );
 		ael->fdSet[ fd ]->rR = luaL_ref( L, LUA_REGISTRYINDEX );
-		//printf(" ======ADDING HANDLE(READ): %d(%d) \n", ael->fdSet[ fd ]->rR, fd );
+		//printf(" ======ADDED HANDLE(READ): %d(%d) \n", ael->fdSet[ fd ]->rR, fd );
 	}
 	else
 	{
+		if (LUA_REFNIL != ael->fdSet[ fd ]->wR)     // if overwriting -> allow for __gc
+			luaL_unref( L, LUA_REGISTRYINDEX, ael->fdSet[ fd ]->wR );
 		ael->fdSet[ fd ]->wR = luaL_ref( L, LUA_REGISTRYINDEX );
-		//printf(" ======ADDING HANDLE(WRITE): %d(%d) \n", ael->fdSet[ fd ]->wR, fd );
+		//printf(" ======ADDED HANDLE(WRITE): %d(%d) \n", ael->fdSet[ fd ]->wR, fd );
 	}
 	lua_pop( L, 1 ); // pop the read/write indicator string
 	if (LUA_REFNIL == ael->fdSet[ fd ]->hR)
 	{
 		ael->fdSet[ fd ]->hR = luaL_ref( L, LUA_REGISTRYINDEX );      // keep ref to handle so it doesnt gc
-		//printf(" ======ADDING HANDLE(SOCKET): %d(%d) \n", ael->fdSet[ fd ]->hR, fd );
+		//printf(" ======ADDED HANDLE(SOCKET): %d(%d) \n", ael->fdSet[ fd ]->hR, fd );
 	}
 
 	return  0;
@@ -333,13 +342,16 @@ lt_ael_removehandle( lua_State *L )
 	      3, "must specify direction" );
 	msk = luaL_checkinteger( L, 3 );
 
-	lS = (luaL_Stream *) luaL_testudata( L, 2, LUA_FILEHANDLE );
-	if (NULL != lS)
-		fd = fileno( lS->f );
-
 	sck = t_net_sck_check_ud( L, 2, 0 );
 	if (NULL != sck)
 		fd = sck->fd;
+	else
+	{
+		// this is less likely -> else path
+		lS = (luaL_Stream *) luaL_testudata( L, 2, LUA_FILEHANDLE );
+		if (NULL != lS)
+			fd = fileno( lS->f );
+	}
 
 	luaL_argcheck( L, fd!=-1, 1, "descriptor mustn't be closed" );
 	luaL_argcheck( L, fd>0  , 1, "Expected file or socket" );
@@ -365,7 +377,7 @@ lt_ael_removehandle( lua_State *L )
 	{
 		//printf(" ======REMOVING HANDLE(SOCKET): %d \n", ael->fdSet[ fd ]->hR );
 		luaL_unref( L, LUA_REGISTRYINDEX, ael->fdSet[ fd ]->hR );
-		ael->fdSet[ fd ]->hR = LUA_REFNIL;
+		//ael->fdSet[ fd ]->hR = LUA_REFNIL;
 		free( ael->fdSet[ fd ] );
 		ael->fdSet[ fd ] = NULL;
 
@@ -394,26 +406,44 @@ lt_ael_removehandle( lua_State *L )
 static int
 lt_ael_addtimer( lua_State *L )
 {
-	struct t_ael     *ael = t_ael_check_ud( L, 1, 1 );
-	struct timeval   *tv  = t_tim_check_ud( L, 2, 1 );
-	int               n   = lua_gettop( L ) + 1;    ///< iterator for arguments
-	struct t_ael_tnd *tNew;
+	struct t_ael     *ael  = t_ael_check_ud( L, 1, 1 );
+	struct timeval   *tv   = t_tim_check_ud( L, 2, 1 );
+	int               n    = lua_gettop( L ) + 1;    ///< iterator for arguments
+	int               r    = 0;                      ///< replace, don't create
+	struct t_ael_tnd *tnd;
+	struct t_ael_tnd *tRun = ael->tmHead;
 
 	luaL_checktype( L, 3, LUA_TFUNCTION );
-	// Build up the timer element
-	tNew = (struct t_ael_tnd *) malloc( sizeof( struct t_ael_tnd ) );
-	tNew->tv =  tv;
+
+	// try to find the timer in the list first and overwrite instead of re-add
+	while (NULL != tRun && NULL != tRun->nxt && tRun->tv != tv)
+		tRun = tRun->nxt;
+	if (tRun && tv == tRun->tv)
+	{
+		tnd = tRun;
+		luaL_unref( L, LUA_REGISTRYINDEX, tnd->fR );
+		r = 1;
+	}
+	else
+	{
+		// Build up the timer element
+		tnd = (struct t_ael_tnd *) malloc( sizeof( struct t_ael_tnd ) );
+		tnd->tv =  tv;
+	}
 	//p_ael_addtimer_impl( ael, tv );
 	lua_createtable( L, n-3, 0 );  // create function/parameter table
 	lua_insert( L, 3 );
 	// Stack: ael,tv,TABLE,func,...
 	while (n > 3)
 		lua_rawseti( L, 3, (n--)-3 );            // add arguments and function (pops each item)
-	tNew->fR = luaL_ref( L, LUA_REGISTRYINDEX );  // pop the function/parameter table
-	// making the time val part of lua registry guarantees the gc can't destroy it
-	tNew->tR = luaL_ref( L, LUA_REGISTRYINDEX );  // pop the timeval
-	// insert into ordered linked list of time events
-	t_ael_insertTimer( &(ael->tmHead), tNew );
+	tnd->fR = luaL_ref( L, LUA_REGISTRYINDEX );  // pop the function/parameter table
+	if (! r)
+	{
+		// making the time val part of lua registry guarantees the gc can't destroy it
+		tnd->tR = luaL_ref( L, LUA_REGISTRYINDEX );  // pop the timeval
+		// insert into ordered linked list of time events
+		t_ael_insertTimer( &(ael->tmHead), tnd );
+	}
 
 	return 1;
 }
