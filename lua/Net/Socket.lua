@@ -17,7 +17,11 @@ local getAddressArgs = function( host, port, bl, default )
 			return Address( host ), bl
 		end
 	elseif "number" == type( host ) then
-		return default, host      -- host is bl
+		if 'number' == type( port ) then
+			return Address( host ), port
+		else
+			return default, host      -- host is bl
+		end
 	else
 		return default
 	end

@@ -89,13 +89,22 @@ local tests = {
 		asrtHlp.Address( self.sck:getsockname(), "AF_INET", host, 'any' )
 	end,
 
-	test_SListenHostAddress = function( self )
+	test_SListenHostPort = function( self )
 		Test.Case.describe( "Socket.listen( host,port ) --> Sck IPv4(TCP), Adr host:port" )
 		local host        = Interface( 'default' ).AF_INET.address.ip
 		local port        = 8000
 		self.sck,self.adr = Socket.listen( host, port )
 		asrtHlp.Socket(  self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
 		asrtHlp.Address( self.adr, "AF_INET", host, port )
+		assert( self.sck:getsockname() == self.adr, "Bound and returned address should match" )
+	end,
+
+	test_SListenPortBacklog = function( self )
+		Test.Case.describe( "Socket.listen( port, bl ) --> Sck IPv4(TCP), Adr 0.0.0.0:port" )
+		local port        = 8000
+		self.sck,self.adr = Socket.listen( port, 50 )
+		asrtHlp.Socket(  self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
+		asrtHlp.Address( self.adr, "AF_INET", '0.0.0.0', port )
 		assert( self.sck:getsockname() == self.adr, "Bound and returned address should match" )
 	end,
 
@@ -200,6 +209,15 @@ local tests = {
 		asrtHlp.Address( a, "AF_INET", host, port )
 		t_assert( self.sck:getsockname() == a,
 			"Bound address should equal input `%s` but was `%s`", a, self.sck:getsockname() )
+	end,
+
+	test_sListenPortBacklog = function( self )
+		Test.Case.describe( "sck:listen( port, bl ) --> Adr 0.0.0.0:port" )
+		local port      = 8000
+		self.sck        = Socket( )
+		self.adr        = self.sck:listen( port, 50 )
+		asrtHlp.Address( self.adr, "AF_INET", '0.0.0.0', port )
+		assert( self.sck:getsockname() == self.adr, "Bound and returned address should match" )
 	end,
 
 	test_sListenHostPortBacklog = function( self )
