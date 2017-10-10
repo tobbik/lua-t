@@ -340,9 +340,7 @@ lt_net_sck_getsockname( lua_State *L )
 	if (NULL == adr)
 		adr = t_net_adr_create_ud( L );
 
-	if (! p_net_sck_getsockname( sck, adr ))
-		lua_pushnil( L );
-	return 1;  // return no matter what to allow testing for nil
+	return p_net_sck_getsockname( L, sck, adr );
 }
 
 

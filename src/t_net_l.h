@@ -72,7 +72,7 @@ int    p_net_sck_shutDown       ( lua_State *L, struct t_net_sck *sck, int shutV
 int    p_net_sck_close          ( lua_State *L, struct t_net_sck *sck );
 int    p_net_sck_setSocketOption( lua_State *L, struct t_net_sck *sck, int sckOpt, const char *sckOptName, int val );
 int    p_net_sck_getSocketOption( lua_State *L, struct t_net_sck *sck, int sckOpt, const char *sckOptName );
-int    p_net_sck_getsockname    ( struct t_net_sck *sck, struct sockaddr_storage *adr );
+int    p_net_sck_getsockname    ( lua_State *L, struct t_net_sck *sck, struct sockaddr_storage *adr );
 int    p_net_sck_mkFdSet        ( lua_State *L, int pos, fd_set *set );
 
 

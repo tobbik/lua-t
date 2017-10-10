@@ -138,6 +138,18 @@ local tests = {
 		assert( not ran, "This should have failed" )
 		t_assert( e:match( eMsg), "Expected error message:\n%s\n%s", eMsg:gsub('%%',''), e )
 	end,
+
+	test_sCloseBoundNoSockname = function( self )
+		Test.Case.describe( "Can't call getsockname on closed socket" )
+		local eMsg      = "Couldn't get Address from (Bad file descriptor)"
+		self.sck        = Socket()
+		local a,b       = self.sck:getsockname( )
+		asrtHlp.Address( a, "AF_INET", '0.0.0.0', 0 )
+		self.sck:close( )
+		a,b       = self.sck:getsockname( )
+		t_assert( not a, "getsockname() should not have returned a value but got `%s`", a )
+		t_assert( b == eMsg, "Error Message should have been `%s', but was `%s`", eMsg, e )
+	end,
 	--]]
 }
 

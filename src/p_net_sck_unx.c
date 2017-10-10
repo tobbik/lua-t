@@ -255,11 +255,14 @@ p_net_sck_recv( lua_State *L, struct t_net_sck *sck, struct sockaddr_storage *ad
  * \return  int    # of values pushed onto the stack.
  *-------------------------------------------------------------------------*/
 int
-p_net_sck_getsockname( struct t_net_sck *sck, struct sockaddr_storage *adr )
+p_net_sck_getsockname( lua_State *L, struct t_net_sck *sck, struct sockaddr_storage *adr )
 {
 	socklen_t adr_len = SOCK_ADDR_SS_LEN( adr );
 
-	return 0 == getsockname( sck->fd, SOCK_ADDR_PTR( adr ), &adr_len );
+	if (-1==getsockname( sck->fd, SOCK_ADDR_PTR( adr ), &adr_len ) )
+		return p_net_sck_pushErrno( L, NULL, "Couldn't get Address from" );
+	else
+		return 1;
 }
 
 
