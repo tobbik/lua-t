@@ -34,6 +34,7 @@
 static int
 lt_net_sck__Call( lua_State *L )
 {
+	struct t_net_sck *sck;
 	lua_remove( L, 1 );         // remove CLASS table
 
 	t_net_getProtocolByName( L, 1, "TCP" );
@@ -47,11 +48,11 @@ lt_net_sck__Call( lua_State *L )
 	            ? SOCK_DGRAM
 	            : SOCK_RAW );
 
-	t_net_sck_create_ud( L,
+	sck  = t_net_sck_create_ud( L );
+	p_net_sck_createHandle( L, sck,
 	   (AF_UNIX==luaL_checkinteger( L, 2 )) ? 0 : lua_tointeger( L, 2 ),
 	   luaL_checkinteger( L, 3 ),
-	   luaL_checkinteger( L, 1 ),
-	   1 );
+	   luaL_checkinteger( L, 1 ) );
 
 	return 1;
 }
@@ -67,14 +68,10 @@ lt_net_sck__Call( lua_State *L )
  * \return  struct t_net_sck* pointer to the socket struct.
  * --------------------------------------------------------------------------*/
 struct t_net_sck
-*t_net_sck_create_ud( lua_State *L, int family, int type, int protocol, int create )
+*t_net_sck_create_ud( lua_State *L )
 {
 	struct t_net_sck *sck  = (struct t_net_sck *) lua_newuserdata( L, sizeof( struct t_net_sck ) );
-
-	if (create)
-		p_net_sck_createHandle( L, sck, family, type, protocol );
-	else
-		sck->fd = 0;
+	sck->fd = 0;
 	luaL_getmetatable( L, T_NET_SCK_TYPE );
 	lua_setmetatable( L, -2 );
 
@@ -127,61 +124,6 @@ lt_net_sck_getFd( lua_State *L )
 }
 
 
-/**--------------------------------------------------------------------------
- * Prints out the socket.
- * \param   L      Lua state.
- * \lparam  sck    Net.Socket userdata instance.
- * \lreturn string formatted string representing socket.
- * \return  int    # of values pushed onto the stack.
- * --------------------------------------------------------------------------*/
-int
-lt_net_sck__tostring( lua_State *L )
-{
-	struct t_net_sck *sck = t_net_sck_check_ud( L, 1, 1 );
-
-	lua_pushfstring( L, T_NET_SCK_TYPE"{%d}: %p"
-		, sck->fd
-		, sck );
-	return 1;
-}
-
-
-/** -------------------------------------------------------------------------
- * Create a listening socket.
- * \param   L      Lua state.
- * \lparam  adr    userdata; t_net_adr userdata instance.
- *          OR
- * \lparam  family string;
- * \lparam  ipstr  string; string representing IP.
- * \lparam  port   integer; port number.
- * \lparam  bl     int; backlog connections.
- * \return  int    # of values pushed onto the stack.
- *-------------------------------------------------------------------------*/
-static int
-lt_net_sck_Listen( lua_State *L )
-{
-	struct t_net_sck        *sck = NULL;
-	struct sockaddr_storage *adr = t_net_adr_check_ud( L, 1, 0 );
-	int                      bl  = SOMAXCONN,
-	                 returnables = 1;  //socket is always returned
-
-	// if last arg is int and second to last is int or Net.Address read as bl
-	if (lua_isinteger( L, -1 ) && LUA_TSTRING != lua_type( L, -2 ))
-	{
-		bl = lua_tointeger( L, -1 );
-		lua_pop( L, 1 );
-	}
-	if (NULL == adr)
-		adr = t_net_adr_getFromStack( L, 1, &returnables );
-	else
-		lua_pop( L, 1 );
-	sck = t_net_sck_create_ud( L, SOCK_ADDR_SS_FAMILY( adr ), SOCK_STREAM, IPPROTO_TCP, 1 );
-	lua_insert( L, 1 );
-
-	return (p_net_sck_listen( L, sck, adr, bl )) ? returnables : 0;
-}
-
-
 /** -------------------------------------------------------------------------
  * Listen on a socket or create a listening socket.
  * \param   L      Lua state.
@@ -189,54 +131,17 @@ lt_net_sck_Listen( lua_State *L )
  * \lparam  adr    Net.Address userdata instance( ipaddr ).
  * \lparam  int    port to listen on.
  * \lparam  int    Backlog connections.
+ * \lreturn sck    t.Net.Socket  userdata(struct).
+ * \lreturn adr    t.Net.Address userdata(struct).
  * \return  int    # of values pushed onto the stack.
  *-------------------------------------------------------------------------*/
 static int
-lt_net_sck_listen( lua_State *L )
+lt_net_sck_listener( lua_State *L )
 {
-	struct t_net_sck        *sck = t_net_sck_check_ud( L, 1, 1 );
-	struct sockaddr_storage *adr = t_net_adr_check_ud( L, 2, 0 );
-	int                      bl  = SOMAXCONN,
-	                 returnables = 0;
+	struct t_net_sck   *sck = t_net_sck_check_ud( L, 1, 1 );
+	int                 bl  = luaL_optinteger( L, 2, SOMAXCONN );
 
-	// if last arg is int and second to last is int or Net.Address read as bl
-	if (lua_isinteger( L, -1 ) && LUA_TSTRING != lua_type( L, -2 ))
-	{
-		bl = lua_tointeger( L, -1 );
-		lua_pop( L, 1 );
-	}
-	if (NULL == adr && lua_gettop( L ) > 1)
-		adr = t_net_adr_getFromStack( L, 2, &returnables );
-	else
-		lua_pop( L, 1 );
-
-	return (p_net_sck_listen( L, sck, adr, bl )) ? returnables : 0;
-}
-
-
-/** -------------------------------------------------------------------------
- * Bind a socket to an address.
- * \param   L      Lua state.
- * \lparam  adr    userdata;t_net_adr userdata instance.
- *          OR
- * \lparam  family string;
- * \lparam  ipstr  string; string representing IP.
- * \lparam  port   integer; port number.
- * \lreturn adr    userdata;t_net_adr userdata instance (optional).
- * \return  int    # of values pushed onto the stack.
- *-------------------------------------------------------------------------*/
-static int
-lt_net_sck_Bind( lua_State *L )
-{
-	int    returnables           = 1;  // at least the socket gets returned
-	// Get address first because the socket inferes the FAMILY from the address
-	struct sockaddr_storage *adr = t_net_adr_getFromStack( L, 1, &returnables );
-	struct t_net_sck        *sck = t_net_sck_create_ud( L,
-	                                 SOCK_ADDR_SS_FAMILY( adr ),
-	                                 SOCK_STREAM, IPPROTO_TCP, 1  );
-
-	if (2==returnables) lua_insert( L, 1 );
-	return (p_net_sck_bind( L, sck, adr )) ? returnables : 0;
+	return p_net_sck_listen( L, sck, bl );
 }
 
 
@@ -248,39 +153,12 @@ lt_net_sck_Bind( lua_State *L )
  * \return  int    # of values pushed onto the stack.
  *-------------------------------------------------------------------------*/
 static int
-lt_net_sck_bind( lua_State *L )
+lt_net_sck_binder( lua_State *L )
 {
-	int    returnables           = 0;
 	struct t_net_sck        *sck = t_net_sck_check_ud( L, 1, 1 );
-	struct sockaddr_storage *adr = t_net_adr_getFromStack( L, 2, &returnables );
+	struct sockaddr_storage *adr = t_net_adr_check_ud( L, 2, 1 );
 
-	return (p_net_sck_bind( L, sck, adr )) ? returnables : 0;
-}
-
-
-/** -------------------------------------------------------------------------
- * Create socket and connect a socket to an address.
- * \param   L      Lua state.
- * \lparam  adr    userdata;t_net_adr userdata instance.
- *          OR
- * \lparam  family string;
- * \lparam  ipstr  string; string representing IP.
- * \lparam  port   integer; port number.
- * \lreturn adr    userdata; t_net_adr userdata instance (optional).
- * \return  int    # of values pushed onto the stack.
- *-------------------------------------------------------------------------*/
-static int
-lt_net_sck_Connect( lua_State *L )
-{
-	int    returnables           = 1;  // at least the socket gets returned
-	// Get address first because the socket inferes the FAMILY from the address
-	struct sockaddr_storage *adr = t_net_adr_getFromStack( L, 1, &returnables );
-	struct t_net_sck        *sck = t_net_sck_create_ud( L,
-	                                 SOCK_ADDR_SS_FAMILY( adr ),
-	                                 SOCK_STREAM, IPPROTO_TCP, 1  );
-
-	if (2==returnables) lua_insert( L, 1 );
-	return (p_net_sck_connect( L, sck, adr )) ? returnables : 0;
+	return p_net_sck_bind( L, sck, adr );
 }
 
 
@@ -297,13 +175,12 @@ lt_net_sck_Connect( lua_State *L )
  * \return  int    # of values pushed onto the stack.
  *-------------------------------------------------------------------------*/
 static int
-lt_net_sck_connect( lua_State *L )
+lt_net_sck_connecter( lua_State *L )
 {
-	int    returnables           = 0;
 	struct t_net_sck        *sck = t_net_sck_check_ud( L, 1, 1 );
-	struct sockaddr_storage *adr = t_net_adr_getFromStack( L, 2, &returnables );
+	struct sockaddr_storage *adr = t_net_adr_check_ud( L, 2, 1 );
 
-	return (p_net_sck_connect( L, sck, adr )) ? returnables : 0;
+	return p_net_sck_connect( L, sck, adr );
 }
 
 
@@ -318,9 +195,9 @@ lt_net_sck_connect( lua_State *L )
 static int
 lt_net_sck_accept( lua_State *L )
 {
-	struct t_net_sck        *srv = t_net_sck_check_ud( L, 1, 1 ); // listening socket
-	struct t_net_sck        *cli = t_net_sck_create_ud( L, AF_INET, SOCK_STREAM, IPPROTO_TCP, 0 ); // accepted socket
-	struct sockaddr_storage *adr = t_net_adr_create_ud( L );      // peer address
+	struct t_net_sck        *srv = t_net_sck_check_ud( L, 1, 1 );// listening socket
+	struct t_net_sck        *cli = t_net_sck_create_ud( L );     // accepted socket
+	struct sockaddr_storage *adr = t_net_adr_create_ud( L );     // peer address
 	return p_net_sck_accept( L, srv, cli, adr );
 }
 
@@ -333,11 +210,11 @@ lt_net_sck_accept( lua_State *L )
  * for an unconnected socket to determine where it goes to.  A fourth parameter,
  * or if Net.Address is omitted a third, is an integer and determines the number
  * of bytes to send.  The following permutations are possible:
- *     cnt        = s:send( buf/seg/str )
- *     cnt        = s:send( buf/seg/str, adr )
- *     cnt        = s:send( buf/seg/str, max )
- *     cnt        = s:send( buf/seg/str, adr, max )
- * \usage   int cnt = sck:send( [Buffer/Segment/string buf, Net.Address adr, int size ] )
+ *     cnt,err = s:send( buf/seg/str )
+ *     cnt,err = s:send( buf/seg/str, adr )
+ *     cnt,err = s:send( buf/seg/str, max )
+ *     cnt,err = s:send( buf/seg/str, adr, max )
+ * \usage   int cnt = sck:send( Buffer/Segment/string buf[, Net.Address adr, int size ] )
  * \param   L      Lua state.
  * \lparam  sck    Net.Socket  userdata instance.       -> mandatory
  * \lparam  msg    Buffer/Segment/string instance.      -> mandatory
@@ -359,10 +236,15 @@ lt_net_sck_send( lua_State *L )
 	                               : len;
 
 	snt = p_net_sck_send( L, sck, adr, msg, (max<len) ? max : len );
-	if (0==snt)
+	if (0==snt || -1 == snt)
 		lua_pushnil( L );
 	else
 		lua_pushinteger( L, snt );
+	if (-1 == snt)               //S: err,nil
+	{
+		lua_rotate( L, -2, -1 );  //S: nil,err
+	}
+
 	return 1;
 }
 
@@ -378,16 +260,16 @@ lt_net_sck_send( lua_State *L )
  * possible to pass an offset to Buffer, instead use a temporary Buffer.Segement
  * to compose a bigger Buffer from multiple recv() operations.  The following
  * permutations are possible:
- *      str ,int = sck:recv( )
- *      str ,int = sck:recv( adr )
- *      str ,int = sck:recv( max )
- *      bool,int = sck:recv( buf/seg )
- *      str ,int = sck:recv( adr, max )
- *      bool,int = sck:recv( adr, buf/seg )
- *      bool,int = sck:recv( buf/seg, max )
- *      bool,int = sck:recv( adr, buf/seg, max )
- * \usage   string msg, int cnt = sck:recv( [Net.Address adr, int size ] )
- * \usage   bool rcvd, int cnt  = sck:recv( [Net.Address adr,] Buffer/Segment buf[, int size ] )
+ *   str ,int,err = sck:recv( )
+ *   str ,int,err = sck:recv( adr )
+ *   str ,int,err = sck:recv( max )
+ *   bool,int,err = sck:recv( buf/seg )
+ *   str ,int,err = sck:recv( adr, max )
+ *   bool,int,err = sck:recv( adr, buf/seg )
+ *   bool,int,err = sck:recv( buf/seg, max )
+ *   bool,int,err = sck:recv( adr, buf/seg, max )
+ * \usage   string msg, int cnt, str err = sck:recv( [Net.Address adr, int size ] )
+ * \usage   bool rcvd, int cnt, str err  = sck:recv( [Net.Address adr,] Buffer/Segment buf[, int size ] )
  * \param   L      Lua state.
  * \lparam  sck    Net.Socket  userdata instance.       -> mandatory
  * \lparam  adr    Net.Address userdata instance.       -> optional
@@ -417,21 +299,27 @@ lt_net_sck_recv( lua_State *L )
 		max = (args == ((NULL==adr) ?3 :4)) ? (size_t) luaL_checkinteger( L, (NULL==adr) ?3 :4 ) : len;
 		luaL_argcheck( L, max<=len, (NULL==adr) ?2 :3, "max must be smaller than sink" );
 		rcvd = p_net_sck_recv( L, sck, adr, msg, max );
-		lua_pushboolean( L, 0 != rcvd );
+		lua_pushboolean( L, 0 != rcvd && -1 != rcvd);
 	}
 	else
 	{
 		max = (args == ((NULL==adr) ?2 :3)) ? luaL_checkinteger( L, (NULL==adr) ?2 :3 ) : BUFSIZ-1;
 		luaL_argcheck( L, max<BUFSIZ, (NULL==adr) ? 2:3, "max must be smaller than BUFSIZ" );
 		rcvd = p_net_sck_recv( L, sck, adr, buf, max );
-		if (0 == rcvd)
+		if (rcvd < 1 )  // 0 for nothing received, -1 for errno being set
 			lua_pushnil( L );
 		else
 			lua_pushlstring( L, buf, rcvd );
 	}
 
 	lua_pushinteger( L, rcvd );
-	return 2;
+	if (-1==rcvd)                //S: err,fls,rcd
+	{
+		lua_rotate( L, -3, -1 );  //S: fls,rcd,err
+		return 3;
+	}
+	else
+		return 2;
 }
 
 
@@ -452,9 +340,7 @@ lt_net_sck_getsockname( lua_State *L )
 	if (NULL == adr)
 		adr = t_net_adr_create_ud( L );
 
-	if (! p_net_sck_getsockname( sck, adr ))
-		lua_pushnil( L );
-	return 1;  // return no matter what to allow testing for nil
+	return p_net_sck_getsockname( L, sck, adr );
 }
 
 
@@ -514,6 +400,25 @@ lt_net_sck_Select( lua_State *L )
 		}
 	}
 	return 2;
+}
+
+
+/**--------------------------------------------------------------------------
+ * Prints out the socket.
+ * \param   L      Lua state.
+ * \lparam  sck    Net.Socket userdata instance.
+ * \lreturn string formatted string representing socket.
+ * \return  int    # of values pushed onto the stack.
+ * --------------------------------------------------------------------------*/
+int
+lt_net_sck__tostring( lua_State *L )
+{
+	struct t_net_sck *sck = t_net_sck_check_ud( L, 1, 1 );
+
+	lua_pushfstring( L, T_NET_SCK_TYPE"{%d}: %p"
+		, sck->fd
+		, sck );
+	return 1;
 }
 
 
@@ -592,9 +497,6 @@ static const struct luaL_Reg t_net_sck_fm [] = {
 static const luaL_Reg t_net_sck_cf [] =
 {
 	  { "select"      , lt_net_sck_Select }
-	, { "bind"        , lt_net_sck_Bind }
-	, { "connect"     , lt_net_sck_Connect }
-	, { "listen"      , lt_net_sck_Listen }
 	, { NULL          , NULL }
 };
 
@@ -609,9 +511,9 @@ static const luaL_Reg t_net_sck_m [] =
 	, { "__newindex"  , lt_net_sck__newindex }
 	, { "__gc"        , lt_net_sck_close }
 	// object methods
-	, { "listen"      , lt_net_sck_listen }
-	, { "bind"        , lt_net_sck_bind }
-	, { "connect"     , lt_net_sck_connect }
+	, { "listener"    , lt_net_sck_listener }
+	, { "binder"      , lt_net_sck_binder }
+	, { "connecter"   , lt_net_sck_connecter }
 	, { "accept"      , lt_net_sck_accept }
 	, { "close"       , lt_net_sck_close }
 	, { "shutdown"    , lt_net_sck_shutDown }

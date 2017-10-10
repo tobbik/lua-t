@@ -58,12 +58,11 @@ int    p_net_ifc_get       ( lua_State *L, const char *name );
 
 // t_net_sck.c
 int               luaopen_t_net_sck  ( lua_State *L );
-struct t_net_sck *t_net_sck_create_ud( lua_State *L, int family, int type, int protocol, int create );
-
+struct t_net_sck *t_net_sck_create_ud( lua_State *L );
 
 // t_net_sck_implementation...
 void   p_net_sck_createHandle   ( lua_State *L, struct t_net_sck *sck, int family, int type, int protocol );
-int    p_net_sck_listen         ( lua_State *L, struct t_net_sck *sck, struct sockaddr_storage *adr, const int bl );
+int    p_net_sck_listen         ( lua_State *L, struct t_net_sck *sck, const int bl );
 int    p_net_sck_bind           ( lua_State *L, struct t_net_sck *sck, struct sockaddr_storage *adr );
 int    p_net_sck_connect        ( lua_State *L, struct t_net_sck *sck, struct sockaddr_storage *adr );
 int    p_net_sck_accept         ( lua_State *L, struct t_net_sck *srv, struct t_net_sck *cli, struct sockaddr_storage *adr );
@@ -73,7 +72,7 @@ int    p_net_sck_shutDown       ( lua_State *L, struct t_net_sck *sck, int shutV
 int    p_net_sck_close          ( lua_State *L, struct t_net_sck *sck );
 int    p_net_sck_setSocketOption( lua_State *L, struct t_net_sck *sck, int sckOpt, const char *sckOptName, int val );
 int    p_net_sck_getSocketOption( lua_State *L, struct t_net_sck *sck, int sckOpt, const char *sckOptName );
-int    p_net_sck_getsockname    ( struct t_net_sck *sck, struct sockaddr_storage *adr );
+int    p_net_sck_getsockname    ( lua_State *L, struct t_net_sck *sck, struct sockaddr_storage *adr );
 int    p_net_sck_mkFdSet        ( lua_State *L, int pos, fd_set *set );
 
 

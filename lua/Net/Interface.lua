@@ -10,9 +10,9 @@ _mt = {       -- local _mt at top of file
 	__tostring = function( self )
 		local ip,port
 		if self.AF_INET and self.AF_INET.address then
-			ip,port = self.AF_INET.address:get( )
+			ip,port = self.AF_INET.address.host, self.AF_INET.address.port
 		elseif self.AF_INET6 and self.AF_INET6.address then
-			ip,port = self.AF_INET.address:get( )
+			ip,port = self.AF_INET6.address.host, self.AF_INET6.address.port
 		end
 		return Net.ifc.tostring( self ):gsub( "}: ", fmt( "(%s)}: ", ip ) )
 	end
@@ -42,7 +42,7 @@ return setmetatable(
 				end
 				::continue::
 			end
-			return candidate
+			return candidate and candidate or list.lo -- use loopback as fallback
 		else
 			return Net.ifc.get( if_name )
 		end
