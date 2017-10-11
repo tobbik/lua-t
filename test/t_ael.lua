@@ -11,18 +11,6 @@ local Socket    = require't.Net.Socket'
 local Address   = require't.Net.Address'
 local Interface = require't.Net.Interface'
 
-local dR = function()
-	local d = debug.getregistry()
-	for i=#d,3,-1 do
-		if type(d[i]) =='table' then
-			print( i, "TABLE", d[i] )
-			for k,v in pairs(d[i]) do print('',k,v) end
-		else
-			print( i, "VALUE", d[i] )
-		end
-	end
-	print("-----------------------------------------")
-end
 
 local   tests = {
 	beforeAll = function( self, done )
@@ -61,9 +49,6 @@ local   tests = {
 	end,
 
 	test_cb_OverwriteReadHandler = function( self, done )
-		-- This test was written to dissect the debug.getregistry() and make sure
-		-- that overwriting the handler does call luaL_unref( L, ... ) and no
-		-- memory is leaked
 		Test.Case.describe( "Overwrite Socket readHandler" )
 		local adr  = Address( Interface( 'default' ).AF_INET.address.ip, 4000 )
 		local rSck = Socket( 'udp' )
@@ -77,10 +62,15 @@ local   tests = {
 			sSck:close( )
 			done( )
 		end
-		local f1  = function( sck )
+		local f1
+		f1 = function( sck )
 			--dR()
 			t_assert( rSck==sck, "Socket should be `%s` but was `%s`", rSck, sck )
+			t_assert( self.loop[sck].read[1] == f1,
+			    "old function should be `%s` but was `%s`", f1, self.loop[sck].read[1] )
 			self.loop:addHandle( sck, 'r', f2, sck )
+			t_assert( self.loop[sck].read[1] == f2,
+			    "new function should be `%s` but was `%s`", f2, self.loop[sck].read[1] )
 			sSck:send('bar', adr)
 		end
 		self.loop:addHandle( rSck, 'r', f1, rSck )
@@ -99,10 +89,55 @@ local   tests = {
 			done( )
 		end
 		self.loop:addTimer( tm, f1, "First Adding of timer" )
-		--dR()
+		t_assert( self.loop[tm][1] == f1,
+			    "function should be `%s` but was `%s`", f1, self.loop[tm ][1] )
 		self.loop:addTimer( tm, f2, "Second Adding of timer" )
-		--dR()
+		t_assert( self.loop[tm][1] == f2,
+			    "new function should be `%s` but was `%s`", f2, self.loop[tm ][1] )
 	end,
+
+	test_cb_replaceTimerParameter = function( self, done )
+		--Test.Case.skip( "" )
+		Test.Case.describe( "Overwrite Timer callback Handlers parameter" )
+		local args
+		local msg1, msg2 = 'Message1', 'Message2'
+		local msg = msg1
+		local tm  = Time( 1000 )
+		local f1  = function( m )
+			t_assert( m == msg, "Expected `%s`, got `%s`", msg, m )
+			msg     =  msg2
+			args[2] = msg2
+			if m == msg1 then
+				tm:set( 1000 )
+				return tm
+			else
+				done( )
+			end
+		end
+		self.loop:addTimer( tm, f1, msg1 )
+		args = self.loop[ tm ]
+	end,
+
+	test_cb_replaceTimerFunction = function( self, done )
+		--Test.Case.skip( "" )
+		Test.Case.describe( "Overwrite Timer callback Handlers function" )
+		local args
+		local tm  = Time( 1000 )
+		local f2  = function(  )
+			t_assert( true, "Should execute")
+			done( )
+		end
+		local f1  = function(  )
+			t_assert( true, "Should execute")
+			args[1] = f2
+			tm:set( 1000 )
+			return tm
+		end
+		self.loop:addTimer( tm, f1, msg1 )
+		args = self.loop[ tm ]
+	end,
+
+
 
 }
 

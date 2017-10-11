@@ -88,7 +88,7 @@ int
 p_ael_addhandle_impl( lua_State *L, struct t_ael *ael, int fd, enum t_ael_msk addmsk )
 {
 	struct t_ael_ste  *state = ael->state;
-	int                msk   = addmsk | ael->fdSet[ fd ]->msk;   // Merge old events
+	addmsk |= ael->fdSet[ fd ]->msk;   // Merge old events
 	// If the fd was already monitored for some event, we need a MOD
 	// operation. Otherwise we need an ADD operation.
 	int                op    = (T_AEL_NO == ael->fdSet[ fd ]->msk)
@@ -98,8 +98,8 @@ p_ael_addhandle_impl( lua_State *L, struct t_ael *ael, int fd, enum t_ael_msk ad
 
 	memset( &ee, 0, sizeof( ee ) ); // avoid valgrind warning
 	ee.events = 0;
-	if (msk & T_AEL_RD) ee.events |= EPOLLIN;
-	if (msk & T_AEL_WR) ee.events |= EPOLLOUT;
+	if (addmsk & T_AEL_RD) ee.events |= EPOLLIN;
+	if (addmsk & T_AEL_WR) ee.events |= EPOLLOUT;
 	ee.data.fd = fd;
 	if (-1 == epoll_ctl( state->epfd, op, fd, &ee ))
 		return t_push_error( L, "Error adding descriptor to set" );
@@ -118,18 +118,18 @@ int
 p_ael_removehandle_impl( lua_State *L, struct t_ael *ael, int fd, enum t_ael_msk delmsk )
 {
 	struct t_ael_ste  *state = ael->state;
-	int                msk   = ael->fdSet[ fd ]->msk & (~delmsk);
+	delmsk = ael->fdSet[ fd ]->msk & (~delmsk);
 	// If the fd remains monitored for some event, we need a MOD
 	// operation. Otherwise we need an DEL operation.
-	int                op    = (T_AEL_NO != msk)
-	                              ? EPOLL_CTL_MOD
-	                              : EPOLL_CTL_DEL;
+	int op = (T_AEL_NO != delmsk)
+	         ? EPOLL_CTL_MOD
+	         : EPOLL_CTL_DEL;
 	struct epoll_event ee;
 
 	memset( &ee, 0, sizeof( ee ) ); // avoid valgrind warning
 	ee.events = 0;
-	if (msk & T_AEL_RD) ee.events |= EPOLLIN;
-	if (msk & T_AEL_WR) ee.events |= EPOLLOUT;
+	if (delmsk & T_AEL_RD) ee.events |= EPOLLIN;
+	if (delmsk & T_AEL_WR) ee.events |= EPOLLOUT;
 	ee.data.fd = fd;
 	if (-1 == epoll_ctl( state->epfd, op, fd, &ee ))
 		return t_push_error( L, "Error removing descriptor from set" );
