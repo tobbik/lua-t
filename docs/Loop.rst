@@ -9,7 +9,12 @@ This provides an asynchronous eventloop that is intended to be platform
 independent.  It is based on redis ae_* code base and basically provides a
 bridge to Lua making it a native member of Lua.  The eventloop is build to
 handle Socket handlers and ``T.Time`` objects which are basically ``struct
-timeval`` wrappers.
+timeval`` wrappers.  General invokation looks like:
+
+  .. code:: lua
+
+   Loop = require't.Loop'
+   l = Loop( 123 )
 
 
 Important File Handle and platform Caveats
@@ -23,19 +28,20 @@ by default:
 
   .. code:: lua
 
-   Loop = require't.Loop'
    l = Loop(123)
    f = io.open('/etc/passwd', 'r')
    p = function(fl) print( fl:read('*all') ) end
    l:addHandle( f, 'r', p, f )
+   -- stdin:1: Error adding descriptor to set (Operation not permitted)
 
-The error message say that the operation is not permitted but that is just
-the kernel telling that the operation is not imported.  That is dependent on
-the file type.  The following code for example works just fine:
+The error message says that the operation is not permitted but that is just
+the kernel telling that the operation is really not supported.  That
+behaviour is dependent on the file type and implementation.  The following
+code for example works just fine with ``epoll`` becuase ``//dev/random`` is
+more than just a file:
 
   .. code:: lua
 
-   Loop = require't.Loop'
    l = Loop(123)
    f = io.open('/dev/random', 'r')
    p = function(fl) print( fl:read(45) ); l:stop() end
@@ -46,7 +52,6 @@ Similarily, ``epoll`` does work for ``io.popen( )``:
 
   .. code:: lua
 
-   Loop = require't.Loop'
    l = Loop(123)
    f = io.popen('date')
    p = function(fl) print( fl:read('*all') ); l:stop() end
@@ -55,13 +60,13 @@ Similarily, ``epoll`` does work for ``io.popen( )``:
 
 So everything under Linux is a file, but not all files are created equal!
 If the underlying implementation is based ion ``select()`` the kernel has no
-problem adding a regular file like ``/etc/passwd`` to the event loop, but if
-the eventloop triggers a readability/writability event there is no guarantee
-that non-blocking read/write will actually succeed.  Under Windows, IOCP can
-handle that fine.  ``T.Loop`` tries to abstract many things away but it does
-not go as far a libuv for example.  Therefore, it will be possible to
-implement a lot of useful stuff in ``T.Loop`` but there are some limitations
-which are platform specific.  For more information read
+problem adding a regular file like ``/etc/passwd`` to the event loop, but
+when the eventloop triggers a readability/writability event there is no
+guarantee that a non-blocking read/write operation will actually succeed.
+Under Windows, IOCP can handle that fine.  ``T.Loop`` tries to abstract many
+things away but it does not go as far a libuv for example.  Therefore, it
+will be possible to implement a lot of useful stuff in ``T.Loop`` but there
+are some limitations which are platform specific.  For more information read
 `Asynchronous I/O in Windows for Unix Programmers
 <http://tinyclouds.org/iocp-links.html>`_
 
@@ -70,7 +75,7 @@ Singleton
 =========
 
 While the interface suggests that there can be multiple ``t.Loop`` instances
-created, running multiple instances in parallel is not defined.
+created, **running multiple ``t.Loop`` instances is not defined**.
 
 
 API
@@ -86,7 +91,7 @@ Class Metamembers
 -----------------
 
 ``Loop l = Loop( int n )       [__call]``
-  Creates ``Loop l`` instamnce.  The parameter ``int n`` describes how many
+  Creates ``Loop l`` instance.  The parameter ``int n`` describes how many
   descriptors can be handled in the event loop.  After adding that number of
   descriptors to the event loop will return false.  There are no limits,
   beyond memory and CPU performance, to adding Timers.
@@ -107,7 +112,7 @@ Instance Members
   Add the ``handle h`` to the eventloop and define what should be executed
   when an event on the handle is observed.  The ``handle h`` can be a
   ``t.Net.Socket`` or a ``Lua File``.  Limitations apply as explained above
-  in the Caveats.  the direction can be ``'r'`` or ``'w'`` determining if
+  in the Caveats.  The direction can be ``'r'`` or ``'w'`` determining if
   the event would indicate readability or writablity.  Upon the triggered
   event the ``function f`` will be executed with the parameters passed in
   ``...``.  ``addHandle()`` is idempotent and each call to it will
@@ -122,10 +127,10 @@ Instance Members
   when then ``t.Time t`` value has passed  Upon the triggered event the
   ``function f`` will be executed with the parameters passed in ``...``.
   ``addTimer()`` is idempotent and each call to it will **replace** the
-  previously added function and parameters.
-  ``function f`` *can have* a single return value.  If it is an instance of
-  ``T.Time`` it will automatically reschedule itself with the same
-  parameters.  This allows to implement intervals.
+  previously added function and parameters.  ``function f`` *can have* a
+  single return value.  If it is an instance of ``T.Time`` it will
+  automatically reschedule itself with the same parameters.  This allows
+  to flexibly implement intervals.
 
 ``boolean b = loop:removeTimer( t.Time t )``
   Remove ``t.Time t`` from the event loop.
@@ -145,14 +150,14 @@ Instance Metamembers
   must be a ``t.Time t`` or a valid File or Socket handle. For a time index
   the table contains ``[ func, arg1, arg2, ... ]``.  For handles it the
   table looks like:
-
+  
   .. code:: lua
-
-  {
-    read  = { func, arg1,arg2, arg3, ... },
-    write = { func, arg1,arg2, arg3, ... }
-  }
- 
+  
+   {
+     read  = { func, arg1,arg2, arg3, ... },
+     write = { func, arg1,arg2, arg3, ... }
+   }
+  
   There is no ``__newindex()`` method since ``__index()`` has been
   implemented merely to provide som debugging and insight capabilities.  To
   replace values it is much better to call ``addTimer()/addHandle()`` again.

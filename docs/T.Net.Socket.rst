@@ -62,7 +62,7 @@ move up so that the following to function calls behave identically.
 
 .. code:: lua
 
-  sent_bytes_count = sck:send( address, message_string, length )
+  sent_bytes_count = sck:send( message_string, address, length )
   sent_bytes_count = sck:send( message_string, length )
 
 
@@ -95,10 +95,11 @@ Class Members
     --           port   -> integer specifying the port
     --           host   -> string specifying the IP address
 
-    sck,adr = Socket.bind(  )               -- Sck (TCP); Adr 0.0.0.0:(0)
-    sck,adr = Socket.bind( host )           -- Sck (TCP); Adr host:(0)
-    sck,adr = Socket.bind( host, port )     -- Sck (TCP); Adr host:port
-    sck,_   = Socket.bind( adr )            -- Sck (TCP)
+    sck,adr = Socket.bind(  )           -- Sck (TCP); Adr 0.0.0.0:(0)
+    sck,adr = Socket.bind( host )       -- Sck (TCP); Adr host:(0)
+    sck,adr = Socket.bind( port )       -- Sck (TCP); Adr 0.0.0.0:port
+    sck,adr = Socket.bind( host, port ) -- Sck (TCP); Adr host:port
+    sck,adr = Socket.bind( adr )        -- Sck (TCP)
 
 ``Net.Socket sck, Net.Address adr = Net.Socket.listen( [string ip, int port, int backlog] )``
   Creates a TCP ``Net.Socket sck`` instance which is listening connections
@@ -114,7 +115,7 @@ Class Members
 
   .. code:: lua
 
-    -- meanings: _     -> placeholders for nil
+    -- meanings:
     --           adr   -> instances of Net.Address
     --           sck   -> instance of Net.Socket
     --           xxxxx -> random port number choosen by the system
@@ -125,10 +126,11 @@ Class Members
     sck,adr = Socket.listen(  )               -- Sck (TCP); Adr 0.0.0.0:xxxxx
     sck,adr = Socket.listen( bl )             -- Sck (TCP); Adr 0.0.0.0:xxxxx
     sck,adr = Socket.listen( host )           -- Sck (TCP); Adr host:(0)
+    sck,adr = Socket.listen( port )           -- Sck (TCP); Adr 0.0.0.0:port
     sck,adr = Socket.listen( host, port )     -- Sck (TCP); Adr host:port
     sck,adr = Socket.listen( host, port, bl ) -- Sck (TCP); Adr host:port
-    sck,_   = Socket.listen( adr )            -- Sck (TCP)
-    sck,_   = Socket.listen( adr, bl )        -- Sck (TCP)
+    sck,adr = Socket.listen( adr )            -- Sck (TCP)
+    sck,adr = Socket.listen( adr, bl )        -- Sck (TCP)
 
 ``Net.Socket sck, Net.Address adr = Net.Socket.connect( [string ip, int port] )``
   Creates an TCP ``Net.Socket`` instance which is connected to the address
@@ -142,12 +144,13 @@ Class Members
 
   .. code:: lua
 
-    -- meanings: ip,adr -> instances of Net.Address
-    --           sck    -> instance of Net.Socket
-    --           port   -> integer specifying the port
-    --           host   -> string specifying the IP address
+    -- meanings: adr  -> instances of Net.Address
+    --           sck  -> instance of Net.Socket
+    --           port -> integer specifying the port
+    --           host -> string specifying the IP address
 
-    sck,_   = Socket.connect( ip )         -- Sck (TCP)
+    sck,adr = Socket.connect( adr )        -- Sck (TCP); ADR adr
+    sck,adr = Socket.connect( port )       -- Sck (TCP); Adr 0.0.0.0:port
     sck,adr = Socket.connect( host, port ) -- Sck (TCP); Adr host:port
 
 
@@ -181,16 +184,16 @@ Instance Members
 
   .. code:: lua
 
-    -- meanings: _      -> placeholder for nil
+    -- meanings:
     --           adr    -> instance of Net.Address
     --           sck    -> instance of Net.Socket
     --           port   -> integer specifying the port
     --           host   -> string specifying the IP address
 
-    adr,_   = sck.bind( )            -- bind to 0.0.0.0:0
-    adr,_   = sck.bind( host )       -- Adr host:0
-    adr,_   = sck.bind( host, port ) -- Adr host:port
-    _,_     = sck.bind( adr )        -- bind Adr
+    adr  = sck.bind( )            -- bind to 0.0.0.0:0
+    adr  = sck.bind( host )       -- Adr host:0
+    adr  = sck.bind( host, port ) -- Adr host:port
+    adr  = sck.bind( adr )        -- bind Adr
 
 ``Net.Address addr = Net.Socket sck:connect( [string ip,] int port )``
   Creates and returns ``Net.Address adr`` instance defined by ``string ip``
@@ -205,14 +208,14 @@ Instance Members
 
   .. code:: lua
 
-    -- meanings: _      -> placeholder for nil
+    -- meanings:
     --           adr    -> instance of Net.Address
     --           sck    -> instance of Net.Socket
     --           port   -> integer specifying the port
     --           host   -> string specifying the IP address
 
-    _,_    = sck.connect( adr )        -- perform bind and listen
-    adr,_  = sck.connect( host, port ) -- Adr host:port
+    adr  = sck.connect( adr )        -- perform bind and listen
+    adr  = sck.connect( host, port ) -- Adr host:port
 
 ``Net.Address addr = Net.Socket sck:listen( [string ip,] int port, int backlog )``
   Creates and returns ``Net.Address adr`` instance defined by the ``string
@@ -228,7 +231,7 @@ Instance Members
 
   .. code:: lua
 
-    -- meanings: _      -> placeholder for nil
+    -- meanings:
     --           adr    -> instance of Net.Address
     --           sck    -> instance of Net.Socket
     --           xxxxx  -> random port number choosen by the system if
@@ -236,13 +239,13 @@ Instance Members
     --           port   -> integer specifying the port
     --           host   -> string specifying the IP address
 
-    _,_    = sck:listen( )                -- just listen; assume bound socket
-    _,_    = sck:listen( bl )             -- just listen; assume bound socket
-    _,_    = sck:listen( ip )             -- perform bind and listen
-    _,_    = sck:listen( adr, bl )        -- perform bind and listen
-    adr,_  = sck:listen( host )           -- Adr host:xxxxx
-    adr,_  = sck:listen( host, port )     -- Adr host:port
-    adr,_  = sck:listen( host, port, bl ) -- Adr host:port
+    adr = sck:listen( )                -- just listen; assume bound socket
+    adr = sck:listen( bl )             -- just listen; assume bound socket
+    adr = sck:listen( adr )            -- perform bind and listen
+    adr = sck:listen( adr, bl )        -- perform bind and listen
+    adr = sck:listen( host )           -- Adr host:xxxxx
+    adr = sck:listen( host, port )     -- Adr host:port
+    adr = sck:listen( host, port, bl ) -- Adr host:port
 
 ``Net.Socket client, NetAddress addr = Net.Socket sck:accept( )``
   Accepts a new connection the ``Net.Socket`` instance.  Returns 
@@ -282,13 +285,13 @@ are valid:
 
 .. code:: lua
 
-  -- meanings: _      -> placeholder for nil
-  --           sck    -> instance of Net.Socket
-  --           adr    -> instance of Net.Address
-  --           buf    -> instance of Buffer
-  --           msg    -> instance of Lua string, received payload
-  --           len    -> Lua integer, len of received data in bytes
-  --           max    -> Lua integer, max to read data in bytes
+  -- meanings:
+  --           sck -> instance of Net.Socket
+  --           adr -> instance of Net.Address
+  --           buf -> instance of Buffer
+  --           msg -> instance of Lua string, received payload
+  --           len -> Lua integer, len of received data in bytes
+  --           max -> Lua integer, max to read data in bytes
 
   msg, len  = sck:recv( adr, buf, max )
   msg, len  = sck:recv( adr, buf )
