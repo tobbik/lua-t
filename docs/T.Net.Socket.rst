@@ -58,9 +58,9 @@ used to send the message to it.  Otherwise the second value will be
 interpreted as how many bytes of the message should be send. So while it is
 possible to skip arguments, the order is always the same:
 
-  # message
-  # t.Net.Address adr
-  # max bytes of message to be sent
+1. message
+2. t.Net.Address adr
+3. max bytes of message to be sent
 
 .. code:: lua
 
@@ -73,9 +73,9 @@ possible to skip arguments, the order is always the same:
 Like ``send()``, ``recv()`` will also accept various arguments which will
 always have the order:
 
-  # t.Net.Address
-  # t.Buffer/t.Buffer.Segment
-  # max bytes to receive
+1. t.Net.Address
+2. t.Buffer/t.Buffer.Segment
+3. max bytes to receive
 
 Argument scan be skipped, but the order must remain as outlined.
 
@@ -433,6 +433,10 @@ Socket properties
 
 The availability of the following modes and/or their writablity is dependent
 on the platforms implementation.
+
+
+Boolean Socket Options
+''''''''''''''''''''''
 
 ``boolean b = sck.nonblock      [read/write] (O_NONBLOCK)``
   Socket blocking mode.
