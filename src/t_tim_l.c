@@ -40,15 +40,16 @@ static int lt_tim_get( lua_State *L );  // forward declaration
 static int
 lt_tim__Call( lua_State *L )
 {
-	int  ms     = 0;
+	struct timeval *tv1 = t_tim_check_ud( L, 2, 0); //S: cls tv1
+	struct timeval *tv  = t_tim_create_ud( L );
 
 	lua_remove( L, 1 );
-	if (t_tim_is( L, 1 ))
-		lt_tim_get( L );         // pull the ms value of t_tim on the stack
-	if (lua_isnumber( L, -1 ))
-		ms = luaL_checkinteger( L, -1 );
-
-	t_tim_create_ud( L, ms );
+	if (tv1)
+		t_tim_setms( tv, t_tim_getms( tv1 ) );
+	else if (lua_isnumber( L, 1 ))
+		t_tim_setms( tv, luaL_checkinteger( L, 1 ) );
+	else
+		t_tim_now( tv, 0 );
 
 	return 1;
 }
@@ -60,18 +61,11 @@ lt_tim__Call( lua_State *L )
  * \return  struct timeval* pointer to userdata at Stack position.
  * --------------------------------------------------------------------------*/
 struct timeval
-*t_tim_create_ud( lua_State *L, long ms )
+*t_tim_create_ud( lua_State *L )
 {
 	struct timeval *tv;
 
 	tv = (struct timeval *) lua_newuserdata( L, sizeof( struct timeval ) );
-	if (ms > 0)
-	{
-		tv->tv_sec  = ms/1000;
-		tv->tv_usec = (ms % 1000) * 1000;
-	}
-	else
-		t_tim_now( tv, 0 );
 
 	luaL_getmetatable( L, T_TIM_TYPE );
 	lua_setmetatable( L, -2 );
@@ -154,6 +148,42 @@ lt_tim_now( lua_State *L )
 
 
 /**--------------------------------------------------------------------------
+ * System call wrapper to sleep (Lua lacks that)
+ *             Lua has no build in sleep method.
+ * \param   L    Lua state.
+ * \lparam  int  milliseconds to sleep
+ * \return  int  # of values pushed onto the stack.
+ * --------------------------------------------------------------------------*/
+static int
+lt_tim_Sleep( lua_State *L )
+{
+#ifdef _WIN32
+	fd_set dummy;
+	int s;
+#endif
+	struct timeval *tv  = t_tim_check_ud( L, 1, 0 );
+	struct timeval  tv1;
+
+	if (! tv)
+	{
+		tv = t_tim_create_ud( L );
+		t_tim_setms( tv, luaL_checkinteger( L, 1 ) );
+	}
+	memcpy( &tv1, tv, sizeof( tv1 ) );
+#ifdef _WIN32
+	s = socket( PF_INET, SOCK_STREAM, IPPROTO_TCP );
+	FD_ZERO( &dummy );
+	FD_SET( s, &dummy );
+	select( 0, 0, 0, &dummy, tv );
+#else
+	select( 0, 0, 0, 0, tv );
+#endif
+	memcpy( tv, &tv1, sizeof( tv1 ) );
+	return 0;
+}
+
+
+/**--------------------------------------------------------------------------
  * Get a string represents the timer.
  * \param   L         Lua state.
  * \lparam  ud        T.Time userdata instance.
@@ -171,6 +201,70 @@ lt_tim__tostring( lua_State *L )
 			tv
 	);
 	return 1;
+}
+
+
+/**--------------------------------------------------------------------------
+ * Allows getting values of a timer.
+ * \param   L         Lua state.
+ * \lparam  tim       T.Time userdata instance.
+ * \lparam  key       Lua String key for access property.
+ * \lreturn value     Accessed property.
+ * \return  int       # of values pushed onto the stack.
+ * --------------------------------------------------------------------------*/
+static int
+lt_tim__index( lua_State *L )
+{
+	struct timeval *tv  = t_tim_check_ud( L, 1, 1 );
+	size_t          l   = 0;
+	const char     *key = luaL_checklstring( L, 2, &l );
+
+	if ( (1==l || 7==l) && 's'==*key)
+		lua_pushinteger( L, tv->tv_sec );
+	else if (2==l && 'm'==*key)
+		lua_pushinteger( L, tv->tv_usec / 1000 );
+	else if (2==l && 'u'==*key)
+		lua_pushinteger( L, tv->tv_usec );
+	else
+	{
+		lua_getmetatable( L, 1 );        //S: tim key tbl
+		lua_rotate( L, -2, -1 );         //S: tim tbl key
+		lua_gettable( L, -2 );           //S: tim tbl fnc
+	}
+	return 1;
+}
+
+
+/**--------------------------------------------------------------------------
+ * Allows setting values of a timer.
+ * \param   L         Lua state.
+ * \lparam  tim       T.Time userdata instance.
+ * \lparam  key       Lua String key for access property.
+ * \lparam  val       Integer Value.
+ * \lreturn value     Accessed property.
+ * \return  int       # of values pushed onto the stack.
+ * --------------------------------------------------------------------------*/
+static int
+lt_tim__newindex( lua_State *L )
+{
+	struct timeval *tv  = t_tim_check_ud( L, 1, 1 );
+	size_t          l   = 0;
+	const char     *key = luaL_checklstring( L, 2, &l );
+	lua_Integer     val = luaL_checkinteger( L, 3 );
+
+	if ( (1==l || 7==l) && 's'==*key)
+		tv->tv_sec = val;
+	else if (2==l && 'm'==*key)
+	{
+		luaL_argcheck( L, val>=0 && val<1000, 3, "`ms` must be between 0 and 999" );
+		tv->tv_usec = val * 1000;
+	}
+	else if (2==l && 'u'==*key)
+	{
+		luaL_argcheck( L, val>=0 && val<1000000, 3, "`ms` must be between 0 and 999999" );
+		tv->tv_usec = luaL_checkinteger( L, 3 );
+	}
+	return 0;
 }
 
 
@@ -206,7 +300,7 @@ lt_tim__add( lua_State *L )
 {
 	struct timeval *tA = t_tim_check_ud( L, 1, 1 );
 	struct timeval *tB = t_tim_check_ud( L, 2, 1 );
-	struct timeval *tC = t_tim_create_ud( L, 0 );
+	struct timeval *tC = t_tim_create_ud( L );
 
 	t_tim_add( tA, tB, tC );
 	return 1;
@@ -226,42 +320,10 @@ lt_tim__sub( lua_State *L )
 {
 	struct timeval *tA = t_tim_check_ud( L, 1, 1 );
 	struct timeval *tB = t_tim_check_ud( L, 2, 1 );
-	struct timeval *tC = t_tim_create_ud( L, 0 );
+	struct timeval *tC = t_tim_create_ud( L );
 
 	t_tim_sub( tA, tB, tC );
 	return 1;
-}
-
-
-/**--------------------------------------------------------------------------
- * System call wrapper to sleep (Lua lacks that)
- *             Lua has no build in sleep method.
- * \param   L    Lua state.
- * \lparam  int  milliseconds to sleep
- * \return  int  # of values pushed onto the stack.
- * --------------------------------------------------------------------------*/
-static int
-lt_tim_Sleep( lua_State *L )
-{
-#ifdef _WIN32
-	fd_set dummy;
-	int s;
-#endif
-	struct timeval *tv;
-	long  sec, usec;
-	if (lua_isnumber( L, -1 ))  t_tim_create_ud( L, luaL_checkinteger( L, -1 ) );
-	tv  = t_tim_check_ud( L, -1, 1 );
-	sec = tv->tv_sec; usec=tv->tv_usec;
-#ifdef _WIN32
-	s = socket( PF_INET, SOCK_STREAM, IPPROTO_TCP );
-	FD_ZERO( &dummy );
-	FD_SET( s, &dummy );
-	select( 0, 0, 0, &dummy, tv );
-#else
-	select( 0, 0, 0, 0, tv );
-#endif
-	tv->tv_sec=sec; tv->tv_usec=usec;
-	return 0;
 }
 
 
@@ -290,6 +352,8 @@ static const struct luaL_Reg t_tim_m [] = {
 	, { "__eq"       , lt_tim__eq }
 	, { "__add"      , lt_tim__add }
 	, { "__sub"      , lt_tim__sub }
+	, { "__index"    , lt_tim__index }
+	, { "__newindex" , lt_tim__newindex }
 	// instance methods
 	, { "set"        , lt_tim_set }
 	, { "get"        , lt_tim_get }
@@ -314,7 +378,6 @@ luaopen_t_tim( lua_State *L )
 	// just make metatable known to be able to register and check userdata
 	luaL_newmetatable( L, T_TIM_TYPE );
 	luaL_setfuncs( L, t_tim_m, 0 );
-	lua_setfield( L, -1, "__index" );
 
 	// Push the class onto the stack
 	luaL_newlib( L, t_tim_cf );

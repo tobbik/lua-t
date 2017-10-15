@@ -30,7 +30,8 @@ struct timeval *t_tim_check_ud ( lua_State *L, int pos, int check );
 void t_tim_add  ( struct timeval *tA, struct timeval *tB, struct timeval *tX );
 void t_tim_sub  ( struct timeval *tA, struct timeval *tB, struct timeval *tX );
 void t_tim_since( struct timeval *tA );
-long t_tim_getms( struct timeval *tA );
+long t_tim_getms( struct timeval *tv );
+void t_tim_setms( struct timeval *tv, int ms );
 
 /**--------------------------------------------------------------------------
  * Compare timeval a to timeval b.
@@ -47,4 +48,3 @@ long t_tim_getms( struct timeval *tA );
 	 ((a)->tv_sec  CMP (b)->tv_sec))
 
 #define t_tim_now( tv, tz ) gettimeofday( tv, tz )
-#define t_tim_is( L, pos ) (NULL != t_tim_check_ud( L, pos, 0 ))

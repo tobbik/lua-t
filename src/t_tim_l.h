@@ -11,5 +11,5 @@
 
 // Constructors
 // t_tim.c
-struct timeval *t_tim_create_ud( lua_State *L, long ms );
+struct timeval *t_tim_create_ud( lua_State *L );
 

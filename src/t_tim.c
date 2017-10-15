@@ -79,9 +79,22 @@ t_tim_since( struct timeval *tA )
  * \return long            value in milliseconds.
  * --------------------------------------------------------------------------*/
 long
-t_tim_getms( struct timeval *t )
+t_tim_getms( struct timeval *tv )
 {
-	return t->tv_sec*1000 + t->tv_usec/1000;
+	return tv->tv_sec*1000 + tv->tv_usec/1000;
+}
+
+
+/**--------------------------------------------------------------------------
+ * Set milliseconds worth of timeval.
+ * \param  struct timeval *t pointer.
+ * \return void.
+ * --------------------------------------------------------------------------*/
+void
+t_tim_setms( struct timeval *tv, int ms )
+{
+	tv->tv_sec  = ms/1000;
+	tv->tv_usec = (ms % 1000) * 1000;
 }
 
 

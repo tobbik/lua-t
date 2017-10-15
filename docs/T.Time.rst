@@ -64,6 +64,21 @@ Instance Members
 ``void Time t:now( )``
   Set the `Time t` instance duration to the difference between now and epoch.
 
+``int sec = Time t.seconds   [read/write]    -- also as t.s``
+  Get/Set how many seconds are in ``Time t``. ``Time t`` is a wrapper
+  around ``struct timeval``.  ``t.s`` is equivalent to ``struct timeval
+  tv->tv_sec``.  The value must be 0 or bigger.
+
+``int msec = Time t.ms   [read/write]``
+  Get/Set how many milliseconds are in ``Time t``. ``Time t`` is a wrapper
+  around ``struct timeval``.  ``t.ms`` is equivalent to ``struct timeval
+  tv->tv_usec / 1000``.  The value is between 0 and 999 (including).
+
+``int usec = Time t.us   [read/write]``
+  Get/Set how many microseconds are in ``Time t``. ``Time t`` is a wrapper
+  around ``struct timeval``.  ``t.us`` is equivalent to ``struct timeval
+  tv->tv_usec``.  The value is between 0 and 999999 (including).
+
 
 Instance Metamembers
 --------------------
