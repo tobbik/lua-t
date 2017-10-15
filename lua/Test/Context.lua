@@ -76,7 +76,7 @@ return setmetatable( {
 							pass  = pass + (cse.pass and 1 or 0)
 							skip  = skip + (cse.skip and 1 or 0)
 							todo  = todo + (cse.todo and 1 or 0)
-							time  = time +  cse.executionTime
+							time  = time + (cse.executionTime and cse.executionTime or (Time(1)-Time(1)))
 						end
 					end
 					return {

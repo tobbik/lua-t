@@ -44,7 +44,7 @@ local receive = function( self, data )
 		self.tail = nil
 		return true
 	else
-		print("NEW TAIL BUFFER")
+		--print(string.format( "NEW TAIL BUFFER: `%s`, %d %d", tail, tail:byte(1), tail:byte(2), ) )
 		self.tail = tail or nil
 		return false
 	end

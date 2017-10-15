@@ -280,7 +280,7 @@ t_htp_req_parseUrl( lua_State *L, const char **data, const char *end )
 
 	lua_newtable( L );                 ///< parsed and decoded query parameters
 
-	while (r < end)
+	while (r <= end)
 	{
 		switch (*r)
 		{
@@ -346,7 +346,7 @@ t_htp_req_parseHttpVersion( lua_State *L, const char **data, const char *end )
 	int         v = T_HTP_VER_ILL;
 	size_t      l = end - r;
 
-	if ((l > 11 && '\r'==*(r+8 )) || (l > 9 && '\n'==*(r+8 )))
+	if ((l > 10 && '\r'==*(r+8 )) || (l > 8 && '\n'==*(r+8)))
 	{
 		switch (*(r+7))
 		{
@@ -362,7 +362,10 @@ t_htp_req_parseHttpVersion( lua_State *L, const char **data, const char *end )
 		}
 		lua_pushinteger( L, v );
 		lua_setfield( L, 1, "version" );
-		lua_pushinteger( L, ((12==l && '\r'==*(r+10)) || (10==l && '\n'==*(r+9)))
+		// HTTP/1.1rnrn
+		// HTTP/1.1nn      -- play nice with naughty implementations
+		// 01234567890
+		lua_pushinteger( L, ((l>10 && '\r'==*(r+10)) || ('\n'==*(r+8) && '\n'==*(r+9)))
 			? T_HTP_REQ_DONE
 			: T_HTP_REQ_HEADERS );
 		lua_setfield( L, 1, "state" );
@@ -394,7 +397,7 @@ t_htp_req_parseHeaders( lua_State *L, const char **data, const char *end )
 	lua_getfield( L, 1, "headers" ); // get pre-existing header table -> re-entrent
 
 	// since exit condition is based on r+1 compare for (r+1)
-	while (r+1 < end)
+	while (r+1 <= end)
 	{
 		switch (*r)
 		{
@@ -411,7 +414,7 @@ t_htp_req_parseHeaders( lua_State *L, const char **data, const char *end )
 				rs = T_HTP_R_KY;
 				if ('\n' == *(r+1) || '\r' == *(r+1))  // double newLine -> END OF HEADER
 				{
-					(*data) = r + (('\n'==*(r+1))? 0 : 1);
+					(*data) = r + (('\n'==*(r+1))? 1 : 2);
 					lua_pop( L, 1 );  // pop header-table from stack
 					lua_pushstring( L, "contentLength" );
 					lua_rawget( L, 1 );
@@ -460,7 +463,7 @@ lt_htp_req_parse( lua_State *L )
 {
 	size_t      d_len;
 	const char *data  = luaL_checklstring( L, 2, &d_len );
-	const char  *end  = data + d_len;
+	const char  *end  = data + d_len-1; // marks the last character
 	const char **tail = &data;
 	size_t      state = (size_t) luaL_checkinteger( L, 3 );
 	lua_pop( L, 1 );  // pop state
@@ -489,7 +492,7 @@ lt_htp_req_parse( lua_State *L )
 	if (*tail == end)
 		lua_pushnil( L );
 	else
-		lua_pushlstring( L, *tail, end-*tail );
+		lua_pushlstring( L, *tail, end-*tail+1 );
 	return 1;
 }
 

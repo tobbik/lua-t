@@ -40,6 +40,9 @@ local listen = function( self, host, port, bl )
 	else
 		self.sck, self.adr = Socket.listen( host, port, bl and bl or 5 )
 	end
+	if not self.sck then
+		error( "Could not start HTTP Server because: " .. self.adr )
+	end
 	self.sck.nonblock = true
 	self.ael:addHandle( self.sck, 'read', accept, self )
 	return self.sck, self.adr
@@ -85,11 +88,12 @@ return setmetatable( {
 				end
 				for k,v in pairs( candidates ) do
 					print("Timeout CLOSE Socket:", v, str[ v ] )
-					if v.reading then ael:removeHandle( v, 'read' ) end
+					ael:removeHandle( v, 'read' )
 					v:close( )
 					str[ v ] = nil
 				end
 				--dR()
+				--collectgarbage()
 				tm:set( timeout )
 				return tm
 			end

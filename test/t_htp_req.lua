@@ -9,6 +9,7 @@ local Request  = require't.Http.Request'
 local Buffer   = require't.Buffer'
 local Method, Version, Status = require't.Http.Method', require't.Http.Version', require't.Http.Status'
 local format   = string.format
+local t_assert = require't'.assert
 
 -- Mocking socket providing just a fake send method
 local mSck = {
@@ -42,7 +43,6 @@ local tests = {
 	end,
 
 	-- Test cases
-
 	-- CONSTRUCTOR TESTS
 	test_Constructor = function( self )
 		Test.Case.describe( "Http.Request( callback ) creates proper Request" )
@@ -122,6 +122,7 @@ local tests = {
 		local s = "GET /go/wherever/it/wil/be/index.html " .. v ..'\r\n\r\n'
 		r:receive( s )
 		assert( r.state   == Request.State.Done, format( "State must be %d but was %d", Request.State.Done, r.state ) )
+		t_assert( not r.tail, "No tail expected but got `%s`", r.tail )
 		assert( r.version == Version[ v ]      , format( "Version must be %d but was %d", Version[v], r.version ) )
 	end,
 
@@ -133,6 +134,7 @@ local tests = {
 		local s = "GET /go/wherever/it/wil/be/index.html " .. v ..'\n\n'
 		r:receive( s )
 		assert( r.state   == Request.State.Done, format( "State must be %d but was %d", Request.State.Done, r.state ) )
+		t_assert( not r.tail, "No tail expected but got `%s`", r.tail )
 		assert( r.version == Version[ v ]      , format( "Version must be %d but was %d", Version[v], r.version ) )
 	end,
 
@@ -298,6 +300,7 @@ local tests = {
 		r:receive( s )
 		assert( nil == r.contentLength, format( "req.contentLength must be `nil` but was `%s`", r.contentLength ) )
 		assert( r.state == Request.State.Done, format( "State must be %d but was %d", Request.State.Done, r.state ) )
+		t_assert( not r.tail, "No tail expected but got `%s`", r.tail )
 	end,
 
 	-- #################################### Continous parsing
@@ -317,7 +320,6 @@ local tests = {
 		assert( r.version == Version[v], format( "HTTP version must be `%s` but was `%s`", Version[v], r.version ) )
 		assert( r.state == Request.State.Headers, format( "State must be %d but was %d", Request.State.Headers, r.state ) )
 	end,
-
 
 }
 

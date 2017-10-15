@@ -13,6 +13,8 @@ local t_insert    , t_remove    , getmetatable, setmetatable, assert, type,  o_t
 
 local Request         = require't.Http.Request'
 
+local format=string.format
+
 local _mt
 
 -- ---------------------------- general helpers  --------------------
@@ -29,7 +31,7 @@ local getRequest = function( self )
 end
 
 local destroy = function( self )
-	--print( "DESTROY:", self )
+	-- print( "DESTROY:", self )
 	self.requests  = nil
 	self.responses = nil
 	self.srv.streams[ self.cli ] = nil
@@ -41,7 +43,7 @@ local recv = function( self )
 	local data,rcvd = self.cli:recv( )
 	if not data then
 		-- it means the other side hung up; No more responses
-		--print( "----------------REMOVE read handler -> RECEIVE FAILURE", self.cli )
+		print( format("----------------REMOVE read handler -> RECEIVE FAILURE on `%s`(%s)", self.cli, recv ) )
 		-- dispose of itself ... clear requests, buffer etc...
 		self.srv.ael:removeHandle( self.cli, 'read' )
 		destroy( self )
@@ -62,6 +64,7 @@ end
 
 local resp = function( self )
 	local runCount, id = 0, nil
+	if not self.responses then return end
 	for k,v in pairs( self.responses ) do
 		if 0==runCount then
 			if v:send( self.cli ) then
