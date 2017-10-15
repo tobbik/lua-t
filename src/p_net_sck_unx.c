@@ -26,6 +26,7 @@
 #include <sys/socket.h>
 #include <sys/select.h>
 #include <errno.h>      // errno
+#include <signal.h>     // signal( SIGPIPE, SIG_IGN )
 
 #include "t_net_l.h"
 
@@ -45,7 +46,7 @@ static int
 p_net_sck_pushErrno( lua_State *L, struct sockaddr_storage *adr, const char *msg )
 {
 	char                     dst[ INET6_ADDRSTRLEN ];
-	lua_pushnil( L );
+	lua_pushboolean( L, 0==1 );
 	if (NULL == adr)
 		lua_pushfstring( L, "%s (%s)", msg, strerror( errno ) );
 	else
@@ -186,6 +187,7 @@ p_net_sck_accept( lua_State *L, struct t_net_sck *srv, struct t_net_sck *cli,
 
 	if (-1 == (cli->fd = accept( srv->fd, SOCK_ADDR_PTR( adr ), &adr_len )))
 		return p_net_sck_pushErrno( L, adr, "Can't accept on socket bound" );
+	//printf("ACCEPTING HANDLE: %d\n", cli->fd);
 
 	return 2;
 }
@@ -200,20 +202,19 @@ p_net_sck_accept( lua_State *L, struct t_net_sck *srv, struct t_net_sck *cli,
  * \param   len     how many bytes to send from the buffer.
  * \return  snt    int; number of bytes sent out.
  *-------------------------------------------------------------------------*/
-int
+ssize_t
 p_net_sck_send( lua_State *L, struct t_net_sck *sck, struct sockaddr_storage *adr,
                               const char* buf, size_t len )
 {
-	int snt;
+	ssize_t snt;
 
 	if (-1 == (snt = sendto(
 	  sck->fd,
 	  buf, len, 0, SOCK_ADDR_PTR( adr ), SOCK_ADDR_SS_LEN( adr ))))
 	{
-		return p_net_sck_pushErrno( L, adr,
-				(NULL == adr) ? "Can't send message" : "Can't send Message to" );
+		p_net_sck_pushErrno( L, adr,
+			(NULL == adr) ? "Can't send message" : "Can't send Message to" );
 	}
-
 	return snt;
 }
 
@@ -227,11 +228,11 @@ p_net_sck_send( lua_State *L, struct t_net_sck *sck, struct sockaddr_storage *ad
  * \param   len     how many bytes to recieve into the the buffer.
  * \return  number of bytes received.
  *-------------------------------------------------------------------------*/
-int
+ssize_t
 p_net_sck_recv( lua_State *L, struct t_net_sck *sck, struct sockaddr_storage *adr,
                               char *buf, size_t len )
 {
-	int       rcvd;
+	ssize_t       rcvd;
 	socklen_t adr_len = SOCK_ADDR_SS_LEN( adr );
 
 	if (-1 == (rcvd = recvfrom(
@@ -239,8 +240,8 @@ p_net_sck_recv( lua_State *L, struct t_net_sck *sck, struct sockaddr_storage *ad
 	  buf, len, 0,
 	  SOCK_ADDR_PTR( adr ), &adr_len)))
 	{
-		return p_net_sck_pushErrno( L, adr,
-				(NULL == adr) ? "Can't receive message" : "Can't receive Message from" );
+		p_net_sck_pushErrno( L, adr,
+			(NULL == adr) ? "Can't receive message" : "Can't receive Message from" );
 	}
 	return rcvd;
 }
@@ -466,3 +467,16 @@ p_net_sck_setSocketOption( lua_State *L, struct t_net_sck *sck , int sckOpt,
 	return 0;
 }
 
+/** -------------------------------------------------------------------------
+ * Open socket functionality for UNIX
+ * \param   void.
+ * \return  fine.
+ *-------------------------------------------------------------------------*/
+int
+p_net_sck_open( void )
+{
+	// otherwise sck:send( "foo" ) on unconnected socket crashes silently and
+	// testing that is too expensive for non-blocking sockets on each send()
+	signal( SIGPIPE, SIG_IGN );
+	return 1;
+}

@@ -28,9 +28,7 @@ Shortcut methods to create Sockets and Adresses
 The methods ``bind()``, ``connect()`` and ``listen()`` determine the
 significance of an argument by type.  This allows to use them as methods on
 an already instantiated object or as a class-level function that can create
-objects and perform operations on it in one step.  The reason for the
-flexibility is the underlying functions for bind, listen and connect that
-are called on a class level or on an instance level(method) are the same.
+objects and perform operations on it in one step. 
 
 
 Default values for ``Net.Socket()``, ``bind()``, ``connect()`` and ``listen()``
@@ -52,18 +50,34 @@ Overloaded send() and recv() methods
 
 Similarly send() and recv() act for all type of sockets.  If the socket is
 unbound/unconnected it requires a ``Net.Address`` instance to be passed
-which is then the first parameter.  Otherwise the first parameter is the
+which is then the second parameter.  The first parameter is always the
 message to be sent.  If the socket is an UDP socket the user is supposed to
 specify an address to send the datagram to.  As a result the ``send()``
-function inspects the first argument.  If it is a ``Net.Address`` it'll be
-used to send the message to it.  Otherwise the first value will be
-interpreted as a message to be send.  All of the following arguments will
-move up so that the following to function calls behave identically.
+function inspects the second argument.  If it is a ``Net.Address`` it'll be
+used to send the message to it.  Otherwise the second value will be
+interpreted as how many bytes of the message should be send. So while it is
+possible to skip arguments, the order is always the same:
+
+  # message
+  # t.Net.Address adr
+  # max bytes of message to be sent
 
 .. code:: lua
 
-  sent_bytes_count = sck:send( message_string, address, length )
+  -- valid invocations of send()
+  sent_bytes_count = sck:send( message_string )
   sent_bytes_count = sck:send( message_string, length )
+  sent_bytes_count = sck:send( message_string, address )
+  sent_bytes_count = sck:send( message_string, address, length )
+
+Like ``send()``, ``recv()`` will also accept various arguments which will
+always have the order:
+
+  # t.Net.Address
+  # t.Buffer/t.Buffer.Segment
+  # max bytes to receive
+
+Argument scan be skipped, but the order must remain as outlined.
 
 
 Class Members
@@ -79,14 +93,14 @@ Class Members
   appended to ``*_rdy`` table,  if it uses a hash index it will be written
   by the hash to that table.
 
-``Net.Socket sck, Net.Address a = Net.Socket.bind( [string ip,] int port )``
-  Creates TCP ``Net.Socket`` instance which is bound to the ``Net.Address``
-  defined via the ``ip`` string and ``port`` number.  ``ip string`` is
-  accepted as **aaa.bbb.ccc.ddd**.  If ``string ip`` is omitted the it will
-  automatically bind to **0.0.0.0**, the IP_ANY interface.
-
-``Net.Socket sck = Net.Socket.bind( Net.Address adr )``
-  Creates a TCP ``Net.Socket`` instance which is bound to ``Net.Address``.
+``Net.Socket sck, Net.Address a = Net.Socket.bind( Net.Address adr/[string host, int port] )``
+  Creates TCP ``Net.Socket`` instance which is bound to the ``Net.Address
+  adr`` or an address that is specified via ``string host:int port``.  The
+  host is accepted as **aaa.bbb.ccc.ddd** IPv4 string or as **[::]** IPv6
+  string.  If no ``Net.Address adr`` is given and no ``string host`` is
+  specified the socket will be automaticaly bound to the default ``IP_ANY``
+  interface.  If an ``Net.Address adr`` is specified, the return address
+  ``a`` is a reference to ``adr`` not a new value.
 
   .. code:: lua
 
@@ -101,17 +115,16 @@ Class Members
     sck,adr = Socket.bind( host, port ) -- Sck (TCP); Adr host:port
     sck,adr = Socket.bind( adr )        -- Sck (TCP)
 
-``Net.Socket sck, Net.Address adr = Net.Socket.listen( [string ip, int port, int backlog] )``
-  Creates a TCP ``Net.Socket sck`` instance which is listening connections
-  on the address requested via ``string ip`` and `int port` number.
-  ``string ip`` is accepted as **aaa.bbb.ccc.ddd**.  If ``string ip`` is
-  omitted it will automatically bind to **0.0.0.0**, the INADDR_ANY
-  interface.
-
-``Net.Socket sck = Net.Socket.listen( [Net.Address addr, int backlog] )``
-  Creates an IPv4 TCP ``Net.Socket sck`` instance which is listening to the
-  ``Net.Address  adr``. ``int backlog`` is optional and defaults to SOMAXCONN.
-  Here are all permutations of using the listen() class function:
+``Net.Socket sck, Net.Address adr = Net.Socket.listen( [Net.Address adr]/[string host, int port, int backlog] )``
+  Creates a TCP ``Net.Socket sck`` instance which is listening for
+  connections on ``Net.Address adr`` or the address specified  via ``string
+  host`` and ``int port`` number.  The host is accepted as **aaa.bbb.ccc.ddd**
+  IPv4 string or as **[::]** IPv string.  If no ``Net.Address adr`` is given
+  and no ``string host`` is specified the socket will be automaticaly bound
+  to the default ``IP_ANY`` interface.  If an ``Net.Address adr`` is
+  specified, the return address ``a`` is a reference to ``adr`` not a new
+  value. ``int backlog`` is optional and defaults to SOMAXCONN.  Here are
+  all permutations of using the listen() class function:
 
   .. code:: lua
 
@@ -126,21 +139,21 @@ Class Members
     sck,adr = Socket.listen(  )               -- Sck (TCP); Adr 0.0.0.0:xxxxx
     sck,adr = Socket.listen( bl )             -- Sck (TCP); Adr 0.0.0.0:xxxxx
     sck,adr = Socket.listen( host )           -- Sck (TCP); Adr host:(0)
-    sck,adr = Socket.listen( port )           -- Sck (TCP); Adr 0.0.0.0:port
+    sck,adr = Socket.listen( port, bl )       -- Sck (TCP); Adr 0.0.0.0:port
     sck,adr = Socket.listen( host, port )     -- Sck (TCP); Adr host:port
     sck,adr = Socket.listen( host, port, bl ) -- Sck (TCP); Adr host:port
     sck,adr = Socket.listen( adr )            -- Sck (TCP)
     sck,adr = Socket.listen( adr, bl )        -- Sck (TCP)
 
-``Net.Socket sck, Net.Address adr = Net.Socket.connect( [string ip, int port] )``
-  Creates an TCP ``Net.Socket`` instance which is connected to the address
-  requested via the ``ip`` string and ``port`` number.  ``string ip`` is
-  accepted as **aaa.bbb.ccc.ddd**.  If ``string ip`` is omitted the it will
-  automatically connect to **127.0.0.1**, the ``localhost``
-
-``Net.Socket sck = Net.Socket.connect( Net.Address adr )``
-  Creates an TCP ``Net.Socket`` instance which is connected to the
-  ``Net.Address``.
+``Net.Socket sck, Net.Address adr = Net.Socket.connect( Net.Address adr/[string ip, int port] )``
+  Creates a TCP ``Net.Socket sck`` instance which connected to a socket
+  listening on ``Net.Address adr`` or the address specified  via ``string
+  host`` and ``int port`` number.  The host is accepted as **aaa.bbb.ccc.ddd**
+  IPv4 string or as **[::]** IPv string.  If no ``Net.Address adr`` is given
+  and no ``string host`` is specified the socket will be automaticaly
+  connected to the default ``localhost`` interface.  If an ``Net.Address
+  adr`` is specified, the return address ``a`` is a reference to ``adr`` not
+  a new value.
 
   .. code:: lua
 
@@ -172,15 +185,21 @@ which can't be duplicated.
 Instance Members
 ----------------
 
-``Net.Address adr = Net.Socket sck:bind( [string ip, int port ])``
+``Net.Address adr = Net.Socket sck:bind( [string host, int port ])``
   Creates and returns ``Net.Address adr`` instance defined by the
   ``string ip`` and ``int port`` number and binds the ``Net.Socket sck``
   instance to it.  ``string ip`` is accepted as **aaa.bbb.ccc.ddd**.  If
   ``ip string`` is omitted it will automatically bind to **0.0.0.0**, the
   IP_ANY interface.
 
-``Net.Socket sck:bind( Net.Address addr )``
-  Binds ``Net.Socket sck`` instance to ``Net.Address adr``.
+``Net.Address adr = Net.Socket sck:bind( Net.Address adr/ [string host, int port] )``
+  Binds ``Net.Socket sck`` instance to ``Net.Address adr`` or the address
+  defined via ``string host`` and ``int port``.  The host is accepted as
+  **aaa.bbb.ccc.ddd** IPv4 string or as **[::]** IPv string.  If no
+  ``Net.Address adr`` is given and no ``string host`` is specified the
+  socket will be automaticaly connected to the default ``IP_ANY`` interface.
+  If an ``Net.Address adr`` is specified, the return address ``a`` is a
+  reference to ``adr`` not a new value.
 
   .. code:: lua
 
@@ -195,16 +214,14 @@ Instance Members
     adr  = sck.bind( host, port ) -- Adr host:port
     adr  = sck.bind( adr )        -- bind Adr
 
-``Net.Address addr = Net.Socket sck:connect( [string ip,] int port )``
-  Creates and returns ``Net.Address adr`` instance defined by ``string ip``
-  and ``int port`` number and connects the ``Net.Socket  sck`` instance to
-  it.  ``string ip`` is accepted as **aaa.bbb.ccc.ddd**.  If ``string ip``
-  is omitted it will automatically connect to **127.0.0.1**, the
-  ``localhost`` interface. In this case the port is the only argument which
-  is mandatory.
-
-``Net.Socket sck:connect( Net.Address addr )``
-  Connects the ``Net.Socket`` instance to the ``Net.Address``.
+``Net.Address adr = Net.Socket sck:connect( Net.Address adr/[string ip, int port] )``
+  Connects ``Net.Socket sck`` instance to socket listening on
+  ``Net.Address adr`` or the address defined via ``string host`` and ``int
+  port``.  The host is accepted as **aaa.bbb.ccc.ddd** IPv4 string or as
+  **[::]** IPv6 string.  If no ``Net.Address adr`` is given and no ``string
+  host`` is specified the socket will be automaticaly connected to the
+  default ``localhost`` interface. If an ``Net.Address adr`` is specified,
+  the return address ``a`` is a reference to ``adr`` not a new value.
 
   .. code:: lua
 
@@ -214,20 +231,20 @@ Instance Members
     --           port   -> integer specifying the port
     --           host   -> string specifying the IP address
 
-    adr  = sck.connect( adr )        -- perform bind and listen
+    adr  = sck.connect( adr )        -- perform connect
+    adr  = sck.connect( host )       -- Adr host:0
     adr  = sck.connect( host, port ) -- Adr host:port
 
-``Net.Address addr = Net.Socket sck:listen( [string ip,] int port, int backlog )``
-  Creates and returns ``Net.Address adr`` instance defined by the ``string
-  ip`` string and ``int port`` number and make the ``Net.Scoket sck``
-  instance listen on it.  ``ip string`` is accepted as **aaa.bbb.ccc.ddd**.
-  If ``string ip`` is omitted it will automatically listen on **0.0.0.0**,
-  the IP_ANY interface.  In this case the port is the only argument which is
-  mandatory.  Backlog defaults to SOMAXCONN.
-
-``Net.Socket sck:listen( Net.Address addr, int backlog )``
-  Makes the ``Net.Socket sck`` instance listen on ``Net.Address adr``.
-  Backlog defaults to SOMAXCONN.
+``Net.Address adr = Net.Socket sck:listen( Net.Address adr/[string ip, int port], int backlog )``
+  Makes ``Net.Socket sck`` listening for connections on ``Net.Address adr``
+  or the address specified  via ``string host`` and ``int port`` number.
+  The host is accepted as **aaa.bbb.ccc.ddd** IPv4 string or as **[::]**
+  IPv6 string.  If no ``Net.Address adr`` is given and no ``string host``
+  is specified the socket will be automaticaly bound to the default
+  ``IP_ANY`` interface.  If an ``Net.Address adr`` is specified, the
+  returned address ``a`` is a reference to ``adr`` not a new value.
+  ``int backlog`` is optional and defaults to SOMAXCONN.  Here are
+  all permutations of using the listen() instance method:
 
   .. code:: lua
 
@@ -312,14 +329,12 @@ The following explains what each argument means.
   is important for datagram(UDP) sockets.  If the ``Net.Socket sck``
   instance is already bound the ``adr`` argument has no impact.
 
-
 ``boolean msg, int len = Net.Socket sck:recv( Buffer/Segment buf )``
   Receives data from the ``Net.Socket`` instance.  Returns ``boolean msg``
   if the ``recv()`` operation was successful.  The received payload will be
   written into the ``Buffer/Segment buf`` object.  The call to ``recv()`` it
   gets automatically limited to a maximum number of bytes equal to the
   length ``#buf`` instance.
-
 
 ``boolean msg, int len = Net.Socket sck:recv( int max )``
   Receives up to ``int max`` bytes from ``Net.Socket sck``.  If both ``int
@@ -328,12 +343,19 @@ The following explains what each argument means.
   length of ``Buffer/Segment buf`` or the length or ``BUFSIZ`` ``recv()``
   will throw an error.
 
+``boolean false, string errMsg = Net.Socket sck:recv( ... )``
+  If ``recv()`` fails the first return value will evaluate to ``false``.  If
+  a system err has occured the message will be in the secind return value.
+  A return value of 0 bytes is returned as ``nil``, which also evaluates as
+  ``false`` and that is usually indicative of the peer having the socket
+  closed.  This is normal operation but can be detected via ``if sck:recv()
+  then ...``.  In this case no error meassage is returned.
+
 
 Overloaded send() method
 ........................
 
-
-Like ``recv()`` the ``send()`` method can have three arguments:
+Like ``recv()``, the ``send()`` method can have three arguments:
 
 ``Buffer/Buffer.Segment/string msg``
   This is the only mandatory argument to ``send()``.  It holds the payload
@@ -396,6 +418,98 @@ The following explains what each argument means.
 ``int sent = Net.Socket sck:sent( Buffer/Segment/string msg )``
   ``msg`` defines the payload to be sent through the socket.  It can be an
   instace of ``Buffer``, ``Buffer.Segment`` or a Lua stirng.
+
+``boolean false, string errMsg = Net.Socket sck:recv( ... )``
+  If ``recv()`` fails the first return value will evaluate to ``false``.  If
+  a system err has occured the message will be in the secind return value.
+  A return value of 0 bytes is returned as ``nil``, which also evaluates as
+  ``false`` and that is usually indicative of the peer having the socket
+  closed.  This is normal operation but can be detected via ``if sck:recv()
+  then ...``.  In this case no error meassage is returned.
+
+
+Socket properties
+.................
+
+The availability of the following modes and/or their writablity is dependent
+on the platforms implementation.
+
+``boolean b = sck.nonblock      [read/write] (O_NONBLOCK)``
+  Socket blocking mode.
+
+``boolean b = sck.broadcast"    [ read/write] (SO_BROADCAST)``
+  Permits sending of broadcast messages, if this is supported by the
+  protocol.
+
+``boolean b = sck.debug"        [ read/write] (SO_DEBUG)``
+  Turns on recording of debugging information.
+
+``boolean b = sck.dontroute"    [ read/write] (SO_DONTROUTE)``
+  Requests that outgoing messages bypass the standard routing facilities.
+
+``boolean b = sck.keepalive"    [ read/write] (SO_KEEPALIVE)``
+  Keeps connections active by enabling the periodic transmission of
+  messages, if this is supported by the protocol.
+
+``boolean b = sck.oobinline"    [ read/write] (SO_OOBINLINE)``
+  Reports whether the socket leaves received out-of-band data (data marked
+  urgent) in line.
+
+``boolean b = sck.reuseaddr"    [ read/write] (SO_REUSEADDR)``
+  Specifies that the rules used in validating addresses supplied to bind()
+  should allow reuse of local addresses, if this is supported by the
+  protocol.
+
+``boolean b = sck.reuseport"    [ read/write] (SO_REUSEPORT)``
+  Specifies that the rules used in validating addresses supplied to bind()
+  should allow reuse of local addresses, if this is supported by the
+  protocol.
+
+``boolean b = sck.useloopback"  [ read/write] (SO_USELOOPBACK)``
+  Directs the network layer (IP) of networking code to use the local
+  loopback address when sending data from this socket. Use this option only
+  when all data sent will also be received locally.
+
+
+Integer Socket options
+''''''''''''''''''''''
+
+``int n = sck.recvlow"          [ read/write] (SO_RCVLOWAT)``
+  Minimum number of bytes to process for socket input operations.
+
+``int n = sck.recvtimeout"      [ read/write] (SO_RCVTIMEO)``
+  Timeout value that specifies the maximum amount of time an input function
+  waits until it completes.
+
+``int n = sck.sendbuffer"       [ read/write] (SO_SNDBUF)``
+  Send buffer size information.
+
+``int n = sck.sendlow"          [ read/write] (SO_SNDLOWAT)``
+  Minimum number of bytes to process for socket output operations.
+
+``int n = sck.sendtimeout"      [ read/write] (SO_SNDTIMEO)``
+  Timeout value specifying the amount of time that an output function blocks
+  because flow control prevents data from being sent.
+
+``int n = sck.error"            [ read/write] (SO_ERROR)``
+  Reports information about error status and clears it.
+
+``int n = sck.recvbuffer"       [ read/write] (SO_RCVBUF)``
+  Receive buffer size information.
+
+
+String Socket Options
+''''''''''''''''''''''
+
+``string str = sck.family"      [ readonly ]``
+  Sockets family type. (AF_INET, AF_INET6, ...).
+
+``string str = sck.type"        [ readonly ] (SO_TYPE)``
+  Socket type. (STREAM, DGRAM, ...).
+
+``string str = sck.protocol"    [ readonly ] (SO_PROTOCOL)``
+  Socket protocol. (TCP, UDP, ...).
+
 
 
 Instance Metamembers

@@ -89,6 +89,7 @@ static int
 lt_net_sck_close( lua_State *L )
 {
 	struct t_net_sck *sck = t_net_sck_check_ud( L, 1, 1 );
+	//printf("CLOSING SOCK: %d\n", sck->fd);
 	return p_net_sck_close( L, sck );
 }
 
@@ -227,7 +228,7 @@ static int
 lt_net_sck_send( lua_State *L )
 {
 	size_t                   len; // length of message to send
-	int                      snt; // actually sent bytes
+	ssize_t                  snt; // actually sent bytes
 	struct t_net_sck        *sck = t_net_sck_check_ud( L, 1, 1 );
 	char                    *msg = t_buf_checklstring( L, 2, &len, NULL );
 	struct sockaddr_storage *adr = t_net_adr_check_ud( L, 3, 0 );
@@ -236,16 +237,9 @@ lt_net_sck_send( lua_State *L )
 	                               : len;
 
 	snt = p_net_sck_send( L, sck, adr, msg, (max<len) ? max : len );
-	if (0==snt || -1 == snt)
-		lua_pushnil( L );
-	else
+	if (snt > -1)
 		lua_pushinteger( L, snt );
-	if (-1 == snt)               //S: err,nil
-	{
-		lua_rotate( L, -2, -1 );  //S: nil,err
-	}
-
-	return 1;
+	return ((snt < 0) ? 2 : 1);   // if <0 there is false and errMsg on stack
 }
 
 
@@ -260,16 +254,16 @@ lt_net_sck_send( lua_State *L )
  * possible to pass an offset to Buffer, instead use a temporary Buffer.Segement
  * to compose a bigger Buffer from multiple recv() operations.  The following
  * permutations are possible:
- *   str ,int,err = sck:recv( )
- *   str ,int,err = sck:recv( adr )
- *   str ,int,err = sck:recv( max )
- *   bool,int,err = sck:recv( buf/seg )
- *   str ,int,err = sck:recv( adr, max )
- *   bool,int,err = sck:recv( adr, buf/seg )
- *   bool,int,err = sck:recv( buf/seg, max )
- *   bool,int,err = sck:recv( adr, buf/seg, max )
- * \usage   string msg, int cnt, str err = sck:recv( [Net.Address adr, int size ] )
- * \usage   bool rcvd, int cnt, str err  = sck:recv( [Net.Address adr,] Buffer/Segment buf[, int size ] )
+ *   str ,int = sck:recv( )
+ *   str ,int = sck:recv( adr )
+ *   str ,int = sck:recv( max )
+ *   bool,int = sck:recv( buf/seg )
+ *   str ,int = sck:recv( adr, max )
+ *   bool,int = sck:recv( adr, buf/seg )
+ *   bool,int = sck:recv( buf/seg, max )
+ *   bool,int = sck:recv( adr, buf/seg, max )
+ * \usage   string msg, int cnt = sck:recv( [Net.Address adr, int size ] )
+ * \usage   bool rcvd, int cnt  = sck:recv( [Net.Address adr,] Buffer/Segment buf[, int size ] )
  * \param   L      Lua state.
  * \lparam  sck    Net.Socket  userdata instance.       -> mandatory
  * \lparam  adr    Net.Address userdata instance.       -> optional
@@ -286,7 +280,7 @@ lt_net_sck_recv( lua_State *L )
 	size_t                   len  = 0;  // length of sink
 	size_t                   max;       // desired or determined size to recv
 	int                      cw   = 0;  // test buffer to be writeable
-	int                      rcvd = 0;  // actually rcvd bytes
+	ssize_t                  rcvd = 0;  // actually rcvd bytes
 	char                     buf[ BUFSIZ ]; // char buffer if no t.Buffer is passed
 	char                    *msg;       // char pointer to recv into
 	size_t                   args = lua_gettop( L );
@@ -299,27 +293,22 @@ lt_net_sck_recv( lua_State *L )
 		max = (args == ((NULL==adr) ?3 :4)) ? (size_t) luaL_checkinteger( L, (NULL==adr) ?3 :4 ) : len;
 		luaL_argcheck( L, max<=len, (NULL==adr) ?2 :3, "max must be smaller than sink" );
 		rcvd = p_net_sck_recv( L, sck, adr, msg, max );
-		lua_pushboolean( L, 0 != rcvd && -1 != rcvd);
+		if (rcvd > 0 )  // 0 for nothing received
+			lua_pushboolean( L, 1 );
 	}
 	else
 	{
 		max = (args == ((NULL==adr) ?2 :3)) ? luaL_checkinteger( L, (NULL==adr) ?2 :3 ) : BUFSIZ-1;
 		luaL_argcheck( L, max<BUFSIZ, (NULL==adr) ? 2:3, "max must be smaller than BUFSIZ" );
 		rcvd = p_net_sck_recv( L, sck, adr, buf, max );
-		if (rcvd < 1 )  // 0 for nothing received, -1 for errno being set
-			lua_pushnil( L );
-		else
+		if (rcvd > 0 )  // 0 for nothing received, -1 for errno being set
 			lua_pushlstring( L, buf, rcvd );
 	}
-
-	lua_pushinteger( L, rcvd );
-	if (-1==rcvd)                //S: err,fls,rcd
-	{
-		lua_rotate( L, -3, -1 );  //S: fls,rcd,err
-		return 3;
-	}
-	else
-		return 2;
+	if (rcvd == 0)
+		lua_pushnil( L );
+	if ( rcvd > -1 )
+		lua_pushinteger( L, (lua_Integer) rcvd );
+	return 2;
 }
 
 
@@ -540,6 +529,7 @@ luaopen_t_net_sck( lua_State *L )
 	luaL_newmetatable( L, T_NET_SCK_TYPE );   // stack: functions meta
 	luaL_setfuncs( L, t_net_sck_m, 0 );
 	lua_pop( L, 1 );
+	p_net_sck_open( );    // native initialization
 
 	// Push the class onto the stack
 	// this is avalable as Socket.<member>

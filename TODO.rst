@@ -2,10 +2,10 @@ Known tasks to be done for lua-t
 ================================
 
 
- - [ ] Fix/complete Net.Socket documentation
+ - [X] Fix/complete Net.Socket documentation
  - [X] Fix add/remove handling for t_ael(Loop)
- - [ ] Add UnitTest for t_ael(Loop)
- - [ ] Add Documentation for t_ael(Loop)
+ - [X] Add UnitTest for t_ael(Loop)
+ - [X] Add Documentation for t_ael(Loop)
  - [ ] Add WebSocket implementation
  - [ ] Add BearSSL for tls/crypt/encode decode wrappers
  - [ ] add __index/__newindex to t_tim_* instead of having it all function

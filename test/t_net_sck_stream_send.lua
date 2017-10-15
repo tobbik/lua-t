@@ -118,7 +118,7 @@ local tests = {
 			string.rep( 'THis Is a LittLe Test-MEsSage To bE sEnt ACcroSS the WIrE ...!_', 50000 )
 		local sender = function( s )
 			local cnt = s.cSck:send( payload:sub( outCount+1 ), 128 )
-			if cnt then
+			if cnt>0 then
 				sendCount = sendCount+1
 				outCount  = cnt + outCount
 			else
@@ -138,7 +138,7 @@ local tests = {
 			string.rep( 'THis Is a LittLe Test-MEsSage To bE sEnt ACcroSS the WIrE ...!_', 600000 )
 		local sender = function( s )
 			local cnt = s.cSck:send( payload:sub( outCount+1 ) )
-			if cnt then
+			if cnt > 0 then
 				sendCount = sendCount+1
 				outCount  = cnt + outCount
 			else
@@ -175,7 +175,7 @@ local tests = {
 		local sender   = function( s )
 			seg           = seg and seg:next() or buf:Segment( 1, 128 )
 			local cnt = s.cSck:send( seg )
-			if cnt then
+			if cnt > 0 then
 				sendCount = sendCount+1
 				outCount  = cnt + outCount
 			else
@@ -196,7 +196,7 @@ local tests = {
 		local buf    = Buffer( payload )
 		local sender = function( s )
 			local cnt = s.cSck:send( buf:Segment( outCount+1 ) )
-			if cnt then
+			if cnt > 0 then
 				sendCount = sendCount+1
 				outCount  = cnt + outCount
 			else
