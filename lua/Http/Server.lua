@@ -35,10 +35,13 @@ local accept = function( self )
 end
 
 local listen = function( self, host, port, bl )
+	self.sck = Socket( 'tcp' )
+	self.sck.reuseaddr = true
+	self.sck.reuseport = true
 	if 'number' == type( host ) then
-		self.sck, self.adr = Socket.listen( host, bl and bl or 5 )
+		self.adr = self.sck:listen( host, port and port or 5 )
 	else
-		self.sck, self.adr = Socket.listen( host, port, bl and bl or 5 )
+		self.adr = self.sck:listen( host, port, bl and bl or 5 )
 	end
 	if not self.sck then
 		error( "Could not start HTTP Server because: " .. self.adr )

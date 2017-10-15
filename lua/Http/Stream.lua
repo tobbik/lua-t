@@ -43,7 +43,8 @@ local recv = function( self )
 	local data,rcvd = self.cli:recv( )
 	if not data then
 		-- it means the other side hung up; No more responses
-		print( format("----------------REMOVE read handler -> RECEIVE FAILURE on `%s`(%s)", self.cli, recv ) )
+		print( format("----------------REMOVE read handler -> RECEIVE FAILURE on `%s`(%s) [%s]",
+			self.cli, rcvd, type(data) ) )
 		-- dispose of itself ... clear requests, buffer etc...
 		self.srv.ael:removeHandle( self.cli, 'read' )
 		destroy( self )
