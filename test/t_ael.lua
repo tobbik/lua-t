@@ -35,13 +35,13 @@ local   tests = {
 	test_cb_Timer = function( self, done )
 		Test.Case.describe( "Test simple Timer" )
 		local arg1,arg2  = 100, 'this is a string'
-		local tm, tmx    = Time( 1500 ), Time( )
+		local tm, tmx    = Time( 200 ), Time( )
 		local success    = function(a,b)
 			tmx:since()
 			local ms_passed = tmx:get()
 			assert( a == arg1, "First argument should be " .. arg1 )
 			assert( b == arg2, "Second argument should be " .. arg2 )
-			assert( ms_passed > 1400 and ms_passed < 1600,
+			assert( ms_passed > 150 and ms_passed < 250,
 				"Time passed should be between 4500 and 5500 milliseconds" )
 			done()
 		end
@@ -79,7 +79,7 @@ local   tests = {
 
 	test_cb_OverwriteTimerHandler = function( self, done )
 		Test.Case.describe( "Overwrite Timer callback Handler" )
-		local tm = Time( 1000 )
+		local tm = Time( 123 )
 		local r1 = false
 		local f1 = function( a )
 			assert( false, "This function should not ran and have been replaced" )
@@ -102,13 +102,13 @@ local   tests = {
 		local args
 		local msg1, msg2 = 'Message1', 'Message2'
 		local msg = msg1
-		local tm  = Time( 1000 )
+		local tm  = Time( 111 )
 		local f1  = function( m )
 			t_assert( m == msg, "Expected `%s`, got `%s`", msg, m )
 			msg     =  msg2
 			args[2] = msg2
 			if m == msg1 then
-				tm:set( 1000 )
+				tm:set( 99 )
 				return tm
 			else
 				done( )
@@ -122,7 +122,7 @@ local   tests = {
 		--Test.Case.skip( "" )
 		Test.Case.describe( "Overwrite Timer callback Handlers function" )
 		local args
-		local tm  = Time( 1000 )
+		local tm  = Time( 111 )
 		local f2  = function(  )
 			t_assert( true, "Should execute")
 			done( )
@@ -130,7 +130,7 @@ local   tests = {
 		local f1  = function(  )
 			t_assert( true, "Should execute")
 			args[1] = f2
-			tm:set( 1000 )
+			tm:set( 99 )
 			return tm
 		end
 		self.loop:addTimer( tm, f1, msg1 )

@@ -88,6 +88,10 @@ int
 p_ael_addhandle_impl( lua_State *L, struct t_ael *ael, int fd, enum t_ael_msk addmsk )
 {
 	struct t_ael_ste  *state = ael->state;
+	//printf("ADDING DESCRIPTOR: %d: {%s + %s = %s}\n", fd,
+	//		t_ael_msk_lst[ ael->fdSet[ fd ]->msk ],
+	//		t_ael_msk_lst[ addmsk ],
+	//		t_ael_msk_lst[ addmsk | ael->fdSet[ fd ]->msk ] );
 	addmsk |= ael->fdSet[ fd ]->msk;   // Merge old events
 	// If the fd was already monitored for some event, we need a MOD
 	// operation. Otherwise we need an ADD operation.
@@ -102,7 +106,9 @@ p_ael_addhandle_impl( lua_State *L, struct t_ael *ael, int fd, enum t_ael_msk ad
 	if (addmsk & T_AEL_WR) ee.events |= EPOLLOUT;
 	ee.data.fd = fd;
 	if (-1 == epoll_ctl( state->epfd, op, fd, &ee ))
-		return t_push_error( L, "Error adding descriptor to set" );
+		return t_push_error( L, "Error %s descriptor [%d:%s] to set",
+				(op == EPOLL_CTL_MOD) ? "modifying" : "adding",
+				fd, t_ael_msk_lst[ addmsk ] );
 	return 1;
 }
 
@@ -118,6 +124,10 @@ int
 p_ael_removehandle_impl( lua_State *L, struct t_ael *ael, int fd, enum t_ael_msk delmsk )
 {
 	struct t_ael_ste  *state = ael->state;
+	//printf("REMOVING DESCRIPTOR: %d: {%s - %s = %s}\n", fd,
+	//		t_ael_msk_lst[ ael->fdSet[ fd ]->msk ],
+	//		t_ael_msk_lst[ delmsk ],
+	//		t_ael_msk_lst[ ael->fdSet[ fd ]->msk & (~delmsk) ] );
 	delmsk = ael->fdSet[ fd ]->msk & (~delmsk);
 	// If the fd remains monitored for some event, we need a MOD
 	// operation. Otherwise we need an DEL operation.
@@ -132,7 +142,9 @@ p_ael_removehandle_impl( lua_State *L, struct t_ael *ael, int fd, enum t_ael_msk
 	if (delmsk & T_AEL_WR) ee.events |= EPOLLOUT;
 	ee.data.fd = fd;
 	if (-1 == epoll_ctl( state->epfd, op, fd, &ee ))
-		return t_push_error( L, "Error removing descriptor from set" );
+		return t_push_error( L, "Error %s descriptor [%d:%s] in set",
+				(op == EPOLL_CTL_MOD) ? "modifying" : "removing",
+				fd, t_ael_msk_lst[ delmsk ] );
 	return 1;
 }
 

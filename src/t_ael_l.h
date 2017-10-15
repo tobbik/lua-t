@@ -24,6 +24,13 @@ enum t_ael_msk {
 	T_AEL_RW = 0x03,        ///< Read and Write on handle
 };
 
+static const char* t_ael_msk_lst[ ] = {
+	  "NONE"
+	, "READ"
+	, "WRITE"
+	, "READWRITE"
+};
+
 
 // definition for file/socket descriptor node
 struct t_ael_dnd {

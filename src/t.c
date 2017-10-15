@@ -112,7 +112,7 @@ t_push_error( lua_State *L, const char *fmt, ... )
 	va_list argp;
 	if (NULL==fmt)
 	{
-		if (0==errno) return luaL_error( L, strerror( errno ) );
+		if (0!=errno) return luaL_error( L, strerror( errno ) );
 		else          return luaL_error( L, "Unknown Error" );
 	}
 	else
