@@ -1,6 +1,5 @@
-#!../out/bin/lua
-Net,Buffer,Loop  = require't.Net',require't.Buffer',require't.Loop'
-host   = Net.Interface( 'default' ).AF_INET.address.ip
+Socket,Interface,Buffer,Loop  = require't.Net.Socket', require't.Net.Interface',require't.Buffer',require't.Loop'
+host   = Interface( 'default' ).AF_INET.address.ip
 port   = 8888
 l      = Loop( 10 )
 bInc   = Buffer( 1024*20 )
@@ -42,7 +41,7 @@ accept = function( s )
 	l:addHandle( c, 'read', read, c )
 end
 
-sSck,sAdr = Net.Socket.listen( host, port, 5 )
+sSck,sAdr = Socket.listen( host, port, 5 )
 sSck.nonblock = true
 print( sSck, sAdr, l )
 l:addHandle( sSck, 'read', accept, sSck )

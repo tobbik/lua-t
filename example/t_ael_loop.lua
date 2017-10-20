@@ -1,4 +1,11 @@
-#!../out/bin/lua
+---
+-- \file       examples/t_ael_loop.lua
+--             Push a few random timers on the loop that refresh themselves by
+--             returning another timer.  If the random value is under a
+--             treshhold it returns null, thus removing this timer from the
+--             loop.  Allows to introspect whats going on, by sending commands
+--             via UDP socket. Use udp_cmd_cli.lua to do so.
+
 Net,Loop,Time  = require't.Net',require't.Loop',require't.Time'
 s  = Net.Socket( 'UDP', 'ip4' )
 s:bind( 8888 )
@@ -14,6 +21,7 @@ end
 
 dR = function()
 	local d = debug.getregistry()
+	-- cheap way to find curried sockets and functions
 	for i=#d,3,-1 do
 		if type(d[i]) =='table' then
 			print( "TABLE", i, d[i] )

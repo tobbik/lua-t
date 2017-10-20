@@ -2,7 +2,7 @@
 Pack,Buffer=require't.Pack',require't.Buffer'
 
 -- pack syntax for the format string is based of Lua 5.3 
-p = Pack('<i2')                         -- Little endian 2 byt integer
+p = Pack('<i2')                         -- Little endian 2 byte integer
 c = Pack('>i2')
 
 ts = Pack(

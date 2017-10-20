@@ -1,26 +1,19 @@
 #!../out/bin/lua
 Net,Buffer=require('t.Net'),require't.Buffer'
-ipAddr = arg[1] and arg[1] or Net.Interface( 'default' ).AF_INET.address:get()
+ipAddr = arg[2] and arg[2] or Net.Interface( 'default' ).AF_INET.address.ip
 port   = arg[2] and arg[2] or 8888
 
---if arg[ 3 ] == c then
---	tcpsock = Net.Socket( ) -- implicit TCP and ip4
---	sip     = Net.IPv4( ipAddr, port )
---	cip     = Net.IPv4( ipAddr, 11111 )
---	--for k,v in pairs(getmetatable(tcpsock)) do print( k, v ) end
---	tcpsock:bind( cip )               -- control outgoing port for client
---	tcpsock:connect( sip )
---else
---	tcpsock, sip = Net.Socket.connect( ipAddr, port )
---end
-tcpsock, sip = Net.Socket.connect( ipAddr, port )
-print( tcpsock, sip, cip )
+if arg[ 1 ] == 'c' then
+	sck,adr1 = Net.Socket.bind( ipAddr, 11111 )  -- control outgoing port for client
+	adr2     = sck:connect( ipAddr, port )
+else
+	sck, adr2 = Net.Socket.connect( ipAddr, port )
+end
+print( sck, adr1, adr2 )
 
 --buf  = Buffer( string.rep( '0123456789', 12345678 ) )
 buf  = Buffer( string.rep( 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz', 123456 ) )
-local snt = tcpsock:send( buf )
+local snt = sck:send( buf )
 assert( snt == #buf, "Send in one rush expected" )
 print( "DONE", '\n', snt, "\n" )
-tcpsock:close( )
-buf = nil
-collectgarbage()
+sck:close( )

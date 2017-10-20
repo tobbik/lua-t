@@ -11,7 +11,6 @@ Timer = require't.Time'
 t_async = function( self, done )
 	Test.Case.describe( 'Running an asynchrounous Timer test' )
 	local rTimeMs = math.random( 500, 3000 )
-	print( "SETTIN TIMER: ", rTimeMs)
 	self.loop:addTimer( 
 		Timer( rTimeMs ),
 		function( tm )
@@ -33,11 +32,9 @@ tbl = {
 		self.loop    = Loop(20) 
 		print("+++++++++++++++++++++++++++++++BEFORE ALL")
 		math.randomseed(os.time())
-		local tm = Timer(1)
-		print(tm)
 		self.a = 10
 		self.b = 20
-		self.loop:addTimer( tm, done )
+		self.loop:addTimer( Timer(1), done )
 		-- loop:run() blocks further execution but the done function here is the
 		-- test runner itself.  When it get's executed it will loop over all test
 		-- cases which in turn puts all of them on the loop pretty much in parallel

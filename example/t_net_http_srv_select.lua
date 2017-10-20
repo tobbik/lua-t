@@ -1,11 +1,11 @@
-#!../out/bin/lua
-local Net=require('t.Net')
-local sport=8005
+-- a naive webserver implementation based on the select() system call
+-- just to show how it's done, please use t.Http.Server instead
 
---srv,ip = t.Net..Socket.bind(sport)
---srv:listen(5)
-srv,ip = Net.Socket.listen( sport, 5 )
-print( srv, ip )
+local Socket = require('t.Net.Socket')
+local s_port = 8005
+
+srv,adr = Socket.listen( s_port, 5 )
+print( srv, adr )
 x = 0
 remSock = function( t, s)
 	for k,v in ipairs(t) do if v==s then table.remove( t, k ) break end end
@@ -16,7 +16,7 @@ rsocks,wsocks  = { srv = srv }, { }
 
 while true do
 	print( #rsocks, #wsocks )
-	local rds, wrs = Net.Socket.select( rsocks, wsocks )
+	local rds, wrs = Socket.select( rsocks, wsocks )
 	print( #rds, #wrs )
 	-- new connection
 	if rds.srv then

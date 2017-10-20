@@ -1,3 +1,3 @@
-local Encode = require("t.buf")
+local Encode = require("t.enc")
 
 return Encode.crc

@@ -21,8 +21,3 @@ for k,v in pairs( getmetatable( tm ) ) do
 	print( '', k, type( v ), v )
 end
 
-print( tm, "MetaMeta-Members:" )
-for k,v in pairs( getmetatable( tm ).__index ) do
-	print( '', k, type( v ), v )
-end
-

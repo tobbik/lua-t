@@ -1,6 +1,6 @@
-#!../out/bin/lua
+Socket,Address,Interface =
+	require('t.Net.Socket'),require('t.Net.Address'),require('t.Net.Interface')
 local Net = require( 't.Net' )
-local fmt = string.format
 
 ipadd     = arg[1] or '127.0.0.1'
 
@@ -14,8 +14,8 @@ print_help = function( )
 		reg       - show table references in registry]] )
 end
 
-s   = Net.Socket( 'UDP', 'ip4' )
-adr = Net.Address( ipadd, 8888 )
+s   = Socket( 'UDP', 'ip4' )
+adr = Address( ipadd, 8888 )
 print( s, adr )
 while true do
 	io.write( "Enter command and type enter ('help' for command list': " )

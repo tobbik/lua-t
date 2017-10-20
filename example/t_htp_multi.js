@@ -37,7 +37,7 @@ var h01= http.createServer( function(req, res) {
 
 
 
-var fileName = 'buf.lua';
+var fileName = 't_oht.lua';
 var stats    = fs.statSync( fileName );
 var fSz      = stats.size;
 var h02 = http.createServer( function( req, res ) {

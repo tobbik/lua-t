@@ -2,7 +2,6 @@ T      = require't'
 Pack   = require( "t.Pack" )
 Buffer = require( "t.Buffer" )
 Oht    = require( "t.OrderedHashTable" )
-rep    = string.rep
 utl    = T.require('t_pck_utl')
 
 --          >I3       <i2   b   B    >I5           <I4          h
@@ -43,9 +42,9 @@ print( "Struct:  ", #p , p )
 print( "Sequence Iterator" );
 utl.get( p, b )
 
-b1     = Buffer( #b )
+b1     = Buffer( #b )       -- empty buffer, same length as b
 print( b1:toHex(), '', '', #b1 )
-utl.set( p, b1, expect )
+utl.set( p, b1, expect )    -- iterate over p and fill b1 with values from expect
 print( b1:toHex(), '', '', #b1, b1:read() )  -- expecting same as buffer b
 
 assert( b1 == b, "The buffer shall be identical" )

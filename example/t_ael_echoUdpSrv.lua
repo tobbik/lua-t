@@ -1,22 +1,26 @@
-#!../out/bin/lua
-Net,Loop = require't.Net',require't.Loop'
-host     = Net.Interface( 'default' ).AF_INET.address.ip
+---
+-- \file    example/t_ael_echoUdpSrv.lua
+--          A UDP echo Server assuming each incoming UDP package has a payload
+--          with an incremented number.  Keeps track of missing packages.
+
+Socket,Address,Interface,Loop = require't.Net.Socket',require't.Net.Address',require't.Net.Interface',require't.Loop'
+host     = Interface( 'default' ).AF_INET.address.ip
 port     = 8888
 l        = Loop( 10 )
 msg      = nil
-sSck     = Net.Socket( 'udp' )
-sAdr     = Net.Address( host, port )
-cAdr     = Net.Address( )
+sSck     = Socket( 'udp' )
+sAdr     = Address( host, port )
+cAdr     = Address( )
 rcv,lst,cnt = 0,0,0
 
 echo = function( c, close )
 	local snt = 0
 	if close then
-		snt  = c:send( cAdr, '', 0 )
+		snt  = c:send( '', cAdr, 0 )
 		print( "GOT BURST:", cnt, lst, rcv )
 		rcv,lst,cnt = 0,0,0
 	else
-		snt  = c:send( cAdr, msg )
+		snt  = c:send( msg, cAdr )
 	end
 	l:removeHandle( c, 'write' )
 end

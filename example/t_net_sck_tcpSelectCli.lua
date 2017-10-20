@@ -16,7 +16,7 @@ sent  = 0
 while true do
 	local rds, wds = Net.Socket.select( {}, conns )
 	if wds.client then
-		local snt = wds.client:send( Buffer.Segment( buf, sent+1 ) )
+		local snt = wds.client:send( buf:Segment( sent+1 ) )
 		if snt and snt>0 then
 			sent = sent + snt
 			print( "SENT:", snt, sent, #buf )
@@ -25,4 +25,4 @@ while true do
 		end
 	end
 end
---tcpsock:close( )
+tcpsock:close( )

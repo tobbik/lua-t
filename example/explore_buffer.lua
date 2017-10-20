@@ -21,8 +21,4 @@ for k,v in pairs( getmetatable( bf ) ) do
 	print( '', k, type( v ), v )
 end
 
-print( bf, "MetaMeta-Members:" )
-for k,v in pairs( getmetatable( bf ).__index ) do
-	print( '', k, type( v ), v )
-end
 

@@ -5,6 +5,6 @@ b=Buffer( 'ABCDEFGH' )
 
 a=Pack( '>I2', 4)
 
-x = a( b )
-print(a,b,x)
-for i,v in pairs(x) do print(i,v) end
+x = a( b )  -- create a result array
+
+for i,v in pairs(x) do print( i, v, a[i](b) ) end

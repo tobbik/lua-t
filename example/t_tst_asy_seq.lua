@@ -11,7 +11,7 @@ Timer = require't.Time'
 t_async = function( self, done )
 	Test.Case.describe( 'Running an asynchrounous Timer test' )
 	local rTimeMs = math.random(500,3000)
-	self.loop:addTimer( 
+	self.loop:addTimer(
 		Timer( rTimeMs ),
 		function( tm )
 			print( "Finished Timer with " ..tm.. " milliseconds" )
@@ -56,6 +56,7 @@ tbl = {
 		done( )
 	end,
 }
+
 for i=1,25 do
 	tbl[ 'test_cb_'..i ] = t_async
 	tbl[ 'test_'..i ]    = t_sync

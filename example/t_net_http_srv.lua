@@ -1,12 +1,12 @@
-#!../out/bin/lua
-Net      = require( 't.Net' )
+-- fully blocking HTTP Server
+
+Socket      = require( 't.Net.Socket' )
 
 s_port = 8003
 answer = 'This is my answer'
 
-srv,adr = Net.Socket.listen( s_port, 5 )
+srv,adr = Socket.listen( s_port, 5 )
 print( tostring(srv) .. " listening on '" ..adr.ip.. ":" ..adr.port.. "' (" ..tostring( adr ).. ")..."  )
-x=0
 payload= 'HTTP/1.1 200 OK\r\r' ..
 'Content-Length: ' .. #answer .. '\r\n' ..
 'Date: Tue, 20 Jan 2015 20:56:55 GMT\r\n\r\n' ..
@@ -25,7 +25,5 @@ while true do
 	print( '\tsend : ' ..len.. " BYTES VIA:  "..tostring( cli ) )
 	cli:close( )
 	collectgarbage( )
-	x = x+1
-	if 0==x%10 then print( "CC" ); collectgarbage() end
 end
 srv:close( )
