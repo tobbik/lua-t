@@ -7,11 +7,11 @@
 -- \author    tkieslich
 -- \copyright See Copyright notice at the end of src/t.h
 
-local Loop, T, Timer = require't.Loop', require't'
+local Loop, T, Time = require't.Loop', require't', require't.Time'
 local t_insert    , t_remove    , getmetatable, setmetatable, assert, type,  o_time =
       table.insert, table.remove, getmetatable, setmetatable, assert, type, os.time
 
-local Request         = require't.Http.Request'
+local Request       = require't.Http.Request'
 
 local format=string.format
 
@@ -31,13 +31,17 @@ local getRequest = function( self )
 end
 
 local destroy = function( self )
-	-- print( "DESTROY:", self )
+	if o_time() - self.created > 2 then
+		print( "LONG RUNNING STREAM", self.cli )
+	end
+	--print( "DESTROY:", self )
 	self.requests  = nil
 	self.responses = nil
 	self.srv.streams[ self.cli ] = nil
 	self.cli:close( )
 	self.cli = nil
 end
+
 
 local recv = function( self )
 	local data,rcvd = self.cli:recv( )
@@ -63,6 +67,7 @@ local recv = function( self )
 	end
 end
 
+
 local resp = function( self )
 	local runCount, id = 0, nil
 	if not self.responses then return end
@@ -79,7 +84,13 @@ local resp = function( self )
 		end
 	end
 	--print( "runCount:",runCount, "id", id )
-	if id then self.responses[ id ] = nil end
+	if id then
+		local dur = o_time( ) - self.responses[ id].created
+		if dur > 1 then
+			print( "----------  LONG REQUEST ", self.cli, "took seconds:", dur )
+		end
+		self.responses[ id ] = nil
+	end
 	if 1==runCount then      -- no further response in the stream
 		--print( "------REMOVING write handler", self.cli)
 		self.srv.ael:removeHandle( self.cli, "write" )
@@ -132,6 +143,7 @@ return setmetatable( {
 			, receiving  = true
 			, responding = false
 			, lastAction = o_time()
+			, created    = o_time()
 		}
 
 		--print( "+++++ADDING read handler", cli)

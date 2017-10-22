@@ -70,4 +70,5 @@ clean:
 
 run: $(SCREEN_RC)
 	$(SCREEN) -S lua -c "$(SCREEN_RC)"
+	#urxvtc -e $(SCREEN) -S perf -c "screen-perf.rc"
 

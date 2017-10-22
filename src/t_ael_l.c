@@ -57,8 +57,8 @@ t_ael_getHandle( lua_State *L, int pos, int check )
 			fd = fileno( lS->f );
 	}
 
-	luaL_argcheck( L, !check || fd>0  , pos, "Expected file or socket" );
-	luaL_argcheck( L, !check || fd!=-1, pos, "descriptor mustn't be closed" );
+	luaL_argcheck( L, !check || fd != -1, pos, "descriptor mustn't be closed" );
+	luaL_argcheck( L, !check || fd > 0  , pos, "Expected a Lua file or t.Net.Socket" );
 	return fd;
 }
 
@@ -125,8 +125,8 @@ t_ael_adjustTimers( struct t_ael_tnd **tHead, struct timeval *tAdj )
 
 /**----------------------------------------------------------------------------
  * Takes refPosition and gets table onto the stack.  Executes function.
- * Stack before: {fnc, p1, p2, p3, ... }
- * Stack after:   fnc  p1  p2  p3  ...
+ * Stack before: {fnc, p1, p2, p3, … }
+ * Stack after:   fnc  p1  p2  p3  …
  * \param   L     Lua state.
  * \param   int   Reference positon.
  * \return  int   Number of arguments to be called by function.
@@ -275,7 +275,7 @@ struct t_ael
  * \lparam  ud     T.Net.Socket or LUA_FILEHANDLE userdata instance.  // 2
  * \lparam  string r,rd,read incoming, w,wr,write outgoing            // 3
  * \lparam  func   to be executed when event handler fires.           // 4
- * \lparam  ...    parameters to function when executed.              // 5 ...
+ * \lparam  …      parameters to function when executed.              // 5 …
  * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int
@@ -309,21 +309,21 @@ lt_ael_addhandle( lua_State *L )
 	dnd->msk |= msk;
 	ael->fdMax = (fd > ael->fdMax) ? fd : ael->fdMax;
 
-	lua_createtable( L, n-4, 0 );  // create function/parameter table
-	lua_insert( L, 4 );                            //S: ael hdl dir tbl fnc …
+	lua_createtable( L, n-4, 0 );      // create function/parameter table
+	lua_insert( L, 4 );                //S: ael hdl dir tbl fnc …
 	while (n > 4)
 		lua_rawseti( L, 4, (n--)-4 );   // add arguments and function (pops each item)
 	// pop the function reference table and assign as read or write function
 	if (T_AEL_RD & msk)
 	{
-		if (LUA_REFNIL != dnd->rR)     // if overwriting -> allow for __gc
+		if (LUA_REFNIL != dnd->rR)      // if overwriting -> allow for __gc
 			luaL_unref( L, LUA_REGISTRYINDEX, dnd->rR );
 		dnd->rR = luaL_ref( L, LUA_REGISTRYINDEX );
 		//printf(" ======ADDED HANDLE(READ): %d(%d) \n", dnd->rR, fd );
 	}
 	else
 	{
-		if (LUA_REFNIL != dnd->wR)     // if overwriting -> allow for __gc
+		if (LUA_REFNIL != dnd->wR)      // if overwriting -> allow for __gc
 			luaL_unref( L, LUA_REGISTRYINDEX, dnd->wR );
 		dnd->wR = luaL_ref( L, LUA_REGISTRYINDEX );
 		//printf(" ======ADDED HANDLE(WRITE): %d(%d) \n", dnd->wR, fd );
@@ -408,7 +408,7 @@ lt_ael_removehandle( lua_State *L )
  * \lparam  ud   T.Loop userdata instance.                   // 1
  * \lparam  ud   T.Time userdata instance.                   // 2
  * \lparam  func to be executed when event handler fires.    // 3
- * \lparam  ...  parameters to function when executed.       // 4 ...
+ * \lparam  …    parameters to function when executed.       // 4 …
  * \return  int  # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int
@@ -441,7 +441,7 @@ lt_ael_addtimer( lua_State *L )
 	//p_ael_addtimer_impl( ael, tv );
 	lua_createtable( L, n-3, 0 );  // create function/parameter table
 	lua_insert( L, 3 );
-	// Stack: ael,tv,tbl,clb,...
+	// Stack: ael,tv,tbl,clb,…
 	while (n > 3)
 		lua_rawseti( L, 3, (n--)-3 );             // add args and callback (pops each item)
 	tnd->fR = luaL_ref( L, LUA_REGISTRYINDEX );  // pop the function/parameter table
@@ -662,8 +662,8 @@ lt_ael__index( lua_State *L )
 	struct t_ael_tnd *tnd = ael->tmHead;
 	int               fd  = 0;
 
-	// return method: stop, stop, addHandle, ...
-	if (LUA_TSTRING == lua_type( L, 2 ))
+
+	if (LUA_TSTRING == lua_type( L, 2 )) // return method: run, stop, addHandle, …
 	{
 		lua_getmetatable( L, 1 );
 		lua_pushvalue( L, 2 );

@@ -25,8 +25,15 @@ Lua vs C
 lua-t started out as a pure monolithic C-library.  This design allowed to
 have C-based functions that can be reused within the framework itself.  It
 since moved to a layer of Lua libraries on top of the C-Monolioth which
-provides the C-functions that can't be implemented in Lua.  It makes the
+provide the C-functions that can't be implemented in Lua.  It makes the
 monolith significantly smaller.
+
+Eventually, the native module have been split into submodules and the code
+got re-organized to re-use code at minimal duplication (binary duplication
+that is).  This allows loading more specifically what is needed and keeps
+the memory footprint low.  Going forward, modularization is becoming a more
+important factor in designing functionality maybe to the point that the
+desired group of functionality can be defined at build time.
 
 
 Functionality
@@ -45,7 +52,7 @@ made more rounded and more useful.
 Contents (High level overview)
 -----------------------------
 
- - Networking (t.Net.*)   --> TCP,UDP,Addresses etc
+ - Networking (t.Net.*)   --> TCP,UDP,Sockets,Addresses,Interfaces etc
  - Buffers (t.Buffer)     --> buffers of defined length with mutable values
  - Packers (t.Pack.*)     --> binary Packer/Parser for several types of data
  - Encoding (t.Encoding.*)--> En/Decoding, En/Decryption, Hashes etc.

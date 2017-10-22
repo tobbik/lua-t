@@ -79,7 +79,7 @@ static const luaL_Reg t_enc_cf [] =
  * \return  int # of values pushed onto the stack.
  *-------------------------------------------------------------------------*/
 LUAMOD_API int
-luaopen_enc( lua_State *L )
+luaopen_t_enc( lua_State *L )
 {
 	luaL_newlib( L, t_enc_cf );
 	luaopen_t_enc_rc4( L );

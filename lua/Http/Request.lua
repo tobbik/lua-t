@@ -4,8 +4,8 @@
 -- \author    tkieslich
 -- \copyright See Copyright notice at the end of src/t.h
 
-local t_insert     , getmetatable, setmetatable, pairs, assert, next, type =
-      table.insert , getmetatable, setmetatable, pairs, assert, next, type
+local t_insert     , getmetatable, setmetatable, pairs, assert, next, type, os_time =
+      table.insert , getmetatable, setmetatable, pairs, assert, next, type, os.time
 
 local Loop, T, Table = require't.Loop', require't', require't.Table'
 
@@ -38,7 +38,7 @@ local receive = function( self, data )
 	local tail = self:parse( self.tail and (self.tail..data) or data, self.state )
 	if self.state > State.Headers then
 		self.stream.keepAlive = self.keepAlive
-		self.stream.srv.callback( self, Response( self.stream, self.id, self.keepAlive, self.version ) )
+		self.stream.srv.callback( self, Response( self.stream, self.id, self.keepAlive, self.version, self.created ) )
 	end
 	if self.state == State.Done then
 		self.tail = nil
@@ -69,6 +69,7 @@ return setmetatable( {
 			, contentLength = nil
 			, keepAlive     = true
 			, headers       = { }      -- pre-existent for re-entrant header parsing
+			, created       = os_time( )
 		}
 		return setmetatable( request, _mt )
 	end

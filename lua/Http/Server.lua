@@ -8,43 +8,31 @@
 local getmetatable, setmetatable =
       getmetatable, setmetatable
 
-local Stream, Socket, Timer = require't.Http.Stream', require't.Net.Socket', require't.Time'
+local Stream, Socket, Timer  = require't.Http.Stream', require't.Net.Socket', require't.Time'
 local t_type  = require't'.type
-local format,o_time,t_insert  = string.format,os.time,table.insert
+local format,o_time,t_insert = string.format,os.time,table.insert
 
 local _mt
 local timeout = 5000
 
-local dR = function()
-	local d = debug.getregistry()
-	for i=#d,3,-1 do
-		if type(d[i]) =='table' then
-			print( i, "TABLE", d[i] )
-			for k,v in pairs(d[i]) do print('',k,v) end
-		else
-			print( i, "VALUE", d[i] )
-		end
-	end
-	print("-----------------------------------------")
-end
-
 -- ---------------------------- general helpers  --------------------
 local accept = function( self )
 	local cli, adr      = self.sck:accept( )
+	cli.nonblock        = true
 	self.streams[ cli ] = Stream( self, cli, adr )
 end
 
 local listen = function( self, host, port, bl )
-	self.sck = Socket( 'tcp' )
-	self.sck.reuseaddr = true
-	self.sck.reuseport = true
+	self.sck    = Socket( 'tcp' )
+	local eMsg  = nil
+	self.sck.reuseaddr, self.sck.reuseport = true, true
 	if 'number' == type( host ) then
-		self.adr = self.sck:listen( host, port and port or 5 )
+		self.adr, eMsg = self.sck:listen( host, port and port or 5 )
 	else
-		self.adr = self.sck:listen( host, port, bl and bl or 5 )
+		self.adr, eMsg = self.sck:listen( host, port, bl and bl or 5 )
 	end
-	if not self.sck then
-		error( "Could not start HTTP Server because: " .. self.adr )
+	if not self.adr then
+		error( "Could not start HTTP Server because: " .. eMsg )
 	end
 	self.sck.nonblock = true
 	self.ael:addHandle( self.sck, 'read', accept, self )

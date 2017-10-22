@@ -127,7 +127,7 @@ _mt.__index     = _mt
 return setmetatable( {
 	  State  = State
 }, {
-	__call   = function( self, stream, id, keepAlive, version )
+	__call   = function( self, stream, id, keepAlive, version, created )
 		local response = {
 			  stream        = stream
 			, id            = id    -- StreamId
@@ -138,6 +138,7 @@ return setmetatable( {
 			, contentLength = nil
 			, statusCode    = 200
 			, statusMessage = Status[ 200 ]
+			, created       = created
 		}
 		return setmetatable( response, _mt )
 	end

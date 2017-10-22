@@ -8,7 +8,7 @@
 
 Server,Socket,Address,Loop = require't.Http.Server',require't.Net.Socket',require't.Net.Address',require't.Loop'
 fmt = string.format
-l   = Loop(10)
+l   = Loop(300)
 l1  = "This is the first part before we finish. A string te repeated a couple of times\n"
 l2  = "This is the finish line of the response.\n"
 rp  = 30

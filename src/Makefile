@@ -34,7 +34,7 @@ endif
 # ALL SOURCES
 T_AEL_SRC=$(wildcard t_ael*.c) $(T_DBG_SRC) t.c t_net.c t_tim.c
 T_BUF_SRC=$(wildcard t_buf*.c) $(T_DBG_SRC) t.c
-T_ENC_SRC=$(wildcard t_enc*.c) $(T_DBG_SRC) t.c
+T_ENC_SRC=$(wildcard t_enc*.c) $(T_DBG_SRC) t.c t_buf.c
 T_HTP_SRC=$(wildcard t_htp*.c) $(T_DBG_SRC) t.c t_buf.c
 T_NET_SRC=$(wildcard t_net*.c) $(T_DBG_SRC) t.c t_buf.c
 T_NRY_SRC=$(wildcard t_nry*.c) $(T_DBG_SRC) t.c
@@ -61,7 +61,7 @@ else
    UNAME_S := $(shell uname -s)
    ifeq ($(UNAME_S),Linux)
       CFLAGS += -D LINUX
-      T_AEL_SRC:=$(T_AEL_SRC) p_ael_epl.c
+      T_AEL_SRC:=$(T_AEL_SRC) p_ael_sel.c
       T_NET_SRC:=$(T_NET_SRC) p_net_sck_unx.c
       T_NET_SRC:=$(T_NET_SRC) p_net_ifc_lnx.c
    endif
