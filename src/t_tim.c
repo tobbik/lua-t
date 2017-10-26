@@ -49,13 +49,13 @@ t_tim_sub( struct timeval *tA, struct timeval *tB, struct timeval *tX )
 	tC.tv_sec    = (tB->tv_usec > tA->tv_usec)
 		? tA->tv_sec - tB->tv_sec - 1
 		: tA->tv_sec - tB->tv_sec;
-		;
+
 	tC.tv_usec   = tA->tv_usec;
 	tC.tv_usec   = (tB->tv_usec > tA->tv_usec)
 		? 1000000 - (tB->tv_usec - tA->tv_usec)
 		: tA->tv_usec - tB->tv_usec;
-	tX->tv_sec   = (tC.tv_sec < 0 ||tC.tv_usec < 0)? 0 : tC.tv_sec;
-	tX->tv_usec  = (tC.tv_sec < 0 ||tC.tv_usec < 0)? 1 : tC.tv_usec;
+	tX->tv_sec   = (tC.tv_sec < 0 || tC.tv_usec < 0) ? 0 : tC.tv_sec;
+	tX->tv_usec  = (tC.tv_sec < 0 || tC.tv_usec < 0) ? 0 : tC.tv_usec;
 }
 
 

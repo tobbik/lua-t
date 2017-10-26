@@ -110,30 +110,28 @@ p_ael_removehandle_impl( lua_State *L, struct t_ael *ael, int fd, enum t_ael_msk
 int
 p_ael_poll_impl( lua_State *L, struct t_ael *ael )
 {
-	int               i,r;
+	UNUSED( L );
+	struct p_ael_ste *state = (struct p_ael_ste *) ael->state;
 	struct timeval   *tv    = (NULL != ael->tmHead)
 	   ? ael->tmHead->tv
 	   : NULL;
-	struct timeval    rt;           ///< timer to calculate runtime over this poll
-	enum t_ael_msk    msk;          ///< handle action per fd (read/write/either)
-	struct p_ael_ste *state = (struct p_ael_ste *) ael->state;
-
-	t_tim_now( &rt, 0 );
+	int               i,r,c = 0;
+	int                 msk;
 
 	memcpy( &state->rfds_w, &state->rfds, sizeof( fd_set ) );
 	memcpy( &state->wfds_w, &state->wfds, sizeof( fd_set ) );
 
 	r = select( ael->fdMax+1, &state->rfds_w, &state->wfds_w, NULL, tv );
-	//printf("RESULT: %d\n",r);
+	//printf( "    &&&&&&&&&&&& POLL RETURNED: %d &&&&&&&&&&&&&&&&&&\n", r );
+
 	if (r<0)
 		return r;
 
-	if (0==r) // deal with timer
-		t_ael_executeHeadTimer( L, &(ael->tmHead), &rt );
-	else      // deal with sockets/file handles
+	if (r>0)
+	{
 		for (i=0; r>0 && i <= ael->fdMax; i++)
 		{
-			if (NULL == ael->fdSet[ i ])
+			if (NULL==ael->fdSet[ i ] || T_AEL_NO==ael->fdSet[ i ]->msk)
 				continue;
 			msk = T_AEL_NO;
 			if (ael->fdSet[ i ]->msk & T_AEL_RD  &&  FD_ISSET( i, &state->rfds_w ))
@@ -142,11 +140,13 @@ p_ael_poll_impl( lua_State *L, struct t_ael *ael )
 				msk |= T_AEL_WR;
 			if (T_AEL_NO != msk)
 			{
-				t_ael_executehandle( L, ael->fdSet[ i ], msk );
+				ael->fdExc[ c++ ]      = i;
+				ael->fdSet[ i ]->exMsk = msk;
 				r--;
 			}
 		}
+	}
 
-	return r;
+	return c;
 }
 

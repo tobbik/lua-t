@@ -3,10 +3,10 @@
 ---
 -- \file    t_ael.lua
 -- \brief   Test for the t.Time
-local t_assert  = require"t".assert
-local   Test    = require't.Test'
-local   Time    = require't.Time'
-local os_time   = os.time
+local t_assert = require"t".assert
+local Test     = require't.Test'
+local Time     = require't.Time'
+local os_time  = os.time
 
 
 local   tests = {
@@ -53,8 +53,24 @@ local   tests = {
 		Time.sleep( 1234 )
 		t:since()
 		t_assert( t.s == 1, "Seconds should be `1` but was `%d`", t.s )
-		t_assert( t.ms > 234 and t.ms < 239,
+		t_assert( t.ms > 232 and t.ms < 236,
 		   "Milliseconds should be between 234 and 239 but was `%d`", t.ms )
+	end,
+
+	test_Set = function( self, done )
+		Test.Case.describe( "Time t:set( ) milliseconds sets time properly" )
+		local t  = Time( )
+		t:set( 123456 )
+		t_assert( t.s  == 123, "Seconds should be `123` but was `%d`", t.s )
+		t_assert( t.ms == 456, "MilliSeconds should be `456` but was `%d`", t.ms )
+		t_assert( t.us == 456000, "MicroSeconds should be `456000` but was `%d`", t.us )
+	end,
+
+	test_Get = function( self, done )
+		Test.Case.describe( "Time t:get( ) milliseconds gets time properly" )
+		local t  = Time( )
+		t.s, t.us = 123, 456789
+		t_assert( t:get()  == 123456, "t:get() should return `123456` but was `%d`", t:get() )
 	end,
 
 	-- Operands

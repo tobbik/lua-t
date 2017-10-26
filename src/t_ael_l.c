@@ -76,7 +76,7 @@ t_ael_insertTimer( struct t_ael_tnd **tHead, struct t_ael_tnd *tIns )
 {
 	struct t_ael_tnd *tRun;
 
-	if (NULL == *tHead || t_tim_cmp( (*tHead)->tv, tIns->tv, > ))
+	if (NULL == *tHead || t_tim_cmp( (*tHead)->tv, tIns->tv, >= ))
 	{
 #if PRINT_DEBUGS == 1
 		printf( "Make HEAD   {%2ld:%6ld}\t PRE{%2ld:%6ld}\n",
@@ -115,9 +115,16 @@ static inline void
 t_ael_adjustTimers( struct t_ael_tnd **tHead, struct timeval *tAdj )
 {
 	struct t_ael_tnd *tRun = *tHead;
+	if (0==tAdj->tv_sec && 0==tAdj->tv_usec) return;
+
 	while (NULL != tRun)
 	{
-		t_tim_sub( tRun->tv, tAdj, tRun->tv );
+		//printf( "  ooooooo ADJUSTING: {%2ld:%6ld}  by  {%2ld:%6ld}  ",
+		//       tRun->tv->tv_sec, tRun->tv->tv_usec, tAdj->tv_sec, tAdj->tv_usec );
+		t_tim_sub( tRun->tv, tAdj, tRun->tv ); // if tAdj > tRun->tv t_tim_sub( )
+		                                       // adjusts tRun->tv to { 0, 0 }
+
+		//printf( "  -> {%2ld:%6ld}\n", tRun->tv->tv_sec, tRun->tv->tv_usec );
 		tRun = tRun->nxt;
 	}
 }
@@ -137,6 +144,7 @@ t_ael_doFunction( lua_State *L, int refPos, int exec )
 	int n;      ///< number of arguments + 1(function)
 	int p;      ///< position of pickled function and args
 	int i;
+
 	if (-1 != refPos)
 	{
 		lua_rawgeti( L, LUA_REGISTRYINDEX, refPos );
@@ -153,6 +161,44 @@ t_ael_doFunction( lua_State *L, int refPos, int exec )
 
 
 /**--------------------------------------------------------------------------
+ * Execute single timer node.
+ * \param   L        Lua state.
+ * \param   *tmNde   t_ael_tnd; pointer to timer to execute.
+ * \return  *tmNde   Returns timer node if new time is put in loop, else NULL.
+ * --------------------------------------------------------------------------*/
+struct t_ael_tnd
+*t_ael_executeTimerNode( lua_State *L, struct t_ael_tnd **tmHead, struct t_ael_tnd *tnd )
+{
+	struct timeval   *tv;              ///< timer returned by execution -> if there is one
+	//struct t_ael_tnd *tnd = *tmHead;
+
+	t_ael_doFunction( L, tnd->fR, 1 );
+	tv = t_tim_check_ud( L, -1, 0 );
+	if (NULL == tv)                    // remove from list
+	{
+		luaL_unref( L, LUA_REGISTRYINDEX, tnd->fR );
+		luaL_unref( L, LUA_REGISTRYINDEX, tnd->tR );
+		free( tnd );
+		tnd = NULL;
+	}
+	else              // re-add node to list if function returned a timer
+	{
+		// re-use timer node which still has function and parameters pickled
+		// but use new tv reference if tv wasn't reused
+		if (tv != tnd->tv)
+		{
+			luaL_unref( L, LUA_REGISTRYINDEX, tnd->tR );
+			tnd->tR = luaL_ref( L, LUA_REGISTRYINDEX );
+			tnd->tv = tv;
+		}
+		t_ael_insertTimer( tmHead, tnd );
+	}
+	lua_pop( L, 1 );   // pop the one value that lua_call allows for being returned
+	return tnd;
+}
+
+
+/**--------------------------------------------------------------------------
  * Pop timer list head, execute and re-add if needed.
  * \param   L        Lua state.
  * \param   **tHead  t_ael_tnd; pointer to Head of timer linked list pointer.
@@ -160,53 +206,23 @@ t_ael_doFunction( lua_State *L, int refPos, int exec )
  * \return  void.
  * --------------------------------------------------------------------------*/
 void
-t_ael_executeHeadTimer( lua_State *L, struct t_ael_tnd **tHead, struct timeval *rt )
+t_ael_processTimers( lua_State *L, struct t_ael_tnd **tmHead, struct timeval *rt )
 {
-	struct timeval   *tv;              ///< timer returned by execution -> if there is
-	struct t_ael_tnd *tExc = *tHead;   ///< timer to execute is tHead, ALWAYS
+	//struct timeval   *tv;                ///< timer returned by execution -> if there is
+	struct t_ael_tnd *tmRun = *tmHead;   ///< timer to execute is tHead, ALWAYS
+	struct t_ael_tnd *tmExc;
 
-	*tHead = (*tHead)->nxt;
-	t_ael_doFunction( L, tExc->fR, 1 );
-	t_tim_since( rt );
-	t_ael_adjustTimers( tHead, rt );
-	tv = t_tim_check_ud( L, -1, 0 );
-	if (NULL == tv)                    // remove from list
+	t_ael_adjustTimers( tmHead, rt );
+
+	// execute every timer that has a {0:0} value
+	while (tmRun && 0==tmRun->tv->tv_sec && 0==tmRun->tv->tv_usec)
 	{
-		luaL_unref( L, LUA_REGISTRYINDEX, tExc->fR );
-		luaL_unref( L, LUA_REGISTRYINDEX, tExc->tR );
-		free( tExc );
+		*tmHead = (*tmHead)->nxt;           // forward head counter
+		tmExc   = t_ael_executeTimerNode( L, tmHead, tmRun );
+		//if (tmExc) ...
+		//t_tim_since( rt );              // TODO: measure execution time
+		tmRun = *tmHead;
 	}
-	else              // re-add node to list if function returned a timer
-	{
-		// re-use timer node which still has function and parameters pickled
-		// but use new tv reference if tv wasn't reused
-		if (tv != tExc->tv)
-		{
-			luaL_unref( L, LUA_REGISTRYINDEX, tExc->tR );
-			tExc->tR = luaL_ref( L, LUA_REGISTRYINDEX );
-			tExc->tv = tv;
-		}
-		t_ael_insertTimer( tHead, tExc );
-	}
-	lua_pop( L, 1 );   // pop the one value that lua_call allows for
-}
-
-
-/**--------------------------------------------------------------------------
- * Executes a handle event function for the file/socket handles.
- * \param   L        Lua state.
- * \param   *dNde    Descriptor node.
- * \param   msk      execute read or write or both.
- * \return  void.
- * --------------------------------------------------------------------------*/
-void
-t_ael_executehandle( lua_State *L, struct t_ael_dnd *ev, enum t_ael_msk msk )
-{
-	//printf( "%d    %d    %d \n", ev->rR, ev->wR, msk );
-	if (NULL != ev && msk & T_AEL_RD & ev->msk)
-		t_ael_doFunction( L, ev->rR, 0 );
-	if (NULL != ev && msk & T_AEL_WR & ev->msk)
-		t_ael_doFunction( L, ev->wR, 0 );
 }
 
 
@@ -244,6 +260,7 @@ struct t_ael
 	ael->fdMax   = 0;
 	ael->tmHead  = NULL;
 	ael->fdSet   = (struct t_ael_dnd **) malloc( (ael->fdCount+1) * sizeof( struct t_ael_dnd * ) );
+	ael->fdExc   = (int *)               malloc( (ael->fdCount+1) * sizeof( int ) );
 	for (n=0; n<=ael->fdCount; n++) ael->fdSet[ n ] = NULL;
 	p_ael_create_ud_impl( L, ael );
 	luaL_getmetatable( L, T_AEL_TYPE );
@@ -282,26 +299,24 @@ static int
 lt_ael_addhandle( lua_State *L )
 {
 	struct t_ael     *ael = t_ael_check_ud( L, 1, 1 );
+	int               fd  = t_ael_getHandle( L, 2, 1 );
 	struct t_ael_dnd *dnd;
 	int               n   = lua_gettop( L ) + 1;    ///< iterator for arguments
-	int               fd  = 0;
 	enum t_ael_msk    msk;
 
 	luaL_argcheck( L, NULL != t_getTypeByName( L, 3, NULL, t_ael_directionList ),
 	      3, "must specify direction" );
 	msk = luaL_checkinteger( L, 3 );
-
 	luaL_checktype( L, 4, LUA_TFUNCTION );
-	fd  = t_ael_getHandle( L, 2, 1 );
 	dnd = ael->fdSet[ fd ];
 
 	if (NULL == dnd)
 	{
 		dnd = (struct t_ael_dnd *) malloc( sizeof( struct t_ael_dnd ) );
-		dnd->msk = T_AEL_NO;
-		dnd->hR  = LUA_REFNIL;
-		dnd->rR  = LUA_REFNIL;
-		dnd->wR  = LUA_REFNIL;
+		dnd->msk         = T_AEL_NO;
+		dnd->hR          = LUA_REFNIL;
+		dnd->rR          = LUA_REFNIL;
+		dnd->wR          = LUA_REFNIL;
 		ael->fdSet[ fd ] = dnd;
 	}
 
@@ -352,8 +367,8 @@ static int
 lt_ael_removehandle( lua_State *L )
 {
 	struct t_ael     *ael = t_ael_check_ud( L, 1, 1 );
+	int                fd = t_ael_getHandle( L, 2, 1 );
 	struct t_ael_dnd *dnd;
-	int                fd = 0;
 	int                 i;
 	enum t_ael_msk    msk;
 
@@ -361,7 +376,6 @@ lt_ael_removehandle( lua_State *L )
 	      3, "must specify direction" );
 	msk = luaL_checkinteger( L, 3 );
 
-	fd  = t_ael_getHandle( L, 2, 1 );
 	dnd = ael->fdSet[ fd ];
 	luaL_argcheck( L, NULL != dnd && dnd->msk, 1, "Descriptor must be observed in Loop" );
 	// remove function
@@ -397,7 +411,6 @@ lt_ael_removehandle( lua_State *L )
 			ael->fdMax = i;
 		}
 	}
-
 	return 0;
 }
 
@@ -536,6 +549,7 @@ lt_ael__gc( lua_State *L )
 			free( ael->fdSet[ i ] );
 		}
 	}
+	free( ael->fdExc );
 	p_ael_free_impl( ael );
 	return 0;
 }
@@ -550,13 +564,35 @@ lt_ael__gc( lua_State *L )
 static int
 lt_ael_run( lua_State *L )
 {
-	struct t_ael    *ael = t_ael_check_ud( L, 1, 1 );
-	ael->run = 1;
+	struct t_ael     *ael   = t_ael_check_ud( L, 1, 1 );
+	struct t_ael_dnd *dnd;         ///< descriptor execution iterator
+	struct timeval    tv;          ///< measure time for one iteration
+	ael->run                = 1;
+	int               i,n;
 
 	while (ael->run)
 	{
-		if (p_ael_poll_impl( L, ael ) < 0)
+		t_tim_now( &tv, 0 );
+		if ((n = p_ael_poll_impl( L, ael )) < 0)
 			return t_push_error( L, "Failed to continue" );
+
+		//printf("oooooooooooooooooooooo POLL RETURNED: %d oooooooooooooooooooo\n", n );
+
+		// execute descriptor events
+		for (i=0; i<n; i++)
+		{
+			dnd = ael->fdSet[ ael->fdExc[ i ] ];
+			//printf( "%d    %d    %d  %d\n", dnd->rR, dnd->wR, dnd->exMsk, dnd->msk );
+			if ( dnd->exMsk & T_AEL_RD & dnd->msk)
+				t_ael_doFunction( L, dnd->rR, 0 );
+			if ( dnd->exMsk & T_AEL_WR & dnd->msk)
+				t_ael_doFunction( L, dnd->wR, 0 );
+		}
+
+		// execute timer events
+		t_tim_since( &tv );
+		t_ael_processTimers( L, &(ael->tmHead), &tv );
+
 		// if there are no events left in the loop stop processing
 		ael->run = (NULL==ael->tmHead && ael->fdMax<1) ? 0 : ael->run;
 	}
@@ -661,7 +697,6 @@ lt_ael__index( lua_State *L )
 	struct timeval   *tv;
 	struct t_ael_tnd *tnd = ael->tmHead;
 	int               fd  = 0;
-
 
 	if (LUA_TSTRING == lua_type( L, 2 )) // return method: run, stop, addHandle, …
 	{

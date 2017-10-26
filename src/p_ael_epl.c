@@ -24,7 +24,7 @@
 #include <unistd.h>           // close
 #include <sys/epoll.h>
 
-struct t_ael_ste {
+struct p_ael_ste {
 	int                 epfd;
 	struct epoll_event *events;
 };
@@ -38,7 +38,7 @@ struct t_ael_ste {
 int
 p_ael_create_ud_impl( lua_State *L, struct t_ael *ael )
 {
-	struct t_ael_ste *state = (struct t_ael_ste *) malloc( sizeof( struct t_ael_ste ) );
+	struct p_ael_ste *state = (struct p_ael_ste *) malloc( sizeof( struct p_ael_ste ) );
 	if (NULL == state)
 		return luaL_error( L, "couldn't allocate memory for loop" );
 
@@ -70,7 +70,7 @@ p_ael_create_ud_impl( lua_State *L, struct t_ael *ael )
 void
 p_ael_free_impl( struct t_ael *ael )
 {
-	struct t_ael_ste *state = ael->state;
+	struct p_ael_ste *state = (struct p_ael_ste *) ael->state;
 	close( state->epfd );
 	free(  state->events );
 	free(  state );
@@ -87,7 +87,7 @@ p_ael_free_impl( struct t_ael *ael )
 int
 p_ael_addhandle_impl( lua_State *L, struct t_ael *ael, int fd, enum t_ael_msk addmsk )
 {
-	struct t_ael_ste  *state = ael->state;
+	struct p_ael_ste *state = (struct p_ael_ste *) ael->state;
 	//printf("ADDING DESCRIPTOR: %d: {%s + %s = %s}\n", fd,
 	//		t_ael_msk_lst[ ael->fdSet[ fd ]->msk ],
 	//		t_ael_msk_lst[ addmsk ],
@@ -98,9 +98,8 @@ p_ael_addhandle_impl( lua_State *L, struct t_ael *ael, int fd, enum t_ael_msk ad
 	int                op    = (T_AEL_NO == ael->fdSet[ fd ]->msk)
 	                           ? EPOLL_CTL_ADD
 	                           : EPOLL_CTL_MOD;
-	struct epoll_event ee;
+	struct epoll_event ee    = {0,{0}}; // avoid valgrind warning
 
-	memset( &ee, 0, sizeof( ee ) ); // avoid valgrind warning
 	ee.events = 0;
 	if (addmsk & T_AEL_RD) ee.events |= EPOLLIN;
 	if (addmsk & T_AEL_WR) ee.events |= EPOLLOUT;
@@ -123,8 +122,8 @@ p_ael_addhandle_impl( lua_State *L, struct t_ael *ael, int fd, enum t_ael_msk ad
 int
 p_ael_removehandle_impl( lua_State *L, struct t_ael *ael, int fd, enum t_ael_msk delmsk )
 {
-	struct t_ael_ste  *state = ael->state;
-	//printf("REMOVING DESCRIPTOR: %d: {%s - %s = %s}\n", fd,
+	struct p_ael_ste *state = (struct p_ael_ste *) ael->state;
+	//printf( "REMOVING DESCRIPTOR: %d: {%s - %s = %s}\n", fd,
 	//		t_ael_msk_lst[ ael->fdSet[ fd ]->msk ],
 	//		t_ael_msk_lst[ delmsk ],
 	//		t_ael_msk_lst[ ael->fdSet[ fd ]->msk & (~delmsk) ] );
@@ -134,9 +133,8 @@ p_ael_removehandle_impl( lua_State *L, struct t_ael *ael, int fd, enum t_ael_msk
 	int op = (T_AEL_NO != delmsk)
 	         ? EPOLL_CTL_MOD
 	         : EPOLL_CTL_DEL;
-	struct epoll_event ee;
+	struct epoll_event ee    = {0,{0}}; // avoid valgrind warning
 
-	memset( &ee, 0, sizeof( ee ) ); // avoid valgrind warning
 	ee.events = 0;
 	if (delmsk & T_AEL_RD) ee.events |= EPOLLIN;
 	if (delmsk & T_AEL_WR) ee.events |= EPOLLOUT;
@@ -158,45 +156,40 @@ p_ael_removehandle_impl( lua_State *L, struct t_ael *ael, int fd, enum t_ael_msk
 int
 p_ael_poll_impl( lua_State *L, struct t_ael *ael )
 {
-	struct t_ael_ste   *state    = ael->state;
-	struct epoll_event *e;
-	struct timeval     *tv       = (NULL != ael->tmHead)
+	UNUSED( L );
+	struct p_ael_ste   *state = (struct p_ael_ste *) ael->state;
+	struct timeval     *tv    = (NULL != ael->tmHead)
 	   ? ael->tmHead->tv
 	   : NULL;
-	struct timeval      rt;    ///< timer to calculate runtime over this poll
-	int                 ret, cnt = 0;
-	int                 i;
+	struct epoll_event *e;
+	int                 i,r,c = 0;
 	int                 msk;
 
-	t_tim_now( &rt, 0 );
-
-	ret = epoll_wait(
+	r = epoll_wait(
 	   state->epfd,
 	   state->events,
 	   ael->fdCount,
 	   tv ? (tv->tv_sec*1000 + tv->tv_usec/1000) : -1 );
+	//printf( "    &&&&&&&&&&&& POLL RETURNED: %d &&&&&&&&&&&&&&&&&&\n", r );
 
-	if (0==ret) // deal with timer
-		t_ael_executeHeadTimer( L, &(ael->tmHead), &rt );
-	else
+	if (r > 0)
 	{
-		cnt = ret;
-		for (i=0; ret>0 && i < cnt; i++)
+		for (i=0; i<r; i++)
 		{
 			msk = T_AEL_NO;
 			e   = state->events + i;
 
 			if (e->events & EPOLLIN)  msk |= T_AEL_RD;
-			if (e->events & EPOLLOUT) msk |= T_AEL_WR;
-			if (e->events & EPOLLERR) msk |= T_AEL_WR;
-			if (e->events & EPOLLHUP) msk |= T_AEL_WR;
+			if (e->events & EPOLLOUT || e->events & EPOLLERR || e->events & EPOLLHUP) msk |= T_AEL_WR;
+			//if (e->events & EPOLLERR) msk |= T_AEL_WR;
+			//if (e->events & EPOLLHUP) msk |= T_AEL_WR;
 			if (T_AEL_NO != msk)
 			{
-				t_ael_executehandle( L, ael->fdSet[ e->data.fd ], msk );
-				ret--;
+				ael->fdExc[ c++ ]               = e->data.fd;
+				ael->fdSet[ e->data.fd ]->exMsk = msk;
 			}
 		}
 	}
-	return cnt;
+	return c;
 }
 

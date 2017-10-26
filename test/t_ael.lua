@@ -71,7 +71,7 @@ local   tests = {
 			self.loop:addHandle( sck, 'r', f2, sck )
 			t_assert( self.loop[sck].read[1] == f2,
 			    "new function should be `%s` but was `%s`", f2, self.loop[sck].read[1] )
-			sSck:send('bar', adr)
+			sSck:send( 'bar', adr )
 		end
 		self.loop:addHandle( rSck, 'r', f1, rSck )
 		sSck:send('foo', adr)
@@ -137,7 +137,24 @@ local   tests = {
 		args = self.loop[ tm ]
 	end,
 
-
+	test_cb_MultiTimer = function( self, done )
+		Test.Case.describe( "Execute multiple timers in succession" )
+		local cnt, m_secs = 0,50
+		local inc = function( ) cnt = cnt+1 end
+		local chk = function( )
+			t_assert( cnt == 8, "%d timers should have been executed. Counted: %d", 8, cnt )
+			done( )
+		end
+		self.loop:addTimer( Time(1*m_secs), inc )
+		self.loop:addTimer( Time(2*m_secs), inc )
+		self.loop:addTimer( Time(3*m_secs), inc )
+		self.loop:addTimer( Time(4*m_secs), inc )
+		self.loop:addTimer( Time(5*m_secs), inc )
+		self.loop:addTimer( Time(6*m_secs), inc )
+		self.loop:addTimer( Time(7*m_secs), inc )
+		self.loop:addTimer( Time(8*m_secs), inc )
+		self.loop:addTimer( Time(9*m_secs), chk )
+	end,
 
 }
 
