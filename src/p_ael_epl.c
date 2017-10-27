@@ -89,13 +89,13 @@ p_ael_addhandle_impl( lua_State *L, struct t_ael *ael, int fd, enum t_ael_msk ad
 {
 	struct p_ael_ste *state = (struct p_ael_ste *) ael->state;
 	//printf("ADDING DESCRIPTOR: %d: {%s + %s = %s}\n", fd,
-	//		t_ael_msk_lst[ ael->fdSet[ fd ]->msk ],
+	//		t_ael_msk_lst[ ael->fdSet[ fd ].msk ],
 	//		t_ael_msk_lst[ addmsk ],
-	//		t_ael_msk_lst[ addmsk | ael->fdSet[ fd ]->msk ] );
-	addmsk |= ael->fdSet[ fd ]->msk;   // Merge old events
+	//		t_ael_msk_lst[ addmsk | ael->fdSet[ fd ].msk ] );
+	addmsk |= ael->fdSet[ fd ].msk;   // Merge old events
 	// If the fd was already monitored for some event, we need a MOD
 	// operation. Otherwise we need an ADD operation.
-	int                op    = (T_AEL_NO == ael->fdSet[ fd ]->msk)
+	int                op    = (T_AEL_NO == ael->fdSet[ fd ].msk)
 	                           ? EPOLL_CTL_ADD
 	                           : EPOLL_CTL_MOD;
 	struct epoll_event ee    = {0,{0}}; // avoid valgrind warning
@@ -124,10 +124,10 @@ p_ael_removehandle_impl( lua_State *L, struct t_ael *ael, int fd, enum t_ael_msk
 {
 	struct p_ael_ste *state = (struct p_ael_ste *) ael->state;
 	//printf( "REMOVING DESCRIPTOR: %d: {%s - %s = %s}\n", fd,
-	//		t_ael_msk_lst[ ael->fdSet[ fd ]->msk ],
+	//		t_ael_msk_lst[ ael->fdSet[ fd ].msk ],
 	//		t_ael_msk_lst[ delmsk ],
-	//		t_ael_msk_lst[ ael->fdSet[ fd ]->msk & (~delmsk) ] );
-	delmsk = ael->fdSet[ fd ]->msk & (~delmsk);
+	//		t_ael_msk_lst[ ael->fdSet[ fd ].msk & (~delmsk) ] );
+	delmsk = ael->fdSet[ fd ].msk & (~delmsk);
 	// If the fd remains monitored for some event, we need a MOD
 	// operation. Otherwise we need an DEL operation.
 	int op = (T_AEL_NO != delmsk)
@@ -185,8 +185,9 @@ p_ael_poll_impl( lua_State *L, struct t_ael *ael )
 			//if (e->events & EPOLLHUP) msk |= T_AEL_WR;
 			if (T_AEL_NO != msk)
 			{
+				//printf( "  _____ FD: %d triggered[%s]____\n", e->data.fd, t_ael_msk_lst[ msk ] );
 				ael->fdExc[ c++ ]               = e->data.fd;
-				ael->fdSet[ e->data.fd ]->exMsk = msk;
+				ael->fdSet[ e->data.fd ].exMsk = msk;
 			}
 		}
 	}

@@ -77,7 +77,7 @@ struct t_ael {
 	size_t             fdCount;  ///< how many fd to handle
 	void              *state;    ///< polling API specific data
 	struct t_ael_tnd  *tmHead;   ///< Head of timers linked list
-	struct t_ael_dnd **fdSet;    ///< array with pointers to fd_events indexed by fd
+	struct t_ael_dnd  *fdSet;    ///< array with pointers to fd_events indexed by fd
 	int               *fdExc;    ///< array with fd indexes to executable fd_events
 };
 

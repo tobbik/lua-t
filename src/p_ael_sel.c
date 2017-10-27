@@ -77,6 +77,10 @@ p_ael_addhandle_impl( lua_State *L, struct t_ael *ael, int fd, enum t_ael_msk ad
 {
 	UNUSED( L );
 	struct p_ael_ste *state = (struct p_ael_ste *) ael->state;
+	printf("+++++ ADDING DESCRIPTOR: %d: {%s + %s = %s}\n", fd,
+			t_ael_msk_lst[ ael->fdSet[ fd ].msk ],
+			t_ael_msk_lst[ addmsk ],
+			t_ael_msk_lst[ addmsk | ael->fdSet[ fd ].msk ] );
 	if (addmsk & T_AEL_RD)    FD_SET( fd, &state->rfds );
 	if (addmsk & T_AEL_WR)    FD_SET( fd, &state->wfds );
 	return 1;
@@ -95,6 +99,10 @@ p_ael_removehandle_impl( lua_State *L, struct t_ael *ael, int fd, enum t_ael_msk
 {
 	UNUSED( L );
 	struct p_ael_ste *state = (struct p_ael_ste *) ael->state;
+	printf( "----- REMOVING DESCRIPTOR: %d: {%s - %s = %s}\n", fd,
+			t_ael_msk_lst[ ael->fdSet[ fd ].msk ],
+			t_ael_msk_lst[ delmsk ],
+			t_ael_msk_lst[ ael->fdSet[ fd ].msk & (~delmsk) ] );
 	if (delmsk & T_AEL_RD)    FD_CLR( fd, &state->rfds );
 	if (delmsk & T_AEL_WR)    FD_CLR( fd, &state->wfds );
 	return 1;
@@ -131,17 +139,17 @@ p_ael_poll_impl( lua_State *L, struct t_ael *ael )
 	{
 		for (i=0; r>0 && i <= ael->fdMax; i++)
 		{
-			if (NULL==ael->fdSet[ i ] || T_AEL_NO==ael->fdSet[ i ]->msk)
+			if (T_AEL_NO==ael->fdSet[ i ].msk)
 				continue;
 			msk = T_AEL_NO;
-			if (ael->fdSet[ i ]->msk & T_AEL_RD  &&  FD_ISSET( i, &state->rfds_w ))
+			if (ael->fdSet[ i ].msk & T_AEL_RD  &&  FD_ISSET( i, &state->rfds_w ))
 				msk |= T_AEL_RD;
-			if (ael->fdSet[ i ]->msk & T_AEL_WR  &&  FD_ISSET( i, &state->wfds_w ))
+			if (ael->fdSet[ i ].msk & T_AEL_WR  &&  FD_ISSET( i, &state->wfds_w ))
 				msk |= T_AEL_WR;
 			if (T_AEL_NO != msk)
 			{
 				ael->fdExc[ c++ ]      = i;
-				ael->fdSet[ i ]->exMsk = msk;
+				ael->fdSet[ i ].exMsk = msk;
 				r--;
 			}
 		}
