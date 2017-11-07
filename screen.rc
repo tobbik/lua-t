@@ -8,7 +8,7 @@ stuff "make costum && out/bin/lua -i ../lua-t/research/http/http_perf.lua "
 # lua-t
 chdir ${HOME}/mygit/lua-t
 screen -t lua-t
-stuff "gvim -p  src/t_htp_req.c lua/Http/{Server,Stream,Request,Response}.* "
+#stuff "gvim -p  src/t_htp_req.c lua/Http/{Server,Stream,Request,Response}.* "
 
 # lua-t source
 chdir ${HOME}/mygit/lua-t/src

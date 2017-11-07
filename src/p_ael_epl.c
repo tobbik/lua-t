@@ -24,6 +24,8 @@
 #include <unistd.h>           // close
 #include <sys/epoll.h>
 
+#define PRINT_DEBUGS 0
+
 struct p_ael_ste {
 	int                 epfd;
 	struct epoll_event *events;
@@ -88,10 +90,12 @@ int
 p_ael_addhandle_impl( lua_State *L, struct t_ael *ael, int fd, enum t_ael_msk addmsk )
 {
 	struct p_ael_ste *state = (struct p_ael_ste *) ael->state;
-	//printf("ADDING DESCRIPTOR: %d: {%s + %s = %s}\n", fd,
-	//		t_ael_msk_lst[ ael->fdSet[ fd ].msk ],
-	//		t_ael_msk_lst[ addmsk ],
-	//		t_ael_msk_lst[ addmsk | ael->fdSet[ fd ].msk ] );
+#if PRINT_DEBUGS == 1
+	printf("+++++ ADDING DESCRIPTOR: %d: {%s + %s = %s}\n", fd,
+			t_ael_msk_lst[ ael->fdSet[ fd ].msk ],
+			t_ael_msk_lst[ addmsk ],
+			t_ael_msk_lst[ addmsk | ael->fdSet[ fd ].msk ] );
+#endif
 	addmsk |= ael->fdSet[ fd ].msk;   // Merge old events
 	// If the fd was already monitored for some event, we need a MOD
 	// operation. Otherwise we need an ADD operation.
@@ -123,10 +127,12 @@ int
 p_ael_removehandle_impl( lua_State *L, struct t_ael *ael, int fd, enum t_ael_msk delmsk )
 {
 	struct p_ael_ste *state = (struct p_ael_ste *) ael->state;
-	//printf( "REMOVING DESCRIPTOR: %d: {%s - %s = %s}\n", fd,
-	//		t_ael_msk_lst[ ael->fdSet[ fd ].msk ],
-	//		t_ael_msk_lst[ delmsk ],
-	//		t_ael_msk_lst[ ael->fdSet[ fd ].msk & (~delmsk) ] );
+#if PRINT_DEBUGS == 1
+	printf( "----- REMOVING DESCRIPTOR: %d: {%s - %s = %s}\n", fd,
+			t_ael_msk_lst[ ael->fdSet[ fd ].msk ],
+			t_ael_msk_lst[ delmsk ],
+			t_ael_msk_lst[ ael->fdSet[ fd ].msk & (~delmsk) ] );
+#endif
 	delmsk = ael->fdSet[ fd ].msk & (~delmsk);
 	// If the fd remains monitored for some event, we need a MOD
 	// operation. Otherwise we need an DEL operation.
@@ -170,7 +176,9 @@ p_ael_poll_impl( lua_State *L, struct t_ael *ael )
 	   state->events,
 	   ael->fdCount,
 	   tv ? (tv->tv_sec*1000 + tv->tv_usec/1000) : -1 );
-	//printf( "    &&&&&&&&&&&& POLL RETURNED: %d &&&&&&&&&&&&&&&&&&\n", r );
+#if PRINT_DEBUGS == 1
+	printf( "    &&&&&&&&&&&& POLL RETURNED: %d &&&&&&&&&&&&&&&&&&\n", r );
+#endif
 
 	if (r > 0)
 	{
@@ -185,7 +193,9 @@ p_ael_poll_impl( lua_State *L, struct t_ael *ael )
 			//if (e->events & EPOLLHUP) msk |= T_AEL_WR;
 			if (T_AEL_NO != msk)
 			{
-				//printf( "  _____ FD: %d triggered[%s]____\n", e->data.fd, t_ael_msk_lst[ msk ] );
+#if PRINT_DEBUGS == 1
+				printf( "  _____ FD: %d triggered[%s]____\n", e->data.fd, t_ael_msk_lst[ msk ] );
+#endif
 				ael->fdExc[ c++ ]               = e->data.fd;
 				ael->fdSet[ e->data.fd ].exMsk = msk;
 			}

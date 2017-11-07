@@ -23,6 +23,7 @@
 #include <string.h>           // memcpy
 #include <stdlib.h>           // malloc, free
 
+#define PRINT_DEBUGS 0
 
 struct p_ael_ste {
 	fd_set             rfds;
@@ -77,10 +78,12 @@ p_ael_addhandle_impl( lua_State *L, struct t_ael *ael, int fd, enum t_ael_msk ad
 {
 	UNUSED( L );
 	struct p_ael_ste *state = (struct p_ael_ste *) ael->state;
+#if PRINT_DEBUGS == 1
 	printf("+++++ ADDING DESCRIPTOR: %d: {%s + %s = %s}\n", fd,
 			t_ael_msk_lst[ ael->fdSet[ fd ].msk ],
 			t_ael_msk_lst[ addmsk ],
 			t_ael_msk_lst[ addmsk | ael->fdSet[ fd ].msk ] );
+#endif
 	if (addmsk & T_AEL_RD)    FD_SET( fd, &state->rfds );
 	if (addmsk & T_AEL_WR)    FD_SET( fd, &state->wfds );
 	return 1;
@@ -99,10 +102,12 @@ p_ael_removehandle_impl( lua_State *L, struct t_ael *ael, int fd, enum t_ael_msk
 {
 	UNUSED( L );
 	struct p_ael_ste *state = (struct p_ael_ste *) ael->state;
+#if PRINT_DEBUGS == 1
 	printf( "----- REMOVING DESCRIPTOR: %d: {%s - %s = %s}\n", fd,
 			t_ael_msk_lst[ ael->fdSet[ fd ].msk ],
 			t_ael_msk_lst[ delmsk ],
 			t_ael_msk_lst[ ael->fdSet[ fd ].msk & (~delmsk) ] );
+#endif
 	if (delmsk & T_AEL_RD)    FD_CLR( fd, &state->rfds );
 	if (delmsk & T_AEL_WR)    FD_CLR( fd, &state->wfds );
 	return 1;
@@ -130,7 +135,9 @@ p_ael_poll_impl( lua_State *L, struct t_ael *ael )
 	memcpy( &state->wfds_w, &state->wfds, sizeof( fd_set ) );
 
 	r = select( ael->fdMax+1, &state->rfds_w, &state->wfds_w, NULL, tv );
-	//printf( "    &&&&&&&&&&&& POLL RETURNED: %d &&&&&&&&&&&&&&&&&&\n", r );
+#if PRINT_DEBUGS == 1
+	printf( "    &&&&&&&&&&&& POLL RETURNED: %d &&&&&&&&&&&&&&&&&&\n", r );
+#endif
 
 	if (r<0)
 		return r;

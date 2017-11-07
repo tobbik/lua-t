@@ -119,12 +119,16 @@ t_ael_adjustTimers( struct t_ael_tnd **tHead, struct timeval *tAdj )
 
 	while (NULL != tRun)
 	{
-		//printf( "  ooooooo ADJUSTING: {%2ld:%6ld}  by  {%2ld:%6ld}  ",
-		//       tRun->tv->tv_sec, tRun->tv->tv_usec, tAdj->tv_sec, tAdj->tv_usec );
+#if PRINT_DEBUGS == 1
+		printf( "  ooooooo ADJUSTING: {%2ld:%6ld}  by  {%2ld:%6ld}  ",
+		       tRun->tv->tv_sec, tRun->tv->tv_usec, tAdj->tv_sec, tAdj->tv_usec );
+#endif
 		t_tim_sub( tRun->tv, tAdj, tRun->tv ); // if tAdj > tRun->tv t_tim_sub( )
 		                                       // adjusts tRun->tv to { 0, 0 }
 
-		//printf( "  -> {%2ld:%6ld}\n", tRun->tv->tv_sec, tRun->tv->tv_usec );
+#if PRINT_DEBUGS == 1
+		printf( "  -> {%2ld:%6ld}\n", tRun->tv->tv_sec, tRun->tv->tv_usec );
+#endif
 		tRun = tRun->nxt;
 	}
 }
@@ -153,7 +157,6 @@ t_ael_doFunction( lua_State *L, int refPos, int exec )
 		for (i=0; i<n; i++)
 			lua_rawgeti( L, p, i+1 );
 		lua_remove( L, p );
-		//printf( "%d  [%d] -- ", refPos, n-1 ); t_stackDump(L);
 		if (exec>-1)
 			lua_call( L, n-1, exec );
 	}
@@ -170,9 +173,6 @@ struct t_ael_tnd
 *t_ael_executeTimerNode( lua_State *L, struct t_ael_tnd **tmHead, struct t_ael_tnd *tnd )
 {
 	struct timeval   *tv;              ///< timer returned by execution -> if there is one
-	//struct t_ael_tnd *tnd = *tmHead;
-	//
-	//printf( "EXECUTE TIMER NODE REFERENCE: %d\n", tnd->fR );
 
 	t_ael_doFunction( L, tnd->fR, 1 );
 	tv = t_tim_check_ud( L, -1, 0 );
@@ -210,14 +210,14 @@ struct t_ael_tnd
 void
 t_ael_processTimers( lua_State *L, struct t_ael_tnd **tmHead, struct timeval *rt )
 {
-	//struct timeval   *tv;                ///< timer returned by execution -> if there is
 	struct t_ael_tnd *tmRun = *tmHead;   ///< timer to execute is tHead, ALWAYS
 	struct t_ael_tnd *tmExc;
 
 	t_ael_adjustTimers( tmHead, rt );
 
-	// execute every timer that has a {0:0} value
-	while (tmRun && 0==tmRun->tv->tv_sec && 0==tmRun->tv->tv_usec)
+	// execute every timer that has a value lesser than {0:001000} (1ms)
+	// using 1ms removes jitter
+	while (tmRun && 0==tmRun->tv->tv_sec && tmRun->tv->tv_usec < 1000)
 	{
 		*tmHead = (*tmHead)->nxt;           // forward head counter
 		tmExc   = t_ael_executeTimerNode( L, tmHead, tmRun );
@@ -332,20 +332,26 @@ lt_ael_addhandle( lua_State *L )
 		if (LUA_REFNIL != dnd->rR)      // if overwriting -> allow for __gc
 			luaL_unref( L, LUA_REGISTRYINDEX, dnd->rR );
 		dnd->rR = luaL_ref( L, LUA_REGISTRYINDEX );
-		//printf(" ======ADDED HANDLE(READ): %d(%d) \n", dnd->rR, fd );
+#if PRINT_DEBUGS == 1
+		printf(" ======ADDED HANDLE(READ): %d(%d) \n", dnd->rR, fd );
+#endif
 	}
 	else
 	{
 		if (LUA_REFNIL != dnd->wR)      // if overwriting -> allow for __gc
 			luaL_unref( L, LUA_REGISTRYINDEX, dnd->wR );
 		dnd->wR = luaL_ref( L, LUA_REGISTRYINDEX );
-		//printf(" ======ADDED HANDLE(WRITE): %d(%d) \n", dnd->wR, fd );
+#if PRINT_DEBUGS == 1
+		printf(" ======ADDED HANDLE(WRITE): %d(%d) \n", dnd->wR, fd );
+#endif
 	}
 	lua_pop( L, 1 ); // pop the read/write indicator string
 	if (LUA_REFNIL == dnd->hR)
 	{
 		dnd->hR = luaL_ref( L, LUA_REGISTRYINDEX );      // keep ref to handle so it doesnt gc
-		//printf(" ======ADDED HANDLE(SOCKET): %d(%d) \n", dnd->hR, fd );
+#if PRINT_DEBUGS == 1
+		printf(" ======ADDED HANDLE(SOCKET): %d(%d) \n", dnd->hR, fd );
+#endif
 	}
 
 	return  0;
@@ -379,13 +385,17 @@ lt_ael_removehandle( lua_State *L )
 	// remove function
 	if ((T_AEL_RD & msk & dnd->msk) && LUA_REFNIL != dnd->rR)
 	{
-		//printf(" ======REMOVING HANDLE(READ): %d for %d(%d)\n", dnd->rR, dnd->hR, fd );
+#if PRINT_DEBUGS == 1
+		printf(" ======REMOVING HANDLE(READ): %d for %d(%d)\n", dnd->rR, dnd->hR, fd );
+#endif
 		luaL_unref( L, LUA_REGISTRYINDEX, dnd->rR );
 		dnd->rR = LUA_REFNIL;
 	}
 	if ((T_AEL_WR & msk & dnd->msk) && LUA_REFNIL != dnd->wR)
 	{
-		//printf(" ======REMOVING HANDLE(WRITE): %d for %d(%d)\n", dnd->wR, dnd->hR, fd );
+#if PRINT_DEBUGS == 1
+		printf(" ======REMOVING HANDLE(WRITE): %d for %d(%d)\n", dnd->wR, dnd->hR, fd );
+#endif
 		luaL_unref( L, LUA_REGISTRYINDEX, dnd->wR );
 		dnd->wR = LUA_REFNIL;
 	}
@@ -395,7 +405,9 @@ lt_ael_removehandle( lua_State *L )
 	// remove from loop if no observed at all anymore
 	if (T_AEL_NO == dnd->msk )
 	{
-		//printf(" ======REMOVING HANDLE(SOCKET): %d \n", dnd->hR );
+#if PRINT_DEBUGS == 1
+		printf(" ======REMOVING HANDLE(SOCKET): %d \n", dnd->hR );
+#endif
 		luaL_unref( L, LUA_REGISTRYINDEX, dnd->hR );
 		dnd->hR = LUA_REFNIL;
 
@@ -527,14 +539,11 @@ lt_ael__gc( lua_State *L )
 	while (NULL != tRun)
 	{
 		tFre = tRun;
-		//printf( "Start  %p   %d   %d    %p\n", tFre, tFre->fR, tFre->tR, tFre->nxt );
 		luaL_unref( L, LUA_REGISTRYINDEX, tFre->fR ); // remove func/arg table from registry
 		luaL_unref( L, LUA_REGISTRYINDEX, tFre->tR ); // remove timeval ref from registry
 		tRun = tRun->nxt;
-		//printf( "Free   %p   %d   %d    %p\n", tFre, tFre->fR, tFre->tR, tFre->nxt );
 		free( tFre );
 	}
-	//printf("---------");
 	for (i=0; i < ael->fdCount; i++)
 	{
 		if (LUA_REFNIL != ael->fdSet[ i ].rR)
@@ -564,7 +573,7 @@ lt_ael_run( lua_State *L )
 	struct t_ael_dnd *dnd;         ///< descriptor execution iterator
 	struct timeval    tv;          ///< measure time for one iteration
 	ael->run                = 1;
-	int               i,n;
+	int               i,n,rf;
 
 	while (ael->run)
 	{
@@ -572,21 +581,29 @@ lt_ael_run( lua_State *L )
 		if ((n = p_ael_poll_impl( L, ael )) < 0)
 			return t_push_error( L, "Failed to continue" );
 
-		//printf("oooooooooooooooooooooo POLL RETURNED: %d oooooooooooooooooooo\n", n );
+#if PRINT_DEBUGS == 1
+		printf( "oooooooooooooooooooooo POLL RETURNED: %d oooooooooooooooooooo\n", n );
+#endif
 
 		// execute descriptor events
 		for (i=0; i<n; i++)
 		{
 			dnd = &(ael->fdSet[ ael->fdExc[ i ] ]);
+			rf  = 0;
 			//printf( "%d    %d    %d  %d\n", dnd->rR, dnd->wR, dnd->exMsk, dnd->msk );
-			if ( dnd->exMsk & T_AEL_RD & dnd->msk)
+			if (dnd->exMsk & T_AEL_RD & dnd->msk)
 			{
-				//printf( "EXECUTE FILE(READ) NODE REFERENCE: %d\n", dnd->rR );
+#if PRINT_DEBUGS == 1
+				printf( ">>>>> EXECUTE FILE(READ) FOR DESCRIPTOR: %d\n", ael->fdExc[ i ] );
+#endif
 				t_ael_doFunction( L, dnd->rR, 0 );
+				rf = 1;
 			}
-			if ( dnd->exMsk & T_AEL_WR & dnd->msk)
+			if ((dnd->exMsk & T_AEL_WR & dnd->msk) && !rf)
 			{
-				//printf( "EXECUTE FILE(WRITE) NODE REFERENCE: %d\n", dnd->wR );
+#if PRINT_DEBUGS == 1
+				printf( "<<<<< EXECUTE FILE(WRITE) FOR DESCRIPTOR: %d\n", ael->fdExc[ i ] );
+#endif
 				t_ael_doFunction( L, dnd->wR, 0 );
 			}
 		}

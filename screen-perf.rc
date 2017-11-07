@@ -16,4 +16,10 @@ chdir ${HOME}/mygit/go/bin
 screen -t go-bin
 stuff "./go-wrk -c 80 -d 10 'http://127.0.0.1:8002/auth?username=tobias&password=password' "
 
+# lua-t
+chdir ${HOME}/mygit/lua-t
+screen -t code
+stuff "vim -p  src/t_htp_req.c lua/Http/{Server,Stream,Request,Response}.* src/*_ael_*{c,h} "
+
+
 chdir ${HOME}/mygit/lua-t
