@@ -4,11 +4,11 @@
 -- \file    t_net_sck_create.lua
 -- \brief   Test assuring Socket() constructor handles all intended use cases
 
-local T       = require( 't' )
+local t_require,t_assert = require't'.require, require't'.assert
 local Test    = require( "t.Test" )
 local Socket  = require( "t.Net.Socket" )
 local Address = require( "t.Net.Address" )
-local asrtHlp = T.require( "assertHelper" )
+local asrtHlp = t_require( "assertHelper" )
 
 local tests = {
 	beforeEach = function( self )
@@ -26,7 +26,7 @@ local tests = {
 
 	test_EmptyCreatesTcpIp4 = function( self )
 		Test.Case.describe( "Socket() --> creates a TCP IPv4 Socket" )
-		self.sock = Socket()
+		self.sock = Socket( )
 		asrtHlp.Socket(  self.sock, 'tcp', 'AF_INET', 'SOCK_STREAM' )
 	end,
 
@@ -98,7 +98,7 @@ local tests = {
 	end,
 
 	test_CreatesWithGramAliases = function( self )
-		Test.Case.describe( "Socket(*, *, 'dgram', ...) --> all create DGRAM Sockets" )
+		Test.Case.describe( "Socket('udp', 'IPv4', '*dgram', ...) --> all create DGRAM Sockets" )
 		for i,t in pairs( { "SOCK_DGRAM", "dgram", "DGRAM", "Datagram", "datagram", "DATAGRAM" } ) do
 			local sock = Socket( 'UDP', 'ip4', t )
 			asrtHlp.Socket(  sock, 'udp', 'AF_INET', 'SOCK_DGRAM' )
@@ -106,6 +106,15 @@ local tests = {
 		end
 	end,
 
+	test_CreatesHasProperDescriptor = function( self )
+		Test.Case.describe( "Socket( ).descriptor has proper values" )
+		local sck = Socket( )
+		t_assert( sck.descriptor, "Socket descriptor should be avalid value" )
+		t_assert( 'number' == type( sck.descriptor ), "Socket descriptor should be a `number` but was `%s`", type( sck.descriptor ) )
+		t_assert( sck.descriptor > 0, "Socket descriptor should be bigger than 0 but was `%s`", sck.descriptor )
+		sck:close( )
+		t_assert( nil == sck.descriptor, "Closed sockets descriptor should be `nil` but was `%s`", type( sck.descriptor ) )
+	end,
 }
 
 return Test( tests )

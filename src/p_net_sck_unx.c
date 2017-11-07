@@ -326,13 +326,13 @@ p_net_sck_getSocketOption( lua_State *L, struct t_net_sck *sck, int sckOpt,
 			break;
 
 		// returning integer values
+		case SO_ERROR:
+		case SO_RCVBUF:
 		case SO_RCVLOWAT:
 		case SO_RCVTIMEO:
 		case SO_SNDBUF:
 		case SO_SNDLOWAT:
 		case SO_SNDTIMEO:
-		case SO_ERROR:
-		case SO_RCVBUF:
 			if (getsockopt( sck->fd, SOL_SOCKET, sckOpt, &val, &val_len ) < 0)
 				lua_pushinteger( L, -1 );
 			else
@@ -358,6 +358,10 @@ p_net_sck_getSocketOption( lua_State *L, struct t_net_sck *sck, int sckOpt,
 				lua_pushboolean(L, val );
 			break;
 
+		case T_NET_SO_DESCRIPTOR:
+			if (-1==sck->fd) lua_pushnil( L );
+			else             lua_pushinteger( L, sck->fd );
+			break;
 		// Special cases returning strings
 		case T_NET_SO_FAMILY:
 			if (0 == getsockname( sck->fd, SOCK_ADDR_PTR( &adr ), &adr_len ))
@@ -428,32 +432,37 @@ p_net_sck_setSocketOption( lua_State *L, struct t_net_sck *sck , int sckOpt,
 				return p_net_sck_pushErrno( L, NULL, "Can't set socket option" );
 			break;
 
+		// SETTING  integer values
+		case SO_RCVBUF:
 		case SO_RCVLOWAT:
 		case SO_RCVTIMEO:
 		case SO_SNDBUF:
 		case SO_SNDLOWAT:
 		case SO_SNDTIMEO:
-		case SO_RCVBUF:
 			if (setsockopt( sck->fd, SOL_SOCKET, sckOpt, &val, sizeof( val ) ) < 0)
 				return p_net_sck_pushErrno( L, NULL, "Can't set socket option" );
 			break;
 
+		// SETTING boolean values
 		case SO_BROADCAST:
 		case SO_DEBUG:
 		case SO_DONTROUTE:
 		case SO_KEEPALIVE:
 		case SO_OOBINLINE:
 		case SO_REUSEADDR:
-#ifdef SO_USELOOPBACK
-		case SO_USELOOPBACK:
-#endif
 #ifdef SO_REUSEPORT
 		case SO_REUSEPORT:
+#endif
+#ifdef SO_USELOOPBACK
+		case SO_USELOOPBACK:
 #endif
 			if (setsockopt( sck->fd, SOL_SOCKET, sckOpt, &val, sizeof( val ) ) < 0)
 				return p_net_sck_pushErrno( L, NULL, "Can't set socket option" );
 			break;
 
+		// trying to set READONLY values -> error
+		case T_NET_SO_DESCRIPTOR:
+		case T_NET_SO_FAMILY:
 		case SO_ERROR:
 #ifdef SO_PROTOCOL
 		case SO_PROTOCOL:

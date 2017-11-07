@@ -478,6 +478,17 @@ Boolean Socket Options
 Integer Socket options
 ''''''''''''''''''''''
 
+``int n = sck.descriptor"       [ readonly ] ``
+  Returns the integre value of the system resource that was returned by the
+  original socket() system call.  If the socket has been closed, returns
+  ``nil``.
+
+``int n = sck.error"            [ read/write] (SO_ERROR)``
+  Reports information about error status and clears it.
+
+``int n = sck.recvbuffer"       [ read/write] (SO_RCVBUF)``
+  Receive buffer size information.
+
 ``int n = sck.recvlow"          [ read/write] (SO_RCVLOWAT)``
   Minimum number of bytes to process for socket input operations.
 
@@ -494,12 +505,6 @@ Integer Socket options
 ``int n = sck.sendtimeout"      [ read/write] (SO_SNDTIMEO)``
   Timeout value specifying the amount of time that an output function blocks
   because flow control prevents data from being sent.
-
-``int n = sck.error"            [ read/write] (SO_ERROR)``
-  Reports information about error status and clears it.
-
-``int n = sck.recvbuffer"       [ read/write] (SO_RCVBUF)``
-  Receive buffer size information.
 
 
 String Socket Options

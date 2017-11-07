@@ -380,20 +380,22 @@ static const struct t_typ t_net_typeList[ ] = {
 
 
 // SO_* defined in /usr/lib/asm-generic/socket.h --> use value out of range
-#define T_NET_SO_FAMILY 100
+#define T_NET_SO_FAMILY     100
+#define T_NET_SO_DESCRIPTOR 101
 
 static const struct t_typ t_net_optionList[ ] = {
 	// fcntl based options
 	{ "nonblock"          , O_NONBLOCK       },
 
 	// getsockopt/setsockopt integers
+	{ "descriptor"        , T_NET_SO_DESCRIPTOR  },   // this is a fake SO_*
+	{ "error"             , SO_ERROR         },
+	{ "recvbuffer"        , SO_RCVBUF        },
 	{ "recvlow"           , SO_RCVLOWAT      },
 	{ "recvtimeout"       , SO_RCVTIMEO      },
 	{ "sendbuffer"        , SO_SNDBUF        },
 	{ "sendlow"           , SO_SNDLOWAT      },
 	{ "sendtimeout"       , SO_SNDTIMEO      },
-	{ "error"             , SO_ERROR         },
-	{ "recvbuffer"        , SO_RCVBUF        },
 
 	// getsockopt/setsockopt booleans
 	{ "broadcast"         , SO_BROADCAST     },
@@ -402,11 +404,11 @@ static const struct t_typ t_net_optionList[ ] = {
 	{ "keepalive"         , SO_KEEPALIVE     },
 	{ "oobinline"         , SO_OOBINLINE     },
 	{ "reuseaddr"         , SO_REUSEADDR     },
-#ifdef SO_USELOOPBACK
-	{ "useloopback"       , SO_USELOOPBACK   },
-#endif
 #ifdef SO_REUSEPORT
 	{ "reuseport"         , SO_REUSEPORT     },
+#endif
+#ifdef SO_USELOOPBACK
+	{ "useloopback"       , SO_USELOOPBACK   },
 #endif
 
 	// getsockopt/setsockopt integer

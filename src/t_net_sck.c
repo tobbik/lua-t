@@ -110,22 +110,6 @@ lt_net_sck_shutDown( lua_State *L )
 
 
 /** -------------------------------------------------------------------------
- * Return the FD int representation of the socket
- * \param   L      Lua state.
- * \lparam  sck    Net.Socket userdata instance.
- * \lreturn socketFD int.
- * \return  int    # of values pushed onto the stack.
- *-------------------------------------------------------------------------*/
-int
-lt_net_sck_getFd( lua_State *L )
-{
-	struct t_net_sck   *sck = t_net_sck_check_ud( L, 1, 1 );
-	lua_pushinteger( L, sck->fd );
-	return 1;
-}
-
-
-/** -------------------------------------------------------------------------
  * Listen on a socket or create a listening socket.
  * \param   L      Lua state.
  * \lparam  sck    Net.Sck userdata instance( socket ).
@@ -509,7 +493,6 @@ static const luaL_Reg t_net_sck_m [] =
 	, { "send"        , lt_net_sck_send }
 	, { "recv"        , lt_net_sck_recv }
 	, { "getsockname" , lt_net_sck_getsockname }
-	, { "getFd"       , lt_net_sck_getFd }
 	, { NULL          , NULL }
 };
 
