@@ -64,7 +64,7 @@ static const char tokens[256] = {
 
 /**--------------------------------------------------------------------------
  * Read registered Request headers. Standardize Casing.
- * Parses values of connection releavnt headers, such as:
+ * Parses values of connection relevant headers, such as:
  *   - Content-Length
  *   - Connection (close/keepalive/upgrade)
  *   - Upgrade (WebSocket, ... )
@@ -406,15 +406,15 @@ t_htp_req_parseHeaders( lua_State *L, const char **data, const char *end )
 					break;
 				if (T_HTP_R_KY == rs)
 				{
-					lua_pushlstring( L, k, r-k-1 );   // didn't find colon; push entire line
+					lua_pushlstring( L, k, r-k-1 );            // didn't find colon; push entire line
 					lua_rawseti( L, -2, lua_rawlen( L, -2 ) ); // push entire line as enumerated value
 				}
 				else
 					t_htp_req_identifyHeader( L, k, c, v, r );
 				rs = T_HTP_R_KY;
-				if ('\n' == *(r+1) || '\r' == *(r+1))  // double newLine -> END OF HEADER
+				if ('\n' == *(r+1) || '\r' == *(r+1))         // double newLine -> END OF HEADER
 				{
-					(*data) = r + (('\n'==*(r+1))? 1 : 2);
+					(*data) = r + (('\n'==*(r+1))? 1 : 3);
 					lua_pop( L, 1 );  // pop header-table from stack
 					lua_pushstring( L, "contentLength" );
 					lua_rawget( L, 1 );
@@ -451,7 +451,8 @@ t_htp_req_parseHeaders( lua_State *L, const char **data, const char *end )
  * Receive message
  * This is optimistic.  If a big chunk got received don't waste time moving
  * everyting between Lua and C.  Just keep parsing and fill the T.Http.Request
- * object.
+ * object.  Otherwise, preserve the state, store unparsed string in Lua and
+ * re-parse upon next incoming data.
  * \param   L      Lua state.
  * \lparam  table  t.Http.Request userdata.
  * \lparam  string Lua string of received data.
@@ -492,7 +493,7 @@ lt_htp_req_parse( lua_State *L )
 	if (*tail == end)
 		lua_pushnil( L );
 	else
-		lua_pushlstring( L, *tail, end-*tail+1 );
+		lua_pushlstring( L, *tail, end - (*tail) + 1 );
 	return 1;
 }
 
@@ -500,16 +501,16 @@ lt_htp_req_parse( lua_State *L )
 /**--------------------------------------------------------------------------
  * Class metamethods library definition
  * --------------------------------------------------------------------------*/
-static const struct luaL_Reg t_htp_req_fm [] = {
-	  { NULL           , NULL }
-};
+//static const struct luaL_Reg t_htp_req_fm [] = {
+//	  { NULL           , NULL }
+//};
 
 /**--------------------------------------------------------------------------
  * Class functions library definition
  * --------------------------------------------------------------------------*/
-static const struct luaL_Reg t_htp_req_cf [] = {
-	  { NULL           , NULL }
-};
+//static const struct luaL_Reg t_htp_req_cf [] = {
+//	  { NULL           , NULL }
+//};
 
 
 /**--------------------------------------------------------------------------

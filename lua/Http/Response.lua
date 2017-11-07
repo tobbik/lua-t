@@ -100,6 +100,7 @@ local finish = function( self, code, msg )
 	self.stream:addResponse( self )
 end
 
+-- return true if this response is done; else false
 local send = function( self, sck )
 	local buf = t_concat( self.buf )
 	local snt = sck:send( buf )

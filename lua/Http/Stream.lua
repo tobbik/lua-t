@@ -11,7 +11,7 @@ local Loop, T, Time = require't.Loop', require't', require't.Time'
 local t_insert    , t_remove    , getmetatable, setmetatable, assert, type,  o_time =
       table.insert, table.remove, getmetatable, setmetatable, assert, type, os.time
 
-local Request       = require't.Http.Request'
+local Request, Response  = require't.Http.Request', require't.Http.Response'
 
 local format=string.format
 
@@ -32,9 +32,9 @@ end
 
 local destroy = function( self )
 	if o_time() - self.created > 2 then
-		print( "LONG RUNNING STREAM", self.cli )
+		print( "LONG RUNNING STREAM", self.cli, self.cli.descriptor )
 	end
-	--print( "DESTROY:", self )
+	--print( "DESTROY:", self, self.cli )
 	self.requests  = nil
 	self.responses = nil
 	self.srv.streams[ self.cli ] = nil
@@ -56,13 +56,16 @@ local recv = function( self )
 		self.lastAction = o_time( )
 		local id, request = getRequest( self )
 		if request:receive( data ) then
-			-- print("REQUEST DONE")
+			--print("REQUEST DONE")
 			t_remove( self.requests, request.id )
+			self.keepAlive = request.keepAlive
 			if 0 == #self.requests and not self.keepAlive then
 				--print( "-----REMOVE read handler", self.cli)
 				self.srv.ael:removeHandle( self.cli, 'read' )
-				self.receiving = false
 			end
+		end
+		if request.state > Request.State.Headers then
+			self.srv.callback( request, Response( self, request.id, self.keepAlive, request.version, request.created ) )
 		end
 	end
 end
@@ -140,7 +143,6 @@ return setmetatable( {
 			, responses  = { }
 			, strategy   = 1  -- 1=HTTP1.1; 2=HTTP2
 			, keepAlive  = true
-			, receiving  = true
 			, responding = false
 			, lastAction = o_time()
 			, created    = o_time()

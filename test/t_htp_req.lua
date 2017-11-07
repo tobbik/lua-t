@@ -278,9 +278,12 @@ local tests = {
 	test_HeaderContentLength = function( self )
 		Test.Case.describe( "Content-Length Header gets parsed" )
 		local r = makeRequest( )
-		local s = "GET /go/index.html HTTP/1.1\r\nContent-Length: 12345\r\n\r\n"
+		local p = string.rep( 'word ', 2469 ) -- 12345 chars
+		local s = "GET /go/index.html HTTP/1.1\r\nContent-Length: " ..#p.. "\r\n\r\n" .. p
 		r:receive( s )
-		assert( 12345 == r.contentLength, format( "req.contentLength must be `%d` but was `%s`", 12345, r.contentLength ) )
+		assert( #p == r.contentLength, format( "req.contentLength must be `%d` but was `%s`", #p, r.contentLength ) )
+		assert( #p == #r,              format( "#req              must be `%d` but was `%s`", #p, #r ) )
+		assert( p  == r.tail,          format( "req.tail must be same as payload but was`%s`", r.tail ) )
 	end,
 
 	test_HeaderNoContentLength = function( self )

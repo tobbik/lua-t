@@ -10,8 +10,8 @@ local t_insert     , getmetatable, setmetatable, pairs, assert, next, type, os_t
 local Loop, T, Table = require't.Loop', require't', require't.Table'
 
 -- require't.Http' loads the the .so file and puts T.Http.Request metatable into the registry
-local           Http ,                Method ,                Version ,                Response =
-      require't.Http', require't.Http.Method', require't.Http.Version', require't.Http.Response'
+local           Http ,                Method ,                Version  =
+      require't.Http', require't.Http.Method', require't.Http.Version'
 
 --local _mt
 local _mt = debug.getregistry( )[ "T.Http.Request" ]
@@ -33,18 +33,15 @@ local State = {
 }
 
 -- receive
--- @return
+-- @return boolean true if done, else false
 local receive = function( self, data )
+	-- parse( ) calls C code that fills up self.* properties such as
+	-- query, url, headers etc.
 	local tail = self:parse( self.tail and (self.tail..data) or data, self.state )
-	if self.state > State.Headers then
-		self.stream.keepAlive = self.keepAlive
-		self.stream.srv.callback( self, Response( self.stream, self.id, self.keepAlive, self.version, self.created ) )
-	end
-	if self.state == State.Done then
+	if State.Done == self.state then
 		self.tail = nil
 		return true
 	else
-		--print(string.format( "NEW TAIL BUFFER: `%s`, %d %d", tail, tail:byte(1), tail:byte(2), ) )
 		self.tail = tail or nil
 		return false
 	end
