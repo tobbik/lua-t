@@ -66,10 +66,11 @@ return setmetatable( {
 		}
 		-- keepAlive handling
 		local timer   = Timer( timeout )
-		local remover = (function(str,tm)
+		local remover = (function( srv, tm )
+			local str = srv.streams
 			return function( )
 				local t          = o_time() - 5
-				print('rinse')
+				print('rinse', srv.ael)
 				local candidates = { }
 				for k,v in pairs( str ) do
 					print(v.lastAction)
@@ -88,8 +89,9 @@ return setmetatable( {
 				tm:set( timeout )
 				return tm
 			end
-		end)( srv.streams, timer )
+		end)( srv, timer )
 		ael:addTimer( timer, remover )
+		print( srv, srv.ael)
 
 		return setmetatable( srv, _mt )
 	end

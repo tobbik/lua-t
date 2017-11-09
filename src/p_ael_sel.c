@@ -32,6 +32,21 @@ struct p_ael_ste {
 	fd_set             wfds_w; ///<
 };
 
+/**--------------------------------------------------------------------------
+ * select() specific allocation of t_ael->state members.
+ * \param   *L      Lua state.
+ * \param   *ael    struct t_ael userdata.
+ * \param   old_sz  size before resizing.
+ * \return  int
+ * --------------------------------------------------------------------------*/
+int
+p_ael_resize_impl( lua_State *L, struct t_ael *ael, size_t old_sz  )
+{
+	if (FD_SETSIZE < ael->fdCount)
+		return luaL_error( "Can't have more than select() limit of file descriptors" );
+	else
+		return 0;
+}
 
 /**--------------------------------------------------------------------------
  * select() specific initialization of t_ael->state.

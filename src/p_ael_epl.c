@@ -24,17 +24,45 @@
 #include <unistd.h>           // close
 #include <sys/epoll.h>
 
-#define PRINT_DEBUGS 0
 
 struct p_ael_ste {
 	int                 epfd;
 	struct epoll_event *events;
 };
 
+
+/**--------------------------------------------------------------------------
+ * epoll specific allocation of t_ael->state members.
+ * \param   *L      Lua state.
+ * \param   *ael    struct t_ael userdata.
+ * \param   old_sz  size before resizing.
+ * \return  int
+ * --------------------------------------------------------------------------*/
+int
+p_ael_resize_impl( lua_State *L, struct t_ael *ael, size_t old_sz  )
+{
+	struct p_ael_ste   *s = ael->state;
+	struct epoll_event *e;
+	e = (0 == old_sz)
+		? (struct epoll_event *) malloc(              sizeof( struct epoll_event ) * (ael->fdCount) )
+		: (struct epoll_event *) realloc( s->events,  sizeof( struct epoll_event ) * (ael->fdCount) );
+	if (! e)
+	{
+		free( s );
+		return luaL_error( L, "couldn't create event structures for epoll loop" );
+	}
+	else
+	{
+		s->events = e;
+		return 0;
+	}
+}
+
+
 /**--------------------------------------------------------------------------
  * epoll specific initialization of t_ael->state.
- * \param   L      Lua state.
- * \param   struct t_ael * pointer to new userdata on Lua Stack
+ * \param   L   Lua state.
+ * \param   ael struct t_ael*; pointer to userdata on Lua Stack.
  * \return  int
  * --------------------------------------------------------------------------*/
 int
@@ -44,22 +72,17 @@ p_ael_create_ud_impl( lua_State *L, struct t_ael *ael )
 	if (NULL == state)
 		return luaL_error( L, "couldn't allocate memory for loop" );
 
-	state->events = malloc( sizeof( struct epoll_event ) * ael->fdCount );
-	if (!state->events)
-	{
-		free( state );
-		return luaL_error( L, "couldn't create sructure for epoll loop" );
-	}
+	// if created t_ael_create_ud calls t_ael_resize which calls p_ael_resize_impl
+	//p_ael_resize_impl( L, ael, 0 );
 
 	state->epfd = epoll_create( 1024 );   // 1024 is a kernel hint
-	memset( state->events, 0, sizeof( struct epoll_event ) );
 	if (state->epfd == -1)
 	{
 		free( state->events );
 		free( state );
-		return luaL_error( L, "couldn't create sructure for epoll loop" );
+		return luaL_error( L, "couldn't create event socket for epoll loop" );
 	}
-	ael->state = state;
+	ael->state    = state;
 	return 1;
 }
 
@@ -72,7 +95,7 @@ p_ael_create_ud_impl( lua_State *L, struct t_ael *ael )
 void
 p_ael_free_impl( struct t_ael *ael )
 {
-	struct p_ael_ste *state = (struct p_ael_ste *) ael->state;
+	struct p_ael_ste *state = ael->state;
 	close( state->epfd );
 	free(  state->events );
 	free(  state );
@@ -89,7 +112,7 @@ p_ael_free_impl( struct t_ael *ael )
 int
 p_ael_addhandle_impl( lua_State *L, struct t_ael *ael, int fd, enum t_ael_msk addmsk )
 {
-	struct p_ael_ste *state = (struct p_ael_ste *) ael->state;
+	struct p_ael_ste *state = ael->state;
 #if PRINT_DEBUGS == 1
 	printf("+++++ ADDING DESCRIPTOR: %d: {%s + %s = %s}\n", fd,
 			t_ael_msk_lst[ ael->fdSet[ fd ].msk ],
@@ -126,7 +149,7 @@ p_ael_addhandle_impl( lua_State *L, struct t_ael *ael, int fd, enum t_ael_msk ad
 int
 p_ael_removehandle_impl( lua_State *L, struct t_ael *ael, int fd, enum t_ael_msk delmsk )
 {
-	struct p_ael_ste *state = (struct p_ael_ste *) ael->state;
+	struct p_ael_ste *state = ael->state;
 #if PRINT_DEBUGS == 1
 	printf( "----- REMOVING DESCRIPTOR: %d: {%s - %s = %s}\n", fd,
 			t_ael_msk_lst[ ael->fdSet[ fd ].msk ],
@@ -163,7 +186,7 @@ int
 p_ael_poll_impl( lua_State *L, struct t_ael *ael )
 {
 	UNUSED( L );
-	struct p_ael_ste   *state = (struct p_ael_ste *) ael->state;
+	struct p_ael_ste   *state = ael->state;
 	struct timeval     *tv    = (NULL != ael->tmHead)
 	   ? ael->tmHead->tv
 	   : NULL;
@@ -193,7 +216,7 @@ p_ael_poll_impl( lua_State *L, struct t_ael *ael )
 			//if (e->events & EPOLLHUP) msk |= T_AEL_WR;
 			if (T_AEL_NO != msk)
 			{
-#if PRINT_DEBUGS == 1
+#if PRINT_DEBUGS == 2
 				printf( "  _____ FD: %d triggered[%s]____\n", e->data.fd, t_ael_msk_lst[ msk ] );
 #endif
 				ael->fdExc[ c++ ]               = e->data.fd;

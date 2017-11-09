@@ -29,8 +29,6 @@
 #include "t_dbg.h"
 #endif
 
-#define PRINT_DEBUGS 0
-
 
 /**----------------------------------------------------------------------------
  * Get descriptor handle from the stack.
@@ -78,7 +76,7 @@ t_ael_insertTimer( struct t_ael_tnd **tHead, struct t_ael_tnd *tIns )
 
 	if (NULL == *tHead || t_tim_cmp( (*tHead)->tv, tIns->tv, >= ))
 	{
-#if PRINT_DEBUGS == 1
+#if PRINT_DEBUGS == 2
 		printf( "Make HEAD   {%2ld:%6ld}\t PRE{%2ld:%6ld}\n",
 			tIns->tv->tv_sec,  tIns->tv->tv_usec,
 			(NULL != (*tHead)) ? (*tHead)->tv->tv_sec  : 0,
@@ -92,7 +90,7 @@ t_ael_insertTimer( struct t_ael_tnd **tHead, struct t_ael_tnd *tIns )
 		tRun = *tHead;
 		while (NULL != tRun->nxt && t_tim_cmp( tRun->nxt->tv, tIns->tv, < ))
 			tRun = tRun->nxt;
-#if PRINT_DEBUGS == 1
+#if PRINT_DEBUGS == 2
 		printf( "Make NODE   {%2ld:%6ld}\tPAST{%2ld:%6ld}\n",
 			tIns->tv->tv_sec,  tIns->tv->tv_usec,
 			tRun->tv->tv_sec,  tRun->tv->tv_usec);
@@ -119,14 +117,14 @@ t_ael_adjustTimers( struct t_ael_tnd **tHead, struct timeval *tAdj )
 
 	while (NULL != tRun)
 	{
-#if PRINT_DEBUGS == 1
+#if PRINT_DEBUGS == 3
 		printf( "  ooooooo ADJUSTING: {%2ld:%6ld}  by  {%2ld:%6ld}  ",
 		       tRun->tv->tv_sec, tRun->tv->tv_usec, tAdj->tv_sec, tAdj->tv_usec );
 #endif
 		t_tim_sub( tRun->tv, tAdj, tRun->tv ); // if tAdj > tRun->tv t_tim_sub( )
 		                                       // adjusts tRun->tv to { 0, 0 }
 
-#if PRINT_DEBUGS == 1
+#if PRINT_DEBUGS == 3
 		printf( "  -> {%2ld:%6ld}\n", tRun->tv->tv_sec, tRun->tv->tv_usec );
 #endif
 		tRun = tRun->nxt;
@@ -139,26 +137,27 @@ t_ael_adjustTimers( struct t_ael_tnd **tHead, struct timeval *tAdj )
  * Stack before: {fnc, p1, p2, p3, … }
  * Stack after:   fnc  p1  p2  p3  …
  * \param   L     Lua state.
- * \param   int   Reference positon.
+ * \param   pos   int; Reference positon on the stack.
+ * \param   exc   int; Reference positon.
  * \return  int   Number of arguments to be called by function.
  * --------------------------------------------------------------------------*/
 static inline void
-t_ael_doFunction( lua_State *L, int refPos, int exec )
+t_ael_doFunction( lua_State *L, int pos, int exc )
 {
 	int n;      ///< number of arguments + 1(function)
 	int p;      ///< position of pickled function and args
 	int i;
 
-	if (-1 != refPos)
+	if (LUA_REFNIL != pos)
 	{
-		lua_rawgeti( L, LUA_REGISTRYINDEX, refPos );
+		lua_rawgeti( L, LUA_REGISTRYINDEX, pos );
 		p = lua_gettop( L );
 		n = lua_rawlen( L, p );
 		for (i=0; i<n; i++)
 			lua_rawgeti( L, p, i+1 );
-		lua_remove( L, p );
-		if (exec>-1)
-			lua_call( L, n-1, exec );
+		lua_remove( L, p );       // remove table with pickled stack
+		if (exc > -1)
+			lua_call( L, n-1, exc );
 	}
 }
 
@@ -229,6 +228,63 @@ t_ael_processTimers( lua_State *L, struct t_ael_tnd **tmHead, struct timeval *rt
 
 
 /**--------------------------------------------------------------------------
+ * Allocate/ReAllocate space for the descriptor nodes.
+ * \param   L      Lua state.
+ * \lparam  CLASS  table t.Loop.
+ * \lreturn int    int initial descriptor capacity of Loop.
+ * \return  int    # of values pushed onto the stack.
+ * --------------------------------------------------------------------------*/
+static void
+t_ael_resize( lua_State *L, struct t_ael *ael, size_t sz )
+{
+	size_t            n;
+	size_t            old_sz = ael->fdCount;
+	struct t_ael_dnd *dnd;
+	int              *exc;
+
+	printf( "Before RESIZE[%ld->%ld]:\n", old_sz, sz );
+	for (n=0; n<old_sz; n++)
+		printf( "%2ld -- MSK: %d, rR: %d, wR: %d, hR: %d\n", n, ael->fdSet[n].msk , ael->fdSet[n].rR, ael->fdSet[n].wR, ael->fdSet[n].hR );
+	ael->fdCount  = sz;
+	dnd  = (0 == old_sz)
+		? (struct t_ael_dnd *) malloc(              sizeof( struct t_ael_dnd ) * (sz) )
+		: (struct t_ael_dnd *) realloc( ael->fdSet, sizeof( struct t_ael_dnd ) * (sz) );
+	if (dnd)
+		ael->fdSet = dnd;
+	else
+	{
+		free( ael );
+		luaL_error( L, "Failed to allocate space for file descriptors in loop" );
+	}
+
+	exc  = (0 == old_sz)
+		? (int *) malloc(              (sz+1) * sizeof( int ) )
+		: (int *) realloc( ael->fdExc, (sz+1) * sizeof( int ) );
+	if (exc)
+		ael->fdExc = exc;
+	else
+	{
+		free( ael->fdSet );
+		free( ael );
+		luaL_error( L, "Failed to allocate space for executor descriptors in loop" );
+	}
+
+	if (sz > old_sz)
+		for (n = old_sz; n < sz; n++)
+		{
+			ael->fdSet[ n ].msk = T_AEL_NO;
+			ael->fdSet[ n ].rR  = LUA_REFNIL;
+			ael->fdSet[ n ].wR  = LUA_REFNIL;
+			ael->fdSet[ n ].hR  = LUA_REFNIL;
+		}
+	p_ael_resize_impl( L, ael, old_sz );
+	printf( "AFTER RESIZE[%ld]:\n", sz );
+	for (n=0; n<sz; n++)
+		printf( "%2ld -- MSK: %d, rR: %d, wR: %d, hR: %d\n", n, ael->fdSet[n].msk , ael->fdSet[n].rR, ael->fdSet[n].wR, ael->fdSet[n].hR );
+}
+
+
+/**--------------------------------------------------------------------------
  * Construct a T.Loop and return it.
  * \param   L      Lua state.
  * \lparam  CLASS  table t.Loop.
@@ -255,22 +311,13 @@ struct t_ael
 *t_ael_create_ud( lua_State *L, size_t sz )
 {
 	struct t_ael    *ael;
-	size_t           n;
 
 	ael = (struct t_ael *) lua_newuserdata( L, sizeof( struct t_ael ) );
-	ael->fdCount = sz;
+	ael->fdCount = 0;
 	ael->fdMax   = 0;
 	ael->tmHead  = NULL;
-	ael->fdSet   = (struct t_ael_dnd *) malloc( (ael->fdCount+1) * sizeof( struct t_ael_dnd  ) );
-	ael->fdExc   = (int *)              malloc( (ael->fdCount+1) * sizeof( int ) );
-	for (n=0; n<=ael->fdCount; n++)
-	{
-		ael->fdSet[ n ].msk = T_AEL_NO;
-		ael->fdSet[ n ].rR  = LUA_REFNIL;
-		ael->fdSet[ n ].wR  = LUA_REFNIL;
-		ael->fdSet[ n ].hR  = LUA_REFNIL;
-	}
 	p_ael_create_ud_impl( L, ael );
+	t_ael_resize( L, ael, sz );
 	luaL_getmetatable( L, T_AEL_TYPE );
 	lua_setmetatable( L, -2 );
 	return ael;
@@ -291,6 +338,7 @@ struct t_ael
 	if (NULL == ud && check) t_typeerror( L , pos, T_AEL_TYPE );
 	return (NULL==ud) ? NULL : (struct t_ael *) ud;
 }
+
 
 
 /**--------------------------------------------------------------------------
@@ -316,6 +364,8 @@ lt_ael_addhandle( lua_State *L )
 	      3, "must specify direction" );
 	msk = luaL_checkinteger( L, 3 );
 	luaL_checktype( L, 4, LUA_TFUNCTION );
+	if (fd >= (int) ael->fdCount)
+		t_ael_resize( L, ael, 2*(ael->fdCount) );
 	dnd = &(ael->fdSet[ fd ]);
 
 	p_ael_addhandle_impl( L, ael, fd, msk );
@@ -332,7 +382,7 @@ lt_ael_addhandle( lua_State *L )
 		if (LUA_REFNIL != dnd->rR)      // if overwriting -> allow for __gc
 			luaL_unref( L, LUA_REGISTRYINDEX, dnd->rR );
 		dnd->rR = luaL_ref( L, LUA_REGISTRYINDEX );
-#if PRINT_DEBUGS == 1
+#if PRINT_DEBUGS == 3
 		printf(" ======ADDED HANDLE(READ): %d(%d) \n", dnd->rR, fd );
 #endif
 	}
@@ -341,7 +391,7 @@ lt_ael_addhandle( lua_State *L )
 		if (LUA_REFNIL != dnd->wR)      // if overwriting -> allow for __gc
 			luaL_unref( L, LUA_REGISTRYINDEX, dnd->wR );
 		dnd->wR = luaL_ref( L, LUA_REGISTRYINDEX );
-#if PRINT_DEBUGS == 1
+#if PRINT_DEBUGS == 3
 		printf(" ======ADDED HANDLE(WRITE): %d(%d) \n", dnd->wR, fd );
 #endif
 	}
@@ -349,7 +399,7 @@ lt_ael_addhandle( lua_State *L )
 	if (LUA_REFNIL == dnd->hR)
 	{
 		dnd->hR = luaL_ref( L, LUA_REGISTRYINDEX );      // keep ref to handle so it doesnt gc
-#if PRINT_DEBUGS == 1
+#if PRINT_DEBUGS == 3
 		printf(" ======ADDED HANDLE(SOCKET): %d(%d) \n", dnd->hR, fd );
 #endif
 	}
@@ -385,7 +435,7 @@ lt_ael_removehandle( lua_State *L )
 	// remove function
 	if ((T_AEL_RD & msk & dnd->msk) && LUA_REFNIL != dnd->rR)
 	{
-#if PRINT_DEBUGS == 1
+#if PRINT_DEBUGS == 3
 		printf(" ======REMOVING HANDLE(READ): %d for %d(%d)\n", dnd->rR, dnd->hR, fd );
 #endif
 		luaL_unref( L, LUA_REGISTRYINDEX, dnd->rR );
@@ -393,7 +443,7 @@ lt_ael_removehandle( lua_State *L )
 	}
 	if ((T_AEL_WR & msk & dnd->msk) && LUA_REFNIL != dnd->wR)
 	{
-#if PRINT_DEBUGS == 1
+#if PRINT_DEBUGS == 3
 		printf(" ======REMOVING HANDLE(WRITE): %d for %d(%d)\n", dnd->wR, dnd->hR, fd );
 #endif
 		luaL_unref( L, LUA_REGISTRYINDEX, dnd->wR );
@@ -405,7 +455,7 @@ lt_ael_removehandle( lua_State *L )
 	// remove from loop if no observed at all anymore
 	if (T_AEL_NO == dnd->msk )
 	{
-#if PRINT_DEBUGS == 1
+#if PRINT_DEBUGS == 3
 		printf(" ======REMOVING HANDLE(SOCKET): %d \n", dnd->hR );
 #endif
 		luaL_unref( L, LUA_REGISTRYINDEX, dnd->hR );
@@ -570,22 +620,25 @@ static int
 lt_ael_run( lua_State *L )
 {
 	struct t_ael     *ael   = t_ael_check_ud( L, 1, 1 );
-	struct t_ael_dnd *dnd;         ///< descriptor execution iterator
-	struct timeval    tv;          ///< measure time for one iteration
-	ael->run                = 1;
-	int               i,n,rf;
+	struct t_ael_dnd *dnd;     ///< descriptor execution iterator
+	struct timeval    tv;      ///< measure time for one iteration
+	int               n,i;     ///< how many file events?
+	int               rf;      ///< was read() event fired for this descriptor?
+	int               new_sz;  ///< shrink loop to new size
 
+	ael->run                = 1;
 	while (ael->run)
 	{
 		t_tim_now( &tv, 0 );
 		if ((n = p_ael_poll_impl( L, ael )) < 0)
-			return t_push_error( L, "Failed to continue" );
+			return t_push_error( L, "Failed to continue the loop" );
 
-#if PRINT_DEBUGS == 1
+#if PRINT_DEBUGS == 3
 		printf( "oooooooooooooooooooooo POLL RETURNED: %d oooooooooooooooooooo\n", n );
 #endif
 
 		// execute descriptor events
+		//for (i=n; i>-1; i--)
 		for (i=0; i<n; i++)
 		{
 			dnd = &(ael->fdSet[ ael->fdExc[ i ] ]);
@@ -606,6 +659,16 @@ lt_ael_run( lua_State *L )
 #endif
 				t_ael_doFunction( L, dnd->wR, 0 );
 			}
+		}
+
+		// shrink loop if applicable
+		if (ael->fdMax < (int) (ael->fdCount)/2)
+		{
+			new_sz = (int) (ael->fdCount)/2;
+			while (ael->fdMax < new_sz/2)
+				new_sz /= 2;
+			printf( "FdMax: %d -- CurSize: %ld NewSize: %d \n", ael->fdMax, ael->fdCount, new_sz );
+			t_ael_resize( L, ael, new_sz );
 		}
 
 		// execute timer events
@@ -647,7 +710,23 @@ static int
 lt_ael__tostring( lua_State *L )
 {
 	struct t_ael *ael = t_ael_check_ud( L, 1, 1 );
-	lua_pushfstring( L, T_AEL_TYPE"{%d:%d}: %p", ael->fdMax, ael->fdMax, ael );
+	lua_pushfstring( L, T_AEL_TYPE"{%d:%d}: %p", ael->fdCount, ael->fdMax, ael );
+	return 1;
+}
+
+
+/**--------------------------------------------------------------------------
+ * How many descriptors is allocated for?
+ * \param   L      Lua state.
+ * \lparam  ud     T.Loop userdata instance.                       // 1
+ * \lreturn int    How many descriptors is space for in T.Loop.
+ * \return  int  # of values pushed onto the stack.
+ * --------------------------------------------------------------------------*/
+static int
+lt_ael__len( lua_State *L )
+{
+	struct t_ael *ael = t_ael_check_ud( L, 1, 1 );
+	lua_pushinteger( L, ael->fdCount );
 	return 1;
 }
 
@@ -782,6 +861,7 @@ static const luaL_Reg t_ael_cf [] = {
 static const struct luaL_Reg t_ael_m [] = {
 	// metamethods
 	  { "__tostring",    lt_ael__tostring }
+	, { "__len",         lt_ael__len }
 	, { "__gc",          lt_ael__gc }
 	, { "__index",       lt_ael__index }
 	// instance methods
