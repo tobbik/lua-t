@@ -17,6 +17,57 @@ timeval`` wrappers.  General invokation looks like:
    l = Loop( 123 )
 
 
+Modes
+=====
+
+``T.Loop`` has 3 modes that determine the behaviour of the memory management
+in the loop.  Internally, similar to the redis ae_* loop, it uses an array
+to allow for access to the event handlers based on file descriptors.  That
+has been implemented as a C-array rather than a Lua table for reasons of
+speed and code simplicity.  Anytime a new file/socket descriptor gets added
+to the Loop via ``ael:addHandle( ... )`` there must be enough space in that
+array to keep track of the event handler attached via ``addhandle()``.  For
+that, ``T.Loop`` has three modes that get determined via the invocation of
+the constructor:
+
+Fixed number of descriptors
+---------------------------
+
+If the constructor is invoked via ``ael = Loop( int n )`` the loop will have
+a fixed number of slots for file descriptors.  Consequently, a call to
+``ael:addhandle( sock, ...)`` with a socket where the value of
+``sock.descriptor`` is bigger than the slot capacity of ``Loop ael`` will
+return ``false``.  No error will be thrown.  The situation can be handled
+manually by calling ``ael:resize( newSize )``.  For reasons of efficiency
+and simplicity, ``int n`` must be at least 4.
+
+Automatic increase of descriptor slots
+--------------------------------------
+
+If the constructor is invoked via ``ael = Loop( bool false )`` the loop will
+automatically increase the nuber of slots as needed.  Calling ``ael =
+Loop()`` will also invoke the same behaviour .Consequently, ``ael:addhandle(
+sock, ... )`` will never return false.  However, if descriptors get removed
+from the loop, the added slots will **NOT** be freed up and the space
+remains allocated in the loop.  This situation can be handled with strategic
+calls to ``ael:resize( )`` (without an argument) which automatically trims
+the slots to the maximal number needed.
+
+Automatic increase AND decrease of descriptor slots
+---------------------------------------------------
+
+If the constructor is invoked via ``ael = Loop( bool true )`` the loop will
+automatically increase the nuber of slots as needed.  And after each round
+of processing events the loop gets tested if the highest descriptor allows
+for the loop to be shrunk.  This scenario does sound most convienient but it
+**MAY** have undesirable side effects.  Since it is implemented using
+``realloc( ... )``, depending on reallocs implementation on your platform
+this can create memory thrashing.  It comes down to testing your code and
+looking for memory behaviour.  In many cases it is just fine because the
+memory used is really small and mostly ``realloc()`` is decent on reusing
+memory.
+
+
 Important File Handle and platform Caveats
 ==========================================
 
@@ -92,9 +143,20 @@ Class Metamembers
 
 ``Loop l = Loop( int n )       [__call]``
   Creates ``Loop l`` instance.  The parameter ``int n`` describes how many
-  descriptors can be handled in the event loop.  After adding that number of
-  descriptors to the event loop will return false.  There are no limits,
-  beyond memory and CPU performance, to adding Timers.
+  descriptors can be handled in the event loop.  Adding descriptors with a
+  higher number than ``int n`` to the loop will return false.  the minimum
+  value for ``int n`` is 4.  This is for reasons of effciency and
+  simplicity.  There are no limits, beyond memory and CPU performance, to
+  adding Timers.
+
+``Loop l = Loop( bool x )       [__call]``
+  Creates ``Loop l`` instance.  The parameter ``bool x`` determines for
+  automatic or semi-automatic handling of descriptor slots.  If ``x==false``
+  the loop willl add slots to it's capacity as needed but it will not
+  automatically decrease it.  If ``x==true`` the loop wikk full
+  automatically handle adding AND removing slots but that may have impatcs
+  on memory thrashing and/or performance of the loop.
+
 
 Instance Members
 ----------------
@@ -135,6 +197,17 @@ Instance Members
 ``boolean b = loop:removeTimer( t.Time t )``
   Remove ``t.Time t`` from the event loop.
 
+``boolean x loop:resize( [int n] )``
+  Resizes slot capacity of the loop.  If the parameter ``int n is given``
+  the loop will allocate the next higher power of 2 number of slots in the
+  loop.  For example calling ``looo:resize( 25 )`` will allocate 32 slots in
+  the loop.  When called without an argument ``loop:resize( )`` will remove
+  as many slots as it can so it can still accommodate the highest descriptor
+  and shrink itself to the next higest power of 2.  Therefore, a call to
+  ``loop:resize( )`` is not guranteed to shrink the number of slots if the
+  currently highest descriptor forbids that if the currently highest
+  descriptor forbids that.
+
 
 Instance Metamembers
 --------------------
@@ -164,3 +237,6 @@ Instance Metamembers
   It is important to point out, the tables returned by the ``index()``
   metamethod are just references and changing the values will infact change
   the executed function or parameter.
+
+``int n = #loop         [__len]``
+  Returns the numbers of slots in the loop currently provided as capacity.

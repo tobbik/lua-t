@@ -24,7 +24,6 @@
 #include "t_ael.h"
 #include "t.h"             // t_typ*
 
-
 enum t_ael_msk {
 	// 00000000
 	T_AEL_NO = 0x00,        ///< not set
@@ -43,6 +42,11 @@ static const char* t_ael_msk_lst[ ] = {
 	, "READWRITE"
 };
 
+enum t_ael_stg {
+	T_AEL_STG_FIX,        ///< use a fixed number of slots
+	T_AEL_STG_ADD,        ///< automatically add more slots
+	T_AEL_STG_AUT,         ///< automatic add and remove slots
+};
 
 // definition for file/socket descriptor node
 struct t_ael_dnd {
@@ -71,6 +75,7 @@ struct t_ael_tnd {
 
 // t_ael general implementation; API specifics live behind the *state pointer
 struct t_ael {
+	enum t_ael_stg     mode;     ///< Garbage strategy
 	int                run;      ///< boolean indicator to start/stop the loop
 	int                fdMax;    ///< max fd
 	size_t             fdCount;  ///< how many fd to handle
@@ -108,10 +113,11 @@ static const struct t_typ t_ael_directionList[ ] = {
 
 // t_ael_l.c
 struct t_ael *t_ael_check_ud ( lua_State *L, int pos, int check );
-struct t_ael *t_ael_create_ud( lua_State *L, size_t sz );
+struct t_ael *t_ael_create_ud( lua_State *L );
 
 // p_ael_(impl).c   (Implementation specific functions) INTERFACE
 int  p_ael_create_ud_impl   ( lua_State *L, struct t_ael *ael );
+int  p_ael_resize_impl      ( lua_State *L, struct t_ael *ael, size_t old_sz );
 void p_ael_free_impl        ( struct t_ael *ael );
 int  p_ael_addhandle_impl   ( lua_State *L, struct t_ael *ael, int fd, enum t_ael_msk msk );
 int  p_ael_removehandle_impl( lua_State *L, struct t_ael *ael, int fd, enum t_ael_msk msk );

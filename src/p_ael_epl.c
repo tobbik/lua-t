@@ -43,6 +43,7 @@ p_ael_resize_impl( lua_State *L, struct t_ael *ael, size_t old_sz  )
 {
 	struct p_ael_ste   *s = ael->state;
 	struct epoll_event *e;
+
 	e = (0 == old_sz)
 		? (struct epoll_event *) malloc(              sizeof( struct epoll_event ) * (ael->fdCount) )
 		: (struct epoll_event *) realloc( s->events,  sizeof( struct epoll_event ) * (ael->fdCount) );

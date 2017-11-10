@@ -86,6 +86,7 @@ return setmetatable( {
 				end
 				--dR()
 				--collectgarbage()
+				srv.ael:resize( )
 				tm:set( timeout )
 				return tm
 			end
