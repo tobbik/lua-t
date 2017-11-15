@@ -42,8 +42,9 @@ struct p_ael_ste {
 int
 p_ael_resize_impl( lua_State *L, struct t_ael *ael, size_t old_sz  )
 {
+	UNUSED( old_sz );
 	if (FD_SETSIZE < ael->fdCount)
-		return luaL_error( "Can't have more than select() limit of file descriptors" );
+		return luaL_error( L, "Can't have more than select() limit of file descriptors" );
 	else
 		return 0;
 }
