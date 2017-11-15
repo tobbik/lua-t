@@ -42,16 +42,9 @@ static const char* t_ael_msk_lst[ ] = {
 	, "READWRITE"
 };
 
-enum t_ael_stg {
-	T_AEL_STG_FIX,        ///< use a fixed number of slots
-	T_AEL_STG_ADD,        ///< automatically add more slots
-	T_AEL_STG_AUT,         ///< automatic add and remove slots
-};
-
 // definition for file/socket descriptor node
 struct t_ael_dnd {
 	enum t_ael_msk    msk;   ///< mask, for unset, readable, writable
-	enum t_ael_msk    exMsk; ///< mask for execution
 	int               rR;    ///< func/arg table reference for read  event in LUA_REGISTRYINDEX
 	int               wR;    ///< func/arg table reference for write event in LUA_REGISTRYINDEX
 	int               hR;    ///< handle   LUA_REGISTRYINDEX reference (T.Net.* or Lua file handle)
@@ -75,14 +68,12 @@ struct t_ael_tnd {
 
 // t_ael general implementation; API specifics live behind the *state pointer
 struct t_ael {
-	enum t_ael_stg     mode;     ///< Garbage strategy
 	int                run;      ///< boolean indicator to start/stop the loop
-	int                fdMax;    ///< max fd
-	size_t             fdCount;  ///< how many fd to handle
-	void              *state;    ///< polling API specific data
+	int                fdCount;  ///< how many descriptor observed
+	//void              *state;    ///< polling API specific data
+	int                sR;       ///< reference to polling API specific data
+	int                dR;       ///< descriptor table reference
 	struct t_ael_tnd  *tmHead;   ///< Head of timers linked list
-	struct t_ael_dnd  *fdSet;    ///< array with pointers to fd_events indexed by fd
-	int               *fdExc;    ///< array with fd indexes to executable fd_events
 };
 
 
@@ -112,17 +103,22 @@ static const struct t_typ t_ael_directionList[ ] = {
 };
 
 // t_ael_l.c
-struct t_ael *t_ael_check_ud ( lua_State *L, int pos, int check );
-struct t_ael *t_ael_create_ud( lua_State *L );
+struct t_ael     *t_ael_check_ud     ( lua_State *L, int pos, int check );
+struct t_ael     *t_ael_create_ud    ( lua_State *L );
+void              t_ael_executehandle( lua_State *L, struct t_ael_dnd *dnd, enum t_ael_msk msk );
+// t_ael_dnd.c
+struct t_ael_dnd *t_ael_dnd_create_ud( lua_State *L );
+struct t_ael_dnd *t_ael_dnd_check_ud ( lua_State *L, int pos, int check );
+void              t_ael_dnd_setMaskAndFunction( lua_State *L, struct t_ael_dnd *dnd, enum t_ael_msk msk, int fR );
+void              t_ael_dnd_removeMaskAndFunction( lua_State *L, struct t_ael_dnd *dnd, enum t_ael_msk msk );
+LUA_API int       luaopen_t_ael_dnd  ( lua_State *L );
 
 // p_ael_(impl).c   (Implementation specific functions) INTERFACE
-int  p_ael_create_ud_impl   ( lua_State *L, struct t_ael *ael );
+int  p_ael_create_ud_impl   ( lua_State *L );
 int  p_ael_resize_impl      ( lua_State *L, struct t_ael *ael, size_t old_sz );
-void p_ael_free_impl        ( struct t_ael *ael );
-int  p_ael_addhandle_impl   ( lua_State *L, struct t_ael *ael, int fd, enum t_ael_msk msk );
-int  p_ael_removehandle_impl( lua_State *L, struct t_ael *ael, int fd, enum t_ael_msk msk );
+void p_ael_free_impl        ( lua_State *L, int ref );
+int  p_ael_addhandle_impl   ( lua_State *L, struct t_ael *ael, struct t_ael_dnd *dnd, int fd, enum t_ael_msk msk );
+int  p_ael_removehandle_impl( lua_State *L, struct t_ael *ael, struct t_ael_dnd *dnd, int fd, enum t_ael_msk msk );
 void p_ael_addtimer_impl    ( struct t_ael *ael, struct timeval *tv );
 int  p_ael_poll_impl        ( lua_State *L, struct t_ael *ael );
 
-struct t_ael_dnd *t_ael_dnd_create_ud( lua_State *L );
-struct t_ael_dnd *t_ael_dnd_check_ud ( lua_State *L, int pos, int check );

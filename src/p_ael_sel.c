@@ -20,127 +20,152 @@
 #include "t_dbg.h"
 #endif
 
-#include <string.h>           // memcpy
-#include <stdlib.h>           // malloc, free
-
-#define PRINT_DEBUGS 0
-
+// implementation specific is that this is limited in size to FD_SETSIZE which
+// ususally is in the neighboorhood of 1024.  That keeps the size very
+// reasonable and makes it static. This way we never have to resize and that
+// allows it to be excluded from any resize efforts/necessities.  If there is a
+// system where FD_SETSIZE is manipulated and much bigger, using the select()
+// based Loop is probably the wrong choice to begin with.
 struct p_ael_ste {
-	fd_set             rfds;
-	fd_set             wfds;
-	fd_set             rfds_w; ///<
-	fd_set             wfds_w; ///<
+	fd_set rfds;
+	fd_set wfds;
+	fd_set rfds_w;                ///<
+	fd_set wfds_w;                ///<
+	int    fdMax;                 ///< max fd
+	int    fd_set [ FD_SETSIZE ]; ///< fd_set[fd]==1 if fd is part of set; else ==0
 };
 
-/**--------------------------------------------------------------------------
- * select() specific allocation of t_ael->state members.
- * \param   *L      Lua state.
- * \param   *ael    struct t_ael userdata.
- * \param   old_sz  size before resizing.
- * \return  int
+
+/* --------------------------------------------------------------------------
+ * get the state struct from the loop userdata.
+ * \param   L     Lua state.
+ * \param   ref   int; reference to state.
+ * \return  state struct to state.
  * --------------------------------------------------------------------------*/
-int
-p_ael_resize_impl( lua_State *L, struct t_ael *ael, size_t old_sz  )
+static inline struct p_ael_ste
+*p_ael_getState( lua_State *L, int ref )
 {
-	UNUSED( old_sz );
-	if (FD_SETSIZE < ael->fdCount)
-		return luaL_error( L, "Can't have more than select() limit of file descriptors" );
-	else
-		return 0;
+	struct p_ael_ste *state;
+	lua_rawgeti( L, LUA_REGISTRYINDEX, ref );
+	state = (struct p_ael_ste *) lua_touserdata( L, -1 );
+	lua_pop( L, 1 );
+	return state;
 }
 
-/**--------------------------------------------------------------------------
+
+/* --------------------------------------------------------------------------
  * select() specific initialization of t_ael->state.
  * \param   L      Lua state.
  * \param   struct t_ael * pointer to new userdata on Lua Stack
  * \return  int.
  * --------------------------------------------------------------------------*/
 int
-p_ael_create_ud_impl( lua_State *L, struct t_ael *ael )
+p_ael_create_ud_impl( lua_State *L )
 {
-	struct p_ael_ste *state = (struct p_ael_ste *) malloc( sizeof( struct p_ael_ste ) );
-	if (NULL == state)
-		return luaL_error( L, "couldn't allocate memory for loop" );
+	struct p_ael_ste *state;
+	state = (struct p_ael_ste *) lua_newuserdata( L, sizeof( struct p_ael_ste ) );
 	FD_ZERO( &state->rfds );
 	FD_ZERO( &state->wfds );
 	FD_ZERO( &state->rfds_w );
 	FD_ZERO( &state->wfds_w );
-	ael->state = state;
-	return 1;
+	return luaL_ref( L, LUA_REGISTRYINDEX );
 }
 
 
-/**--------------------------------------------------------------------------
+/* --------------------------------------------------------------------------
  * select() specific destruction of t_ael->state.
  * \param   struct t_ael * pointer to new userdata on Lua Stack
  * --------------------------------------------------------------------------*/
 void
-p_ael_free_impl( struct t_ael *ael )
+p_ael_free_impl( lua_State *L, int ref )
 {
-	struct p_ael_ste  *state = ael->state;
-	free(  state );
+	UNUSED( L );
+	UNUSED( ref );
 }
 
 
-/**--------------------------------------------------------------------------
+/* --------------------------------------------------------------------------
  * Add a File/Socket event handler to the T.Loop.
+ * \param  L      lua_State.
  * \param  ael    struct t_ael pointer to loop.
+ * \param  dnd    struct assiciated with fd.
  * \param  fd     int  Socket/file descriptor.
  * \param  addmsk enum t_ael_msk - direction of descriptor to be observed.
  * \return int    success/fail;
  * --------------------------------------------------------------------------*/
 int
-p_ael_addhandle_impl( lua_State *L, struct t_ael *ael, int fd, enum t_ael_msk addmsk )
+p_ael_addhandle_impl( lua_State *L, struct t_ael *ael, struct t_ael_dnd *dnd, int fd, enum t_ael_msk addmsk )
 {
 	UNUSED( L );
-	struct p_ael_ste *state = (struct p_ael_ste *) ael->state;
+	struct p_ael_ste *state = p_ael_getState( L, ael->sR );
 #if PRINT_DEBUGS == 1
 	printf("+++++ ADDING DESCRIPTOR: %d: {%s + %s = %s}\n", fd,
-			t_ael_msk_lst[ ael->fdSet[ fd ].msk ],
+			t_ael_msk_lst[ dnd->msk ],
 			t_ael_msk_lst[ addmsk ],
-			t_ael_msk_lst[ addmsk | ael->fdSet[ fd ].msk ] );
+			t_ael_msk_lst[ addmsk | dnd->msk ] );
+#else
+	UNUSED( dnd );
 #endif
 	if (addmsk & T_AEL_RD)    FD_SET( fd, &state->rfds );
 	if (addmsk & T_AEL_WR)    FD_SET( fd, &state->wfds );
+	state->fdMax        = (fd > state->fdMax) ? fd : state->fdMax;
+	state->fd_set[ fd ] = 1;
 	return 1;
 }
 
 
-/**--------------------------------------------------------------------------
+/* --------------------------------------------------------------------------
  * Remove a File/Socket event handler to the T.Loop.
+ * \param  L      lua_State.
  * \param  ael    struct t_ael pointer to loop.
+ * \param  dnd    struct assiciated with fd.
  * \param  fd     int  Socket/file descriptor.
  * \param  delmsk enum t_ael_msk - direction of descriptor to stop observing.
  * \return int    success/fail;
  * --------------------------------------------------------------------------*/
 int
-p_ael_removehandle_impl( lua_State *L, struct t_ael *ael, int fd, enum t_ael_msk delmsk )
+p_ael_removehandle_impl( lua_State *L, struct t_ael *ael, struct t_ael_dnd *dnd, int fd, enum t_ael_msk delmsk )
 {
 	UNUSED( L );
-	struct p_ael_ste *state = (struct p_ael_ste *) ael->state;
+	struct p_ael_ste *state = p_ael_getState( L, ael->sR );
+	int               i;
 #if PRINT_DEBUGS == 1
-	printf( "----- REMOVING DESCRIPTOR: %d: {%s - %s = %s}\n", fd,
-			t_ael_msk_lst[ ael->fdSet[ fd ].msk ],
+	printf( "----- REMOVING DESCRIPTOR: %d: {%s - %s = %s}    MAX: %2d\n", fd,
+			t_ael_msk_lst[ dnd->msk ],
 			t_ael_msk_lst[ delmsk ],
-			t_ael_msk_lst[ ael->fdSet[ fd ].msk & (~delmsk) ] );
+			t_ael_msk_lst[ dnd->msk & (~delmsk) ],
+			state->fdMax );
+#else
+	UNUSED( dnd );
 #endif
 	if (delmsk & T_AEL_RD)    FD_CLR( fd, &state->rfds );
 	if (delmsk & T_AEL_WR)    FD_CLR( fd, &state->wfds );
+	if (T_AEL_NO == (dnd->msk & (~delmsk)))
+	{
+		state->fd_set[ fd ] = 0;
+		if (fd == state->fdMax)
+		{
+			for (i = state->fdMax-1; i >= 0; i--)
+				if (state->fd_set[ i ]) break;
+			state->fdMax = i;
+		}
+	}
 	return 1;
 }
 
 
-/**--------------------------------------------------------------------------
+/* --------------------------------------------------------------------------
  * Set up a select call for all events in the T.Loop
- * \param   L              Lua state.
- * \param   struct t_ael   The loop struct.
- * \return  int            number returns from select.
+ * \param   L    Lua state.
+ * \param   ael  struct t_ael;   The loop struct.
+ * \return  int  number returns from select.
  * --------------------------------------------------------------------------*/
 int
 p_ael_poll_impl( lua_State *L, struct t_ael *ael )
 {
 	UNUSED( L );
-	struct p_ael_ste *state = (struct p_ael_ste *) ael->state;
+	struct p_ael_ste *state = p_ael_getState( L, ael->sR );
+	struct t_ael_dnd *dnd;
 	struct timeval   *tv    = (NULL != ael->tmHead)
 	   ? ael->tmHead->tv
 	   : NULL;
@@ -150,9 +175,9 @@ p_ael_poll_impl( lua_State *L, struct t_ael *ael )
 	memcpy( &state->rfds_w, &state->rfds, sizeof( fd_set ) );
 	memcpy( &state->wfds_w, &state->wfds, sizeof( fd_set ) );
 
-	r = select( ael->fdMax+1, &state->rfds_w, &state->wfds_w, NULL, tv );
+	r = select( state->fdMax+1, &state->rfds_w, &state->wfds_w, NULL, tv );
 #if PRINT_DEBUGS == 1
-	printf( "    &&&&&&&&&&&& POLL RETURNED: %d &&&&&&&&&&&&&&&&&&\n", r );
+	printf( "    &&&&&&&&&&&& POLL RETURNED[%d:%d]: %d &&&&&&&&&&&&&&&&&&\n", ael->fdCount, state->fdMax, r );
 #endif
 
 	if (r<0)
@@ -160,22 +185,30 @@ p_ael_poll_impl( lua_State *L, struct t_ael *ael )
 
 	if (r>0)
 	{
-		for (i=0; r>0 && i <= ael->fdMax; i++)
+		lua_rawgeti( L, LUA_REGISTRYINDEX, ael->dR );
+		for (i=0; r>0 && i <= state->fdMax; i++)
 		{
-			if (T_AEL_NO==ael->fdSet[ i ].msk)
+			lua_rawgeti( L, -1, i );
+			if (lua_isnil( L, -1 ))
+			{
+				lua_pop( L, 1 );
 				continue;
+			}
+
+			dnd = (struct t_ael_dnd*) lua_touserdata( L, -1 );
 			msk = T_AEL_NO;
-			if (ael->fdSet[ i ].msk & T_AEL_RD  &&  FD_ISSET( i, &state->rfds_w ))
+			if (dnd->msk & T_AEL_RD  &&  FD_ISSET( i, &state->rfds_w ))
 				msk |= T_AEL_RD;
-			if (ael->fdSet[ i ].msk & T_AEL_WR  &&  FD_ISSET( i, &state->wfds_w ))
+			if (dnd->msk & T_AEL_WR  &&  FD_ISSET( i, &state->wfds_w ))
 				msk |= T_AEL_WR;
 			if (T_AEL_NO != msk)
 			{
-				ael->fdExc[ c++ ]      = i;
-				ael->fdSet[ i ].exMsk = msk;
+				t_ael_executehandle( L, dnd, msk );
 				r--;
 			}
+			lua_pop( L, 1 );
 		}
+		lua_pop( L, 1 );
 	}
 
 	return c;

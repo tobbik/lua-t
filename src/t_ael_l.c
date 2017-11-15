@@ -200,10 +200,39 @@ struct t_ael_tnd
 
 
 /**--------------------------------------------------------------------------
+ * Executes a handle event function for the file/socket handles.
+ * \param   L        Lua state.
+ * \param   *dNde    Descriptor node.
+ * \param   msk      execute read or write or both.
+ * \return  void.
+  --------------------------------------------------------------------------*/
+void
+t_ael_executehandle( lua_State *L, struct t_ael_dnd *dnd, enum t_ael_msk msk )
+{
+	int rf = 0;      ///< was read() event fired for this descriptor?
+	if (msk & T_AEL_RD & dnd->msk)
+	{
+#if PRINT_DEBUGS == 1
+		//printf( ">>>>> EXECUTE FILE(READ) FOR DESCRIPTOR: %d\n", ael->fdExc[ i ] );
+#endif
+		t_ael_doFunction( L, dnd->rR, 0 );
+		rf = 1;
+	}
+	if ((msk & T_AEL_WR & dnd->msk) && !rf)
+	{
+#if PRINT_DEBUGS == 1
+		//printf( "<<<<< EXECUTE FILE(WRITE) FOR DESCRIPTOR: %d\n", ael->fdExc[ i ] );
+#endif
+		t_ael_doFunction( L, dnd->wR, 0 );
+	}
+}
+
+
+/**--------------------------------------------------------------------------
  * Pop timer list head, execute and re-add if needed.
  * \param   L        Lua state.
  * \param   **tHead  t_ael_tnd; pointer to Head of timer linked list pointer.
- * \param   *rt      struct timeval; measure how long since last poll fall through
+ * \param   *rt      struct timeval; measure how long since last poll fell through
  * \return  void.
  * --------------------------------------------------------------------------*/
 void
@@ -228,88 +257,6 @@ t_ael_processTimers( lua_State *L, struct t_ael_tnd **tmHead, struct timeval *rt
 
 
 /**--------------------------------------------------------------------------
- * Allocate/ReAllocate space for the descriptor nodes.
- * \param   L      Lua state.
- * \lparam  CLASS  table t.Loop.
- * \lreturn int    int initial descriptor capacity of Loop.
- * \return  int    # of values pushed onto the stack.
- * --------------------------------------------------------------------------*/
-static void
-t_ael_resize( lua_State *L, struct t_ael *ael, size_t sz )
-{
-	size_t            n;
-	size_t            old_sz = ael->fdCount;
-	struct t_ael_dnd *dnd;
-	int              *exc;
-
-	// at least slots always available, covers:
-	// 0 - STDIN
-	// 1 - STDOUT
-	// 2 - STDERR
-	// 3 - EPOLL FD (Not 'observed', but any other socket will be > 3)
-	sz = (0 != sz && sz < 4) ? 4 : sz;
-
-	// determine new shrunk size
-	if (sz == 0 && ael->fdMax < (int) old_sz/2)
-	{
-		sz = old_sz/2;
-		while (ael->fdMax < (int) sz/2)
-			sz /= 2;
-#if PRINT_DEBUGS==4
-		printf( "FdMax: %d -- CurSize: %ld NewSize: %ld \n", ael->fdMax, ael->fdCount, sz );
-#endif
-	}
-
-	if (0 != sz && sz != old_sz)
-	{
-#if PRINT_DEBUGS==4
-		printf( "Before RESIZE[%ld->%ld]:\n", old_sz, sz );
-		for (n=0; n<old_sz; n++)
-			printf( "%2ld -- MSK: %d, rR: %d, wR: %d, hR: %d\n", n, ael->fdSet[n].msk , ael->fdSet[n].rR, ael->fdSet[n].wR, ael->fdSet[n].hR );
-#endif
-		ael->fdCount  = sz;
-		dnd  = (0 == old_sz)
-			? (struct t_ael_dnd *) malloc(              sizeof( struct t_ael_dnd ) * (sz) )
-			: (struct t_ael_dnd *) realloc( ael->fdSet, sizeof( struct t_ael_dnd ) * (sz) );
-		if (dnd)
-			ael->fdSet = dnd;
-		else
-		{
-			free( ael );
-			luaL_error( L, "Failed to allocate space for file descriptors in loop" );
-		}
-
-		exc  = (0 == old_sz)
-			? (int *) malloc(              (sz+1) * sizeof( int ) )
-			: (int *) realloc( ael->fdExc, (sz+1) * sizeof( int ) );
-		if (exc)
-			ael->fdExc = exc;
-		else
-		{
-			free( ael->fdSet );
-			free( ael );
-			luaL_error( L, "Failed to allocate space for executor descriptors in loop" );
-		}
-
-		if (sz > old_sz)
-			for (n = old_sz; n < sz; n++)
-			{
-				ael->fdSet[ n ].msk = T_AEL_NO;
-				ael->fdSet[ n ].rR  = LUA_REFNIL;
-				ael->fdSet[ n ].wR  = LUA_REFNIL;
-				ael->fdSet[ n ].hR  = LUA_REFNIL;
-			}
-#if PRINT_DEBUGS==4
-		printf( "AFTER RESIZE[%ld]:\n", sz );
-		for (n=0; n<sz; n++)
-			printf( "%2ld -- MSK: %d, rR: %d, wR: %d, hR: %d\n", n, ael->fdSet[n].msk , ael->fdSet[n].rR, ael->fdSet[n].wR, ael->fdSet[n].hR );
-#endif
-		p_ael_resize_impl( L, ael, old_sz );
-	}
-}
-
-
-/**--------------------------------------------------------------------------
  * Construct a T.Loop and return it.
  * \param   L      Lua state.
  * \lparam  CLASS  table t.Loop.
@@ -319,27 +266,9 @@ t_ael_resize( lua_State *L, struct t_ael *ael, size_t sz )
 static int lt_ael__Call( lua_State *L )
 {
 	struct t_ael *ael;
-	size_t         sz;
 	lua_remove( L, 1 );   // remove CLASS table
 
 	ael = t_ael_create_ud( L );
-	if (lua_isinteger( L, 1 ))
-	{
-		sz = lua_tointeger( L, 1 );
-		luaL_argcheck( L, sz > 3, 1, "Minimum size of loop must be 4" );
-		ael->mode = T_AEL_STG_FIX;
-		t_ael_resize( L, ael, sz );
-	}
-	else if (lua_isboolean( L, 1 ) || t_ael_check_ud( L, 1, 0 ))
-	{
-		t_ael_resize( L, ael, 4 );
-		ael->mode = (lua_isboolean( L, 1 ) && lua_toboolean( L, 1 ))
-			? T_AEL_STG_AUT
-			: T_AEL_STG_ADD;
-	}
-	else
-		luaL_argerror( L, 1, "Must be empty, boolean or integer" );
-
 	return 1;
 }
 
@@ -356,10 +285,11 @@ struct t_ael
 	struct t_ael    *ael;
 
 	ael = (struct t_ael *) lua_newuserdata( L, sizeof( struct t_ael ) );
-	ael->fdCount = 0;
-	ael->fdMax   = 0;
 	ael->tmHead  = NULL;
-	p_ael_create_ud_impl( L, ael );
+	ael->fdCount = 0;
+	lua_newtable( L );
+	ael->dR = luaL_ref( L, LUA_REGISTRYINDEX );
+	ael->sR = p_ael_create_ud_impl( L );
 	luaL_getmetatable( L, T_AEL_TYPE );
 	lua_setmetatable( L, -2 );
 	return ael;
@@ -380,7 +310,6 @@ struct t_ael
 	if (NULL == ud && check) t_typeerror( L , pos, T_AEL_TYPE );
 	return (NULL==ud) ? NULL : (struct t_ael *) ud;
 }
-
 
 
 /**--------------------------------------------------------------------------
@@ -407,49 +336,31 @@ lt_ael_addhandle( lua_State *L )
 	msk = luaL_checkinteger( L, 3 );
 	luaL_checktype( L, 4, LUA_TFUNCTION );
 
-	// resize avaiable slots?
-	if (fd >= (int) ael->fdCount)
+	// get/create dnd userdata
+	lua_rawgeti( L, LUA_REGISTRYINDEX, ael->dR );
+	lua_rawgeti( L, -1, fd );
+	if (lua_isnil( L, -1 ))
 	{
-		if (T_AEL_STG_FIX == ael->mode)
-		{
-			lua_pushboolean( L, 0 );
-			return 1;
-		}
-		else
-			t_ael_resize( L, ael, 2*(ael->fdCount) );
-	}
-
-	// adjust loop behaviour for fd
-	dnd          = &(ael->fdSet[ fd ]);
-	p_ael_addhandle_impl( L, ael, fd, msk );
-	dnd->msk    |= msk;
-	ael->fdMax   = (fd > ael->fdMax) ? fd : ael->fdMax;
-
-	// set handlers
-	lua_createtable( L, n-4, 0 );      // create function/parameter table
-	lua_insert( L, 4 );                //S: ael hdl dir tbl fnc …
-	while (n > 4)
-		lua_rawseti( L, 4, (n--)-4 );   // add arguments and function (pops each item)
-	// pop the function reference table and assign as read or write function
-	if (T_AEL_RD & msk)                //S: ael hdl dir tbl
-	{
-		if (LUA_REFNIL != dnd->rR)      // if overwriting -> allow for __gc
-			luaL_unref( L, LUA_REGISTRYINDEX, dnd->rR );
-		dnd->rR = luaL_ref( L, LUA_REGISTRYINDEX );
-#if PRINT_DEBUGS == 3
-		printf(" ======ADDED HANDLE(READ): %d(%d) \n", dnd->rR, fd );
-#endif
+		dnd = t_ael_dnd_create_ud( L );          //S: ael hnd dir fnc … nds nil dnd
+		lua_rawseti( L, -3, fd );
+		(ael->fdCount)++;
 	}
 	else
-	{
-		if (LUA_REFNIL != dnd->wR)      // if overwriting -> allow for __gc
-			luaL_unref( L, LUA_REGISTRYINDEX, dnd->wR );
-		dnd->wR = luaL_ref( L, LUA_REGISTRYINDEX );
-#if PRINT_DEBUGS == 3
-		printf(" ======ADDED HANDLE(WRITE): %d(%d) \n", dnd->wR, fd );
-#endif
-	}
-	lua_pop( L, 1 ); // pop the read/write indicator string/integer
+		dnd = t_ael_dnd_check_ud( L, -1, 1 );    //S: ael hnd dir fnc … nds dnd
+	lua_pop( L, 2 );   // pop nil/dnd and nodes //S: ael hnd dir fnc …
+
+	// implementatuion specific handling
+	p_ael_addhandle_impl( L, ael, dnd, fd, msk );
+
+	// create function reference
+	lua_createtable( L, n-4, 0 );               // create function/parameter table
+	lua_insert( L, 4 );                         //S: ael hdl dir tbl fnc …
+	while (n > 4)
+		lua_rawseti( L, 4, (n--)-4 );            // add arguments and function (pops each item)
+
+	t_ael_dnd_setMaskAndFunction( L, dnd, msk, luaL_ref( L, LUA_REGISTRYINDEX ) );
+
+	lua_pop( L, 1 );                            // pop the read/write indicator string/integer
 	if (LUA_REFNIL == dnd->hR)
 	{
 		dnd->hR = luaL_ref( L, LUA_REGISTRYINDEX );      // keep ref to handle so it doesnt gc
@@ -478,51 +389,34 @@ lt_ael_removehandle( lua_State *L )
 	struct t_ael     *ael = t_ael_check_ud( L, 1, 1 );
 	int                fd = t_ael_getHandle( L, 2, 1 );
 	struct t_ael_dnd *dnd;
-	int                 i;
 	enum t_ael_msk    msk;
 
 	luaL_argcheck( L, NULL != t_getTypeByName( L, 3, NULL, t_ael_directionList ),
 	      3, "must specify direction" );
 	msk = luaL_checkinteger( L, 3 );
 
-	dnd = &(ael->fdSet[ fd ]);
-	luaL_argcheck( L, dnd->msk, 1, "Descriptor must be observed in Loop" );
-	// remove function
-	if ((T_AEL_RD & msk & dnd->msk) && LUA_REFNIL != dnd->rR)
-	{
-#if PRINT_DEBUGS == 3
-		printf(" ======REMOVING HANDLE(READ): %d for %d(%d)\n", dnd->rR, dnd->hR, fd );
-#endif
-		luaL_unref( L, LUA_REGISTRYINDEX, dnd->rR );
-		dnd->rR = LUA_REFNIL;
-	}
-	if ((T_AEL_WR & msk & dnd->msk) && LUA_REFNIL != dnd->wR)
-	{
-#if PRINT_DEBUGS == 3
-		printf(" ======REMOVING HANDLE(WRITE): %d for %d(%d)\n", dnd->wR, dnd->hR, fd );
-#endif
-		luaL_unref( L, LUA_REGISTRYINDEX, dnd->wR );
-		dnd->wR = LUA_REFNIL;
-	}
-	p_ael_removehandle_impl( L, ael, fd, msk );
-	// remove from mask
-	dnd->msk = dnd->msk & (~msk);
-	// remove from loop if no observed at all anymore
+	// get/create dnd userdata
+	lua_rawgeti( L, LUA_REGISTRYINDEX, ael->dR );
+	lua_rawgeti( L, -1, fd );
+	if (lua_isnil( L, -1 ))
+		return luaL_error( L, "Descriptor must be observed in Loop" );
+	else
+		dnd = t_ael_dnd_check_ud( L, -1, 1 );    //S: ael hnd dir nds dnd
+	lua_pop( L, 1 );   // pop dnd               //S: ael hnd dir nds
+
+	p_ael_removehandle_impl( L, ael, dnd, fd, msk );
+
+	t_ael_dnd_removeMaskAndFunction( L, dnd, msk );
+
 	if (T_AEL_NO == dnd->msk )
 	{
 #if PRINT_DEBUGS == 3
 		printf(" ======REMOVING HANDLE(SOCKET): %d \n", dnd->hR );
 #endif
 		luaL_unref( L, LUA_REGISTRYINDEX, dnd->hR );
-		dnd->hR = LUA_REFNIL;
-
-		// reset the maxFd
-		if (fd == ael->fdMax)
-		{
-			for (i = ael->fdMax-1; i >= 0; i--)
-				if (T_AEL_NO != ael->fdSet[ i ].msk) break;
-			ael->fdMax = i;
-		}
+		lua_pushnil( L );
+		lua_rawseti( L, -2, fd );
+		(ael->fdCount)--;
 	}
 	return 0;
 }
@@ -530,12 +424,12 @@ lt_ael_removehandle( lua_State *L )
 
 /**--------------------------------------------------------------------------
  * Add a Timer event handler to the T.Loop.
- * \param   L    Lua state.
- * \lparam  ud   T.Loop userdata instance.                   // 1
- * \lparam  ud   T.Time userdata instance.                   // 2
- * \lparam  func to be executed when event handler fires.    // 3
- * \lparam  …    parameters to function when executed.       // 4 …
- * \return  int  # of values pushed onto the stack.
+ * \param   L   Lua state.
+ * \lparam  ud  T.Loop userdata instance.                   // 1
+ * \lparam  ud  T.Time userdata instance.                   // 2
+ * \lparam  fnc to be executed when event handler fires.    // 3
+ * \lparam  …   parameters to function when executed.       // 4 …
+ * \return  int # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int
 lt_ael_addtimer( lua_State *L )
@@ -639,7 +533,6 @@ lt_ael__gc( lua_State *L )
 	struct t_ael     *ael  = t_ael_check_ud( L, 1, 1 );
 	struct t_ael_tnd *tFre;
 	struct t_ael_tnd *tRun = ael->tmHead;
-	size_t            i;       ///< the iterator for all fields
 
 	while (NULL != tRun)
 	{
@@ -649,21 +542,10 @@ lt_ael__gc( lua_State *L )
 		tRun = tRun->nxt;
 		free( tFre );
 	}
-	for (i=0; i < ael->fdCount; i++)
-	{
-		if (LUA_REFNIL != ael->fdSet[ i ].rR)
-			luaL_unref( L, LUA_REGISTRYINDEX, ael->fdSet[ i ].rR );
-		if (LUA_REFNIL != ael->fdSet[ i ].wR)
-			luaL_unref( L, LUA_REGISTRYINDEX, ael->fdSet[ i ].wR );
-		if (LUA_REFNIL != ael->fdSet[ i ].hR)
-			luaL_unref( L, LUA_REGISTRYINDEX, ael->fdSet[ i ].hR );
-	}
-	if (ael->fdCount > 0)
-	{
-		free( ael->fdSet );
-		free( ael->fdExc );
-	}
-	p_ael_free_impl( ael );
+	// walk down dR table an unref functions and handles
+	p_ael_free_impl( L, ael->sR );
+	luaL_unref( L, LUA_REGISTRYINDEX, ael->sR ); // unref impl state data
+	luaL_unref( L, LUA_REGISTRYINDEX, ael->dR ); // unref nodes table
 	return 0;
 }
 
@@ -678,10 +560,8 @@ static int
 lt_ael_run( lua_State *L )
 {
 	struct t_ael     *ael   = t_ael_check_ud( L, 1, 1 );
-	struct t_ael_dnd *dnd;     ///< descriptor execution iterator
 	struct timeval    tv;      ///< measure time for one iteration
-	int               n,i;     ///< how many file events?
-	int               rf;      ///< was read() event fired for this descriptor?
+	int               n;       ///< how many file events?
 
 	ael->run                = 1;
 	while (ael->run)
@@ -694,40 +574,12 @@ lt_ael_run( lua_State *L )
 		printf( "oooooooooooooooooooooo POLL RETURNED: %d oooooooooooooooooooo\n", n );
 #endif
 
-		// execute descriptor events
-		//for (i=n; i>-1; i--)
-		for (i=0; i<n; i++)
-		{
-			dnd = &(ael->fdSet[ ael->fdExc[ i ] ]);
-			rf  = 0;
-			//printf( "%d    %d    %d  %d\n", dnd->rR, dnd->wR, dnd->exMsk, dnd->msk );
-			if (dnd->exMsk & T_AEL_RD & dnd->msk)
-			{
-#if PRINT_DEBUGS == 1
-				printf( ">>>>> EXECUTE FILE(READ) FOR DESCRIPTOR: %d\n", ael->fdExc[ i ] );
-#endif
-				t_ael_doFunction( L, dnd->rR, 0 );
-				rf = 1;
-			}
-			if ((dnd->exMsk & T_AEL_WR & dnd->msk) && !rf)
-			{
-#if PRINT_DEBUGS == 1
-				printf( "<<<<< EXECUTE FILE(WRITE) FOR DESCRIPTOR: %d\n", ael->fdExc[ i ] );
-#endif
-				t_ael_doFunction( L, dnd->wR, 0 );
-			}
-		}
-
-		// shrink loop if applicable
-		if (T_AEL_STG_AUT == ael->mode && ael->fdMax < (int) (ael->fdCount)/2)
-			t_ael_resize( L, ael, 0 );   // 0 indicates automatic resize
-
 		// execute timer events
 		t_tim_since( &tv );
 		t_ael_processTimers( L, &(ael->tmHead), &tv );
 
 		// if there are no events left in the loop stop processing
-		ael->run = (NULL==ael->tmHead && ael->fdMax<1) ? 0 : ael->run;
+		ael->run = (NULL==ael->tmHead && ael->fdCount<1) ? 0 : ael->run;
 	}
 
 	return 0;
@@ -750,29 +602,6 @@ lt_ael_stop( lua_State *L )
 
 
 /**--------------------------------------------------------------------------
- * Resizes an T.Loop.
- * \param   L    Lua state.
- * \lparam  ud   T.Loop userdata instance.                       // 1
- * \lparam  sz   int,nil; New desired size, nil for autoshrink   // 2
- * \return  int  # of values pushed onto the stack.
- * --------------------------------------------------------------------------*/
-static int
-lt_ael_resize( lua_State *L )
-{
-	size_t         sz = 0;
-	struct t_ael *ael = t_ael_check_ud( L, 1, 1 );
-
-	if (lua_isinteger( L, 2 ))
-	{
-		sz= lua_tointeger( L, 2 );
-		luaL_argcheck( L, sz > 3, 2, "Minimum size of loop must be 4" );
-	}
-	t_ael_resize( L, ael, sz );
-	return 0;
-}
-
-
-/**--------------------------------------------------------------------------
  * Prints out the Loop.
  * \param   L      Lua state.
  * \lparam  ud     T.Loop userdata instance.                       // 1
@@ -784,7 +613,7 @@ static int
 lt_ael__tostring( lua_State *L )
 {
 	struct t_ael *ael = t_ael_check_ud( L, 1, 1 );
-	lua_pushfstring( L, T_AEL_TYPE"{%d:%d}: %p", ael->fdCount, ael->fdMax, ael );
+	lua_pushfstring( L, T_AEL_TYPE"{%d}: %p", ael->fdCount, ael );
 	return 1;
 }
 
@@ -815,6 +644,7 @@ lt_ael_showloop( lua_State *L )
 {
 	struct t_ael     *ael = t_ael_check_ud( L, 1, 1 );
 	struct t_ael_tnd *tr  = ael->tmHead;
+	struct t_ael_dnd *dnd;
 	int               i   = 0;
 	int               n   = lua_gettop( L );
 	printf( T_AEL_TYPE" %p TIMER LIST:\n", ael );
@@ -830,26 +660,30 @@ lt_ael_showloop( lua_State *L )
 		tr = tr->nxt;
 	}
 	printf( T_AEL_TYPE" %p HANDLE LIST:\n", ael );
-	for( i=0; i<ael->fdMax+1; i++)
+	lua_rawgeti( L, LUA_REGISTRYINDEX, ael->dR );
+	lua_pushnil( L );
+	while (lua_next( L, -2 ))
 	{
-		if (T_AEL_NO == ael->fdSet[ i ].msk)
+		dnd = t_ael_dnd_check_ud( L, -1, 1 );
+		if (T_AEL_NO == dnd->msk)
 			continue;
-		if (T_AEL_RD & ael->fdSet[i].msk)
+		if (T_AEL_RD & dnd->msk)
 		{
 			printf( "%5d  [R]  ", i );
-			t_ael_doFunction( L, ael->fdSet[i].rR, -1 );
+			t_ael_doFunction( L, dnd->rR, -1 );
 			t_stackPrint( L, n+1, lua_gettop( L ), 1 );
 			lua_pop( L, lua_gettop( L ) - n );
 			printf( "\n" );
 		}
-		if (T_AEL_WR & ael->fdSet[i].msk)
+		if (T_AEL_WR & dnd->msk)
 		{
 			printf( "%5d  [W]  ", i );
-			t_ael_doFunction( L, ael->fdSet[i].wR, -1 );
+			t_ael_doFunction( L, dnd->wR, -1 );
 			t_stackPrint( L, n+1, lua_gettop( L ), 1 );
 			lua_pop( L, lua_gettop( L ) - n );
 			printf( "\n" );
 		}
+		lua_pop( L, 1 );
 	}
 	return 0;
 }
@@ -868,6 +702,7 @@ lt_ael__index( lua_State *L )
 	struct t_ael     *ael = t_ael_check_ud( L, 1, 1 );
 	struct timeval   *tv;
 	struct t_ael_tnd *tnd = ael->tmHead;
+	struct t_ael_dnd *dnd ;
 	int               fd  = 0;
 
 	if (LUA_TSTRING == lua_type( L, 2 )) // return method: run, stop, addHandle, …
@@ -878,20 +713,28 @@ lt_ael__index( lua_State *L )
 	}
 	else
 	{
-		fd  = t_ael_getHandle( L, 2, 0 );
-		if (fd && ael->fdSet[ fd ].msk)
+		lua_rawgeti( L, LUA_REGISTRYINDEX, ael->dR );
+		fd = t_ael_getHandle( L, 2, 0 );
+		if (! fd)
 		{
+			lua_pushnil( L ); return 1;
+		}
+		lua_rawgeti( L, -1, fd );
+		if (! lua_isnil( L, -1 ))
+		{
+			dnd = t_ael_dnd_check_ud( L, -1, 1 );
 			lua_createtable( L, 0, 2 );
-			if (LUA_REFNIL != ael->fdSet[ fd ].rR)
+			if (LUA_REFNIL != dnd->rR)
 			{
-				lua_rawgeti( L, LUA_REGISTRYINDEX, ael->fdSet[ fd ].rR );
+				lua_rawgeti( L, LUA_REGISTRYINDEX, dnd->rR );
 				lua_setfield( L, -2, "read" );
 			}
-			if (LUA_REFNIL != ael->fdSet[ fd ].wR)
+			if (LUA_REFNIL != dnd->wR)
 			{
-				lua_rawgeti( L, LUA_REGISTRYINDEX, ael->fdSet[ fd ].wR );
+				lua_rawgeti( L, LUA_REGISTRYINDEX, dnd->wR );
 				lua_setfield( L, -2, "write" );
 			}
+			// TODO: remove dR ref
 		}
 		else
 		{
@@ -946,7 +789,6 @@ static const struct luaL_Reg t_ael_m [] = {
 	, { "run",            lt_ael_run }
 	, { "stop",           lt_ael_stop }
 	, { "show",           lt_ael_showloop }
-	, { "resize",         lt_ael_resize }
 	, { NULL,   NULL }
 };
 
@@ -965,6 +807,8 @@ luaopen_t_ael( lua_State *L )
 	// just make metatable known to be able to register and check userdata
 	luaL_newmetatable( L, T_AEL_TYPE );   // stack: functions meta
 	luaL_setfuncs( L, t_ael_m, 0 );
+	luaopen_t_ael_dnd( L );
+	lua_setfield( L, -2, T_AEL_DND_NAME );
 
 	// Push the class onto the stack
 	luaL_newlib( L, t_ael_cf );

@@ -13,8 +13,11 @@
 #include "lauxlib.h"
 
 #define T_AEL_IDNT "ael"
+#define T_AEL_DND_IDNT "dnd"
 
 #define T_AEL_NAME "Loop"
+#define T_AEL_DND_NAME "Node"
 
 #define T_AEL_TYPE "T."T_AEL_NAME
+#define T_AEL_DND_TYPE "T."T_AEL_DND_NAME
 

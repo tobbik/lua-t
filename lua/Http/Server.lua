@@ -53,6 +53,18 @@ _mt = {       -- local _mt at top of file
 
 _mt.__index     = _mt
 
+dR = function()
+	local d = debug.getregistry()
+	for i=#d,3,-1 do
+		if type(d[i]) =='table' then
+			print( "TABLE", i, d[i] )
+			for k,v in pairs(d[i]) do print('',k,v) end
+		elseif type(d[i]) =='userdata' then
+			print( "USERDATA", i, d[i] )
+		end
+	end
+end
+
 return setmetatable( {
 	  toString = function( srv ) return _mt.__name end
 }, {
@@ -86,7 +98,6 @@ return setmetatable( {
 				end
 				--dR()
 				--collectgarbage()
-				srv.ael:resize( )
 				tm:set( timeout )
 				return tm
 			end

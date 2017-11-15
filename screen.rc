@@ -3,7 +3,7 @@ source ${HOME}/.screenrc
 chdir ${HOME}/mygit/lua-build
 screen -t build
 stuff "make clean "
-stuff "make costum && out/bin/lua -i ../lua-t/research/http/http_perf.lua "
+stuff "make costum && out/bin/lua -i ../lua-t/research/http/s_t.lua "
 
 # lua-t
 chdir ${HOME}/mygit/lua-t

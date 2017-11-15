@@ -14,72 +14,74 @@ timeval`` wrappers.  General invokation looks like:
   .. code:: lua
 
    Loop = require't.Loop'
-   l = Loop( 123 )
+   l = Loop( )
+
+Technologies like luvit or NodeJs utilize similar ideas and underlying
+technologies to handle io.  By including the loop in the interpreter they
+can hide a lot of implementation detail from the user.  As a side effect of
+tying the loop and the interpreter tightly together the software is fixed to
+the version of the interpeter which creates the need for their own
+eco-system.  Now, both luvit and node, have a great eco-system and npm is a
+fantastic package manager but in Lua land it remains desirable to just
+choose and pick the lates official Lua distribution from PUC.  Therefore,
+lua-t makes an effort to be 'just another library' that can be loaded and
+used in conjunction with all the other software that is available either
+via the distribution or lua-rocks.
 
 
-Modes
-=====
+Implementation
+==============
 
-``T.Loop`` has 3 modes that determine the behaviour of the memory management
-in the loop.  Internally, similar to the redis ae_* loop, it uses an array
-to allow for access to the event handlers based on file descriptors.  That
-has been implemented as a C-array rather than a Lua table for reasons of
-speed and code simplicity.  Anytime a new file/socket descriptor gets added
-to the Loop via ``ael:addHandle( ... )`` there must be enough space in that
-array to keep track of the event handler attached via ``addhandle()``.  For
-that, ``T.Loop`` has three modes that get determined via the invocation of
-the constructor:
+``t.Loop`` is very loosely based on the ae_* eventloop found in redis.
+General architecture is similar as that it have a general part which handles
+the common code and then implementation/platform specific code which handles
+the abstraction regarding the use of the underlaying technology.  While not
+fully implemented yet the following platforms are planned to be supported:
 
-Fixed number of descriptors
----------------------------
+  - select() (platform independent with known select() limitations)
+  - epoll()  default on Linux systems, and probably best tested
+  - kqueue() default on OS X and all ***Bsd platforms
+  - evport() Solaris
+  - cpio     Windows (inspiration from Microsoft redis port)
 
-If the constructor is invoked via ``ael = Loop( int n )`` the loop will have
-a fixed number of slots for file descriptors.  Consequently, a call to
-``ael:addhandle( sock, ...)`` with a socket where the value of
-``sock.descriptor`` is bigger than the slot capacity of ``Loop ael`` will
-return ``false``.  No error will be thrown.  The situation can be handled
-manually by calling ``ael:resize( newSize )``.  For reasons of efficiency
-and simplicity, ``int n`` must be at least 4.
-
-Automatic increase of descriptor slots
---------------------------------------
-
-If the constructor is invoked via ``ael = Loop( bool false )`` the loop will
-automatically increase the nuber of slots as needed.  Calling ``ael =
-Loop()`` will also invoke the same behaviour .Consequently, ``ael:addhandle(
-sock, ... )`` will never return false.  However, if descriptors get removed
-from the loop, the added slots will **NOT** be freed up and the space
-remains allocated in the loop.  This situation can be handled with strategic
-calls to ``ael:resize( )`` (without an argument) which automatically trims
-the slots to the maximal number needed.
-
-Automatic increase AND decrease of descriptor slots
----------------------------------------------------
-
-If the constructor is invoked via ``ael = Loop( bool true )`` the loop will
-automatically increase the nuber of slots as needed.  And after each round
-of processing events the loop gets tested if the highest descriptor allows
-for the loop to be shrunk.  This scenario does sound most convienient but it
-**MAY** have undesirable side effects.  Since it is implemented using
-``realloc( ... )``, depending on reallocs implementation on your platform
-this can create memory thrashing.  It comes down to testing your code and
-looking for memory behaviour.  In many cases it is just fine because the
-memory used is really small and mostly ``realloc()`` is decent on reusing
-memory.
+Where ``t.Loop`` differs significantly from redis is the handling of slots
+for descriptors to be watched.  In redis the user is responsible to not add
+a file/socket descriptor to the loop which has a higher descriptor number
+then the slot capacity of the loop and the user must resize the loop (which
+uses realloc()) manually because the slots are managed as a fixed size
+array.  ``t.Loop`` uses a Lua table instead which is garbage collected by
+Lua itself.  There are some performance implications but in the interest of
+easier handling this implementation is much preferable.  It keeps ``t.Loop``
+in the spirit of Lua as a scripting language where the user shall not be
+concerned with those kind of aspects.  On a technical level, ``t.Loop`` sets
+a slot via ``slotTable[ fdNumber ]``.  Since there is no concept of filling
+the table consecutively, Lua handles that as an associative table.  It is
+still plenty fast.
 
 
-Important File Handle and platform Caveats
+Major differences from redis design
+-----------------------------------
+
+ - this is not a binding to the redis event-loop, but a reimplementation
+   which uses lua_State all the way through
+ - instead of C functions it directly executes Lua functions with Lua based
+   parameters when events are fired
+ - using a Lua table to hold the descriptors and their associated
+   event-handlers, so it does not have to be manually resized
+
+
+Important File Handle and Platform Caveats
 ==========================================
 
-Based on the underlying eventloop implementation, it may be possible to had
-it also file descriptors that have been created with Lua's ``io.open()``
-method.  Not all implementations can hadle regular files.  For example, the
+Depending on the underlying eventloop implementation, it may be possible to
+had it also file descriptors that have been created with Lua's ``io.open()``
+method.  Not all implementations can handle regular files.  For example, the
 following example fails under Linux which uses the ``epoll`` implementation
 by default:
 
   .. code:: lua
 
-   l = Loop(123)
+   l = Loop( )
    f = io.open('/etc/passwd', 'r')
    p = function(fl) print( fl:read('*all') ) end
    l:addHandle( f, 'r', p, f )
@@ -88,12 +90,12 @@ by default:
 The error message says that the operation is not permitted but that is just
 the kernel telling that the operation is really not supported.  That
 behaviour is dependent on the file type and implementation.  The following
-code for example works just fine with ``epoll`` becuase ``//dev/random`` is
-more than just a file:
+code for example works just fine with ``epoll`` because ``/dev/random`` is
+not just a file but actually a device:
 
   .. code:: lua
 
-   l = Loop(123)
+   l = Loop( )
    f = io.open('/dev/random', 'r')
    p = function(fl) print( fl:read(45) ); l:stop() end
    l:addHandle( f, 'r', p, f )
@@ -103,7 +105,7 @@ Similarily, ``epoll`` does work for ``io.popen( )``:
 
   .. code:: lua
 
-   l = Loop(123)
+   l = Loop( )
    f = io.popen('date')
    p = function(fl) print( fl:read('*all') ); l:stop() end
    l:addHandle( f, 'r', p, f )
@@ -117,9 +119,9 @@ guarantee that a non-blocking read/write operation will actually succeed.
 Under Windows, IOCP can handle that fine.  ``T.Loop`` tries to abstract many
 things away but it does not go as far a libuv for example.  Therefore, it
 will be possible to implement a lot of useful stuff in ``T.Loop`` but there
-are some limitations which are platform specific.  For more information read
-`Asynchronous I/O in Windows for Unix Programmers
-<http://tinyclouds.org/iocp-links.html>`_
+are some limitations which are platform specific.  For more general
+information on that topic read `Asynchronous I/O in Windows for Unix
+Programmers <http://tinyclouds.org/iocp-links.html>`_
 
 
 Singleton
@@ -141,21 +143,9 @@ None
 Class Metamembers
 -----------------
 
-``Loop l = Loop( int n )       [__call]``
-  Creates ``Loop l`` instance.  The parameter ``int n`` describes how many
-  descriptors can be handled in the event loop.  Adding descriptors with a
-  higher number than ``int n`` to the loop will return false.  the minimum
-  value for ``int n`` is 4.  This is for reasons of effciency and
-  simplicity.  There are no limits, beyond memory and CPU performance, to
-  adding Timers.
-
-``Loop l = Loop( bool x )       [__call]``
-  Creates ``Loop l`` instance.  The parameter ``bool x`` determines for
-  automatic or semi-automatic handling of descriptor slots.  If ``x==false``
-  the loop willl add slots to it's capacity as needed but it will not
-  automatically decrease it.  If ``x==true`` the loop wikk full
-  automatically handle adding AND removing slots but that may have impatcs
-  on memory thrashing and/or performance of the loop.
+``Loop l = Loop( )       [__call]``
+  Creates ``Loop l`` instance.  Create only one per application.  Using
+  multiple loops is not defined as behaviour.
 
 
 Instance Members
@@ -215,8 +205,7 @@ Instance Metamembers
 ``string s = tostring( Loop l )  [__tostring]``
   Returns a string representing the ``Loop l`` instance.  The string
   contains type, length and memory address information such as
-  *`t.Loop{123:5}: 0xdac2e8`*, meaning it has capacity for 123 descriptors
-  and 5 is the highest file descriptor number.
+  *`t.Loop{7}: 0xdac2e8`*, meaning it is currently observing 7 descriptors.
 
 ``table t = Loop l[ idx ] [__index]``
   Returns a ``table t`` which is different for Timers or Handles.  The index

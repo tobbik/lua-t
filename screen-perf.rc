@@ -2,19 +2,19 @@ source ${HOME}/.screenrc
 
 chdir ${HOME}/mygit/
 screen -t curl
-stuff "curl -i 'http://127.0.0.1:8002/newUser?username=tobias&password=password' "
+stuff "curl -i 'http://127.0.0.1:8000/newUser?username=tobias&password=password' "
 
 chdir ${HOME}/mygit/
 screen -t ab
-stuff "ab -k -c80 -n 30000 'http://127.0.0.1:8002/auth?username=tobias&password=password' "
+stuff "ab -k -c80 -n 30000 'http://127.0.0.1:8000/auth?username=tobias&password=password' "
 
 chdir ${HOME}/mygit/wrk
 screen -t wrk
-stuff "./wrk -t 12 -c 80 -d 10 'http://127.0.0.1:8002/auth?username=tobias&password=password' "
+stuff "wrk -t 12 -c 80 -d 10 'http://127.0.0.1:8000/auth?username=tobias&password=password' "
 
 chdir ${HOME}/mygit/go/bin
 screen -t go-bin
-stuff "./go-wrk -c 80 -d 10 'http://127.0.0.1:8002/auth?username=tobias&password=password' "
+stuff "./go-wrk -c 80 -d 10 'http://127.0.0.1:8000/auth?username=tobias&password=password' "
 
 # lua-t
 chdir ${HOME}/mygit/lua-t
