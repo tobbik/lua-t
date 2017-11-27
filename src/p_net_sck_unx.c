@@ -55,7 +55,8 @@ p_net_sck_pushErrno( lua_State *L, struct sockaddr_storage *adr, const char *msg
 		lua_pushfstring( L, "%s %s:%d (%s)", msg, dst,
 		   ntohs( SOCK_ADDR_SS_PORT( adr ) ), strerror( errno ) );
 	}
-	return 2;
+	lua_pushinteger( L, errno );
+	return 3;
 }
 
 

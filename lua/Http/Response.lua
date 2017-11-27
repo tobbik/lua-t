@@ -3,8 +3,10 @@
 -- \author    tkieslich
 -- \copyright See Copyright notice at the end of src/t.h
 
-local t_insert    , t_concat    ,    time,    date,        format, setmetatable, pairs =
-      table.insert, table.concat, os.time, os.date, string.format, setmetatable, pairs
+local setmetatable, pairs =
+      setmetatable, pairs
+local t_insert    , t_concat    ,  o_time,  o_date,      s_format =
+      table.insert, table.concat, os.time, os.date, string.format
 local Status, Version = require't.Http.Status', require't.Http.Version'
 
 local _mt
@@ -16,13 +18,13 @@ local State = {
 }
 
 local now = (function( )
-	local now = time( )
-	local str = date( "%a, %d %b %Y %H:%M:%S %Z", now )
+	local now = o_time( )
+	local str = o_date( "%a, %d %b %Y %H:%M:%S %Z", now )
 	return function( )
-		local n = time( )
+		local n = o_time( )
 		if n - now>0 then
 			now = n
-			str = date( "%a, %d %b %Y %H:%M:%S %Z", now )
+			str = o_date( "%a, %d %b %Y %H:%M:%S %Z", now )
 		end
 		return str
 	end
@@ -36,7 +38,7 @@ local formHeader = function( self, msg )
 		"\r\nConnection: " .. (self.keepAlive and "keep-alive" or "close") ..
 		(self.contentLength and "\r\nContent-Length: " .. self.contentLength or "\r\nTransfer-Encoding: chunked") ..
 		"\r\n" .. (self.headers and '' or '\r\n') ..
-		((not self.headers and msg) and (self.chunked and format( "%X\r\n%s\r\n", #msg, msg ) or msg) or '' )
+		((not self.headers and msg) and (self.chunked and s_format( "%X\r\n%s\r\n", #msg, msg ) or msg) or '' )
 	}
 	if self.headers then
 		for k,v in pairs( self.headers ) do
@@ -71,7 +73,7 @@ local write = function( self, msg )
 	if self.state < State.Written then
 		formHeader( self, msg )
 	else
-		t_insert( self.buf, self.chunked and format( "%X\r\n%s\r\n", #msg, msg ) or msg )
+		t_insert( self.buf, self.chunked and s_format( "%X\r\n%s\r\n", #msg, msg ) or msg )
 	end
 	self.state = State.Written
 	self.stream:addResponse( self )
@@ -89,7 +91,7 @@ local finish = function( self, code, msg )
 		formHeader( self, msg )
 	else
 		if msg and self.chunked then
-			t_insert( self.buf, format( "%X\r\n%s\r\n0\r\n\r\n", #msg, msg ) )
+			t_insert( self.buf, s_format( "%X\r\n%s\r\n0\r\n\r\n", #msg, msg ) )
 		elseif msg then
 			t_insert( self.buf, msg )
 		elseif self.chunked then
@@ -100,18 +102,15 @@ local finish = function( self, code, msg )
 	self.stream:addResponse( self )
 end
 
--- return true if this response is done; else false
-local send = function( self, sck )
-	local buf = t_concat( self.buf )
-	local snt = sck:send( buf )
-	if snt == #buf and State.Done == self.state then
-		return true
-	elseif snt == #buf then
-		self.buf = { }
-		return false
+local getBuffer = function( self )
+	return t_concat( self.buf )
+end
+
+local setBuffer = function( self, buf )
+	if buf then
+		self.buf = { buf }
 	else
-		self.buf = { buf:sub( snt+1 ) }
-		return false
+		self.buf = { }
 	end
 end
 
@@ -121,7 +120,9 @@ _mt = {       -- local _mt at top of file
 	, writeHead  = writeHead
 	, write      = write
 	, finish     = finish
-	, send       = send
+	-- considered internal
+	, getBuffer  = getBuffer
+	, setBuffer  = setBuffer
 }
 _mt.__index     = _mt
 
