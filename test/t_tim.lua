@@ -17,8 +17,8 @@ local   tests = {
 
 	test_Create = function( self, done )
 		Test.Case.describe( "Time() create timer since epoch" )
-		local tm = os_time()
-		local t  = Time()
+		local tm = os_time( )
+		local t  = Time( )
 		t_assert( t.s == tm, "Seconds should be `%d` but was `%d`", tm, t.s )
 	end,
 
@@ -38,6 +38,15 @@ local   tests = {
 		t_assert( t.us == 0, "Micro seconds should be `%d` but was `%d`", 0, t.us )
 	end,
 
+	test_CreateClone = function( self, done )
+		Test.Case.describe( "Time( tm ) creates a clone of timer" )
+		local t  = Time( )
+		local tc = Time( t )
+		t_assert( t.s  == tc.s,  "Seconds should be `%d` but was `%d`",       t.s,  tc.s )
+		t_assert( t.ms == tc.ms, "Milli seconds should be `%d` but was `%d`", t.ms, tc.ms )
+		t_assert( t.us == tc.us, "Micro seconds should be `%d` but was `%d`", t.us, tc.us )
+	end,
+
 	-- Methods from here
 	test_Now = function( self, done )
 		Test.Case.describe( "Time t:now() resets timer value to time  since epoch" )
@@ -50,11 +59,12 @@ local   tests = {
 	test_Since = function( self, done )
 		Test.Case.describe( "Time t:since() measures time since last" )
 		local t  = Time( )
+		local s_s, ms_min, ms_max = 1, 232, 238
 		Time.sleep( 1234 )
 		t:since()
-		t_assert( t.s == 1, "Seconds should be `1` but was `%d`", t.s )
-		t_assert( t.ms > 232 and t.ms < 236,
-		   "Milliseconds should be between 234 and 239 but was `%d`", t.ms )
+		t_assert( t.s == s_s, "Seconds should be `%d` but was `%d`", s_s, t.s )
+		t_assert( t.ms > ms_min and t.ms < ms_max,
+		   "Milliseconds should be between `%d` and `%d` but was `%d`", ms_min, ms_max, t.ms )
 	end,
 
 	test_Set = function( self, done )

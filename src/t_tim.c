@@ -108,6 +108,26 @@ t_tim_setms( struct timeval *tv, int ms )
 
 
 /**--------------------------------------------------------------------------
+ * Create an timer userdata and push to LuaStack.
+ * \param   L      Lua state.
+ * \return  struct timeval* pointer to userdata at Stack position.
+ * --------------------------------------------------------------------------*/
+struct timeval
+*t_tim_create_ud( lua_State *L, struct timeval *tvr )
+{
+	struct timeval *tv;
+
+	tv = (struct timeval *) lua_newuserdata( L, sizeof( struct timeval ) );
+	tv->tv_sec  = (NULL != tvr) ? tvr->tv_sec  : 0;
+	tv->tv_usec = (NULL != tvr) ? tvr->tv_usec : 0;
+
+	luaL_getmetatable( L, T_TIM_TYPE );
+	lua_setmetatable( L, -2 );
+	return tv;
+}
+
+
+/**--------------------------------------------------------------------------
  * Check a value on the stack for being a struct timeval.
  * \param   L      Lua state.
  * \param   int    Position on the stack

@@ -24,6 +24,7 @@
 
 // Constructors
 // t_tim.c
+struct timeval *t_tim_create_ud( lua_State *L, struct timeval *tvr );
 struct timeval *t_tim_check_ud ( lua_State *L, int pos, int check );
 
 // helpers

@@ -41,36 +41,25 @@ static int
 lt_tim__Call( lua_State *L )
 {
 	struct timeval *tv1 = t_tim_check_ud( L, 2, 0); //S: cls tv1
-	struct timeval *tv  = t_tim_create_ud( L );
+	struct timeval *tv;
 
 	lua_remove( L, 1 );
 	if (tv1)
-		t_tim_setms( tv, t_tim_getms( tv1 ) );
+		tv = t_tim_create_ud( L, tv1 );
 	else if (lua_isnumber( L, 1 ))
+	{
+		tv = t_tim_create_ud( L, NULL );
 		t_tim_setms( tv, luaL_checkinteger( L, 1 ) );
+	}
 	else
+	{
+		tv = t_tim_create_ud( L, NULL );
 		t_tim_now( tv, 0 );
+	}
 
 	return 1;
 }
 
-
-/**--------------------------------------------------------------------------
- * Create an timer userdata and push to LuaStack.
- * \param   L      Lua state.
- * \return  struct timeval* pointer to userdata at Stack position.
- * --------------------------------------------------------------------------*/
-struct timeval
-*t_tim_create_ud( lua_State *L )
-{
-	struct timeval *tv;
-
-	tv = (struct timeval *) lua_newuserdata( L, sizeof( struct timeval ) );
-
-	luaL_getmetatable( L, T_TIM_TYPE );
-	lua_setmetatable( L, -2 );
-	return tv;
-}
 
 
 /**--------------------------------------------------------------------------
@@ -166,7 +155,7 @@ lt_tim_Sleep( lua_State *L )
 
 	if (! tv)
 	{
-		tv = t_tim_create_ud( L );
+		tv = t_tim_create_ud( L, NULL );
 		t_tim_setms( tv, luaL_checkinteger( L, 1 ) );
 	}
 	memcpy( &tv1, tv, sizeof( tv1 ) );
@@ -300,7 +289,7 @@ lt_tim__add( lua_State *L )
 {
 	struct timeval *tA = t_tim_check_ud( L, 1, 1 );
 	struct timeval *tB = t_tim_check_ud( L, 2, 1 );
-	struct timeval *tC = t_tim_create_ud( L );
+	struct timeval *tC = t_tim_create_ud( L, NULL );
 
 	t_tim_add( tA, tB, tC );
 	return 1;
@@ -320,7 +309,7 @@ lt_tim__sub( lua_State *L )
 {
 	struct timeval *tA = t_tim_check_ud( L, 1, 1 );
 	struct timeval *tB = t_tim_check_ud( L, 2, 1 );
-	struct timeval *tC = t_tim_create_ud( L );
+	struct timeval *tC = t_tim_create_ud( L, NULL );
 
 	t_tim_sub( tA, tB, tC );
 	return 1;
