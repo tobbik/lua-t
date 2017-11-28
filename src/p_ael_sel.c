@@ -181,7 +181,7 @@ p_ael_poll_impl( lua_State *L, struct t_ael *ael )
 #endif
 
 	if (r<0)
-		return r;
+		return t_push_error( L, "select() failed" );
 
 	if (r>0)
 	{

@@ -181,7 +181,7 @@ p_ael_poll_impl( lua_State *L, struct t_ael *ael )
 	r = epoll_wait(
 	   state->epfd,
 	   state->events,
-	   (ael->fdCount > P_AEL_EPL_SLOTSZ) ? P_AEL_EPL_SLOTSZ : ael->fdCount,
+	   (ael->fdCount > P_AEL_EPL_SLOTSZ) ? P_AEL_EPL_SLOTSZ : (ael->fdCount>0) ? ael->fdCount : 1,
 	   tv ? (tv->tv_sec*1000 + tv->tv_usec/1000) : -1 );
 #if PRINT_DEBUGS == 1
 	printf( "    &&&&&&&&&&&& POLL RETURNED[%d]: %d &&&&&&&&&&&&&&&&&&\n", ael->fdCount, r );
