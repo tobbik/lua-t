@@ -10,7 +10,7 @@ local getmetatable, setmetatable =
 
 local Stream, Socket, Timer  = require't.Http.Stream', require't.Net.Socket', require't.Time'
 local t_type  = require't'.type
-local format,o_time,t_insert = string.format,os.time,table.insert
+local s_format,o_time,t_insert = string.format,os.time,table.insert
 
 local _mt
 local timeout = 5000
@@ -18,8 +18,12 @@ local timeout = 5000
 -- ---------------------------- general helpers  --------------------
 local accept = function( self )
 	local cli, adr      = self.sck:accept( )
-	cli.nonblock        = true
-	self.streams[ cli ] = Stream( self, cli, adr )
+	if cli then
+		cli.nonblock        = true
+		self.streams[ cli ] = Stream( self, cli, adr )
+	else
+		print( s_format( "Couldn't accept Client Socket: `%s`", adr ) )
+	end
 end
 
 local listen = function( self, host, port, bl )
@@ -70,7 +74,7 @@ return setmetatable( {
 }, {
 	__call   = function( self, ael, cb )
 		assert( t_type( ael ) == 'T.Loop',   "`T.Loop` is required" )
-		assert( type( cb )    == 'function', format( "Callback function required but got `%s`", cb ) )
+		assert( type( cb )    == 'function', s_format( "Callback function required but got `%s`", cb ) )
 		local srv = {
 			  ael      = ael
 			, callback = cb
@@ -85,14 +89,14 @@ return setmetatable( {
 				print('rinse', srv.ael)
 				local candidates = { }
 				for k,v in pairs( str ) do
-					print(v.lastAction)
+					print(v.lastAction, t, v.lastAction < t)
 					if v.lastAction < t then
-						t_insert( candidates, v.cli )
+						t_insert( candidates, v.sck )
 					end
 				end
 				for k,v in pairs( candidates ) do
 					print("Timeout CLOSE Socket:", v, str[ v ] )
-					ael:removeHandle( v, 'read' )
+					ael:removeHandle( v, 'readwrite' )
 					v:close( )
 					str[ v ] = nil
 				end

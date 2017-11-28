@@ -224,7 +224,7 @@ lt_net_sck_send( lua_State *L )
 	snt = p_net_sck_send( L, sck, adr, msg, (max<len) ? max : len );
 	if (snt > -1)
 		lua_pushinteger( L, snt );
-	return ((snt < 0) ? 2 : 1);   // if <0 there is false and errMsg on stack
+	return ((snt < 0) ? 3 : 1);   // for <0 is false, errMsg, errNo on stack
 }
 
 
@@ -293,7 +293,7 @@ lt_net_sck_recv( lua_State *L )
 		lua_pushnil( L );
 	if ( rcvd > -1 )
 		lua_pushinteger( L, (lua_Integer) rcvd );
-	return 2;
+	return ((rcvd < 0) ? 3 : 2);
 }
 
 

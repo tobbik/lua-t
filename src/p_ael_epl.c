@@ -201,7 +201,7 @@ p_ael_poll_impl( lua_State *L, struct t_ael *ael )
 			if (e->events & EPOLLOUT || e->events & EPOLLERR || e->events & EPOLLHUP) msk |= T_AEL_WR;
 			if (T_AEL_NO != msk)
 			{
-#if PRINT_DEBUGS == 2
+#if PRINT_DEBUGS == 1
 				printf( "  _____ FD: %d triggered[%s]____\n", e->data.fd, t_ael_msk_lst[ msk ] );
 #endif
 				lua_rawgeti( L, -1, e->data.fd );

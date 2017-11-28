@@ -63,7 +63,8 @@ p_net_sck_pushErrno( lua_State *L, struct sockaddr_storage *adr, const char *msg
 		   ntohs( SOCK_ADDR_SS_PORT( adr ) ), strerror( errno ) );
 	}
 	lua_concat( L, 3 );
-	return 2;
+	lua_pushinteger( L, errno );
+	return 3;
 }
 
 
