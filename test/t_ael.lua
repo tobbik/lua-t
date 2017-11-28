@@ -3,10 +3,10 @@
 ---
 -- \file    t_ael.lua
 -- \brief   Test for the Set functionality
-local t_assert  =   require"t".assert
-local   Test    = require't.Test'
-local   Loop    = require't.Loop'
-local   Time    = require't.Time'
+local t_assert  = require"t".assert
+local Test      = require't.Test'
+local Loop      = require't.Loop'
+local Time      = require't.Time'
 local Socket    = require't.Net.Socket'
 local Address   = require't.Net.Address'
 local Interface = require't.Net.Interface'
@@ -31,7 +31,6 @@ local   tests = {
 	-- -----------------------------------------------------------------------
 	-- Timer Tests
 	-- -----------------------------------------------------------------------
-
 	test_cb_Timer = function( self, done )
 		Test.Case.describe( "Test simple Timer" )
 		local arg1,arg2  = 100, 'this is a string'
@@ -81,17 +80,20 @@ local   tests = {
 		Test.Case.describe( "Overwrite Timer callback Handler" )
 		local tm = Time( 123 )
 		local r1 = false
+		local m1, m2 = 'Message1', 'Message2'
 		local f1 = function( a )
+			t_assert( m1 == a, "Expected `%s`, got `%s`", m1, a )
 			assert( false, "This function should not ran and have been replaced" )
 		end
 		local f2 = function( b )
+			t_assert( m2 == b, "Expected `%s`, got `%s`", m2, b )
 			assert( true, "This is okay" )
 			done( )
 		end
-		self.loop:addTimer( tm, f1, "First Adding of timer" )
+		self.loop:addTimer( tm, f1, m1 )
 		t_assert( self.loop[tm][1] == f1,
 			    "function should be `%s` but was `%s`", f1, self.loop[tm ][1] )
-		self.loop:addTimer( tm, f2, "Second Adding of timer" )
+		self.loop:addTimer( tm, f2, m2 )
 		t_assert( self.loop[tm][1] == f2,
 			    "new function should be `%s` but was `%s`", f2, self.loop[tm ][1] )
 	end,
@@ -105,7 +107,7 @@ local   tests = {
 		local tm  = Time( 111 )
 		local f1  = function( m )
 			t_assert( m == msg, "Expected `%s`, got `%s`", msg, m )
-			msg     =  msg2
+			msg     = msg2
 			args[2] = msg2
 			if m == msg1 then
 				tm:set( 99 )
@@ -121,20 +123,23 @@ local   tests = {
 	test_cb_replaceTimerFunction = function( self, done )
 		--Test.Case.skip( "" )
 		Test.Case.describe( "Overwrite Timer callback Handlers function" )
-		local args
+		local pickle
+		local tbl = { }    -- a table reference only equal to itself
 		local tm  = Time( 111 )
-		local f2  = function(  )
+		local f2  = function( arg )
 			t_assert( true, "Should execute")
+			t_assert( tbl==arg, "arg expected `%s`; got `%s`", tbl, arg)
 			done( )
 		end
-		local f1  = function(  )
+		local f1  = function( arg )
 			t_assert( true, "Should execute")
-			args[1] = f2
+			t_assert( tbl==arg, "arg expected `%s`; got `%s`", tbl, arg)
+			pickle[ 1 ] = f2 -- overwrite function but not argument
 			tm:set( 99 )
 			return tm
 		end
-		self.loop:addTimer( tm, f1, msg1 )
-		args = self.loop[ tm ]
+		self.loop:addTimer( tm, f1, tbl )
+		pickle = self.loop[ tm ] -- { f1, tbl }
 	end,
 
 	test_cb_MultiTimer = function( self, done )

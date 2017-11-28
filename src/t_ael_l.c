@@ -715,31 +715,9 @@ lt_ael__index( lua_State *L )
 	{
 		lua_rawgeti( L, LUA_REGISTRYINDEX, ael->dR );
 		fd = t_ael_getHandle( L, 2, 0 );
-		if (! fd)
+		if (! fd)  // last chance might be a t.Time
 		{
-			lua_pushnil( L ); return 1;
-		}
-		lua_rawgeti( L, -1, fd );
-		if (! lua_isnil( L, -1 ))
-		{
-			dnd = t_ael_dnd_check_ud( L, -1, 1 );
-			lua_createtable( L, 0, 2 );
-			if (LUA_REFNIL != dnd->rR)
-			{
-				lua_rawgeti( L, LUA_REGISTRYINDEX, dnd->rR );
-				lua_setfield( L, -2, "read" );
-			}
-			if (LUA_REFNIL != dnd->wR)
-			{
-				lua_rawgeti( L, LUA_REGISTRYINDEX, dnd->wR );
-				lua_setfield( L, -2, "write" );
-			}
-			// TODO: remove dR ref
-		}
-		else
-		{
-			tv  = t_tim_check_ud( L, 2, 0 );
-			if (tv)
+			if (NULL != (tv  = t_tim_check_ud( L, 2, 0 )))
 			{
 				while (NULL != tnd && NULL != tnd->nxt && tnd->tv != tv)
 					tnd = tnd->nxt;
@@ -750,6 +728,26 @@ lt_ael__index( lua_State *L )
 			}
 			else
 				lua_pushnil( L );
+		}
+		else
+		{
+			lua_rawgeti( L, -1, fd );
+			if (! lua_isnil( L, -1 ))
+			{
+				dnd = t_ael_dnd_check_ud( L, -1, 1 );
+				lua_createtable( L, 0, 2 );
+				if (LUA_REFNIL != dnd->rR)
+				{
+					lua_rawgeti( L, LUA_REGISTRYINDEX, dnd->rR );
+					lua_setfield( L, -2, "read" );
+				}
+				if (LUA_REFNIL != dnd->wR)
+				{
+					lua_rawgeti( L, LUA_REGISTRYINDEX, dnd->wR );
+					lua_setfield( L, -2, "write" );
+				}
+				// TODO: remove dR ref
+			}
 		}
 	}
 
