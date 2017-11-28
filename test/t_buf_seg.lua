@@ -6,11 +6,11 @@
 --          The tests are largely the same as T.Buffer since the interface
 --          between the two classes is unified to provide usage across T.Net
 --          and T.Pack
-T       = require( "t" )
-Test    = require( "t.Test" )
-Buffer  = require( "t.Buffer" )
-Rtvg    = T.require( 'rtvg' )
-format  = string.format
+local T       = require( "t" )
+local Test    = require( "t.Test" )
+local Buffer  = require( "t.Buffer" )
+local Rtvg    = T.require( 'rtvg' )
+local format  = string.format
 --math.randomseed(os.time())
 
 tests = {

@@ -23,9 +23,9 @@
 local t_type,t_assert,t_require,t_assert = 
       require't'.type, require't'.assert,require't'.require,require( "t" ).assert
 local Test      = require( "t.Test" )
-Socket    = require( "t.Net.Socket" )
-Address   = require( "t.Net.Address" )
-Interface = require( "t.Net.Interface" )
+local Socket    = require( "t.Net.Socket" )
+local Address   = require( "t.Net.Address" )
+local Interface = require( "t.Net.Interface" )
 local asrtHlp   = t_require( "assertHelper" )
 
 local tests = {

@@ -3,11 +3,11 @@
 ---
 -- \file    t_buf.lua
 -- \brief   Test for the T.Buffer implementation
-T      = require( "t" )
-Test   = require( "t.Test" )
-Buffer = require( "t.Buffer" )
-Rtvg   = T.require( 'rtvg' )
-format = string.format
+local T      = require( "t" )
+local Test   = require( "t.Test" )
+local Buffer = require( "t.Buffer" )
+local Rtvg   = T.require( 'rtvg' )
+local format = string.format
 
 tests = {
 	rtvg       = Rtvg( ),

@@ -15,15 +15,15 @@
 -- to run within the same  process.  Each test will restart the loop, connect,
 -- assert and stop the loop before moving on to the next test.
 
-Test      = require( "t.Test" )
-Timer     = require( "t.Time" )
-Loop      = require( "t.Loop" )
-Socket    = require( "t.Net.Socket" )
-Address   = require( "t.Net.Address" )
-Interface = require( "t.Net.Interface" )
-Buffer    = require( "t.Buffer" )
-T         = require( "t" )
-asrtHlp   = T.require( "assertHelper" )
+local Test      = require( "t.Test" )
+local Timer     = require( "t.Time" )
+local Loop      = require( "t.Loop" )
+local Socket    = require( "t.Net.Socket" )
+local Address   = require( "t.Net.Address" )
+local Interface = require( "t.Net.Interface" )
+local Buffer    = require( "t.Buffer" )
+local T         = require( "t" )
+local asrtHlp   = T.require( "assertHelper" )
 
 
 -- for this test we use blocking sending only.  The test is for recv(); no need
