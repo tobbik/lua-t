@@ -98,8 +98,8 @@ Instance Metamembers
   Substract the duration of ``Time t2`` from ``Time t2``.  Returns a new
   instance of ``Time t``.  A ``Time`` value can **never be negative**.  If a
   bigger ``Time t2`` is substracted from a smaller ``Time t1`` the operation
-  will not throw an error but instead return a value ``Time t3`` with the
-  duration 0.
+  will **not throw** an error but instead return a value ``Time t3`` with
+  the duration 0.
 
   .. code:: lua
 

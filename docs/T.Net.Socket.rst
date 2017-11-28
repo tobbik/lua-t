@@ -307,8 +307,8 @@ are valid:
   --           adr -> instance of Net.Address
   --           buf -> instance of Buffer
   --           msg -> instance of Lua string, received payload
-  --           len -> Lua integer, len of received data in bytes
-  --           max -> Lua integer, max to read data in bytes
+  --           len -> integer, len of received data in bytes
+  --           max -> integer, max to read data in bytes
 
   msg, len  = sck:recv( adr, buf, max )
   msg, len  = sck:recv( adr, buf )
@@ -391,8 +391,8 @@ permutations for ``recv()`` are valid:
   -- meanings: sck    -> instance of Net.Socket
   --           adr    -> instance of Net.Address
   --           msg    -> instance of Buffer or Buffer.Segment or Lua string
-  --           snt    -> Lua integer, sent bytes
-  --           max    -> Lua integer, max to send data in bytes
+  --           snt    -> integer, sent bytes
+  --           max    -> integer, max to send data in bytes
 
   snt  = sck:send( msg )           -- send msg on a connected socket
   snt  = sck:send( msg, adr )      -- send msg on unconnected socket to adr
@@ -432,77 +432,101 @@ Socket properties
 .................
 
 The availability of the following modes and/or their writablity is dependent
-on the platforms implementation.
+on the platforms implementation.  The majority of this documentation has
+been taken from the Linux Manpages for the appropriate options.
 
 
 Boolean Socket Options
 ''''''''''''''''''''''
 
-``boolean b = sck.nonblock      [read/write] (O_NONBLOCK)``
+``boolean b = sck.nonblock     [read/write] (O_NONBLOCK)``
   Socket blocking mode.
 
-``boolean b = sck.broadcast"    [ read/write] (SO_BROADCAST)``
+``boolean b = sck.broadcast    [read/write] (SO_BROADCAST)``
   Permits sending of broadcast messages, if this is supported by the
   protocol.
 
-``boolean b = sck.debug"        [ read/write] (SO_DEBUG)``
+``boolean b = sck.debug        [read/write] (SO_DEBUG)``
   Turns on recording of debugging information.
 
-``boolean b = sck.dontroute"    [ read/write] (SO_DONTROUTE)``
+``boolean b = sck.dontroute    [read/write] (SO_DONTROUTE)``
   Requests that outgoing messages bypass the standard routing facilities.
 
-``boolean b = sck.keepalive"    [ read/write] (SO_KEEPALIVE)``
+``boolean b = sck.keepalive    [read/write] (SO_KEEPALIVE)``
   Keeps connections active by enabling the periodic transmission of
   messages, if this is supported by the protocol.
 
-``boolean b = sck.oobinline"    [ read/write] (SO_OOBINLINE)``
+``boolean b = sck.oobinline    [read/write] (SO_OOBINLINE)``
   Reports whether the socket leaves received out-of-band data (data marked
   urgent) in line.
 
-``boolean b = sck.reuseaddr"    [ read/write] (SO_REUSEADDR)``
+``boolean b = sck.reuseaddr    [read/write] (SO_REUSEADDR)``
   Specifies that the rules used in validating addresses supplied to bind()
   should allow reuse of local addresses, if this is supported by the
   protocol.
 
-``boolean b = sck.reuseport"    [ read/write] (SO_REUSEPORT)``
+``boolean b = sck.reuseport    [read/write] (SO_REUSEPORT)``
   Specifies that the rules used in validating addresses supplied to bind()
   should allow reuse of local addresses, if this is supported by the
   protocol.
 
-``boolean b = sck.useloopback"  [ read/write] (SO_USELOOPBACK)``
+``boolean b = sck.useloopback  [read/write] (SO_USELOOPBACK)``
   Directs the network layer (IP) of networking code to use the local
   loopback address when sending data from this socket. Use this option only
   when all data sent will also be received locally.
+
+``boolean b = sck.nodelay      [read/write] (TCP_NODELAY)``
+  This affects TCP sockets only!
+  If set, disable the Nagle algorithm. This means that segments are always
+  sent as soon as possible, even if there is only a small amount of data.
+  When not set, data is buffered until there is a sufficient amount to send
+  out, thereby avoiding the frequent sending of small packets, which results
+  in poor utilization of the network. This option is overridden by TCP_CORK;
+  however, setting this option forces an explicit flush of pending output,
+  even if TCP_CORK is currently set.
+
+``boolean b = sck.maxsegment   [read/write] (TCP_MAXSEG)``
+  This affects TCP sockets only!
+  The maximum segment size for outgoing TCP packets. In Linux 2.2 and
+  earlier, and in Linux 2.6.28 and later, if this option is set before
+  connection establishment, it also changes the MSS value announced to the
+  other end in the initial packet. Values greater than the (eventual)
+  interface MTU have no effect. TCP will also impose its minimum and
+  maximum bounds over the value provided.
 
 
 Integer Socket options
 ''''''''''''''''''''''
 
-``int n = sck.descriptor"       [ readonly ] ``
-  Returns the integre value of the system resource that was returned by the
+``int n = sck.descriptor       [readonly]``
+  Returns the integer value of the system resource that was returned by the
   original socket() system call.  If the socket has been closed, returns
   ``nil``.
 
-``int n = sck.error"            [ read/write] (SO_ERROR)``
+``int n = sck.error            [read/write] (SO_ERROR)``
   Reports information about error status and clears it.
 
-``int n = sck.recvbuffer"       [ read/write] (SO_RCVBUF)``
+``int n = sck.recvbuffer       [read/write] (SO_RCVBUF)``
   Receive buffer size information.
 
-``int n = sck.recvlow"          [ read/write] (SO_RCVLOWAT)``
+``int n = sck.recvlow          [read/write] (SO_RCVLOWAT)``
   Minimum number of bytes to process for socket input operations.
 
-``int n = sck.recvtimeout"      [ read/write] (SO_RCVTIMEO)``
+``int n = sck.sendbuffer       [read/write] (SO_SNDBUF)``
+  Send buffer size information.
+
+``int n = sck.sendlow          [read/write] (SO_SNDLOWAT)``
+  Minimum number of bytes to process for socket output operations.
+
+
+T.Time (struct timeval) Socket options
+''''''''''''''''''''''''''''''''''''''
+
+``t.Time t = sck.recvtimeout      [read/write] (SO_RCVTIMEO)``
   Timeout value that specifies the maximum amount of time an input function
   waits until it completes.
 
-``int n = sck.sendbuffer"       [ read/write] (SO_SNDBUF)``
-  Send buffer size information.
-
-``int n = sck.sendlow"          [ read/write] (SO_SNDLOWAT)``
-  Minimum number of bytes to process for socket output operations.
-
-``int n = sck.sendtimeout"      [ read/write] (SO_SNDTIMEO)``
+``t.Time t = sck.sendtimeout      [read/write] (SO_SNDTIMEO)``
   Timeout value specifying the amount of time that an output function blocks
   because flow control prevents data from being sent.
 
@@ -510,13 +534,13 @@ Integer Socket options
 String Socket Options
 ''''''''''''''''''''''
 
-``string str = sck.family"      [ readonly ]``
+``string str = sck.family"      [readonly ]``
   Sockets family type. (AF_INET, AF_INET6, ...).
 
-``string str = sck.type"        [ readonly ] (SO_TYPE)``
+``string str = sck.type"        [readonly ] (SO_TYPE)``
   Socket type. (STREAM, DGRAM, ...).
 
-``string str = sck.protocol"    [ readonly ] (SO_PROTOCOL)``
+``string str = sck.protocol"    [readonly ] (SO_PROTOCOL)``
   Socket protocol. (TCP, UDP, ...).
 
 

@@ -44,7 +44,7 @@ local tests = {
 	-- #########################################################################
 	-- wrappers for tests
 	beforeAll = function( self, done )
-		self.loop  = Loop( 20 )
+		self.loop  = Loop( )
 		self.host  = Interface( 'default' ).AF_INET.address.ip
 		self.port  = 8000
 		self.sSck  = Socket( 'udp' )

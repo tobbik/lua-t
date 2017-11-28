@@ -43,7 +43,7 @@ local tests = {
 		self.port          = 8000
 		self.srv, self.adr = Socket.listen( self.host, self.port )
 		print( self.srv, self.adr )
-		self.loop          = Loop( 20 )
+		self.loop          = Loop( )
 		self.loop:addHandle( self.srv, 'read', accept, self )
 		done()
 	end,

@@ -29,6 +29,7 @@
 #include <signal.h>     // signal( SIGPIPE, SIG_IGN )
 
 #include "t_net_l.h"
+#include "t_tim.h"
 
 #ifdef DEBUG
 #include "t_dbg.h"
@@ -43,18 +44,25 @@
  * \return  returns 1 which is # of elements left on stack.
  * --------------------------------------------------------------------------*/
 static int
-p_net_sck_pushErrno( lua_State *L, struct sockaddr_storage *adr, const char *msg )
+p_net_sck_pushErrno( lua_State *L, struct sockaddr_storage *adr, const char *msg, ... )
 {
 	char                     dst[ INET6_ADDRSTRLEN ];
+	va_list                  argp;
+
 	lua_pushboolean( L, 0==1 );
+	va_start( argp, msg );
+	luaL_where( L, 1 );
+	lua_pushvfstring( L, msg, argp );
+	va_end( argp );
 	if (NULL == adr)
-		lua_pushfstring( L, "%s (%s)", msg, strerror( errno ) );
+		lua_pushfstring( L, " (%s)", strerror( errno ) );
 	else
 	{
 		SOCK_ADDR_INET_NTOP( adr, dst );
-		lua_pushfstring( L, "%s %s:%d (%s)", msg, dst,
+		lua_pushfstring( L, " %s:%d (%s)", dst,
 		   ntohs( SOCK_ADDR_SS_PORT( adr ) ), strerror( errno ) );
 	}
+	lua_concat( L, 3 );
 	return 2;
 }
 
@@ -310,61 +318,57 @@ p_net_sck_mkFdSet( lua_State *L, int pos, fd_set *set )
  * \return  int    # of values pushed onto the stack.
  *-------------------------------------------------------------------------*/
 int
-p_net_sck_getSocketOption( lua_State *L, struct t_net_sck *sck, int sckOpt,
-                                         const char *sckOptName )
+p_net_sck_getSocketOption( lua_State *L, struct t_net_sck        *sck,
+                                         struct t_net_sck_option *opt )
 {
 	struct sockaddr_storage   adr;
-	socklen_t                 adr_len = sizeof( adr );
-	int                       val;
-	socklen_t                 val_len = sizeof( val );
+	int                       ival;
+	struct timeval            tv;
+	socklen_t                 len;
 
-	switch (sckOpt)
+	switch (opt->type)
 	{
-		case O_NONBLOCK:
-			val = fcntl( sck->fd, F_GETFL );
-			lua_pushboolean( L, (-1==val) ? 0 :(val & O_NONBLOCK) == O_NONBLOCK );
-			break;
-
-		// returning integer values
-		case SO_ERROR:
-		case SO_RCVBUF:
-		case SO_RCVLOWAT:
-		case SO_RCVTIMEO:
-		case SO_SNDBUF:
-		case SO_SNDLOWAT:
-		case SO_SNDTIMEO:
-			if (getsockopt( sck->fd, SOL_SOCKET, sckOpt, &val, &val_len ) < 0)
-				lua_pushinteger( L, -1 );
-			else
-				lua_pushinteger(L, val );
-			break;
-
-		// returning booleans flags
-		case SO_BROADCAST:
-		case SO_DEBUG:
-		case SO_DONTROUTE:
-		case SO_KEEPALIVE:
-		case SO_OOBINLINE:
-		case SO_REUSEADDR:
-#ifdef SO_USELOOPBACK
-		case SO_USELOOPBACK:
-#endif
-#ifdef SO_REUSEPORT
-		case SO_REUSEPORT:
-#endif
-			if (getsockopt( sck->fd, SOL_SOCKET, sckOpt, &val, &val_len ) < 0)
+		case T_NET_SCK_OTP_FCNTL:
+			if (-1 == (ival = fcntl( sck->fd, opt->getlevel )))
 				lua_pushboolean( L, 0 );
 			else
-				lua_pushboolean(L, val );
+				lua_pushboolean( L, (ival & opt->option) == opt->option );
 			break;
-
-		case T_NET_SO_DESCRIPTOR:
+		case T_NET_SCK_OTP_IOCTL:
+			if (ioctl( sck->fd, opt->getlevel, &ival ) < 0)
+				lua_pushboolean( L, 0 );
+			else
+				lua_pushboolean( L, ival);
+			break;
+		case T_NET_SCK_OTP_BOOL:
+			len = sizeof( ival );
+			if (getsockopt( sck->fd, opt->getlevel, opt->option, &ival, &len ) < 0)
+				lua_pushboolean( L, 0);
+			else
+				lua_pushboolean( L, ival );
+			break;
+		case T_NET_SCK_OTP_INT:
+			len = sizeof( ival );
+			if (getsockopt( sck->fd, opt->getlevel, opt->option, &ival, &len ) < 0)
+				lua_pushinteger( L, -1 );
+			else
+				lua_pushinteger( L, ival );
+			break;
+		case T_NET_SCK_OTP_TIME:
+			len = sizeof( tv );
+			if (getsockopt( sck->fd, opt->getlevel, opt->option, &tv, &len ) < 0)
+				lua_pushinteger( L, -1 );
+			else
+				t_tim_create_ud( L, &tv );     // push t.Time userdata
+			break;
+		case T_NET_SCK_OTP_DSCR:
 			if (-1==sck->fd) lua_pushnil( L );
 			else             lua_pushinteger( L, sck->fd );
 			break;
 		// Special cases returning strings
-		case T_NET_SO_FAMILY:
-			if (0 == getsockname( sck->fd, SOCK_ADDR_PTR( &adr ), &adr_len ))
+		case T_NET_SCK_OTP_FMLY:
+			len = sizeof( struct sockaddr_storage );
+			if (0 == getsockname( sck->fd, SOCK_ADDR_PTR( &adr ), &len ))
 			{
 				lua_pushinteger( L, SOCK_ADDR_SS_FAMILY( &adr ) );
 				t_getTypeByValue( L, -1, -1, t_net_familyList );
@@ -372,30 +376,30 @@ p_net_sck_getSocketOption( lua_State *L, struct t_net_sck *sck, int sckOpt,
 			else
 				lua_pushnil( L );
 			break;
-#ifdef SO_PROTOCOL
-		case SO_PROTOCOL:
-			if (getsockopt( sck->fd, SOL_SOCKET, sckOpt, &val, &val_len ) < 0)
+		case T_NET_SCK_OTP_PRTC:
+			len = sizeof( ival );
+			if (getsockopt( sck->fd, opt->getlevel, opt->option, &ival, &len ) < 0)
 				lua_pushnil( L );
 			else
 			{
-				lua_pushinteger( L, val );
-				t_net_getProtocolByValue ( L, -1, -1 );
+				lua_pushinteger( L, ival );
+				t_net_getProtocolByValue( L, -1, -1 );
 			}
 			break;
-#endif
-		case SO_TYPE:
-			if (getsockopt( sck->fd, SOL_SOCKET, sckOpt, &val, &val_len ) < 0)
+		case T_NET_SCK_OTP_TYPE:
+			len = sizeof( ival );
+			if (getsockopt( sck->fd, opt->getlevel, opt->option, &ival, &len ) < 0)
 				lua_pushnil( L );
 			else
 			{
-				lua_pushinteger( L, val );
+				lua_pushinteger( L, ival );
 				t_getTypeByValue( L, -1, -1, t_net_typeList );
 			}
 			break;
 
 		default:
 			// should never get here
-			luaL_error( L, "unknown socket option: %s", sckOptName );
+			luaL_error( L, "unknown socket option: `%s`", lua_tostring( L, 2 ) );
 	}
 	return 1;
 }
@@ -410,71 +414,50 @@ p_net_sck_getSocketOption( lua_State *L, struct t_net_sck *sck, int sckOpt,
  * \return  int    # of values pushed onto the stack.
  *-------------------------------------------------------------------------*/
 int
-p_net_sck_setSocketOption( lua_State *L, struct t_net_sck *sck , int sckOpt,
-                                         const char *sckOptName, int val )
+p_net_sck_setSocketOption( lua_State *L, struct t_net_sck        *sck,
+                                         struct t_net_sck_option *opt )
 {
-	int    flags;
+	int                       ival;
+	struct timeval           *tv;
 
-	switch (sckOpt)
+	switch (opt->type)
 	{
-		case O_NONBLOCK:
-			flags = fcntl( sck->fd, F_GETFL );
-			if (flags > 0)
+		case T_NET_SCK_OTP_FCNTL:
+			ival  = fcntl( sck->fd, opt->getlevel, 0 );
+			if (ival > 0)
 			{
-				if (val)
-					flags |=  sckOpt;
+				if (lua_toboolean( L, 3 ))
+					ival |=  opt->option;
 				else
-					flags &= ~sckOpt;
-				if (fcntl( sck->fd, F_SETFL, flags ) < 0)
-					return p_net_sck_pushErrno( L, NULL, "Can't set socket option" );
+					ival &=  opt->option;
+				if (fcntl( sck->fd, opt->setlevel, ival ) < 0)
+					return p_net_sck_pushErrno( L, NULL, "Can't set socket option `%s`", lua_tostring( L, 2 ) );
 			}
 			else
-				return p_net_sck_pushErrno( L, NULL, "Can't set socket option" );
+				return p_net_sck_pushErrno( L, NULL, "Can't set socket option `%s`", lua_tostring( L, 2 ) );
 			break;
-
-		// SETTING  integer values
-		case SO_RCVBUF:
-		case SO_RCVLOWAT:
-		case SO_RCVTIMEO:
-		case SO_SNDBUF:
-		case SO_SNDLOWAT:
-		case SO_SNDTIMEO:
-			if (setsockopt( sck->fd, SOL_SOCKET, sckOpt, &val, sizeof( val ) ) < 0)
-				return p_net_sck_pushErrno( L, NULL, "Can't set socket option" );
+		case T_NET_SCK_OTP_BOOL:
+			ival = lua_toboolean( L, 3 );
+			if (setsockopt( sck->fd, opt->getlevel, opt->option, &ival, sizeof( ival ) ) < 0)
+				return p_net_sck_pushErrno( L, NULL, "Can't set socket option `%s`", lua_tostring( L, 2 ) );
 			break;
-
-		// SETTING boolean values
-		case SO_BROADCAST:
-		case SO_DEBUG:
-		case SO_DONTROUTE:
-		case SO_KEEPALIVE:
-		case SO_OOBINLINE:
-		case SO_REUSEADDR:
-#ifdef SO_REUSEPORT
-		case SO_REUSEPORT:
-#endif
-#ifdef SO_USELOOPBACK
-		case SO_USELOOPBACK:
-#endif
-			if (setsockopt( sck->fd, SOL_SOCKET, sckOpt, &val, sizeof( val ) ) < 0)
-				return p_net_sck_pushErrno( L, NULL, "Can't set socket option" );
+		case T_NET_SCK_OTP_INT:
+			ival = luaL_checkinteger( L, 3 );
+			if (setsockopt( sck->fd, opt->getlevel, opt->option, &ival, sizeof( ival ) ) < 0)
+				return p_net_sck_pushErrno( L, NULL, "Can't set socket option `%s`", lua_tostring( L, 2 ) );
 			break;
-
-		// trying to set READONLY values -> error
-		case T_NET_SO_DESCRIPTOR:
-		case T_NET_SO_FAMILY:
-		case SO_ERROR:
-#ifdef SO_PROTOCOL
-		case SO_PROTOCOL:
-#endif
-		case SO_TYPE:
-			return luaL_error( L, "Can't set readonly socket option: %s", sckOptName );
+		case T_NET_SCK_OTP_TIME:
+			tv = t_tim_check_ud( L, 3, 1 );
+			if (setsockopt( sck->fd, opt->getlevel, opt->option, tv, sizeof( struct timeval ) ) < 0)
+				return p_net_sck_pushErrno( L, NULL, "Can't set socket option `%s`", lua_tostring( L, 2 ) );
+			break;
 		default:
 			// should never get here
-			return luaL_error( L, "unknown socket option: %s", sckOptName );
+			return luaL_error( L, "unknown socket option: %s", lua_tostring( L, 2 ) );
 	}
 	return 0;
 }
+
 
 /** -------------------------------------------------------------------------
  * Open socket functionality for UNIX
@@ -489,3 +472,6 @@ p_net_sck_open( void )
 	signal( SIGPIPE, SIG_IGN );
 	return 1;
 }
+
+
+

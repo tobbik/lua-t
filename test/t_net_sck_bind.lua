@@ -148,7 +148,8 @@ local tests = {
 		self.sck:close( )
 		a,b       = self.sck:getsockname( )
 		t_assert( not a, "getsockname() should not have returned a value but got `%s`", a )
-		t_assert( b == eMsg, "Error Message should have been `%s', but was `%s`", eMsg, e )
+		t_assert( b:match( eMsg:gsub( "%(", "%%(" ):gsub( "%)", "%%)" ) ),
+		   "Error Message should have been `%s', but was `%s`", eMsg, b )
 	end,
 	--]]
 }

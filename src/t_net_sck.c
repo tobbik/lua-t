@@ -12,6 +12,7 @@
 #include "t_net_l.h"
 #include "t_buf.h"
 #include "t.h"        //t_getTypeBy*
+#include <stdlib.h>   // bsearch()
 
 #ifdef DEBUG
 #include "t_dbg.h"
@@ -395,64 +396,78 @@ lt_net_sck__tostring( lua_State *L )
 }
 
 
+static int t_net_sck_optCompare( const void *needle, const void *haystack )
+{
+	const char                      *const key   = needle;
+	const struct t_net_sck_option   *const value = haystack;
+
+	return strcmp( key, value->name );
+}
+
+
 /** -------------------------------------------------------------------------
- * __index; used to get socket option values
+ * __index; retrieve socket option values and other attributes
  * \param   L      Lua state.
  * \lparam  ud     T.Net.Socket userdata instance.
- * \lparam  string socket option name or fucntion name.
- * \lreturn value  int or bool socket option value or function.
+ * \lparam  string socket option name or function name.
+ * \lreturn value  Lua value; socket option/attribute value or instance method
+ *                 function.
  * \return  int    # of values pushed onto the stack.
  *-------------------------------------------------------------------------*/
 static int
 lt_net_sck__index( lua_State *L )
 {
-	struct t_net_sck *sck = t_net_sck_check_ud( L, 1, 1 );
+	struct t_net_sck         *sck = t_net_sck_check_ud( L, 1, 1 );
+	struct t_net_sck_option  *opt = bsearch(
+	                                     luaL_checkstring( L, 2 )
+	                                   , t_net_sck_options
+	                                   , T_NET_SCK_OPTS_MAX
+	                                   , sizeof( struct t_net_sck_option )
+	                                   , t_net_sck_optCompare
+	                                );
 
-	lua_pushvalue( L, 2 );   // preserve the key
-	if (NULL == t_getTypeByName( L, -1, NULL, t_net_optionList ))  //S: sck key val opt
+	if (NULL == opt)  //S: sck key val
 	{
 		// in case no socket option was requested, relay functions from the
-		// metatable if available (send,recv,accept,bind etc.)
+		// metatable if available (send,recv,accept,bind etc.). Can be nil.
 		lua_getmetatable( L, 1 );
 		lua_pushvalue( L, 2 );
 		lua_gettable( L, -2 );
 		return 1;
 	}
 	else
-	{
-		return p_net_sck_getSocketOption(
-			L,
-			sck,
-			luaL_checkinteger( L, -1 ),
-			lua_tostring( L, 2 ) );
-	}
+		return p_net_sck_getSocketOption( L, sck, opt );
 }
 
 
 /** -------------------------------------------------------------------------
- * __newindex; used to get socket option values
+ * __index; set socket option values and other attributes
  * \param   L      Lua state.
  * \lparam  ud     T.Net.Socket userdata instance.
  * \lparam  string socket option name or function name.
- * \lparam  value  int or bool socket option value.
+ * \lparam  value  Lua value; socket option/attribute value.
  * \return  int    # of values pushed onto the stack.
  *-------------------------------------------------------------------------*/
 static int
 lt_net_sck__newindex( lua_State *L )
 {
-	lua_pushvalue( L, 2 );
-	if (NULL == t_getTypeByName( L, 4, NULL, t_net_optionList ))  //S: sck key val opt
-		return luaL_error( L, "unknown socket option: %s", lua_tostring( L, 2 ) );
+	struct t_net_sck_option  *opt = bsearch(
+	                                     luaL_checkstring( L, 2 )
+	                                   , t_net_sck_options
+	                                   , T_NET_SCK_OPTS_MAX
+	                                   , sizeof( struct t_net_sck_option )
+	                                   , t_net_sck_optCompare
+	                                );
 
-	return p_net_sck_setSocketOption(
-		L,
-		t_net_sck_check_ud( L, 1, 1 ),
-		lua_tointeger( L, 4 ),
-		lua_tostring( L, 2 ),
-		(lua_isboolean( L, 3 ))
-			? lua_toboolean( L, 3 )
-			: luaL_checkinteger( L, 3 )
-	);
+	if (NULL == opt)              //S: sck key val
+		return luaL_error( L, "Can't set unknown socket option: `%s`", lua_tostring( L, 2 ) );
+	else
+	{
+		if (opt->set)
+			return p_net_sck_setSocketOption( L, t_net_sck_check_ud( L, 1, 1 ), opt );
+		else
+			return luaL_error( L, "Socket option: `%s` is read-only", lua_tostring( L, 2 ) );
+	}
 }
 
 

@@ -187,7 +187,7 @@ p_ael_poll_impl( lua_State *L, struct t_ael *ael )
 	printf( "    &&&&&&&&&&&& POLL RETURNED[%d]: %d &&&&&&&&&&&&&&&&&&\n", ael->fdCount, r );
 #endif
 	if (r<0)
-		return t_push_error( L, "Failed to receive" );
+		return t_push_error( L, "epoll_wait() failed" );
 
 	if (r > 0)
 	{

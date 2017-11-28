@@ -14,6 +14,11 @@
 #include <unistd.h>
 #include <fcntl.h>       // O_NONBLOCK,...
 #include <sys/select.h>  // fd_set
+#include <netinet/tcp.h>  // TCP_NODELAY
+#ifdef __linux
+#include <sys/ioctl.h>
+#include <linux/sockios.h> //SIOCINQ
+#endif
 
 #include "t_net.h"
 #include "t.h"           // t_getType*
@@ -30,6 +35,33 @@
 // Always create sockets or addresses with this family unless specified
 int _t_net_default_family;
 #endif  // T_NET_DEF_FAM_H
+
+
+// Socket option handling type declaration
+enum t_net_sck_optionType {
+	T_NET_SCK_OTP_BOOL,
+	T_NET_SCK_OTP_INT,
+	T_NET_SCK_OTP_LINGER,
+	T_NET_SCK_OTP_TIME,
+	T_NET_SCK_OTP_FCNTL,
+	T_NET_SCK_OTP_IOCTL,
+	// proprietary options
+	T_NET_SCK_OTP_DSCR,    ///< retrieve Socket descriptor number
+	T_NET_SCK_OTP_FMLY,    ///< retrieve Socket Family Name
+	T_NET_SCK_OTP_PRTC,    ///< retrieve Socket Protocol Name
+	T_NET_SCK_OTP_TYPE,    ///< retrieve Socket Type Name
+};
+
+struct t_net_sck_option
+{
+	const char *const                name;
+	const int                        getlevel;
+	const int                        setlevel;
+	const int                        option;
+	const enum t_net_sck_optionType  type;
+	const int                        get;
+	const int                        set;
+};
 
 // Constructors
 // t_net_adr.c
@@ -71,8 +103,8 @@ ssize_t p_net_sck_send          ( lua_State *L, struct t_net_sck *sck, struct so
 ssize_t p_net_sck_recv          ( lua_State *L, struct t_net_sck *sck, struct sockaddr_storage *adr,       char *buf, size_t len );
 int    p_net_sck_shutDown       ( lua_State *L, struct t_net_sck *sck, int shutVal );
 int    p_net_sck_close          ( lua_State *L, struct t_net_sck *sck );
-int    p_net_sck_setSocketOption( lua_State *L, struct t_net_sck *sck, int sckOpt, const char *sckOptName, int val );
-int    p_net_sck_getSocketOption( lua_State *L, struct t_net_sck *sck, int sckOpt, const char *sckOptName );
+int    p_net_sck_setSocketOption( lua_State *L, struct t_net_sck *sck, struct t_net_sck_option *opt );
+int    p_net_sck_getSocketOption( lua_State *L, struct t_net_sck *sck, struct t_net_sck_option *opt );
 int    p_net_sck_getsockname    ( lua_State *L, struct t_net_sck *sck, struct sockaddr_storage *adr );
 int    p_net_sck_mkFdSet        ( lua_State *L, int pos, fd_set *set );
 
@@ -379,48 +411,6 @@ static const struct t_typ t_net_typeList[ ] = {
 };
 
 
-// SO_* defined in /usr/lib/asm-generic/socket.h --> use value out of range
-#define T_NET_SO_FAMILY     100
-#define T_NET_SO_DESCRIPTOR 101
-
-static const struct t_typ t_net_optionList[ ] = {
-	// fcntl based options
-	{ "nonblock"          , O_NONBLOCK       },
-
-	// getsockopt/setsockopt integers
-	{ "descriptor"        , T_NET_SO_DESCRIPTOR  },   // this is a fake SO_*
-	{ "error"             , SO_ERROR         },
-	{ "recvbuffer"        , SO_RCVBUF        },
-	{ "recvlow"           , SO_RCVLOWAT      },
-	{ "recvtimeout"       , SO_RCVTIMEO      },
-	{ "sendbuffer"        , SO_SNDBUF        },
-	{ "sendlow"           , SO_SNDLOWAT      },
-	{ "sendtimeout"       , SO_SNDTIMEO      },
-
-	// getsockopt/setsockopt booleans
-	{ "broadcast"         , SO_BROADCAST     },
-	{ "debug"             , SO_DEBUG         },
-	{ "dontroute"         , SO_DONTROUTE     },
-	{ "keepalive"         , SO_KEEPALIVE     },
-	{ "oobinline"         , SO_OOBINLINE     },
-	{ "reuseaddr"         , SO_REUSEADDR     },
-#ifdef SO_REUSEPORT
-	{ "reuseport"         , SO_REUSEPORT     },
-#endif
-#ifdef SO_USELOOPBACK
-	{ "useloopback"       , SO_USELOOPBACK   },
-#endif
-
-	// getsockopt/setsockopt integer
-	// translated to strings
-	{ "family"            , T_NET_SO_FAMILY  },   // this is a fake SO_*
-	{ "type"              , SO_TYPE          },
-#ifdef SO_PROTOCOL
-	{ "protocol"          , SO_PROTOCOL      },
-#endif
-	{ NULL                , 0                }
-};
-
 static const struct t_typ t_net_shutList[ ] = {
 #ifdef SHUT_RD
 	{ "SHUT_RD"            , SHUT_RD         }, // No more receptions.
@@ -444,3 +434,57 @@ static const struct t_typ t_net_shutList[ ] = {
 #endif
 	{ NULL                , 0                }
 };
+
+
+/* ############################################################################
+ * Handling of socket, descriptor, protocoll options etc.  After trying a big
+ * old switch statement for *ALL* options lua-conman's approach is much more
+ * flexible and readable.  Adapting and extending.
+ * ############################################################################ */
+// bsearch() is used on this array.  Order keys (name) alphabetically!
+static const struct t_net_sck_option t_net_sck_options[ ] =
+{
+	{ "broadcast"      , SOL_SOCKET  , 0       , SO_BROADCAST   , T_NET_SCK_OTP_BOOL   , 1 , 1 } ,
+#ifdef FD_CLOEXEC
+	{ "closeexec"      , F_GETFD     , F_SETFD , FD_CLOEXEC     , T_NET_SCK_OTP_FCNTL  , 1 , 1 } ,
+#endif
+	{ "debug"          , SOL_SOCKET  , 0       , SO_DEBUG       , T_NET_SCK_OTP_BOOL   , 1 , 1 } ,
+	{ "descriptor"     , 0           , 0       , 0              , T_NET_SCK_OTP_DSCR   , 1 , 0 } ,
+	{ "dontroute"      , SOL_SOCKET  , 0       , SO_DONTROUTE   , T_NET_SCK_OTP_BOOL   , 1 , 1 } ,
+	{ "error"          , SOL_SOCKET  , 0       , SO_ERROR       , T_NET_SCK_OTP_INT    , 1 , 0 } ,
+	{ "family"         , 0           , 0       , 0              , T_NET_SCK_OTP_FMLY   , 1 , 0 } ,
+	{ "keepalive"      , SOL_SOCKET  , 0       , SO_KEEPALIVE   , T_NET_SCK_OTP_BOOL   , 1 , 1 } ,
+	{ "linger"         , SOL_SOCKET  , 0       , SO_LINGER      , T_NET_SCK_OTP_LINGER , 1 , 1 } ,
+	{ "maxsegment"     , IPPROTO_TCP , 0       , TCP_MAXSEG     , T_NET_SCK_OTP_INT    , 1 , 1 } ,
+	{ "nodelay"        , IPPROTO_TCP , 0       , TCP_NODELAY    , T_NET_SCK_OTP_BOOL   , 1 , 1 } ,
+	{ "nonblock"       , F_GETFL     , F_SETFL , O_NONBLOCK     , T_NET_SCK_OTP_FCNTL  , 1 , 1 } ,
+#ifdef SO_NOSIGPIPE
+	{ "nosigpipe"      , SOL_SOCKET  , 0       , SO_NOSIGPIPE   , T_NET_SCK_OTP_BOOL   , 1 , 1 } ,
+#endif
+	{ "oobinline"      , SOL_SOCKET  , 0       , SO_OOBINLINE   , T_NET_SCK_OTP_BOOL   , 1 , 1 } ,
+#ifdef SO_PROTOCOL
+	{ "protocol"       , SOL_SOCKET  , 0       , SO_PROTOCOL    , T_NET_SCK_OTP_PRTC   , 1 , 0 } ,
+#endif
+	{ "recvbuffer"     , SOL_SOCKET  , 0       , SO_RCVBUF      , T_NET_SCK_OTP_INT    , 1 , 1 } ,
+	{ "recvlow"        , SOL_SOCKET  , 0       , SO_RCVLOWAT    , T_NET_SCK_OTP_INT    , 1 , 1 } ,
+#ifdef __linux
+	{ "recvqueue"      , SIOCINQ     , 0       , 0              , T_NET_SCK_OTP_IOCTL  , 1 , 0 } ,
+#endif
+	{ "recvtimeout"    , SOL_SOCKET  , 0       , SO_RCVTIMEO    , T_NET_SCK_OTP_TIME   , 1 , 1 } ,
+	{ "reuseaddr"      , SOL_SOCKET  , 0       , SO_REUSEADDR   , T_NET_SCK_OTP_BOOL   , 1 , 1 } ,
+#ifdef SO_REUSEPORT
+	{ "reuseport"      , SOL_SOCKET  , 0       , SO_REUSEPORT   , T_NET_SCK_OTP_BOOL   , 1 , 1 } ,
+#endif
+	{ "sendbuffer"     , SOL_SOCKET  , 0       , SO_SNDBUF      , T_NET_SCK_OTP_INT    , 1 , 1 } ,
+	{ "sendlow"        , SOL_SOCKET  , 0       , SO_SNDLOWAT    , T_NET_SCK_OTP_INT    , 1 , 1 } ,
+#ifdef __linux
+	{ "sendqueue"      , SIOCOUTQ    , 0       , 0              , T_NET_SCK_OTP_IOCTL  , 1 , 0 } ,
+#endif
+	{ "sendtimeout"    , SOL_SOCKET  , 0       , SO_SNDTIMEO    , T_NET_SCK_OTP_TIME   , 1 , 1 } ,
+	{ "type"           , SOL_SOCKET  , 0       , SO_TYPE        , T_NET_SCK_OTP_TYPE   , 1 , 0 } ,
+#ifdef SO_USELOOPBACK
+	{ "useloopback"    , SOL_SOCKET  , 0       , SO_USELOOPBACK , T_NET_SCK_OTP_BOOL   , 1 , 1 } ,
+#endif
+};
+
+#define T_NET_SCK_OPTS_MAX       (sizeof(t_net_sck_options) / sizeof(struct t_net_sck_option))
