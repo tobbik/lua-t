@@ -76,6 +76,6 @@ if arg[ 2 ] then
 	host = arg[ 2 ]
 end
 
-local srv, adr   = httpServer:listen( host, port, 5000 )
+local srv, adr   = httpServer:listen( host, port, 1000 )
 print( fmt( "Started `%s` at `%s` (%s)", srv, adr, srv.family ) )
 httpServer.ael:run( )

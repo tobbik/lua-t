@@ -35,7 +35,7 @@ end
 local destroy = function( self )
 	local dur = o_time() - self.created
 	if dur > 2 then
-		print( "LONG RUNNING STREAM", self.sck, self.sck.descriptor, dur )
+		print( s_format( "LONG RUNNING STREAM: `%s`  %d seconds", self.sck, dur ) )
 	end
 	--print( "DESTROY:", self, self.sck )
 	self.requests  = nil
@@ -49,8 +49,8 @@ local recv = function( self )
 	local data,rcvd = self.sck:recv( )
 	if not data then
 		-- it means the other side hung up; No more responses
-		print( s_format("----------------REMOVE read handler -> RECEIVE FAILURE on `%s`(%s) [%s] T: %d",
-			self.sck, rcvd, type(data), o_time() - self.lastAction ) )
+		print( s_format("----------------REMOVE read handler -> RECEIVE FAILURE on `%s` (%s) Time: %d",
+			self.sck, rcvd, o_time( ) - self.lastAction ) )
 		-- dispose of itself ... clear requests, buffer etc...
 		self.srv.ael:removeHandle( self.sck, 'readwrite' )
 		destroy( self )
@@ -128,13 +128,13 @@ send = function( self, response )
 		end
 	else
 		stopSending = true
-		if (11 == errNo) then --EAGAIN/EWOULDBLOCK -> put on loop
+		if (11 == eNo) then --EAGAIN/EWOULDBLOCK -> put on loop
 			if not self.isOnOutLoop then
 				self.srv.ael:addHandle( self.sck, 'write', respond, self )
 				self.isOnOutLoop = true
 			end
 		else
-			print( "Failed to send:", eMsg )
+			print( "Failed to send:", eMsg, eNo )
 			self.srv.ael:removeHandle( self.sck, 'readwrite' )
 			destroy( self )
 		end

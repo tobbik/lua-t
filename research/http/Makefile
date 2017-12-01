@@ -9,8 +9,8 @@ SCREEN_RC=screen.rc
 SCREEN=$(shell which screen)
 CURL=$(shell which curl)
 AB=$(shell which ab)
-SIEGE=$(shell which siege)
 WRK=$(shell which wrk)
+GOWRK=$(shell which go-wrk)
 
 USERNAME=username
 PASSWORD=password
@@ -54,14 +54,17 @@ ab: $(AB)
 abk: $(AB)
 	$(AB) -k -c$(CONNS) -n500000 -t$(SECONDS) "http://$(HOST):$(PORT)/auth?username=$(USERNAME)&password=$(PASSWORD)"
 
-siege: $(SIEGE)
-	$(SIEGE) -c$(CONNS) -t$(SECONDS)S  "http://$(HOST):$(PORT)/auth?username=$(USERNAME)&password=$(PASSWORD)"
-
 wrk: $(WRK)
-	$(WRK) -t 12 -c $(CONNS) -d $(SECONDS) -H "Connection: close" "http://$(HOST):$(PORT)/auth?username=$(USERNAME)&password=$(PASSWORD)"
+	$(WRK) -t 12 -c $(CONNS) -d $(SECONDS) -H "Connection: close"      "http://$(HOST):$(PORT)/auth?username=$(USERNAME)&password=$(PASSWORD)"
 
 wrkk: $(WRK)
 	$(WRK) -t 12 -c $(CONNS) -d $(SECONDS) -H "Connection: keep-alive" "http://$(HOST):$(PORT)/auth?username=$(USERNAME)&password=$(PASSWORD)"
+
+gowrk: $(GOWRK)
+	$(GOWRK) -c $(CONNS) -d $(SECONDS) -H "Connection: close"      "http://$(HOST):$(PORT)/auth?username=$(USERNAME)&password=$(PASSWORD)" 2> /dev/null
+
+gowrkk: $(GOWRK)
+	$(GOWRK) -c $(CONNS) -d $(SECONDS) -H "Connection: keep-alive" "http://$(HOST):$(PORT)/auth?username=$(USERNAME)&password=$(PASSWORD)" 2> /dev/null
 
 users:
 	$(MAKE) USERNAME=$(USERNAME) PORT=8000 user
