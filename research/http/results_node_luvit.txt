@@ -1,0 +1,151 @@
+wrk keepalive node:
+-------------------
+/usr/bin/wrk -t 12 -c 30 -d 6 -H "Connection: keep-alive" "http://10.128.3.107:8001/auth?username=username&password=password"
+Running 6s test @ http://10.128.3.107:8001/auth?username=username&password=password
+  12 threads and 30 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     1.06ms  406.89us   6.45ms   69.21%
+    Req/Sec     1.89k   246.72     2.96k    80.36%
+  136835 requests in 6.10s, 17.09MB read
+Requests/sec:  22439.54
+Transfer/sec:      2.80MB
+
+wrk keepalive luvit:
+-------------------
+/usr/bin/wrk -t 12 -c 30 -d 6 -H "Connection: keep-alive" "http://10.128.3.107:8003/auth?username=username&password=password"
+Running 6s test @ http://10.128.3.107:8003/auth?username=username&password=password
+  12 threads and 30 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    23.89ms    2.99ms  66.53ms   97.72%
+    Req/Sec    82.74     12.53   181.00     87.59%
+  5995 requests in 6.10s, 0.86MB read
+  Socket errors: connect 0, read 5994, write 0, timeout 0
+Requests/sec:    982.73
+Transfer/sec:    144.27KB
+
+wrk non-keepalive node:
+-----------------------
+/usr/bin/wrk -t 12 -c 30 -d 6 -H "Connection: close" "http://10.128.3.107:8001/auth?username=username&password=password"
+Running 6s test @ http://10.128.3.107:8001/auth?username=username&password=password
+  12 threads and 30 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     2.87ms    1.42ms  19.16ms   85.16%
+    Req/Sec   501.13    100.22     2.40k    95.84%
+  36064 requests in 6.10s, 4.33MB read
+Requests/sec:   5912.35
+Transfer/sec:    727.50KB
+
+wrk non-keepalive node:
+-----------------------
+/usr/bin/wrk -t 12 -c 30 -d 6 -H "Connection: close" "http://10.128.3.107:8003/auth?username=username&password=password"
+Running 6s test @ http://10.128.3.107:8003/auth?username=username&password=password
+  12 threads and 30 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    23.62ms    3.01ms  48.76ms   97.78%
+    Req/Sec    83.71     28.24   818.00     99.86%
+  6032 requests in 6.10s, 854.84KB read
+Requests/sec:    989.51
+Transfer/sec:    140.23KB
+
+ab non-keepalive node:
+----------------------
+/usr/bin/ab -c30 -n500000 -t6 "http://10.128.3.107:8001/auth?username=username&password=password"
+This is ApacheBench, Version 2.3 <: 1807734 $>
+Copyright 1996 Adam Twiss, Zeus Technology Ltd, http://www.zeustech.net/
+Licensed to The Apache Software Foundation, http://www.apache.org/
+
+Benchmarking 10.128.3.107 (be patient)
+Completed 5000 requests
+Completed 10000 requests
+Completed 15000 requests
+Completed 20000 requests
+Completed 25000 requests
+Completed 30000 requests
+Completed 35000 requests
+Completed 40000 requests
+Finished 40408 requests
+
+
+Server Software:        
+Server Hostname:        10.128.3.107
+Server Port:            8001
+
+Document Path:          /auth?username=username&password=password
+Document Length:        31 bytes
+
+Concurrency Level:      30
+Time taken for tests:   6.000 seconds
+Complete requests:      40408
+Failed requests:        0
+Total transferred:      4283460 bytes
+HTML transferred:       1252710 bytes
+Requests per second:    6734.48 [#/sec] (mean)
+Time per request:       4.455 [ms] (mean)
+Time per request:       0.148 [ms] (mean, across all concurrent requests)
+Transfer rate:          697.16 [Kbytes/sec] received
+
+Connection Times (ms)
+              min  mean[+/-sd] median   max
+Connect:        0    1   0.6      1       5
+Processing:     1    4   1.8      3      20
+Waiting:        0    3   1.8      3      20
+Total:          2    4   1.7      4      20
+
+Percentage of the requests served within a certain time (ms)
+  50%      4
+  66%      4
+  75%      5
+  80%      5
+  90%      6
+  95%      7
+  98%     10
+  99%     13
+ 100%     20 (longest request)
+
+ab non-keepalive luvit:
+-----------------------
+/usr/bin/ab -c30 -n500000 -t6 "http://10.128.3.107:8003/auth?username=username&password=password"
+This is ApacheBench, Version 2.3 <: 1807734 $>
+Copyright 1996 Adam Twiss, Zeus Technology Ltd, http://www.zeustech.net/
+Licensed to The Apache Software Foundation, http://www.apache.org/
+
+Benchmarking 10.128.3.107 (be patient)
+Completed 5000 requests
+Finished 5823 requests
+
+
+Server Software:        
+Server Hostname:        10.128.3.107
+Server Port:            8003
+
+Document Path:          /auth?username=username&password=password
+Document Length:        42 bytes
+
+Concurrency Level:      30
+Time taken for tests:   6.000 seconds
+Complete requests:      5823
+Failed requests:        0
+Total transferred:      846395 bytes
+HTML transferred:       244566 bytes
+Requests per second:    970.48 [#/sec] (mean)
+Time per request:       30.912 [ms] (mean)
+Time per request:       1.030 [ms] (mean, across all concurrent requests)
+Transfer rate:          137.76 [Kbytes/sec] received
+
+Connection Times (ms)
+              min  mean[+/-sd] median   max
+Connect:        0    0   0.1      0       3
+Processing:    27   31   2.5     30      75
+Waiting:        2   21   4.1     20      65
+Total:         30   31   2.5     31      77
+
+Percentage of the requests served within a certain time (ms)
+  50%     31
+  66%     31
+  75%     31
+  80%     31
+  90%     31
+  95%     31
+  98%     31
+  99%     32
+ 100%     77 (longest request)
