@@ -134,7 +134,9 @@ send = function( self, response )
 				self.isOnOutLoop = true
 			end
 		else
-			error( s_format( "Could not send: `%s`", eMsg ) )
+			print( "Failed to send:", eMsg )
+			self.srv.ael:removeHandle( self.sck, 'readwrite' )
+			destroy( self )
 		end
 	end
 	return responseDone, removeSocket, stopSending
