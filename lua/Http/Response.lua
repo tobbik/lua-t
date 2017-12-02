@@ -129,11 +129,11 @@ _mt.__index     = _mt
 return setmetatable( {
 	  State  = State
 }, {
-	__call   = function( self, stream, id, keepAlive, version, created )
+	__call   = function( self, stream, id, version, created )
 		local response = {
 			  stream        = stream
 			, id            = id    -- StreamId
-			, keepAlive     = keepAlive
+			, keepAlive     = stream.keepAlive
 			, state         = State.Zero
 			, version       = version
 			, chunked       = true

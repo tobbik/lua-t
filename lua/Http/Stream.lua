@@ -67,7 +67,7 @@ local recv = function( self )
 			end
 		end
 		if request.state > Request.State.Headers then
-			self.srv.callback( request, Response( self, request.id, self.keepAlive, request.version, request.created ) )
+			self.srv.callback( request, Response( self, request.id, request.version, request.created ) )
 		end
 	end
 end

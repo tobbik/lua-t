@@ -115,6 +115,9 @@ Class Members
     sck,adr = Socket.bind( host, port ) -- Sck (TCP); Adr host:port
     sck,adr = Socket.bind( adr )        -- Sck (TCP)
 
+
+:: _Net-Socket-listen:
+
 ``Net.Socket sck, Net.Address adr = Net.Socket.listen( [Net.Address adr]/[string host, int port, int backlog] )``
   Creates a TCP ``Net.Socket sck`` instance which is listening for
   connections on ``Net.Address adr`` or the address specified  via ``string

@@ -17,11 +17,6 @@ local           Http ,                Method ,                Version  =
 local _mt = debug.getregistry( )[ "T.Http.Request" ]
 
 -- ---------------------------- general helpers  --------------------
--- assert Set type and return the proxy table
-local chkStr  = function( self )
-	T.assert( _mt == getmetatable( self ), "Expected `%s`, got %s", _mt.__name, T.type( self ) )
-	return self[ T.prxTblIdx ]
-end
 
 local State = {
 	  Method  = 1
