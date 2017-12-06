@@ -19,9 +19,9 @@ local m = {
 	"t_t"                   , "t_t_equals",
 	"t_tbl"                 ,
 	"t_tst"                 ,
+	"t_pck_range"           , "t_pck_cmb",
 	"t_pck_bytes"           , "t_pck_bits",
 	"t_pck_fmt"             , "t_pck_mix",
-	"t_pck_cmb"             ,
 	"t_htp_rsp"             , "t_htp_req",
 	"t_tim"                 ,
 }

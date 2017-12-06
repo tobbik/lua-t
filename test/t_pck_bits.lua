@@ -24,7 +24,7 @@ local tests = {
 		local buf        = Buffer( char( 0x80 ) ) -- 1000 0000
 		local pi, pu, pb = Pack('r'), Pack('R'), Pack('v')
 		T.assert( pi(buf) == -1,   "Expected %d; was %d",   -1, pi(buf) )
-		T.assert( pu(buf) ==  1,   "Expected %d; was %d",   -1, pu(buf) )
+		T.assert( pu(buf) ==  1,   "Expected %d; was %d",    1, pu(buf) )
 		T.assert( pb(buf) == true, "Expected %s; was %s", true, pb(buf) )
 	end,
 

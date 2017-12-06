@@ -18,7 +18,7 @@
 
 
 /**--------------------------------------------------------------------------
- * Create a  T.Pack.Struct Object and put it onto the stack.
+ * Create a t.Pack.Struct Object and put it onto the stack.
  * \param   L      Lua state.
  * \lparam  table  T.OrderedHashTable instance with packer definitions.
  * \return  struct t_pck*.
@@ -58,7 +58,7 @@ struct t_pck
 
 
 /**--------------------------------------------------------------------------
- * Create a  T.Pack.Sequence Object and put it onto the stack.
+ * Create a t.Pack.Sequence Object and put it onto the stack.
  * \param   L      Lua state.
  * \param   int    sp start position on Stack for first Packer.
  * \param   int    ep   end position on Stack for last Packer.
@@ -103,7 +103,7 @@ struct t_pck
 
 
 /**--------------------------------------------------------------------------
- * Create a  T.Pack.Array Object and put it onto the stack.
+ * Create a t.Pack.Array Object and put it onto the stack.
  * \param   L          Lua state.
  * \lparam  ud/string  T.Pack, T.Pack.Struct, T.Pack.Array or format string.
  * \lparam  integer    Number of elements in the array.
@@ -130,7 +130,7 @@ struct t_pck
 
 
 /**--------------------------------------------------------------------------
- * Create a  T.Pack.Field Object and put it onto the stack.
+ * Create a t.Pack.Field Object and put it onto the stack.
  * \param   L      Lua state.
  * \param   int    ofs offset in byte.
  * \return  struct t_pck_fld*.

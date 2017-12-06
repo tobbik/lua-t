@@ -87,19 +87,59 @@ following datatypes:
 atomic
   The constructor takes a format string which defines a single atomic item.
   eg. ``p = Pack( '<I3' )`` defines a little endian unsigned integer of 3
-  bytes width (UInt3L)
+  bytes width (UInt3L).
+
+  An interesting aspect about atomic packers is that they are perfectly
+  immutable and therefore don't have to be recreated.  The library performs
+  some lazy caching in order to prevent the creation of unnecessary copies:
+
+  .. code:: lua
+
+  Pack = require't.Pack'
+  p1, p2, p3 = Pack'R4', Pack'v', Pack'R4'
+  print(p1,p2,p3)
+  -- Note that p1 and p3 have the same address
+  -- t.Pack.UBit4:0: 0x55814d1601a8  t.Pack.Bool: 0x55814d1afeb8     t.Pack.UBit4:0: 0x55814d1601a8
+  print( Pack[ 'UBit4' ])
+  -- t.Pack.UBit4:0: 0x55814d1601a8
+  -- caching happens by adding a
+  -- reference to the internal library table
 
 sequence
   The constructor takes a format string which defines a composition of
-  multiple items.  eg. ``p = Pack( '>l<H' )`` defines a sequence of 2
-  elements and is 10 bytes long on a 64 bit system::
+  multiple items.  eg. ``p = Pack( '>l', '<H', 'i6' )`` defines a sequence
+  of 3 elements and is 16 bytes long on a 64 bit system::
 
-   - p[1]: atomic packer of type (Int8B) 0 bytes offset (1st element)
-   - p[2]: atomic packer of type (Int2L) 8 bytes offset (length of p[1])
+   - p[1]: atomic packer of type (Int8SB) 0  bytes offset (1st element)
+   - p[2]: atomic packer of type (Int2UL) 8  bytes offset (length of p[1]+p[2])
+   - p[3]: atomic packer of type (Int6SL) 10 bytes offset (length of p[1])
+
+  As a convienience a packer sequence can be created providing just one
+  single concatenated string to the constructor.  ``p = Pack( '>l<Hi6' )``
+  creates exactly the same sequence as the example above.  This convienience
+  creates a peculiar behaviour of the sequence constructor which is very
+  logical but may lead to some confusion.  As mentioned, while the call to
+  ``p1 = Pack( '>l<Hi6' )`` creates the same sequence as the call to ``p2 = 
+  Pack( '>l', '<H', 'i6' )`` the call to ``p3 = Pack( '>l<H', 'i6' )`` is
+  different!  It will create a sequence of 2 packers, the first being a
+  sequence of 2 atomic integer packers and the second being just a single
+  atomic integer packer:
+
+  .. code:: lua
+
+   p1, p2, p3 = Pack( '>l<Hi6' ), Pack( '>l', '<H', 'i6'  ), Pack( '>l<H', 'i6' )
+   print( p1, p2, p3 )
+   -- t.Pack.Sequence[3]: 0x55c95e8af958      t.Pack.Sequence[3]: 0x55c95e8aff38      t.Pack.Sequence[2]: 0x55c95e8b2e18
+   print( p1[1], p2[1] )
+   -- t.Pack.Field[0](Int8B): 0x5641245a24b8           t.Pack.Field[0](Int8B): 0x5641245a3848
+   print( p3[1], p3[2] )        -- 1. Sequence 2. Atomic
+   -- t.Pack.Field[0](Sequence[2]): 0x55c95e8b6748    t.Pack.Field[10](UInt2L): 0x55c95e8b6788
+   print( p3[1][1], p3[1][2] )  -- within the Sequence are two Atomic
+   -- t.Pack.Field[0](Int8B): 0x55c95e8b6d88 t.Pack.Field[8](UInt2L): 0x55c95e8b6e08
 
 array
   The constructor takes a format string which defines a packer (atomic OR
-  combinator) and a number defining how often it gets repeated. 
+  combinator) and a number defining how often it gets repeated.
   eg. p = ``Pack( '>d<H', 4 )`` defines a sequence of 2 elements which is
   10 bytes long, it will get repeated 4 times, making the packer cover 40
   bytes::
@@ -116,7 +156,7 @@ struct
    - p[2]: is an atomic packer of type (int2L) with an 8 bytes offset
 
 reuse of packers
-  Any previously defined packer can be used in plcae of a format string to
+  Any previously defined packer can be used in place of a format string to
   create a new packer.  Consider the following code:
 
   .. code:: lua
@@ -142,7 +182,7 @@ Class Members
   ``Pack.Array`` and ``Pack.Struct`` and returns the accumulated size.
 
 ``int bytes, int bits = Pack.offset( t.Pack.Field pf )``
-  Returns the offset of the ``Pack.Fiel pf`` in bytes and in bits.  For bit
+  Returns the offset of the ``Pack.Field pf`` in bytes and in bits.  For bit
   type Packers the byte value is truncated to the next full byte value.  The
   function can be used on the combinators ``Pack.Field`` instances only and
   does not apply to atomic ``Pack`` types.
@@ -185,9 +225,12 @@ Class Metamembers
 Instance Members
 ----------------
 
-Only ``Pack.Struct``, ``Pack.Array`` and ``Pack.Sequence`` have instance
-access to members.  Cross reference their documentation.
+Atomic Packer instances have no access to internal members.  Combinators,
+however, do.  Refer to their seperate documentation for details:
 
+ - `Pack.Array <Pack.Array.rst>`__
+ - `Pack.Sequence <Pack.Sequence.rst>`__
+ - `Pack.Struct <Pack.Struct.rst>`__
 
 Instance Metamembers
 --------------------
