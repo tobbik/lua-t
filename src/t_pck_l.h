@@ -12,23 +12,38 @@
 // Helper Macros
 // http://stackoverflow.com/questions/2100331/c-macro-definition-to-determine-big-endian-or-little-endian-machine
 // http://esr.ibiblio.org/?p=5095
-#define IS_BIG_ENDIAN (*(uint16_t *)"\0\xff" < 0x100)
 #define IS_LITTLE_ENDIAN (1 == *(unsigned char *)&(const int){1})
+//#define IS_BIG_ENDIAN (*(uint16_t *)"\0\xff" < 0x100)
 //#define IS_LITTLE_ENDIAN (*(uint16_t*)"\0\1">>8)
 //#define IS_BIG_ENDIAN (*(uint16_t*)"\1\0">>8)
 
 // macro taken from Lua 5.3 source code
 // number of bits in a character
-#define NB                 CHAR_BIT
+#define NB                    CHAR_BIT
 
 // mask for one character (NB 1's)
-#define MC                 ((1 << NB) - 1)
+#define MC                    ((1 << NB) - 1)
 
 // size of a lua_Integer
-#define MXINT              ((int)sizeof(lua_Integer))
+#define MXINT                 ((int)sizeof(lua_Integer))
 
 // Maximum bits that can be read or written
-#define MXBIT              MXINT * NB
+#define MXBIT                 MXINT * NB
+
+// Macros to determine Packer sub-type
+#define T_PCK_ISSIGNED( m  )  ((m & T_PCK_MOD_SIGNED) != 0)
+#define T_PCK_ISLITTLE( m  )  ((m & T_PCK_MOD_LITTLE) != 0)
+#define T_PCK_ISBIG(    m  )  ((m & T_PCK_MOD_LITTLE) == 0)
+
+// Macros to detect if a character is a digit?
+#define T_PCK_ISDIGIT(  c  )  ((c) - '0' + 0U <= 9U)
+
+// ========== Buffer accessor Helpers
+#define T_PCK_BIT_GET(b,n  )  ( ((b) >> (NB-(n)-1)) & 0x01 )
+#define T_PCK_BIT_SET(b,n,v)                   \
+	( b = ( (1==v)                              \
+	 ? ((b) | (  (0x01) << (NB-(n)-1)))   \
+	 : ((b) & (~((0x01) << (NB-(n)-1)))) ) )
 
 
 // T.Pack is designed to work like Lua 5.3 pack/unpack support.  By the same
@@ -48,7 +63,7 @@ enum t_pck_t {
 };
 
 
-static const char *const t_pck_t_lst[] = {
+static const char *const t_pck_t_lst[ ] = {
 	// atomic packer types
 	  "Bool"         ///< Packer      Boolean (1 Bit)
 	, "Int"          ///< Packer      Integer
@@ -65,13 +80,6 @@ enum t_pck_m {
 	  T_PCK_MOD_SIGNED  = 0x00000001  ///< Modifier Signed
 	, T_PCK_MOD_LITTLE  = 0x00000002  ///< Modifier Little Endian
 };
-
-#define T_PCK_ISSIGNED( m ) ((m & T_PCK_MOD_SIGNED) != 0)
-#define T_PCK_ISLITTLE( m ) ((m & T_PCK_MOD_LITTLE) != 0)
-#define T_PCK_ISBIG(    m ) ((m & T_PCK_MOD_LITTLE) == 0)
-
-#define T_PCK_ISDIGIT(  c ) ((c) - '0' + 0U <= 9U)
-
 
 /// The userdata struct for T.Pack/T.Pack.Struct/T.Pack.Array/T.Pack.Sequence
 /// This is a very terse structure to make it use a very small amount of memory
@@ -100,7 +108,8 @@ struct t_pck {
 
 /// The userdata struct for T.Pack.Field
 struct t_pck_fld {
-	int      pR;   ///< LUA_REGISTRYINDEX to the T.Pack or T.Pack.Field type
+	int      pR;   ///< LUA_REGISTRYINDEX to the T.Pack
+	int      bR;   ///< LUA_REGISTRYINDEX to the T.Pack.Field of the parent
 	size_t   o;    ///< offset from the beginning of the wrapping Combinator in bits
 };
 

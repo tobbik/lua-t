@@ -18,15 +18,6 @@
 #include "t_dbg.h"
 #endif
 
-// ========== Buffer accessor Helpers
-#define BIT_GET(b,n)       ( ((b) >> (NB-(n)-1)) & 0x01 )
-#define BIT_SET(b,n,v)                   \
-	( b = ( (1==v)                              \
-	 ? ((b) | (  (0x01) << (NB-(n)-1)))   \
-	 : ((b) & (~((0x01) << (NB-(n)-1)))) ) )
-
-// ========== Helper for format parser
-
 
 // global default for T.Pack, can be flipped
 #ifdef IS_LITTLE_ENDIAN
@@ -244,7 +235,7 @@ t_pck_setIntValue( lua_State *L, char *b, struct t_pck *p, size_t ofs )
 	if (ofs || p->s % NB)
 		for (n = p->s; n > 0; n--)
 		{
-			BIT_SET( *(b + (ofs/NB)), ofs%NB, ((val >> (n-1)) & 0x01) ? 1 : 0 );
+			T_PCK_BIT_SET( *(b + (ofs/NB)), ofs%NB, ((val >> (n-1)) & 0x01) ? 1 : 0 );
 			ofs++;
 		}
 	else
@@ -273,7 +264,7 @@ t_pck_read( lua_State *L, const char *b, struct t_pck *p, size_t ofs )
 	switch( p->t )
 	{
 		case T_PCK_BOL:
-			lua_pushboolean( L, BIT_GET( *b, ofs ) );
+			lua_pushboolean( L, T_PCK_BIT_GET( *b, ofs ) );
 			break;
 		case T_PCK_INT:
 			t_pck_getIntValue( L, b, p, ofs );
@@ -318,7 +309,7 @@ t_pck_write( lua_State *L, char *b, struct t_pck *p, size_t ofs )
 		case T_PCK_BOL:
 			luaL_argcheck( L,  lua_isboolean( L, -1 ) , -1,
 			   "value to pack must be boolean type" );
-			BIT_SET( *b, ofs, lua_toboolean( L, -1 ) );
+			T_PCK_BIT_SET( *b, ofs, lua_toboolean( L, -1 ) );
 			break;
 		case T_PCK_INT:
 			t_pck_setIntValue( L, b, p, ofs );
@@ -812,7 +803,11 @@ lt_pck__gc( lua_State *L )
 	struct t_pck_fld *pf = NULL;
 	struct t_pck     *pc = t_pck_fld_getPackFromStack( L, -1, &pf );
 	if (NULL != pf)
+	{
 		luaL_unref( L, LUA_REGISTRYINDEX, pf->pR );
+		if (LUA_REFNIL != pf->bR)
+			luaL_unref( L, LUA_REGISTRYINDEX, pf->bR );
+	}
 	if (NULL == pf && pc->t > T_PCK_RAW)
 		luaL_unref( L, LUA_REGISTRYINDEX, pc->m );
 	return 0;
@@ -979,7 +974,6 @@ static const struct luaL_Reg t_pck_fm [] = {
  * --------------------------------------------------------------------------*/
 static const struct luaL_Reg t_pck_cf [] = {
 	  { "getSize"        , lt_pck_GetSize }
-	, { "setEndian"      , lt_pck_SetDefaultEndian }
 	, { "setEndian"      , lt_pck_SetDefaultEndian }
 	, { "type"           , lt_pck_Type }
 	, { "getOffset"      , lt_pck_fld_GetOffset }
