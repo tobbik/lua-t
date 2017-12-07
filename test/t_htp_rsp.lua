@@ -23,8 +23,9 @@ local mSck = {
 
 local makeResonse = function()
 	return Response( {
-		addResponse = function() end
-	}, 1, true, 3 )
+		addResponse = function() end,
+		keepAlive   = true
+	}, 1, 3 )
 end
 
 local tests = {
@@ -38,7 +39,7 @@ local tests = {
 		assert( r.keepAlive, "Response must be using keepAlive" )
 		assert( r.chunked,   "Response must use chunked encoding by default" )
 		assert( r.id == 1, "Response.id must be 123 but was " .. r.id )
-		assert( r.version == 3, format( "Http.version must `%s` but was `%s`", r.version, 3 ) )
+		assert( r.version == 3, format( "Http.version must `%s` but was `%s`", 3, r.version ) )
 	end,
 
 	--  ##############              WRITE HEAD
@@ -122,7 +123,6 @@ local tests = {
 		assert( r.chunked, "Response must be chunked" )
 		assert( r.buf[1]:match(payload), format( "Response Buffer should match `%s` but found `%s`", payload, r.buf[1]) )
 	end,
-
 
 }
 
