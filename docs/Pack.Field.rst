@@ -5,16 +5,18 @@ lua-t Pack.Field - Binary Packer
 Overview
 ========
 
-A ``t.Pack`` Struct, Sequence or Array element returned by the packers
-__index method.  Additionally, to the type of the packer it also contains
-information about the offset in the returning context.
+A ``Pack.Field`` is a ``Pack`` that is located at a specific position within
+any ``Pack`` combinator such as Struct, Sequence or Array.  As such, a
+``Pack.Field`` element is returned by the packer cobinators ``__index
+metamethod``.  Depending on preceeding ``Pack`` elements, a ``Pack.Field``
+may contain information about the offset in the returning context.
 
 .. code:: lua
 
   p = Pack( 'hHhH' ) -- packer sequence of 4 shorts, each 2 bytes long
   -- returning the `short` packer at 3rd position of sequence which is 4
   -- bytes offset from the beginning
-  print( p[3] )      -- Pack.Field[4](UInt2l)
+  print( p[3] )      -- Pack.Field[4](Int2ul)
 
 
 Reuse of existing ``t.Pack.Field`` definitions

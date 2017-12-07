@@ -26,8 +26,7 @@
 	 : ((b) & (~((0x01) << (NB-(n)-1)))) ) )
 
 // ========== Helper for format parser
-#define CP( typ, mod, sz ) \
-	t_pck_create_ud( L, T_PCK_##typ, (sz), (mod) );
+
 
 // global default for T.Pack, can be flipped
 #ifdef IS_LITTLE_ENDIAN
@@ -51,7 +50,7 @@ static int _default_endian = 0;
 static size_t
 gn( const char **fmt, size_t dft )
 {
-	if (! ISDIGIT(** fmt))    // no number
+	if (! T_PCK_ISDIGIT(** fmt))    // no number
 		return dft;
 	else
 	{
@@ -59,7 +58,7 @@ gn( const char **fmt, size_t dft )
 		do
 		{
 			a = a*10 + *((*fmt)++) - '0';
-		} while (ISDIGIT(**fmt) &&  a <(INT_MAX/10 - 10));
+		} while (T_PCK_ISDIGIT(**fmt) &&  a <(INT_MAX/10 - 10));
 		return a;
 	}
 }
@@ -102,6 +101,9 @@ static struct t_pck
 	int           opt;
 	struct t_pck *p = NULL;
 
+#define C( typ, ltl, sgn, sz ) \
+   t_pck_create_ud( L, T_PCK_##typ, (sz), \
+     ( ((ltl) ? T_PCK_MOD_LITTLE : 0) | ((sgn) ? T_PCK_MOD_SIGNED : 0) ) );
 	while (NULL == p)
 	{
 		opt = *((*f)++);
@@ -109,40 +111,41 @@ static struct t_pck
 		switch (opt)
 		{
 			// Integer types
-			case 'b': p = CP( INT, 1==*e,                         NB        ); break;
-			case 'B': p = CP( UNT, 1==*e,                         NB        ); break;
-			case 'h': p = CP( INT, 1==*e, sizeof( short )       * NB        ); break;
-			case 'H': p = CP( UNT, 1==*e, sizeof( short )       * NB        ); break;
-			case 'l': p = CP( INT, 1==*e, sizeof( long )        * NB        ); break;
-			case 'L': p = CP( UNT, 1==*e, sizeof( long )        * NB        ); break;
-			case 'j': p = CP( INT, 1==*e, sizeof( lua_Integer ) * NB        ); break;
-			case 'J': p = CP( UNT, 1==*e, sizeof( lua_Integer ) * NB        ); break;
-			case 'T': p = CP( UNT, 1==*e, sizeof( size_t )      * NB        ); break;
-			case 'i': p = CP( INT, 1==*e, gnl( L, f, sizeof( int ), MXINT ) ); break;
-			case 'I': p = CP( UNT, 1==*e, gnl( L, f, sizeof( int ), MXINT ) ); break;
+			case 'b': p = C( INT, 1==*e, 1,                         NB        ); break;
+			case 'B': p = C( INT, 1==*e, 0,                         NB        ); break;
+			case 'h': p = C( INT, 1==*e, 1, sizeof( short )       * NB        ); break;
+			case 'H': p = C( INT, 1==*e, 0, sizeof( short )       * NB        ); break;
+			case 'l': p = C( INT, 1==*e, 1, sizeof( long )        * NB        ); break;
+			case 'L': p = C( INT, 1==*e, 0, sizeof( long )        * NB        ); break;
+			case 'j': p = C( INT, 1==*e, 1, sizeof( lua_Integer ) * NB        ); break;
+			case 'J': p = C( INT, 1==*e, 0, sizeof( lua_Integer ) * NB        ); break;
+			case 'T': p = C( INT, 1==*e, 0, sizeof( size_t )      * NB        ); break;
+			case 'i': p = C( INT, 1==*e, 1, gnl( L, f, sizeof( int ), MXINT ) ); break;
+			case 'I': p = C( INT, 1==*e, 0, gnl( L, f, sizeof( int ), MXINT ) ); break;
 
 			// Float types
-			case 'f': p = CP( FLT, 1==*e, sizeof( float )       * NB        ); break;
-			case 'd': p = CP( FLT, 1==*e, sizeof( double )      * NB        ); break;
-			case 'n': p = CP( FLT, 1==*e, sizeof( lua_Number )  * NB        ); break;
+			case 'f': p = C( FLT, 1==*e, 0, sizeof( float )       * NB        ); break;
+			case 'd': p = C( FLT, 1==*e, 0, sizeof( double )      * NB        ); break;
+			case 'n': p = C( FLT, 1==*e, 0, sizeof( lua_Number )  * NB        ); break;
 
 			// String type
-			case 'c': p = CP( RAW,     0, gnl( L, f, 1, 0x1 << 30 )         ); break;
+			case 'c': p = C( RAW,     0, 0, gnl( L, f, 1, 0x1 << 30 )         ); break;
 
 			// Bit types
-			case 'r': p = CP( BTS,     0, gnl( L, f, 1, MXBIT )/NB          ); break;
-			case 'R': p = CP( BTU,     0, gnl( L, f, 1, MXBIT )/NB          ); break;
-			case 'v': p = CP( BOL,     0, 1                                 ); break;
+			case 'v': p = C( BOL,     0, 0, 1                                 ); break;
+			case 'r': p = C( INT,     0, 1, gnl( L, f, 1, MXBIT )/NB          ); break;
+			case 'R': p = C( INT,     0, 0, gnl( L, f, 1, MXBIT )/NB          ); break;
 
 			// modifier types
-			case '<': *e = 1; continue;                                        break;
-			case '>': *e = 0; continue;                                        break;
-			case '\0': return NULL;                                            break;
+			case '<': *e = 1; continue;                                           break;
+			case '>': *e = 0; continue;                                           break;
+			case '\0': return NULL;                                               break;
 			default:
 				luaL_error( L, "invalid format option '%c'", opt );
 				return NULL;
 		}
 	}
+#undef C
 	return p;
 }
 
@@ -196,7 +199,7 @@ t_pck_getIntValue( lua_State *L, const char *b, struct t_pck *p, size_t ofs )
 	size_t        bytes;              ///< how many bytes to copy for ALL bits
 	size_t        l_shft;             ///< how far left to shift the value
 
-	if (p->t > T_PCK_UNT)             // for bit style reading
+	if (ofs || p->s % NB)            // Bitwise parsing if not aligned to byte border
 	{
 		bytes  = ((p->s + ofs - 1) / NB) + 1;
 		t_pck_copyBytes( out, b, bytes, 1 );
@@ -204,9 +207,9 @@ t_pck_getIntValue( lua_State *L, const char *b, struct t_pck *p, size_t ofs )
 		val    = (val << l_shft) >> (MXBIT - p->s);
 	}
 	else
-		t_pck_copyBytes( out, b, p->s/NB, ! p->m );
+		t_pck_copyBytes( out, b, p->s/NB, T_PCK_ISBIG( p->m ) );
 
-	if (T_PCK_INT==p->t || T_PCK_BTS==p->t)  // 2's complement for signed
+	if (T_PCK_ISSIGNED( p->m ))  // 2's complement for signed
 	{
 		msk = (lua_Unsigned) 1  << (p->s - 1);
 		lua_pushinteger( L, (lua_Integer) ((val^msk) - msk) );
@@ -227,7 +230,7 @@ static void
 t_pck_setIntValue( lua_State *L, char *b, struct t_pck *p, size_t ofs )
 {
 	lua_Integer  iVal = luaL_checkinteger( L, -1 );
-	int     is_signed = ((T_PCK_INT==p->t || T_PCK_BTS==p->t) && p->s < MXBIT);
+	int     is_signed = (T_PCK_ISSIGNED( p->m ) && p->s < MXBIT);
 	int       do_sign = (is_signed && iVal<0 );
 	lua_Unsigned  msk = (do_sign) ? (lua_Unsigned) 1  << (p->s - 1) : 0;
 	lua_Unsigned  val = (do_sign)
@@ -238,14 +241,14 @@ t_pck_setIntValue( lua_State *L, char *b, struct t_pck *p, size_t ofs )
 	// if positive and signed, 2's complement can handle only p->s-1 bits wide
 	luaL_argcheck( L,  0 == (val >> ((is_signed && ! do_sign) ? p->s-1 : p->s)) ,
 	   2, "packed value must fit the value range for the packer size" );
-	if (p->t > T_PCK_UNT)   // for bit style writing
+	if (ofs || p->s % NB)
 		for (n = p->s; n > 0; n--)
 		{
 			BIT_SET( *(b + (ofs/NB)), ofs%NB, ((val >> (n-1)) & 0x01) ? 1 : 0 );
 			ofs++;
 		}
 	else
-		t_pck_copyBytes( b, (char *) &val, p->s/NB, ! p->m );
+		t_pck_copyBytes( b, (char *) &val, p->s/NB, T_PCK_ISBIG( p->m ) );
 }
 
 
@@ -269,16 +272,11 @@ t_pck_read( lua_State *L, const char *b, struct t_pck *p, size_t ofs )
 
 	switch( p->t )
 	{
-		case T_PCK_INT:
-		case T_PCK_UNT:
-			luaL_argcheck( L, ofs == 0, 1, "Integer Packer must start reading at byte border" );
-			/* FALLTHRU */   // --> just checking byte border; still get Int value
-		case T_PCK_BTS:
-		case T_PCK_BTU:
-			t_pck_getIntValue( L, b, p, ofs );
-			break;
 		case T_PCK_BOL:
 			lua_pushboolean( L, BIT_GET( *b, ofs ) );
+			break;
+		case T_PCK_INT:
+			t_pck_getIntValue( L, b, p, ofs );
 			break;
 		case T_PCK_FLT:
 			luaL_argcheck( L, ofs == 0, 1, "Float Packer must start reading at byte border" );
@@ -317,16 +315,13 @@ t_pck_write( lua_State *L, char *b, struct t_pck *p, size_t ofs )
 	// TODO: size check values if they fit the packer size
 	switch( p->t )
 	{
-		case T_PCK_INT:
-		case T_PCK_UNT:
-		case T_PCK_BTS:
-		case T_PCK_BTU:
-			t_pck_setIntValue( L, b, p, ofs );
-			break;
 		case T_PCK_BOL:
 			luaL_argcheck( L,  lua_isboolean( L, -1 ) , -1,
 			   "value to pack must be boolean type" );
 			BIT_SET( *b, ofs, lua_toboolean( L, -1 ) );
+			break;
+		case T_PCK_INT:
+			t_pck_setIntValue( L, b, p, ofs );
 			break;
 		case T_PCK_FLT:
 			if      (sizeof( u.f ) == p->s/NB) u.f = (float)  luaL_checknumber( L, -1 );
@@ -368,17 +363,17 @@ t_pck_format( lua_State *L, enum t_pck_t t, size_t s, int m )
 	lua_pushfstring( L, "%s", t_pck_t_lst[ t ] );
 	switch( t )
 	{
-		case T_PCK_INT:
-		case T_PCK_UNT:
-		case T_PCK_FLT:
-			lua_pushfstring( L, "%d%c", s/NB, (1==m) ? 'L' : 'B' );
-			break;
 		case T_PCK_BOL:
 			lua_pushfstring( L, "" );
 			break;
-		case T_PCK_BTS:
-		case T_PCK_BTU:
-			lua_pushfstring( L, "%d:%d", s, m );
+		case T_PCK_INT:
+			lua_pushfstring( L, "%d%c%c", s,
+			                 (T_PCK_ISSIGNED( m )) ? 's' : 'u',
+			                 (T_PCK_ISLITTLE( m )) ? 'l' : 'b' );
+			break;
+		case T_PCK_FLT:
+			lua_pushfstring( L, "%d%c", s/NB,
+			                 (T_PCK_ISLITTLE( m )) ? 'l' : 'b' );
 			break;
 		case T_PCK_RAW:
 			lua_pushfstring( L, "%d", s/NB );
@@ -417,7 +412,7 @@ struct t_pck
 	lua_getfield( L, -1, "t."T_PCK_IDNT );
 	t_pck_format( L, t, s, m );
 	lua_rawget( L, -2 );           //S: _ld t t.pck pck/nil
-	if (t > T_PCK_RAW || lua_isnil( L, -1 ))        // haven't found in cache -> create it
+	if (t > T_PCK_RAW || lua_isnil( L, -1 ))  // combinator or not in cache -> create it
 	{
 		p    = (struct t_pck *) lua_newuserdata( L, sizeof( struct t_pck ));
 		p->t = t;
@@ -426,7 +421,7 @@ struct t_pck
 
 		luaL_getmetatable( L, T_PCK_TYPE );
 		lua_setmetatable( L, -2 );
-		if (t<T_PCK_ARR)        // register atomic types only
+		if (t < T_PCK_ARR)           // register atomic types only
 		{
 			lua_remove( L, -2 );      // remove the nil
 			t_pck_format( L, t, s, m );
@@ -562,8 +557,8 @@ struct t_pck
 /**--------------------------------------------------------------------------
  * Decides if the element on pos is a packer kind of type.
  * It decides between the following options:
- *     - T.Pack type              : just return it
- *     - T.Pack.Field             : return referenced packer
+ *     - t.Pack type              : just return it
+ *     - t.Pack.Field             : return referenced packer
  *     - fmt string of single item: fetch from cache or create
  *     - fmt string of mult items : let Sequence constructor handle and return result
  * \param   L      Lua state.
@@ -624,11 +619,11 @@ t_pck_readArguments( lua_State *L, int sp, int ep )
 	while (i < n)
 	{
 		luaL_argcheck( L, lua_istable( L, sp ), i+1,
-			"Arguments must be a table" );
+			"Each argument must be a table" );
 		// get key/value from table
 		lua_pushnil( L );                //S: sp … ep … tbl nil
 		luaL_argcheck( L, lua_next( L, sp ), ep-n-1,
-			"The table argument must contain one key/value pair." );
+			"The table argument must contain a single key/value pair." );
 		lua_remove( L, sp );             // remove the table now key/pck pair is on stack
 		lua_pushvalue( L, -2 );          //S: sp … ep … tbl key val key
 		lua_rawget( L, -4 );             //S: sp … ep … tbl key val valold?
@@ -640,7 +635,7 @@ t_pck_readArguments( lua_State *L, int sp, int ep )
 			lua_rawset( L, -3 );
 		}
 		else
-			luaL_error( L, "No duplicates for Pack keys allowed");
+			luaL_error( L, "No duplicates for Pack keys allowed" );
 
 		i++;
 	}
@@ -668,19 +663,19 @@ t_pck_readArguments( lua_State *L, int sp, int ep )
  *  -------------------------------------------------------------------------*/
 static int lt_pck__Call( lua_State *L )
 {
-	lua_remove( L, 1 );                     // remove the T.Pack Class table
-	if (lua_istable( L, 1 ))                // Oht style constructor -> struct
+	lua_remove( L, 1 );               // remove the t.Pack Class table
+	if (lua_istable( L, 1 ))          // Oht style constructor -> struct
 	{
 		t_pck_readArguments( L, 1, lua_gettop( L ) );
-		t_pck_str_create( L );           //S: pck tbl
+		t_pck_str_create( L );         //S: pck tbl
 	}
 	else
 	{
 		if (1==lua_gettop( L ))
-			t_pck_getPacker( L, 1 );      // single packer
+			t_pck_getPacker( L, 1 );    // single packer
 		else
 			if (lua_isinteger( L, 2 ))
-				t_pck_arr_create( L );     // if second is number it must be array
+				t_pck_arr_create( L );   // if second is number it must be array
 			else
 				t_pck_seq_create( L, 1, lua_gettop( L ) );
 	}

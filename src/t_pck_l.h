@@ -17,8 +17,6 @@
 //#define IS_LITTLE_ENDIAN (*(uint16_t*)"\0\1">>8)
 //#define IS_BIG_ENDIAN (*(uint16_t*)"\1\0">>8)
 
-#define ISDIGIT( c ) ((c) - '0' + 0U <= 9U)
-
 // macro taken from Lua 5.3 source code
 // number of bits in a character
 #define NB                 CHAR_BIT
@@ -39,12 +37,9 @@
 // TODO: make the check of enums based on Bit Masks to have subtype grouping
 enum t_pck_t {
 	// atomic packer types
-	  T_PCK_INT      ///< Packer      Integer Signed
-	, T_PCK_UNT      ///< Packer      Integer Unsigned
+	  T_PCK_BOL      ///< Packer      Boolean( 1 Bit )
+	, T_PCK_INT      ///< Packer      Integer
 	, T_PCK_FLT      ///< Packer      Float( doubles as Double )
-	, T_PCK_BOL      ///< Packer      Boolean( 1 Bit )
-	, T_PCK_BTS      ///< Packer      BitField( integer x Bits) - signed
-	, T_PCK_BTU      ///< Packer      BitField( integer x Bits) - unsigned
 	, T_PCK_RAW      ///< Packer      Raw - string/utf8/binary/bunch of bytes
 	// complex packer types
 	, T_PCK_ARR      ///< Combinator  Array   ( n packers of given type )
@@ -55,18 +50,27 @@ enum t_pck_t {
 
 static const char *const t_pck_t_lst[] = {
 	// atomic packer types
-	  "Int"          ///< Packer      Integer
-	, "UInt"         ///< Packer      Unsigned Integer
+	  "Bool"         ///< Packer      Boolean (1 Bit)
+	, "Int"          ///< Packer      Integer
 	, "Float"        ///< Packer      Float
-	, "Bool"         ///< Packer      Boolean (1 Bit)
-	, "SBit"         ///< Packer      Signed   Integer as BitArray (integer x Bit)
-	, "UBit"         ///< Packer      Unsigned Integer as BitArray (integer x Bit)
 	, "Raw"          ///< Packer      Raw - string/utf8/binary
 	// complex packer types
 	, "Array"        ///< Combinator  Array   ( n packers of given type )
 	, "Sequence"     ///< Combinator  Sequence( sequence of packers )
 	, "Struct"       ///< Combinator  Struct  ( key:packer struct, ordered )
 };
+
+enum t_pck_m {
+	// atomic packer types
+	  T_PCK_MOD_SIGNED  = 0x00000001  ///< Modifier Signed
+	, T_PCK_MOD_LITTLE  = 0x00000002  ///< Modifier Little Endian
+};
+
+#define T_PCK_ISSIGNED( m ) ((m & T_PCK_MOD_SIGNED) != 0)
+#define T_PCK_ISLITTLE( m ) ((m & T_PCK_MOD_LITTLE) != 0)
+#define T_PCK_ISBIG(    m ) ((m & T_PCK_MOD_LITTLE) == 0)
+
+#define T_PCK_ISDIGIT(  c ) ((c) - '0' + 0U <= 9U)
 
 
 /// The userdata struct for T.Pack/T.Pack.Struct/T.Pack.Array/T.Pack.Sequence

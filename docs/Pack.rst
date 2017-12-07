@@ -6,10 +6,10 @@ Overview
 ========
 
 A Bit and Byte packer using the same kind of formatting string as Lua 5.3
-``string.pack( )`` and ``string.unpack( )`` with two notable exceptions::
+``string.pack( )`` and ``string.unpack( )`` with two notable exceptions:
 
-   # it does not deal with alignment or variable length strings
-   # it can pack and unpack Bit wide resolution
+   #. it does not deal with alignment or variable length strings
+   #. it can pack and unpack Bit wide resolution
 
 ``Pack`` preferably works on ``Buffer`` objects, because they are mutable.
 This way it is possible to overwrite only parts of a buffer if only selected
@@ -52,7 +52,7 @@ sequence
   Multiple values that are packed in order defined by the format string.
 
 array
-  A collection of *n* packers of the same type.
+  A collection of ``n`` packers of the same type.
 
 struct
   An ordered collection of named packers.
@@ -95,24 +95,24 @@ atomic
 
   .. code:: lua
 
-  Pack = require't.Pack'
-  p1, p2, p3 = Pack'R4', Pack'v', Pack'R4'
-  print(p1,p2,p3)
-  -- Note that p1 and p3 have the same address
-  -- t.Pack.UBit4:0: 0x55814d1601a8  t.Pack.Bool: 0x55814d1afeb8     t.Pack.UBit4:0: 0x55814d1601a8
-  print( Pack[ 'UBit4' ])
-  -- t.Pack.UBit4:0: 0x55814d1601a8
-  -- caching happens by adding a
-  -- reference to the internal library table
+   Pack = require't.Pack'
+   p1, p2, p3 = Pack'R4', Pack'v', Pack'R4'
+   print(p1,p2,p3)
+   -- Note that p1 and p3 have the same address
+   -- t.Pack.Int4ub: 0x55814d1601a8  t.Pack.Bool: 0x55814d1afeb8     t.Pack.Int4ub: 0x55814d1601a8
+   print( Pack[ 'Int4ub' ])
+   -- t.Pack.Int4ub: 0x55814d1601a8
+   -- caching happens by adding a
+   -- reference to the internal library table
 
 sequence
   The constructor takes a format string which defines a composition of
   multiple items.  eg. ``p = Pack( '>l', '<H', 'i6' )`` defines a sequence
   of 3 elements and is 16 bytes long on a 64 bit system::
 
-   - p[1]: atomic packer of type (Int8SB) 0  bytes offset (1st element)
-   - p[2]: atomic packer of type (Int2UL) 8  bytes offset (length of p[1]+p[2])
-   - p[3]: atomic packer of type (Int6SL) 10 bytes offset (length of p[1])
+   - p[1]: atomic packer of type (Int8sb) 0  bytes offset (1st element)
+   - p[2]: atomic packer of type (Int2ul) 8  bytes offset (length of p[1]+p[2])
+   - p[3]: atomic packer of type (Int6sl) 10 bytes offset (length of p[1])
 
   As a convienience a packer sequence can be created providing just one
   single concatenated string to the constructor.  ``p = Pack( '>l<Hi6' )``
@@ -135,7 +135,7 @@ sequence
    print( p3[1], p3[2] )        -- 1. Sequence 2. Atomic
    -- t.Pack.Field[0](Sequence[2]): 0x55c95e8b6748    t.Pack.Field[10](UInt2L): 0x55c95e8b6788
    print( p3[1][1], p3[1][2] )  -- within the Sequence are two Atomic
-   -- t.Pack.Field[0](Int8B): 0x55c95e8b6d88 t.Pack.Field[8](UInt2L): 0x55c95e8b6e08
+   -- t.Pack.Field[0](Int8sb): 0x55c95e8b6d88 t.Pack.Field[8](Int2ul): 0x55c95e8b6e08
 
 array
   The constructor takes a format string which defines a packer (atomic OR
@@ -152,8 +152,8 @@ struct
   multiple items. eg. ``p = Pack( '>l<H' )`` defines a sequence of 2
   elements and is 10 bytes long on a 64 bit system::
 
-   - p[1]: is an atomic packer of type (Int8B) with a  0 bytes offset
-   - p[2]: is an atomic packer of type (int2L) with an 8 bytes offset
+   - p[1]: is an atomic packer of type (Int8sb) with a  0 bytes offset
+   - p[2]: is an atomic packer of type (Int2sl) with an 8 bytes offset
 
 reuse of packers
   Any previously defined packer can be used in place of a format string to

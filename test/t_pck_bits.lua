@@ -75,6 +75,7 @@ local tests = {
 		local s,n = char( 0x00, 0xFF, 0x00 ), NB
 		local x,r = math.tointeger(2^n)-1, 0
 		for i = 0,n do
+			local f = format( "r%dR%d", n+i, n )
 			local p = Pack( format( "r%dR%d", n+i, n ) )
 			local a,b,r = p[1](s), p[2](s), math.tointeger(2^i)-1
 			T.assert( a == r,   "Expected %d; got %d", r  , a )

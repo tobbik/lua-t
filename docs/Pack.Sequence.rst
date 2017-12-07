@@ -21,7 +21,7 @@ Class Metamembers (related to Pack.Sequence)
 
   .. code:: lua
 
-    -- Sequence of UInt5L, Int2B, Int1, int2B, Uint1
+    -- Sequence of Int5ul, Int2sb, Int1sb, Int2sb, Int1ub
     p = Pack("<I5>i2bhB")
 
 ``Pack.Sequence p = Pack( pck1, pck2, pck3, ...)       [__call]``

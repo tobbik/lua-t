@@ -145,7 +145,7 @@ local tests = {
 
 	test_MultiBitStruct = function( self )
 		Test.Case.describe( "Struct of bit Packer" )
-		local t = {}
+		local t = { }
 		for i=1,31 do table.insert( t, { ['foo'..i] = 'r'..i } ) end
 		local p = Pack( table.unpack( t ) )
 		T.assert( 31 == #p, "Packer length was %d, expected %d", #p, 31 )
@@ -160,14 +160,22 @@ local tests = {
 		end
 	end,
 
-	test_UnalignedBytesFailToRead = function( self )
-		Test.Case.describe( "Bytes after Bits fail if not starting at byte border" )
-		local p1,p2,p3 = Pack("r3I2"), Pack("r5d"), Pack("r7c20")
-		local s        = char(0xFF,0x01)
-		local f        = function(p,b) local x = p(b) end
-		T.assert( not pcall( f, p1, s ), "Expected to fail to read Packer %s", p1 )
-		T.assert( not pcall( f, p2, s ), "Expected to fail to read Packer %s", p1 )
-		T.assert( not pcall( f, p3, s ), "Expected to fail to read Packer %s", p1 )
+	test_CanReadUnalignedIntegers = function( self )
+		Test.Case.describe( "Read bytes after Bits not aligned at byte border" )
+		local p = Pack( "r3HR5" )
+		local s = char(0xFF,0xFF,0xFF,0xFF)
+		local t = p(s)
+		T.assert( -1     == t[1], "Expected %d; got %d",     -1, t[1] )
+		T.assert( 2^16-1 == t[2], "Expected %d; got %d", 2^15-1, t[2] )
+		T.assert( 2^5-1  == t[3], "Expected %d; got %d", 2^5 -1, t[3] )
+	end,
+
+	test_ReadUnalignedFloatFail = function( self )
+		Test.Case.describe( "Floats after Bits fail if not starting at byte border" )
+		local p = Pack("r3fr5")
+		local s = char(0xFF,0x01,0x01,0x01,0x01,0xFF)
+		local f = function(p,b) local x = p(b) end
+		T.assert( not pcall( f, p1, s ), "Expected to fail to read Packer %s", p )
 	end,
 
 }

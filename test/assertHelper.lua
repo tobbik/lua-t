@@ -22,9 +22,8 @@ return {
 		end
 	end,
 
-	Packer = function( pck, typ, sizByte, sizBit, x )
-		local ext      = ('number' == type(x) ) and ':'..x or x
-		local expect   = 't.Pack.' .. typ .. (ext and ext or '')
+	Packer = function( pck, typ, sizByte, sizBit )
+		local expect   = 't.Pack.' .. typ
 		local pck_name = tostring( pck ):match( '(.*):' )
 		--print( 'PCK_NAME:', expect, pck_name )
 		t_assert( expect == pck_name,

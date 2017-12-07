@@ -23,11 +23,11 @@ local tests = {
 		Test.Case.describe( "Sized Integer Packers    'i1..n', 'I1..n'" )
 		local byteSize = (math.tointeger( math.log( math.maxinteger, 2 ) ) + 1) // NB
 		for i=1,byteSize do
-			for k,v in pairs( { B='>', L='<' } ) do
-				local pi = Pack( v .. 'i' .. i )
+			for k,v in pairs( { b='>', l='<' } ) do
+				local ps = Pack( v .. 'i' .. i )
 				local pu = Pack( v .. 'I' .. i )
-				pAssert( pi,  'Int'..i,  i, i*NB, k )
-				pAssert( pu,  'UInt'..i, i, i*NB, k )
+				pAssert( ps,  'Int'..i*NB..'s'..k,  i, i*NB )
+				pAssert( pu,  'Int'..i*NB..'u'..k,  i, i*NB )
 			end
 		end
 	end,
@@ -35,13 +35,13 @@ local tests = {
 	test_FloatPacker = function( self )
 		Test.Case.describe( "Float Packers            'f', 'd', 'n'" )
 		local byteSize = (math.tointeger( math.log( math.maxinteger, 2 ) ) + 1) // NB
-		for k,v in pairs( { B='>', L='<' } ) do
+		for k,v in pairs( { b='>', l='<' } ) do
 			local pfl = Pack( v..'f' )
 			local pdb = Pack( v..'d' )
 			local pln = Pack( v..'n' )
-			pAssert( pfl, 'Float4', 4, 4*NB, k )
-			pAssert( pdb, 'Float8', 8, 8*NB, k )
-			pAssert( pln, 'Float'..byteSize, byteSize, byteSize*NB, k )
+			pAssert( pfl, 'Float4'.. k, 4, 4*NB, k )
+			pAssert( pdb, 'Float8'.. k, 8, 8*NB, k )
+			pAssert( pln, 'Float'..byteSize..k, byteSize, byteSize*NB, k )
 		end
 	end,
 
@@ -49,12 +49,12 @@ local tests = {
 		Test.Case.describe( "Standard Integer Packers 'bB','hH','iI','lL','jJ','T'" )
 		local sizeFormat = { b=1, B=1, h=2, H=2, i=4, I=4, l=8, L=8,
 		                     j=Pack.numsize, J=Pack.numsize,
-		                     T=self.numsize }
+		                     T=Pack.numsize }
 		for f,s in pairs( sizeFormat ) do
-			for e,x in pairs( { B='>', L='<' } ) do
+			for e,x in pairs( { b='>', l='<' } ) do
 				local pi = Pack( x ..''.. f )
-				local fmtString = string.upper( f ) == f and 'UInt' or 'Int'
-				pAssert( pi, fmtString..s, s, s*NB, e )
+				local signed = string.upper( f ) == f and 'u' or 's'
+				pAssert( pi, 'Int'..s*NB..signed..e, s, s*NB, e )
 			end
 		end
 	end,
@@ -65,8 +65,8 @@ local tests = {
 		for i=1,mxBit do
 			local ps = Pack( 'r' .. i )
 			local pu = Pack( 'R' .. i )
-			pAssert( ps,  'SBit'..i, i//NB, i, 0 )
-			pAssert( pu,  'UBit'..i, i//NB, i, 0 )
+			pAssert( ps,  'Int'..i..'sb', i//NB, i, 0 )
+			pAssert( pu,  'Int'..i..'ub', i//NB, i, 0 )
 		end
 	end,
 
@@ -75,8 +75,8 @@ local tests = {
 		local ps = Pack( 'r' )
 		local pu = Pack( 'R' )
 		local pb = Pack( 'v' )
-		pAssert( ps,  'SBit1', 0, 1, 0 )
-		pAssert( pu,  'UBit1', 0, 1, 0 )
+		pAssert( ps,  'Int1sb', 0, 1, 0 )
+		pAssert( pu,  'Int1ub', 0, 1, 0 )
 		pAssert( pb,  'Bool' , 0, 1 )
 	end,
 
