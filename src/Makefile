@@ -14,7 +14,7 @@ LDFLAGS:=$(LDFLAGS) -lcrypt
 CC=clang
 LD=clang
 #CFLAGS:= -Wall -Wextra -pedantic -O0 -std=c99 -fpic $(MYCFLAGS)
-CFLAGS:= -Wall -Wextra -std=c99 -fpic $(MYCFLAGS)
+CFLAGS:= -Wall -Wextra -Werror -std=c99 -fpic $(MYCFLAGS)
 LDLIBS:= -llua -lm
 INSTALL_CMOD=$(PREFIX)/lib/lua/$(LVER)/t
 

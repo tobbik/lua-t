@@ -25,6 +25,12 @@
 #define P_AEL_EPL_SLOTSZ 1024 // how many events can be returned for ONE call to epoll_wait()
                               // NOT how many fd can be observed, which is limited by ulimit!
 
+static const char* t_ael_msk_lst[ ] = {
+	  "NONE"
+	, "READ"
+	, "WRITE"
+	, "READWRITE"
+};
 
 struct p_ael_ste {
 	int                 epfd;

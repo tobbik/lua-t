@@ -95,6 +95,7 @@ t_htp_req_identifyHeader( lua_State *L, const char *k, const char *c,
 			}
 			if (29==l) { lua_pushstring( L, "Access-Control-Request-Method" );  break; }
 			if (30==l) { lua_pushstring( L, "Access-Control-Request-Headers" ); break; }
+			break;
 		case 'c':
 			if (6 ==l) {     lua_pushstring( L, "Cookie" );                     break; }
 			if (10==l)
@@ -139,6 +140,7 @@ t_htp_req_identifyHeader( lua_State *L, const char *k, const char *c,
 				lua_pushstring( L, "Content-Length" );
 				break;
 			}
+			break;
 		case 'd':
 			                 lua_pushstring( L, "Date" );                       break;
 		case 'e':
@@ -146,6 +148,7 @@ t_htp_req_identifyHeader( lua_State *L, const char *k, const char *c,
 		case 'f':
 			if (4 ==l) {     lua_pushstring( L, "From" );                       break; }
 			if (9 ==l) {     lua_pushstring( L, "Forwarded" );                  break; }
+			break;
 		case 'h':
 			                 lua_pushstring( L, "Host" );                       break;
 		case 'i':
@@ -157,6 +160,7 @@ t_htp_req_identifyHeader( lua_State *L, const char *k, const char *c,
 			if (13==l) {     lua_pushstring( L, "If-None-Match" );              break; }
 			if (17==l) {     lua_pushstring( L, "If-Modified-Since" );          break; }
 			if (19==l) {     lua_pushstring( L, "If-Unmodified-Since" );        break; }
+			break;
 		case 'm':
 			                 lua_pushstring( L, "Max-Forwards" );               break;
 		case 'o':
@@ -164,14 +168,17 @@ t_htp_req_identifyHeader( lua_State *L, const char *k, const char *c,
 		case 'p':
 			if (6 ==l) {     lua_pushstring( L, "Pragma" );                     break; }
 			if (19==l) {     lua_pushstring( L, "Proxy-Authorization" );        break; }
+			break;
 		case 'r':
 			if (5 ==l) {     lua_pushstring( L, "Range" );                      break; }
 			if (7 ==l) {     lua_pushstring( L, "Referer" );                    break; }
+			break;
 		case 't':
 			                 lua_pushstring( L, "TE" );                         break;
 		case 'u':
 			if (7 ==l) {     lua_pushstring( L, "Upgrade" );                    break; }
 			if (10==l) {     lua_pushstring( L, "User-Agent" );                 break; }
+			break;
 		case 'v':
 			                 lua_pushstring( L, "Via" );                        break;
 		case 'w':
@@ -220,6 +227,7 @@ t_htp_req_parseMethod( lua_State *L, const char **data, const char *end )
 				if ('N'==*(r+2)) { m = T_HTP_MTH_CONNECT    ;  n=7;  break; }
 				if ('E'==*(r+2)) { m = T_HTP_MTH_CHECKOUT   ;  n=8;  break; }
 				if ('P'==*(r+2)) { m = T_HTP_MTH_COPY       ;  n=4;  break; }
+				break;
 			case 'D':             m = T_HTP_MTH_DELETE     ;  n=6;  break;
 			case 'G':             m = T_HTP_MTH_GET        ;  n=3;  break;
 			case 'H':             m = T_HTP_MTH_HEAD       ;  n=4;  break;
@@ -231,6 +239,7 @@ t_htp_req_parseMethod( lua_State *L, const char **data, const char *end )
 				if ('-'==*(r+1)) { m = T_HTP_MTH_MSEARCH    ;  n=8;  break; }
 				if ('E'==*(r+1)) { m = T_HTP_MTH_MERGE      ;  n=5;  break; }
 				if ('O'==*(r+1)) { m = T_HTP_MTH_MOVE       ;  n=4;  break; }
+				break;
 			case 'N':             m = T_HTP_MTH_NOTIFY     ;  n=6;  break;
 			case 'O':             m = T_HTP_MTH_OPTIONS    ;  n=7;  break;
 			case 'P':
@@ -240,14 +249,17 @@ t_htp_req_parseMethod( lua_State *L, const char **data, const char *end )
 				if ('R'==*(r+2)) { m = T_HTP_MTH_PURGE      ;  n=5;  break; }
 				if ('F'==*(r+4)) { m = T_HTP_MTH_PROPFIND   ;  n=8;  break; }
 				if ('P'==*(r+4)) { m = T_HTP_MTH_PROPPATCH  ;  n=9;  break; }
+				break;
 			case 'R':             m = T_HTP_MTH_REPORT     ;  n=6;  break;
 			case 'S':
 				if ('U'==*(r+1)) { m = T_HTP_MTH_SUBSCRIBE  ;  n=9;  break; }
 				if ('E'==*(r+1)) { m = T_HTP_MTH_SEARCH     ;  n=6;  break; }
+				break;
 			case 'T':             m = T_HTP_MTH_TRACE      ;  n=5;  break;
 			case 'U':
 				if ('L'==*(r+2)) { m = T_HTP_MTH_UNLOCK     ;  n=6;  break; }
 				if ('L'==*(r+2)) { m = T_HTP_MTH_UNSUBSCRIBE;  n=11; break; }
+				break;
 			default:
 				luaL_error( L, "Illegal HTTP header: Unknown HTTP Method" );
 				break;
@@ -475,18 +487,22 @@ lt_htp_req_parse( lua_State *L )
 			//printf( "Parsing METHOD\n" );
 			if (0 == t_htp_req_parseMethod( L, tail, end ))
 				break;
+			/* FALLTHRU */
 		case T_HTP_REQ_URI:
 			//printf( "Parsing URL\n" );
 			if (0 == t_htp_req_parseUrl( L, tail, end ))
 				break;
+			/* FALLTHRU */
 		case T_HTP_REQ_VERSION:
 			//printf( "Parsing VERSION\n" );
 			if (0 == t_htp_req_parseHttpVersion( L, tail, end ))
 				break;
+			/* FALLTHRU */
 		case T_HTP_REQ_HEADERS:
 			//printf( "Parsing HEADERS\n" );
 			if (0 == t_htp_req_parseHeaders( L, tail, end ))
 				break;
+			/* FALLTHRU */
 		default:
 			break;
 	}

@@ -102,7 +102,7 @@ tests = {
 	end,
 
 	test_ConstructorTooShortPartialFromSegmentFails = function( self )
-		Test.Case.describe( "Buffer( #buffer-5, buffer ) shall fail" )
+		Test.Case.describe( "Buffer( #buffer-5, buffer:Segment() ) shall fail" )
 		local errMsg = "size must be at least as big as source to copy from"
 		local s      = self.b:Segment( math.floor( #self.b/2 ) )
 		local f      = function( x ) local b = Buffer( #x-5, x ) end

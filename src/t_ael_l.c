@@ -238,8 +238,8 @@ t_ael_executehandle( lua_State *L, struct t_ael_dnd *dnd, enum t_ael_msk msk )
 void
 t_ael_processTimers( lua_State *L, struct t_ael_tnd **tmHead, struct timeval *rt )
 {
-	struct t_ael_tnd *tmRun = *tmHead;   ///< timer to execute is tHead, ALWAYS
-	struct t_ael_tnd *tmExc;
+	struct t_ael_tnd *tmRun = *tmHead;   ///< timer to execute is tHead, ALWAYS!
+	struct t_ael_tnd __attribute__ ((unused)) *tmExc;
 
 	t_ael_adjustTimers( tmHead, rt );
 
@@ -265,7 +265,7 @@ t_ael_processTimers( lua_State *L, struct t_ael_tnd **tmHead, struct timeval *rt
  * --------------------------------------------------------------------------*/
 static int lt_ael__Call( lua_State *L )
 {
-	struct t_ael *ael;
+	struct t_ael __attribute__ ((unused)) *ael;
 	lua_remove( L, 1 );   // remove CLASS table
 
 	ael = t_ael_create_ud( L );

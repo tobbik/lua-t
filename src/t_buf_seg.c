@@ -35,7 +35,7 @@ lt_buf_seg__Call( lua_State *L )
 {
 	struct t_buf     *buf = t_buf_check_ud( L, 2, 1 );
 	int               idx = luaL_optinteger( L, 3, 1 );
-	int               len = luaL_optinteger( L, 4, buf->len - idx + 1 );
+	int               len = luaL_optinteger( L, 4, (int) buf->len - idx + 1 );
 
 	lua_remove( L, 1 );               // remove class table
 	while (lua_isinteger( L, -1 ))
@@ -46,22 +46,22 @@ lt_buf_seg__Call( lua_State *L )
 
 
 /**--------------------------------------------------------------------------
- * Create a T.Buffer.Segment and push to LuaStack.
- * \param  L  Lua state.
+ * Adjusts T.Buffer.Segment internal values.
+ * \param  *L  Lua state.
  *
  * \return struct t_buf_seg*  pointer to the  t_buf_seg struct
  * --------------------------------------------------------------------------*/
 static void
-t_buf_seg_set( lua_State *L, struct t_buf_seg *seg, struct t_buf *buf, size_t idx, size_t len )
+t_buf_seg_set( lua_State *L, struct t_buf_seg *seg, struct t_buf *buf, int idx, int len )
 {
-	//printf( "%ld    %ld    %ld\n", idx, len, buf->len );
+	//printf( "%d    %d    %ld\n", idx, len, buf->len );
 	luaL_argcheck( L, 1 <= idx && (size_t) (idx) <= buf->len+1, 1,
 	   "Offset relative to length of "T_BUF_TYPE" out of bound" );
-	luaL_argcheck( L, 0 <= len && (size_t) (idx+len-1) <= buf->len, 2,
+	luaL_argcheck( L, len >= 0 && (size_t) (idx+len-1) <= buf->len, 2,
 	   T_BUF_SEG_TYPE" length out of bound" );
 
-	seg->len = len;
-	seg->idx = idx;
+	seg->len = (size_t) len;
+	seg->idx = (size_t) idx;
 	seg->b   = &(buf->b[ idx-1 ]);
 }
 
@@ -73,7 +73,7 @@ t_buf_seg_set( lua_State *L, struct t_buf_seg *seg, struct t_buf *buf, size_t id
  * \return struct t_buf_seg*  pointer to the  t_buf_seg struct
  * --------------------------------------------------------------------------*/
 struct t_buf_seg
-*t_buf_seg_create_ud( lua_State *L, struct t_buf *buf, size_t idx, size_t len )
+*t_buf_seg_create_ud( lua_State *L, struct t_buf *buf, int idx, int len )
 {
 	struct t_buf_seg  *seg;
 
@@ -118,11 +118,11 @@ lt_buf_seg_clear( lua_State *L )
 static int
 lt_buf_seg_shift( lua_State *L )
 {
-	struct t_buf_seg *seg   = t_buf_seg_check_ud( L, 1, 1 );
+	struct t_buf_seg *seg  = t_buf_seg_check_ud( L, 1, 1 );
 	struct t_buf     *buf;
 	lua_rawgeti( L, LUA_REGISTRYINDEX, seg->bR );
 	buf = t_buf_check_ud( L, -1, 1 );
-	t_buf_seg_set( L, seg, buf, seg->idx + luaL_checkinteger( L, 2 ), seg->len );
+	t_buf_seg_set( L, seg, buf, (int) seg->idx + luaL_checkinteger( L, 2 ), (int) seg->len );
 	return 0;
 }
 
@@ -290,7 +290,7 @@ lt_buf_seg__newindex( lua_State *L )
 		idx = lua_tointeger( L, 2 );
 		luaL_argcheck( L, idx >  0 && idx <= (int) seg->len, 2, "index out of bound" );
 		val = luaL_checkinteger( L, 3 );
-		luaL_argcheck( L, val >= 0 && idx <= 255, 3, "value out of range" );
+		luaL_argcheck( L, val >= 0 && idx <=            255, 3, "value out of range" );
 		seg->b[ idx ] = val;
 	}
 	else

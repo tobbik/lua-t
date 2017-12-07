@@ -20,6 +20,16 @@
 #include "t_dbg.h"
 #endif
 
+#if PRINT_DEBUGS == 1
+static const char* t_ael_msk_lst[ ] = {
+	  "NONE"
+	, "READ"
+	, "WRITE"
+	, "READWRITE"
+};
+#endif
+
+
 // implementation specific is that this is limited in size to FD_SETSIZE which
 // ususally is in the neighboorhood of 1024.  That keeps the size very
 // reasonable and makes it static. This way we never have to resize and that
@@ -79,8 +89,7 @@ p_ael_create_ud_impl( lua_State *L )
 void
 p_ael_free_impl( lua_State *L, int ref )
 {
-	UNUSED( L );
-	UNUSED( ref );
+	UNUSED( L, ref );
 }
 
 
