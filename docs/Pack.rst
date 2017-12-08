@@ -105,6 +105,10 @@ Struct
   Ordered sequence of Key/Value pairs where the values are ``t.Pack``
   instances.
 
+
+Pack() Constructor overload
+---------------------------
+
 What kind of a packer is created is controlled by the constructor.  The
 ``Pack( )`` constructor takes the following paramters and creates the
 following datatypes:
@@ -131,18 +135,6 @@ atomic
    print( Pack[ 'Int4ub' ] )
    -- t.Pack.Int4ub: 0x55814d1601a8
 
-sequence
-  The constructor takes a format string which defines a composition of
-  multiple items.  eg. ``p = Pack( '<l', '>H', 'i6' )`` defines a sequence
-  of 3 elements and is 16 bytes long on a 64 bit system::
-
-   - p[1]: atomic packer of type (Int8sl) 0  bytes offset (1st element)
-   - p[2]: atomic packer of type (Int2ub) 8  bytes offset (length of p[1])
-   - p[3]: atomic packer of type (Int6sl) 10 bytes offset (length of p[1]+p[2])
-
-  More details are in the `Pack.Sequence <Pack.Sequence.rst>`__
-  documentation.
-
 array
   The constructor takes a format string which defines a packer (atomic OR
   combinator) and a number defining how often it gets repeated.
@@ -154,6 +146,19 @@ array
    - p[2][1]: is an atomic packer of type (float) with a 10 bytes offset
 
   More details are in the `Pack.Array <Pack.Array.rst>`__ documentation.
+
+sequence
+  The constructor takes a format string which defines a composition of
+  multiple items.  eg. ``p = Pack( '<l', '>H', 'i6' )`` defines a sequence
+  of 3 elements and is 16 bytes long on a 64 bit system::
+
+   - p[1]: atomic packer of type (Int8sl) 0  bytes offset (1st element)
+   - p[2]: atomic packer of type (Int2ub) 8  bytes offset (length of p[1])
+   - p[3]: atomic packer of type (Int6sl) 10 bytes offset (length of p[1]+p[2])
+
+  ``Pack( '<l>H<i6' )`` also creates a sequence.  There are subtile
+  differences in the behaviour that re explained in the `Pack.Sequence
+  <Pack.Sequence.rst>`__ documentation.
 
 struct
   The constructor takes a format string which defines a composition of
@@ -171,7 +176,7 @@ reuse of packers
 
   .. code:: lua
 
-   p1 = Pack( 'f>I4' ) -- sequence of packers
+   p1 = Pack( 'f >I4' ) -- sequence of packers
    -- formulate as struct
    p2 = Pack(
       { floatie = p[ 1 ] },
@@ -200,7 +205,7 @@ Class Members
 ``string type, string subType= Pack.type( t.Pack p )``
   Returns ``string type`` such as ``Int, Float, Array, ...`` and the subType
   of a packer instance.  The ``string subType`` is composed of the type,
-  length and modifiers as explained in _`Pack Identification`.
+  length and modifiers as explained in `Pack Identification`_.
 
 
 Class Metamembers
@@ -210,32 +215,35 @@ Class Metamembers
   Creates ``Pack.* p`` from a single or multiple arguments. ``Pack()``
   reflects on the arguments to determine the type of Packer to be created.
   More details on the behaviourn can be found in the documentation for
-  ``Pack.Struct``, ``Pack.Array`` and ``Pack.Sequence``.
+  `Pack.Array <Pack.Array.rst>`__, `Pack.Sequence <Pack.Sequence.rst>`__ and
+  `Pack.Struct <Pack.Struct.rst>`__.  An overview is given in `Pack()
+  Constructor overload`_.
 
 ``Pack p = Pack( string fmt )       [__call]``
   Creates ``Pack.* p`` from a format string.  The following format strings
   are allowed::
 
-    - ``<``   : sets little endian
-    - ``>``   : sets big endian
-    - ``b``   : a signed byte (char)
-    - ``B``   : an unsigned byte (char)
-    - ``h``   : a signed short (native size)
-    - ``H``   : an unsigned short (native size)
-    - ``l``   : a signed long (native size)
-    - ``L``   : an unsigned long (native size)
-    - ``j``   : a lua_Integer
-    - ``J``   : a lua_Unsigned
-    - ``T``   : a size_t (native size)
-    - ``i[n]``: a signed int with n bytes (default is native size)
-    - ``I[n]``: an unsigned int with n bytes (default is native size)
-    - ``f``   : a float (native size)
-    - ``d``   : a double (native size)
-    - ``n``   : a lua_Number
-    - ``cn``  : a fixed-sized string with n bytes
-    - ``r[n]``: signed Integer, n bits wide
-    - ``R[n]``: unsigned Integer, n bits wide
-    - ``v``   : single bit, intepreted as Lua boolean -> 0=False, 1= True
+   - <   : sets little endian
+   - >   : sets big endian
+   - b   : a signed byte (char)
+   - B   : an unsigned byte (char)
+   - h   : a signed short (native size)
+   - H   : an unsigned short (native size)
+   - l   : a signed long (native size)
+   - L   : an unsigned long (native size)
+   - j   : a lua_Integer
+   - J   : a lua_Unsigned
+   - T   : a size_t (native size)
+   - i[n]: a signed int with n bytes (default is native size)
+   - I[n]: an unsigned int with n bytes (default is native size)
+   - f   : a float (native size)
+   - d   : a double (native size)
+   - n   : a lua_Number
+   - cn  : a fixed-sized string with n bytes
+   - r[n]: signed Integer, n bits wide
+   - R[n]: unsigned Integer, n bits wide
+   - v   : single bit, intepreted as Lua boolean -> 0=False, 1= True
+
 
 Instance Members
 ----------------

@@ -36,11 +36,11 @@ Class Metamembers (related to Pack.Sequence)
   a format string that defines multiple packers in a row.  This is a
   convienience constructor that does not require each and every element of
   the sequence to be provided explicitely.  Field definitions can be
-  separated by spaces to allow foreasier to read formatting.  Endianess
-  formatters ``<`` and ``>`` can be separated from the following field
-  definitions because they affect **all of** the following elements.
-  However, length definitions following a filed specifier cannot be
-  separated from the specifier by a space.
+  separated by spaces to allow for easier reading of the formatting string.
+  Endianess formatters ``<`` and ``>`` can be separated from the following
+  field definitions because they affect **all of** the following elements
+  within the same formatting string.  However, length definitions following
+  a field specifier cannot be separated from the specifier by a space.
 
   .. code:: lua
 
@@ -52,13 +52,13 @@ Class Metamembers (related to Pack.Sequence)
 Instance Members
 ----------------
 
-A ``Pack.Sequence`` has no instance members because access to the values is
+A ``Pack.Sequence`` has no instance members because access to its members is
 controlled via table syntax.  As such the following behaviour has the
 following effects:
 
 ``Pack.Field pf = Pack.Sequence p[ integer idx ]``
-  Returns ``Pack p`` wrapped in ``Pack.Field pf`` which contains the offset
-  information of p within the ``Pack.Sequence p``.
+  Returns ``Pack p_idx`` wrapped in ``Pack.Field pf`` which contains the offset
+  information of ``Pack p_idx`` within ``Pack.Sequence p``.
 
 
 Instance Metamembers
