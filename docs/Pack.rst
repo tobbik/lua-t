@@ -87,23 +87,24 @@ following datatypes:
 atomic
   The constructor takes a format string which defines a single atomic item.
   eg. ``p = Pack( '<I3' )`` defines a little endian unsigned integer of 3
-  bytes width (UInt3L).
+  bytes width (Int3ul).
 
   An interesting aspect about atomic packers is that they are perfectly
   immutable and therefore don't have to be recreated.  The library performs
-  some lazy caching in order to prevent the creation of unnecessary copies:
+  some **lazy** caching in order to prevent the creation of unnecessary
+  copies:
 
   .. code:: lua
 
    Pack = require't.Pack'
+   print( Pack[ 'Int4ub' ])
+   -- nil
    p1, p2, p3 = Pack'R4', Pack'v', Pack'R4'
    print(p1,p2,p3)
    -- Note that p1 and p3 have the same address
    -- t.Pack.Int4ub: 0x55814d1601a8  t.Pack.Bool: 0x55814d1afeb8     t.Pack.Int4ub: 0x55814d1601a8
    print( Pack[ 'Int4ub' ])
    -- t.Pack.Int4ub: 0x55814d1601a8
-   -- caching happens by adding a
-   -- reference to the internal library table
 
 sequence
   The constructor takes a format string which defines a composition of
@@ -114,28 +115,8 @@ sequence
    - p[2]: atomic packer of type (Int2ul) 8  bytes offset (length of p[1]+p[2])
    - p[3]: atomic packer of type (Int6sl) 10 bytes offset (length of p[1])
 
-  As a convienience a packer sequence can be created providing just one
-  single concatenated string to the constructor.  ``p = Pack( '>l<Hi6' )``
-  creates exactly the same sequence as the example above.  This convienience
-  creates a peculiar behaviour of the sequence constructor which is very
-  logical but may lead to some confusion.  As mentioned, while the call to
-  ``p1 = Pack( '>l<Hi6' )`` creates the same sequence as the call to ``p2 = 
-  Pack( '>l', '<H', 'i6' )`` the call to ``p3 = Pack( '>l<H', 'i6' )`` is
-  different!  It will create a sequence of 2 packers, the first being a
-  sequence of 2 atomic integer packers and the second being just a single
-  atomic integer packer:
-
-  .. code:: lua
-
-   p1, p2, p3 = Pack( '>l<Hi6' ), Pack( '>l', '<H', 'i6'  ), Pack( '>l<H', 'i6' )
-   print( p1, p2, p3 )
-   -- t.Pack.Sequence[3]: 0x55c95e8af958      t.Pack.Sequence[3]: 0x55c95e8aff38      t.Pack.Sequence[2]: 0x55c95e8b2e18
-   print( p1[1], p2[1] )
-   -- t.Pack.Field[0](Int8B): 0x5641245a24b8           t.Pack.Field[0](Int8B): 0x5641245a3848
-   print( p3[1], p3[2] )        -- 1. Sequence 2. Atomic
-   -- t.Pack.Field[0](Sequence[2]): 0x55c95e8b6748    t.Pack.Field[10](UInt2L): 0x55c95e8b6788
-   print( p3[1][1], p3[1][2] )  -- within the Sequence are two Atomic
-   -- t.Pack.Field[0](Int8sb): 0x55c95e8b6d88 t.Pack.Field[8](Int2ul): 0x55c95e8b6e08
+  More details are in the `Pack.Sequence <Pack.Sequence.rst>`__
+  documentation.
 
 array
   The constructor takes a format string which defines a packer (atomic OR
@@ -147,6 +128,8 @@ array
    - p[1]:    is a packer sequence
    - p[2][1]: is an atomic packer of type (float) with an 10 bytes offset
 
+  More details are in the `Pack.Array <Pack.Array.rst>`__ documentation.
+
 struct
   The constructor takes a format string which defines a composition of
   multiple items. eg. ``p = Pack( '>l<H' )`` defines a sequence of 2
@@ -154,6 +137,8 @@ struct
 
    - p[1]: is an atomic packer of type (Int8sb) with a  0 bytes offset
    - p[2]: is an atomic packer of type (Int2sl) with an 8 bytes offset
+
+  More details are in the `Pack.Struct <Pack.Struct.rst>`__ documentation.
 
 reuse of packers
   Any previously defined packer can be used in place of a format string to

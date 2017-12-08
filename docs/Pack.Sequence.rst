@@ -15,15 +15,6 @@ API
 Class Metamembers (related to Pack.Sequence)
 --------------------------------------------
 
-``Pack.Sequence p = Pack( string format )       [__call]``
-  Creates ``Pack.Sequence p`` from a single argument to ``Pack()`` which is
-  a format string that defines multiple packers in a row.
-
-  .. code:: lua
-
-    -- Sequence of Int5ul, Int2sb, Int1sb, Int2sb, Int1ub
-    p = Pack("<I5>i2bhB")
-
 ``Pack.Sequence p = Pack( pck1, pck2, pck3, ...)       [__call]``
   Creates ``Pack.Sequence p`` from multiple arguments to ``Pack()`` where each
   argument is either a ``t.Pack`` instance, a ''t.Pack.Field`` instance or a
@@ -31,10 +22,31 @@ Class Metamembers (related to Pack.Sequence)
 
   .. code:: lua
 
-    p1 = Pack("<I5")
-    p2 = Pack("<I2>i2")
+    p1 = Pack( "<I5" )
+    p2 = Pack( "<I2 >i2" )
 
     s = Pack( p1, 'B', p2[2] )
+
+  Endianess setters effect only the element they are specified for and have
+  to be specified for each field.  Otherwise the default endianess will be
+  used.
+
+``Pack.Sequence p = Pack( string format )       [__call]``
+  Creates ``Pack.Sequence p`` from a single argument to ``Pack()`` which is
+  a format string that defines multiple packers in a row.  This is a
+  convienience constructor that does not require each and every element of
+  the sequence to be provided explicitely.  Field definitions can be
+  separated by spaces to allow foreasier to read formatting.  Endianess
+  formatters ``<`` and ``>`` can be separated from the following field
+  definitions because they affect **all of** the following elements.
+  However, length definitions following a filed specifier cannot be
+  separated from the specifier by a space.
+
+  .. code:: lua
+
+    -- Sequence of Int5ul, Int2sb, Int1sb, Int2sb, Int1ub
+    p1 = Pack("<I5>i2bhB")
+    p2 = Pack("<I5 >i2 b h B")  -- same but more readable
 
 
 Instance Members

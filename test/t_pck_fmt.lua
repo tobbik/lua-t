@@ -11,7 +11,6 @@
 local T       = require( "t" )
 local Test    = require( "t.Test" )
 local Pack    = require( "t.Pack" )
-local pAssert = T.require'assertHelper'.Packer
 
 local NB      = Pack.charbits
 
@@ -26,8 +25,8 @@ local tests = {
 			for k,v in pairs( { b='>', l='<' } ) do
 				local ps = Pack( v .. 'i' .. i )
 				local pu = Pack( v .. 'I' .. i )
-				pAssert( ps,  'Int'..i*NB..'s'..k,  i, i*NB )
-				pAssert( pu,  'Int'..i*NB..'u'..k,  i, i*NB )
+				T.assert( ps,  'Int'..i*NB..'s'..k,  i, i*NB )
+				T.assert( pu,  'Int'..i*NB..'u'..k,  i, i*NB )
 			end
 		end
 	end,
@@ -39,9 +38,9 @@ local tests = {
 			local pfl = Pack( v..'f' )
 			local pdb = Pack( v..'d' )
 			local pln = Pack( v..'n' )
-			pAssert( pfl, 'Float4'.. k, 4, 4*NB, k )
-			pAssert( pdb, 'Float8'.. k, 8, 8*NB, k )
-			pAssert( pln, 'Float'..byteSize..k, byteSize, byteSize*NB, k )
+			T.assert( pfl, 'Float4'.. k, 4, 4*NB, k )
+			T.assert( pdb, 'Float8'.. k, 8, 8*NB, k )
+			T.assert( pln, 'Float'..byteSize..k, byteSize, byteSize*NB, k )
 		end
 	end,
 
@@ -54,8 +53,23 @@ local tests = {
 			for e,x in pairs( { b='>', l='<' } ) do
 				local pi = Pack( x ..''.. f )
 				local signed = string.upper( f ) == f and 'u' or 's'
-				pAssert( pi, 'Int'..s*NB..signed..e, s, s*NB, e )
+				T.assert( pi, 'Int'..s*NB..signed..e, s, s*NB, e )
 			end
+		end
+	end,
+
+	test_SequenceConstructor = function( self )
+		Test.Case.describe( "Different Sequence Packers: P('b','B','h','H')  P('bBhH') P('b B h H')" )
+		local f  = { 'b','B','h','H','i','I' }
+		local p1 = Pack( table.unpack( f      ) )   --  Pack('b','B','h','H','i','I')
+		local p2 = Pack( table.concat( f, ''  ) )   --  Pack('bBhHiI')
+		local p3 = Pack( table.concat( f, ' ' ) )   --  Pack('b B h H i I')
+		for i,v in ipairs( p1 ) do
+			local _,t1 = Pack.type( p1[i] )
+			local _,t2 = Pack.type( p2[i] )
+			local _,t3 = Pack.type( p3[i] )
+			T.assert( t1  ==  t2,  'Sub-Type should be `%s` but was `%s`', t1, t2 )
+			T.assert( t1  ==  t3,  'Sub-Type should be `%s` but was `%s`', t1, t3 )
 		end
 	end,
 
@@ -65,8 +79,8 @@ local tests = {
 		for i=1,mxBit do
 			local ps = Pack( 'r' .. i )
 			local pu = Pack( 'R' .. i )
-			pAssert( ps,  'Int'..i..'sb', i//NB, i, 0 )
-			pAssert( pu,  'Int'..i..'ub', i//NB, i, 0 )
+			T.assert( ps,  'Int'..i..'sb', i//NB, i, 0 )
+			T.assert( pu,  'Int'..i..'ub', i//NB, i, 0 )
 		end
 	end,
 
@@ -75,16 +89,16 @@ local tests = {
 		local ps = Pack( 'r' )
 		local pu = Pack( 'R' )
 		local pb = Pack( 'v' )
-		pAssert( ps,  'Int1sb', 0, 1, 0 )
-		pAssert( pu,  'Int1ub', 0, 1, 0 )
-		pAssert( pb,  'Bool' , 0, 1 )
+		T.assert( ps,  'Int1sb', 0, 1, 0 )
+		T.assert( pu,  'Int1ub', 0, 1, 0 )
+		T.assert( pb,  'Bool' , 0, 1 )
 	end,
 
 	test_StringPacker = function( self )
 		Test.Case.describe( "Sized String Packers     'c1, ... ,cMax'" )
 		for i,n in pairs( {1,7,36,583,9523,12845,778293,1234567,87654321,918273645,1073741824} ) do
 			local pc = Pack( 'c' .. n )
-			pAssert( pc,  'Raw'..n, n, n*NB )
+			T.assert( pc,  'Raw'..n, n, n*NB )
 		end
 	end,
 

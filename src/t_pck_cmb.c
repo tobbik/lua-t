@@ -139,7 +139,7 @@ struct t_pck_fld
 {
 	struct t_pck_fld *pf;      ///< userdata for packer field
 
-	pf    = (struct t_pck_fld *) lua_newuserdata( L, sizeof( struct t_pck_fld ) );
+	pf     = (struct t_pck_fld *) lua_newuserdata( L, sizeof( struct t_pck_fld ) );
 	luaL_getmetatable( L, T_PCK_FLD_TYPE );
 	lua_setmetatable( L, -2 ) ;                //S:… tbl key Fld
 	pf->o  = ofs;

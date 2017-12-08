@@ -128,9 +128,13 @@ static struct t_pck
 			case 'R': p = C( INT,     0, 0, gnl( L, f, 1, MXBIT )/NB          ); break;
 
 			// modifier types
-			case '<': *e = 1; continue;                                           break;
-			case '>': *e = 0; continue;                                           break;
-			case '\0': return NULL;                                               break;
+			case '<': *e = 1;                                                 continue;
+			case '>': *e = 0;                                                 continue;
+
+			// allow spaces as meaningless separators
+			case ' ':                                                         continue;
+			// that's the end of it
+			case '\0':                                                     return NULL;
 			default:
 				luaL_error( L, "invalid format option '%c'", opt );
 				return NULL;
@@ -744,6 +748,7 @@ lt_pck_SetDefaultEndian( lua_State *L )
  * \param   L      Lua state.
  * \lparam  ud     T.Pack/T.Pack.Field userdata instance.
  * \lreturn string Name of pack type.
+ * \lreturn string Name of pack sub-type.
  * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int
@@ -751,7 +756,8 @@ lt_pck_Type( lua_State *L )
 {
 	struct t_pck *p = t_pck_fld_getPackFromStack( L, 1, NULL );
 	lua_pushfstring( L, "%s", t_pck_t_lst[ p->t ] );
-	return 1;
+	t_pck_format( L, p->t, p->s, p->m );
+	return 2;
 }
 
 
