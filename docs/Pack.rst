@@ -58,30 +58,55 @@ struct
   An ordered collection of named packers.
 
 
-Pack identification
----------------------
+Pack Identification
+-------------------
 
 ``Pack`` objects can identify themselves via a string.  The string is
 composed of different elements which vary slightly from type to type.  The
 general composition follows a simple schema:
 
-   Type Length Endianess
+   Type Length Modifiers
 
 Type can be any of the following:
 
-   - Int          (includes byte, short, long, LuaInteger)
-   - UInt         (includes unsigned byte, short, long, LuaInteger)
-   - Float        (includes double and LuaNumber)
-   - Boolean      single bit representing a flag
-   - BitSigned    Bitfield representing signed integer
-   - BitUnsigned  Bitfield representing unsigned integer
-   - Raw          string/utf8/binary
-   - Array        Array Combinator
-   - Sequence     Sequence Combinator
-   - Struct       Struct Combinator
+Int
+  Integer type; can be up to 64 bit wide, arbitrary bit size is allowed.
+  Can be signed or unsigned.  Types that align with byte borders can have
+  endianess assigned to them otherwise they default to network byte order
+  .aka big endian.  Examples:
+
+   - ``Int32ul``  Little endian unsigned integer; 4 byte wide
+   - ``Int15sb``  Big endian signed integer; 15 bit wide
+
+Float
+  Float type; can be 4 bytes or 8 bytes wide. aka Float or Double.  Floats
+  are always signed.  Endianess can be assigned.  Examples:
+
+   - ``Float32sl``  Little endian; 4 byte wide
+   - ``Float64sb``  Big endian; 8 byte wide
+
+Boolean
+  Boolean type; No variations. 1 bit wide.  The difference between this and
+  a 1 bit wide integer is the return value type when parsing.
+
+Raw
+  Raw or String type.  The only variation is the length.
+
+   - ``Raw14``   Blob or string of 14 bytes
+   - ``Raw512``  Blob or string of 512 bytes
+
+Array
+  Array of ``n`` ``t.Pack`` instances of the same type.
+
+Sequence
+  Sequence of multiple ``t.Pack`` instances.
+
+Struct
+  Ordered sequence of Key/Value pairs where the values are ``t.Pack``
+  instances.
 
 What kind of a packer is created is controlled by the constructor.  The
-``Pack()`` constructor takes the following paramters and creates the
+``Pack( )`` constructor takes the following paramters and creates the
 following datatypes:
 
 atomic
@@ -97,23 +122,23 @@ atomic
   .. code:: lua
 
    Pack = require't.Pack'
-   print( Pack[ 'Int4ub' ])
+   print( Pack[ 'Int4ub' ] )
    -- nil
    p1, p2, p3 = Pack'R4', Pack'v', Pack'R4'
    print(p1,p2,p3)
    -- Note that p1 and p3 have the same address
    -- t.Pack.Int4ub: 0x55814d1601a8  t.Pack.Bool: 0x55814d1afeb8     t.Pack.Int4ub: 0x55814d1601a8
-   print( Pack[ 'Int4ub' ])
+   print( Pack[ 'Int4ub' ] )
    -- t.Pack.Int4ub: 0x55814d1601a8
 
 sequence
   The constructor takes a format string which defines a composition of
-  multiple items.  eg. ``p = Pack( '>l', '<H', 'i6' )`` defines a sequence
+  multiple items.  eg. ``p = Pack( '<l', '>H', 'i6' )`` defines a sequence
   of 3 elements and is 16 bytes long on a 64 bit system::
 
-   - p[1]: atomic packer of type (Int8sb) 0  bytes offset (1st element)
-   - p[2]: atomic packer of type (Int2ul) 8  bytes offset (length of p[1]+p[2])
-   - p[3]: atomic packer of type (Int6sl) 10 bytes offset (length of p[1])
+   - p[1]: atomic packer of type (Int8sl) 0  bytes offset (1st element)
+   - p[2]: atomic packer of type (Int2ub) 8  bytes offset (length of p[1])
+   - p[3]: atomic packer of type (Int6sl) 10 bytes offset (length of p[1]+p[2])
 
   More details are in the `Pack.Sequence <Pack.Sequence.rst>`__
   documentation.
@@ -126,7 +151,7 @@ array
   bytes::
 
    - p[1]:    is a packer sequence
-   - p[2][1]: is an atomic packer of type (float) with an 10 bytes offset
+   - p[2][1]: is an atomic packer of type (float) with a 10 bytes offset
 
   More details are in the `Pack.Array <Pack.Array.rst>`__ documentation.
 
@@ -171,6 +196,11 @@ Class Members
   type Packers the byte value is truncated to the next full byte value.  The
   function can be used on the combinators ``Pack.Field`` instances only and
   does not apply to atomic ``Pack`` types.
+
+``string type, string subType= Pack.type( t.Pack p )``
+  Returns ``string type`` such as ``Int, Float, Array, ...`` and the subType
+  of a packer instance.  The ``string subType`` is composed of the type,
+  length and modifiers as explained in _`Pack Identification`.
 
 
 Class Metamembers

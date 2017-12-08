@@ -979,10 +979,10 @@ static const struct luaL_Reg t_pck_fm [] = {
  * Objects metamethods library definition
  * --------------------------------------------------------------------------*/
 static const struct luaL_Reg t_pck_cf [] = {
-	  { "getSize"        , lt_pck_GetSize }
-	, { "setEndian"      , lt_pck_SetDefaultEndian }
+	  { "size"           , lt_pck_GetSize }
+	, { "defaultEndian"  , lt_pck_SetDefaultEndian }
 	, { "type"           , lt_pck_Type }
-	, { "getOffset"      , lt_pck_fld_GetOffset }
+	, { "offset"         , lt_pck_fld_GetOffset }
 	, { NULL             , NULL }
 };
 

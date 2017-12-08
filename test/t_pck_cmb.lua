@@ -27,8 +27,8 @@ local tests = {
 		T.assert( 8 == #p, "Packer length was %d, expected %d", #p, 8 )
 		for i=1,#p do
 			local byOff, biOff = (i-1)*5, (i-1)*5*NB --expected accumulated byte/bit offset
-			local sby,sbi =  Pack.getSize( p[i] )
-			local oby,obi =  Pack.getOffset( p[i] )
+			local sby,sbi =  Pack.size( p[i] )
+			local oby,obi =  Pack.offset( p[i] )
 			T.assert( sby == 5,     "Int Packer Byte size was %d; expected: %d", sby, 5 )
 			T.assert( sbi == 5*NB,  "Int Packer Bits size was %d; expected: %d", sbi, 5*NB )
 			T.assert( oby == byOff, "Int Packer Byte offset was %d; expected: %d", oby, byOff )
@@ -44,8 +44,8 @@ local tests = {
 			for x=0,1 do
 				local byOff, biOff = ((i-1)*i)+(x*i), (((i-1)*i)+(x*i)) * NB
 				local idx,siz = (i-1)*2 +x+1, i
-				local sby,sbi = Pack.getSize(   p[idx] )
-				local oby,obi = Pack.getOffset( p[idx] )
+				local sby,sbi = Pack.size(   p[idx] )
+				local oby,obi = Pack.offset( p[idx] )
 				T.assert( sby == siz,    "Int Packer Byte size was %d; expected: %d", sby, siz )
 				T.assert( sbi == siz*NB, "Int Packer Bits size was %d; expected: %d", sbi, siz*NB )
 				T.assert( oby == byOff,  "Int Packer Byte offset was %d; expected: %d", oby, byOff )
@@ -61,8 +61,8 @@ local tests = {
 		T.assert( n == #p, "Array Packer length was %d, expected %d", #p, n )
 		for i=1,#p do
 			local byOff, biOff = (i-1)*3, ((i-1)*3) * NB
-			local sby,sbi = Pack.getSize(   p[i] )
-			local oby,obi = Pack.getOffset( p[i] )
+			local sby,sbi = Pack.size(   p[i] )
+			local oby,obi = Pack.offset( p[i] )
 			T.assert( sby == s,      "Int Packer Byte size was %d; expected: %d", sby, s )
 			T.assert( sbi == s*NB,   "Int Packer Bits size was %d; expected: %d", sbi, s*NB )
 			T.assert( oby == byOff,  "Int Packer Byte offset was %d; expected: %d", oby, byOff )
@@ -82,8 +82,8 @@ local tests = {
 		for n=1,#p do
 			local sz      = math.ceil(n/2)   -- size in bytes
 			local cBy     = sz*(sz-1) + ((n-1)%2)*sz  -- expected accumulated byte Offset
-			local sby,sbi = Pack.getSize( p[n] )
-			local oby,obi = Pack.getOffset( p[n] )
+			local sby,sbi = Pack.size( p[n] )
+			local oby,obi = Pack.offset( p[n] )
 			T.assert( sby == sz,     "Int Packer Byte size was %d; expected: %d", sby, sz )
 			T.assert( sbi == sz*NB,  "Int Packer Bits size was %d; expected: %d", sbi, sz*NB )
 			T.assert( obi == cBy*NB, "Int Packer Bits offset was %d; expected: %d", obi, cBy*NB )
@@ -99,8 +99,8 @@ local tests = {
 			T.assert( 20*2 == #p, "Packer length was %d, expected %d", #p, 20*2 )
 			for i=1,#p do
 				local cBi     =  n*(i-1)  -- expected accumulated bitOffset
-				local sby,sbi =  Pack.getSize( p[i] )
-				local oby,obi =  Pack.getOffset( p[i] )
+				local sby,sbi =  Pack.size( p[i] )
+				local oby,obi =  Pack.offset( p[i] )
 				T.assert( sbi == n,       "Int Packer Bits size was %d; expected: %d", sbi, n )
 				T.assert( sby == n//NB,   "Int Packer Byte size was %d; expected: %d", sby, n//NB )
 				T.assert( obi == cBi,     "Int Packer Bits offset was %d; expected: %d", obi, cBi )
@@ -118,8 +118,8 @@ local tests = {
 		T.assert( 63 == #p, "Packer length was %d, expected %d", #p, 63 )
 		for n=1,#p do
 			local cBi     =  (n*(n+1))/2 - n  -- expected accumulated bitOffset
-			local sby,sbi =  Pack.getSize( p[n] )
-			local oby,obi =  Pack.getOffset( p[n] )
+			local sby,sbi =  Pack.size( p[n] )
+			local oby,obi =  Pack.offset( p[n] )
 			T.assert( sbi == n,       "Int Packer Bits size was %d; expected: %d", sbi, n )
 			T.assert( sby == n//NB,   "Int Packer Byte size was %d; expected: %d", sby, n//NB )
 			T.assert( obi == cBi,     "Int Packer Bits offset was %d; expected: %d", obi, cBi )
@@ -134,8 +134,8 @@ local tests = {
 		T.assert( n == #p, "Array Packer length was %d, expected %d", #p, n )
 		for i=1,#p do
 			local byOff, biOff = ((i-1)*s)//NB, (i-1)*s
-			local sby,sbi = Pack.getSize(   p[i] )
-			local oby,obi = Pack.getOffset( p[i] )
+			local sby,sbi = Pack.size(   p[i] )
+			local oby,obi = Pack.offset( p[i] )
 			T.assert( sby == s//NB,  "Int Packer Byte size was %d; expected: %d", sby, s//NB )
 			T.assert( sbi == s,      "Int Packer Bits size was %d; expected: %d", sbi, s )
 			T.assert( oby == byOff,  "Int Packer Byte offset was %d; expected: %d", oby, byOff )
@@ -151,8 +151,8 @@ local tests = {
 		T.assert( 31 == #p, "Packer length was %d, expected %d", #p, 31 )
 		for n=1,#p do
 			local cBi    =  (n*(n+1))/2 - n  -- expected accumulated bitOffset
-			local sby,sbi =  Pack.getSize( p[n] )
-			local oby,obi =  Pack.getOffset( p[n] )
+			local sby,sbi =  Pack.size( p[n] )
+			local oby,obi =  Pack.offset( p[n] )
 			T.assert( sbi == n,       "Int Packer Bits size was %d; expected: %d", sbi, n )
 			T.assert( sby == n//NB,   "Int Packer Byte size was %d; expected: %d", sby, n//NB )
 			T.assert( obi == cBi,     "Int Packer Bits offset was %d; expected: %d", obi, cBi )

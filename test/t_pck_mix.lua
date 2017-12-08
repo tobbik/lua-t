@@ -100,32 +100,32 @@ local tests = {
 	end,
 
 	test_getSize = function( self )
-		Test.Case.describe( "t.Pack.getSize() on various selected packers" )
-		local exp,sByte,sBit = 25, Pack.getSize( self.p )
+		Test.Case.describe( "t.Pack.size() on various selected packers" )
+		local exp,sByte,sBit = 25, Pack.size( self.p )
 		T.assert( exp     == sByte, "Expected %d; got %d bytes of length", exp, sByte )
 		T.assert( exp*NB  == sBit,  "Expected %d; got %d bits  of length", exp*NB, sBit )
-		exp,sByte,sBit = 7, Pack.getSize( self.p.bits )
+		exp,sByte,sBit = 7, Pack.size( self.p.bits )
 		T.assert( exp     == sByte, "Expected %d; got %d bytes of length", exp, sByte )
 		T.assert( exp*NB  == sBit,  "Expected %d; got %d bits  of length", exp*NB, sBit )
-		exp,sByte,sBit = 24, Pack.getSize( self.p.bits[3] ) -- this looks for the bits
+		exp,sByte,sBit = 24, Pack.size( self.p.bits[3] ) -- this looks for the bits
 		T.assert( sBit//8 == sByte, "Expected %d; got %d bytes of length", exp//8, sByte )
 		T.assert( exp     == sBit,  "Expected %d; got %d bits  of length", exp, sBit )
-		exp,sByte,sBit = 1, Pack.getSize( self.p.bytes.unsigned )
+		exp,sByte,sBit = 1, Pack.size( self.p.bytes.unsigned )
 		T.assert( exp     == sByte, "Expected %d; got %d bytes of length", exp, sByte )
 		T.assert( exp*NB  == sBit,  "Expected %d; got %d bits  of length", exp*NB, sBit )
 	end,
 
 	test_getOffset = function( self )
-		Test.Case.describe( "t.Pack.getOffset() on various selected packers" )
-		local exp,sByte,sBit = 19, Pack.getOffset( self.p.int4sl )
+		Test.Case.describe( "t.Pack.offset() on various selected packers" )
+		local exp,sByte,sBit = 19, Pack.offset( self.p.int4sl )
 		T.assert( exp     == sByte, "Expected %d; got %d bytes of offset", exp, sByte )
 		T.assert( exp*NB  == sBit,  "Expected %d; got %d bits  of offset", exp*NB, sBit )
 		-- this looks for bits (3+2+2)*charbits + 4 + 7 + 5*3
-		exp,sByte,sBit = 7*NB +4+7+ 5*3, Pack.getOffset( self.p.bits[3][6] )
+		exp,sByte,sBit = 7*NB +4+7+ 5*3, Pack.offset( self.p.bits[3][6] )
 		T.assert( exp     == sBit,  "Expected %d; got %d bits  of offset", exp, sBit )
 		T.assert( exp//NB == sByte, "Expected %d; got %d bytes of offset", exp//NB, sByte )
 		local pb = Pack( self.p.bits[3] )
-		exp,sByte,sBit = 4*3, Pack.getOffset( pb[5] )
+		exp,sByte,sBit = 4*3, Pack.offset( pb[5] )
 		T.assert( exp     == sBit,  "Expected %d; got %d bits  of offset", exp, sBit )
 		T.assert( exp//NB == sByte, "Expected %d; got %d bytes of offset", exp//NB, sByte )
 	end,
