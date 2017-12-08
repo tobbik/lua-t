@@ -88,21 +88,21 @@ struct t_pck {
 	enum  t_pck_t  t;          ///< type of packer
 
 	/// ////////////////////////// size of packer -> various meanings
-	///  -- int/uint float raw = number of bits, NOT bytes
-	///  -- bit bits nibble    = number of bits
-	///  -- Seq Struct Arr     = number of elements in Combinator
+	///  -- int float raw     = number of bits, NOT bytes
+	///  -- Seq Struct Arr    = number of elements in Combinator
 	size_t         s;          ///< size of packer
 
 	/// //////////////////////// modifier -> various meanings
-	///  -- int/uint, float    = Endian ( 0=Big, 1=Little )
-	///  -- bit                = Offset from beginning of byte ( bit numbering: MSB 0 )
-	///  -- raw                = ??? (unused)
-	///  -- Arr                = LUA_REGISTRYINDEX for packer
-	///  -- Seq                = LUA_REGISTRYINDEX for table
-	///        table[ i    ] = Pack.Field (has offset information)
-	///  -- Struct             = LUA_REGISTRYINDEX for table
-	///        table[ i    ] = name       -- schema of OrderedHashTable
-	///        table[ name ] = Pack.Field
+	///  -- int(flags)        = T_PCK_MOD_LITTLE, T_PCK_MOD_SIGNED
+	///  -- float(flags)      = T_PCK_MOD_LITTLE, T_PCK_MOD_SIGNED
+	///  -- bool              = NONE
+	///  -- raw               = NONE
+	///  -- Arr               = LUA_REGISTRYINDEX for packer
+	///  -- Seq               = LUA_REGISTRYINDEX for table
+	///        table[ i   ] = Pack.Field (has offset information)
+	///  -- Struct            = LUA_REGISTRYINDEX for table
+	///        table[ i   ] = name       -- schema of OrderedHashTable
+	///        table[ key ] = Pack.Field
 	int           m;          ///< modifier/reference of packer
 };
 

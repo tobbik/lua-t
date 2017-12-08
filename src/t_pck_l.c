@@ -68,7 +68,7 @@ gnl( lua_State *L, const char **fmt, int dft, size_t max )
 {
 	size_t sz = gn( fmt, dft );
 	if (sz > max || sz <= 0)
-		luaL_error( L, "size (%s) out of limits [1 .. %zu]", sz, max );
+		return (size_t) luaL_error( L, "size (%d) out of limits [1 … %d]", sz, max );
 	return sz * NB;
 }
 
@@ -367,7 +367,7 @@ t_pck_format( lua_State *L, enum t_pck_t t, size_t s, int m )
 			                 (T_PCK_ISLITTLE( m )) ? 'l' : 'b' );
 			break;
 		case T_PCK_FLT:
-			lua_pushfstring( L, "%d%c", s/NB,
+			lua_pushfstring( L, "%d%c", s,
 			                 (T_PCK_ISLITTLE( m )) ? 'l' : 'b' );
 			break;
 		case T_PCK_RAW:

@@ -11,6 +11,7 @@
 local T       = require( "t" )
 local Test    = require( "t.Test" )
 local Pack    = require( "t.Pack" )
+local fmt     = string.format
 
 local NB      = Pack.charbits
 
@@ -120,7 +121,20 @@ local tests = {
 			local s1,s3 = tostring(p1[i]):match("(.*):"), tostring(p3[i]):match("(.*):"), 
 			T.assert( s1 == s3, "Got Packer length: %s; expected:%s", s3, s1 )
 		end
-	end
+	end,
+
+	test_OutOfRangePackerSizeFails = function( self )
+		Test.Case.describe( "Pack( 'i17') " )
+		local m = 'size %%(%d%%) out of limits %%[1 … 8%%]'
+		local f = function( i ) return Pack('i'..i) end
+		local r,e = pcall( f, 0 )
+		T.assert( not r, "Creating 0 sized Packer should have failed" )
+		T.assert( e:match(fmt(m,0)), "Expected error message `%s`, got `%s`", fmt(m,0), e )
+		local r,e = pcall( f, 17 )
+		T.assert( not r, "Creating 0 sized Packer should have failed" )
+		T.assert( e:match(fmt(m,17)), "Expected error message `%s`, got `%s`", fmt(m,17), e )
+	end,
+
 }
 
 --t =  Test( tests )

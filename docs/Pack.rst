@@ -192,9 +192,13 @@ Class Members
 
 ``int bytes, int bits = Pack.size( t.Pack p )``
   Returns the size of the ``Pack p`` in bytes and in bits.  For bit type
-  Packers the byte value is truncated to the next full byte value.  The
+  Packers the byte value is truncated to the last full byte value.  The
   function can be used on any of the combinators ``Pack.Sequence``,
   ``Pack.Array`` and ``Pack.Struct`` and returns the accumulated size.
+
+  .. code:: lua
+   print( Pack('r20') )
+   -- 2       20
 
 ``int bytes, int bits = Pack.offset( t.Pack.Field pf )``
   Returns the offset of the ``Pack.Field pf`` in bytes and in bits.  For bit
