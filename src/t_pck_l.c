@@ -809,11 +809,7 @@ lt_pck__gc( lua_State *L )
 	struct t_pck_fld *pf = NULL;
 	struct t_pck     *pc = t_pck_fld_getPackFromStack( L, -1, &pf );
 	if (NULL != pf)
-	{
 		luaL_unref( L, LUA_REGISTRYINDEX, pf->pR );
-		if (LUA_REFNIL != pf->bR)
-			luaL_unref( L, LUA_REGISTRYINDEX, pf->bR );
-	}
 	if (NULL == pf && pc->t > T_PCK_RAW)
 		luaL_unref( L, LUA_REGISTRYINDEX, pc->m );
 	return 0;

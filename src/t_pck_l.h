@@ -109,7 +109,6 @@ struct t_pck {
 /// The userdata struct for T.Pack.Field
 struct t_pck_fld {
 	int      pR;   ///< LUA_REGISTRYINDEX to the T.Pack
-	int      bR;   ///< LUA_REGISTRYINDEX to the T.Pack.Field of the parent
 	size_t   o;    ///< offset from the beginning of the wrapping Combinator in bits
 };
 

@@ -144,7 +144,6 @@ struct t_pck_fld
 	lua_setmetatable( L, -2 ) ;                //S:… tbl key Fld
 	pf->o  = ofs;
 	pf->pR = LUA_REFNIL;
-	pf->bR = LUA_REFNIL;
 	return pf;
 }
 
@@ -217,11 +216,6 @@ lt_pck_fld__index( lua_State *L )
 	}
 
 	npf->pR  = luaL_ref( L, LUA_REGISTRYINDEX );               //S: ??? i/k Fld
-	if (ppf)     // if parent is pack.field add reference
-	{
-		lua_pushvalue( L, 1 );                                  //S: ??? i/k Fld ???
-		npf->bR  = luaL_ref( L, LUA_REGISTRYINDEX );            //S: ??? i/k Fld
-	}
 	return 1;
 }
 
