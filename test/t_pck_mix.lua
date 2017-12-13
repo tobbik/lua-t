@@ -56,7 +56,7 @@ local tests = {
 		local s = self.b:read()
 		--assert main struct
 		for i,k in ipairs({ 'int3ub', 'int2sl', 'int5sb','int4sl', 'int2s' }) do
-			T.assert( self.p[k]( s ) == self.v[k], 
+			T.assert( self.p[k]( s ) == self.v[k],
 			   "Expected %d; got%d", self.v[k], self.p[k]( s ) )
 		end
 		-- assert bytes struct
@@ -108,7 +108,7 @@ local tests = {
 		T.assert( exp     == sByte, "Expected %d; got %d bytes of length", exp, sByte )
 		T.assert( exp*NB  == sBit,  "Expected %d; got %d bits  of length", exp*NB, sBit )
 		exp,sByte,sBit = 24, Pack.size( self.p.bits[3] ) -- this looks for the bits
-		T.assert( sBit//8 == sByte, "Expected %d; got %d bytes of length", exp//8, sByte )
+		T.assert( sBit//8 == sByte, "Expected %d; got %d bytes of length", exp//NB, sByte )
 		T.assert( exp     == sBit,  "Expected %d; got %d bits  of length", exp, sBit )
 		exp,sByte,sBit = 1, Pack.size( self.p.bytes.unsigned )
 		T.assert( exp     == sByte, "Expected %d; got %d bytes of length", exp, sByte )

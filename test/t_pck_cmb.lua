@@ -74,20 +74,23 @@ local tests = {
 		Test.Case.describe( "Struct of byte Packer" )
 		local t = { }
 		for i=1,Pack.numsize do
-			table.insert( t, { ['signed'..i]   = 'i'..i } )
-			table.insert( t, { ['unsigned'..i] = 'I'..i } )
+			table.insert( t, { ['signedBig'..i]   = '>i'..i } )
+			table.insert( t, { ['unsignedBig'..i] = '>I'..i } )
+			table.insert( t, { ['signedLittle'..i]   = '<i'..i } )
+			table.insert( t, { ['unsignedLittle'..i] = '<I'..i } )
 		end
 		local p = Pack( table.unpack( t ) )
-		T.assert( Pack.numsize*2 == #p, "Packer length was %d, expected %d", #p, Pack.numsize*2 )
+		T.assert( Pack.numsize*4 == #p, "Packer length was %d, expected %d", #p, Pack.numsize*4 )
+		local cBy = 0      -- accumulate byte count
 		for n=1,#p do
-			local sz      = math.ceil(n/2)   -- size in bytes
-			local cBy     = sz*(sz-1) + ((n-1)%2)*sz  -- expected accumulated byte Offset
+			local sz      = math.ceil(n/4)   -- size in bytes
 			local sby,sbi = Pack.size( p[n] )
 			local oby,obi = Pack.offset( p[n] )
 			T.assert( sby == sz,     "Int Packer Byte size was %d; expected: %d", sby, sz )
 			T.assert( sbi == sz*NB,  "Int Packer Bits size was %d; expected: %d", sbi, sz*NB )
 			T.assert( obi == cBy*NB, "Int Packer Bits offset was %d; expected: %d", obi, cBy*NB )
 			T.assert( oby == cBy,    "Int Packer Byte offset was %d; expected: %d", oby, cBy )
+			cBy = cBy + sz
 		end
 	end,
 

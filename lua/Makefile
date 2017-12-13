@@ -36,7 +36,7 @@ T_SRC=\
    Net/Socket.lua \
    OrderedHashTable.lua \
    Pack.lua \
-   Pack/Field.lua \
+   Pack/Index.lua \
    Set.lua \
    Table.lua \
    Test.lua \

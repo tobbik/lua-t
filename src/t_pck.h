@@ -13,11 +13,11 @@
 #include "lauxlib.h"
 
 #define T_PCK_IDNT      "pck"
-#define T_PCK_FLD_IDNT  "fld"
+#define T_PCK_IDX_IDNT  "idx"
 
 #define T_PCK_NAME      "Pack"
-#define T_PCK_FLD_NAME  "Field"
+#define T_PCK_IDX_NAME  "Index"
 
 #define T_PCK_TYPE      "t."T_PCK_NAME
-#define T_PCK_FLD_TYPE  T_PCK_TYPE"."T_PCK_FLD_NAME
+#define T_PCK_IDX_TYPE  T_PCK_TYPE"."T_PCK_IDX_NAME
 

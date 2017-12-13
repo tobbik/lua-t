@@ -17,48 +17,42 @@
 #endif
 
 
-/**--------------------------------------------------------------------------
- * Create a t.Pack.Struct Object and put it onto the stack.
- * \param   L      Lua state.
- * \lparam  table  T.OrderedHashTable instance with packer definitions.
- * \return  struct t_pck*.
- * --------------------------------------------------------------------------*/
-struct t_pck
-*t_pck_str_create( lua_State *L )
+static struct t_pck_idx
+*t_pck_idx_create_ud( lua_State *L, size_t idx, int p_ref)
 {
-	size_t            n;       ///< iterator for going through the arguments
-	size_t            bo = 0;  ///< bit  offset within the sequence
-	struct t_pck     *p;       ///< temporary packer/struct for iteration
-	struct t_pck     *ps;      ///< the packer instance to be created
-	struct t_pck_fld *pf;      ///< userdata for current field
+	struct t_pck_idx  __attribute__ ((unused)) *pci;
 
-	for (n=0; n<lua_rawlen( L, -1 ); n++)
-	{
-		lua_rawgeti( L, -1, n+1 );                 //S:… tbl key
-		pf     = t_pck_fld_create_ud( L, bo );     //S:… tbl key Fld
-		lua_rawgeti( L, -3, n+1 );                 //S:… tbl key Fld key
-		lua_rawget( L, -4 );                       //S:… tbl key Fld Pck
-		p      = t_pck_getPacker( L, -1 );         // turn Pck into true packer
-		pf->pR = luaL_ref( L, LUA_REGISTRYINDEX ); // pops the packer from stack
-		bo    += t_pck_getSize( L, p );
-		// replace pack with new Pack.Field
-		lua_rawset( L, -3 );                       //S:… tbl
-	}
-
-	ps    = (struct t_pck *) lua_newuserdata( L, sizeof( struct t_pck ) );
-	luaL_getmetatable( L, T_PCK_TYPE );           //S:… T.Pack
-	lua_setmetatable( L, -2 ) ;
-	ps->t = T_PCK_STR;
-	ps->s = lua_rawlen( L, -2 );                  //S:… tbl pck
-	lua_insert( L, -2 );                          //S:… pck tbl
-	ps->m = luaL_ref( L, LUA_REGISTRYINDEX );     // register table
-
-	return ps;
+	pci      = (struct t_pck_idx *) lua_newuserdata( L, sizeof( struct t_pck_idx ));
+	pci->idx = idx;
+	pci->pR  = p_ref;
+	luaL_getmetatable( L, T_PCK_IDX_TYPE );
+	lua_setmetatable( L, -2 );
+	return pci;
 }
 
 
 /**--------------------------------------------------------------------------
- * Create a t.Pack.Sequence Object and put it onto the stack.
+ * Create a t.Pack.Array instance and put it onto the stack.
+ * \param  *L          Lua state.
+ * \lparam  ud/string  T.Pack.* instance or format string.
+ * \lparam  sz        int; Number of elements in the array.
+ * \return  struct    t_pck* pointer.
+ * --------------------------------------------------------------------------*/
+struct t_pck
+*t_pck_arr_create( lua_State *L )
+{
+	size_t  sz = luaL_checkinteger( L, -1 );
+
+	lua_pop( L, 1 );           //S: PCK
+	t_pck_getPacker( L, -1 );  // convert into a real packer
+
+	return t_pck_create_ud( L, T_PCK_ARR, sz, luaL_ref( L, LUA_REGISTRYINDEX ) );
+}
+
+
+/**--------------------------------------------------------------------------
+ * Create a t.Pack.Sequence instance and put it onto the stack.
+ * Expects the packers as stack element located between sp and ep.
  * \param   L      Lua state.
  * \param   int    sp start position on Stack for first Packer.
  * \param   int    ep   end position on Stack for last Packer.
@@ -67,155 +61,161 @@ struct t_pck
 struct t_pck
 *t_pck_seq_create( lua_State *L, int sp, int ep )
 {
-	size_t            bo = 0; ///< bit offset within the sequence
-	struct t_pck     *p;      ///< temporary packer/struct for iteration
-	struct t_pck     *sq;     ///< the userdata this constructor creates
-	struct t_pck_fld *pf;     ///< userdata for current field
+	struct t_pck *p;              ///< temporary packer/struct for iteration
+	size_t        sz = (ep-sp)+1; ///< size of Sequence
 
-	sq    = (struct t_pck *) lua_newuserdata( L, sizeof( struct t_pck ) );
-	sq->t = T_PCK_SEQ;
-	sq->s = (ep-sp)+1;
+	lua_createtable( L, sz, 0 );      //S: … p1 p2 … pn … tbl
 
-	// create and populate index table
-	lua_createtable( L, sq->s, 0 ); //S: p1 p2 … pn … Seq tbl
-	while (lua_rawlen( L, -1 ) < sq->s)
+	// populate index table
+	while (lua_rawlen( L, -1 ) < sz)
 	{
-		p      = t_pck_getPacker( L, sp );
-		pf     = t_pck_fld_create_ud( L, bo );
-		lua_pushvalue( L, sp );      //S: p1 p2 … pn … Seq tbl Fld Pck
-		pf->pR = luaL_ref( L, LUA_REGISTRYINDEX );  // pops the packer from stack
-
-		luaL_getmetatable( L, T_PCK_FLD_TYPE );
-		lua_setmetatable( L, -2 );   //S: p1 p2 … pn … Seq tbl Fld
-
-		lua_rawseti( L, -2, lua_rawlen( L, -2 )+1 ); // tbl[i] = Fld
-		bo += t_pck_getSize( L, p );
-		lua_remove( L, sp );
+		lua_rotate( L, sp, -1 );       //S: … p2 … pn … Seq tbl p1
+		p = t_pck_getPacker( L, -1 );
+		lua_rawseti( L, -2, lua_rawlen( L, -2 )+1 ); // tbl[ i ] = Pck
 	}
-	sq->m = luaL_ref( L, LUA_REGISTRYINDEX ); // register table
-
-	luaL_getmetatable( L, T_PCK_TYPE ); //S: … T.Pack
-	lua_setmetatable( L, -2 ) ;
-
-	return sq;
+	return t_pck_create_ud( L, T_PCK_SEQ, sz, luaL_ref( L, LUA_REGISTRYINDEX ) );
 }
 
 
 /**--------------------------------------------------------------------------
- * Create a t.Pack.Array Object and put it onto the stack.
- * \param   L          Lua state.
- * \lparam  ud/string  T.Pack, T.Pack.Struct, T.Pack.Array or format string.
- * \lparam  integer    Number of elements in the array.
- * \return  struct     t_pck* pointer.
+ * Create a t.Pack.Struct instance and put it onto the stack.
+ * Expects table on stack which has key/packer structure already.  Just turning
+ * the packers into real packers. (convert formatstrings etc ...
+ * \param   L      Lua state.
+ * \lparam  table  T.OrderedHashTable instance with key/packer definitions.
+ * \return  struct t_pck*.
  * --------------------------------------------------------------------------*/
 struct t_pck
-*t_pck_arr_create( lua_State *L )
+*t_pck_str_create( lua_State *L )
 {
-	struct t_pck  __attribute__ ((unused)) *p  = t_pck_getPacker( L, -2 );  ///< packer
-	struct t_pck     *ap;     ///< array userdata to be created
+	size_t         n;      ///< iterator for going through the arguments
+	struct t_pck  *p;      ///< temporary packer/struct for iteration
 
-	ap    = (struct t_pck *) lua_newuserdata( L, sizeof( struct t_pck ) );
-	ap->t = T_PCK_ARR;
-	ap->s = luaL_checkinteger( L, -2 );       // how many elements in array
-
-	lua_pushvalue( L, -3 );                   //S: Pck n Arr Pck
-	ap->m = luaL_ref( L, LUA_REGISTRYINDEX ); // record reference to packer
-
-	luaL_getmetatable( L, T_PCK_TYPE );
-	lua_setmetatable( L, -2 ) ;
-
-	return ap;
+	for (n=0; n<lua_rawlen( L, -1 ); n++)
+	{
+		lua_rawgeti( L, -1, n+1 );                 //S:… tbl key
+		lua_pushvalue( L, -1 );                    //S:… tbl key key
+		lua_rawget( L, -3 );                       //S:… tbl key pck
+		p = t_pck_getPacker( L, -1 );              // turn Pck into true packer
+		lua_rawset( L, -3 );                       //S:… tbl
+	}
+	return t_pck_create_ud( L, T_PCK_STR, lua_rawlen( L, -1), luaL_ref( L, LUA_REGISTRYINDEX ) );
 }
 
 
 /**--------------------------------------------------------------------------
- * Create a t.Pack.Field Object and put it onto the stack.
- * \param   L      Lua state.
- * \param   int    ofs offset in byte.
- * \return  struct t_pck_fld*.
+ * Get the offset of a certain Pack.Index.
+ * \param   *L      Lua state.
+ * \param    pos    int; position on Lua stack.
+ * \param  **pcf    struct** pointer to t_pck_idx pointer.
+ * \return  *pck    struct*  pointer to t_pck.
  * --------------------------------------------------------------------------*/
-struct t_pck_fld
-*t_pck_fld_create_ud( lua_State *L, int ofs )
+size_t
+t_pck_idx_getOffset( lua_State *L, struct t_pck_idx *pci )
 {
-	struct t_pck_fld *pf;      ///< userdata for packer field
+	struct t_pck      *pkc;     ///< Container pck
+	//struct t_pck      *pck;     ///< Runner pck
+	size_t             ofs = 0;
+	size_t             n, n_sz;
 
-	pf     = (struct t_pck_fld *) lua_newuserdata( L, sizeof( struct t_pck_fld ) );
-	luaL_getmetatable( L, T_PCK_FLD_TYPE );
-	lua_setmetatable( L, -2 ) ;                //S:… tbl key Fld
-	pf->o  = ofs;
-	pf->pR = LUA_REFNIL;
-	return pf;
+	// get parent-container; by convention only Array,Sequence,Struct
+	lua_rawgeti( L, LUA_REGISTRYINDEX, pci->pR ); //S:… pkc
+	pkc = t_pck_check_ud( L, -1, 1 );
+	lua_rawgeti( L, LUA_REGISTRYINDEX, pkc->m );  //S:… pkc tbl/pck
+	switch (pkc->t)
+	{
+		case T_PCK_ARR:
+			n_sz = t_pck_getSize( L, t_pck_check_ud( L, -1, 1 ) );
+			if (n_sz)
+				ofs  = (pci->idx - 1)  *  t_pck_getSize( L, t_pck_check_ud( L, -1, 1 ) );
+			break;
+		case T_PCK_SEQ:
+		case T_PCK_STR:
+			for (n = 1; n < pci->idx; n++) // does not run for pci-idx==1 !
+			{
+				lua_rawgeti( L, -1, n );             //S:… pkc tbl key/pck
+				if (T_PCK_STR == pkc->t)
+					lua_rawget( L, -2);               //S:… pkc tbl pck
+				//pck  = t_pck_check_ud( L, -1, 1 );   //S:… pkc tbl pck
+				n_sz = t_pck_getSize( L, t_pck_check_ud( L, -1, 1 ) );
+				if (n_sz)
+					ofs += n_sz;
+				else
+				{
+					// TODO: probably here read with buffer to get values from payload
+					ofs = 0;
+					n   = pkc->s; // break for loop; still clean up stack
+				}
+				lua_pop( L, 1 );
+			}
+			break;
+		default:
+			break;   // ofs = 0 (default)
+	}
+	lua_pop( L, 2 );
+	return ofs;
 }
 
 
 /**--------------------------------------------------------------------------
- * Read a Struct packer value.
- *          This can not simply return a packer/Struct type since it now has
- *          meta information about the position it is requested from.  For this
- *          the is a new datatype T.Pack.Result which carries type and position
- *          information
+ * Read a t.Array/Sequence/Struct/Function packer value.
  * \param   L    Lua state.
- * \lparam  ud   T.Pack.Struct userdata instance.
+ * \lparam  ud   T.Pack.* userdata instance.
  * \lparam  key  string/integer.
  * \lreturn ud   T.Pack.Field instance.
  * \return  int  # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 int
-lt_pck_fld__index( lua_State *L )
+lt_pck__index( lua_State *L )
 {
-	struct t_pck_fld *ppf  = NULL;  ///< Pack.Field to read from (parent)
-	struct t_pck     *ppc  = t_pck_fld_getPackFromStack( L, 1, &ppf );
-	struct t_pck_fld *ipf  = NULL;  ///< Pack.Field found at index
-	struct t_pck     *ipc;          ///< Pack found at index or referenced from ipf
-	struct t_pck_fld *npf;          ///< new Pack.Field to be returned
-	size_t            idx;          ///< index of requested field
+	struct t_pck_idx *pci  = NULL;  ///< Pack.Index to read from (parent)
+	struct t_pck     *pck  = t_pck_idx_getPackFromStack( L, 1, &pci );
+	size_t            idx  = 0;     ///< index of requested field
+	size_t           i,n;           ///< iterators to figure out index
 
-	luaL_argcheck( L, ppc->t > T_PCK_RAW, 1, "Trying to index Atomic "T_PCK_TYPE" type" );
-	luaL_argcheck( L, (ppc->t < T_PCK_STR && LUA_TNUMBER == lua_type( L, 2 )) || ppc->t == T_PCK_STR,
+	luaL_argcheck( L, pck->t > T_PCK_FNC, 1, "can't index Atomic "T_PCK_TYPE" type" );
+	luaL_argcheck( L, (pck->t < T_PCK_STR && LUA_TNUMBER == lua_type( L, 2 )) || pck->t == T_PCK_STR,
 		2, "Index for "T_PCK_TYPE".Array or "T_PCK_TYPE".Sequence must be numeric." );
 
-	if (LUA_TNUMBER == lua_type( L, 2 ) && (idx = luaL_checkinteger( L, 2 )) && (idx > ppc->s || idx<1))
+	if (LUA_TNUMBER == lua_type( L, 2 ) && (idx = luaL_checkinteger( L, 2 )) && (idx > pck->s || idx<1))
 	{
 		// Array/Sequence out of bound: return nil
 		lua_pushnil( L );
 		return 1;
 	}
 
-	// push empty field on stack
-	npf     = t_pck_fld_create_ud( L, (NULL == ppf )? 0 : ppf->o );
-	// get table (struct,sequence) or packer type (array)
-	lua_rawgeti( L, LUA_REGISTRYINDEX, ppc->m );               //S: ??? i/k ud tbl/Pck
-
-	switch (ppc->t)
+	// get idx from struct
+	if (T_PCK_STR == pck->t && ! lua_isinteger( L, 2 ))
 	{
-		case T_PCK_ARR:
-			ipc     = t_pck_check_ud( L, -1, 1 );                //S: Arr i/k ud Pck
-			npf->o += t_pck_getSize( L, ipc ) * (idx-1) ;
-			break;
-		case T_PCK_SEQ:
-			lua_rawgeti( L, -1, idx );                           //S: Seq idx ud tbl Fld
-			lua_remove( L, -2 );                                 //S: Seq idx ud Fld
-			ipc     = t_pck_fld_getPackFromStack( L, -1, &ipf ); //S: Seq idx ud Pck
-			npf->o += ipf->o;
-			break;
-		case T_PCK_STR:
-			if (lua_isinteger( L, 2 ) )
-				lua_rawgeti( L, -1, idx );                        //S: Str idx ud tbl key
-			else
-				lua_pushvalue( L, 2 );                            //S: Str key ud tbl key
-			lua_rawget( L, -2 );                                 //S: Str i/k ud tbl Fld
-			lua_remove( L, -2 );                                 //S: Str i/k ud Fld
-			ipc     = t_pck_fld_getPackFromStack( L, -1, &ipf ); //S: Str i/k ud Pck
-			npf->o += ipf->o;
-			break;
-		//case T_PCK_FNC:
-			// TODO: To be implemented
-		//	break;
-		default:
-			break;
+		lua_rawgeti( L, LUA_REGISTRYINDEX, pck->m );      //S: Str key tbl
+		lua_pushvalue( L, 2 );                            //S: Str key tbl key
+		lua_rawget( L, -2 );                              //S: Str key tbl pck/nil
+		if (! lua_isnil( L, -1 ))
+		{
+			lua_pop( L, 1 );                               //S: Str key tbl
+			n = lua_rawlen( L, -1 );
+			for (i=0; i<n; i++)
+			{
+				lua_rawgeti( L, -1, i+1 );                  //S: Str key tbl keyN
+				if (lua_rawequal( L, -1, -3 ))
+				{
+					idx = i+1;
+					i   = n+1;  // shortcut the loop; still lua_pop the key
+				}
+				lua_pop( L, 1 );            // pop keyN
+			}
+		}
+		else
+			lua_pop( L, 1 );                               //S: Str key tbl (pop nil)
+		lua_pop( L, 1 );                                  //S: Str key
 	}
+	lua_pop( L, 1 );                                     //S: Pck
 
-	npf->pR  = luaL_ref( L, LUA_REGISTRYINDEX );               //S: ??? i/k Fld
+	if (0 != idx)
+		pci = t_pck_idx_create_ud( L, idx, luaL_ref( L, LUA_REGISTRYINDEX ) );
+	else
+		lua_pushnil( L );
+	//printf( "GET FIELD[%zu]: ", idx); t_stackDump(L);
 	return 1;
 }
 
@@ -229,33 +229,33 @@ lt_pck_fld__index( lua_State *L )
  * \return  int   # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 int
-lt_pck_fld__newindex( lua_State *L )
+lt_pck__newindex( lua_State *L )
 {
-	struct t_pck *pc = t_pck_fld_getPackFromStack( L, -3, NULL );
-	luaL_argcheck( L, pc->t > T_PCK_RAW, -3, "Atomic "T_PCK_TYPE" type has no fields" );
+	struct t_pck *pc = t_pck_idx_getPackFromStack( L, 1, NULL );
+	luaL_argcheck( L, pc->t > T_PCK_FNC, 1, "Atomic "T_PCK_TYPE" type has no fields" );
 	return luaL_error( L, T_PCK_TYPE" is read-only!" );
 }
 
 
 /**--------------------------------------------------------------------------
- * the actual iterate(next) over the T.Pack.Struct.
+ * the actual iterate(next) over the t.Pack.Struct.
  * It will return key,value pairs in properly ordered.
- * \param   L       Lua state.
- * \lparam  tbl/ud  referenced table with element or userdata T.Pack.
- * \lparam  value   previous key or index.
- * \lreturn mult    current key, current value.
- * \return  int     # of values pushed onto the stack.
+ * \param   *L       Lua state.
+ * \lparam   tbl/ud  referenced table with element or userdata T.Pack.
+ * \lparam   value   previous key or index.
+ * \lreturn  mult    current key, current value.
+ * \return   int     # of values pushed onto the stack.
  *  -------------------------------------------------------------------------*/
 static int
-t_pck_fld_iter( lua_State *L )
+t_pck_iter( lua_State *L )
 {
 	int               idx = luaL_checkinteger( L, lua_upvalueindex( 1 ) ) + 1;
 	int               len = luaL_checkinteger( L, lua_upvalueindex( 3 ) );
 	enum t_pck_t      pct = luaL_checkinteger( L, lua_upvalueindex( 4 ) );
 	int               itn = luaL_checkinteger( L, lua_upvalueindex( 5 ) );
-	struct t_pck     *pc;
-	struct t_pck_fld *pf;         ///< New T.Pack.Field to be returned
-	struct t_pck_fld *pcf;        ///< T.Pack.Field read from current idx
+	struct t_pck     *pck;
+	//struct t_pck_idx *pci;          ///< New T.Pack.Index to be returned
+	//struct t_pck_idx *pci_r;        ///< T.Pack.Index read from current idx
 
 	//check and update running index
 	if (idx > len)
@@ -270,28 +270,25 @@ t_pck_fld_iter( lua_State *L )
 		lua_pushinteger( L, idx );
 	else
 		lua_rawgeti( L, 1, idx );
-	pf = t_pck_fld_create_ud( L, luaL_checkinteger( L, lua_upvalueindex( 2 ) ) );
-	                                             //S: pck/tbl idx/key ud
+	                                             //S: pck/tbl idx/key
 	if (T_PCK_ARR == pct)
 	{
-		pc     = t_pck_check_ud( L, 1, 1 );
-		pf->o += (idx-1) * pc->s;
-		lua_pushvalue( L, 1 );                    //S: tbl idx ud pck
+		pck     = t_pck_check_ud( L, 1, 1 );
+		//pf->o += (idx-1) * pck->s;
+		lua_pushvalue( L, 1 );                    //S: tbl idx pck
 	}
 	if (T_PCK_SEQ == pct)
 	{
-		lua_rawgeti( L, 1, idx );                 //S: tbl idx ud fld
-		pc     = t_pck_fld_getPackFromStack( L, -1, &pcf );//S: tbl idx ud pck
-		pf->o += pcf->o;
+		lua_rawgeti( L, 1, idx );                 //S: tbl idx pck
+		//pck     = t_pck_fld_getPackFromStack( L, -1, &pci_r );//S: tbl idx pck
 	}
 	if (T_PCK_STR == pct)
 	{
-		lua_rawgeti( L, 1, idx );                 //S: tbl idx ud key
-		lua_rawget( L, 1 );                       //S: tbl idx ud fld
-		pc     = t_pck_fld_getPackFromStack( L, -1, &pcf );//S: tbl idx ud pck
-		pf->o += pcf->o;
+		lua_rawgeti( L, 1, idx );                 //S: tbl idx key
+		lua_rawget( L, 1 );                       //S: tbl idx pck
+		//pck     = t_pck_fld_getPackFromStack( L, -1, &pci_r );//S: tbl idx ud pck
 	}
-	pf->pR = luaL_ref( L, LUA_REGISTRYINDEX );   //S: tbl/pck idx/key ud
+	t_pck_idx_create_ud( L, idx, luaL_ref( L, LUA_REGISTRYINDEX ) );
 	return 2;
 }
 
@@ -304,23 +301,23 @@ t_pck_fld_iter( lua_State *L )
  * \return  int    # of values pushed onto the stack.
  *  -------------------------------------------------------------------------*/
 int
-lt_pck_fld__pairs( lua_State *L )
+lt_pck__pairs( lua_State *L )
 {
-	struct t_pck_fld *pf = NULL;
-	struct t_pck     *pc = t_pck_fld_getPackFromStack( L, 1, &pf );
+	struct t_pck_idx *pci = NULL;
+	struct t_pck     *pck = t_pck_idx_getPackFromStack( L, 1, &pci );
 
-	luaL_argcheck( L, pc->t > T_PCK_RAW, 1,
-	   "Attempt to index atomic T.Pack type" );
+	luaL_argcheck( L, pck->t > T_PCK_FNC, 1,
+	   "can't index atomic T.Pack type" );
 
-	lua_pushinteger( L, 0 );                                    //S: pck idx
-	lua_pushinteger( L, (NULL == pf) ? 0 : pf->o );             //S: pck idx ofs
-	lua_pushinteger( L, (int) pc->s );                          //S: pck idx ofs len
-	lua_pushinteger( L, pc->t );                                //S: pck idx ofs len typ
-	lua_pushinteger( L, T_PCK_ARR==pc->t || T_PCK_SEQ==pc->t ); //S: pck idx ofs len typ itt
-	lua_pushcclosure( L, &t_pck_fld_iter, 5 );
-	lua_rawgeti( L, LUA_REGISTRYINDEX, pc->m );                 //S: pck fnc tbl/pck
-	//lua_rawgeti( L, -1, 1                                     //S: pck fnc tbl/pck key
-	lua_pushnil( L );                                           //S: pck fnc tbl/pck nil
+	lua_pushinteger( L, 0 );                                      //S: pck idx
+	lua_pushinteger( L, (NULL == pci) ? 0 : t_pck_idx_getOffset( L, pci ) );             //S: pck idx ofs
+	lua_pushinteger( L, (int) pck->s );                           //S: pck idx ofs len
+	lua_pushinteger( L, pck->t );                                 //S: pck idx ofs len typ
+	lua_pushinteger( L, T_PCK_ARR==pck->t || T_PCK_SEQ==pck->t ); //S: pck idx ofs len typ itt
+	lua_pushcclosure( L, &t_pck_iter, 5 );
+	lua_rawgeti( L, LUA_REGISTRYINDEX, pck->m );                  //S: pck fnc tbl/pck
+	//lua_rawgeti( L, -1, 1                                       //S: pck fnc tbl/pck key
+	lua_pushnil( L );                                             //S: pck fnc tbl/pck nil
 	lua_remove( L, 1 );
 	return 3;
 }
