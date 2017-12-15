@@ -148,6 +148,7 @@ struct t_pck *t_pck_getPacker ( lua_State *L, int pos );
 size_t        t_pck_getSize   ( lua_State *L,  struct t_pck *p );
 
 struct t_pck *t_pck_idx_getPackFromStack( lua_State * L, int pos, struct t_pck_idx **pci );
+struct t_pck *t_pck_idx_getPackFromFieldOnStack( lua_State * L, int pos, struct t_pck_idx **pcir, int los );
 size_t        t_pck_idx_getOffset( lua_State * L, struct t_pck_idx *pci );
 
 

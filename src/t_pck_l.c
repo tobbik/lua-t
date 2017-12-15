@@ -486,7 +486,8 @@ t_pck_getSize( lua_State *L, struct t_pck *p )
 					lua_rawgeti( L, -1, n+1 );    // get packer or key from table
 					if (T_PCK_STR == p->t)
 						lua_rawget( L, -2 );
-					t_pck_idx_getPackFromStack( L, -1, NULL );
+					//t_pck_idx_getPackFromStack( L, -1, NULL );
+					t_pck_idx_getPackFromFieldOnStack( L, -1, NULL, 0 );
 					ns = t_pck_getSize( L, t_pck_check_ud( L, -1, 1 ) );
 					if (ns)
 						s += ns;
@@ -588,6 +589,7 @@ struct t_pck
 	// T.Pack or T.Pack.Index at pos
 	if (lua_isuserdata( L, pos ))
 		p    = t_pck_idx_getPackFromStack( L, pos, NULL );
+		//p    = t_pck_idx_getPackFromFieldOnStack( L, pos, NULL, 1 );
 	else // format string at pos
 	{
 		fmt = luaL_checkstring( L, pos );
@@ -717,7 +719,8 @@ static int lt_pck__Call( lua_State *L )
 static int
 lt_pck_GetSize( lua_State *L )
 {
-	struct t_pck *p  = t_pck_idx_getPackFromStack( L, 1, NULL );
+	//struct t_pck *p  = t_pck_idx_getPackFromStack( L, 1, NULL );
+	struct t_pck *p  = t_pck_idx_getPackFromFieldOnStack( L, 1, NULL, 0 );
 	size_t        sz = t_pck_getSize( L, p );
 	lua_pushinteger( L, sz/NB );   // size in bytes
 	lua_pushinteger( L, sz );      // size in bits
@@ -738,7 +741,8 @@ lt_pck_idx_GetOffset( lua_State *L )
 {
 	struct t_pck_idx *pci = NULL;
 	size_t            ofs = 0;    ///< offset in bits
-	t_pck_idx_getPackFromStack( L, 1, &pci );
+	//t_pck_idx_getPackFromStack( L, 1, &pci );
+	t_pck_idx_getPackFromFieldOnStack( L, 1, &pci, 0 );
 	luaL_argcheck( L, NULL != pci, 1, "Expected `"T_PCK_IDX_TYPE"`." );
 	ofs = t_pck_idx_getOffset( L, pci );
 	// TODO: Fix getting the offsets
@@ -779,7 +783,8 @@ lt_pck_SetDefaultEndian( lua_State *L )
 static int
 lt_pck_Type( lua_State *L )
 {
-	struct t_pck *p = t_pck_idx_getPackFromStack( L, 1, NULL );
+	//struct t_pck *p = t_pck_idx_getPackFromStack( L, 1, NULL );
+	struct t_pck *p = t_pck_idx_getPackFromFieldOnStack( L, 1, NULL, 0 );
 	lua_pushfstring( L, "%s", t_pck_t_lst[ p->t ] );
 	t_pck_format( L, p->t, p->s, p->m );
 	return 2;
@@ -805,7 +810,8 @@ static int
 lt_pck__tostring( lua_State *L )
 {
 	struct t_pck_idx *pci = NULL;
-	struct t_pck     *pck = t_pck_idx_getPackFromStack( L, -1, &pci );
+	//struct t_pck     *pck = t_pck_idx_getPackFromStack( L, -1, &pci );
+	struct t_pck     *pck = t_pck_idx_getPackFromFieldOnStack( L, -1, &pci, 0 );
 
 	lua_pushfstring( L, (NULL == pci) ? T_PCK_TYPE"(" : T_PCK_IDX_TYPE"(" );
 	t_pck_format( L, pck->t, pck->s, pck->m );
@@ -828,12 +834,13 @@ lt_pck__tostring( lua_State *L )
 static int
 lt_pck__gc( lua_State *L )
 {
-	struct t_pck_idx *pi = NULL;
-	struct t_pck     *pc = t_pck_idx_getPackFromStack( L, -1, &pi );
-	if (NULL != pi)
-		luaL_unref( L, LUA_REGISTRYINDEX, pi->pR );
-	if (NULL == pi && pc->t > T_PCK_RAW)
-		luaL_unref( L, LUA_REGISTRYINDEX, pc->m );
+	struct t_pck_idx *pci = NULL;
+	//struct t_pck     *pck = t_pck_idx_getPackFromStack( L, -1, &pci );
+	struct t_pck     *pck = t_pck_idx_getPackFromFieldOnStack( L, -1, &pci, 0 );
+	if (NULL != pci)
+		luaL_unref( L, LUA_REGISTRYINDEX, pci->pR );
+	if (NULL == pci && pck->t > T_PCK_RAW)
+		luaL_unref( L, LUA_REGISTRYINDEX, pck->m );
 	return 0;
 }
 
@@ -848,11 +855,12 @@ lt_pck__gc( lua_State *L )
 static int
 lt_pck__len( lua_State *L )
 {
-	struct t_pck *pc = t_pck_idx_getPackFromStack( L, -1, NULL );
+	//struct t_pck *pck = t_pck_idx_getPackFromStack( L, -1, NULL );
+	struct t_pck *pck = t_pck_idx_getPackFromFieldOnStack( L, -1, NULL, 0 );
 
-	luaL_argcheck( L, pc->t > T_PCK_RAW, 1, "Attempt to get length of atomic "T_PCK_TYPE" type" );
+	luaL_argcheck( L, pck->t > T_PCK_RAW, 1, "Attempt to get length of atomic "T_PCK_TYPE" type" );
 
-	lua_pushinteger( L, pc->s );
+	lua_pushinteger( L, pck->s );
 	return 1;
 }
 
@@ -899,7 +907,8 @@ t_pck__callread( lua_State *L, struct t_pck *pck, const char *b, size_t ofs )
 		for (n=0; n<pck->s; n++)
 		{
 			lua_rawgeti( L, -1, n+1 );         //S:… res tbl pck
-			p   = t_pck_idx_getPackFromStack( L, -1, &pci );
+			//p   = t_pck_idx_getPackFromStack( L, -1, &pci );
+			p   = t_pck_idx_getPackFromFieldOnStack( L, -1, &pci, 0 );
 			ofs = t_pck__callread( L, p, b, ofs );//S:… res tbl pck val
 			lua_rawseti( L, -4, n+1 );         //S:… res tbl pck
 			lua_pop( L, 1 );
@@ -914,7 +923,8 @@ t_pck__callread( lua_State *L, struct t_pck *pck, const char *b, size_t ofs )
 			lua_rawgeti( L, -1, n+1 );         //S:… res tbl key
 			lua_pushvalue( L, -1 );            //S:… res tbl key key
 			lua_rawget( L, -3 );               //S:… res tbl key idx
-			p   = t_pck_idx_getPackFromStack( L, -1, &pci );
+			//p   = t_pck_idx_getPackFromStack( L, -1, &pci );
+			p   = t_pck_idx_getPackFromFieldOnStack( L, -1, &pci, 0 );
 			ofs = t_pck__callread( L, p, b, ofs );//S:… res tbl key pck val
 			lua_remove( L, -2 );               //S:… res tbl key val
 			lua_pushvalue( L, -2 );            //S:… res tbl key val key
@@ -952,7 +962,8 @@ static int
 lt_pck_idx__call( lua_State *L )
 {
 	struct t_pck_idx  *pci = NULL;
-	struct t_pck      *pck = t_pck_idx_getPackFromStack( L, 1, &pci );
+	//struct t_pck      *pck = t_pck_idx_getPackFromStack( L, 1, &pci );
+	struct t_pck      *pck = t_pck_idx_getPackFromFieldOnStack( L, 1, &pci, 0 );
 	size_t             ofs = (NULL == pci) ? 0 : t_pck_idx_getOffset( L, pci );
 	//size_t             ofs = (NULL == pf) ? 0 : pf->o;
 	char              *b;
