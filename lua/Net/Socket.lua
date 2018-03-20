@@ -1,6 +1,7 @@
 local Socket, Address, t_type, t_assert, type  =
       require"t.net".sck, require"t.net".adr,require't'.type,require't'.assert,type
 local sck_mt = debug.getregistry( )[ "T.Net.Socket" ]
+local Sck_mt = getmetatable( Socket )
 
 -- multi function to negotiate arguments
 local getAddressArgs = function( host, port, bl, default )
@@ -119,6 +120,28 @@ sck_mt.connect = function( sck, host, port )
 	local t,e = sck:connecter( adr )
 	--print( sck, adr, t, e )
 	if t then return adr else return t,e end
+end
+
+-- Socket( ) Creates a new socket
+-- \param   protocol string: 'TCP', 'UDP' ...
+-- \param   family   string: 'ip4', 'AF_INET6', 'raw' ...
+-- \param   type     string: 'stream', 'datagram' ...
+-- \usage   Net.Socket( )                   -> create TCP IPv4 Socket
+--          Net.Socket( 'TCP' )             -> create TCP IPv4 Socket
+--          Net.Socket( 'TCP', 'ip4' )      -> create TCP IPv4 Socket
+--          Net.Socket( 'UDP', 'ip4' )      -> create UDP IPv4 Socket
+--          Net.Socket( 'UDP', 'ip6' )      -> create UDP IPv6 Socket
+Sck_mt.__call = function( Sck, protocol, family, typ )
+	-- Socket.new() use getprotobyname() which is specific to the implementation
+	-- of the underlying C-lib. `musl` (on alpine linux for docker is a good
+	-- example for a limited implementation).  It doesn't provide a re-entrant
+	-- version and requires lower-cased protocol names.
+	protocol = protocol and string.lower( protocol ) or 'tcp'
+	family   = family   or  'AF_INET'
+	typ      = typ      or  (('tcp' == protocol) and 'SOCK_STREAM')
+	                    or  (('udp' == protocol) and 'SOCK_DGRAM')
+	                    or  'SOCK_RAW'
+	return Sck.new( protocol, family, typ )
 end
 
 return Socket

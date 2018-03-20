@@ -18,11 +18,18 @@ MYCFLAGS=
 SRCDIR=$(CURDIR)/src
 LUADIR=$(CURDIR)/lua
 
-CC=clang
-LD=clang
+CC=gcc
+LD=gcc
 
 SCREEN_RC=screen.rc
 SCREEN=$(shell which screen)
+
+# Docker build specific
+DOCKER=$(shell which docker)
+DOCKERPS=$(DOCKER) ps --format "table {{.Names}}"
+CONTAINER=luab
+VERSION=5.3
+IMAGE=lua$(shell echo $(VERSION) | sed "s/\.//")
 
 all: $(SRCDIR)/*.so
 
@@ -65,8 +72,10 @@ echo:
 	@echo "MYCFLAGS= $(MYCFLAGS)"
 
 clean:
-	$(MAKE) -C $(SRCDIR) \
-		clean
+	$(MAKE) -C $(SRCDIR) clean
+
+pristine:
+	$(MAKE) -C $(SRCDIR) pristine
 
 run: $(SCREEN_RC)
 	$(SCREEN) -S lua -c "$(SCREEN_RC)"
@@ -74,3 +83,13 @@ run: $(SCREEN_RC)
 perf:
 	$(SCREEN) -S perf -c "screen-perf.rc"
 
+
+# following targets are for docker builds
+docker: $(DOCKER)
+	$(DOCKER) build --tag $(IMAGE) .
+
+runit:
+	$(DOCKER) run -i -t $(IMAGE) /bin/bash
+
+dclean:
+	$(DOCKER) image rm $(IMAGE)

@@ -11,8 +11,8 @@ INCDIR=$(shell pkg-config --variable=includedir lua)
 #LDFLAGS=$(shell pkg-config --libs lua) -lcrypt
 LDFLAGS:=$(LDFLAGS) -lcrypt
 # clang can be substituted with gcc (command line args compatible)
-CC=clang
-LD=clang
+CC=gcc
+LD=gcc
 #CFLAGS:= -Wall -Wextra -pedantic -O0 -std=c99 -fpic $(MYCFLAGS)
 CFLAGS:= -Wall -Wextra -Werror -std=c99 -fpic $(MYCFLAGS)
 LDLIBS:= -llua -lm
@@ -175,6 +175,10 @@ clean:
 	$(MAKE) -C $(CURDIR)/test clean
 	-$(RM) $(LIBS)
 	-$(RM) $(OBJS)
+
+pristine:
+	-$(RM) *.so
+	-$(RM) *.o
 
 .PHONY: all test clean
 

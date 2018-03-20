@@ -22,7 +22,8 @@
 /**--------------------------------------------------------------------------
  * Create a socket and push to LuaStack.
  * \param   L        Lua state.
- * \lparam  protocol string: 'TCP', 'UDP' ...
+ * \lparam  protocol string: 'tcp', 'udp' ...  -- use lower cased for platform
+ *                                                independence
  * \lparam  family   string: 'ip4', 'AF_INET6', 'raw' ...
  * \lparam  type     string: 'stream', 'datagram' ...
  * \usage   Net.Socket( )                   -> create TCP IPv4 Socket
@@ -33,21 +34,13 @@
  * \return  struct t_net_sck pointer to the socket struct.
  * --------------------------------------------------------------------------*/
 static int
-lt_net_sck__Call( lua_State *L )
+lt_net_sck_New( lua_State *L )
 {
 	struct t_net_sck *sck;
-	lua_remove( L, 1 );         // remove CLASS table
 
 	t_net_getProtocolByName( L, 1, "TCP" );
-	if (NULL == t_getTypeByName( L, 2, "AF_INET", t_net_familyList ))
-		lua_pushinteger( L, _t_net_default_family );
-	if (NULL == t_getTypeByName( L, 3, "SOCK_STREAM", t_net_typeList ))
-		lua_pushinteger( L,
-	      (IPPROTO_TCP == luaL_checkinteger( L, 1 ))
-	         ? SOCK_STREAM
-	         : (IPPROTO_UDP == luaL_checkinteger( L, 1 ))
-	            ? SOCK_DGRAM
-	            : SOCK_RAW );
+	t_getTypeByName( L, 2, "AF_INET", t_net_familyList );
+	t_getTypeByName( L, 3, "SOCK_STREAM", t_net_typeList );
 
 	sck  = t_net_sck_create_ud( L );
 	p_net_sck_createHandle( L, sck,
@@ -353,7 +346,7 @@ lt_net_sck_Select( lua_State *L )
 		while (lua_next( L, i ))
 		{
 			sck = t_net_sck_check_ud( L, -1, 1 ); //S: rdi wri rdr wrr key sck
-			if FD_ISSET( sck->fd, (1==i) ? &rfds : &wfds )
+			if (FD_ISSET( sck->fd, (1==i) ? &rfds : &wfds ))
 			{
 				if (lua_isinteger( L, -2 ))         // append numeric idx
 					lua_rawseti( L, i+2, lua_rawlen( L, i+2 )+1 );
@@ -475,8 +468,7 @@ lt_net_sck__newindex( lua_State *L )
  * Class metamethods library definition
  * --------------------------------------------------------------------------*/
 static const struct luaL_Reg t_net_sck_fm [] = {
-	  { "__call"      , lt_net_sck__Call }
-	, { NULL          , NULL }
+	  { NULL          , NULL }
 };
 
 /**--------------------------------------------------------------------------
@@ -485,6 +477,7 @@ static const struct luaL_Reg t_net_sck_fm [] = {
 static const luaL_Reg t_net_sck_cf [] =
 {
 	  { "select"      , lt_net_sck_Select }
+	, { "new"         , lt_net_sck_New }
 	, { NULL          , NULL }
 };
 

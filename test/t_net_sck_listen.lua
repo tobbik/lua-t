@@ -29,6 +29,15 @@ local Interface = require( "t.Net.Interface" )
 local asrtHlp   = t_require( "assertHelper" )
 
 local tests = {
+	beforeAll  = function( self, done )
+		-- UNIX only
+		-- TODO: make more universal
+		local h = io.popen( 'id' )
+		local s = h:read( '*a' )
+		h:close()
+		self.isPriv = not not s:match( 'uid=0' )
+		done( )
+	end,
 
 	beforeEach = function( self )
 	end,
@@ -111,6 +120,9 @@ local tests = {
 	test_SListenHostPrivPortThrowsPermission = function( self )
 		-- This Test behaves differently when run as Root (it succeeds)
 		Test.Case.describe( "Socket.listen( host, priviledged port ) --> throws permission error" )
+		if self.isPriv then
+			Test.Case.skip( "Test is for unauthorized behaviour" )
+		end
 		local host   = Interface( 'default' ).AF_INET.address.ip
 		local port   = 80
 		local errMsg = "Can't bind socket to "..host..":"..port.." %(Permission denied%)"

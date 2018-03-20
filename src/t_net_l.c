@@ -19,6 +19,7 @@
 #include <WS2tcpip.h>
 #include <Windows.h>
 #else
+#include <ctype.h>                // toupper()
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -53,14 +54,16 @@ t_net_getProtocolByName( lua_State *L, int pos, const char *dft )
 	                          : luaL_optstring( L, pos, dft );
 	struct protoent  result_buf;
 	struct protoent *result;
-#if defined(__linux__)
+	//TODO: define _REENTRANT properly
+#if defined(__linux__) && defined(_REENTRANT)
 	char             buf[ BUFSIZ ];
 #endif
 	// get absolute stack position
 	pos = (pos < 0) ? lua_gettop( L ) + pos + 1 : pos;
 	luaL_argcheck( L, pos-1 <= lua_gettop( L ), pos, "can't convert protocol name, stack too short" );
 
-#if defined(__linux__)
+	//TODO: define _REENTRANT properly
+#if defined(__linux__) && defined(_REENTRANT)
 	luaL_argcheck( L,
 		0 == getprotobyname_r( pName, &result_buf, buf, sizeof( buf ), &result ),
 		pos,
@@ -92,14 +95,16 @@ t_net_getProtocolByValue( lua_State *L, int pos, const int dft )
 	                          : luaL_optinteger( L, pos, dft );
 	struct protoent  result_buf;
 	struct protoent *result;
-#if defined(__linux__)
+	//TODO: define _REENTRANT properly
+#if defined(__linux__) && defined(_REENTRANT)
 	char             buf[ BUFSIZ ];
 #endif
 	// get absolute stack position
 	pos = (pos < 0) ? lua_gettop( L ) + pos + 1 : pos;
 	luaL_argcheck( L, pos-1 <= lua_gettop( L ), pos, "can't convert protocol, stack too short" );
 
-#if defined(__linux__)
+	//TODO: define _REENTRANT properly
+#if defined(__linux__) && defined(_REENTRANT)
 	luaL_argcheck( L,
 		0 == getprotobynumber_r( val, &result_buf, buf, sizeof( buf ), &result),
 		0,

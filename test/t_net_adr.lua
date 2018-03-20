@@ -13,6 +13,11 @@ local asrtHlp   = T.require( "assertHelper" )
 local fmt       = string.format
 
 local tests = {
+	beforeAll = function( self, done )
+		self.ipv6 = (Interface( 'default' ).AF_INET6 ~= nil)
+		done( )
+	end,
+
 
 	test_CreateEmptyAddressIp4 = function( self )
 		Test.Case.describe( "Socket.Address() --> creates an IPv4 Address {0.0.0.0:0}" )
@@ -33,7 +38,6 @@ local tests = {
 	end,
 
 	test_CreateLocalhostAddressIp6 = function( self )
-		Test.Case.describe( "Socket.Address('::') --> creates an IPv6 Address {[::]:0}" )
 		Test.Case.describe( "Socket.Address( '::1' ) --> creates localhost IPv6 Address {[::1]:0}" )
 		local adr = Address( '::1' )
 		asrtHlp.Address( adr, "AF_INET6", '::1', 0 ) -- AF_INET6 inferred from IP6 Address
@@ -47,6 +51,7 @@ local tests = {
 	end,
 
 	test_CreateIp6AddressPort = function( self )
+		if not self.ipv6 then Test.Case.skip( 'Test requires IPv6 to be enabled' ) end
 		local family,ip, port  = "AF_INET6", Interface( 'default' ).AF_INET6.address.ip, 8000
 		Test.Case.describe( fmt( "Socket.Address( '%s', %d ) --> creates IPv4 Address {%s:%d}", ip,port,ip,port ) )
 		local adr = Address( ip, port)
@@ -63,6 +68,7 @@ local tests = {
 	end,
 	
 	test_CreateIp6AddressByClone = function( self )
+		if not self.ipv6 then Test.Case.skip( 'Test requires IPv6 to be enabled' ) end
 		local family,ip, port  = "AF_INET6", Interface( 'default' ).AF_INET6.address.ip, 8000
 		Test.Case.describe( "Socket.Address( adr ) --> creates clone of IPv6 Address" )
 		local adr      = Address( ip, port )
@@ -72,6 +78,7 @@ local tests = {
 	end,
 
 	test_SetFamily = function( self )
+		if not self.ipv6 then Test.Case.skip( 'Test requires IPv6 to be enabled' ) end
 		local family4, ip4, port  = "AF_INET",  Interface( 'default' ).AF_INET.address.ip, 8000
 		local family6, ip6, port  = "AF_INET6", Interface( 'default' ).AF_INET6.address.ip, 8000
 		Test.Case.describe( "adr.family = AF_INET6 --> changes family to IPv6" )
@@ -91,6 +98,7 @@ local tests = {
 	end,
 
 	test_SetIpChangesFamily = function( self )
+		if not self.ipv6 then Test.Case.skip( 'Test requires IPv6 to be enabled' ) end
 		local family4, ip4, port  = "AF_INET",  Interface( 'default' ).AF_INET.address.ip, 8000
 		local family6, ip6, port  = "AF_INET6", Interface( 'default' ).AF_INET6.address.ip, 8000
 		Test.Case.describe( fmt( "adr.ip = '%s' sets the ip6 and AF_INET6 ", ip6 ) )
@@ -109,46 +117,64 @@ local tests = {
 		asrtHlp.Address( adr, family, ip, port )
 	end,
 
-	test_EqTestForEquality = function( self )
+	test_EqTestForIpv4Equality = function( self )
 		local ip4, port4  = Interface( 'default' ).AF_INET.address.ip, 50000
-		local ip6, port6  = Interface( 'default' ).AF_INET6.address.ip, 8000
 		local adr4a = Address( ip4, port4 )
 		local adr4b = Address( ip4, port4 )
 		Test.Case.describe( fmt( "%s ~= %s", adr4a, adr4b ) )
 		T.assert( adr4a == adr4b, "%s should be equal to %s", adr4a, adr4b )
+	end,
+
+	test_EqTestForIpv6Equality = function( self )
+		if not self.ipv6 then Test.Case.skip( 'Test requires IPv6 to be enabled' ) end
+		local ip6, port6  = Interface( 'default' ).AF_INET6.address.ip, 8000
 		local adr6a = Address( ip6, port6 )
 		local adr6b = Address( ip6, port6 )
+		Test.Case.describe( fmt( "%s ~= %s", adr6a, adr6b ) )
 		T.assert( adr6a == adr6b, "%s should be equal to %s", adr6a, adr6b )
 	end,
 
-	test_EqTestForPortInEquality = function( self )
+	test_EqTestForPortIpv4Inequality = function( self )
 		local ip4, port4  = Interface( 'default' ).AF_INET.address.ip, 50000
-		local ip6, port6  = Interface( 'default' ).AF_INET6.address.ip, 8000
 		local adr4a = Address( ip4, port4 )
 		local adr4b = Address( ip4, port4+1 )
 		Test.Case.describe( fmt( "%s ~= %s", adr4a, adr4b ) )
 		T.assert( adr4a ~= adr4b, "%s should not be equal to %s", adr4a, adr4b )
+	end,
+
+	test_EqTestForPortIpv6Inequality = function( self )
+		if not self.ipv6 then Test.Case.skip( 'Test requires IPv6 to be enabled' ) end
+		local ip6, port6  = Interface( 'default' ).AF_INET6.address.ip, 8000
 		local adr6a = Address( ip6, port6 )
 		local adr6b = Address( ip6, port6+1 )
+		Test.Case.describe( fmt( "%s ~= %s", adr6a, adr6b ) )
 		T.assert( adr6a ~= adr6b, "%s should not be equal to %s", adr6a, adr6b )
 	end,
 
-	test_EqTestForIpInEquality = function( self )
+	test_EqTestForIpv4Inequality = function( self )
 		local ip4, port4  = Interface( 'default' ).AF_INET.address.ip, 50000
-		local ip6, port6  = Interface( 'default' ).AF_INET6.address.ip, 8000
 		if ip4 == '127.0.0.1' then Test.Case.skip('Insufficient network setup') end
 		local adr4a = Address( ip4, port4 )
 		local adr4b = Address( '127.0.0.1', port4 )
 		Test.Case.describe( fmt( "%s ~= %s", adr4a, adr4b ) )
 		T.assert( adr4a ~= adr4b, "%s should not be equal to %s", adr4a, adr4b )
+	end,
+
+	test_EqTestForIpv6Inequality = function( self )
+		if not self.ipv6 then Test.Case.skip( 'Test requires IPv6 to be enabled' ) end
+		local ip6, port6  = Interface( 'default' ).AF_INET6.address.ip, 8000
+		if ip6 == '::1' then Test.Case.skip('Insufficient network setup') end
 		local adr6a = Address( ip6, port6 )
 		local adr6b = Address( '::1', port6 )
+		Test.Case.describe( fmt( "%s ~= %s", adr6a, adr6b ) )
 		T.assert( adr6a ~= adr6b, "%s should not be equal to %s", adr6a, adr6b )
 	end,
 
 	test_EqTestForFamilyInEquality = function( self )
+		if not self.ipv6 then Test.Case.skip( 'Test requires IPv6 to be enabled' ) end
 		local ip4, port4  = Interface( 'default' ).AF_INET.address.ip,  8000
 		local ip6, port6  = Interface( 'default' ).AF_INET6.address.ip, 8000
+		Test.Case.describe( fmt( "Socket.Address( '%s', %d ) ~= Socket.Address( '%s', %d )", ip4,port4,ip6,port6 ) )
 		local adrA = Address( ip4, port4 )
 		local adrB = Address( ip6, port6 )
 		Test.Case.describe( fmt( "%s ~= %s", adrA, adrB ) )
@@ -157,11 +183,16 @@ local tests = {
 
 	test_TostringFormatsProperly = function( self )
 		local ip4, port4  = Interface( 'default' ).AF_INET.address.ip, 1234
-		local ip6, port6  = Interface( 'default' ).AF_INET6.address.ip, 4321
 		Test.Case.describe( fmt( "Socket.Address( '%s', %d ) --> T.Net.Address{%s:%d}", ip4,port4,ip4,port4 ) )
 		local adr4, str4 = Address( ip4, port4 ), fmt( "T.Net.Address{%s:%d}", ip4, port4 )
 		local tostr4     = tostring( adr4 ):gsub( "}: .*", "}" )
 		T.assert( str4 == tostr4,  "%s shall be %s", tostr4, str4 )
+	end,
+
+	test_TostringFormatsIpv6Properly = function( self )
+		if not self.ipv6 then Test.Case.skip( 'Test requires IPv6 to be enabled' ) end
+		local ip6, port6  = Interface( 'default' ).AF_INET6.address.ip, 4321
+		Test.Case.describe( fmt( "Socket.Address( '%s', %d ) --> T.Net.Address{%s:%d}", ip6,port6,ip6,port6 ) )
 		local adr6, str6 = Address( ip6, port6 ), fmt( "T.Net.Address{[%s]:%d}", ip6, port6 )
 		local tostr6     = tostring( adr6 ):gsub( "}: .*", "}" )
 		T.assert( str6 == tostr6,  "%s shall be %s", tostr6, str6 )

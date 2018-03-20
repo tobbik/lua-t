@@ -11,6 +11,16 @@ local Address = require( "t.Net.Address" )
 local asrtHlp = t_require( "assertHelper" )
 
 local tests = {
+	beforeAll  = function( self, done )
+		-- UNIX only
+		-- TODO: make more universal
+		local h = io.popen( 'id' )
+		local s = h:read( '*a' )
+		h:close()
+		self.isPriv = not not s:match( 'uid=0' )
+		done( )
+	end,
+
 	beforeEach = function( self )
 		-- print("SOURCE:", debug.getinfo(1, "S").source)
 		-- print("ARGS:", arg[-3], arg[-2], arg[-1], arg[0], arg[1], arg[2] )
@@ -54,10 +64,13 @@ local tests = {
 		asrtHlp.Socket(  self.sock, 'udp', 'AF_INET6', 'SOCK_DGRAM' )
 	end,
 
-	test_CreatesCongestionControlSocket = function( self )
-		Test.Case.describe( "Socket('DCCP', 'ip6', 'SOCK_DCCP') --> creates a Congestion control IPv6 Socket" )
-		self.sock =  Socket('DCCP', 'ip6', 'SOCK_DCCP' )
-		asrtHlp.Socket(  self.sock, 'dccp', 'AF_INET6', 'SOCK_DCCP' )
+	test_CreatesControlMessageSocket = function( self )
+		Test.Case.describe( "Socket('ICMP', 'ip6', 'SOCK_RAW') --> creates a control message  IPv6 Socket" )
+		if not self.isPriv then
+			Test.Case.skip( "Must be privileged user (root) to create ICMP Socket" )
+		end
+		self.sock =  Socket('ICMP', 'ip6', 'SOCK_RAW' )
+		asrtHlp.Socket(  self.sock, 'icmp', 'AF_INET6', 'SOCK_RAW' )
 	end,
 
 	test_CreatesWithIp4Aliases = function( self )
@@ -89,7 +102,9 @@ local tests = {
 
 	test_CreatesWithRawAliases = function( self )
 		Test.Case.describe( "Socket(*, *, 'raw', ...) --> all create RAW Sockets" )
-		Test.Case.skip( "Must be privileged user (root) to execute that" )
+		if not self.isPriv then
+			Test.Case.skip( "Must be privileged user (root) to create RAW Sockets" )
+		end
 		for i,t in pairs( { "SOCK_RAW", "raw", "RAW" } ) do
 			local sock = Socket( 'TCP', 'ip4', t )
 			asrtHlp.Socket(  sock, 'tcp', 'AF_INET', 'SOCK_RAW' )

@@ -166,14 +166,15 @@ struct t_pck
 *t_pck_str_create( lua_State *L )
 {
 	size_t         n;      ///< iterator for going through the arguments
-	struct t_pck  *p;      ///< temporary packer/struct for iteration
+	//struct t_pck  *p;      ///< temporary packer/struct for iteration
 
 	for (n=0; n<lua_rawlen( L, -1 ); n++)
 	{
 		lua_rawgeti( L, -1, n+1 );                 //S:… tbl key
 		lua_pushvalue( L, -1 );                    //S:… tbl key key
 		lua_rawget( L, -3 );                       //S:… tbl key pck
-		p = t_pck_getPacker( L, -1 );              // turn Pck into true packer
+		//p = t_pck_getPacker( L, -1 );              // turn Pck into true packer
+		t_pck_getPacker( L, -1 );              // turn Pck into true packer
 		lua_rawset( L, -3 );                       //S:… tbl
 	}
 	return t_pck_create_ud( L, T_PCK_STR, lua_rawlen( L, -1), luaL_ref( L, LUA_REGISTRYINDEX ) );
@@ -245,7 +246,7 @@ t_pck_idx_getOffset( lua_State *L, struct t_pck_idx *pci )
 int
 lt_pck__index( lua_State *L )
 {
-	struct t_pck_idx *pci = NULL;  ///< Pack.Index to read from (parent)
+	//struct t_pck_idx *pci = NULL;  ///< Pack.Index to read from (parent)
 	//struct t_pck     *pck = t_pck_idx_getPackFromStack( L, 1, &pci );
 	struct t_pck     *pck = t_pck_idx_getPackFromFieldOnStack( L, 1, NULL, 0 );
 	size_t            idx = 0;     ///< index of requested field
@@ -290,7 +291,8 @@ lt_pck__index( lua_State *L )
 	lua_pop( L, 1 );                                     //S: Pck
 
 	if (0 != idx)
-		pci = t_pck_idx_create_ud( L, idx, luaL_ref( L, LUA_REGISTRYINDEX ) );
+		//pci = t_pck_idx_create_ud( L, idx, luaL_ref( L, LUA_REGISTRYINDEX ) );
+		t_pck_idx_create_ud( L, idx, luaL_ref( L, LUA_REGISTRYINDEX ) );
 	else
 		lua_pushnil( L );
 	//printf( "GET FIELD[%zu]: ", idx); t_stackDump(L);
@@ -331,7 +333,7 @@ t_pck_iter( lua_State *L )
 	int               len = luaL_checkinteger( L, lua_upvalueindex( 3 ) );
 	enum t_pck_t      pct = luaL_checkinteger( L, lua_upvalueindex( 4 ) );
 	int               itn = luaL_checkinteger( L, lua_upvalueindex( 5 ) );
-	struct t_pck     *pck;
+	//struct t_pck     *pck;
 	//struct t_pck_idx *pci;          ///< New T.Pack.Index to be returned
 	//struct t_pck_idx *pci_r;        ///< T.Pack.Index read from current idx
 
@@ -351,7 +353,8 @@ t_pck_iter( lua_State *L )
 	                                             //S: pck/tbl idx/key
 	if (T_PCK_ARR == pct)
 	{
-		pck     = t_pck_check_ud( L, 1, 1 );
+		//pck     = t_pck_check_ud( L, 1, 1 );
+		t_pck_check_ud( L, 1, 1 );
 		//pf->o += (idx-1) * pck->s;
 		lua_pushvalue( L, 1 );                    //S: tbl idx pck
 	}
