@@ -1,12 +1,14 @@
-local t_insert,t_concat,fmt,rep = table.insert,table.concat,string.format, string.rep
+local t_insert,t_concat                = table.insert,table.concat
+local s_fmt,s_rep                      = string.format,string.rep
+local pairs,tostring,assert,type,print = pairs,tostring,assert,type,print
 
-local Table      = { }
-Table.map        = function( tbl, func )
+local t_map        = nil
+t_map              = function( tbl, func )
 	for k,v in pairs( tbl ) do  tbl[ k ] = func( v, k )  end
 	return tbl
 end
 
-Table.merge      = function( t1, t2, union )
+local t_merge      = function( t1, t2, union )
 	local ret = { }
 	for k,v in pairs( t1 ) do
 		if union or t2[ k ] then ret[ k ] = v end
@@ -19,7 +21,7 @@ Table.merge      = function( t1, t2, union )
 	return ret
 end
 
-Table.complement = function( t1, t2, sym )
+local t_complement = function( t1, t2, sym )
 	local ret = { }
 	for k,v in pairs( t1 ) do
 		if nil == t2[ k ] then ret[ k ] = v end
@@ -33,7 +35,7 @@ Table.complement = function( t1, t2, sym )
 end
 
 -- only true for absolute cases: completely disjunct or completely contained
-Table.contains   = function( t1, t2, disjunct )
+local t_contains   = function( t1, t2, disjunct )
 	if not disjunct then disjunct = false else disjunct = true end  -- nil->false
 	for k,v in pairs( t2 ) do
 		if (nil == t1[ k ]) ~= disjunct then return false end
@@ -42,15 +44,15 @@ Table.contains   = function( t1, t2, disjunct )
 end
 
 -- This is an untested stub ... may not even be needed
-Table.intersects = function( t1, t2 )
+local t_intersects = function( t1, t2 )
 	for k,v in pairs( t2 ) do
 		if (nil ~= t1[ k ]) then return true end
 	end
 	return false
 end
 
-Table.find       = function( tbl, val, idx )
-	assert( type(tbl) == "table", "Expected `Table`" )
+local t_find       = function( tbl, val, idx )
+	assert( type( tbl ) == "table", "Expected `Table`" )
 	if idx then -- index forces to search numeric indizes only
 		for i=idx,#tbl do      if tbl[i]==val then return i end   end
 	else
@@ -59,33 +61,33 @@ Table.find       = function( tbl, val, idx )
 	return nil
 end
 
-Table.keys       = function( tbl )
-	assert( type(tbl) == "table", "Expected `Table`" )
+local t_keys     = function( tbl )
+	assert( type( tbl ) == "table", "Expected `Table`" )
 	local ret = { }
 	for k,v in pairs( tbl ) do    t_insert( ret, k )    end
 	return ret
 end
 
-Table.values     = function( tbl )
-	assert( type(tbl) == "table", "Expected `Table`" )
+local t_values   = function( tbl )
+	assert( type( tbl ) == "table", "Expected `Table`" )
 	local ret = { }
 	for k,v in pairs( tbl ) do    t_insert( ret, v )    end
 	return ret
 end
 
-Table.count      = function( tbl )
-	assert( type(tbl) == "table", "Expected `Table`" )
+local t_count     = function( tbl )
+	assert( type( tbl ) == "table", "Expected `Table`" )
 	local cnt = 0
 	for k,v in pairs( tbl ) do    cnt=cnt+1    end
 	return cnt
 end
-Table.length = Table.count
 
-Table.clone      = function( tbl, deep )
+local t_clone = nil    -- recursive
+t_clone       = function( tbl, deep )
 	local ret = { }
 	for k,v in pairs( tbl ) do
-		if deep and 'table' == type(v) then
-			ret[ k ] = Table.clone( v )
+		if deep and 'table' == type( v ) then
+			ret[ k ] = t_clone( v )
 		else
 			ret[ k ] = v
 		end
@@ -93,39 +95,52 @@ Table.clone      = function( tbl, deep )
 	return ret
 end
 
-Table.asstring   = function( tbl, t )
+local t_asstring   = function( tbl, t )
 	if 'keys' == t then
-		return '{' .. t_concat( Table.map( Table.keys( tbl ), tostring ), ',') .. '}'
+		return '{' .. t_concat( t_map( t_keys( tbl ),   tostring ), ',') .. '}'
 	elseif 'values' == t then
-		return '{' .. t_concat( Table.map( Table.values( tbl ), tostring ), ',') .. '}'
+		return '{' .. t_concat( t_map( t_values( tbl ), tostring ), ',') .. '}'
 	else
-		return '{' .. t_concat( Table.map( Table.values( tbl ), tostring ), ',') .. '}'
+		return '{' .. t_concat( t_map( t_values( tbl ), tostring ), ',') .. '}'
 	end
 end
 
-Table.isempty    = function( tbl )
+local t_isempty  = function( tbl )
 	for k,v in pairs( tbl ) do return false end
 	for i = 1, #tbl         do return false end
 	return true
 end
 
-local pprint = nil
-pprint = function( tbl, idnt )
+local t_pprint = nil    -- recursive
+t_pprint = function( tbl, idnt )
 	idnt = idnt or 0
 	for k, v in pairs( tbl ) do
-		local fmt = rep("  ", idnt) .. k .. ": "
-		if "table" == type(v) then
-			print( fmt )
-			pprint(v, idnt+1)
-		elseif type(v) == 'boolean' then
-			print(fmt .. tostring(v))
+		local s_fmt = s_rep( "  ", idnt ) .. k .. ": "
+		if "table" == type( v ) then
+			print( s_fmt )
+			t_pprint( v, idnt+1 )
+		elseif 'boolean' == type( v ) then
+			print( s_fmt .. tostring( v ) )
 		else
-			print(fmt .. v)
+			print( s_fmt .. v )
 		end
 	end
 end
 
-Table.pprint     = pprint
 
-
-return Table
+return {
+	  map          = t_map
+	, merge        = t_merge
+	, complement   = t_complement
+	, contains     = t_contains
+	, intersects   = t_intersects
+	, find         = t_find
+	, keys         = t_keys
+	, values       = t_values
+	, count        = t_count
+	, length       = t_count
+	, clone        = t_clone
+	, asstring     = t_asstring
+	, isempty      = t_isempty
+	, pprint       = t_pprint
+}

@@ -25,6 +25,7 @@ Class Members
 
 None.
 
+
 Class Metamembers
 -----------------
 
@@ -97,7 +98,7 @@ Instance Members
     status           : OK
 
 ``string current_name``
-  The name of the curtrently executed test.
+  The name of the currently executed test.
 
 ``int name_width``
   The length(in characters) of the longest name in the test suite to be

@@ -92,8 +92,8 @@ _mt = {       -- local _mt at top of file
 				ctx.name_width = #name > ctx.name_width and #name or ctx.name_width
 			end
 		end
-		--execute
-		if 0 ~= ctx.name_width then 
+		-- execute
+		if 0 ~= ctx.name_width then
 			local runner = function( )
 				for name,cse,i in pairs( self ) do
 					if ctx:match( name ) then
