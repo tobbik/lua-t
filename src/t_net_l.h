@@ -444,46 +444,46 @@ static const struct t_typ t_net_shutList[ ] = {
 // bsearch() is used on this array.  Order keys (name) alphabetically!
 static const struct t_net_sck_option t_net_sck_options[ ] =
 {
-	{ "broadcast"      , SOL_SOCKET  , 0       , SO_BROADCAST   , T_NET_SCK_OTP_BOOL   , 1 , 1 } ,
+	{ "broadcast"   , SOL_SOCKET  , 0       , SO_BROADCAST   , T_NET_SCK_OTP_BOOL   , 1 , 1 } ,
 #ifdef FD_CLOEXEC
-	{ "closeexec"      , F_GETFD     , F_SETFD , FD_CLOEXEC     , T_NET_SCK_OTP_FCNTL  , 1 , 1 } ,
+	{ "closeexec"   , F_GETFD     , F_SETFD , FD_CLOEXEC     , T_NET_SCK_OTP_FCNTL  , 1 , 1 } ,
 #endif
-	{ "debug"          , SOL_SOCKET  , 0       , SO_DEBUG       , T_NET_SCK_OTP_BOOL   , 1 , 1 } ,
-	{ "descriptor"     , 0           , 0       , 0              , T_NET_SCK_OTP_DSCR   , 1 , 0 } ,
-	{ "dontroute"      , SOL_SOCKET  , 0       , SO_DONTROUTE   , T_NET_SCK_OTP_BOOL   , 1 , 1 } ,
-	{ "error"          , SOL_SOCKET  , 0       , SO_ERROR       , T_NET_SCK_OTP_INT    , 1 , 0 } ,
-	{ "family"         , 0           , 0       , 0              , T_NET_SCK_OTP_FMLY   , 1 , 0 } ,
-	{ "keepalive"      , SOL_SOCKET  , 0       , SO_KEEPALIVE   , T_NET_SCK_OTP_BOOL   , 1 , 1 } ,
-	{ "linger"         , SOL_SOCKET  , 0       , SO_LINGER      , T_NET_SCK_OTP_LINGER , 1 , 1 } ,
-	{ "maxsegment"     , IPPROTO_TCP , 0       , TCP_MAXSEG     , T_NET_SCK_OTP_INT    , 1 , 1 } ,
-	{ "nodelay"        , IPPROTO_TCP , 0       , TCP_NODELAY    , T_NET_SCK_OTP_BOOL   , 1 , 1 } ,
-	{ "nonblock"       , F_GETFL     , F_SETFL , O_NONBLOCK     , T_NET_SCK_OTP_FCNTL  , 1 , 1 } ,
+	{ "debug"       , SOL_SOCKET  , 0       , SO_DEBUG       , T_NET_SCK_OTP_BOOL   , 1 , 1 } ,
+	{ "descriptor"  , 0           , 0       , 0              , T_NET_SCK_OTP_DSCR   , 1 , 0 } ,
+	{ "dontroute"   , SOL_SOCKET  , 0       , SO_DONTROUTE   , T_NET_SCK_OTP_BOOL   , 1 , 1 } ,
+	{ "error"       , SOL_SOCKET  , 0       , SO_ERROR       , T_NET_SCK_OTP_INT    , 1 , 0 } ,
+	{ "family"      , 0           , 0       , 0              , T_NET_SCK_OTP_FMLY   , 1 , 0 } ,
+	{ "keepalive"   , SOL_SOCKET  , 0       , SO_KEEPALIVE   , T_NET_SCK_OTP_BOOL   , 1 , 1 } ,
+	{ "linger"      , SOL_SOCKET  , 0       , SO_LINGER      , T_NET_SCK_OTP_LINGER , 1 , 1 } ,
+	{ "maxsegment"  , IPPROTO_TCP , 0       , TCP_MAXSEG     , T_NET_SCK_OTP_INT    , 1 , 1 } ,
+	{ "nodelay"     , IPPROTO_TCP , 0       , TCP_NODELAY    , T_NET_SCK_OTP_BOOL   , 1 , 1 } ,
+	{ "nonblock"    , F_GETFL     , F_SETFL , O_NONBLOCK     , T_NET_SCK_OTP_FCNTL  , 1 , 1 } ,
 #ifdef SO_NOSIGPIPE
-	{ "nosigpipe"      , SOL_SOCKET  , 0       , SO_NOSIGPIPE   , T_NET_SCK_OTP_BOOL   , 1 , 1 } ,
+	{ "nosigpipe"   , SOL_SOCKET  , 0       , SO_NOSIGPIPE   , T_NET_SCK_OTP_BOOL   , 1 , 1 } ,
 #endif
-	{ "oobinline"      , SOL_SOCKET  , 0       , SO_OOBINLINE   , T_NET_SCK_OTP_BOOL   , 1 , 1 } ,
+	{ "oobinline"   , SOL_SOCKET  , 0       , SO_OOBINLINE   , T_NET_SCK_OTP_BOOL   , 1 , 1 } ,
 #ifdef SO_PROTOCOL
-	{ "protocol"       , SOL_SOCKET  , 0       , SO_PROTOCOL    , T_NET_SCK_OTP_PRTC   , 1 , 0 } ,
+	{ "protocol"    , SOL_SOCKET  , 0       , SO_PROTOCOL    , T_NET_SCK_OTP_PRTC   , 1 , 0 } ,
 #endif
-	{ "recvbuffer"     , SOL_SOCKET  , 0       , SO_RCVBUF      , T_NET_SCK_OTP_INT    , 1 , 1 } ,
-	{ "recvlow"        , SOL_SOCKET  , 0       , SO_RCVLOWAT    , T_NET_SCK_OTP_INT    , 1 , 1 } ,
+	{ "recvbuffer"  , SOL_SOCKET  , 0       , SO_RCVBUF      , T_NET_SCK_OTP_INT    , 1 , 1 } ,
+	{ "recvlow"     , SOL_SOCKET  , 0       , SO_RCVLOWAT    , T_NET_SCK_OTP_INT    , 1 , 1 } ,
 #ifdef __linux
-	{ "recvqueue"      , SIOCINQ     , 0       , 0              , T_NET_SCK_OTP_IOCTL  , 1 , 0 } ,
+	{ "recvqueue"   , SIOCINQ     , 0       , 0              , T_NET_SCK_OTP_IOCTL  , 1 , 0 } ,
 #endif
-	{ "recvtimeout"    , SOL_SOCKET  , 0       , SO_RCVTIMEO    , T_NET_SCK_OTP_TIME   , 1 , 1 } ,
-	{ "reuseaddr"      , SOL_SOCKET  , 0       , SO_REUSEADDR   , T_NET_SCK_OTP_BOOL   , 1 , 1 } ,
+	{ "recvtimeout" , SOL_SOCKET  , 0       , SO_RCVTIMEO    , T_NET_SCK_OTP_TIME   , 1 , 1 } ,
+	{ "reuseaddr"   , SOL_SOCKET  , 0       , SO_REUSEADDR   , T_NET_SCK_OTP_BOOL   , 1 , 1 } ,
 #ifdef SO_REUSEPORT
-	{ "reuseport"      , SOL_SOCKET  , 0       , SO_REUSEPORT   , T_NET_SCK_OTP_BOOL   , 1 , 1 } ,
+	{ "reuseport"   , SOL_SOCKET  , 0       , SO_REUSEPORT   , T_NET_SCK_OTP_BOOL   , 1 , 1 } ,
 #endif
-	{ "sendbuffer"     , SOL_SOCKET  , 0       , SO_SNDBUF      , T_NET_SCK_OTP_INT    , 1 , 1 } ,
-	{ "sendlow"        , SOL_SOCKET  , 0       , SO_SNDLOWAT    , T_NET_SCK_OTP_INT    , 1 , 1 } ,
+	{ "sendbuffer"  , SOL_SOCKET  , 0       , SO_SNDBUF      , T_NET_SCK_OTP_INT    , 1 , 1 } ,
+	{ "sendlow"     , SOL_SOCKET  , 0       , SO_SNDLOWAT    , T_NET_SCK_OTP_INT    , 1 , 1 } ,
 #ifdef __linux
-	{ "sendqueue"      , SIOCOUTQ    , 0       , 0              , T_NET_SCK_OTP_IOCTL  , 1 , 0 } ,
+	{ "sendqueue"   , SIOCOUTQ    , 0       , 0              , T_NET_SCK_OTP_IOCTL  , 1 , 0 } ,
 #endif
-	{ "sendtimeout"    , SOL_SOCKET  , 0       , SO_SNDTIMEO    , T_NET_SCK_OTP_TIME   , 1 , 1 } ,
-	{ "type"           , SOL_SOCKET  , 0       , SO_TYPE        , T_NET_SCK_OTP_TYPE   , 1 , 0 } ,
+	{ "sendtimeout" , SOL_SOCKET  , 0       , SO_SNDTIMEO    , T_NET_SCK_OTP_TIME   , 1 , 1 } ,
+	{ "type"        , SOL_SOCKET  , 0       , SO_TYPE        , T_NET_SCK_OTP_TYPE   , 1 , 0 } ,
 #ifdef SO_USELOOPBACK
-	{ "useloopback"    , SOL_SOCKET  , 0       , SO_USELOOPBACK , T_NET_SCK_OTP_BOOL   , 1 , 1 } ,
+	{ "useloopback" , SOL_SOCKET  , 0       , SO_USELOOPBACK , T_NET_SCK_OTP_BOOL   , 1 , 1 } ,
 #endif
 };
 

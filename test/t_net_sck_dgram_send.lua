@@ -26,6 +26,7 @@ local Buffer    = require( "t.Buffer" )
 local T         = require( "t" )
 local t_assert,t_require  = require't'.assert, require't'.require
 local asrtHlp   = t_require( "assertHelper" )
+local config    = t_require( "t_cfg" )
 
 
 local makeReceiver = function( self, payload, max, done )
@@ -55,7 +56,7 @@ local tests = {
 	beforeAll = function( self, done )
 		self.loop  = Loop( )
 		self.host  = Interface( "default" ).AF_INET.address.ip
-		self.port  = 8000
+		self.port  = config.nonPrivPort
 		self.sSck  = Socket( "udp" )
 		self.sAdr  = self.sSck:bind( self.host, self.port )
 		asrtHlp.Socket( self.sSck, "udp", "AF_INET", "SOCK_DGRAM" )

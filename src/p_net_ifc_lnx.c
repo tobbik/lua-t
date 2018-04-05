@@ -205,6 +205,7 @@ p_net_ifc_get( lua_State *L, const char *if_name )
 	for (ifa = all_ifas; ifa ; ifa = ifa->ifa_next)
 	{
 		lua_getfield( L, -1,  ifa->ifa_name );
+		//printf("N: %s(%s)\n", ifa->ifa_name, (ifa->ifa_addr) ?"True":"False" );
 		if (lua_isnil( L, -1 ))
 		{
 			lua_pop( L, 1 );        // pop nil
@@ -216,14 +217,14 @@ p_net_ifc_get( lua_State *L, const char *if_name )
 			lua_pushstring( L, ifa->ifa_name );
 			lua_setfield( L, -2, "name" );
 		}                          //S: lst ifc
-		if (AF_INET == ifa->ifa_addr->sa_family)
+		if (ifa->ifa_addr && AF_INET   == ifa->ifa_addr->sa_family)
 		{
 			p_net_ifc_parseFlags( L, ifa->ifa_flags );
 			p_net_ifs_getAddrPayload( L, ifa );
 		}
-		if (AF_INET6 == ifa->ifa_addr->sa_family)
+		if (ifa->ifa_addr && AF_INET6  == ifa->ifa_addr->sa_family)
 			p_net_ifs_getAddrPayload( L, ifa );
-		if (AF_PACKET == ifa->ifa_addr->sa_family)
+		if (ifa->ifa_addr && AF_PACKET == ifa->ifa_addr->sa_family)
 			p_net_ifs_getAddrStats( L, ifa );
 		lua_pop( L, 1 );
 	}

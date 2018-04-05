@@ -20,6 +20,8 @@ local Socket    =   require( "t.Net.Socket" )
 local Address   =   require( "t.Net.Address" )
 local Interface =   require( "t.Net.Interface" )
 local asrtHlp   = t_require( "assertHelper" )
+local config    = t_require( "t_cfg" )
+
 
 local tests = {
 	beforeAll  = function( self, done )
@@ -28,7 +30,7 @@ local tests = {
 		local h = io.popen( 'id' )
 		local s = h:read( '*a' )
 		h:close()
-		self.isPriv = not not s:match( 'uid=0' )
+		self.isPriv = not not s:match( 'uid=0' ) -- isPriviledged? root?
 		done( )
 	end,
 
@@ -53,7 +55,7 @@ local tests = {
 		if self.isPriv then
 			Test.Case.skip( "Test is for unauthorized behaviour" )
 		end
-		local port   = 80
+		local port   = config.privPort
 		local errMsg = "Can't bind socket to 0.0.0.0:"..port.." %(Permission denied%)"
 		local a,e    = Socket.bind( port )
 		assert( not a, "Should fail binding to priviledged port as non root" )
@@ -62,7 +64,7 @@ local tests = {
 
 	test_SBindPortCreateSockAndInanyAddress = function( self )
 		Test.Case.describe( "Socket.bind( port ) --> creates TCP IPv4 Socket and 0.0.0.0:port address" )
-		local port  = 8000
+		local port  = config.nonPrivPort
 		self.sck, self.address = Socket.bind( port )
 		asrtHlp.Socket(  self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
 		asrtHlp.Address( self.address, "AF_INET", '0.0.0.0', port )
@@ -71,16 +73,16 @@ local tests = {
 	test_SBindHostPortCreateSockAndAddress = function( self )
 		Test.Case.describe( "Socket.bind(host,port) --> creates TCP IPv4 Socket and address" )
 		local host   = Interface( 'default' ).AF_INET.address.ip
-		local port   = 8000
+		local port   = config.nonPrivPort
 		self.sck, self.address = Socket.bind( host, port )
 		asrtHlp.Socket(  self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
-		asrtHlp.Address( self.address, "AF_INET", host, 8000 )
+		asrtHlp.Address( self.address, "AF_INET", host, config.nonPrivPort )
 	end,
 
 	test_SBindAddressCreateSockOnly = function( self )
 		Test.Case.describe( "Socket.bind(address) --> creates TCP IPv4 Socket but no address" )
 		local host   = Interface( 'default' ).AF_INET.address.ip
-		local port   = 8000
+		local port   = config.nonPrivPort
 		local addr   = Address( host, port )
 		self.sck, self.adr = Socket.bind( addr )
 		asrtHlp.Socket(  self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
@@ -90,7 +92,7 @@ local tests = {
 	test_SBindReturnBoundSocket = function( self )
 		Test.Case.describe( "Socket.bind(address) --> returning socket is bound; getsockname()" )
 		local host   = Interface( 'default' ).AF_INET.address.ip
-		local port   = 8000
+		local port   = config.nonPrivPort
 		local addr   = Address( host, port )
 		self.sck, self.address = Socket.bind( addr )
 		asrtHlp.Socket(  self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
@@ -111,27 +113,27 @@ local tests = {
 
 	test_sBindPortCreateInAnyAddress = function( self )
 		Test.Case.describe( "s:bind( port ) --> creates 0.0.0.0:port address" )
-		local port   = 8000
+		local port   = config.nonPrivPort
 		self.sck     = Socket()
 		local adr, b = self.sck:bind( port)
 		assert( nil  == b, "The socket should not be returned" )
-		asrtHlp.Address( adr, "AF_INET", '0.0.0.0', 8000 )
+		asrtHlp.Address( adr, "AF_INET", '0.0.0.0', config.nonPrivPort )
 	end,
 
 	test_sBindHostPortCreateAddress = function( self )
 		Test.Case.describe( "s:bind(host,port) --> creates address" )
 		local host   = Interface( 'default' ).AF_INET.address.ip
-		local port   = 8000
+		local port   = config.nonPrivPort
 		self.sck     = Socket()
 		local adr, b = self.sck:bind( host, port )
 		assert( nil  == b, "The socket should not be returned" )
-		asrtHlp.Address( adr, "AF_INET", host, 8000 )
+		asrtHlp.Address( adr, "AF_INET", host, config.nonPrivPort )
 	end,
 
 	test_sBindAddressCreateNothingButBinds = function( self )
 		Test.Case.describe( "s:bind(address) --> creates nothing but does bind" )
 		local host   = Interface( 'default' ).AF_INET.address.ip
-		local port   = 8000
+		local port   = config.nonPrivPort
 		local addr   = Address( host, port )
 		self.sck     = Socket()
 		local adr,b  = self.sck:bind( addr )

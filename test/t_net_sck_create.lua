@@ -16,7 +16,7 @@ local tests = {
 		-- TODO: make more universal
 		local h = io.popen( 'id' )
 		local s = h:read( '*a' )
-		h:close()
+		h:close( )
 		self.isPriv = not not s:match( 'uid=0' )
 		done( )
 	end,

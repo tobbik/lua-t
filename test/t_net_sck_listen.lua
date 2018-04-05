@@ -27,6 +27,7 @@ local Socket    = require( "t.Net.Socket" )
 local Address   = require( "t.Net.Address" )
 local Interface = require( "t.Net.Interface" )
 local asrtHlp   = t_require( "assertHelper" )
+local config    = t_require( "t_cfg" )
 
 local tests = {
 	beforeAll  = function( self, done )
@@ -70,7 +71,7 @@ local tests = {
 	test_SListenAddress = function( self )
 		Test.Case.describe( "Socket.listen( adr ) --> Sck IPv4(TCP)" )
 		local host        = Interface( 'default' ).AF_INET.address.ip
-		local port        = 8000
+		local port        = config.nonPrivPort
 		local addr        = Address( host, port )
 		self.sck,self.adr = Socket.listen( addr )
 		assert( self.adr == addr, "Returned Address shall be same as input" )
@@ -81,7 +82,7 @@ local tests = {
 	test_SListenAddressBacklog = function( self )
 		Test.Case.describe( "Socket.listen( adr, backlog ) --> Sck IPv4(TCP)" )
 		local host        = Interface( 'default' ).AF_INET.address.ip
-		local port        = 8000
+		local port        = config.nonPrivPort
 		local addr        = Address( host, port )
 		self.sck,self.adr = Socket.listen( addr, 5 )
 		assert( self.adr == addr, "Returned Address shall be same as input" )
@@ -101,7 +102,7 @@ local tests = {
 	test_SListenHostPort = function( self )
 		Test.Case.describe( "Socket.listen( host,port ) --> Sck IPv4(TCP), Adr host:port" )
 		local host        = Interface( 'default' ).AF_INET.address.ip
-		local port        = 8000
+		local port        = config.nonPrivPort
 		self.sck,self.adr = Socket.listen( host, port )
 		asrtHlp.Socket(  self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
 		asrtHlp.Address( self.adr, "AF_INET", host, port )
@@ -110,7 +111,7 @@ local tests = {
 
 	test_SListenPortBacklog = function( self )
 		Test.Case.describe( "Socket.listen( port, bl ) --> Sck IPv4(TCP), Adr 0.0.0.0:port" )
-		local port        = 8000
+		local port        = config.nonPrivPort
 		self.sck,self.adr = Socket.listen( port, 50 )
 		asrtHlp.Socket(  self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
 		asrtHlp.Address( self.adr, "AF_INET", '0.0.0.0', port )
@@ -124,7 +125,7 @@ local tests = {
 			Test.Case.skip( "Test is for unauthorized behaviour" )
 		end
 		local host   = Interface( 'default' ).AF_INET.address.ip
-		local port   = 80
+		local port   = config.privPort
 		local errMsg = "Can't bind socket to "..host..":"..port.." %(Permission denied%)"
 		local f,e    = Socket.listen( host, port )
 		assert( not f, "Should have failed as non-root user" )
@@ -134,7 +135,7 @@ local tests = {
 	test_SListenHostAddressBacklog = function( self )
 		Test.Case.describe( "Socket.listen( host,port,backlog ) --> Sck IPv4(TCP), Adr host:port" )
 		local host        = Interface( 'default' ).AF_INET.address.ip
-		local port        = 8000
+		local port        = config.nonPrivPort
 		self.sck,self.adr = Socket.listen( host, port, 5 )
 		asrtHlp.Socket(  self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
 		asrtHlp.Address( self.adr, "AF_INET", host, port )
@@ -147,7 +148,7 @@ local tests = {
 	test_sListen = function( self )
 		Test.Case.describe( "sck:listen( ) --> void (Assume Socket is already bound)" )
 		local host        = Interface( 'default' ).AF_INET.address.ip
-		local port        = 8000
+		local port        = config.nonPrivPort
 		self.sck,self.adr = Socket.bind( host, port )
 		asrtHlp.Socket( self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
 		asrtHlp.Address( self.adr, "AF_INET", host, port )
@@ -161,7 +162,7 @@ local tests = {
 	test_sListenBacklog = function( self )
 		Test.Case.describe( "sck:listen( backlog ) --> void (Assume Socket is already bound)" )
 		local host        = Interface( 'default' ).AF_INET.address.ip
-		local port        = 8000
+		local port        = config.nonPrivPort
 		self.sck,self.adr = Socket.bind( host, port )
 		asrtHlp.Socket( self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
 		asrtHlp.Address( self.adr, "AF_INET", host, port )
@@ -175,7 +176,7 @@ local tests = {
 	test_sListenAddress = function( self )
 		Test.Case.describe( "sck:listen( adr ) --> void" )
 		local host = Interface( 'default' ).AF_INET.address.ip
-		local port = 8000
+		local port = config.nonPrivPort
 		self.adr   = Address( host, port )
 		self.sck   = Socket( )
 		local a, b = self.sck:listen( self.adr )
@@ -188,7 +189,7 @@ local tests = {
 	test_sListenAddressBacklog = function( self )
 		Test.Case.describe( "sck:listen( adr, backlog ) --> void" )
 		local host = Interface( 'default' ).AF_INET.address.ip
-		local port = 8000
+		local port = config.nonPrivPort
 		self.adr   = Address( host, port )
 		self.sck   = Socket( )
 		local a, b = self.sck:listen( self.adr, 5 )
@@ -213,7 +214,7 @@ local tests = {
 	test_sListenHostPort = function( self )
 		Test.Case.describe( "sck:listen( host, port ) --> Adr host:port" )
 		local host      = Interface( 'default' ).AF_INET.address.ip
-		local port      = 8000
+		local port      = config.nonPrivPort
 		self.sck        = Socket( )
 		asrtHlp.Socket( self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
 		local a,b       = self.sck:listen( host, port )
@@ -225,7 +226,7 @@ local tests = {
 
 	test_sListenPortBacklog = function( self )
 		Test.Case.describe( "sck:listen( port, bl ) --> Adr 0.0.0.0:port" )
-		local port      = 8000
+		local port      = config.nonPrivPort
 		self.sck        = Socket( )
 		self.adr        = self.sck:listen( port, 50 )
 		asrtHlp.Address( self.adr, "AF_INET", '0.0.0.0', port )
@@ -235,7 +236,7 @@ local tests = {
 	test_sListenHostPortBacklog = function( self )
 		Test.Case.describe( "sck:listen( host, port, backlog ) --> Adr host:port" )
 		local host      = Interface( 'default' ).AF_INET.address.ip
-		local port      = 8000
+		local port      = config.nonPrivPort
 		self.sck        = Socket( )
 		asrtHlp.Socket( self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
 		local a,b       = self.sck:listen( host, port, 5 )

@@ -22,6 +22,7 @@ local Interface = require( "t.Net.Interface" )
 local Socket    = require( "t.Net.Socket" )
 local Address   = require( "t.Net.Address" )
 local asrtHlp   = t_require( "assertHelper" )
+local config    = t_require( "t_cfg" )
 
 
 -- #########################################################################
@@ -40,7 +41,7 @@ local tests = {
 	-- wrappers for tests
 	beforeAll = function( self, done )
 		self.host          = Interface( 'default' ).AF_INET.address.ip
-		self.port          = 8000
+		self.port          = config.nonPrivPort
 		self.srv, self.adr = Socket.listen( self.host, self.port )
 		print( self.srv, self.adr )
 		self.loop          = Loop( )
@@ -110,9 +111,9 @@ local tests = {
 
 	test_cb_sConnectHostPortBound = function( self, done )
 		Test.Case.describe( "sck:connect( host, port ) bound --> Adr host:port" )
-		-- bind socket to outgoing interface/port first 
+		-- bind socket to outgoing interface/port first
 		self.host2cmp       = self.host
-		self.port2cmp       = 11111
+		self.port2cmp       = config.nonPrivPortAlt
 		self.sck            = Socket()
 		self.sck.reuseaddr  = true
 		self.adrb           = self.sck:bind( self.host2cmp, self.port2cmp )
@@ -123,9 +124,9 @@ local tests = {
 
 	test_cb_sConnectAddressBound = function( self, done )
 		Test.Case.describe( "sck:connect( adr ) bound --> no return value" )
-		-- bind socket to outgoing interface/port first 
+		-- bind socket to outgoing interface/port first
 		self.host2cmp       = self.host
-		self.port2cmp       = 11111
+		self.port2cmp       = config.nonPrivPortAlt
 		self.sck            = Socket()
 		self.sck.reuseaddr  = true
 		self.adrb           = self.sck:bind( self.host2cmp, self.port2cmp )

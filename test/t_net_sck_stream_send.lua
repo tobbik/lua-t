@@ -28,6 +28,7 @@ local Interface = require( "t.Net.Interface" )
 local Buffer    = require( "t.Buffer" )
 local T         = require( "t" )
 local asrtHlp   = T.require( "assertHelper" )
+local config    = T.require( "t_cfg" )
 
 
 -- #########################################################################
@@ -72,7 +73,7 @@ local tests = {
 	beforeAll = function( self, done )
 		self.loop            = Loop( )
 		self.host            = Interface( 'default' ).AF_INET.address.ip
-		self.port            = 8000
+		self.port            = config.nonPrivPort
 		self.sSck, self.sAdr = Socket.listen( self.host, self.port )
 		done( )
 	end,
