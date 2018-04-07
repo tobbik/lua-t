@@ -85,11 +85,27 @@ perf:
 
 
 # following targets are for docker builds
-docker: $(DOCKER)
+docker-build: $(DOCKER)
 	$(DOCKER) build --tag $(IMAGE) .
 
-runit:
-	$(DOCKER) run -i -t $(IMAGE) /bin/bash
+docker-run:
+	$(DOCKER) run -i -t --name $(IMAGE) $(IMAGE) /bin/bash
+
+docker-start:
+	$(DOCKER) start $(IMAGE)
+
+docker-stop:
+	$(DOCKER) stop $(IMAGE)
+
+docker-exec:
+	$(DOCKER) exec -i -t $(IMAGE) /bin/bash
+
+
+docker1: $(DOCKER)
+	$(DOCKER) build --tag $(IMAGE)1 -f Dockerfile.1 .
+
+runit1:
+	$(DOCKER) run -i -t $(IMAGE)1 /bin/bash
 
 dclean:
 	$(DOCKER) image rm $(IMAGE)
