@@ -14,7 +14,7 @@ PREFIX=$(shell pkg-config --variable=prefix lua)
 INCDIR=$(shell pkg-config --variable=includedir lua)
 LDFLAGS=$(shell pkg-config --libs lua) -lcrypt
 PLAT=linux
-MYCFLAGS=
+MYCFLAGS=" -O2"
 SRCDIR=$(CURDIR)/src
 LUADIR=$(CURDIR)/lua
 
@@ -30,6 +30,12 @@ DOCKERPS=$(DOCKER) ps --format "table {{.Names}}"
 CONTAINER=luab
 VERSION=5.3
 IMAGE=lua$(shell echo $(VERSION) | sed "s/\.//")
+TZDATAPATH=build/tz
+
+dev:
+	$(MAKE) MYCFLAGS="-g -O0" \
+	  CC=clang LD=clang \
+	  DEBUG=1 BUILD_EXAMPLE=1 install
 
 all: $(SRCDIR)/*.so
 
@@ -92,20 +98,41 @@ docker-run:
 	$(DOCKER) run -i -t --name $(IMAGE) $(IMAGE) /bin/bash
 
 docker-start:
-	$(DOCKER) start $(IMAGE)
+	$(DOCKER) start -i $(IMAGE)
 
 docker-stop:
 	$(DOCKER) stop $(IMAGE)
 
-docker-exec:
-	$(DOCKER) exec -i -t $(IMAGE) /bin/bash
-
-
-docker1: $(DOCKER)
-	$(DOCKER) build --tag $(IMAGE)1 -f Dockerfile.1 .
-
-runit1:
-	$(DOCKER) run -i -t $(IMAGE)1 /bin/bash
-
 dclean:
 	$(DOCKER) image rm $(IMAGE)
+
+
+# Docker for development
+#
+$(TZDATAPATH):
+	cat /etc/localtime > $(TZDATAPATH)
+
+docker-dev: $(DOCKER) $(TZDATAPATH)
+	$(DOCKER) build  --tag  $(IMAGE)dev -f Dockerfile.dev .
+	$(DOCKER) run    -i -t \
+	  --name   $(IMAGE)dev \
+	  --mount  src="$(CURDIR)",target=/build,type=bind \
+	  $(IMAGE)dev \
+	  /bin/bash
+
+docker-dev-start:
+	$(DOCKER) start -i $(IMAGE)dev
+
+docker-dev-stop:
+	$(DOCKER) stop $(IMAGE)dev
+
+docker-dev-clean:
+	$(DOCKER) rm $(IMAGE)dev
+
+docker-dev-pristine:
+	$(DOCKER) image rm $(IMAGE)dev
+
+docker-dev-rinse:
+	$(MAKE) docker-dev-clean
+	$(MAKE) docker-dev-pristine
+	-rm $(TZDATAPATH)

@@ -3,12 +3,13 @@ source ${HOME}/.screenrc
 chdir ${HOME}/mygit/lua-build
 screen -t build
 stuff "make clean "
-stuff "make costum && out/bin/lua -i ../lua-t/research/http/s_t.lua "
+stuff "make costum && out/bin/lua -i ../lua-t/test/runner.lua create "
 
 # lua-t
 chdir ${HOME}/mygit/lua-t
 screen -t lua-t
-#stuff "gvim -p  src/t_htp_req.c lua/Http/{Server,Stream,Request,Response}.* "
+stuff "gvim -p  src/t_pck*{c,h} ../lua-build/pck* "
+stuff "gvim -p  docs/Pack* "
 
 # lua-t source
 chdir ${HOME}/mygit/lua-t/src
@@ -18,8 +19,8 @@ screen -t t-src
 chdir ${HOME}/mygit/lua-t/example
 screen -t example
 
-# lua-t http
-chdir ${HOME}/mygit/lua-t/research/http
-screen -t http
+# lua-t docker
+chdir ${HOME}/mygit/lua-t
+screen -t docker
 
 chdir ${HOME}/mygit/lua-t

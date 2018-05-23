@@ -6,14 +6,13 @@ ENV LVER=5.3 LREL=4 LURL=http://www.lua.org/ftp/
 # Build dependencies.
 RUN apk update && \
     apk --no-cache add \
-    build-base linux-headers git bash unzip curl readline readline-dev
+    build-base linux-headers wget readline readline-dev
 
 # Build a reasonably vanilla lua version. This models the archlinux package
 COPY build/${LVER}/liblua.so.patch /tmp/
 COPY build/${LVER}/lua.pc /tmp/
-RUN cd /tmp && \
-    curl -o lua.tgz ${LURL}/lua-${LVER}.${LREL}.tar.gz && \
-    tar xzvf lua.tgz && mv lua-${LVER}.${LREL} lua && cd lua && \
+RUN mkdir -p /tmp/lua && cd /tmp/lua && \
+    wget ${LURL}/lua-${LVER}.${LREL}.tar.gz  -O - | tar xz --strip-components 1 && \
     patch -p1 -i ../liblua.so.patch && \
     sed "s/%VER%/${LVER}/g;s/%REL%/${LVER}.${LREL}/g" ../lua.pc > lua.pc && \
     make MYCFLAGS="-fPIC -fbuiltin -g -O0" linux && \
