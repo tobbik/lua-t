@@ -1,9 +1,11 @@
 source ${HOME}/.screenrc
 
-chdir ${HOME}/mygit/lua-build
+chdir ${HOME}/mygit/lua-t
 screen -t build
-stuff "make clean "
-stuff "make costum && out/bin/lua -i ../lua-t/test/runner.lua create "
+stuff "make dev-rinse "
+stuff "export LUA_PATH=\"${PWD}/out/share/lua/5.3/?.lua;;\" "
+stuff "export LUA_CPATH=\"${PWD}/out/lib/lua/5.3/?.so;;\" "
+stuff "make dev-all && out/bin/lua -i ../lua-t/test/runner.lua create "
 
 # lua-t
 chdir ${HOME}/mygit/lua-t

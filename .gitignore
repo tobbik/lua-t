@@ -12,3 +12,7 @@ research/*.o
 research/*.make
 research/Makefile
 build/tz
+# used to build a local Lua
+download
+compile
+out
