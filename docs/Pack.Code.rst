@@ -1,20 +1,52 @@
-lua-t Pack - The Binary Packer
-++++++++++++++++++++++++++++++++
+lua-t Pack - Code explaination
+++++++++++++++++++++++++++++++
 
 
-Overview
-========
+Data Structures
+===============
+
+Base Packer Data type
+---------------------
+
+The base structure for a pack has a type, a modifier and an optional size.
+The meaning of the modifier is dependent of the type.  For Functions,
+Arrays, Sequences, Structs its the Lua reference
+
+.. code:: c
+
+  struct t_pck {
+    enum   t_pck_t  t;   // type of packer (INT,FLOAT,RAW,...)
+    size_t          s;   // size of packer in bits (if known)
+    int             m;   // modifier (endian,signed,...)
+  }
+
+
+Index Access Data Type
+----------------------
+
+This structure describes a packer element located at a specific index within
+a packer combinator packer.
+
+.. code:: c
+
+  struct t_pck_idx {
+    int             pR;  // Reference to parent Packer
+    int            idx;  // 1-based index of packer field
+  }
+
 
 A Bit and Byte packer using the same kind of formatting string as Lua 5.3
 ``string.pack( )`` and ``string.unpack( )`` with two notable exceptions:
 
-   #. it does not deal with alignment or variable length strings
-   #. it can pack and unpack Bit wide resolution
+ #. it does not deal with alignment or variable length strings (yet)
+ #. it can pack and unpack Bit wide resolution
 
+When using a ``Pack`` object to create a packed binary representation,
+``Buffer`` objects are the preferred 
 ``Pack`` preferably works on ``Buffer`` objects, because they are mutable.
 This way it is possible to overwrite only parts of a buffer if only selected
 fields should be changed.  This safes memory because it prevents Lua from
-creating and interning  new strings for each write.
+creating and interning new strings for each write.
 
 t.Pack format strings
 =====================
@@ -58,14 +90,14 @@ struct
   An ordered collection of named packers.
 
 
-Pack Identification
--------------------
+Pack Identification aka. Packer types
+-------------------------------------
 
 ``Pack`` objects can identify themselves via a string.  The string is
 composed of different elements which vary slightly from type to type.  The
 general composition follows a simple schema:
 
-   Type Length Modifiers
+   ``<Type><Length><Modifiers>``
 
 Type can be any of the following:
 
@@ -73,7 +105,7 @@ Int
   Integer type; can be up to 64 bit wide, arbitrary bit size is allowed.
   Can be signed or unsigned.  Types that align with byte borders can have
   endianess assigned to them otherwise they default to network byte order
-  .aka big endian.  Examples:
+  aka. Big endian.  Examples:
 
    - ``Int32ul``  Little endian unsigned integer; 4 byte wide
    - ``Int15sb``  Big endian signed integer; 15 bit wide
@@ -86,8 +118,8 @@ Float
    - ``Float64sb``  Big endian; 8 byte wide
 
 Boolean
-  Boolean type; No variations. 1 bit wide.  The difference between this and
-  a 1 bit wide integer is the return value type when parsing.
+  Boolean type; 1 bit wide, no modifiers.  The difference between this and a
+  1 bit wide integer is the return value type when parsing.
 
 Raw
   Raw or String type.  The only variation is the length.
@@ -109,8 +141,8 @@ Struct
 Pack() Constructor overload
 ---------------------------
 
-What kind of a packer is created is controlled by the constructor.  The
-``Pack( )`` constructor takes the following paramters and creates the
+The type of packer created is controlled by the constructor.  The
+``Pack( )`` constructor takes the following parameters and creates the
 following datatypes:
 
 atomic
@@ -135,18 +167,6 @@ atomic
    print( Pack[ 'Int4ub' ] )
    -- t.Pack.Int4ub: 0x55814d1601a8
 
-array
-  The constructor takes a format string which defines a packer (atomic OR
-  combinator) and a number defining how often it gets repeated.
-  eg. p = ``Pack( '>d<H', 4 )`` defines a sequence of 2 elements which is
-  10 bytes long, it will get repeated 4 times, making the packer cover 40
-  bytes::
-
-   - p[1]:    is a packer sequence
-   - p[2][1]: is an atomic packer of type (float) with a 10 bytes offset
-
-  More details are in the `Pack.Array <Pack.Array.rst>`__ documentation.
-
 sequence
   The constructor takes a format string which defines a composition of
   multiple items.  eg. ``p = Pack( '<l', '>H', 'i6' )`` defines a sequence
@@ -156,9 +176,23 @@ sequence
    - p[2]: atomic packer of type (Int2ub) 8  bytes offset (length of p[1])
    - p[3]: atomic packer of type (Int6sl) 10 bytes offset (length of p[1]+p[2])
 
-  ``Pack( '<l>H<i6' )`` also creates a sequence.  There are subtile
-  differences in the behaviour that re explained in the `Pack.Sequence
-  <Pack.Sequence.rst>`__ documentation.
+  ``Pack( '<l>H<i6' )`` also creates a sequence.  There is a subtile
+  differences in the behaviour of the endianess handling that are explained
+  in the `Pack.Sequence <Pack.Sequence.rst>`__ documentation.
+
+array
+  The constructor takes a format string which defines a packer (atomic OR
+  combinator) and a number defining how often it gets repeated.  eg. ``p =
+  Pack( '<i4', 12 )`` would create a packer array composed of twelve 32 bit
+  integers making it ``4*12 = 48`` bytes long.  Arrays can also define more
+  complex types such as an array of sequences.  eg. p = ``Pack( '>d<H', 4
+  )`` defines an array of sequences, with each sequence being 10 bytes long,
+  it will get repeated 4 times, making the packer cover 40 bytes::
+
+   - p[1]:    is a packer sequence
+   - p[2][1]: is an atomic packer of type (float) with a 10 bytes offset
+
+  More details are in the `Pack.Array <Pack.Array.rst>`__ documentation.
 
 struct
   The constructor takes a format string which defines a composition of

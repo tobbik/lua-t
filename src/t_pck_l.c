@@ -19,323 +19,6 @@
 #endif
 
 
-// global default for T.Pack, can be flipped
-#ifdef IS_LITTLE_ENDIAN
-static int _default_endian = 1;
-#else
-static int _default_endian = 0;
-#endif
-
-// Function helpers
-//
-
-// ###########################################################################
-//                                HELPERS adapted from Lua 5.3 Source
-
-/** -------------------------------------------------------------------------
- * reads from string until input is not numeric any more.
- * \param   fmt    char**; format string
- * \param   dft    int   ; default value
- * \return  a      int   ; read numeric value
- *  -------------------------------------------------------------------------*/
-static size_t
-gn( const char **fmt, size_t dft )
-{
-	if (! T_PCK_ISDIGIT(** fmt))    // no number
-		return dft;
-	else
-	{
-		int a=0;
-		do
-		{
-			a = a*10 + *((*fmt)++) - '0';
-		} while (T_PCK_ISDIGIT(**fmt) &&  a <(INT_MAX/10 - 10));
-		return a;
-	}
-}
-
-
-/** -------------------------------------------------------------------------
- * Read an integer from the format parser
- * raises an error if it is larger than the maximum size for integers.
- * \param   fmt    char**; format string
- * \param   dft    int   ; default value
- * \param   max    int   ; max value allowed for int
- * \return  size   int   ; read size converted to bits
- *  -------------------------------------------------------------------------*/
-static size_t
-gnl( lua_State *L, const char **fmt, int dft, size_t max )
-{
-	size_t sz = gn( fmt, dft );
-	if (sz > max || sz <= 0)
-		return (size_t) luaL_error( L, "size (%d) out of limits [1 … %d]", sz, max );
-	return sz * NB;
-}
-
-
-/** -------------------------------------------------------------------------
- * Determines type of Packer from format string.
- * Returns the Packer, or NULL if unsuccessful.  Leaves created packer on the
- * stack.
- * \param   *L      Lua state.
- * \param   **f     const char** format string pointer. Function moves pointer.
- * \param   *e      int* pointer. Value holds current endianess.
- * \lreturn ud      t.Pack userdata instance.
- * \return  *p      struct t_pck* pointer.
- * TODO: Deal with bit sized Packers:
- *       - Detect if we are in Bit sized type(o%8 !=0)
- *       - Detect if fmt switched back to byte style and ERROR
- *  -------------------------------------------------------------------------*/
-static struct t_pck
-*t_pck_parseFmt( lua_State *L, const char **f, int *e )
-{
-	int           opt;
-	struct t_pck *p = NULL;
-
-#define C( typ, ltl, sgn, sz ) \
-   t_pck_create_ud( L, T_PCK_##typ, (sz), \
-     ( ((ltl) ? T_PCK_MOD_LITTLE : 0) | ((sgn) ? T_PCK_MOD_SIGNED : 0) ) );
-	while (NULL == p)
-	{
-		opt = *((*f)++);
-		//printf("'%c'   %02X\n", opt, opt);
-		switch (opt)
-		{
-			// Integer types
-			case 'b': p = C( INT, 1==*e, 1,                         NB        ); break;
-			case 'B': p = C( INT, 1==*e, 0,                         NB        ); break;
-			case 'h': p = C( INT, 1==*e, 1, sizeof( short )       * NB        ); break;
-			case 'H': p = C( INT, 1==*e, 0, sizeof( short )       * NB        ); break;
-			case 'l': p = C( INT, 1==*e, 1, sizeof( long )        * NB        ); break;
-			case 'L': p = C( INT, 1==*e, 0, sizeof( long )        * NB        ); break;
-			case 'j': p = C( INT, 1==*e, 1, sizeof( lua_Integer ) * NB        ); break;
-			case 'J': p = C( INT, 1==*e, 0, sizeof( lua_Integer ) * NB        ); break;
-			case 'T': p = C( INT, 1==*e, 0, sizeof( size_t )      * NB        ); break;
-			case 'i': p = C( INT, 1==*e, 1, gnl( L, f, sizeof( int ), MXINT ) ); break;
-			case 'I': p = C( INT, 1==*e, 0, gnl( L, f, sizeof( int ), MXINT ) ); break;
-
-			// Float types
-			case 'f': p = C( FLT, 1==*e, 0, sizeof( float )       * NB        ); break;
-			case 'd': p = C( FLT, 1==*e, 0, sizeof( double )      * NB        ); break;
-			case 'n': p = C( FLT, 1==*e, 0, sizeof( lua_Number )  * NB        ); break;
-
-			// String type
-			case 'c': p = C( RAW,     0, 0, gnl( L, f, 1, 0x1 << 30 )         ); break;
-
-			// Bit types
-			case 'v': p = C( BOL,     0, 0, 1                                 ); break;
-			case 'r': p = C( INT,     0, 1, gnl( L, f, 1, MXBIT )/NB          ); break;
-			case 'R': p = C( INT,     0, 0, gnl( L, f, 1, MXBIT )/NB          ); break;
-
-			// modifier types
-			case '<': *e = 1;                                                 continue;
-			case '>': *e = 0;                                                 continue;
-
-			// allow spaces as meaningless separators
-			case ' ':                                                         continue;
-			// that's the end of it
-			case '\0':                                                     return NULL;
-			default:
-				luaL_error( L, "invalid format option '%c'", opt );
-				return NULL;
-		}
-	}
-#undef C
-	return p;
-}
-
-
-/**--------------------------------------------------------------------------
- * Copy byte by byte from one string to another. Honours endianess.
- * \param   dst        char* to write to.
- * \param   src        char* to read from.
- * \param   sz         how many bytes to copy.
- * \param   is_little  treat input as little endian?
- * --------------------------------------------------------------------------*/
-static void
-t_pck_copyBytes( char *dst, const char *src, size_t sz, int is_little )
-{
-#ifdef IS_LITTLE_ENDIAN
-	if (is_little)
-		while (sz-- != 0)
-			*(dst++) = *(src+sz);
-	else
-	{
-		src = src+sz-1;
-		while (sz-- != 0)
-			*(dst++) = *(src-sz);
-	}
-#else
-	int i = 0;
-	if (is_little)
-		while (sz-- != 0)
-			dst[i++] = src[sz];
-	else
-		while (sz-- != 0)
-			dst[MXINT-1-i++] = src[sz];
-#endif
-}
-
-
-/**--------------------------------------------------------------------------
- * Get integer value from buffer and pushes to Lua stack.
- * \param  *L    Lua state.
- * \param  *b    char* to read from.
- * \param  *p    struct t_pck*.
- * \param   ofs  int; inner byte offset of bits.
- * \lreturn      pushes int value onto stack.
- * --------------------------------------------------------------------------*/
-static void
-t_pck_getIntValue( lua_State *L, const char *b, struct t_pck *p, size_t ofs )
-{
-	lua_Unsigned  msk    = 0,
-	              val    = 0;
-	char         *out    = (char *) &val;
-	size_t        bytes;              ///< how many bytes to copy for ALL bits
-	size_t        l_shft;             ///< how far left to shift the value
-
-	if (ofs || p->s % NB)            // Bitwise parsing if not aligned to byte border
-	{
-		bytes  = ((p->s + ofs - 1) / NB) + 1;
-		t_pck_copyBytes( out, b, bytes, 1 );
-		l_shft = (MXBIT - bytes*NB + ofs);
-		val    = (val << l_shft) >> (MXBIT - p->s);
-	}
-	else
-		t_pck_copyBytes( out, b, p->s/NB, T_PCK_ISBIG( p->m ) );
-
-	if (T_PCK_ISSIGNED( p->m ))  // 2's complement for signed
-	{
-		msk = (lua_Unsigned) 1  << (p->s - 1);
-		lua_pushinteger( L, (lua_Integer) ((val^msk) - msk) );
-	}
-	else
-		lua_pushinteger( L, val );
-}
-
-
-/**--------------------------------------------------------------------------
- * Read integer value from stack and set to char buffer.
- * \param  *L    Lua state.
- * \param  *b    char* to read from.
- * \param  *p    struct t_pck*.
- * \param   ofs  bit offset for bit type from last byte border (0-7).
- * --------------------------------------------------------------------------*/
-static void
-t_pck_setIntValue( lua_State *L, char *b, struct t_pck *p, size_t ofs )
-{
-	lua_Integer  iVal = luaL_checkinteger( L, -1 );
-	int     is_signed = (T_PCK_ISSIGNED( p->m ) && p->s < MXBIT);
-	int       do_sign = (is_signed && iVal<0 );
-	lua_Unsigned  msk = (do_sign) ? (lua_Unsigned) 1  << (p->s - 1) : 0;
-	lua_Unsigned  val = (do_sign)
-	                    ? (((lua_Unsigned) iVal) + msk) ^ msk
-	                    : (lua_Unsigned) iVal;
-	size_t          n;
-
-	// if positive and signed, 2's complement can handle only p->s-1 bits wide
-	luaL_argcheck( L,  0 == (val >> ((is_signed && ! do_sign) ? p->s-1 : p->s)) ,
-	   2, "packed value must fit the value range for the packer size" );
-	if (ofs || p->s % NB)
-		for (n = p->s; n > 0; n--)
-		{
-			T_PCK_BIT_SET( *(b + (ofs/NB)), ofs%NB, ((val >> (n-1)) & 0x01) ? 1 : 0 );
-			ofs++;
-		}
-	else
-		t_pck_copyBytes( b, (char *) &val, p->s/NB, T_PCK_ISBIG( p->m ) );
-}
-
-
-///////////////////////////////////////////////////////////////////////////////
-//
-// ================================= GENERIC t_pck API ========================
-// Reader and writer for packer data
-/**--------------------------------------------------------------------------
- * reads a value from the packer and pushes it onto the Lua stack.
- * \param  *L      Lua state.
- * \param  *b      const char* buffer to read from (bytes positioned).
- * \param  *p      struct* t_pck.
- * \param   ofs    size_t offset in bit from byte border.
- * \lreturn value  Appropriate Lua value.
- * \return  p->s   amount of bits read from b.
- * -------------------------------------------------------------------------- */
-size_t
-t_pck_read( lua_State *L, const char *b, struct t_pck *p, size_t ofs )
-{
-	volatile union Ftypes  u;
-
-	switch( p->t )
-	{
-		case T_PCK_BOL:
-			lua_pushboolean( L, T_PCK_BIT_GET( *b, ofs ) );
-			break;
-		case T_PCK_INT:
-			t_pck_getIntValue( L, b, p, ofs );
-			break;
-		case T_PCK_FLT:
-			luaL_argcheck( L, ofs == 0, 1, "Float Packer must start reading at byte border" );
-			t_pck_copyBytes( (char*) &(u), b, p->s/NB, ! p->m );
-			if      (sizeof( u.f ) == p->s/NB) lua_pushnumber( L, (lua_Number) u.f );
-			else if (sizeof( u.d ) == p->s/NB) lua_pushnumber( L, (lua_Number) u.d );
-			else                               lua_pushnumber( L,              u.n );
-			break;
-		case T_PCK_RAW:
-			luaL_argcheck( L, ofs == 0, 1, "Raw Packer must start reading at byte border" );
-			lua_pushlstring( L, (const char*) b, p->s/NB );
-			break;
-		default:
-			return luaL_error( L, "Can't read value from unknown packer type" );
-	}
-	return p->s;
-}
-
-
-/**--------------------------------------------------------------------------
- * Sets a value from stack to a char buffer according to packer format.
- * \param  *L      Lua state.
- * \param  *b      char* buffer to write to (bytes positioned).
- * \param  *p      struct* t_pck.
- * \param   ofs    size_t offset in bit from byte border.
- * \lparam  value  Appropriate Lua value.
- * \return  int    0==success; !=0 errors pushed to Lua stack.
- *  -------------------------------------------------------------------------*/
-int
-t_pck_write( lua_State *L, char *b, struct t_pck *p, size_t ofs )
-{
-	volatile union Ftypes  u;
-	const char            *strVal;
-	size_t                 sL;
-
-	// TODO: size check values if they fit the packer size
-	switch( p->t )
-	{
-		case T_PCK_BOL:
-			luaL_argcheck( L,  lua_isboolean( L, -1 ) , -1,
-			   "value to pack must be boolean type" );
-			T_PCK_BIT_SET( *b, ofs, lua_toboolean( L, -1 ) );
-			break;
-		case T_PCK_INT:
-			t_pck_setIntValue( L, b, p, ofs );
-			break;
-		case T_PCK_FLT:
-			if      (sizeof( u.f ) == p->s/NB) u.f = (float)  luaL_checknumber( L, -1 );
-			else if (sizeof( u.d ) == p->s/NB) u.d = (double) luaL_checknumber( L, -1 );
-			else                               u.n =          luaL_checknumber( L, -1 );
-			t_pck_copyBytes( b, (char*) &(u), p->s/NB, 0 );
-			break;
-		case T_PCK_RAW:
-			strVal = luaL_checklstring( L, -1, &sL );
-			luaL_argcheck( L,  p->s/NB >= sL, -1, "String is to big for the field" );
-			memcpy( b, strVal, sL );
-			break;
-		default:
-			return luaL_error( L, "Can't pack a value in unknown packer type" );
-	}
-	return 0;
-}
-
-
 /* #########################################################################
  *   _                      _          _
  *  | |_ _   _ _ __   ___  | |__   ___| |_ __   ___ _ __ ___
@@ -343,7 +26,7 @@ t_pck_write( lua_State *L, char *b, struct t_pck *p, size_t ofs )
  *  | |_| |_| | |_) |  __/ | | | |  __/ | |_) |  __/ |  \__ \
  *   \__|\__, | .__/ \___| |_| |_|\___|_| .__/ \___|_|  |___/
  *       |___/|_|                       |_|
- *  ######################################################################### */
+ *  ######################################################################## */
 /**--------------------------------------------------------------------------
  * __tostring helper that prints the packer type.
  * \param   L       Lua state.
@@ -472,7 +155,6 @@ t_pck_getSize( lua_State *L, struct t_pck *p )
 	else
 	{
 		lua_rawgeti( L, LUA_REGISTRYINDEX, p->m ); // get packer or table
-
 		switch (p->t)
 		{
 			case T_PCK_ARR:
@@ -510,9 +192,9 @@ t_pck_getSize( lua_State *L, struct t_pck *p )
 
 /**--------------------------------------------------------------------------
  * Get T.Pack from a stack element at specified position.
- * The item@pos can be a t_pck or a t_pck_idx.  The way the function depends on
- * to conditions:
- *        - item @ pos is a t_pck_idx or a t_pck
+ * The item@pos can be a t_pck or a t_pck_idx.  The way the function works
+ * depends on two conditions:
+ *        - item @pos is a t_pck_idx or a t_pck
  *        - arg **pcf is NULL or points to a *t_pck_idx
  * The behaviour is as follows:
  * - if item @pos is t_pck:
@@ -543,7 +225,7 @@ struct t_pck
 	{
 		if (NULL != pci)
 			*pci = pi;
-		// get parent-container; by convention only Array,Sequence,Struct ...
+		// get parent-container; could only be a Array,Sequence,Struct ...
 		lua_rawgeti( L, LUA_REGISTRYINDEX, pi->pR ); //S:… pi … pcp
 		pck = t_pck_check_ud( L, -1, 1 );   // get reference; pck or tbl
 		lua_rawgeti( L, LUA_REGISTRYINDEX, pck->m ); //S:… pi … pcp ref
@@ -563,59 +245,12 @@ struct t_pck
 
 
 /**--------------------------------------------------------------------------
- * Decides if the element on pos is a packer kind of type.
- * It decides between the following options:
- *     - t.Pack type              : just return it
- *     - t.Pack.Field             : return referenced packer
- *     - fmt string of single item: fetch from cache or create
- *     - fmt string of mult items : let Sequence constructor handle and return result
- * \param   L      Lua state.
- * \param   pos    position on stack.
- * \param   int*   bit offset runner.
- * \return  struct t_pck* pointer.
- * --------------------------------------------------------------------------*/
-struct t_pck
-*t_pck_getPacker( lua_State *L, int pos )
-{
-	struct t_pck *p = NULL; ///< packer
-	int           l = _default_endian;
-	int           n = 0;    ///< counter for packers created from fmt string
-	int           t = lua_gettop( L );  ///< top of stack before operations
-	const char   *fmt;
-
-	// get absolute stack position
-	pos = (pos < 0) ? lua_gettop( L ) + pos + 1 : pos;
-
-	// T.Pack or T.Pack.Index at pos
-	if (lua_isuserdata( L, pos ))
-		p    = t_pck_idx_getPackFromStack( L, pos, NULL );
-		//p    = t_pck_idx_getPackFromFieldOnStack( L, pos, NULL, 1 );
-	else // format string at pos
-	{
-		fmt = luaL_checkstring( L, pos );
-		p   = t_pck_parseFmt( L, &fmt, &l );
-		while (NULL != p )
-		{
-			n++;
-			p = t_pck_parseFmt( L, &fmt, &l );
-		}
-		if (n > 1)
-			p =  t_pck_seq_create( L, t+1, lua_gettop( L ) );
-		else
-			p = t_pck_check_ud( L, -1, 1 );
-		lua_replace( L, pos );
-	}
-	return p;
-}
-
-
-/**--------------------------------------------------------------------------
  * Read all arguments from Stack.
- * Creates table like this:
- *         1    = key1
- *         2    = key2
- *         key1 = pck1
- *         key2 = pck2
+ * Creates table like this: {
+ *         [1]  = 'key1',
+ *         [2]  = 'key2',
+ *         key1 = pck1,
+ *         key2 = pck2      }
  * \param   *L      Lua state.
  * \param    sp     int; start position; stack index for first parameter table.
  * \param    ep     int; end position;   stack index for last  parameter table.
@@ -667,13 +302,13 @@ t_pck_readArguments( lua_State *L, int sp, int ep )
 /** -------------------------------------------------------------------------
  * Constructor for T.Pack.
  * Behaves differently based on arguments.
- * \param     L      Lua state.
- * \lparam    CLASS  table T.Pack.
- * \lparam    fmt    string.
+ * \param   L      Lua state.
+ * \lparam  CLASS  table T.Pack.
+ * \lparam  fmt    string.
  *      OR
- * \lparam    tbl,…  {name=T.Pack},… name value pairs.
+ * \lparam  tbl,…  {name=T.Pack},… name value pairs.
  *      OR
- * \lparam    T.Pack elements.    copy constructor
+ * \lparam  T.Pack elements.    copy constructor
  * \return  int    # of values pushed onto the stack.
  *  -------------------------------------------------------------------------*/
 static int lt_pck__Call( lua_State *L )

@@ -1,7 +1,7 @@
 /* vim: ts=3 sw=3 sts=3 tw=80 sta noet list
 */
 /**
- * \file      t_pck_cmb.c
+ * \file      t_pck__combinator.c
  * \brief     Helper functions for T.Pack combinators(Struct,Sequence,Array)
  *            - create functions
  *            - index functions
@@ -35,13 +35,13 @@ static struct t_pck_idx
  * Get T.Pack from a stack element at specified position.
  * The item@pos can be a t_pck or a t_pck_idx.  The way the function depends on
  * to conditions:
- *        - item @ pos is a t_pck_idx or a t_pck
+ *        - item @pos is a t_pck_idx or a t_pck
  *        - arg **pcf is NULL or points to a *t_pck_idx
  * The behaviour is as follows:
  * - if item @pos is t_pck:
  *   - returns a pointer to that userdata
  * - if item @pos is t_pck_idx
- *   - return pointer to t_pck reference in t_pck_idx
+ *   - return pointer to t_pck referenced in t_pck_idx
  *   - item @pos in stack will be replaced by referenced t_pck instance
  * - if item @pos is t_pck_idx and arg **pcf!=NULL
  *   - **pcf will point to t_pck_idx instance
@@ -54,29 +54,30 @@ struct t_pck
 *t_pck_idx_getPackFromFieldOnStack( lua_State * L, int pos, struct t_pck_idx **pcir, int los )
 {
 	int               o_top = lua_gettop( L );
+	void             *ud    = luaL_testudata( L, pos, T_PCK_IDX_TYPE );
+	struct t_pck_idx *pi    = (NULL == ud) ? NULL : (struct t_pck_idx *) ud;
 	int               idx;
 	struct t_pck_idx *pci;
 	struct t_pck     *pck;
-	void             *ud  = luaL_testudata( L, pos, T_PCK_IDX_TYPE );
-	struct t_pck_idx *pi  = (NULL == ud) ? NULL : (struct t_pck_idx *) ud;
 
 	lua_pushvalue( L, pos );
 	if (NULL != pcir)
 		*pcir = pi;
-	//t_stackDump( L );
+	t_stackDump( L );
+	// as long as pci->pR is an index
 	while (NULL != (ud = luaL_testudata( L, -1, T_PCK_IDX_TYPE )))
 	{
 		pci = (struct t_pck_idx *) ud;
 		lua_pop( L, 1 );                              // pop the pci from stack
 		lua_pushinteger( L, pci->idx );
 		lua_rawgeti( L, LUA_REGISTRYINDEX, pci->pR ); // new reference on stack
-		//printf("traversing\n");t_stackDump( L );
+		printf("traversing\n"); t_stackDump( L );
 	}
 
 	pck   = t_pck_check_ud( L, -1, 1 );         //S:… pci … x y z pck
 	lua_pop( L, 1 );
-	//printf ( "%d   %d  ---  ", lua_gettop(L), o_top );
-	//t_stackDump( L );
+	printf ( "%d   %d  ---  ", lua_gettop(L), o_top );
+	t_stackDump( L );
 	while (lua_gettop( L ) > o_top)
 	{
 		idx = luaL_checkinteger( L, -1 );        // last pickled index
@@ -88,19 +89,19 @@ struct t_pck
 		{
 			lua_rawgeti( L, -1, idx );
 			lua_rawget( L, -2 );                  //S:… pci … x y pck
-			//t_stackDump( L );
+			printf("STRUCT: ");t_stackDump( L );
 		}
 		pck = t_pck_check_ud( L, -1, 1 );
 		lua_pop( L, 2 );
-		//t_stackDump( L );
+		t_stackDump( L );
 	}
-	//t_stackDump( L );
+	t_stackDump( L );
 	if (los)
 	{
 		lua_rawgeti( L, LUA_REGISTRYINDEX, pck->m );
 		lua_replace( L, pos );
 	}
-	//t_stackDump( L );
+	t_stackDump( L );
 	printf( "done\n" );
 	return pck;
 }
@@ -136,18 +137,19 @@ struct t_pck
 struct t_pck
 *t_pck_seq_create( lua_State *L, int sp, int ep )
 {
-	struct t_pck *p;              ///< temporary packer/struct for iteration
+	//struct t_pck *p;              ///< temporary packer/struct for iteration
 	size_t        sz = (ep-sp)+1; ///< size of Sequence
 
 	lua_createtable( L, sz, 0 );      //S: … p1 p2 … pn … tbl
 
 	// populate index table
-	t_stackDump(L);
+	//t_stackDump(L);
 	while (sz--)
 	{
 		lua_rotate( L, sp, -1 );       //S: … p2 … pn … Seq tbl p1
-		p = t_pck_getPacker( L, -1 );
-		printf("%d %d %zu    ", p->t, p->m, p->s );t_stackDump(L);
+		//p = t_pck_getPacker( L, -1 );
+		t_pck_getPacker( L, -1 );
+		//printf("%d %d %zu    ", p->t, p->m, p->s );t_stackDump(L);
 		lua_rawseti( L, -2, lua_rawlen( L, -2 )+1 ); // tbl[ i ] = Pck
 	}
 	return t_pck_create_ud( L, T_PCK_SEQ, lua_rawlen( L, -1 ), luaL_ref( L, LUA_REGISTRYINDEX ) );
@@ -166,15 +168,13 @@ struct t_pck
 *t_pck_str_create( lua_State *L )
 {
 	size_t         n;      ///< iterator for going through the arguments
-	//struct t_pck  *p;      ///< temporary packer/struct for iteration
 
 	for (n=0; n<lua_rawlen( L, -1 ); n++)
 	{
 		lua_rawgeti( L, -1, n+1 );                 //S:… tbl key
 		lua_pushvalue( L, -1 );                    //S:… tbl key key
 		lua_rawget( L, -3 );                       //S:… tbl key pck
-		//p = t_pck_getPacker( L, -1 );              // turn Pck into true packer
-		t_pck_getPacker( L, -1 );              // turn Pck into true packer
+		t_pck_getPacker( L, -1 );                  // turn Pck into true packer
 		lua_rawset( L, -3 );                       //S:… tbl
 	}
 	return t_pck_create_ud( L, T_PCK_STR, lua_rawlen( L, -1), luaL_ref( L, LUA_REGISTRYINDEX ) );
@@ -196,7 +196,7 @@ t_pck_idx_getOffset( lua_State *L, struct t_pck_idx *pci )
 	size_t             ofs = 0;
 	size_t             n, n_sz;
 
-	// get parent-container; by convention only Array,Sequence,Struct
+	// get parent, can only be Array,Sequence,Struct or another Index?
 	lua_rawgeti( L, LUA_REGISTRYINDEX, pci->pR ); //S:… pkc
 	pkc = t_pck_check_ud( L, -1, 1 );
 	lua_rawgeti( L, LUA_REGISTRYINDEX, pkc->m );  //S:… pkc tbl/pck
@@ -214,7 +214,7 @@ t_pck_idx_getOffset( lua_State *L, struct t_pck_idx *pci )
 				lua_rawgeti( L, -1, n );             //S:… pkc tbl key/pck
 				if (T_PCK_STR == pkc->t)
 					lua_rawget( L, -2);               //S:… pkc tbl pck
-				//pck  = t_pck_check_ud( L, -1, 1 );   //S:… pkc tbl pck
+				//t_pck_check_ud( L, -1, 1 );          //S:… pkc tbl pck
 				n_sz = t_pck_getSize( L, t_pck_check_ud( L, -1, 1 ) );
 				if (n_sz)
 					ofs += n_sz;
@@ -248,10 +248,12 @@ lt_pck__index( lua_State *L )
 {
 	//struct t_pck_idx *pci = NULL;  ///< Pack.Index to read from (parent)
 	//struct t_pck     *pck = t_pck_idx_getPackFromStack( L, 1, &pci );
+	printf("IDX_ACCESS:  "); t_stackDump(L);
 	struct t_pck     *pck = t_pck_idx_getPackFromFieldOnStack( L, 1, NULL, 0 );
 	size_t            idx = 0;     ///< index of requested field
 	size_t            i,n;         ///< iterators to figure out index
 
+	printf("__INDEX:  "); t_stackDump(L);
 	luaL_argcheck( L, pck->t > T_PCK_FNC, 1, "can't index Atomic "T_PCK_TYPE" type" );
 	luaL_argcheck( L, (pck->t < T_PCK_STR && LUA_TNUMBER == lua_type( L, 2 )) || pck->t == T_PCK_STR,
 		2, "Index for "T_PCK_TYPE".Array or "T_PCK_TYPE".Sequence must be numeric." );
@@ -334,8 +336,8 @@ t_pck_iter( lua_State *L )
 	enum t_pck_t      pct = luaL_checkinteger( L, lua_upvalueindex( 4 ) );
 	int               itn = luaL_checkinteger( L, lua_upvalueindex( 5 ) );
 	//struct t_pck     *pck;
-	//struct t_pck_idx *pci;          ///< New T.Pack.Index to be returned
-	//struct t_pck_idx *pci_r;        ///< T.Pack.Index read from current idx
+	//struct t_pck_idx *pci;          ///< New Pack.Index to be returned
+	//struct t_pck_idx *pci_r;        ///< Pack.Index read from current idx
 
 	//check and update running index
 	if (idx > len)

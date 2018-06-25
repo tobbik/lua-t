@@ -25,7 +25,8 @@
 #define MC                    ((1 << NB) - 1)
 
 // size of a lua_Integer
-#define MXINT                 ((int)sizeof(lua_Integer))
+#define MXINT                 ((int) sizeof( lua_Integer ))
+#define SZINT                 ((int) sizeof( int ))
 
 // Maximum bits that can be read or written
 #define MXBIT                 MXINT * NB
@@ -44,6 +45,14 @@
 	( b = ( (1==v)                              \
 	 ? ((b) | (  (0x01) << (NB-(n)-1)))   \
 	 : ((b) & (~((0x01) << (NB-(n)-1)))) ) )
+
+
+// global default for T.Pack, can be flipped
+#ifdef IS_LITTLE_ENDIAN
+static int _default_endian = 1;
+#else
+static int _default_endian = 0;
+#endif
 
 
 // T.Pack is designed to work like Lua 5.3 pack/unpack support.  By the same
@@ -102,10 +111,10 @@ struct t_pck {
 	///  -- raw               = NONE
 	///  -- Arr               = LUA_REGISTRYINDEX for packer
 	///  -- Seq               = LUA_REGISTRYINDEX for table
-	///        table[ i   ] = Pack.Field (has offset information)
+	///        table[ i   ] = Pack.Index (has offset information)
 	///  -- Struct            = LUA_REGISTRYINDEX for table
 	///        table[ i   ] = name       -- schema of OrderedHashTable
-	///        table[ key ] = Pack.Field
+	///        table[ key ] = Pack.Index
 	int           m;          ///< modifier/reference of packer
 };
 

@@ -45,8 +45,8 @@ Class Metamembers (related to Pack.Sequence)
   .. code:: lua
 
     -- Sequence of Int5ul, Int2sb, Int1sb, Int2sb, Int1ub
-    p1 = Pack("<I5>i2bhB")
-    p2 = Pack("<I5 >i2 b h B")  -- same but more readable
+    p1 = Pack( "<I5>i2bhB" )
+    p2 = Pack( "<I5 > i2 b h B" )  -- same but more readable
 
 
 Instance Members
@@ -79,3 +79,62 @@ Instance Metamembers
 ``function f, table t, val key = ipairs( Pack.Sequence p)  [__ipairs]``
   Iterator for ``Pack.Sequence p``.  It will iterate over the table in proper
   order returning ``integer idx Pack.Field pf`` for each iteration.
+
+
+Potentially unexpected Constructor behaviour
+============================================
+
+This will point out some pitfalls which may be the result of misconceptions.
+However, the behaviour is fully in-line with other behaviour.
+
+
+Constructor handling in regard to Endianess
+-------------------------------------------
+
+Using the ``Pack.Sequence`` constructor with a single format string vs.
+multiple arguments has an effect on endianess.  For example, on an x86 based
+machine the default endianess is Little endian, meaning each packer will be
+created indiviually using the default or the specified endianess.
+
+.. code:: lua
+
+  p = Pack( "i5",">i2","i4" )
+  print( p[1],p[2],p[3] )
+  -- t.Pack.Index(Int40sl)   t.Pack.Index(Int16sb)   t.Pack.Index(Int32sl)
+
+``p[3]`` was created with the Little endian default of the machine.  If the
+sequence is created with a single format string that defines the entire
+sequence an endian modifier sticks until the end of the string or until
+another endian modifier is encountered.  ``p[3]`` in this case will be Big
+endian.
+
+.. code:: lua
+
+  p = Pack( "i5 >i2 i4" )
+  print( p[1], p[2], p[3] )
+  -- t.Pack.Index(Int40sl)   t.Pack.Index(Int16sb)   t.Pack.Index(Int32sb)
+
+
+
+Constructor handling in regard to mixing atomic and sequence packers
+--------------------------------------------------------------------
+
+If a sequence is created by passing multiple arguments to the constructor
+the number of elements in the resulting sequence is always equal to the
+number of arguments in the constructor.  It is important to keep that in
+mind.  Otherwise the following example might be confusing:
+
+.. code:: lua
+
+  p = Pack( "i2", "i3i4", "i6" )
+  print( #p )
+  -- 3
+  print( p[1], p[2], p[3] )
+  -- t.Pack.Index(Int16sl)   t.Pack.Index(Sequence[2])   t.Pack.Index(Int48sl)
+  print( p[2][1], p[2][2] )
+  -- t.Pack.Index(Int24sl)   t.Pack.Index(Int32sl)
+
+This code does **NOT** create a sequence of four integer packers.  Instead
+it creates a sequence of ``<Integer> <Sequence of 2 Integers> Integer``,
+where ``p[2]`` becomes a nested structure.
+
