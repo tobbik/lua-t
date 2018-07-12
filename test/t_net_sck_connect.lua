@@ -29,7 +29,7 @@ local config    = t_require( "t_cfg" )
 -- accept server for each test
 accept = function( self )
 	local c, ip = self.srv:accept( )
-	asrtHlp.Socket( c, 'tcp', 'AF_INET', 'SOCK_STREAM' )
+	asrtHlp.Socket( c, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' )
 	asrtHlp.Address( ip, "AF_INET", self.host2cmp, self.port2cmp )
 	self.sck:close() -- close client first to avoid "Address already in use"
 	                 -- http://hea-www.harvard.edu/~fine/Tech/addrinuse.html
@@ -140,7 +140,7 @@ local tests = {
 	test_cb_sConnectWrongArgFails = function( self, done )
 		Test.Case.describe( "sck.connect( adr ) --> fails" )
 		self.sck    = Socket( )
-		local eMsg  = "bad argument #1 to 'connect' %(t.Net.Socket expected, got `nil`%)"
+		local eMsg  = "bad argument #1 to `connect` %(expected `t.Net.Socket`, got `nil`%)"
 		local f     = function() local _,__ = self.sck.connect( ) end
 		local ran,e = pcall( f )
 		assert( not ran, "This should have failed" )

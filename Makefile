@@ -81,6 +81,7 @@ echo:
 
 clean:
 	$(MAKE) -C $(SRCDIR) clean
+	$(MAKE) -C $(LUADIR) clean
 
 pristine:
 	$(MAKE) -C $(SRCDIR) pristine

@@ -54,7 +54,7 @@ local tests = {
 	test_SListenEmpty = function( self )
 		Test.Case.describe( "Socket.listen( ) --> Sck IPv4(TCP); Adr 0.0.0.0:xxxxx" )
 		self.sck, self.adr = Socket.listen( )
-		asrtHlp.Socket( self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
+		asrtHlp.Socket( self.sck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' )
 		asrtHlp.Address( self.adr, "AF_INET", '0.0.0.0', 'any' )
 		t_assert( self.sck:getsockname() == self.adr, "Bound[ %s ] and returned [ %s ]address should match",
 			self.sck:getsockname(), self.adr )
@@ -63,7 +63,7 @@ local tests = {
 	test_SListenBacklog = function( self )
 		Test.Case.describe( "Socket.listen( 5 ) --> Sck IPv4(TCP); Adr 0.0.0.0:xxxxx" )
 		self.sck,self.adr  = Socket.listen( 5 )
-		asrtHlp.Socket(  self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
+		asrtHlp.Socket(  self.sck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' )
 		asrtHlp.Address( self.adr, "AF_INET", '0.0.0.0', 'any' )
 		assert( self.sck:getsockname() == self.adr, "Bound and returned address should match" )
 	end,
@@ -75,7 +75,7 @@ local tests = {
 		local addr        = Address( host, port )
 		self.sck,self.adr = Socket.listen( addr )
 		assert( self.adr == addr, "Returned Address shall be same as input" )
-		asrtHlp.Socket(  self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
+		asrtHlp.Socket(  self.sck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' )
 		assert( self.sck:getsockname() == addr, "Bound address should equal input" )
 	end,
 
@@ -86,7 +86,7 @@ local tests = {
 		local addr        = Address( host, port )
 		self.sck,self.adr = Socket.listen( addr, 5 )
 		assert( self.adr == addr, "Returned Address shall be same as input" )
-		asrtHlp.Socket(  self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
+		asrtHlp.Socket(  self.sck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' )
 		assert( self.sck:getsockname() == addr, "Bound address should equal input" )
 	end,
 
@@ -94,7 +94,7 @@ local tests = {
 		Test.Case.describe( "Socket.listen( host ) --> Sck IPv4(TCP), Adr host:xxxxx" )
 		local host        = Interface( 'default' ).AF_INET.address.ip
 		self.sck,self.adr = Socket.listen( host )
-		asrtHlp.Socket(  self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
+		asrtHlp.Socket(  self.sck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' )
 		asrtHlp.Address( self.adr, "AF_INET", host, 'any' )
 		asrtHlp.Address( self.sck:getsockname(), "AF_INET", host, 'any' )
 	end,
@@ -104,7 +104,7 @@ local tests = {
 		local host        = Interface( 'default' ).AF_INET.address.ip
 		local port        = config.nonPrivPort
 		self.sck,self.adr = Socket.listen( host, port )
-		asrtHlp.Socket(  self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
+		asrtHlp.Socket(  self.sck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' )
 		asrtHlp.Address( self.adr, "AF_INET", host, port )
 		assert( self.sck:getsockname() == self.adr, "Bound and returned address should match" )
 	end,
@@ -113,7 +113,7 @@ local tests = {
 		Test.Case.describe( "Socket.listen( port, bl ) --> Sck IPv4(TCP), Adr 0.0.0.0:port" )
 		local port        = config.nonPrivPort
 		self.sck,self.adr = Socket.listen( port, 50 )
-		asrtHlp.Socket(  self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
+		asrtHlp.Socket(  self.sck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' )
 		asrtHlp.Address( self.adr, "AF_INET", '0.0.0.0', port )
 		assert( self.sck:getsockname() == self.adr, "Bound and returned address should match" )
 	end,
@@ -137,7 +137,7 @@ local tests = {
 		local host        = Interface( 'default' ).AF_INET.address.ip
 		local port        = config.nonPrivPort
 		self.sck,self.adr = Socket.listen( host, port, 5 )
-		asrtHlp.Socket(  self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
+		asrtHlp.Socket(  self.sck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' )
 		asrtHlp.Address( self.adr, "AF_INET", host, port )
 		assert( self.sck:getsockname() == self.adr, "Bound and returned address should match" )
 	end,
@@ -150,7 +150,7 @@ local tests = {
 		local host        = Interface( 'default' ).AF_INET.address.ip
 		local port        = config.nonPrivPort
 		self.sck,self.adr = Socket.bind( host, port )
-		asrtHlp.Socket( self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
+		asrtHlp.Socket( self.sck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' )
 		asrtHlp.Address( self.adr, "AF_INET", host, port )
 		local a, b        = self.sck:listen( )
 		assert( b == nil, "No second value should have been returned" )
@@ -164,7 +164,7 @@ local tests = {
 		local host        = Interface( 'default' ).AF_INET.address.ip
 		local port        = config.nonPrivPort
 		self.sck,self.adr = Socket.bind( host, port )
-		asrtHlp.Socket( self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
+		asrtHlp.Socket( self.sck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' )
 		asrtHlp.Address( self.adr, "AF_INET", host, port )
 		local a, b        = self.sck:listen( 5 )
 		assert( b == nil, "No second value should have been returned" )
@@ -203,7 +203,7 @@ local tests = {
 		Test.Case.describe( "sck:listen( host ) --> Adr host:xxxxx" )
 		local host      = Interface( 'default' ).AF_INET.address.ip
 		self.sck        = Socket( )
-		asrtHlp.Socket( self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
+		asrtHlp.Socket( self.sck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' )
 		local a, b      = self.sck:listen( host )
 		assert( b == nil, "No second value should have been returned" )
 		asrtHlp.Address( a, "AF_INET", host, 'any' )
@@ -216,7 +216,7 @@ local tests = {
 		local host      = Interface( 'default' ).AF_INET.address.ip
 		local port      = config.nonPrivPort
 		self.sck        = Socket( )
-		asrtHlp.Socket( self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
+		asrtHlp.Socket( self.sck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' )
 		local a,b       = self.sck:listen( host, port )
 		assert( b == nil, "No values should have been returned" )
 		asrtHlp.Address( a, "AF_INET", host, port )
@@ -238,7 +238,7 @@ local tests = {
 		local host      = Interface( 'default' ).AF_INET.address.ip
 		local port      = config.nonPrivPort
 		self.sck        = Socket( )
-		asrtHlp.Socket( self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
+		asrtHlp.Socket( self.sck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' )
 		local a,b       = self.sck:listen( host, port, 5 )
 		assert( b == nil, "No second value should have been returned" )
 		asrtHlp.Address( a, "AF_INET", host, port )
@@ -249,7 +249,7 @@ local tests = {
 	test_sListenWrongArgFails = function( self )
 		Test.Case.describe( "sck.listen( adr ) --> fails" )
 		self.sck    = Socket()
-		local eMsg  = "bad argument #1 to 'listen' %(t.Net.Socket expected, got `nil`%)"
+		local eMsg  = "bad argument #1 to `listen` %(expected `t.Net.Socket`, got `nil`%)"
 		local f     = function() local _,__ = self.sck.listen( ) end
 		local ran,e = pcall( f )
 		assert( not ran, "This should have failed" )

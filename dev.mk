@@ -96,9 +96,12 @@ dev-clean:
 		DEBUG=1 \
 		PREFIX="$(PREFIX)" clean
 
+dev-rm:
+	-rm -rf $(PREFIX)
+
 dev-rinse:
 	$(MAKE) dev-clean
-	-rm -rf $(PREFIX)
+	$(MAKE) dev-rm
 
 dev-pristine:
 	$(MAKE) dev-rinse

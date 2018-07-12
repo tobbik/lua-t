@@ -45,7 +45,7 @@ local tests = {
 	test_SBindCreateSockAndInanyAddress = function( self )
 		Test.Case.describe( "Socket.bind() --> creates a TCP IPv4 Socket and 0.0.0.0:0 address" )
 		self.sck, self.address = Socket.bind()
-		asrtHlp.Socket(  self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
+		asrtHlp.Socket(  self.sck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' )
 		asrtHlp.Address( self.address, "AF_INET", '0.0.0.0', 0 )
 	end,
 
@@ -66,7 +66,7 @@ local tests = {
 		Test.Case.describe( "Socket.bind( port ) --> creates TCP IPv4 Socket and 0.0.0.0:port address" )
 		local port  = config.nonPrivPort
 		self.sck, self.address = Socket.bind( port )
-		asrtHlp.Socket(  self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
+		asrtHlp.Socket(  self.sck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' )
 		asrtHlp.Address( self.address, "AF_INET", '0.0.0.0', port )
 	end,
 
@@ -75,7 +75,7 @@ local tests = {
 		local host   = Interface( 'default' ).AF_INET.address.ip
 		local port   = config.nonPrivPort
 		self.sck, self.address = Socket.bind( host, port )
-		asrtHlp.Socket(  self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
+		asrtHlp.Socket(  self.sck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' )
 		asrtHlp.Address( self.address, "AF_INET", host, config.nonPrivPort )
 	end,
 
@@ -85,7 +85,7 @@ local tests = {
 		local port   = config.nonPrivPort
 		local addr   = Address( host, port )
 		self.sck, self.adr = Socket.bind( addr )
-		asrtHlp.Socket(  self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
+		asrtHlp.Socket(  self.sck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' )
 		t_assert( addr == self.adr, "The returned address`%s` should equal input `%s`", self.adr, addr )
 	end,
 
@@ -95,7 +95,7 @@ local tests = {
 		local port   = config.nonPrivPort
 		local addr   = Address( host, port )
 		self.sck, self.address = Socket.bind( addr )
-		asrtHlp.Socket(  self.sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
+		asrtHlp.Socket(  self.sck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' )
 		assert( addr  == self.sck:getsockname(), "The addresses should be equal" )
 	end,
 
@@ -145,8 +145,8 @@ local tests = {
 
 	test_sBindWrongArgFails = function( self )
 		Test.Case.describe( "sck.bind( adr ) --> fails" )
-		self.sck        = Socket()
-		local eMsg      = "bad argument #1 to 'bind' %(t.Net.Socket expected, got `nil`%)"
+		self.sck    = Socket()
+		local eMsg  = "bad argument #1 to `bind` %(expected `t.Net.Socket`, got `nil`%)"
 		local f     = function() local _,__ = self.sck.bind( ) end
 		local ran,e = pcall( f )
 		assert( not ran, "This should have failed" )

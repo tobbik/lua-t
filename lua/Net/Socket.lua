@@ -1,7 +1,21 @@
-local Socket, Address, t_type, t_assert, type  =
-      require"t.net".sck, require"t.net".adr,require't'.type,require't'.assert,type
+local Socket            , Address           =
+      require"t.net".sck, require"t.net".adr
+local Protocol                      , Shutdown          =
+      require"t.Net.Socket.Protocol", require"t.Net.Socket.Shutdown"
+local t_type         , t_assert         , type, s_lower     , s_format     , type =
+      require't'.type, require't'.assert, type, string.lower, string.format, type
 local sck_mt = debug.getregistry( )[ "T.Net.Socket" ]
 local Sck_mt = getmetatable( Socket )
+
+local sck_listener    = sck_mt.listener
+local sck_binder      = sck_mt.binder
+local sck_connecter   = sck_mt.connecter
+local sck_shutdowner  = sck_mt.shutdowner
+
+sck_mt.listener       = nil
+sck_mt.binder         = nil
+sck_mt.connecter      = nil
+sck_mt.shutdowner     = nil
 
 -- multi function to negotiate arguments
 local getAddressArgs = function( host, port, bl, default )
@@ -43,7 +57,7 @@ end
 
 local validateSocket = function( sck, command )
 	t_assert( "T.Net.Socket" == t_type( sck ),
-		"bad argument #1 to '" ..command.. "' (t.Net.Socket expected, got `%s`)", t_type( sck ) )
+		"bad argument #1 to `" ..command.. "` (expected `t.Net.Socket`, got `%s`)", t_type( sck ) )
 	return sck
 end
 
@@ -56,11 +70,11 @@ end
 -- sck,adr = Socket.listen( host, port, bl ) -- Sck IPv4(TCP); Adr host:port
 Socket.listen = function( host, port, bl )
 	local adr, backlog = getAddressArgs( host, port, bl, Address( ) )
-	local sck = Socket( 'TCP', adr.family )
+	local sck = Socket( Socket.IPPROTO_TCP, adr.family )
 	local t,e = sck:bind( adr )
 	--print(sck, adr, t, e )
 	if not t then return t, e end -- false, errMsg
-	sck:listener( backlog )
+	sck_listener( sck, backlog )
 	if 0==adr.port then adr.port = sck:getsockname( ).port end
 	return sck, adr
 end
@@ -76,7 +90,7 @@ sck_mt.listen = function( sck, host, port, bl )
 	sck = validateSocket( sck, "listen" )
 	local adr, backlog = getAddressArgs( host, port, bl, nil )
 	if adr then sck:bind( adr ) else adr = sck:getsockname( ) end
-	sck:listener( backlog )
+	sck_listener( sck, backlog )
 	if 0==adr.port then adr.port = sck:getsockname( ).port end
 	return adr and adr or sck:getsockname( )
 end
@@ -88,8 +102,8 @@ end
 -- sck, adr = Socket.bind(address)   --> returning socket is bound; getsockname()
 Socket.bind = function( host, port )
 	local adr = getAddress( host, port )
-	local sck = Socket( 'TCP', adr.family )
-	local t,e = sck:binder( adr )
+	local sck = Socket( Socket.IPPROTO_TCP, adr.family )
+	local t,e = sck_binder( sck, adr )
 	--print(sck, adr, t, e )
 	if t then return sck,adr else return t,e end
 end
@@ -101,7 +115,7 @@ end
 sck_mt.bind = function( sck, host, port )
 	sck = validateSocket( sck, "bind" )
 	local adr = getAddress( host, port )
-	local t,e = sck:binder( adr )
+	local t,e = sck_binder( sck, adr )
 	--print( sck, adr, t, e )
 	if t then return adr else return t,e end
 end
@@ -109,7 +123,7 @@ end
 Socket.connect = function( host, port )
 	local adr = getAddress( host, port )
 	local sck = Socket( 'TCP', adr.family )
-	local t,e = sck:connecter( adr )
+	local t,e = sck_connecter( sck, adr )
 	--print(sck, adr, t, e )
 	if t then return sck,adr else return t,e end
 end
@@ -117,9 +131,18 @@ end
 sck_mt.connect = function( sck, host, port )
 	sck = validateSocket( sck, "connect" )
 	local adr = getAddress( host, port )
-	local t,e = sck:connecter( adr )
+	local t,e = sck_connecter( sck, adr )
 	--print( sck, adr, t, e )
 	if t then return adr else return t,e end
+end
+
+-- lookup shutdownmode and make sure it's callimg with number
+sck_mt.shutdown = function( sck, mode )
+	local mode_nr =   "number"==type( mode )
+	      and mode
+	      or  Shutdown[ mode ]
+	assert( Shutdown[ mode_nr ], s_format( "Shutdown mode `%s` does not exist.", mode ) )
+	sck_shutdowner( sck, mode_nr )
 end
 
 -- Socket( ) Creates a new socket
@@ -128,20 +151,18 @@ end
 -- \param   type     string: 'stream', 'datagram' ...
 -- \usage   Net.Socket( )                   -> create TCP IPv4 Socket
 --          Net.Socket( 'TCP' )             -> create TCP IPv4 Socket
---          Net.Socket( 'TCP', 'ip4' )      -> create TCP IPv4 Socket
---          Net.Socket( 'UDP', 'ip4' )      -> create UDP IPv4 Socket
+--          Net.Socket( 'tcp', 'ip4' )      -> create TCP IPv4 Socket
+--          Net.Socket( 'Udp', 'ip4' )      -> create UDP IPv4 Socket
 --          Net.Socket( 'UDP', 'ip6' )      -> create UDP IPv6 Socket
 Sck_mt.__call = function( Sck, protocol, family, typ )
-	-- Socket.new() use getprotobyname() which is specific to the implementation
-	-- of the underlying C-lib. `musl` (on alpine linux for docker is a good
-	-- example for a limited implementation).  It doesn't provide a re-entrant
-	-- version and requires lower-cased protocol names.
-	protocol = protocol and string.lower( protocol ) or 'tcp'
+	local p = protocol or Protocol.IPPROTO_TCP       -- sane default
+	p       = ( 'string' == type( p ) ) and Protocol[ p ] or p  -- lookup name
+	assert( Protocol[ p ] and 'number' == type( p ), s_format( "Can't find protocol `%s`", protocol ))
 	family   = family   or  'AF_INET'
-	typ      = typ      or  (('tcp' == protocol) and 'SOCK_STREAM')
-	                    or  (('udp' == protocol) and 'SOCK_DGRAM')
+	typ      = typ      or  ((Protocol.IPPROTO_TCP == p ) and 'SOCK_STREAM')
+	                    or  ((Protocol.IPPROTO_UDP == p ) and 'SOCK_DGRAM')
 	                    or  'SOCK_RAW'
-	return Sck.new( protocol, family, typ )
+	return Sck.new( p, family, typ )
 end
 
 return Socket

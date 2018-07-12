@@ -38,7 +38,8 @@ lt_net_sck_New( lua_State *L )
 {
 	struct t_net_sck *sck;
 
-	t_net_getProtocolByName( L, 1, "TCP" );
+	//t_net_getProtocolByName( L, 1, "TCP" );
+	//t_getTypeByName( L, 1, "TCP", t_net_protocolList );
 	t_getTypeByName( L, 2, "AF_INET", t_net_familyList );
 	t_getTypeByName( L, 3, "SOCK_STREAM", t_net_typeList );
 
@@ -97,8 +98,7 @@ lt_net_sck_close( lua_State *L )
 static int
 lt_net_sck_shutDown( lua_State *L )
 {
-	struct t_net_sck *sck = t_net_sck_check_ud( L, 1, 1 );
-	t_getTypeByName( L, 2, "SHUT_RD", t_net_shutList );
+	struct t_net_sck *sck     = t_net_sck_check_ud( L, 1, 1 );
 	return p_net_sck_shutDown( L, sck, luaL_checkinteger( L, 2 ) );
 }
 
@@ -497,7 +497,7 @@ static const luaL_Reg t_net_sck_m [] =
 	, { "connecter"   , lt_net_sck_connecter }
 	, { "accept"      , lt_net_sck_accept }
 	, { "close"       , lt_net_sck_close }
-	, { "shutdown"    , lt_net_sck_shutDown }
+	, { "shutdowner"  , lt_net_sck_shutDown }
 	, { "send"        , lt_net_sck_send }
 	, { "recv"        , lt_net_sck_recv }
 	, { "getsockname" , lt_net_sck_getsockname }
@@ -525,6 +525,13 @@ luaopen_t_net_sck( lua_State *L )
 	// Push the class onto the stack
 	// this is avalable as Socket.<member>
 	luaL_newlib( L, t_net_sck_cf );
+	// Load available Shutdown modes
+	luaopen_t_net_sck_sht( L );
+	lua_setfield( L, -2, T_NET_SCK_SHT_IDNT );
+	// Load available protocols
+	luaopen_t_net_sck_ptc( L );
+	lua_setfield( L, -2, T_NET_SCK_PTC_IDNT );
+
 	// set the methods as metatable
 	// this is only avalable a <instance>.<member>
 	luaL_newlib( L, t_net_sck_fm );

@@ -33,7 +33,6 @@
 #include "t_dbg.h"
 #endif
 
-
 /**--------------------------------------------------------------------------
  * IP4/IP6 setting of Address.
  * \param   L      Lua state.
@@ -86,41 +85,13 @@ t_net_adr_setPort( lua_State *L, struct sockaddr_storage *adr, const int port, c
 
 
 /**--------------------------------------------------------------------------
- * Construct a Net.Address and return it.
- * \param   L      Lua state.
- * \lparam  CLASS  table t.Net.Address
- * \lparam  port   Port for the Address.
- * \lparam  string IP address in xxx.xxx.xxx.xxx format.
- * \lreturn ud     sockaddr_storage* userdata instance.
- * \return  int    # of values pushed onto the stack.
- * --------------------------------------------------------------------------*/
-static int
-lt_net_adr__Call( lua_State *L )
-{
-	int             returnables  = 0;
-	char                     ip[ INET6_ADDRSTRLEN ];
-	struct sockaddr_storage *adr = t_net_adr_check_ud( L, 2, 0 );
-	lua_remove( L, 1 );
-	if (NULL != adr )
-	{
-		lua_remove( L, 1 );
-		SOCK_ADDR_INET_NTOP( adr, ip );
-		lua_pushstring( L, ip );
-		lua_pushinteger( L, ntohs( SOCK_ADDR_SS_PORT( adr ) ) );
-	}
-	t_net_adr_getFromStack( L, 1, &returnables );
-	return 1;
-}
-
-
-/**--------------------------------------------------------------------------
  * Evaluate stack parameters to set address criteria.
  * \param   L      Lua state.
  * \param   int    offset  on stack to start reading values.
  * \lparam  string IPv4/IPv6 address for the socket.
  * \lparam  int    port for the socket.
  * --------------------------------------------------------------------------*/
-struct sockaddr_storage
+static struct sockaddr_storage
 *t_net_adr_getFromStack( lua_State *L, int pos, int *returnables )
 {
 	struct sockaddr_storage *adr    = t_net_adr_check_ud( L, pos, 0 );
@@ -168,6 +139,34 @@ struct sockaddr_storage
 	// put the address into the stack were the parameters used to be
 	lua_insert( L, pos );
 	return adr;
+}
+
+
+/**--------------------------------------------------------------------------
+ * Construct a Net.Address and return it.
+ * \param   L      Lua state.
+ * \lparam  CLASS  table t.Net.Address
+ * \lparam  port   Port for the Address.
+ * \lparam  string IP address in xxx.xxx.xxx.xxx format.
+ * \lreturn ud     sockaddr_storage* userdata instance.
+ * \return  int    # of values pushed onto the stack.
+ * --------------------------------------------------------------------------*/
+static int
+lt_net_adr__Call( lua_State *L )
+{
+	int             returnables  = 0;
+	char                     ip[ INET6_ADDRSTRLEN ];
+	struct sockaddr_storage *adr = t_net_adr_check_ud( L, 2, 0 );
+	lua_remove( L, 1 );
+	if (NULL != adr )
+	{
+		lua_remove( L, 1 );
+		SOCK_ADDR_INET_NTOP( adr, ip );
+		lua_pushstring( L, ip );
+		lua_pushinteger( L, ntohs( SOCK_ADDR_SS_PORT( adr ) ) );
+	}
+	t_net_adr_getFromStack( L, 1, &returnables );
+	return 1;
 }
 
 

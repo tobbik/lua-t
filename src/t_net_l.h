@@ -12,8 +12,8 @@
 #include <stdint.h>
 #include <netdb.h>
 #include <unistd.h>
-#include <fcntl.h>       // O_NONBLOCK,...
-#include <sys/select.h>  // fd_set
+#include <fcntl.h>        // O_NONBLOCK,...
+#include <sys/select.h>   // fd_set
 #include <netinet/tcp.h>  // TCP_NODELAY
 #ifdef __linux
 #include <sys/ioctl.h>
@@ -21,7 +21,7 @@
 #endif
 
 #include "t_net.h"
-#include "t.h"           // t_getType*
+#include "t.h"             // t_getType*
 
 
 #define INT_TO_ADDR( _addr ) \
@@ -71,14 +71,11 @@ struct sockaddr_storage *t_net_adr_create_ud   ( lua_State *L );
 void                     t_net_adr_setAddr     ( struct sockaddr_storage *adr, const char* ips );
 void                     t_net_adr_setPort     ( lua_State *L, struct sockaddr_storage *adr, const int port, const int pos );
 int                     lt_net_adr_getIpAndPort( lua_State *L );
-struct sockaddr_storage *t_net_adr_getFromStack( lua_State *L, int pos, int *returnables );
 #define t_net_adr_is( L, pos ) (NULL != t_net_adr_check_ud( L, pos, 0 ))
 
 
 // ----------------------------- INTERFACES -----------------------------------
 // t_netl.c
-void   t_net_getProtocolByName ( lua_State *L, int pos, const char *dft );
-void   t_net_getProtocolByValue( lua_State *L, int pos, const int val );
 int    t_net_getStack          ( lua_State *L, const int pos, struct t_net_sck **sck,
                                  struct sockaddr_storage **adr );
 
@@ -109,6 +106,8 @@ int    p_net_sck_getsockname    ( lua_State *L, struct t_net_sck *sck, struct so
 int    p_net_sck_mkFdSet        ( lua_State *L, int pos, fd_set *set );
 
 
+int    luaopen_t_net_sck_ptc    ( lua_State *L );
+int    luaopen_t_net_sck_sht    ( lua_State *L );
 // ---------------------------- MACRO HELPERS FOR IP ADDRESSES ----------------
 //
 #define SOCK_ADDR_PTR(ptr)        ((struct sockaddr *)(ptr))
@@ -409,32 +408,6 @@ static const struct t_typ t_net_typeList[ ] = {
 #endif
 	{ NULL                , 0                }   // Sentinel
 };
-
-
-static const struct t_typ t_net_shutList[ ] = {
-#ifdef SHUT_RD
-	{ "SHUT_RD"            , SHUT_RD         }, // No more receptions.
-	{ "read"               , SHUT_RD         },
-	{ "rd"                 , SHUT_RD         },
-	{ "r"                  , SHUT_RD         },
-#endif
-#ifdef SHUT_WR
-	{ "SHUT_WR"            , SHUT_WR         }, // No more transmissions.
-	{ "write"              , SHUT_WR         },
-	{ "wr"                 , SHUT_WR         },
-	{ "w"                  , SHUT_WR         },
-#endif
-#ifdef SHUT_RDWR
-	{ "SHUT_RDWR"          , SHUT_RDWR       }, // No more receptions or transmissions.
-	{ "readwrite"          , SHUT_RDWR       },
-	{ "rdwr"               , SHUT_RDWR       },
-	{ "rw"                 , SHUT_RDWR       },
-	{ "both"               , SHUT_RDWR       },
-	{ "either"             , SHUT_RDWR       },
-#endif
-	{ NULL                , 0                }
-};
-
 
 /* ############################################################################
  * Handling of socket, descriptor, protocoll options etc.  After trying a big

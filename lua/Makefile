@@ -34,6 +34,8 @@ T_SRC=\
    Net/Interface.lua \
    Net/Address.lua \
    Net/Socket.lua \
+   Net/Socket/Protocol.lua \
+   Net/Socket/Shutdown.lua \
    OrderedHashTable.lua \
    Pack.lua \
    Pack/Index.lua \

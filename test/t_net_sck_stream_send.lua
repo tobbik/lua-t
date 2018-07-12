@@ -54,7 +54,7 @@ local makeReceiver = function( self, size, payload, done )
 	end
 	local acpt = function( )
 		sck, adr = self.sSck:accept( )
-		asrtHlp.Socket( sck, 'tcp', 'AF_INET', 'SOCK_STREAM' )
+		asrtHlp.Socket( sck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' )
 		asrtHlp.Address( adr, "AF_INET", self.host, 'any' )
 		self.loop:addHandle( sck, "read", rcv )
 	end

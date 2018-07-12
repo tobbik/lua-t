@@ -59,7 +59,7 @@ local tests = {
 		self.port  = config.nonPrivPort
 		self.sSck  = Socket( "udp" )
 		self.sAdr  = self.sSck:bind( self.host, self.port )
-		asrtHlp.Socket( self.sSck, "udp", "AF_INET", "SOCK_DGRAM" )
+		asrtHlp.Socket( self.sSck, "IPPROTO_UDP", "AF_INET", "SOCK_DGRAM" )
 		asrtHlp.Address( self.sAdr, "AF_INET", self.host, self.port )
 		done()
 	end,
@@ -71,7 +71,7 @@ local tests = {
 
 	beforeEach_cb = function( self, done )
 		self.cSck  = Socket( "udp" )
-		asrtHlp.Socket( self.cSck, "udp", "AF_INET", "SOCK_DGRAM" )
+		asrtHlp.Socket( self.cSck, "IPPROTO_UDP", "AF_INET", "SOCK_DGRAM" )
 
 		self.loop:addTimer( Timer( 1 ), done )
 		-- loop:run() blocks further execution until the function on the loop
