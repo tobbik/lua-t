@@ -14,23 +14,25 @@
 -- same  process.  Each test will restart the loop, connect, assert and stop the
 -- loop before moving on to the next test.
 
-local t_assert,t_require  =   require"t".assert, require"t".require
+local t_require = require"t".require
 local Test      = require( "t.Test" )
 local Timer     = require( "t.Time" )
 local Loop      = require( "t.Loop" )
 local Interface = require( "t.Net.Interface" )
 local Socket    = require( "t.Net.Socket" )
 local Address   = require( "t.Net.Address" )
-local asrtHlp   = t_require( "assertHelper" )
+local chkAdr    = t_require( "assertHelper" ).Adr
+local chkSck    = t_require( "assertHelper" ).Sck
 local config    = t_require( "t_cfg" )
+local fmt       = string.format
 
 
 -- #########################################################################
 -- accept server for each test
 accept = function( self )
 	local c, ip = self.srv:accept( )
-	asrtHlp.Socket( c, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' )
-	asrtHlp.Address( ip, "AF_INET", self.host2cmp, self.port2cmp )
+	assert( chkSck( c, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' ) )
+	assert( chkAdr( ip, "AF_INET", self.host2cmp, self.port2cmp ) )
 	self.sck:close() -- close client first to avoid "Address already in use"
 	                 -- http://hea-www.harvard.edu/~fine/Tech/addrinuse.html
 	c:close( )
@@ -133,7 +135,7 @@ local tests = {
 		self.adrc           = Address( self.host, self.port )
 		local adr, b        = self.sck:connect( self.adrc )
 		assert( b == nil, "Only address should have been returned" )
-		t_assert( adr == self.adrc, "Returned address `%s` should equal input `%s`", adr, self.adrc )
+		assert( adr == self.adrc, fmt( "Returned address `%s` should equal input `%s`", adr, self.adrc ) )
 		done( )
 	end,
 
@@ -144,7 +146,7 @@ local tests = {
 		local f     = function() local _,__ = self.sck.connect( ) end
 		local ran,e = pcall( f )
 		assert( not ran, "This should have failed" )
-		t_assert( e:match( eMsg), "Expected error message:\n%s\n%s", eMsg:gsub('%%',''), e )
+		assert( e:match( eMsg), fmt( "Expected error message:\n%s\n%s", eMsg:gsub('%%',''), e ) )
 		done( )
 	end,
 --]]

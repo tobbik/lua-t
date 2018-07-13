@@ -14,13 +14,15 @@
 --          s:bind(host,port)      --> creates address
 --          s:bind(address)        --> creates nothing but does bind
 
-local t_assert,t_require  =   require"t".assert, require"t".require
+local t_require =   require( "t" ).require
 local Test      =   require( "t.Test" )
 local Socket    =   require( "t.Net.Socket" )
 local Address   =   require( "t.Net.Address" )
 local Interface =   require( "t.Net.Interface" )
-local asrtHlp   = t_require( "assertHelper" )
+local chkAdr    = t_require( "assertHelper" ).Adr
+local chkSck    = t_require( "assertHelper" ).Sck
 local config    = t_require( "t_cfg" )
+local fmt       = string.format
 
 
 local tests = {
@@ -45,8 +47,8 @@ local tests = {
 	test_SBindCreateSockAndInanyAddress = function( self )
 		Test.Case.describe( "Socket.bind() --> creates a TCP IPv4 Socket and 0.0.0.0:0 address" )
 		self.sck, self.address = Socket.bind()
-		asrtHlp.Socket(  self.sck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' )
-		asrtHlp.Address( self.address, "AF_INET", '0.0.0.0', 0 )
+		assert( chkSck( self.sck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' ) )
+		assert( chkAdr( self.address, "AF_INET", '0.0.0.0', 0 ) )
 	end,
 
 	test_SBindPrivPortThrowsPermission = function( self )
@@ -59,15 +61,15 @@ local tests = {
 		local errMsg = "Can't bind socket to 0.0.0.0:"..port.." %(Permission denied%)"
 		local a,e    = Socket.bind( port )
 		assert( not a, "Should fail binding to priviledged port as non root" )
-		t_assert( e:match( errMsg ), "Expected error message:\n%s\n%s", errMsg, e )
+		assert( e:match( errMsg ), fmt( "Expected error message:\n%s\n%s", errMsg, e ) )
 	end,
 
 	test_SBindPortCreateSockAndInanyAddress = function( self )
 		Test.Case.describe( "Socket.bind( port ) --> creates TCP IPv4 Socket and 0.0.0.0:port address" )
 		local port  = config.nonPrivPort
 		self.sck, self.address = Socket.bind( port )
-		asrtHlp.Socket(  self.sck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' )
-		asrtHlp.Address( self.address, "AF_INET", '0.0.0.0', port )
+		assert( chkSck(  self.sck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' ) )
+		assert( chkAdr( self.address, "AF_INET", '0.0.0.0', port ) )
 	end,
 
 	test_SBindHostPortCreateSockAndAddress = function( self )
@@ -75,8 +77,8 @@ local tests = {
 		local host   = Interface( 'default' ).AF_INET.address.ip
 		local port   = config.nonPrivPort
 		self.sck, self.address = Socket.bind( host, port )
-		asrtHlp.Socket(  self.sck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' )
-		asrtHlp.Address( self.address, "AF_INET", host, config.nonPrivPort )
+		assert( chkSck(  self.sck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' ) )
+		assert( chkAdr( self.address, "AF_INET", host, config.nonPrivPort ) )
 	end,
 
 	test_SBindAddressCreateSockOnly = function( self )
@@ -85,8 +87,8 @@ local tests = {
 		local port   = config.nonPrivPort
 		local addr   = Address( host, port )
 		self.sck, self.adr = Socket.bind( addr )
-		asrtHlp.Socket(  self.sck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' )
-		t_assert( addr == self.adr, "The returned address`%s` should equal input `%s`", self.adr, addr )
+		assert( chkSck(  self.sck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' ) )
+		assert( addr == self.adr, fmt( "The returned address`%s` should equal input `%s`", self.adr, addr ) )
 	end,
 
 	test_SBindReturnBoundSocket = function( self )
@@ -95,7 +97,7 @@ local tests = {
 		local port   = config.nonPrivPort
 		local addr   = Address( host, port )
 		self.sck, self.address = Socket.bind( addr )
-		asrtHlp.Socket(  self.sck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' )
+		assert( chkSck(  self.sck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' ) )
 		assert( addr  == self.sck:getsockname(), "The addresses should be equal" )
 	end,
 
@@ -108,7 +110,7 @@ local tests = {
 		self.sck     = Socket()
 		local adr,b = self.sck:bind()
 		assert( nil  == b, "The socket should not be returned" )
-		asrtHlp.Address( adr, "AF_INET", '0.0.0.0', 0 )
+		assert( chkAdr( adr, "AF_INET", '0.0.0.0', 0 ) )
 	end,
 
 	test_sBindPortCreateInAnyAddress = function( self )
@@ -117,7 +119,7 @@ local tests = {
 		self.sck     = Socket()
 		local adr, b = self.sck:bind( port)
 		assert( nil  == b, "The socket should not be returned" )
-		asrtHlp.Address( adr, "AF_INET", '0.0.0.0', config.nonPrivPort )
+		assert( chkAdr( adr, "AF_INET", '0.0.0.0', config.nonPrivPort ) )
 	end,
 
 	test_sBindHostPortCreateAddress = function( self )
@@ -127,7 +129,7 @@ local tests = {
 		self.sck     = Socket()
 		local adr, b = self.sck:bind( host, port )
 		assert( nil  == b, "The socket should not be returned" )
-		asrtHlp.Address( adr, "AF_INET", host, config.nonPrivPort )
+		assert( chkAdr( adr, "AF_INET", host, config.nonPrivPort ) )
 	end,
 
 	test_sBindAddressCreateNothingButBinds = function( self )
@@ -140,7 +142,7 @@ local tests = {
 		assert( nil  == b,   "Only address should be returned" )
 		assert( addr  == self.sck:getsockname(), "The addresses should be equal" )
 		assert( addr  == adr, "The addresses should be equal input" )
-		asrtHlp.Address( addr, "AF_INET", host, port )
+		assert( chkAdr( addr, "AF_INET", host, port ) )
 	end,
 
 	test_sBindWrongArgFails = function( self )
@@ -150,7 +152,7 @@ local tests = {
 		local f     = function() local _,__ = self.sck.bind( ) end
 		local ran,e = pcall( f )
 		assert( not ran, "This should have failed" )
-		t_assert( e:match( eMsg), "Expected error message:\n%s\n%s", eMsg:gsub('%%',''), e )
+		assert( e:match( eMsg), fmt( "Expected error message:\n%s\n%s", eMsg:gsub('%%',''), e ) )
 	end,
 
 	test_sCloseBoundNoSockname = function( self )
@@ -158,12 +160,12 @@ local tests = {
 		local eMsg      = "Couldn't get Address from (Bad file descriptor)"
 		self.sck        = Socket()
 		local a,b       = self.sck:getsockname( )
-		asrtHlp.Address( a, "AF_INET", '0.0.0.0', 0 )
+		assert( chkAdr( a, "AF_INET", '0.0.0.0', 0 ) )
 		self.sck:close( )
 		a,b       = self.sck:getsockname( )
-		t_assert( not a, "getsockname() should not have returned a value but got `%s`", a )
-		t_assert( b:match( eMsg:gsub( "%(", "%%(" ):gsub( "%)", "%%)" ) ),
-		   "Error Message should have been `%s', but was `%s`", eMsg, b )
+		assert( not a, fmt( "getsockname() should not have returned a value but got `%s`", a ) )
+		assert( b:match( eMsg:gsub( "%(", "%%(" ):gsub( "%)", "%%)" ) ),
+		   fmt( "Error Message should have been `%s', but was `%s`", eMsg, b ) )
 	end,
 	--]]
 }

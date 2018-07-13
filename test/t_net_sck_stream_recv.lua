@@ -22,9 +22,13 @@ local Socket    = require( "t.Net.Socket" )
 local Address   = require( "t.Net.Address" )
 local Interface = require( "t.Net.Interface" )
 local Buffer    = require( "t.Buffer" )
-local T         = require( "t" )
-local asrtHlp   = T.require( "assertHelper" )
-local config    = T.require( "t_cfg" )
+
+local t_require = require( "t" ).require
+local chkSck    = t_require( "assertHelper" ).Sck
+local chkAdr    = t_require( "assertHelper" ).Adr
+local fmt       = string.format
+local config    = t_require( "t_cfg" )
+
 
 
 -- for this test we use blocking sending only.  The test is for recv(); no need
@@ -33,7 +37,7 @@ local makeSender = function( self, msg )
 	self.cSck = Socket.connect( self.sAdr )
 	local f = function( s, m )
 		local snt = s.cSck:send( m )
-		T.assert( snt == #m, "Should have sent all(%d bytes) but sent %d bytes", #m, snt )
+		assert( snt == #m, fmt( "Should have sent all(%d bytes) but sent %d bytes", #m, snt ) )
 		s.loop:removeHandle( self.cSck, "write" )
 		self.cSck:shutdown( 'write' )
 	end
@@ -45,8 +49,8 @@ end
 local makeReceiver = function( self, receiver )
 	local acpt = function( )
 		self.aSck, self.aAdr = self.sSck:accept( )
-		asrtHlp.Socket( self.aSck, "IPPROTO_TCP", "AF_INET", "SOCK_STREAM" )
-		asrtHlp.Address( self.aAdr, "AF_INET", self.host, "any" )
+		assert( chkSck( self.aSck, "IPPROTO_TCP", "AF_INET", "SOCK_STREAM" ) )
+		assert( chkAdr( self.aAdr, "AF_INET", self.host, "any" ) )
 		self.loop:addHandle( self.aSck, "read", receiver, self )
 	end
 	self.loop:addHandle( self.sSck, "read", acpt )
@@ -61,8 +65,8 @@ local tests = {
 		self.host            = Interface( 'default' ).AF_INET.address.ip
 		self.port            = config.nonPrivPort
 		self.sSck, self.sAdr = Socket.listen( self.host, self.port )
-		asrtHlp.Socket( self.sSck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' )
-		asrtHlp.Address( self.sAdr, "AF_INET", self.host, self.port )
+		assert( chkSck( self.sSck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' ) )
+		assert( chkAdr( self.sAdr, "AF_INET", self.host, self.port ) )
 		done()
 	end,
 
@@ -96,14 +100,14 @@ local tests = {
 		local cnt      = 0
 		local receiver = function( s )
 			local msg,len = s.aSck:recv( )
-			T.assert( type(len)=='number',  "Expected `%s` but got `%s`", 'number', type(len) )
+			assert( type(len)=='number', fmt( "Expected `%s` but got `%s`", 'number', type(len) ) )
 			if msg then
-				T.assert( type(msg)=='string',  "Expected `%s` but got `%s`", 'string', type(msg) )
-				T.assert( msg == payload:sub(cnt+1,cnt+len), "Message was %s but should have been %s",
-				          msg, payload:sub(cnt+1,cnt+len) )
+				assert( type(msg)=='string', fmt( "Expected `%s` but got `%s`", 'string', type(msg) ) )
+				assert( msg == payload:sub(cnt+1,cnt+len), fmt( "Message was %s but should have been %s",
+				          msg, payload:sub(cnt+1,cnt+len) ) )
 				cnt = cnt+len
 			else
-				T.assert( cnt==#payload, "Expected %d but got %d bytes", #payload, cnt)
+				assert( cnt==#payload, fmt( "Expected %d but got %d bytes", #payload, cnt) )
 				done()
 			end
 		end
@@ -118,16 +122,16 @@ local tests = {
 		local rcvd,sz,cnt  = 0,128,0
 		local receiver = function( s )
 			local msg,len = s.aSck:recv( sz )
-			T.assert( type(len)=='number',  "Expected `%s` but got `%s`", 'number', type(len) )
+			assert( type(len)=='number', fmt( "Expected `%s` but got `%s`", 'number', type(len) ) )
 			if msg then
-				T.assert( sz==len,  "Expected %d bytes but got %d", sz, len )
-				T.assert( type(msg)=='string',  "Expected `%s` but got `%s`", 'string', type(msg) )
-				T.assert( msg == payload:sub(rcvd+1,rcvd+len), "Message was %s but should have been %s",
-				          msg, payload:sub(rcvd+1,rcvd+len) )
+				assert( sz==len, fmt( "Expected %d bytes but got %d", sz, len ) )
+				assert( type(msg)=='string', fmt( "Expected `%s` but got `%s`", 'string', type(msg) ) )
+				assert( msg == payload:sub(rcvd+1,rcvd+len), fmt( "Message was %s but should have been %s",
+				          msg, payload:sub(rcvd+1,rcvd+len) ) )
 				rcvd = rcvd+len
 				cnt  = cnt +1
 			else
-				T.assert( rcvd==#payload, "Expected %d but got %d bytes", #payload, rcvd)
+				assert( rcvd==#payload, fmt( "Expected %d but got %d bytes", #payload, rcvd) )
 				done()
 			end
 		end
@@ -142,13 +146,13 @@ local tests = {
 		local cnt      = 0
 		local receiver = function( s )
 			local msg,len = s.aSck:recv( buffer:Segment( cnt+1 ) )
-			T.assert( type(len)=='number',  "Expected `%s` but got `%s`", 'number', type(len) )
+			assert( type(len)=='number', fmt( "Expected `%s` but got `%s`", 'number', type(len) ) )
 			if msg then
-				T.assert( type(msg)=='boolean',  "Expected `%s` but got `%s`", 'boolean', type(msg) )
+				assert( type(msg)=='boolean', fmt( "Expected `%s` but got `%s`", 'boolean', type(msg) ) )
 				cnt = cnt+len
 			else
-				T.assert( cnt==#payload, "Expected %d but got %d bytes", #payload, cnt)
-				T.assert( buffer:read()==payload, "Payload should equal received value")
+				assert( cnt==#payload, fmt( "Expected %d but got %d bytes", #payload, cnt) )
+				assert( buffer:read()==payload, fmt( "Payload should equal received value") )
 				done()
 			end
 		end
@@ -164,14 +168,14 @@ local tests = {
 		local receiver = function( s )
 			seg           = seg and seg:next() or buffer:Segment( 1, 128 )
 			local msg,len = s.aSck:recv( seg )
-			T.assert( type(len)=='number',  "Expected `%s` but got `%s`", 'number', type(len) )
+			assert( type(len)=='number', fmt( "Expected `%s` but got `%s`", 'number', type(len) ) )
 			if msg then
-				T.assert( #seg==len,  "Expected %d bytes but got %d", #seg, len )
-				T.assert( type(msg)=='boolean',  "Expected `%s` but got `%s`", 'boolean', type(msg) )
+				assert( #seg==len, fmt( "Expected %d bytes but got %d", #seg, len ) )
+				assert( type(msg)=='boolean', fmt( "Expected `%s` but got `%s`", 'boolean', type(msg) ) )
 				cnt = cnt+len
 			else
-				T.assert( cnt==#payload, "Expected %d but got %d bytes", #payload, cnt)
-				T.assert( buffer:read()==payload, "Payload should equal received value")
+				assert( cnt==#payload, fmt( "Expected %d but got %d bytes", #payload, cnt) )
+				assert( buffer:read()==payload, fmt( "Payload should equal received value") )
 				done()
 			end
 		end
@@ -187,15 +191,15 @@ local tests = {
 		local receiver = function( s )
 			local buf     = Buffer( 2*sz )
 			local msg,len = s.aSck:recv( buf, sz )
-			T.assert( type(len)=='number',  "Expected `%s` but got `%s`", 'number', type(len) )
+			assert( type(len)=='number', fmt( "Expected `%s` but got `%s`", 'number', type(len) ) )
 			if msg then
-				T.assert( sz==len,  "Expected %d bytes but got %d", sz, len )
-				T.assert( buf:read(1,len) == payload:sub(rcvd+1,rcvd+len), "Message was %s but should have been %s",
-				          buf:read(1,len), payload:sub(rcvd+1,rcvd+len) )
+				assert( sz==len, fmt( "Expected %d bytes but got %d", sz, len ) )
+				assert( buf:read(1,len) == payload:sub(rcvd+1,rcvd+len), fmt( "Message was %s but should have been %s",
+				          buf:read(1,len), payload:sub(rcvd+1,rcvd+len) ) )
 				rcvd = rcvd+len
 				cnt  = cnt +1
 			else
-				T.assert( rcvd==#payload, "Expected %d but got %d bytes", #payload, rcvd)
+				assert( rcvd==#payload, fmt( "Expected %d but got %d bytes", #payload, rcvd) )
 				done()
 			end
 		end

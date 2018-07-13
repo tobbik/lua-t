@@ -20,13 +20,15 @@
 --  adr  = Socket.listen( sck, host, port, bl ) -- Adr host:port
 
 
-local t_type,t_assert,t_require,t_assert = 
-      require't'.type, require't'.assert,require't'.require,require( "t" ).assert
 local Test      = require( "t.Test" )
 local Socket    = require( "t.Net.Socket" )
 local Address   = require( "t.Net.Address" )
 local Interface = require( "t.Net.Interface" )
-local asrtHlp   = t_require( "assertHelper" )
+
+local t_require = require( "t" ).require
+local chkSck    = t_require( "assertHelper" ).Sck
+local chkAdr    = t_require( "assertHelper" ).Adr
+local fmt       = string.format
 local config    = t_require( "t_cfg" )
 
 local tests = {
@@ -54,17 +56,17 @@ local tests = {
 	test_SListenEmpty = function( self )
 		Test.Case.describe( "Socket.listen( ) --> Sck IPv4(TCP); Adr 0.0.0.0:xxxxx" )
 		self.sck, self.adr = Socket.listen( )
-		asrtHlp.Socket( self.sck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' )
-		asrtHlp.Address( self.adr, "AF_INET", '0.0.0.0', 'any' )
-		t_assert( self.sck:getsockname() == self.adr, "Bound[ %s ] and returned [ %s ]address should match",
-			self.sck:getsockname(), self.adr )
+		assert( chkSck( self.sck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' ) )
+		assert( chkAdr( self.adr, "AF_INET", '0.0.0.0', 'any' ) )
+		assert( self.sck:getsockname() == self.adr, fmt( "Bound[ %s ] and returned [ %s ]address should match",
+			self.sck:getsockname(), self.adr ) )
 	end,
 
 	test_SListenBacklog = function( self )
 		Test.Case.describe( "Socket.listen( 5 ) --> Sck IPv4(TCP); Adr 0.0.0.0:xxxxx" )
 		self.sck,self.adr  = Socket.listen( 5 )
-		asrtHlp.Socket(  self.sck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' )
-		asrtHlp.Address( self.adr, "AF_INET", '0.0.0.0', 'any' )
+		assert( chkSck(  self.sck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' ) )
+		assert( chkAdr( self.adr, "AF_INET", '0.0.0.0', 'any' ) )
 		assert( self.sck:getsockname() == self.adr, "Bound and returned address should match" )
 	end,
 
@@ -75,7 +77,7 @@ local tests = {
 		local addr        = Address( host, port )
 		self.sck,self.adr = Socket.listen( addr )
 		assert( self.adr == addr, "Returned Address shall be same as input" )
-		asrtHlp.Socket(  self.sck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' )
+		assert( chkSck(  self.sck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' ) )
 		assert( self.sck:getsockname() == addr, "Bound address should equal input" )
 	end,
 
@@ -86,7 +88,7 @@ local tests = {
 		local addr        = Address( host, port )
 		self.sck,self.adr = Socket.listen( addr, 5 )
 		assert( self.adr == addr, "Returned Address shall be same as input" )
-		asrtHlp.Socket(  self.sck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' )
+		assert( chkSck(  self.sck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' ) )
 		assert( self.sck:getsockname() == addr, "Bound address should equal input" )
 	end,
 
@@ -94,9 +96,9 @@ local tests = {
 		Test.Case.describe( "Socket.listen( host ) --> Sck IPv4(TCP), Adr host:xxxxx" )
 		local host        = Interface( 'default' ).AF_INET.address.ip
 		self.sck,self.adr = Socket.listen( host )
-		asrtHlp.Socket(  self.sck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' )
-		asrtHlp.Address( self.adr, "AF_INET", host, 'any' )
-		asrtHlp.Address( self.sck:getsockname(), "AF_INET", host, 'any' )
+		assert( chkSck(  self.sck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' ) )
+		assert( chkAdr( self.adr, "AF_INET", host, 'any' ) )
+		assert( chkAdr( self.sck:getsockname(), "AF_INET", host, 'any' ) )
 	end,
 
 	test_SListenHostPort = function( self )
@@ -104,8 +106,8 @@ local tests = {
 		local host        = Interface( 'default' ).AF_INET.address.ip
 		local port        = config.nonPrivPort
 		self.sck,self.adr = Socket.listen( host, port )
-		asrtHlp.Socket(  self.sck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' )
-		asrtHlp.Address( self.adr, "AF_INET", host, port )
+		assert( chkSck(  self.sck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' ) )
+		assert( chkAdr( self.adr, "AF_INET", host, port ) )
 		assert( self.sck:getsockname() == self.adr, "Bound and returned address should match" )
 	end,
 
@@ -113,8 +115,8 @@ local tests = {
 		Test.Case.describe( "Socket.listen( port, bl ) --> Sck IPv4(TCP), Adr 0.0.0.0:port" )
 		local port        = config.nonPrivPort
 		self.sck,self.adr = Socket.listen( port, 50 )
-		asrtHlp.Socket(  self.sck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' )
-		asrtHlp.Address( self.adr, "AF_INET", '0.0.0.0', port )
+		assert( chkSck(  self.sck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' ) )
+		assert( chkAdr( self.adr, "AF_INET", '0.0.0.0', port ) )
 		assert( self.sck:getsockname() == self.adr, "Bound and returned address should match" )
 	end,
 
@@ -129,7 +131,7 @@ local tests = {
 		local errMsg = "Can't bind socket to "..host..":"..port.." %(Permission denied%)"
 		local f,e    = Socket.listen( host, port )
 		assert( not f, "Should have failed as non-root user" )
-		t_assert( e:match( errMsg ), "Expected Error Message: `%s` but got `%s`", errMsg, e )
+		assert( e:match( errMsg ), fmt( "Expected Error Message: `%s` but got `%s`", errMsg, e ) )
 	end,
 
 	test_SListenHostAddressBacklog = function( self )
@@ -137,8 +139,8 @@ local tests = {
 		local host        = Interface( 'default' ).AF_INET.address.ip
 		local port        = config.nonPrivPort
 		self.sck,self.adr = Socket.listen( host, port, 5 )
-		asrtHlp.Socket(  self.sck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' )
-		asrtHlp.Address( self.adr, "AF_INET", host, port )
+		assert( chkSck(  self.sck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' ) )
+		assert( chkAdr( self.adr, "AF_INET", host, port ) )
 		assert( self.sck:getsockname() == self.adr, "Bound and returned address should match" )
 	end,
 
@@ -150,13 +152,13 @@ local tests = {
 		local host        = Interface( 'default' ).AF_INET.address.ip
 		local port        = config.nonPrivPort
 		self.sck,self.adr = Socket.bind( host, port )
-		asrtHlp.Socket( self.sck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' )
-		asrtHlp.Address( self.adr, "AF_INET", host, port )
+		assert( chkSck( self.sck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' ) )
+		assert( chkAdr( self.adr, "AF_INET", host, port ) )
 		local a, b        = self.sck:listen( )
 		assert( b == nil, "No second value should have been returned" )
-		t_assert( self.adr == a, "returned address `%s` should equal previously bound `%s`", a, self.adr )
-		t_assert( self.sck:getsockname() == self.adr,
-			"Bound address should equal input `%s` but was `%s`", self.adr, self.sck:getsockname() )
+		assert( self.adr == a, fmt( "returned address `%s` should equal previously bound `%s`", a, self.adr ) )
+		assert( self.sck:getsockname() == self.adr,
+			fmt( "Bound address should equal input `%s` but was `%s`", self.adr, self.sck:getsockname() ) )
 	end,
 
 	test_sListenBacklog = function( self )
@@ -164,13 +166,13 @@ local tests = {
 		local host        = Interface( 'default' ).AF_INET.address.ip
 		local port        = config.nonPrivPort
 		self.sck,self.adr = Socket.bind( host, port )
-		asrtHlp.Socket( self.sck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' )
-		asrtHlp.Address( self.adr, "AF_INET", host, port )
+		assert( chkSck( self.sck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' ) )
+		assert( chkAdr( self.adr, "AF_INET", host, port ) )
 		local a, b        = self.sck:listen( 5 )
 		assert( b == nil, "No second value should have been returned" )
-		t_assert( a == self.adr, "returned address `%s` should equal previously bound `%s`", a, self.adr )
-		t_assert( self.sck:getsockname() == self.adr,
-			"Bound address should equal input `%s` but was `%s`", self.adr, self.sck:getsockname() )
+		assert( a == self.adr, fmt( "returned address `%s` should equal previously bound `%s`", a, self.adr ) )
+		assert( self.sck:getsockname() == self.adr,
+			fmt( "Bound address should equal input `%s` but was `%s`", self.adr, self.sck:getsockname() ) )
 	end,
 
 	test_sListenAddress = function( self )
@@ -182,8 +184,8 @@ local tests = {
 		local a, b = self.sck:listen( self.adr )
 		assert( b == nil, "No second value should have been returned" )
 		assert( a == self.adr, "Returned address should be same as input address" )
-		t_assert( self.sck:getsockname() == self.adr,
-			"Bound address should equal input `%s` but was `%s`", self.adr, self.sck:getsockname() )
+		assert( self.sck:getsockname() == self.adr,
+			fmt( "Bound address should equal input `%s` but was `%s`", self.adr, self.sck:getsockname() ) )
 	end,
 
 	test_sListenAddressBacklog = function( self )
@@ -195,20 +197,20 @@ local tests = {
 		local a, b = self.sck:listen( self.adr, 5 )
 		assert( b == nil, "No second value should have been returned" )
 		assert( a == self.adr, "Returned address should be same as input address" )
-		t_assert( self.sck:getsockname() == self.adr,
-			"Bound address should equal input `%s` but was `%s`", self.adr, self.sck:getsockname() )
+		assert( self.sck:getsockname() == self.adr,
+			fmt( "Bound address should equal input `%s` but was `%s`", self.adr, self.sck:getsockname() ) )
 	end,
 
 	test_sListenHost = function( self )
 		Test.Case.describe( "sck:listen( host ) --> Adr host:xxxxx" )
 		local host      = Interface( 'default' ).AF_INET.address.ip
 		self.sck        = Socket( )
-		asrtHlp.Socket( self.sck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' )
+		assert( chkSck( self.sck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' ) )
 		local a, b      = self.sck:listen( host )
 		assert( b == nil, "No second value should have been returned" )
-		asrtHlp.Address( a, "AF_INET", host, 'any' )
-		t_assert( self.sck:getsockname() == a,
-			"Bound address should equal input `%s` but was `%s`", self.adr, self.sck:getsockname() )
+		assert( chkAdr( a, "AF_INET", host, 'any' ) )
+		assert( self.sck:getsockname() == a,
+			fmt( "Bound address should equal input `%s` but was `%s`", self.adr, self.sck:getsockname() ) )
 	end,
 
 	test_sListenHostPort = function( self )
@@ -216,12 +218,12 @@ local tests = {
 		local host      = Interface( 'default' ).AF_INET.address.ip
 		local port      = config.nonPrivPort
 		self.sck        = Socket( )
-		asrtHlp.Socket( self.sck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' )
+		assert( chkSck( self.sck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' ) )
 		local a,b       = self.sck:listen( host, port )
 		assert( b == nil, "No values should have been returned" )
-		asrtHlp.Address( a, "AF_INET", host, port )
-		t_assert( self.sck:getsockname() == a,
-			"Bound address should equal input `%s` but was `%s`", a, self.sck:getsockname() )
+		assert( chkAdr( a, "AF_INET", host, port ) )
+		assert( self.sck:getsockname() == a,
+			fmt( "Bound address should equal input `%s` but was `%s`", a, self.sck:getsockname() ) )
 	end,
 
 	test_sListenPortBacklog = function( self )
@@ -229,7 +231,7 @@ local tests = {
 		local port      = config.nonPrivPort
 		self.sck        = Socket( )
 		self.adr        = self.sck:listen( port, 50 )
-		asrtHlp.Address( self.adr, "AF_INET", '0.0.0.0', port )
+		assert( chkAdr( self.adr, "AF_INET", '0.0.0.0', port ) )
 		assert( self.sck:getsockname() == self.adr, "Bound and returned address should match" )
 	end,
 
@@ -238,12 +240,12 @@ local tests = {
 		local host      = Interface( 'default' ).AF_INET.address.ip
 		local port      = config.nonPrivPort
 		self.sck        = Socket( )
-		asrtHlp.Socket( self.sck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' )
+		assert( chkSck( self.sck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' ) )
 		local a,b       = self.sck:listen( host, port, 5 )
 		assert( b == nil, "No second value should have been returned" )
-		asrtHlp.Address( a, "AF_INET", host, port )
-		t_assert( self.sck:getsockname() == a,
-			"Bound address should equal input `%s` but was `%s`", a, self.sck:getsockname() )
+		assert( chkAdr( a, "AF_INET", host, port ) )
+		assert( self.sck:getsockname() == a,
+			fmt( "Bound address should equal input `%s` but was `%s`", a, self.sck:getsockname() ) )
 	end,
 
 	test_sListenWrongArgFails = function( self )
@@ -253,7 +255,7 @@ local tests = {
 		local f     = function() local _,__ = self.sck.listen( ) end
 		local ran,e = pcall( f )
 		assert( not ran, "This should have failed" )
-		t_assert( e:match( eMsg), "Expected error message:\n`%s`\nbut got `%s`\n\n", eMsg:gsub('%%',''), e )
+		assert( e:match( eMsg), fmt( "Expected error message:\n`%s`\nbut got `%s`\n\n", eMsg:gsub('%%',''), e ) )
 	end,
 --]]
 }

@@ -3,7 +3,7 @@
 -- \author    tkieslich
 -- \copyright See Copyright notice at the end of src/t.h
 
-local package, format       , getmetatable, type, dgetinfo     =
+local package, s_format     , getmetatable, type, d_getinfo    =
       package, string.format, getmetatable, type, debug.getinfo
 
 local equals
@@ -24,9 +24,9 @@ debug.getregistry( )[ 'T.ProxyTableIndex' ] = proxyTableIndex
 return {
 	require  = function( name )
 		local dir                                           , path        , cpath =
-		      dgetinfo( 2, "S" ).short_src:match( "^(.*)/" ), package.path, package.cpath
-		package.path  = format( "%s;%s/?.lua;%s/?/init.lua", path, dir, dir )
-		package.cpath = format( "%s;%s/?.so", cpath, dir )
+		      d_getinfo( 2, "S" ).short_src:match( "^(.*)/" ), package.path, package.cpath
+		package.path  = s_format( "%s;%s/?.lua;%s/?/init.lua", path, dir, dir )
+		package.cpath = s_format( "%s;%s/?.so", cpath, dir )
 		local loaded  = require( name )
 		package.path, package.cpath = path, cpath     --  restore original
 		return loaded
@@ -37,13 +37,13 @@ return {
 		local name = (nil ~= mt) and mt.__name or nil
 		return name and name or type( obj )
 	end,
-	assert  = function( cnd, ... ) assert( cnd, string.format( ... ) ) end,
-	print   = function( fmt, ... ) print( string.format( fmt, ... ) ) end,
+	assert  = function( cnd, ... ) assert( cnd, s_format( ... ) ) end,
+	print   = function( fmt, ... ) print( s_format( fmt, ... ) ) end,
 
 --  -------------------------------------------------------------------------
 --  Objects that use a proxy table such as t.Test or t.OrderedHashTable have an
 --  internal tracking or proxy table which holds the data so that __index and
---  __newindex operations can be done without hassle.  Within the object, the
+--  __newindex operations can be used without hassle.  Within the object, the
 --  tracking table is indexed by an empty table:
 --  t.proxyTableIndex = {}    -- a globally (to t) defined empty table
 --  oht = OrderedHashTable()  -- oht is the table instance with the metamethods

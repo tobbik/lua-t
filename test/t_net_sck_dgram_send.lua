@@ -23,20 +23,21 @@ local Socket    = require( "t.Net.Socket" )
 local Address   = require( "t.Net.Address" )
 local Interface = require( "t.Net.Interface" )
 local Buffer    = require( "t.Buffer" )
-local T         = require( "t" )
-local t_assert,t_require  = require't'.assert, require't'.require
-local asrtHlp   = t_require( "assertHelper" )
+local t_require = require( "t" ).require
+local chkSck    = t_require( "assertHelper" ).Sck
+local chkAdr    = t_require( "assertHelper" ).Adr
+local fmt       = string.format
 local config    = t_require( "t_cfg" )
 
 
 local makeReceiver = function( self, payload, max, done )
 	local f = function( s, msg )
 		local msg, rcvd = s.sSck:recv( )
-		t_assert( rcvd==max   , "Expected %d bytes but got %d", max, rcvd )
+		assert( rcvd==max   , fmt( "Expected %d bytes but got %d", max, rcvd ) )
 		if 0==max then
-			t_assert( msg==nil,  "Expected `nil` but got\n%s", msg )
+			assert( msg==nil,  fmt( "Expected `nil` but got\n%s", msg ) )
 		else
-			t_assert( msg==payload, "Expected\n%s\nbut got\n%s", payload, msg )
+			assert( msg==payload, fmt( "Expected\n%s\nbut got\n%s", payload, msg ) )
 		end
 		s.loop:removeHandle( s.sSck, "read" )
 		done( )
@@ -59,8 +60,8 @@ local tests = {
 		self.port  = config.nonPrivPort
 		self.sSck  = Socket( "udp" )
 		self.sAdr  = self.sSck:bind( self.host, self.port )
-		asrtHlp.Socket( self.sSck, "IPPROTO_UDP", "AF_INET", "SOCK_DGRAM" )
-		asrtHlp.Address( self.sAdr, "AF_INET", self.host, self.port )
+		assert( chkSck( self.sSck, "IPPROTO_UDP", "AF_INET", "SOCK_DGRAM" ) )
+		assert( chkAdr( self.sAdr, "AF_INET", self.host, self.port ) )
 		done()
 	end,
 
@@ -71,7 +72,7 @@ local tests = {
 
 	beforeEach_cb = function( self, done )
 		self.cSck  = Socket( "udp" )
-		asrtHlp.Socket( self.cSck, "IPPROTO_UDP", "AF_INET", "SOCK_DGRAM" )
+		assert( chkSck( self.cSck, "IPPROTO_UDP", "AF_INET", "SOCK_DGRAM" ) )
 
 		self.loop:addTimer( Timer( 1 ), done )
 		-- loop:run() blocks further execution until the function on the loop
@@ -106,8 +107,8 @@ local tests = {
 		local payload = string.rep( "TestMessage content for sending full message -- ", 14 )
 		local sender  = function( s )
 			local sent = s.cSck:send( payload )
-			t_assert( type(sent)=="number",  "Expected `number` but got `%s`", type(sent) )
-			t_assert( sent==#payload,        "Expected %d but sent %d bytes", #payload, sent)
+			assert( type(sent)=="number", fmt( "Expected `number` but got `%s`", type(sent) ) )
+			assert( sent==#payload,       fmt( "Expected %d but sent %d bytes", #payload, sent) )
 			s.loop:removeHandle( s.cSck, "write" )
 		end
 		makeReceiver( self, payload, #payload, done )
@@ -120,8 +121,8 @@ local tests = {
 		local max     = #payload//2
 		local sender  = function( s )
 			local sent = s.cSck:send( payload, max )
-			t_assert( type(sent)=="number",  "Expected `number` but got `%s`", type(sent) )
-			t_assert( sent==max,         "Expected %d but sent %d bytes", max, sent)
+			assert( type(sent)=="number", fmt( "Expected `number` but got `%s`", type(sent) ) )
+			assert( sent==max,            fmt( "Expected %d but sent %d bytes", max, sent) )
 			s.loop:removeHandle( s.cSck, "write" )
 		end
 		makeReceiver( self, payload:sub(1,max), max, done )
@@ -133,8 +134,8 @@ local tests = {
 		local payload = string.rep( "TestMessage content for sending full message -- ", 14 )
 		local sender  = function( s )
 			local sent = s.cSck:send( payload, s.sAdr )
-			t_assert( type(sent)=="number",  "Expected `number` but got `%s`", type(sent) )
-			t_assert( sent==#payload,        "Expected %d but sent %d bytes", #payload, sent)
+			assert( type(sent)=="number", fmt( "Expected `number` but got `%s`", type(sent) ) )
+			assert( sent==#payload,       fmt( "Expected %d but sent %d bytes", #payload, sent) )
 			s.loop:removeHandle( s.cSck, "write" )
 		end
 		makeReceiver( self, payload, #payload, done )
@@ -147,8 +148,8 @@ local tests = {
 		local max     = #payload//2
 		local sender  = function( s )
 			local sent = s.cSck:send( payload, s.sAdr, max )
-			t_assert( type(sent)=="number",  "Expected `number` but got `%s`", type(sent) )
-			t_assert( sent==max,         "Expected %d but sent %d bytes", max, sent)
+			assert( type(sent)=="number",  fmt( "Expected `number` but got `%s`", type(sent) ) )
+			assert( sent==max,             fmt( "Expected %d but sent %d bytes", max, sent) )
 			s.loop:removeHandle( s.cSck, "write" )
 		end
 		makeReceiver( self, payload:sub(1,max), max, done )
@@ -161,8 +162,8 @@ local tests = {
 		local buffer  = Buffer( payload )
 		local sender  = function( s )
 			local sent = s.cSck:send( buffer )
-			t_assert( type(sent)=="number",  "Expected `number` but got `%s`", type(sent) )
-			t_assert( sent==#buffer,        "Expected %d but sent %d bytes", #buffer, sent)
+			assert( type(sent)=="number",  fmt( "Expected `number` but got `%s`", type(sent) ) )
+			assert( sent==#buffer,         fmt( "Expected %d but sent %d bytes", #buffer, sent) )
 			s.loop:removeHandle( s.cSck, "write" )
 		end
 		makeReceiver( self, payload, #payload, done )
@@ -176,8 +177,8 @@ local tests = {
 		local max     = #payload//2
 		local sender  = function( s )
 			local sent = s.cSck:send( buffer, max )
-			t_assert( type(sent)=="number",  "Expected `number` but got `%s`", type(sent) )
-			t_assert( sent==max,         "Expected %d but sent %d bytes", max, sent)
+			assert( type(sent)=="number",  fmt( "Expected `number` but got `%s`", type(sent) ) )
+			assert( sent==max,             fmt( "Expected %d but sent %d bytes", max, sent) )
 			s.loop:removeHandle( s.cSck, "write" )
 		end
 		makeReceiver( self, payload:sub(1,max), max, done )
@@ -190,8 +191,8 @@ local tests = {
 		local buffer  = Buffer( payload )
 		local sender  = function( s )
 			local sent = s.cSck:send( payload, s.sAdr )
-			t_assert( type(sent)=="number",  "Expected `number` but got `%s`", type(sent) )
-			t_assert( sent==#buffer,        "Expected %d but sent %d bytes", #buffer, sent)
+			assert( type(sent)=="number",  fmt( "Expected `number` but got `%s`", type(sent) ) )
+			assert( sent==#buffer,         fmt( "Expected %d but sent %d bytes", #buffer, sent) )
 			s.loop:removeHandle( s.cSck, "write" )
 		end
 		makeReceiver( self, payload, #payload, done )
@@ -205,8 +206,8 @@ local tests = {
 		local max     = #payload//2
 		local sender  = function( s )
 			local sent = s.cSck:send( buffer, s.sAdr, max )
-			t_assert( type(sent)=="number",  "Expected `number` but got `%s`", type(sent) )
-			t_assert( sent==max,         "Expected %d but sent %d bytes", max, sent)
+			assert( type(sent)=="number",  fmt( "Expected `number` but got `%s`", type(sent) ) )
+			assert( sent==max,             fmt( "Expected %d but sent %d bytes", max, sent) )
 			s.loop:removeHandle( s.cSck, "write" )
 		end
 		makeReceiver( self, payload:sub(1,max), max, done )
@@ -219,8 +220,8 @@ local tests = {
 		local len     = #payload
 		local sender  = function( s )
 			local sent = s.cSck:send( payload, len+400 )
-			t_assert( type(sent)=="number",  "Expected `number` but got `%s`", type(sent) )
-			t_assert( sent==len,         "Expected %d but sent %d bytes", len, sent)
+			assert( type(sent)=="number",  fmt( "Expected `number` but got `%s`", type(sent) ) )
+			assert( sent==len,             fmt( "Expected %d but sent %d bytes", len, sent) )
 			s.loop:removeHandle( s.cSck, "write" )
 		end
 		makeReceiver( self, payload, len, done )
@@ -234,8 +235,8 @@ local tests = {
 		local buffer  = Buffer( payload )
 		local sender  = function( s )
 			local sent = s.cSck:send( buffer, len+400 )
-			t_assert( type(sent)=="number",  "Expected `number` but got `%s`", type(sent) )
-			t_assert( sent==len,         "Expected %d but sent %d bytes", len, sent)
+			assert( type(sent)=="number",  fmt( "Expected `number` but got `%s`", type(sent) ) )
+			assert( sent==len,             fmt( "Expected %d but sent %d bytes", len, sent) )
 			s.loop:removeHandle( s.cSck, "write" )
 		end
 		makeReceiver( self, payload, len, done )
@@ -253,19 +254,19 @@ local tests = {
 			eMsg = "bad argument #1 to 'send' %(T.Net.Socket expected, got string%)"
 			d,e  = pcall( f, s )
 			assert( not d, "Call should have failed" )
-			t_assert( e:match( eMsg ), "Error message should contain: `%s`\nbut was\n`%s`", eMsg, e )
+			assert( e:match( eMsg ), fmt( "Error message should contain: `%s`\nbut was\n`%s`", eMsg, e ) )
 
 			f    = function( x ) local snt = x.cSck:send( payload, "something" ) end
 			eMsg = "bad argument #2 to 'send' %(number expected, got string%)"
 			d,e  = pcall( f, s )
 			assert( not d, "Call should have failed" )
-			t_assert( e:match( eMsg ), "Error message should contain: `%s`\nbut was\n`%s`", eMsg, e )
+			assert( e:match( eMsg ), fmt( "Error message should contain: `%s`\nbut was\n`%s`", eMsg, e ) )
 
 			f    = function( x ) local snt = x.cSck:send( payload, Address(), "something" ) end
 			eMsg = "bad argument #3 to 'send' %(number expected, got string%)"
 			d,e  = pcall( f, s )
 			assert( not d, "Call should have failed" )
-			t_assert( e:match( eMsg ), "Error message should contain: `%s`\nbut was\n`%s`", eMsg, e )
+			assert( e:match( eMsg ), fmt( "Error message should contain: `%s`\nbut was\n`%s`", eMsg, e ) )
 
 			s.loop:removeHandle( s.cSck, "write" )
 			done()

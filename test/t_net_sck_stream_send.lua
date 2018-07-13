@@ -26,9 +26,16 @@ local Socket    = require( "t.Net.Socket" )
 local Address   = require( "t.Net.Address" )
 local Interface = require( "t.Net.Interface" )
 local Buffer    = require( "t.Buffer" )
-local T         = require( "t" )
-local asrtHlp   = T.require( "assertHelper" )
-local config    = T.require( "t_cfg" )
+local t_require = require( "t" ).require
+local chkSck    = t_require( "assertHelper" ).Sck
+local chkAdr    = t_require( "assertHelper" ).Adr
+local fmt       = string.format
+
+local t_require = require( "t" ).require
+local chkSck    = t_require( "assertHelper" ).Sck
+local chkAdr    = t_require( "assertHelper" ).Adr
+local fmt       = string.format
+local config    = t_require( "t_cfg" )
 
 
 -- #########################################################################
@@ -39,13 +46,13 @@ local makeReceiver = function( self, size, payload, done )
 		local seg     = incBuffer:Segment( inCount+1 )
 		local suc,cnt = sck:recv( seg )
 		if suc then
-			T.assert( incBuffer:read( inCount+1, cnt ) == payload:sub( inCount+1, cnt+inCount ),
-				"%d[%d]Received and original should match:\n%s\n---------------------------\n%s",
-				inCount, cnt, incBuffer:read( inCount+1, cnt ), payload:sub( inCount+1, cnt+inCount  ) )
+			assert( incBuffer:read( inCount+1, cnt ) == payload:sub( inCount+1, cnt+inCount ),
+				fmt( "%d[%d]Received and original should match:\n%s\n---------------------------\n%s",
+				inCount, cnt, incBuffer:read( inCount+1, cnt ), payload:sub( inCount+1, cnt+inCount  ) ) )
 			inCount = cnt + inCount
 		else
-			T.assert( inCount  ==  size, "Send(%d) and Recv(%d) count should be equal", size, inCount )
-			T.assert( incBuffer:read() == payload, "Sent payload shouls equal received overall message" )
+			assert( inCount  ==  size, fmt( "Send(%d) and Recv(%d) count should be equal", size, inCount ) )
+			assert( incBuffer:read() == payload, fmt( "Sent payload shouls equal received overall message" ) )
 			self.loop:removeHandle( sck, "read" )
 			self.cSck:close( )
 			sck:close( )
@@ -54,8 +61,8 @@ local makeReceiver = function( self, size, payload, done )
 	end
 	local acpt = function( )
 		sck, adr = self.sSck:accept( )
-		asrtHlp.Socket( sck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' )
-		asrtHlp.Address( adr, "AF_INET", self.host, 'any' )
+		assert( chkSck( sck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' ) )
+		assert( chkAdr( adr, "AF_INET", self.host, 'any' ) )
 		self.loop:addHandle( sck, "read", rcv )
 	end
 	self.loop:addHandle( self.sSck, "read", acpt )
@@ -105,7 +112,7 @@ local tests = {
 		local payload = string.rep( 'THis Is a LittLe Test-MEsSage To bE sEnt ACcroSS the WIrE ...!_', 50000 )
 		local sender  = function( s )
 			local cnt = s.cSck:send( payload )
-			T.assert( cnt == #payload, "Blocking send() should send all(%d) but sent(%d)", #payload, cnt )
+			assert( cnt == #payload, fmt( "Blocking send() should send all(%d) but sent(%d)", #payload, cnt ) )
 			s.loop:removeHandle( s.cSck, 'write' )
 			s.cSck:shutdown( 'write' )
 		end
@@ -123,8 +130,8 @@ local tests = {
 				sendCount = sendCount+1
 				outCount  = cnt + outCount
 			else
-				T.assert( sendCount == math.ceil( outCount/128 ), "expected iterations: %d/%d", sendCount, math.ceil(outCount/128) )
-				T.assert( outCount  == #payload, "send() should accumulate to (%d) but sent(%d)", #payload, outCount )
+				assert( sendCount == math.ceil( outCount/128 ), fmt( "expected iterations: %d/%d", sendCount, math.ceil(outCount/128) ) )
+				assert( outCount  == #payload, fmt( "send() should accumulate to (%d) but sent(%d)", #payload, outCount ) )
 				s.loop:removeHandle( s.cSck, 'write' )
 				s.cSck:shutdown( 'write' )
 			end
@@ -143,8 +150,8 @@ local tests = {
 				sendCount = sendCount+1
 				outCount  = cnt + outCount
 			else
-				T.assert( sendCount>1, "Non blocking should have broken up sending: %d ", sendCount)
-				T.assert( outCount  == #payload, "send() should accumulate to (%d) but sent(%d)", #payload, outCount )
+				assert( sendCount>1, fmt( "Non blocking should have broken up sending: %d ", sendCount) )
+				assert( outCount  == #payload, fmt( "send() should accumulate to (%d) but sent(%d)", #payload, outCount ) )
 				s.loop:removeHandle( s.cSck, 'write' )
 				s.cSck:shutdown( 'write' )
 			end
@@ -159,7 +166,7 @@ local tests = {
 		local buf      = Buffer( payload )
 		local sender = function( s )
 			local cnt = s.cSck:send( buf )
-			T.assert( cnt == #buf, "Blocking send() should send all(%d) but sent(%d)", #buf, cnt )
+			assert( cnt == #buf, fmt( "Blocking send() should send all(%d) but sent(%d)", #buf, cnt ) )
 			s.loop:removeHandle( s.cSck, 'write' )
 			s.cSck:shutdown( 'write' )
 		end
@@ -180,8 +187,8 @@ local tests = {
 				sendCount = sendCount+1
 				outCount  = cnt + outCount
 			else
-				T.assert( sendCount == math.ceil( outCount/128 ), "expected iterations: %d/%d", sendCount, math.ceil(outCount/128) )
-				T.assert( outCount  == #buf, "send() should accumulate to (%d) but sent(%d)", #buf, outCount )
+				assert( sendCount == math.ceil( outCount/128 ), fmt( "expected iterations: %d/%d", sendCount, math.ceil(outCount/128) ) )
+				assert( outCount  == #buf, fmt( "send() should accumulate to (%d) but sent(%d)", #buf, outCount ) )
 				s.loop:removeHandle( s.cSck, 'write' )
 				s.cSck:shutdown( 'write' )
 			end
@@ -202,8 +209,8 @@ local tests = {
 				outCount  = cnt + outCount
 			else
 				--print("SENT:", outCount, sendCount )
-				T.assert( sendCount>1, "Non blocking should have broken up sending: %d ", sendCount)
-				T.assert( outCount  == #buf, "send() should accumulate to (%d) but sent(%d)", #buf, outCount )
+				assert( sendCount>1, fmt( "Non blocking should have broken up sending: %d ", sendCount) )
+				assert( outCount  == #buf, fmt( "send() should accumulate to (%d) but sent(%d)", #buf, outCount ) )
 				s.loop:removeHandle( s.cSck, 'write' )
 				s.cSck:shutdown( 'write' )
 			end
