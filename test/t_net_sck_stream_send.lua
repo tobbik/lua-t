@@ -131,10 +131,17 @@ local tests = {
 			-- the substring only has to be longer than chunksize
 			local cnt = s.cSck:send( payload:sub( outCount+1, outCount+chunk_sz ), chunk_sz )
 			if cnt>0 then
+				if cnt < chunk_sz then
+					-- check for proper remainder size
+					assert( cnt == #payload % chunk_sz, fmt('Sent chunk was #%d, expected %d', cnt, #payload % chunk_sz ) )
+				else
+					assert( cnt == chunk_sz, fmt('Sent chunk was #%d, expected %d', cnt, chunk_sz ) )
+				end
 				sendCount = sendCount+1
 				outCount  = cnt + outCount
 			else
-				assert( sendCount == math.ceil( outCount/chunk_sz ), fmt( "expected iterations: %d/%d", sendCount, math.ceil( outCount/chunk_sz ) ) )
+				assert( sendCount == math.ceil( outCount/chunk_sz ),
+				        fmt( "expected iterations: %d/%d", sendCount, math.ceil( outCount/chunk_sz ) ) )
 				assert( outCount  == #payload, fmt( "send() should accumulate to (%d) but sent(%d)", #payload, outCount ) )
 				s.loop:removeHandle( s.cSck, 'write' )
 				s.cSck:shutdown( 'write' )
@@ -191,10 +198,17 @@ local tests = {
 			seg           = seg and seg:next() or buf:Segment( 1, chunk_sz )
 			local cnt = s.cSck:send( seg )
 			if cnt > 0 then
+				if cnt < chunk_sz then
+					-- check for proper remainder size
+					assert( cnt == #payload % chunk_sz, fmt('Sent chunk was #%d, expected %d', cnt, #payload % chunk_sz ) )
+				else
+					assert( cnt == chunk_sz, fmt('Sent chunk was #%d, expected %d', cnt, chunk_sz ) )
+				end
 				sendCount = sendCount+1
 				outCount  = cnt + outCount
 			else
-				assert( sendCount == math.ceil( outCount/chunk_sz ), fmt( "expected iterations: %d/%d", sendCount, math.ceil( outCount/chunk_sz ) ) )
+				assert( sendCount == math.ceil( outCount/chunk_sz ),
+				        fmt( "expected iterations: %d/%d", sendCount, math.ceil( outCount/chunk_sz ) ) )
 				assert( outCount  == #buf, fmt( "send() should accumulate to (%d) but sent(%d)", #buf, outCount ) )
 				s.loop:removeHandle( s.cSck, 'write' )
 				s.cSck:shutdown( 'write' )
