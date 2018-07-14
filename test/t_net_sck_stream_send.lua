@@ -109,8 +109,10 @@ local tests = {
 	-- Actual Test cases
 	test_cb_sendFullString = function( self, done )
 		Test.Case.describe( "cnt = sck.send( msg ) -- send all in one go" )
-		local payload = string.rep( 'THis Is a LittLe Test-MEsSage To bE sEnt ACcroSS the WIrE ...!_', 50000 )
+		local payload = string.rep( 'THis Is a LittLe Test-MEsSage To bE sEnt ACcroSS the WIrE ...!_', 41000 )
 		local sender  = function( s )
+			assert( s.cSck.sendbuffer >= #payload,
+			        fmt( "Sendbuffer[%d] is smaller than #msg[%d]. Consider adjusting size.", s.cSck.sendbuffer, #payload ) )
 			local cnt = s.cSck:send( payload )
 			assert( cnt == #payload, fmt( "Blocking send() should send all(%d) but sent(%d)", #payload, cnt ) )
 			s.loop:removeHandle( s.cSck, 'write' )
@@ -123,14 +125,16 @@ local tests = {
 	test_cb_sendStringSmallChunks = function( self, done )
 		Test.Case.describe( "cnt = sck.send( msg, sz ) -- small sized chunks" )
 		local sendCount, outCount, payload = 0, 0,
-			string.rep( 'THis Is a LittLe Test-MEsSage To bE sEnt ACcroSS the WIrE ...!_', 50000 )
+			string.rep( 'THis Is a LittLe Test-MEsSage To bE sEnt ACcroSS the WIrE ...!_', 40000 )
+		local chunk_sz = 128
 		local sender = function( s )
-			local cnt = s.cSck:send( payload:sub( outCount+1 ), 128 )
+			-- the substring only has to be longer than chunksize
+			local cnt = s.cSck:send( payload:sub( outCount+1, outCount+chunk_sz ), chunk_sz )
 			if cnt>0 then
 				sendCount = sendCount+1
 				outCount  = cnt + outCount
 			else
-				assert( sendCount == math.ceil( outCount/128 ), fmt( "expected iterations: %d/%d", sendCount, math.ceil(outCount/128) ) )
+				assert( sendCount == math.ceil( outCount/chunk_sz ), fmt( "expected iterations: %d/%d", sendCount, math.ceil( outCount/chunk_sz ) ) )
 				assert( outCount  == #payload, fmt( "send() should accumulate to (%d) but sent(%d)", #payload, outCount ) )
 				s.loop:removeHandle( s.cSck, 'write' )
 				s.cSck:shutdown( 'write' )
@@ -162,9 +166,11 @@ local tests = {
 
 	test_cb_sendFullBuffer = function( self, done )
 		Test.Case.describe( "cnt = sck.send( buf ) -- send all in one go" )
-		local payload  = string.rep( 'THis Is a LittLe Test-MEsSage To bE sEnt ACcroSS the WIrE ...!_', 50000 )
+		local payload  = string.rep( 'THis Is a LittLe Test-MEsSage To bE sEnt ACcroSS the WIrE ...!_', 41000 )
 		local buf      = Buffer( payload )
 		local sender = function( s )
+			assert( s.cSck.sendbuffer >= #payload,
+			        fmt( "Sendbuffer[%d] is smaller than #msg[%d]. Consider adjusting size.", s.cSck.sendbuffer, #payload ) )
 			local cnt = s.cSck:send( buf )
 			assert( cnt == #buf, fmt( "Blocking send() should send all(%d) but sent(%d)", #buf, cnt ) )
 			s.loop:removeHandle( s.cSck, 'write' )
@@ -180,14 +186,15 @@ local tests = {
 			string.rep( 'THis Is a LittLe Test-MEsSage To bE sEnt ACcroSS the WIrE ...!_', 50000 )
 		local buf      = Buffer( payload )
 		local seg      = nil
+		local chunk_sz = 128
 		local sender   = function( s )
-			seg           = seg and seg:next() or buf:Segment( 1, 128 )
+			seg           = seg and seg:next() or buf:Segment( 1, chunk_sz )
 			local cnt = s.cSck:send( seg )
 			if cnt > 0 then
 				sendCount = sendCount+1
 				outCount  = cnt + outCount
 			else
-				assert( sendCount == math.ceil( outCount/128 ), fmt( "expected iterations: %d/%d", sendCount, math.ceil(outCount/128) ) )
+				assert( sendCount == math.ceil( outCount/chunk_sz ), fmt( "expected iterations: %d/%d", sendCount, math.ceil( outCount/chunk_sz ) ) )
 				assert( outCount  == #buf, fmt( "send() should accumulate to (%d) but sent(%d)", #buf, outCount ) )
 				s.loop:removeHandle( s.cSck, 'write' )
 				s.cSck:shutdown( 'write' )

@@ -15,6 +15,7 @@
 #include <fcntl.h>        // O_NONBLOCK,...
 #include <sys/select.h>   // fd_set
 #include <netinet/tcp.h>  // TCP_NODELAY
+#include <netinet/in.h>   // IPPROTO_*
 #ifdef __linux
 #include <sys/ioctl.h>
 #include <linux/sockios.h> //SIOCINQ

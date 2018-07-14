@@ -103,9 +103,14 @@ dev-rinse:
 	$(MAKE) dev-clean
 	$(MAKE) dev-rm
 
+dev-rmcomp:
+	$(MAKE) dev-rinse
+	-rm -rf $(COMPDIR)
+
 dev-pristine:
 	$(MAKE) dev-rinse
-	-rm -rf $(COMPDIR) $(DLDIR)
+	$(MAKE) dev-rmcomp
+	-rm -rf $(DLDIR)
 
 dev-test:
 	$(MAKE) CC=$(CC) LD=$(LD) \

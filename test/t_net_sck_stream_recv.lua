@@ -35,6 +35,8 @@ local config    = t_require( "t_cfg" )
 -- to complicate it
 local makeSender = function( self, msg )
 	self.cSck = Socket.connect( self.sAdr )
+	assert( self.cSck.sendbuffer >= #msg,
+		fmt( "Sendbuffer[%d] is smaller than #msg[%d]. Consider adjusting size.", self.cSck.sendbuffer, #msg ) )
 	local f = function( s, m )
 		local snt = s.cSck:send( m )
 		assert( snt == #m, fmt( "Should have sent all(%d bytes) but sent %d bytes", #m, snt ) )
@@ -96,7 +98,7 @@ local tests = {
 	-- Actual Test cases
 	test_cb_recvString = function( self, done )
 		Test.Case.describe( "msg,len = sck.recv( )" )
-		local payload  = string.rep( "TestMessage content for recieving full string -- ", 60000 )
+		local payload  = string.rep( "TestMessage content for recieving full string -- ", 50000 )
 		local cnt      = 0
 		local receiver = function( s )
 			local msg,len = s.aSck:recv( )
@@ -117,7 +119,7 @@ local tests = {
 
 	test_cb_recvSizedString = function( self, done )
 		Test.Case.describe( "msg,len = sck.recv( size )" )
-		local payload  = string.rep( "TestMessage content for recieving chopped up chunky stringes -- ", 60000 )
+		local payload  = string.rep( "TestMessage content for recieving chopped up chunky stringes -- ", 35000 )
 		-- #payload must be devisible by sz - else test fails on last chunk!
 		local rcvd,sz,cnt  = 0,128,0
 		local receiver = function( s )
@@ -141,7 +143,7 @@ local tests = {
 
 	test_cb_recvBuffer = function( self, done )
 		Test.Case.describe( "msg,len = sck.recv( buf_seg )" )
-		local payload  = string.rep( "TestMessage content for recieving bigger buffer -- ", 90000 )
+		local payload  = string.rep( "TestMessage content for recieving bigger buffer -- ", 50000 )
 		local buffer   = Buffer( #payload )
 		local cnt      = 0
 		local receiver = function( s )
@@ -162,7 +164,7 @@ local tests = {
 
 	test_cb_recvSizedBuffer = function( self, done )
 		Test.Case.describe( "msg,len = sck.recv( buf_seg )  [Small 128 bytes segment]" )
-		local payload  = string.rep( "TestMessage content for recieving bigger buffer -- ", 90000 )
+		local payload  = string.rep( "TestMessage content for recieving bigger buffer -- ", 50000 )
 		local buffer   = Buffer( #payload )
 		local seg, cnt = nil, 0
 		local receiver = function( s )
@@ -185,7 +187,7 @@ local tests = {
 
 	test_cb_recvSizedBufferMax = function( self, done )
 		Test.Case.describe( "msg,len = sck.recv( buffer, size )" )
-		local payload  = string.rep( "TestMessage content for recieving chopped up chunky stringes -- ", 60000 )
+		local payload  = string.rep( "TestMessage content for recieving chopped up chunky stringes -- ", 40000 )
 		-- #payload must be devisible by sz - else test fails on last chunk!
 		local rcvd,sz,cnt  = 0,128,0
 		local receiver = function( s )
