@@ -1,7 +1,9 @@
 local Socket            , Address           =
       require"t.net".sck, require"t.net".adr
-local Protocol                      , Shutdown          =
+local Protocol                      , Shutdown                       =
       require"t.Net.Socket.Protocol", require"t.Net.Socket.Shutdown"
+local Family               =
+      require"t.Net.Family"
 local t_type         , t_assert         , type, s_lower     , s_format     , type =
       require't'.type, require't'.assert, type, string.lower, string.format, type
 local sck_mt = debug.getregistry( )[ "T.Net.Socket" ]
@@ -146,8 +148,8 @@ sck_mt.shutdown = function( sck, mode )
 end
 
 -- Socket( ) Creates a new socket
--- \param   protocol string: 'TCP', 'UDP' ...
--- \param   family   string: 'ip4', 'AF_INET6', 'raw' ...
+-- \param   protocol string/number: 'TCP', 'udp', 'IPPROTO_IPV6' ...
+-- \param   family   string/number: 'ip4', 'AF_INET6', 'raw' ...
 -- \param   type     string: 'stream', 'datagram' ...
 -- \usage   Net.Socket( )                   -> create TCP IPv4 Socket
 --          Net.Socket( 'TCP' )             -> create TCP IPv4 Socket
@@ -158,11 +160,15 @@ Sck_mt.__call = function( Sck, protocol, family, typ )
 	local p = protocol or Protocol.IPPROTO_TCP       -- sane default
 	p       = ( 'string' == type( p ) ) and Protocol[ p ] or p  -- lookup name
 	assert( Protocol[ p ] and 'number' == type( p ), s_format( "Can't find protocol `%s`", protocol ))
-	family   = family   or  'AF_INET'
+
+	local f = family or Family.AF_INET               -- sane default
+	f       = ( 'string' == type( f ) ) and Family[ f ] or f  -- lookup name
+	assert( Family[ f ] and 'number' == type( f ), s_format( "Can't find family `%s`", family ))
+
 	typ      = typ      or  ((Protocol.IPPROTO_TCP == p ) and 'SOCK_STREAM')
 	                    or  ((Protocol.IPPROTO_UDP == p ) and 'SOCK_DGRAM')
 	                    or  'SOCK_RAW'
-	return Sck.new( p, family, typ )
+	return Sck.new( p, f, typ )
 end
 
 return Socket

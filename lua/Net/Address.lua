@@ -1,3 +1,4 @@
-local Net = require( "t.net" )
+local Adr    = require( "t.net" ).adr
 
-return Net.adr
+
+return Adr

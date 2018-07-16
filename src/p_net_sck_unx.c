@@ -372,7 +372,7 @@ p_net_sck_getSocketOption( lua_State *L, struct t_net_sck        *sck,
 			if (0 == getsockname( sck->fd, SOCK_ADDR_PTR( &adr ), &len ))
 			{
 				lua_pushinteger( L, SOCK_ADDR_SS_FAMILY( &adr ) );
-				t_getTypeByValue( L, -1, -1, t_net_familyList );
+				t_net_getFamilyValue( L, -1 );
 			}
 			else
 				lua_pushnil( L );

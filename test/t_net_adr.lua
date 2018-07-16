@@ -8,6 +8,7 @@ local t_require =   require( "t" ).require
 local Test      =   require( "t.Test" )
 local Socket    =   require( "t.Net.Socket" )
 local Address   =   require( "t.Net.Address" )
+local Family    =   require( "t.Net.Family" )
 local Interface =   require( "t.Net.Interface" )
 local chkAdr    = t_require( "assertHelper" ).Adr
 local config    = t_require( "t_cfg" )
@@ -20,6 +21,7 @@ local tests = {
 	end,
 
 
+	-- Tests
 	test_CreateEmptyAddressIp4 = function( self )
 		Test.Case.describe( "Socket.Address() --> creates an IPv4 Address {0.0.0.0:0}" )
 		local adr = Address( )
@@ -67,7 +69,7 @@ local tests = {
 		assert( adr == adrClone, fmt( "`%s` should equal `%s`", adr, adrClone ) )
 		assert( chkAdr( adr, family, ip, port ) )
 	end,
-	
+
 	test_CreateIp6AddressByClone = function( self )
 		if not self.ipv6 then Test.Case.skip( 'Test requires IPv6 to be enabled' ) end
 		local family,ip, port  = "AF_INET6", Interface( 'default' ).AF_INET6.address.ip, config.nonPrivPort
@@ -86,6 +88,18 @@ local tests = {
 		local adr = Address( ip4, port )
 		assert( chkAdr( adr, family4, ip4, port ) )
 		adr.family = family6
+		assert( chkAdr( adr, family6, '::', port ) )
+	end,
+
+	test_SetFamilyNumber = function( self )
+		if not self.ipv6 then Test.Case.skip( 'Test requires IPv6 to be enabled' ) end
+		local family4, ip4, port  = "AF_INET",  Interface( 'default' ).AF_INET.address.ip, config.nonPrivPort
+		local family6, ip6, port  = "AF_INET6", Interface( 'default' ).AF_INET6.address.ip, config.nonPrivPort
+		Test.Case.describe( "adr.family = Family.AF_INET6 --> changes family to IPv6" )
+		local adr = Address( ip4, port )
+		assert( chkAdr( adr, family4, ip4, port ) )
+		adr.family = Family.AF_INET6
+		assert( 'number' == type( Family.AF_INET6), "`Net.Family.AF_INET6` should be numeric" )
 		assert( chkAdr( adr, family6, '::', port ) )
 	end,
 

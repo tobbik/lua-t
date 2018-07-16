@@ -96,14 +96,14 @@ dev-clean:
 		DEBUG=1 \
 		PREFIX="$(PREFIX)" clean
 
-dev-rm:
+dev-rmout:
 	-rm -rf $(PREFIX)
 
 dev-rinse:
 	$(MAKE) dev-clean
-	$(MAKE) dev-rm
+	$(MAKE) dev-rmout
 
-dev-rmcomp:
+dev-rm:
 	$(MAKE) dev-rinse
 	-rm -rf $(COMPDIR)
 

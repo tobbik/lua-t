@@ -36,6 +36,21 @@
 
 int _t_net_default_family = AF_INET;
 
+int t_net_getFamilyValue( lua_State *L, int pos )
+{
+	pos = (pos < 0) ? lua_gettop( L ) + pos + 1 : pos; // get absolute stack position
+	// push family name on stack
+	luaL_getsubtable( L, LUA_REGISTRYINDEX, "_LOADED" );
+	lua_getfield( L, -1, "t."T_NET_IDNT );
+	lua_getfield( L, -1, T_NET_FML_IDNT );
+	lua_pushvalue( L, pos );   //S:… key … _LD Net Fml key
+	lua_rawget( L, -2 );       //S:… key … _LD Net Fml fml
+	lua_replace( L, pos );     //S:… fml … _LD Net Fml
+	lua_pop( L, 3 );           //S:… fml …
+	return (! lua_isnil( L, pos ) );
+}
+
+
 /**--------------------------------------------------------------------------
  * Class functions library definition
  * --------------------------------------------------------------------------*/
@@ -63,5 +78,7 @@ luaopen_t_net( lua_State *L )
 	lua_setfield( L, -2, T_NET_IFC_IDNT );
 	luaopen_t_net_sck( L );
 	lua_setfield( L, -2, T_NET_SCK_IDNT );
+	luaopen_t_net_fml( L );
+	lua_setfield( L, -2, T_NET_FML_IDNT );
 	return 1;
 }

@@ -39,8 +39,6 @@ lt_net_sck_New( lua_State *L )
 	struct t_net_sck *sck;
 
 	//t_net_getProtocolByName( L, 1, "TCP" );
-	//t_getTypeByName( L, 1, "TCP", t_net_protocolList );
-	t_getTypeByName( L, 2, "AF_INET", t_net_familyList );
 	t_getTypeByName( L, 3, "SOCK_STREAM", t_net_typeList );
 
 	sck  = t_net_sck_create_ud( L );

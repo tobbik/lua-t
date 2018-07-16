@@ -18,6 +18,7 @@
 #define T_NET_SCK_IDNT      "sck"
 #define T_NET_SCK_PTC_IDNT  "ptc"
 #define T_NET_SCK_SHT_IDNT  "sht"
+#define T_NET_FML_IDNT      "fml"
 
 #define T_NET_NAME          "Net"
 #define T_NET_ADR_NAME      "Address"
@@ -25,6 +26,7 @@
 #define T_NET_SCK_NAME      "Socket"
 #define T_NET_SCK_PTC_NAME  "Protocol"
 #define T_NET_SCK_SHT_NAME  "Shutdown"
+#define T_NET_FML_NAME      "Family"
 
 #define T_NET_TYPE          "T."T_NET_NAME
 #define T_NET_ADR_TYPE      T_NET_TYPE"."T_NET_ADR_NAME
@@ -32,6 +34,7 @@
 #define T_NET_SCK_TYPE      T_NET_TYPE"."T_NET_SCK_NAME
 #define T_NET_SCK_PTC_TYPE  T_NET_TYPE"."T_NET_SCK_NAME"."T_NET_SCK_PTC_NAME
 #define T_NET_SCK_SHT_TYPE  T_NET_TYPE"."T_NET_SCK_NAME"."T_NET_SCK_SHT_NAME
+#define T_NET_FML_TYPE      T_NET_TYPE"."T_NET_FML_NAME
 
 /// The userdata struct for T.Net.Socket
 struct t_net_sck {

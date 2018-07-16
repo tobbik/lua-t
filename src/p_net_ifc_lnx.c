@@ -170,7 +170,8 @@ p_net_ifs_getAddrPayload( lua_State *L, struct ifaddrs *ifa )
 {
 	int found = 0;
 	lua_pushinteger( L, ifa->ifa_addr->sa_family );
-	t_getTypeByValue( L, -1, -1, t_net_familyList );
+	t_net_getFamilyValue( L, -1 );
+
 	lua_newtable( L );
 	if (p_net_ifs_makeAddress( L, ifa->ifa_addr     , &found ))
 		lua_setfield( L, -2, "address" );
