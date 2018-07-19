@@ -5,6 +5,7 @@ local T      = require( 't' )
 local Test   = require( "t.Test" )
 local Oht    = require( "t.OrderedHashTable" )
 local Rtvg   = T.require( 'rtvg' )
+local fmt    = string.format
 
 local tests = {
 	len        = 5000,
@@ -108,8 +109,10 @@ local tests = {
 		for i,v,k in ipairs( self.o ) do
 			ri = ri+1
 			assert( i == ri, "Iterator index '"..i.."' must match running index '"..ri.."'" )
-			assert( k == self.keys[i], "Iterator hash must match running index hash" )
-			--assert( v == self.vals[i], "Iterator value must match running index value" )
+			if Oht._isCompat then
+				assert( k == self.keys[i], fmt("Iterator hash[%s] must match running index hash[%s]", k, self.keys[i] ) )
+			end
+			--assert( v == self.vals[i], "Iterator value[%s] must match running index value[%s]", v, self.vals[i] ) )
 		end
 		assert( #self.o == ri,
 			 "Number of iterations in ipairs() ("..ri..

@@ -216,7 +216,9 @@ local   tests = {
 		local t1   = {a='a'}
 		local t2   = {1,2,3,4,5}; t2[1]=nil; t2[2] = nil; t2[5]=nil
 		assert( 0 == #t1     , "Length of hashtable should be 0" )
-		assert( 0 == #t2     , "Length of tables with gaps should be 0" )
+		-- behavior for #t2 has changed from Lua-5.3 to 5.4; used to be 0 but now
+		-- seems highest original index
+		assert( 5 ~= #t2     , "#table with gaps shouldn't be original length" )
 		assert( 1 == cnt(t1) , "Count of hashtable should be 1" )
 		assert( 2 == cnt(t2) , "Count of tables with gaps should be 2" )
 		assert( not Table.isempty( t1 ), "Hashtable should not be empty" )

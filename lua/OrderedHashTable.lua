@@ -27,6 +27,14 @@ local t_keys    , t_values    , t_clone    , t_asstring     , equals   , prxTblI
 
 local _mt
 
+-- Test if ipairs() is compat or not
+-- compat returns more than 2 variables of __ipairs
+local t = setmetatable( {},{__ipairs=function(tbl) return function() return nil,nil,true end,tbl,0 end})
+
+local a,b,c = ipairs(t)
+local _,_,_isCompat = a(b,c)
+
+
 -- ---------------------------- general helpers  --------------------
 -- assert Oht type and return the proxy table
 local getPrx     = function( self )
@@ -102,15 +110,36 @@ local setElement = function( tbl, key, val )
 	end
 end
 
-local iters      = function( tbl, int )
-	local idx, init  = 0, nil
-	if int then init = 0 end
-	return function( key, t )
-		idx = idx + 1
-		local key = tbl[ idx ]
-		if nil ~= key and int     then return idx, tbl[ key ], key end
-		if nil ~= key and not int then return key, tbl[ key ], idx end end,
-		tbl, init
+local iters = function( tbl, int )
+	if int and _isCompat then
+		return function( t, idx )
+				if idx < #tbl then
+					idx = idx + 1
+					local key = tbl[ idx ]
+					return idx, tbl[ key ], key
+				end
+			end,
+			tbl, 0
+	elseif int then
+		return function( t, idx )
+				if idx < #tbl then
+					idx = idx + 1
+					local key = tbl[ idx ]
+					return idx, tbl[ key ]
+				end
+			end,
+			tbl, 0
+	else
+		local k_idx = 0
+		return function( t, last_key )
+				if k_idx < #tbl then
+					k_idx = k_idx + 1
+					local key = tbl[ k_idx ]
+					return key, tbl[ key ], k_idx
+				end
+			end,
+			tbl, nil
+	end
 end
 
 local readArgs   = function( ... )
@@ -129,9 +158,9 @@ _mt = {       -- local _mt at top of file
 	__name     = "t.OrderedHashTable",
 	__len      = function( self )           return #(getPrx( self )) end,
 	__index    = function( self, key )      return getElement( getPrx( self ), key ) end,
-	__newindex = function( self, key, val ) setElement( getPrx( self ), key, val) end,
-	__pairs    = function( self )           return iters( getPrx( self ) ) end,
-	__ipairs   = function( self )           return iters( getPrx( self ), true )   end,
+	__newindex = function( self, key, val ) setElement( getPrx( self ), key, val )   end,
+	__pairs    = function( self )           return iters( getPrx( self ), false )    end,
+	__ipairs   = function( self )           return iters( getPrx( self ), true )     end,
 -- comparing operations
 	__eq       = function( self, othr )     return equals( getPrx(self), getPrx( othr ) ) end,
 }
@@ -154,6 +183,7 @@ return setmetatable( {
 	getElement = getElement,
 	setElement = setElement,
 	iters      = iters,
+	_isCompat  = _isCompat
 }, {
 	__call   = function( self, tbl, ... )
 		local prx
