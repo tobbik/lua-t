@@ -7,27 +7,19 @@ const process = require( 'process' )
 //curl -i "http://localhost:8001/auth?username=matt&password=password"
 //ab -k -c 20 -n 250 "http://localhost:8001/auth?username=matt&password=password"
 
-var rot47lot = [ ];
-var users    = { };
-var r_cnt    = 0;
-
-var rot47init = function( )
-{
-	var input  = '!"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]^_`abcdefghijklmnopqrstuvwxyz{|}~';
-	var output = 'PQRSTUVWXYZ[]^_`abcdefghijklmnopqrstuvwxyz{|}~!"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNO';
-	for( var i=0; i<input.length; i++)
-		rot47lot[ input.charCodeAt( i ) ] = output.charAt( i );
-}
+var users = { };
+var r_cnt = 0;
 
 var rot47 = function( pw )
 {
 	var ret = [ ];
 	for( var i=0; i<pw.length; i++)
-		ret.push( rot47lot[ pw.charCodeAt( i ) ] );
-	return ret.join('');
+	{
+		var k = pw.charCodeAt( i );
+		ret.push( (k>79) ? String.fromCharCode( k-47 ) : String.fromCharCode( k+47 ) );
+	}
+	return ret.join( '' );
 }
-
-rot47init( );
 
 httpServer = http.createServer( (req, res) => {
 	var uri = url.parse( req.url, true )
@@ -58,7 +50,7 @@ httpServer = http.createServer( (req, res) => {
 
 		username = username.replace(/[!@#$%^&*]/g, '');
 
-		console.log( username, password, users[ username ] )
+		console.log( username, password )
 		if (!username || !password || users[ username ])
 		{
 			res.statusCode = 400;

@@ -4,32 +4,23 @@
 
 local Server,Loop           = require't.Http.Server', require't.Loop'
 local fmt,t_insert,t_concat = string.format, table.insert, table.concat
+local s_byte,s_char         = string.byte, string.char
 
 -- curl -i -X GET "http://localhost:8002/newUser?username=username&password=password"
 -- curl -i "http://localhost:8002/auth?username=username&password=password"
 -- ab -k -c 20 -n 250 "http://localhost:8002/auth?username=username&password=password"
 
-local rot47lot = { }  -- ROT47 Lookup  table
-local users    = { }  -- Users lookup  table
-local r_cnt    = 0    -- Counts all auth operations
+local users = { }  -- Users lookup  table
+local r_cnt = 0    -- Counts all auth operations
 
-local rot47init = function(  )
-	local input  = '!"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]^_`abcdefghijklmnopqrstuvwxyz{|}~';
-	local output = 'PQRSTUVWXYZ[]^_`abcdefghijklmnopqrstuvwxyz{|}~!"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNO';
-	for i=1, #input do
-		rot47lot[ input:byte( i ) ] = output:sub( i, i )
-	end
-end
-
-local rot47 = function( pw )
+local rot47 = function( wrd )
 	local ret = { }
-	for i=1, #pw do
-		t_insert( ret, rot47lot[ pw:byte( i ) ] )
+	for i=1, #wrd do
+		local k = s_byte( wrd, i )
+		t_insert( ret, k>79 and s_char( k-47 ) or s_char( k+47 ) )
 	end
 	return t_concat( ret, '' )
 end
-
-rot47init( )
 
 local callback = function( req, res )
 	if req.path == "/auth" then

@@ -20,16 +20,12 @@ var (
 	rotLot = make( map[rune]   rune )
 )
 
-func rot47Init() {
-	var input  []rune = []rune( "!\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]^_`abcdefghijklmnopqrstuvwxyz{|}~" );
-	var output []rune = []rune( "PQRSTUVWXYZ[]^_`abcdefghijklmnopqrstuvwxyz{|}~!\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNO" );
-	for pos, char := range input {
-		rotLot[ char ] = output[ pos ]
-	}
-}
-
 func rot47map( c rune ) rune {
-	return rotLot[ c ]
+	if (c > 'O') {
+		return (c - 47)
+	} else {
+		return (c + 47)
+	}
 }
 
 func rot47( pw string ) string {
@@ -48,7 +44,7 @@ func handlerNew(w http.ResponseWriter, req *http.Request) {
 	username = re.ReplaceAllString( username, "" )
 	_, haveUser  := users[ username ]
 
-	fmt.Printf( "%s   %s   %s", username, password, users[ username ] )
+	//fmt.Printf( "%s   %s   %s", username, password, users[ username ] )
 	if (""==username || ""==password || haveUser) {
 		w.WriteHeader( http.StatusBadRequest )
 		w.Write( []byte( "Creating a new user failed\n" ) )
@@ -101,7 +97,6 @@ func main() {
 	if 2==len( os.Args ) {
 		port = os.Args[ 1 ]
 	}
-	rot47Init( )
 	http.HandleFunc( "/newUser", handlerNew )
 	http.HandleFunc( "/auth", handlerAuth )
 	http.HandleFunc( "/", handler404 )

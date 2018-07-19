@@ -41,7 +41,7 @@ $(DLDIR):
 	mkdir -p $@
 
 $(DLDIR)/$(LUASRC): $(DLDIR)
-	$(CURL) -o $<   $(LUAURL)/$(LUASRC)
+	$(CURL) -o $@   $(LUAURL)/$(LUASRC)
 
 $(COMPDIR)/$(LVER): $(DLDIR)/$(LUASRC)
 	mkdir -p $@
