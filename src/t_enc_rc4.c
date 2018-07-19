@@ -237,7 +237,7 @@ static const luaL_Reg t_enc_rc4_m [] = {
  * \lreturn table  the library
  * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
-LUAMOD_API int
+int
 luaopen_t_enc_rc4( lua_State *L )
 {
 	// just make metatable known to be able to register and check userdata

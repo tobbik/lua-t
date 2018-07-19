@@ -155,7 +155,8 @@ static const luaL_Reg t_htp_wsk_m [] = {
  * \lreturn table  the library
  * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
-LUAMOD_API int luaopen_t_htp_wsk (lua_State *L)
+int
+luaopen_t_htp_wsk (lua_State *L)
 {
 	// T.Websocket instance metatable
 	luaL_newmetatable( L, T_HTP_WSK_TYPE );

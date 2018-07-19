@@ -674,7 +674,7 @@ static const luaL_Reg t_pck_m [] = {
  * \lreturn table  the library
  * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
-LUAMOD_API int
+int
 luaopen_t_pck( lua_State *L )
 {
 	// T.Pack.Field instance metatable

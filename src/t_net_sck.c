@@ -511,7 +511,7 @@ static const luaL_Reg t_net_sck_m [] =
  * \lreturn table the library
  * \return  int   # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
-LUA_API int
+int
 luaopen_t_net_sck( lua_State *L )
 {
 	// just make metatable known to be able to register and check userdata

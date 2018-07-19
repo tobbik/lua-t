@@ -4,8 +4,7 @@ UNZIP=$(shell which unzip)
 
 LVER=5.3
 LREL=4
-LRL=$(LVER).$(LREL)
-LUASRC=lua-$(LRL).tar.gz
+LUASRC=lua-$(LVER).$(LREL).tar.gz
 LUAURL=http://www.lua.org/ftp
 PLURL=https://codeload.github.com/stevedonovan/Penlight/tar.gz/master
 
@@ -32,22 +31,32 @@ LD=clang
 
 dev-all: $(TINSTALL)
 
+dev-54:
+	$(MAKE) \
+		LVER=5.4 LREL=0 LUASRC=lua-5.4.0-work2.tar.gz LUAURL=http://www.lua.org/work \
+		dev-all
+
 # create a local Lua installation
 $(DLDIR):
-	mkdir -p $(DLDIR)
+	mkdir -p $@
 
 $(DLDIR)/$(LUASRC): $(DLDIR)
-	$(CURL) -o $(DLDIR)/$(LUASRC)   $(LUAURL)/$(LUASRC)
+	$(CURL) -o $<   $(LUAURL)/$(LUASRC)
 
-$(COMPDIR)/$(LVER)/src: $(DLDIR)/$(LUASRC)
-	mkdir -p $(COMPDIR)/$(LVER)
-	tar -xvzf $(DLDIR)/$(LUASRC) -C $(COMPDIR)/$(LVER) --strip-components=1
-	sed -i "s/-O2 //" $(COMPDIR)/$(LVER)/src/Makefile
+$(COMPDIR)/$(LVER): $(DLDIR)/$(LUASRC)
+	mkdir -p $@
+	tar -xvzf $< -C $@ --strip-components=1
+	sed -i "s/-O2 //" $@/src/Makefile
 
-$(COMPDIR)/$(LVER)/src/lua: $(COMPDIR)/$(LVER)/src
-	$(MAKE) -C $(COMPDIR)/$(LVER) -j 4 CC=$(CC) LD=$(LD) \
+$(COMPDIR)/5.3/src/lua: $(COMPDIR)/5.3
+	$(MAKE) -C $< -j 4 CC=$(CC) LD=$(LD) \
 		MYCFLAGS="$(MYCFLAGS)" \
 		linux
+
+$(COMPDIR)/5.4/src/lua: $(COMPDIR)/5.4
+	$(MAKE) -C $< -j 4 CC=$(CC) LD=$(LD) \
+		MYCFLAGS="$(MYCFLAGS)" \
+		linux-readline
 
 $(PREFIX)/bin/lua: $(COMPDIR)/$(LVER)/src/lua
 	$(MAKE) -C $(COMPDIR)/$(LVER) CC=$(CC) LD=$(LD) \
@@ -58,15 +67,15 @@ $(PREFIX)/bin/lua: $(COMPDIR)/$(LVER)/src/lua
 
 # get a local PenLight installation
 $(DLDIR)/$(PLSRC): $(DLDIR)
-	$(CURL) -o $(DLDIR)/$(PLSRC) $(PLURL)
+	$(CURL) -o $@ $(PLURL)
 
-$(COMPDIR)/$(PLNAME): $(DLDIR)/$(PLSRC) $(COMPDIR)/$(LVER)/src
-	mkdir -p $(COMPDIR)/$(PLNAME)
-	tar -xvzf $(DLDIR)/$(PLSRC) -C $(COMPDIR)/$(PLNAME) --strip-components=1
+$(COMPDIR)/$(PLNAME): $(DLDIR)/$(PLSRC) $(COMPDIR)/$(LVER)
+	mkdir -p $@
+	tar -xvzf $< -C $@ --strip-components=1
 
 $(PLINSTALL): $(COMPDIR)/$(PLNAME) $(PREFIX)/bin/lua
-	mkdir -p $(PLINSTALL)
-	cp -apr  $(COMPDIR)/$(PLNAME)/lua/pl $(PREFIX)/share/lua/$(LVER)
+	mkdir -p $@
+	cp -apr $</lua/pl $(PREFIX)/share/lua/$(LVER)
 
 # compile and install lua-t in local Lua
 dev-build:

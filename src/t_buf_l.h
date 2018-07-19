@@ -13,14 +13,14 @@
 
 // t_buf.c
 // Constructors
-int           luaopen_t_buf   ( lua_State *L );
-struct t_buf *t_buf_create_ud ( lua_State *L, size_t n );
+int             luaopen_t_buf     ( lua_State *L );
+struct t_buf   *t_buf_create_ud   ( lua_State *L, size_t n );
 // t_buf.c helpers
-int           t_buf_getHexString( lua_State *L, char *b, size_t len );
-int           t_buf_getBinString( lua_State *L, char *b, size_t len );
-int           t_buf_compare( char *bA, char *bB, size_t aLen, size_t bLen );
-int          lt_buf_write( lua_State *L );
-int          lt_buf_read ( lua_State *L );
+int             t_buf_getHexString( lua_State *L, char *b, size_t len );
+int             t_buf_getBinString( lua_State *L, char *b, size_t len );
+int             t_buf_compare( char *bA, char *bB, size_t aLen, size_t bLen );
+int            lt_buf_write( lua_State *L );
+int            lt_buf_read ( lua_State *L );
 
 // t_buf_seg.c
 // Constructors

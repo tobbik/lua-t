@@ -86,8 +86,8 @@ enum t_htp_srm_s {
 	T_HTP_STR_FINISH,     ///< The last chunk was written into the buffer
 };
 
-LUAMOD_API int luaopen_t_htp_wsk( lua_State *L );
-LUAMOD_API int luaopen_t_htp_req( lua_State *L );
+int luaopen_t_htp_wsk ( lua_State *L );
+int luaopen_t_htp_req ( lua_State *L );
 
 /*  __        __   _    ____             _        _
  *  \ \      / /__| |__/ ___|  ___   ___| | _____| |_

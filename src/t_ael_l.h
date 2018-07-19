@@ -104,7 +104,7 @@ struct t_ael_dnd *t_ael_dnd_create_ud( lua_State *L );
 struct t_ael_dnd *t_ael_dnd_check_ud ( lua_State *L, int pos, int check );
 void              t_ael_dnd_setMaskAndFunction( lua_State *L, struct t_ael_dnd *dnd, enum t_ael_msk msk, int fR );
 void              t_ael_dnd_removeMaskAndFunction( lua_State *L, struct t_ael_dnd *dnd, enum t_ael_msk msk );
-LUA_API int       luaopen_t_ael_dnd  ( lua_State *L );
+int               luaopen_t_ael_dnd  ( lua_State *L );
 
 // p_ael_(impl).c   (Implementation specific functions) INTERFACE
 int  p_ael_create_ud_impl   ( lua_State *L );

@@ -482,7 +482,7 @@ static const luaL_Reg t_tst_m [] = {
  * \lreturn table T.Test library
  * \return  int   # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
-LUA_API int
+int
 luaopen_t_tst( lua_State *L )
 {
 	luaL_newmetatable( L, T_TST_TYPE );   // stack: functions meta

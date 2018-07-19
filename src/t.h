@@ -8,7 +8,6 @@
  * \copyright See Copyright notice at the end of t.h
  */
 
-
 // includes the Lua headers
 #include "lua.h"
 #include "lualib.h"

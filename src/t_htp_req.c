@@ -546,7 +546,7 @@ static const luaL_Reg t_htp_req_m [] = {
  * \lreturn table  the library
  * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
-LUAMOD_API int
+int
 luaopen_t_htp_req( lua_State *L )
 {
 	// T.Http.Server instance metatable

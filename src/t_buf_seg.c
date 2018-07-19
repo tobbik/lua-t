@@ -358,7 +358,8 @@ static const luaL_Reg t_buf_seg_m [] = {
  * \lreturn table  the library
  * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
-LUAMOD_API int luaopen_t_buf_seg( lua_State *L )
+int
+luaopen_t_buf_seg( lua_State *L )
 {
 	// T.Buffer.Segment instance metatable
 	luaL_newmetatable( L, T_BUF_SEG_TYPE );

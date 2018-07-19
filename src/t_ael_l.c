@@ -639,6 +639,7 @@ lt_ael__len( lua_State *L )
  * \param   t_ael    Loop Struct.
  * \return  int  # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
+#ifdef DEBUG          //t_stackPrint is t_dbg
 static int
 lt_ael_showloop( lua_State *L )
 {
@@ -687,6 +688,7 @@ lt_ael_showloop( lua_State *L )
 	}
 	return 0;
 }
+#endif
 
 
 /**--------------------------------------------------------------------------
@@ -786,7 +788,9 @@ static const struct luaL_Reg t_ael_m [] = {
 	, { "removeHandle",   lt_ael_removehandle }
 	, { "run",            lt_ael_run }
 	, { "stop",           lt_ael_stop }
+#ifdef DEBUG
 	, { "show",           lt_ael_showloop }
+#endif
 	, { NULL,   NULL }
 };
 
@@ -799,7 +803,7 @@ static const struct luaL_Reg t_ael_m [] = {
  * \lreturn string    the library
  * \return  int  # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
-LUA_API int
+int
 luaopen_t_ael( lua_State *L )
 {
 	// just make metatable known to be able to register and check userdata

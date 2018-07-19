@@ -698,7 +698,7 @@ static const luaL_Reg t_tst_cse_m [] = {
  * \lreturn table  the library
  * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
-LUA_API int
+int
 luaopen_t_tst_cse( lua_State *L )
 {
 	// T.Test.Case instance metatable

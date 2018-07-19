@@ -179,7 +179,7 @@ static const struct luaL_Reg t_ael_dnd_m [] = {
  * \lreturn string    the library
  * \return  int  # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
-LUA_API int
+int
 luaopen_t_ael_dnd( lua_State *L )
 {
 	// just make metatable known to be able to register and check userdata

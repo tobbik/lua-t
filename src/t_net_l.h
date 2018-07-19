@@ -69,7 +69,6 @@ struct t_net_sck_option
 int                      luaopen_t_net_adr     ( lua_State *L );
 struct sockaddr_storage *t_net_adr_check_ud    ( lua_State *L, int pos, int check );
 struct sockaddr_storage *t_net_adr_create_ud   ( lua_State *L );
-int                     lt_net_adr_getIpAndPort( lua_State *L );
 #define t_net_adr_is( L, pos ) (NULL != t_net_adr_check_ud( L, pos, 0 ))
 
 
@@ -106,8 +105,8 @@ int    p_net_sck_mkFdSet        ( lua_State *L, int pos, fd_set *set );
 
 
 int    luaopen_t_net_fml        ( lua_State *L );
-int    luaopen_t_net_sck_ptc    ( lua_State *L );
-int    luaopen_t_net_sck_sht    ( lua_State *L );
+int   luaopen_t_net_sck_ptc     ( lua_State *L );
+int   luaopen_t_net_sck_sht     ( lua_State *L );
 // ---------------------------- MACRO HELPERS FOR IP ADDRESSES ----------------
 //
 #define SOCK_ADDR_PTR(ptr)        ((struct sockaddr *)(ptr))

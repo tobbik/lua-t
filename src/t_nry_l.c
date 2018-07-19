@@ -385,7 +385,7 @@ static const luaL_Reg t_nry_m [] = {
  * \param  L    The lua state.
  * \return int  # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
-LUAMOD_API int
+int
 luaopen_nry( lua_State *L )
 {
 	// T.Numarray stance metatable

@@ -361,7 +361,7 @@ static const struct luaL_Reg t_tim_m [] = {
  * \lreturn table  The library.
  * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
-LUA_API int
+int
 luaopen_t_tim( lua_State *L )
 {
 	// just make metatable known to be able to register and check userdata

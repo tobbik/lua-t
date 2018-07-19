@@ -17,6 +17,6 @@ struct t_nry
 };
 
 // Constructors
-int           luaopen_t_nry  ( lua_State *L );
-struct t_nry *t_nry_check_ud ( lua_State *L, int pos, int check );
-struct t_nry *t_nry_create_ud( lua_State *L, size_t n );
+int             luaopen_t_nry  ( lua_State *L );
+struct t_nry   *t_nry_check_ud ( lua_State *L, int pos, int check );
+struct t_nry   *t_nry_create_ud( lua_State *L, size_t n );

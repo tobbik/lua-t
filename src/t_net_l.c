@@ -68,7 +68,7 @@ static const luaL_Reg t_net_cf [] =
  * \lreturn table  the library
  * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
-LUA_API int
+int
 luaopen_t_net( lua_State *L )
 {
 	luaL_newlib( L, t_net_cf );
