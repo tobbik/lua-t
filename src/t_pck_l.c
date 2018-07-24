@@ -87,15 +87,14 @@ struct t_pck
 *t_pck_create_ud( lua_State *L, enum t_pck_t t, size_t s, int m )
 {
 	struct t_pck  __attribute__ ((unused)) *p;
-	int                                     i;
 
 	luaL_getsubtable( L, LUA_REGISTRYINDEX, "_LOADED" );
 	lua_getfield( L, -1, "t."T_PCK_IDNT );
 	t_pck_format( L, t, s, m );
-	lua_rawget( L, -2 );           //S: _ld t t.pck pck/nil
-	if (lua_isnil( L, -1 ))  // combinator or not in cache -> create it
+	lua_rawget( L, -2 );             //S: _ld t.pck pck/nil
+	if (lua_isnil( L, -1 ))          // combinator or not in cache -> create it
 	{
-		lua_pop( L, 1 );      // pop nil
+		lua_pop( L, 1 );              // pop nil
 		p    = (struct t_pck *) lua_newuserdata( L, sizeof( struct t_pck ));
 		p->t = t;
 		p->s = s;
@@ -106,13 +105,13 @@ struct t_pck
 		if (t < T_PCK_FNC)           // register atomic cacheable types only
 		{
 			t_pck_format( L, t, s, m );
-			lua_pushvalue( L, -2 );   //S: _ld t t.pck pck fmt pck
+			lua_pushvalue( L, -2 );   //S: 'i'_ld t.pck pck fmt pck
 			lua_rawset( L, -4 );
 		}
 	}
-	p = t_pck_check_ud( L, -1, 1 ); //S: _ld t t.pck pck
-	for (i=0; i<2; i++)
-		lua_remove( L, -2 );
+	p = t_pck_check_ud( L, -1, 1 ); //S:'i' _ld t.pck pck
+	lua_rotate( L, -3, 1 );
+	lua_pop( L, 2 );
 
 	return p;                       //S: pck
 }

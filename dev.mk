@@ -1,5 +1,6 @@
 # vim: ft=make ts=3 sw=3 st=3 sts=3 sta noet tw=80 list
 CURL=$(shell which curl)
+TAR=$(shell which tar)
 UNZIP=$(shell which unzip)
 
 LVER=5.3
@@ -36,6 +37,15 @@ dev-54:
 		LVER=5.4 LREL=0 LUASRC=lua-5.4.0-work2.tar.gz LUAURL=http://www.lua.org/work \
 		dev-all
 
+dev-arm:
+	$(MAKE) LVER=5.4 LREL=0 LUASRC=lua-5.4.0-work2.tar.gz LUAURL=http://www.lua.org/work \
+	  MYCFLAGS=" -m32 -O2 -mthumb -march=armv8-a -mcpu=cortex-a72 -mtune=cortex-a72.cortex-a53 -mfloat-abi=softfp" \
+	  CC=clang LD=clang \
+	  LDFLAGS="$(LDFLAGS)" \
+	  INCS="$(LUAINC)" \
+	  PREFIX="$(PREFIX)" \
+	  DEBUG=1 BUILD_EXAMPLE=1 install
+
 # create a local Lua installation
 $(DLDIR):
 	mkdir -p $@
@@ -45,7 +55,7 @@ $(DLDIR)/$(LUASRC): $(DLDIR)
 
 $(COMPDIR)/$(LVER): $(DLDIR)/$(LUASRC)
 	mkdir -p $@
-	tar -xvzf $< -C $@ --strip-components=1
+	$(TAR) -xzf $< -C $@ --strip-components=1
 	sed -i "s/-O2 //" $@/src/Makefile
 
 $(COMPDIR)/5.3/src/lua: $(COMPDIR)/5.3
@@ -71,7 +81,7 @@ $(DLDIR)/$(PLSRC): $(DLDIR)
 
 $(COMPDIR)/$(PLNAME): $(DLDIR)/$(PLSRC) $(COMPDIR)/$(LVER)
 	mkdir -p $@
-	tar -xvzf $< -C $@ --strip-components=1
+	$(TAR) -xzf $< -C $@ --strip-components=1
 
 $(PLINSTALL): $(COMPDIR)/$(PLNAME) $(PREFIX)/bin/lua
 	mkdir -p $@

@@ -17,7 +17,7 @@
 //#define IS_LITTLE_ENDIAN (*(uint16_t*)"\0\1">>8)
 //#define IS_BIG_ENDIAN (*(uint16_t*)"\1\0">>8)
 
-// macro taken from Lua 5.3 source code
+// macro taken from Lua 5.3+ source code
 // number of bits in a character
 #define NB                    CHAR_BIT
 
