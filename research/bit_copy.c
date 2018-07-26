@@ -96,11 +96,13 @@ static void  getValue( char *src, size_t sz, size_t ofs, bool is_signed )
 }
 
 
-int main(void)
+int main( int argc,char *argv[] )
 {
-	//char          sA[] = { 0x95, 0x65, 0xDC, 0x14, 0xD9, 0x00 };
-	char          sA[] = { 0x9A, 0xB2, 0xEE, 0x0A, 0x7C, 0x65, 0x25, 0x00 };
-	char         *s    = &sA[0];
+	//char   sA[] = { 0x95, 0x65, 0xDC, 0x14, 0xD9, 0x00 };
+	char   sA[] = { 0x9A, 0xB2, 0xEE, 0x0A, 0x7C, 0x65, 0x25, 0x00 };
+	char   *s    = &sA[0];
+	(void) argc; // silence unused arguments warning
+	(void) argv; // silence unused arguments warning
 
 	printCharBin( s, 5 );
 	printf( "\n" );

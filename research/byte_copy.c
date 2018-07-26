@@ -87,12 +87,14 @@ static void copyBytes( unsigned long *val, char *src, size_t sz, int is_little )
 	printCharByte( out, MXINT );
 }
 
-int main(void)
+int main( int argc,char *argv[] )
 {
 	char         sA[] = { 0x61, 0x42, 0x63, 0x44, 0x65, 0xC3, 0xBC, 0x48, 0x69,
 	                      0x4A, 0x6B, 0x4C, 0x6D, 0x4E, 0x6F, 0x50, 0xC3, 0xB6, 0x00 };
 	char         *s   = &sA[0];
 	unsigned long val = 0;
+	(void) argc; // silence unused arguments warning
+	(void) argv; // silence unused arguments warning
 
 	// unsigned int  I3  = 0;
 	// int           i2  = 0;
