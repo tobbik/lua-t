@@ -63,7 +63,7 @@ struct t_pck
 	lua_pushvalue( L, pos );
 	if (NULL != pcir)
 		*pcir = pi;
-	t_stackDump( L );
+	//t_stackDump( L );
 	// as long as pci->pR is an index
 	while (NULL != (ud = luaL_testudata( L, -1, T_PCK_IDX_TYPE )))
 	{
@@ -76,8 +76,8 @@ struct t_pck
 
 	pck   = t_pck_check_ud( L, -1, 1 );         //S:… pci … x y z pck
 	lua_pop( L, 1 );
-	printf ( "%d   %d  ---  ", lua_gettop(L), o_top );
-	t_stackDump( L );
+	//printf ( "%d   %d  ---  ", lua_gettop(L), o_top );
+	//t_stackDump( L );
 	while (lua_gettop( L ) > o_top)
 	{
 		idx = luaL_checkinteger( L, -1 );        // last pickled index
@@ -95,14 +95,13 @@ struct t_pck
 		lua_pop( L, 2 );
 		t_stackDump( L );
 	}
-	t_stackDump( L );
+	//t_stackDump( L );
 	if (los)
 	{
 		lua_rawgeti( L, LUA_REGISTRYINDEX, pck->m );
 		lua_replace( L, pos );
 	}
-	t_stackDump( L );
-	printf( "done\n" );
+	//t_stackDump( L );printf( "done\n" );
 	return pck;
 }
 

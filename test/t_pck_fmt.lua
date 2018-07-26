@@ -97,7 +97,7 @@ local tests = {
 
 	test_StringPacker = function( self )
 		Test.Case.describe( "Sized String Packers     'c1, ... ,cMax'" )
-		for i,n in pairs( {1,7,36,583,9523,12845,778293,1234567,87654321,918273645,1073741824} ) do
+		for i,n in pairs( {1,7,36,583,9523,12845,778293,1234567,87654321} ) do
 			local pc = Pack( 'c' .. n )
 			T.assert( pc,  'Raw'..n, n, n*NB )
 		end

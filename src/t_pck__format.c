@@ -17,6 +17,15 @@
 #endif
 
 
+/* Lifted from Lua-5.3+ source
+** Some sizes are better limited to fit in 'int', but must also fit in
+** 'size_t'. (We assume that 'lua_Integer' cannot be smaller than 'int'.)
+*/
+#define MAX_SIZET ((size_t)(~(size_t)0))
+
+#define MAXSIZE  \
+   (sizeof(size_t) < sizeof(int) ? MAX_SIZET : (size_t)(INT_MAX))
+
 // Function helpers
 //
 
@@ -30,17 +39,17 @@
  * \return  a      int   ; read numeric value
  *  -------------------------------------------------------------------------*/
 static size_t
-gn( const char **fmt, size_t dft )
+t_pck_parseSize( const char **fmt, size_t dft )
 {
 	if (! T_PCK_ISDIGIT( **fmt ))    // no number
 		return dft;
 	else
 	{
-		int a=0;
+		size_t a = 0;
 		do
 		{
 			a = a*10 + *((*fmt)++) - '0';
-		} while (T_PCK_ISDIGIT(**fmt) &&  a < (INT_MAX/10 - 10));
+		} while (T_PCK_ISDIGIT(**fmt) && a<(MAXSIZE - 9)/NB);
 		return a;
 	}
 }
@@ -55,9 +64,9 @@ gn( const char **fmt, size_t dft )
  * \return  size   int   ; read size
  *  -------------------------------------------------------------------------*/
 static size_t
-gnl( lua_State *L, const char **fmt, int dft, size_t max )
+t_pck_getSizeFromFormat( lua_State *L, const char **fmt, int dft, size_t max )
 {
-	size_t sz = gn( fmt, dft );
+	size_t sz = t_pck_parseSize( fmt, dft );
 	if (sz > max || sz <= 0)
 		return (size_t) luaL_error( L, "size (%d) out of limits [1 … %d]", sz, max );
 	return sz;
@@ -83,6 +92,9 @@ static struct t_pck
 	int           opt;
 	struct t_pck *p = NULL;
 
+#define G( sz, mx ) \
+   t_pck_getSizeFromFormat( L, f, sz, mx )
+
 #define C( typ, ltl, sgn, sz ) \
    t_pck_create_ud( L, T_PCK_##typ, (sz), \
      ( ((ltl) ? T_PCK_MOD_LITTLE : 0) | ((sgn) ? T_PCK_MOD_SIGNED : 0) ) );
@@ -93,45 +105,46 @@ static struct t_pck
 		switch (opt)
 		{
 			// Integer types
-			case 'b': p = C( INT, 1==*e, 1,                             NB ); break;
-			case 'B': p = C( INT, 1==*e, 0,                             NB ); break;
-			case 'h': p = C( INT, 1==*e, 1, sizeof( short )           * NB ); break;
-			case 'H': p = C( INT, 1==*e, 0, sizeof( short )           * NB ); break;
-			case 'l': p = C( INT, 1==*e, 1, sizeof( long )            * NB ); break;
-			case 'L': p = C( INT, 1==*e, 0, sizeof( long )            * NB ); break;
-			case 'j': p = C( INT, 1==*e, 1, sizeof( lua_Integer )     * NB ); break;
-			case 'J': p = C( INT, 1==*e, 0, sizeof( lua_Integer )     * NB ); break;
-			case 'T': p = C( INT, 1==*e, 0, sizeof( size_t )          * NB ); break;
-			case 'i': p = C( INT, 1==*e, 1, gnl( L, f, SZINT, MXINT ) * NB ); break;
-			case 'I': p = C( INT, 1==*e, 0, gnl( L, f, SZINT, MXINT ) * NB ); break;
+			case 'b': p = C( INT, 1==*e, 1,                         NB ); break;
+			case 'B': p = C( INT, 1==*e, 0,                         NB ); break;
+			case 'h': p = C( INT, 1==*e, 1, sizeof( short )       * NB ); break;
+			case 'H': p = C( INT, 1==*e, 0, sizeof( short )       * NB ); break;
+			case 'l': p = C( INT, 1==*e, 1, sizeof( long )        * NB ); break;
+			case 'L': p = C( INT, 1==*e, 0, sizeof( long )        * NB ); break;
+			case 'j': p = C( INT, 1==*e, 1, sizeof( lua_Integer ) * NB ); break;
+			case 'J': p = C( INT, 1==*e, 0, sizeof( lua_Integer ) * NB ); break;
+			case 'T': p = C( INT, 1==*e, 0, sizeof( size_t )      * NB ); break;
+			case 'i': p = C( INT, 1==*e, 1, G( SZINT, MXINT )     * NB ); break;
+			case 'I': p = C( INT, 1==*e, 0, G( SZINT, MXINT )     * NB ); break;
 
 			// Float types
-			case 'f': p = C( FLT, 1==*e, 0, sizeof( float )           * NB ); break;
-			case 'd': p = C( FLT, 1==*e, 0, sizeof( double )          * NB ); break;
-			case 'n': p = C( FLT, 1==*e, 0, sizeof( lua_Number )      * NB ); break;
+			case 'f': p = C( FLT, 1==*e, 0, sizeof( float )       * NB ); break;
+			case 'd': p = C( FLT, 1==*e, 0, sizeof( double )      * NB ); break;
+			case 'n': p = C( FLT, 1==*e, 0, sizeof( lua_Number )  * NB ); break;
 
 			// String type
-			case 'c': p = C( RAW,     0, 0, gnl( L, f, 1, 0x1 << 30 )      ); break;
+			case 'c': p = C( RAW,     0, 0, G( 1, MAXSIZE )       * NB ); break;
 
 			// Bit types
-			case 'v': p = C( BOL,     0, 0, 1                              ); break;
-			case 'r': p = C( INT,     0, 1, gnl( L, f, 1, MXBIT )          ); break;
-			case 'R': p = C( INT,     0, 0, gnl( L, f, 1, MXBIT )          ); break;
+			case 'v': p = C( BOL,     0, 0, 1                          ); break;
+			case 'r': p = C( INT,     0, 1, G( 1, MXBIT )              ); break;
+			case 'R': p = C( INT,     0, 0, G( 1, MXBIT )              ); break;
 
 			// modifier types
-			case '<': *e = 1;                                              continue;
-			case '>': *e = 0;                                              continue;
+			case '<': *e = 1;                                             continue;
+			case '>': *e = 0;                                             continue;
 
 			// allow spaces as meaningless separators
-			case ' ':                                                      continue;
+			case ' ':                                                     continue;
 			// that's the end of it
-			case '\0':                                                  return NULL;
+			case '\0':                                                    return NULL;
 			default:
 				luaL_error( L, "invalid format option '%c'", opt );
 				return NULL;
 		}
 	}
 #undef C
+#undef G
 	return p;
 }
 
@@ -140,7 +153,7 @@ static struct t_pck
  * Decides if the element on pos is a packer kind of type.
  * It decides between the following options:
  *     - t.Pack type              : just return it
- *     - t.Pack.Field             : return referenced packer
+ *     - t.Pack.Index             : return referenced packer location identifier
  *     - fmt string of single item: fetch from cache or create
  *     - fmt string of multp items: let Sequence constructor handle and return result
  * \param   L      Lua state.
