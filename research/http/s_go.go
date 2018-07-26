@@ -21,11 +21,7 @@ var (
 )
 
 func rot47map( c rune ) rune {
-	if (c > 'O') {
-		return (c - 47)
-	} else {
-		return (c + 47)
-	}
+	return '!' + (c - '!' + 47) % 94
 }
 
 func rot47( pw string ) string {

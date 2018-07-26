@@ -11,27 +11,18 @@ local fmt,t_insert,t_concat = string.format, table.insert, table.concat
 -- curl -i "http://localhost:8002/auth?username=username&password=password"
 -- ab -k -c 20 -n 250 "http://localhost:8002/auth?username=username&password=password"
 
-local rot47lot = { }  -- ROT47 Lookup  table
 local users    = { }  -- Users lookup  table
 local r_cnt    = 0    -- Counts all auth operations
-
-local rot47init = function(  )
-	local input  = '!"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]^_`abcdefghijklmnopqrstuvwxyz{|}~';
-	local output = 'PQRSTUVWXYZ[]^_`abcdefghijklmnopqrstuvwxyz{|}~!"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNO';
-	for i=1, #input do
-		rot47lot[ input:byte( i ) ] = output:sub( i, i )
-	end
-end
 
 local rot47 = function( pw )
 	local ret = { }
 	for i=1, #pw do
-		t_insert( ret, rot47lot[ pw:byte( i ) ] )
+		var k = pw.charCodeAt( i );
+		--t_insert( ret, s_char( '!' + (k - '!' + 47) % 94 ) )
+		t_insert( ret, s_char( 33 + (k + 14)%94 ) )
 	end
 	return t_concat( ret, '' )
 end
-
-rot47init( )
 
 local callback = function( req, res )
 	local uri = url.parse( req.url, true )

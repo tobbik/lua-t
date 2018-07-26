@@ -4,7 +4,7 @@ TAR=$(shell which tar)
 UNZIP=$(shell which unzip)
 
 LVER=5.3
-LREL=4
+LREL=5
 LUASRC=lua-$(LVER).$(LREL).tar.gz
 LUAURL=http://www.lua.org/ftp
 PLURL=https://codeload.github.com/stevedonovan/Penlight/tar.gz/master

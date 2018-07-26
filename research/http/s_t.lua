@@ -17,7 +17,8 @@ local rot47 = function( wrd )
 	local ret = { }
 	for i=1, #wrd do
 		local k = s_byte( wrd, i )
-		t_insert( ret, k>79 and s_char( k-47 ) or s_char( k+47 ) )
+		--t_insert( ret, s_char( '!' + (k - '!' + 47) % 94 ) )
+		t_insert( ret, s_char( 33 + (k + 14)%94 ) )
 	end
 	return t_concat( ret, '' )
 end

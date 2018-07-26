@@ -16,7 +16,8 @@ var rot47 = function( pw )
 	for( var i=0; i<pw.length; i++)
 	{
 		var k = pw.charCodeAt( i );
-		ret.push( (k>79) ? String.fromCharCode( k-47 ) : String.fromCharCode( k+47 ) );
+		//ret.push( String.fromCharCode( '!' + (k + '!' - 47) % 94 ) )
+		ret.push( String.fromCharCode( 33 + (k + 14)%94 ) )
 	}
 	return ret.join( '' );
 }
