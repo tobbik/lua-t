@@ -10,14 +10,15 @@ SCREEN=$(shell which screen)
 CURL=$(shell which curl)
 AB=$(shell which ab)
 WRK=$(shell which wrk)
+WRK2=$(shell which wrk2)
 GOWRK=$(shell which go-wrk)
 
-USERNAME=username
-PASSWORD=password
+USERNAME=mickey
+PASSWORD=goofey
 HOST=127.0.0.1
-PORT=8000
+PORT=10000
 CONNS=400
-SECONDS=6
+SECONDS=30
 
 include $(CURDIR)/../instruct.make
 
@@ -55,10 +56,16 @@ abk: $(AB)
 	$(AB) -k -c$(CONNS) -n500000 -t$(SECONDS) "http://$(HOST):$(PORT)/auth?username=$(USERNAME)&password=$(PASSWORD)"
 
 wrk: $(WRK)
-	$(WRK) -t 12 -c $(CONNS) -d $(SECONDS) -H "Connection: close"      "http://$(HOST):$(PORT)/auth?username=$(USERNAME)&password=$(PASSWORD)"
+	$(WRK) -t 12 -c $(CONNS) -d $(SECONDS) --latency -H "Connection: close"      "http://$(HOST):$(PORT)/auth?username=$(USERNAME)&password=$(PASSWORD)"
 
 wrkk: $(WRK)
-	$(WRK) -t 12 -c $(CONNS) -d $(SECONDS) -H "Connection: keep-alive" "http://$(HOST):$(PORT)/auth?username=$(USERNAME)&password=$(PASSWORD)"
+	$(WRK) -t 12 -c $(CONNS) -d $(SECONDS) --latency -H "Connection: keep-alive" "http://$(HOST):$(PORT)/auth?username=$(USERNAME)&password=$(PASSWORD)"
+
+wrk2: $(WRK2)
+	$(WRK2) -t 12 -c $(CONNS) -d $(SECONDS) -R 20000 --latency -H "Connection: close"      "http://$(HOST):$(PORT)/auth?username=$(USERNAME)&password=$(PASSWORD)"
+
+wrk2k: $(WRK2)
+	$(WRK2) -t 12 -c $(CONNS) -d $(SECONDS) -R 20000 --latency -H "Connection: keep-alive" "http://$(HOST):$(PORT)/auth?username=$(USERNAME)&password=$(PASSWORD)"
 
 gowrk: $(GOWRK)
 	$(GOWRK) -c $(CONNS) -d $(SECONDS) -H "Connection: close"      "http://$(HOST):$(PORT)/auth?username=$(USERNAME)&password=$(PASSWORD)" 2> /dev/null

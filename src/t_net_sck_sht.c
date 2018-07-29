@@ -35,19 +35,21 @@ int
 luaopen_t_net_sck_sht( lua_State *L )
 {
 	luaL_newlib( L, t_net_sck_sht_cf );
+#define DF_SD( sdn ) \
+   lua_pushinteger( L, sdn );   \
+   lua_setfield( L, -2, #sdn "" );
 
 #ifdef SHUT_RD
-	lua_pushinteger( L, SHUT_RD );        // No more receptions.
-	lua_setfield( L, -2, "SHUT_RD" );
+	DF_SD( SHUT_RD );        // No more receptions.
 #endif
 #ifdef SHUT_WR
-	lua_pushinteger( L, SHUT_WR );        // No more transmissions.
-	lua_setfield( L, -2, "SHUT_WR" );
+	DF_SD( SHUT_WR );        // No more transmissions.
 #endif
 #ifdef SHUT_RDWR
-	lua_pushinteger( L, SHUT_RDWR );      // No more receptions or transmissions.
-	lua_setfield( L, -2, "SHUT_RDWR" );
+	DF_SD( SHUT_RDWR );      // No more receptions or transmissions.
 #endif
+
+#undef DF_SD
 
 	return 1;
 }

@@ -30,7 +30,6 @@ local fmt       = string.format
 local config    = t_require( "t_cfg" )
 
 
-
 -- for this test we use blocking sending only.  The test is for recv(); no need
 -- to complicate it
 local makeSender = function( self, msg )

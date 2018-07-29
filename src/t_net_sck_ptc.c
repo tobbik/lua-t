@@ -35,113 +35,88 @@ int
 luaopen_t_net_sck_ptc( lua_State *L )
 {
 	luaL_newlib( L, t_net_sck_ptc_cf );
-#define CP( ptc ) \
+#define DF_PT( ptc ) \
    lua_pushinteger( L, ptc );   \
-   lua_setfield( L, -2, "#ptc" );
+   lua_setfield( L, -2, #ptc "" );
 
 	// populating the protocols table based on features that are existing at compile time
 #ifdef IPPROTO_IP
-	lua_pushinteger( L, IPPROTO_IP );        // Dummy protocol for TCP
-	lua_setfield( L, -2, "IPPROTO_IP" );
+	DF_PT( IPPROTO_IP );        // Dummy protocol for TCP
 #endif
 #ifdef IPPROTO_ICMP
-	lua_pushinteger( L, IPPROTO_ICMP );      // Internet Control Message Protocol
-	lua_setfield( L, -2, "IPPROTO_ICMP" );
+	DF_PT( IPPROTO_ICMP );      // Internet Control Message Protocol
 #endif
 #ifdef IPPROTO_IGMP
-	lua_pushinteger( L, IPPROTO_IGMP );      // Internet  Group Management Protocol
-	lua_setfield( L, -2, "IPPROTO_IGMP" );
+	DF_PT( IPPROTO_IGMP );      // Internet  Group Management Protocol
 #endif
 #ifdef IPPROTO_IPIP
-	lua_pushinteger( L, IPPROTO_IPIP );      // IPIP tunnels (older KA9Q tunnels use 94)
-	lua_setfield( L, -2, "IPPROTO_IPIP" );
+	DF_PT( IPPROTO_IPIP );      // IPIP tunnels (older KA9Q tunnels use 94)
 #endif
 #ifdef IPPROTO_TCP
-	lua_pushinteger( L, IPPROTO_TCP );       // Transmission Control Protocol
-	lua_setfield( L, -2, "IPPROTO_TCP" );
+	DF_PT( IPPROTO_TCP );       // Transmission Control Protocol
 #endif
 #ifdef IPPROTO_EGP
-	lua_pushinteger( L, IPPROTO_EGP );       // Exterior Gateway Protocol
-	lua_setfield( L, -2, "IPPROTO_EGP" );
+	DF_PT( IPPROTO_EGP );       // Exterior Gateway Protocol
 #endif
 #ifdef IPPROTO_PUP
-	lua_pushinteger( L, IPPROTO_PUP );       // PUP Protocol
-	lua_setfield( L, -2, "IPPROTO_PUP" );
+	DF_PT( IPPROTO_PUP );       // PUP Protocol
 #endif
 #ifdef IPPROTO_UDP
-	lua_pushinteger( L, IPPROTO_UDP );       // User Datagram Protocol
-	lua_setfield( L, -2, "IPPROTO_UDP" );
+	DF_PT( IPPROTO_UDP );       // User Datagram Protocol
 #endif
 #ifdef IPPROTO_IDP
-	lua_pushinteger( L, IPPROTO_IDP );       // XNS IDP protocol
-	lua_setfield( L, -2, "IPPROTO_IDP" );
+	DF_PT( IPPROTO_IDP );       // XNS IDP protocol
 #endif
 #ifdef IPPROTO_TP
-	lua_pushinteger( L, IPPROTO_TP );        // SO Transport Protocol Class 4
-	lua_setfield( L, -2, "IPPROTO_TP" );
+	DF_PT( IPPROTO_TP );        // SO Transport Protocol Class 4
 #endif
 #ifdef IPPROTO_DCCP
-	lua_pushinteger( L, IPPROTO_DCCP );      // Datagram Congestion Control Protocol
-	lua_setfield( L, -2, "IPPROTO_DCCP" );
+	DF_PT( IPPROTO_DCCP );      // Datagram Congestion Control Protocol
 #endif
 #ifdef IPPROTO_IPV6
-	lua_pushinteger( L, IPPROTO_DCCP );      // IPv6-in-IPv4 tunnelling
-	lua_setfield( L, -2, "IPPROTO_DCCP" );
+	DF_PT( IPPROTO_DCCP );      // IPv6-in-IPv4 tunnelling
 #endif
 #ifdef IPPROTO_RSVP
-	lua_pushinteger( L, IPPROTO_RSVP );      // RSVP Protocol
-	lua_setfield( L, -2, "IPPROTO_RSVP" );
+	DF_PT( IPPROTO_RSVP );      // RSVP Protocol
 #endif
 #ifdef IPPROTO_GRE
-	lua_pushinteger( L, IPPROTO_GRE );       // Cisco GRE tunnels (rfc 1701,1702)
-	lua_setfield( L, -2, "IPPROTO_GRE" );
+	DF_PT( IPPROTO_GRE );       // Cisco GRE tunnels (rfc 1701,1702)
 #endif
 #ifdef IPPROTO_ESP
-	lua_pushinteger( L, IPPROTO_ESP );       // Encapsulation Security Payload protocol
-	lua_setfield( L, -2, "IPPROTO_ESP" );
+	DF_PT( IPPROTO_ESP );       // Encapsulation Security Payload protocol
 #endif
 #ifdef IPPROTO_AH
-	lua_pushinteger( L, IPPROTO_AH );        // Authentication Header protocol
-	lua_setfield( L, -2, "IPPROTO_AH" );
+	DF_PT( IPPROTO_AH );        // Authentication Header protocol
 #endif
 #ifdef IPPROTO_MTP
-	lua_pushinteger( L, IPPROTO_MTP );       // Multicast Transport Protocol
-	lua_setfield( L, -2, "IPPROTO_MTP" );
+	DF_PT( IPPROTO_MTP );       // Multicast Transport Protocol
 #endif
 #ifdef IPPROTO_BEETPH
-	lua_pushinteger( L, IPPROTO_BEETPH );    // IP option pseudo header for BEET
-	lua_setfield( L, -2, "IPPROTO_BEETPH" );
+	DF_PT( IPPROTO_BEETPH );    // IP option pseudo header for BEET
 #endif
 #ifdef IPPROTO_ENCAP
-	lua_pushinteger( L, IPPROTO_ENCAP );     // Encapsulation Header
-	lua_setfield( L, -2, "IPPROTO_ENCAP" );
+	DF_PT( IPPROTO_ENCAP );     // Encapsulation Header
 #endif
 #ifdef IPPROTO_PIM
-	lua_pushinteger( L, IPPROTO_PIM );       // Protocol Independent Multicast
-	lua_setfield( L, -2, "IPPROTO_PIM" );
+	DF_PT( IPPROTO_PIM );       // Protocol Independent Multicast
 #endif
 #ifdef IPPROTO_COMP
-	lua_pushinteger( L, IPPROTO_COMP );      // Compression Header Protocol
-	lua_setfield( L, -2, "IPPROTO_COMP" );
+	DF_PT( IPPROTO_COMP );      // Compression Header Protocol
 #endif
 #ifdef IPPROTO_SCTP
-	lua_pushinteger( L, IPPROTO_SCTP );      // Stream Control Transport Protocol
-	lua_setfield( L, -2, "IPPROTO_SCTP" );
+	DF_PT( IPPROTO_SCTP );      // Stream Control Transport Protocol
 #endif
 #ifdef IPPROTO_UDPLITE
-	lua_pushinteger( L, IPPROTO_UDPLITE );   //  UDP-Lite (RFC 3828)
-	lua_setfield( L, -2, "IPPROTO_UDPLITE" );
+	DF_PT( IPPROTO_UDPLITE );   //  UDP-Lite (RFC 3828)
 #endif
 #ifdef IPPROTO_MPLS
-	lua_pushinteger( L, IPPROTO_MPLS );      //  MPLS in IP (RFC 4023)
-	lua_setfield( L, -2, "IPPROTO_MPLS" );
+	DF_PT( IPPROTO_MPLS );      //  MPLS in IP (RFC 4023)
 #endif
 #ifdef IPPROTO_RAW
-	lua_pushinteger( L, IPPROTO_RAW );       // Raw IP packets
-	lua_setfield( L, -2, "IPPROTO_RAW" );
+	DF_PT( IPPROTO_RAW );       // Raw IP packets
 #endif
 
-#undef CP
+#undef DF_PT
 
 	return 1;
 }

@@ -18,10 +18,7 @@ local tests = {
 	-- Test cases
 	test_StringPacker = function( self )
 		Test.Case.describe( "Sized String Packers     'c1, ... ,cMax'" )
-		local maxIntSize = math.floor( ((2 ^ (Pack.charbits*Pack.intsize - 1))-9) // 10 )
-		for i,n in pairs( {1,7,36,583,9523,12845,778293,1234567,87654321,918273645,1073741824} ) do
-			-- print("\n", n, maxIntSize, (Pack.charbits*Pack.intsize - 1), 2^(Pack.charbits*Pack.intsize - 1)  )
-			if n > maxIntSize then Test.Case.skip("Size not supported on Sytem") end
+		for i,n in pairs( {1,7,36,583,9523,12845,778293,1234567,87654321,214748363} ) do
 			local pc = Pack( 'c' .. n )
 			local sz_byte,sz_bit = Pack.size( pc )
 			assert( n    == sz_byte, s_format( 'Expected size %d bytes, got %d', n   , sz_byte ) )

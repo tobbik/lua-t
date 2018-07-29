@@ -3,14 +3,13 @@ source ${HOME}/.screenrc
 chdir ${HOME}/mygit/lua-t
 screen -t build
 stuff "make dev-rinse "
-stuff "export LUA_PATH=\"${PWD}/out/share/lua/5.3/?.lua;;\" "
-stuff "export LUA_CPATH=\"${PWD}/out/lib/lua/5.3/?.so;;\" "
-stuff "make dev-all && out/bin/lua -i ../lua-t/test/runner.lua create "
+stuff "source bionic-arm.sh "
+stuff "make dev-54 && out/bin/lua -i ../lua-t/test/runner.lua create "
 
 # lua-t
 chdir ${HOME}/mygit/lua-t
 screen -t lua-t
-stuff "gvim -p  src/t_pck*{c,h} ../lua-build/pck* "
+stuff "gvim -p  src/t_pck*{c,h} "
 stuff "gvim -p  docs/Pack* "
 
 # lua-t source

@@ -98,6 +98,7 @@ static struct t_pck
 #define C( typ, ltl, sgn, sz ) \
    t_pck_create_ud( L, T_PCK_##typ, (sz), \
      ( ((ltl) ? T_PCK_MOD_LITTLE : 0) | ((sgn) ? T_PCK_MOD_SIGNED : 0) ) );
+
 	while (NULL == p)
 	{
 		opt = *((*f)++);
