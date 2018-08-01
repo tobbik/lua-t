@@ -61,6 +61,160 @@ static const char tokens[256] = {
 /* 120  x   121  y   122  z   123  {   124  |   125  }   126  ~   127 del */
        'x',     'y',     'z',      0,      '|',      0,      '~',       0 };
 
+/*
+static void
+t_htp_req_getContentLength( lua_State *L, int lv, char *v )
+{
+	int cl=0, i=0;
+
+	for (i=0; i < (int)lv; ++i)
+		cl = cl*10 + (v[i] - '0');
+	lua_pushstring( L, "contentLength" );
+	lua_pushinteger( L, cl );            //S: req hed key cl
+	lua_rawset( L, -5 );                 // set request.contentLength
+	lua_pushstring( L, "Content-Length" );
+}
+*/
+
+
+/**--------------------------------------------------------------------------
+ * Read registered Request headers. Standardize Casing.
+ * Parses values of connection relevant headers, such as:
+ *   - Content-Length
+ *   - Connection (close/keepalive/upgrade)
+ *   - Upgrade (WebSocket, ... )
+ * \param   char*  k Header key start.
+ * \param   char*  c Colon after the header key (':').
+ * \param   char*  v Header value start.
+ * \param   char*  e Header value end ('\r' or '\n' ... sloppy bastards!).
+ * \return  enum   How to parse the heaer value.
+ * --------------------------------------------------------------------------*/
+/*
+static void
+t_htp_req_identifyHeader( lua_State *L, const char *k, const char *c,
+                                        const char *v, const char *e )
+{
+	size_t   l  = c-k,
+	         lv = ('\r' == *e) ? e-v-2 : e-v-1;
+	int      cl, i;     // Content-Length parsing
+
+#define PH(hdr) \
+   lua_pushstring( L, hdr );
+
+	switch (tokens[ (unsigned char) *k ])
+	{
+		case 'a':
+			if (6 ==l) {     PH( "Accept" );                         break; }
+			if (13==l) {     PH( "Authorization" );                  break; }
+			if (14==l) {     PH( "Accept-Charset" );                 break; }
+			if (15==l) {
+				switch (tokens[ (unsigned char) *(k+7) ])
+				{
+					case 'e': { PH( "Accept-Encoding"  );               break; }
+					case 'l': { PH( "Accept-Language"  );               break; }
+					case 'd': { PH( "Accept-Datetime" );                break; }
+					default : break;
+				}
+				break;
+			}
+			if (29==l) {     PH( "Access-Control-Request-Method" );  break; }
+			if (30==l) {     PH( "Access-Control-Request-Headers" ); break; }
+			break;
+		case 'c':
+			if (6 ==l) {     PH( "Cookie" );                         break; }
+			if (10==l)
+			{
+				switch (tokens[ (unsigned char) *(v) ])
+				{
+					case 'c':  PH( "keepAlive" ); lua_pushboolean( L, 0 ); break;
+					case 'k':  PH( "keepAlive" ); lua_pushboolean( L, 1 ); break;
+					case 't':  PH( "tls" );       lua_pushboolean( L, 1 ); break;
+					case 'u':  PH( "upgrade" );   lua_pushboolean( L, 1 ); break;
+					default:                                               break;
+				}
+				lua_rawset( L, -5 );    // set value on the `request` object
+				PH( "Connection" );
+				break;
+			}
+			if (11==l) {     PH( "Content-MD5" );                    break; }
+			if (12==l) {     PH( "Content-Type" );                   break; }
+			if (13==l) {     PH( "Cache-Control" );                  break; }
+			if (14==l)
+			{
+				cl = 0;
+				for (i=0; i < (int)lv; ++i)
+					cl = cl*10 + (v[i] - '0');
+				PH( "contentLength" );
+				lua_pushinteger( L, cl );            //S: req,hed,key,cnl
+				lua_rawset( L, -5 );                 // set request.contentLength
+				PH( "Content-Length" );
+				break;
+			}
+			break;
+		case 'd':
+			                 PH( "Date" );                           break;
+		case 'e':
+			                 PH( "Expect" );                         break;
+		case 'f':
+			if (4 ==l) {     PH( "From" );                           break; }
+			if (9 ==l) {     PH( "Forwarded" );                      break; }
+			break;
+		case 'h':
+			                 PH( "Host" );                           break;
+		case 'i':
+			//switch (tokens[ (unsigned char) *(k+6) ])
+			//{
+			//	case 'c':     PH( "If-Match" );                       break;
+			//	case 'g':     PH( "If-Range" );                       break;
+			//	case 'e':     PH( "If-None-Match" );                  break;
+			//	case 'i':     PH( "If-Modified-Since" );              break;
+			//	case 'i':     PH( "If-Unmodified-Since" );            break;
+			//	default :     break;
+			//}
+			//break;
+			if (8 ==l) {
+				switch (tokens[ (unsigned char) *(k+3) ])
+				{
+					case 'm': { PH( "If-Match"  );                      break; }
+					case 'r': { PH( "If-Range"  );                      break; }
+				}
+				break;
+			}
+			if (13==l) {     PH( "If-None-Match" );                  break; }
+			if (17==l) {     PH( "If-Modified-Since" );              break; }
+			if (19==l) {     PH( "If-Unmodified-Since" );            break; }
+			break;
+		case 'm':
+			                 PH( "Max-Forwards" );                   break;
+		case 'o':
+			                 PH( "Origin" );                         break;
+		case 'p':
+			if (6 ==l) {     PH( "Pragma" );                         break; }
+			if (19==l) {     PH( "Proxy-Authorization" );            break; }
+			break;
+		case 'r':
+			if (5 ==l) {     PH( "Range" );                          break; }
+			if (7 ==l) {     PH( "Referer" );                        break; }
+			break;
+		case 't':
+			                 PH( "TE" );                             break;
+		case 'u':
+			if (7 ==l) {     PH( "Upgrade" );                        break; }
+			if (10==l) {     PH( "User-Agent" );                     break; }
+			break;
+		case 'v':
+			                 PH( "Via" );                            break;
+		case 'w':
+			                 PH( "Warning" );                        break;
+		default:
+			lua_pushlstring( L, k, l );
+	}
+	lua_pushlstring( L, v, lv );   // push value
+	lua_rawset( L, -3 );
+#undef PH
+}
+*/
+
 
 /**--------------------------------------------------------------------------
  * Read registered Request headers. Standardize Casing.
@@ -78,116 +232,287 @@ static void
 t_htp_req_identifyHeader( lua_State *L, const char *k, const char *c,
                                         const char *v, const char *e )
 {
-	size_t   l  = c-k, lv = ('\r' == *e) ? e-v-2 : e-v-1;
+	size_t   l  = c-k,
+	         lv = ('\r' == *e) ? e-v-2 : e-v-1;
 	int      cl, i;     // Content-Length parsing
-	char     x;
+
+#define PH(hdr) \
+   lua_pushstring( L, hdr );
+
 	switch (tokens[ (unsigned char) *k ])
 	{
 		case 'a':
-			if (6 ==l) {     lua_pushstring( L, "Accept" );                     break; }
-			if (13==l) {     lua_pushstring( L, "Authorization" );              break; }
-			if (14==l) {     lua_pushstring( L, "Accept-Charset" );             break; }
-			if (15==l) {
-				x = tokens[ (unsigned char) *(k+7) ];
-				if ('e'==x) { lua_pushstring( L, "Accept-Encoding"  );           break; }
-				if ('l'==x) { lua_pushstring( L, "Accept-Language"  );           break; }
-				if ('d'==x) { lua_pushstring( L, "Accept-Datetime" );            break; }
-			}
-			if (29==l) { lua_pushstring( L, "Access-Control-Request-Method" );  break; }
-			if (30==l) { lua_pushstring( L, "Access-Control-Request-Headers" ); break; }
-			break;
-		case 'c':
-			if (6 ==l) {     lua_pushstring( L, "Cookie" );                     break; }
-			if (10==l)
+			if (l>25)
 			{
-				x = tokens[ (unsigned char) *(v) ];
-				switch (x)
+				switch (tokens[ (unsigned char) *(k+24) ])
 				{
-					case 'c':
-						lua_pushstring( L, "keepAlive" );
-						lua_pushboolean( L, 0 );
-						break;
-					case 'k':
-						lua_pushstring( L, "keepAlive" );
-						lua_pushboolean( L, 1 );
-						break;
-					case 't':
-						lua_pushstring( L, "tls" );
-						lua_pushboolean( L, 1 );
-						break;
-					case 'u':
-						lua_pushstring( L, "upgrade" );
-						lua_pushboolean( L, 1 );
-						break;
-					default:
-						break;
+					case 'h':         PH( "Access-Control-Request-Headers" ); break;
+					case 'm':         PH( "Access-Control-Request-Method" );  break;
+					default : break;
 				}
-				lua_rawset( L, -5 );
-				lua_pushstring( L, "Connection" );
-				break;
+				break;  // break 'a'
 			}
-			if (11==l) {     lua_pushstring( L, "Content-MD5" );                break; }
-			if (12==l) {     lua_pushstring( L, "Content-Type" );               break; }
-			if (13==l) {     lua_pushstring( L, "Cache-Control" );              break; }
-			if (14==l)
+			else if (l>12)
 			{
-				cl = 0;
-				for (i=0; i < (int)lv; ++i)
-					cl = cl*10 + (v[i] - '0');
-				lua_pushstring( L, "contentLength" );
-				lua_pushinteger( L, cl );            //S: req,hed,key,cnl
-				lua_rawset( L, -5 );
-				lua_pushstring( L, "Content-Length" );
-				break;
+				switch (tokens[ (unsigned char) *(k+12) ])
+				{
+					case 'o':         PH( "Authorization" );                  break;
+					case 's':         PH( "Accept-Charset" );                 break;
+					case 'd':         PH( "Accept-Encoding"  );               break;
+					case 'u':         PH( "Accept-Language"  );               break;
+					case 't':         PH( "Accept-Datetime" );                break;
+					default : break;
+				}
+				break;  // break 'a'
 			}
-			break;
+			else if (6==l && 'p'==*(k+5))
+			{
+				PH( "Accept" );
+				break;  // break 'a'
+			}
+			else
+				break;  // break 'a'
+		case 'c':
+			if (l>10)
+			{
+				switch (tokens[ (unsigned char) *(k+9) ])
+				{
+					case 'l':
+						cl = 0;
+						for (i=0; i < (int)lv; ++i)
+							cl = cl*10 + (v[i] - '0');
+						PH( "contentLength" );
+						lua_pushinteger( L, cl );            //S: req,hed,key,cnl
+						lua_rawset( L, -5 );                 // set request.contentLength
+						PH( "Content-Length" );
+						break;
+					case 'm':         PH( "Content-MD5" );                    break;
+					case 'n':         PH( "Cache-Control"  );                 break;
+					case 'o':         PH( "Connection" );                     break;
+					case 't':
+						switch (tokens[ (unsigned char) *(v) ])
+						{
+							case 'c':  PH( "keepAlive" ); lua_pushboolean( L, 0 ); break;
+							case 'k':  PH( "keepAlive" ); lua_pushboolean( L, 1 ); break;
+							case 't':  PH( "tls" );       lua_pushboolean( L, 1 ); break;
+							case 'u':  PH( "upgrade" );   lua_pushboolean( L, 1 ); break;
+							default:                                               break;
+						}
+						lua_rawset( L, -5 );    // set value on the `request` object
+						PH( "Connection" );
+						break;
+					default : break;
+				}
+				break;  // break 'c'
+			}
+			else if (6 ==l && 'i'==*(k+5))
+			{
+				PH( "Cookie" );
+				break;  // break 'c'
+			}
 		case 'd':
-			                 lua_pushstring( L, "Date" );                       break;
+			PH( "Date" );                           break;
 		case 'e':
-			                 lua_pushstring( L, "Expect" );                     break;
+			                 PH( "Expect" );                         break;
 		case 'f':
-			if (4 ==l) {     lua_pushstring( L, "From" );                       break; }
-			if (9 ==l) {     lua_pushstring( L, "Forwarded" );                  break; }
+			if (4 ==l) {     PH( "From" );                           break; }
+			if (9 ==l) {     PH( "Forwarded" );                      break; }
 			break;
 		case 'h':
-			                 lua_pushstring( L, "Host" );                       break;
+			                 PH( "Host" );                           break;
 		case 'i':
-			if (8 ==l) {
-				x = tokens[ (unsigned char) *(k+3) ];
-				if ('m'==x) { lua_pushstring( L, "If-Match"  );                  break; }
-				if ('r'==x) { lua_pushstring( L, "If-Range"  );                  break; }
+			switch (tokens[ (unsigned char) *(k+6) ])
+			{
+				case 'c':     PH( "If-Match" );                       break;
+				case 'g':     PH( "If-Range" );                       break;
+				case 'e':     PH( "If-None-Match" );                  break;
+				case 'i':     PH( "If-Modified-Since" );              break;
+				case 'i':     PH( "If-Unmodified-Since" );            break;
+				default :     break;
 			}
-			if (13==l) {     lua_pushstring( L, "If-None-Match" );              break; }
-			if (17==l) {     lua_pushstring( L, "If-Modified-Since" );          break; }
-			if (19==l) {     lua_pushstring( L, "If-Unmodified-Since" );        break; }
 			break;
 		case 'm':
-			                 lua_pushstring( L, "Max-Forwards" );               break;
+			                 PH( "Max-Forwards" );                   break;
 		case 'o':
-			                 lua_pushstring( L, "Origin" );                     break;
+			                 PH( "Origin" );                         break;
 		case 'p':
-			if (6 ==l) {     lua_pushstring( L, "Pragma" );                     break; }
-			if (19==l) {     lua_pushstring( L, "Proxy-Authorization" );        break; }
+			switch (tokens[ (unsigned char) *(k+3) ])
+			{
+				case 'a':     PH( "Pragma" );                         break;
+				case 'o':     PH( "Proxy-Authorization" );            break;
+				default :     break;
+			}
 			break;
 		case 'r':
-			if (5 ==l) {     lua_pushstring( L, "Range" );                      break; }
-			if (7 ==l) {     lua_pushstring( L, "Referer" );                    break; }
+			switch (tokens[ (unsigned char) *(k+2) ])
+			{
+				case 'a':     PH( "Range" );                          break;
+				case 'e':     PH( "Referer" );                        break;
+				default :     break;
+			}
 			break;
 		case 't':
-			                 lua_pushstring( L, "TE" );                         break;
+			                 PH( "TE" );                             break;
 		case 'u':
-			if (7 ==l) {     lua_pushstring( L, "Upgrade" );                    break; }
-			if (10==l) {     lua_pushstring( L, "User-Agent" );                 break; }
+			switch (tokens[ (unsigned char) *(k+2) ])
+			{
+				case 'p':     PH( "Upgrade" );                        break;
+				case 's':     PH( "User-Agent" );                     break;
+				default :     break;
+			}
 			break;
 		case 'v':
-			                 lua_pushstring( L, "Via" );                        break;
+			                 PH( "Via" );                            break;
 		case 'w':
-			                 lua_pushstring( L, "Warning" );                    break;
+			                 PH( "Warning" );                        break;
 		default:
 			lua_pushlstring( L, k, l );
 	}
 	lua_pushlstring( L, v, lv );   // push value
 	lua_rawset( L, -3 );
+#undef PH
+}
+
+
+
+
+/**--------------------------------------------------------------------------
+ * Read registered Request headers. Standardize Casing.
+ * Parses values of connection relevant headers, such as:
+ *   - Content-Length
+ *   - Connection (close/keepalive/upgrade)
+ *   - Upgrade (WebSocket, ... )
+ * \param   char*  k Header key start.
+ * \param   char*  c Colon after the header key (':').
+ * \param   char*  v Header value start.
+ * \param   char*  e Header value end ('\r' or '\n' ... sloppy bastards!).
+ * \return  enum   How to parse the heaer value.
+ * --------------------------------------------------------------------------*/
+static void
+t_htp_req_identifyHeader( lua_State *L, const char *k, const char *c,
+                                        const char *v, const char *e )
+{
+	size_t   l  = c-k,
+	         lv = ('\r' == *e) ? e-v-2 : e-v-1;
+	int      cl, i;     // Content-Length parsing
+
+#define PH(hdr) \
+   lua_pushstring( L, hdr );
+
+	// Switching on length instead of first character which creates a higher
+	// initial branch level
+	switch (l)
+	{
+		case 2:         PH( "TE" );                             break;
+		case 3:         PH( "Via" );                            break;
+		case 4:
+			switch (tokens[ (unsigned char) *(k) ])
+			{
+				case 'd': PH( "Date" );                           break;
+				case 'f': PH( "From" );                           break;
+				case 'h': PH( "Host" );                           break;
+				default :                                         break;
+			}
+			break;
+		case 5:         PH( "Range" );                          break;
+		case 6:
+			switch (tokens[ (unsigned char) *(k) ])
+			{
+				case 'a': PH( "Accept" );                         break;
+				case 'c': PH( "Cookie" );                         break;
+				case 'e': PH( "Expect" );                         break;
+				case 'o': PH( "Origin" );                         break;
+				case 'p': PH( "Pragma" );                         break;
+				default :                                         break;
+			}
+			break;
+		case 7:
+			switch (tokens[ (unsigned char) *(k) ])
+			{
+				case 'r': PH( "Referer" );                        break;
+				case 'u': PH( "Upgrade" );                        break;
+				case 'w': PH( "Warning" );                        break;
+				default :                                         break;
+			}
+			break;
+		case 8:
+			switch (tokens[ (unsigned char) *(k+3) ])
+			{
+				case 'm': PH( "If-Match" );                       break;
+				case 'r': PH( "If-Range" );                       break;
+				default :                                         break;
+			}
+			break;
+		case 9:         PH( "Forwarded" );                      break;
+		case 10:
+			switch (tokens[ (unsigned char) *(k) ])
+			{
+				case 'c': PH( "Connection" );                     break;
+				case 'u': PH( "User-Agent" );                     break;
+				default :                                         break;
+			}
+			break;
+		case 11:        PH( "Content-MD5" );                    break;
+		case 12:
+			switch (tokens[ (unsigned char) *(k) ])
+			{
+				case 'c': PH( "Content-Type" );                   break;
+				case 'f': PH( "Max-Forwards" );                   break;
+				default :                                         break;
+			}
+			break;
+		case 13:
+			switch (tokens[ (unsigned char) *(k) ])
+			{
+				case 'a': PH( "Authorization" );                  break;
+				case 'c': PH( "Cache-Control" );                  break;
+				case 'i': PH( "If-None-Match" );                  break;
+				default :                                         break;
+			}
+			break;
+		case 14:
+			switch (tokens[ (unsigned char) *(k) ])
+			{
+				case 'a': PH( "Accept-Charset" );                 break;
+				case 'c':
+					PH( "Content-Length" );
+					cl = 0;
+					for (i=0; i < (int)lv; ++i)
+						cl = cl*10 + (v[i] - '0');
+					PH( "contentLength" );
+					lua_pushinteger( L, cl );            //S: req,hed,key,cnl
+					lua_rawset( L, -5 );                 // set request.contentLength
+					PH( "Content-Length" );
+					break;
+				default :                                         break;
+			}
+			break;
+		case 15:
+			switch (tokens[ (unsigned char) *(k+7) ])
+			{
+				case 'e': PH( "Accept-Encoding" );                break;
+				case 'l': PH( "Accept-Language" );                break;
+				case 'd': PH( "Accept-Datetime" );                break;
+				default :                                         break;
+			}
+			break;
+		case 17:        PH( "If-Modified-Since" );              break;
+		case 19:
+			switch (tokens[ (unsigned char) *(k) ])
+			{
+				case 'i': PH( "If-Unmodified-Since" );            break;
+				case 'p': PH( "Proxy-Authorization" );            break;
+				default :                                         break;
+			}
+			break;
+		case 29:        PH( "Access-Control-Request-Method" );  break;
+		case 30:        PH( "Access-Control-Request-Headers" ); break;
+		default:
+			lua_pushlstring( L, k, l );
+	}
+	lua_pushlstring( L, v, lv );   // push value
+	lua_rawset( L, -3 );
+#undef PH
 }
 
 
@@ -374,8 +699,8 @@ t_htp_req_parseHttpVersion( lua_State *L, const char **data, const char *end )
 		}
 		lua_pushinteger( L, v );
 		lua_setfield( L, 1, "version" );
-		// HTTP/1.1rnrn
-		// HTTP/1.1nn      -- play nice with naughty implementations
+		// HTTP/1.1/r/n/r/n
+		// HTTP/1.1/n/n      -- play nice with sloppy implementations
 		// 01234567890
 		lua_pushinteger( L, ((l>10 && '\r'==*(r+10)) || ('\n'==*(r+8) && '\n'==*(r+9)))
 			? T_HTP_REQ_DONE
@@ -406,7 +731,7 @@ t_htp_req_parseHeaders( lua_State *L, const char **data, const char *end )
 	const char    *v  = r;                 ///< marks start of value
 	enum t_htp_rs  rs = T_HTP_R_KY;        ///< local parse state = New Line Beginning
 
-	lua_getfield( L, 1, "headers" ); // get pre-existing header table -> re-entrent
+	lua_getfield( L, 1, "headers" );       // get pre-existing header table -> re-entrent
 
 	// since exit condition is based on r+1 compare for (r+1)
 	while (r+1 <= end)
@@ -414,7 +739,7 @@ t_htp_req_parseHeaders( lua_State *L, const char **data, const char *end )
 		switch (*r)
 		{
 			case '\n':
-				if (' ' == *(r+1)) // Value Continuation
+				if (' ' == *(r+1))                            // Value Continuation
 					break;
 				if (T_HTP_R_KY == rs)
 				{
@@ -427,15 +752,15 @@ t_htp_req_parseHeaders( lua_State *L, const char **data, const char *end )
 				if ('\n' == *(r+1) || '\r' == *(r+1))         // double newLine -> END OF HEADER
 				{
 					(*data) = r + (('\n'==*(r+1))? 1 : 3);
-					lua_pop( L, 1 );  // pop header-table from stack
 					lua_pushstring( L, "contentLength" );
 					lua_rawget( L, 1 );
-					if (lua_isnil( L, -1 ) || (lua_isinteger( L, -1 ) && 0 == lua_tointeger( L, -1 )))
+					lua_pushstring( L, "state" );              //S: req hdr cl "state"
+					if (lua_isnil( L, -2 ) || (lua_isinteger( L, -2 ) && 0 == lua_tointeger( L, -2 )))
 						lua_pushinteger( L, T_HTP_REQ_DONE );
 					else
-						lua_pushinteger( L, T_HTP_REQ_BODY );
-					lua_remove( L, -2 );
-					lua_setfield( L, 1, "state" );
+						lua_pushinteger( L, T_HTP_REQ_BODY );   //S: req hdr cl "state" ste
+					lua_rawset( L, 1 );                        //S: req hdr cl
+					lua_pop( L, 2 );                           //S: req
 					return 1;
 				}
 				k = r+1;
