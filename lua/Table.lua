@@ -4,18 +4,28 @@ local pairs,tostring,assert,type,print = pairs,tostring,assert,type,print
 
 local t_map        = nil
 t_map              = function( tbl, func )
+	local ret = { }
+	for k,v in pairs( tbl ) do  ret[ k ] = func( v, k )  end
+	return ret
+end
+
+local t_foreach    = nil
+t_foreach          = function( tbl, func )
 	for k,v in pairs( tbl ) do  tbl[ k ] = func( v, k )  end
 	return tbl
 end
 
+-- create union or intersection merely based on presence of keys
+-- if values for keys differ in t1 vs t2, values from t2 will be used in the
+-- result
 local t_merge      = function( t1, t2, union )
 	local ret = { }
-	for k,v in pairs( t1 ) do
-		if union or t2[ k ] then ret[ k ] = v end
+	for k,v in pairs( t2 ) do
+		if union or t1[k] then ret[k] = v end
 	end
 	if union then
-		for k,v in pairs( t2 ) do
-			ret[ k ] = v
+		for k,v in pairs( t1 ) do
+			ret[ k ] = nil == ret[ k ] and v or ret[ k ]
 		end
 	end
 	return ret
@@ -82,8 +92,8 @@ local t_count     = function( tbl )
 	return cnt
 end
 
-local t_clone = nil    -- recursive
-t_clone       = function( tbl, deep )
+local t_clone     = nil    -- recursive
+t_clone           = function( tbl, deep )
 	local ret = { }
 	for k,v in pairs( tbl ) do
 		if deep and 'table' == type( v ) then
@@ -97,11 +107,11 @@ end
 
 local t_asstring   = function( tbl, t )
 	if 'keys' == t then
-		return '{' .. t_concat( t_map( t_keys( tbl ),   tostring ), ',') .. '}'
+		return '{' .. t_concat( t_foreach( t_keys( tbl ),   tostring ), ',' ) .. '}'
 	elseif 'values' == t then
-		return '{' .. t_concat( t_map( t_values( tbl ), tostring ), ',') .. '}'
+		return '{' .. t_concat( t_foreach( t_values( tbl ), tostring ), ',' ) .. '}'
 	else
-		return '{' .. t_concat( t_map( t_values( tbl ), tostring ), ',') .. '}'
+		return '{' .. t_concat( t_foreach( t_values( tbl ), tostring ), ',' ) .. '}'
 	end
 end
 
@@ -122,7 +132,7 @@ t_pprint = function( tbl, idnt )
 		elseif 'boolean' == type( v ) then
 			print( s_fmt .. tostring( v ) )
 		else
-			print( s_fmt .. v )
+			print( s_fmt .. tostring( v ) )
 		end
 	end
 end
@@ -130,6 +140,7 @@ end
 
 return {
 	  map          = t_map
+	, foreach      = t_foreach
 	, merge        = t_merge
 	, complement   = t_complement
 	, contains     = t_contains

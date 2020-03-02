@@ -1,21 +1,11 @@
 local ptcs = require't.net'.sck.ptc
+local map  = require't.Table'.map
 
-local setAliases = function( name, value, p )
-	local sn = name:match( "_(.+)" )                       -- 'IPPROTO_TCP' -> 'TCP'
-	p[ sn ]                                       = value  -- p['TCP'] = 6
-	p[ sn:sub(1,1):upper() .. sn:sub(2):lower() ] = value  -- p['Tcp'] = 6
-	p[ sn:lower() ]                               = value  -- p['tcp'] = 6
-	p[ value ]                                    = name   -- p[ 6 ]   = 'IPPROTO_TCP'
-end
-
-local aliases = {}
-
-for prot, val in pairs( ptcs ) do
-	setAliases( prot, val, aliases )
-end
-
-for alias, val in pairs( aliases ) do
-	ptcs[ alias ] = val
+for p_name, value in pairs( map( ptcs, function( v, k ) return 'string' == type( k ) and v or nil end ) ) do
+	local sn = p_name:match( "_(.+)" )                        -- 'IPPROTO_TCP' -> 'TCP'
+	ptcs[ sn ]                                       = value  -- p['TCP'] = 6
+	ptcs[ sn:sub(1,1):upper() .. sn:sub(2):lower() ] = value  -- p['Tcp'] = 6
+	ptcs[ sn:lower() ]                               = value  -- p['tcp'] = 6
 end
 
 return ptcs

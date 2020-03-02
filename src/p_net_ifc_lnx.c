@@ -34,33 +34,34 @@
  * \lreturn table    Table representing with all flags.
  * --------------------------------------------------------------------------*/
 static void
-p_net_ifc_parseFlags( lua_State *L, unsigned int flags )
+p_net_ifc_parseFlags( lua_State *L, struct ifaddrs *ifa )
 {
-	lua_newtable( L );
+	if (ifa->ifa_addr && ifa->ifa_flags && AF_INET == ifa->ifa_addr->sa_family)
+	{
 #define IF_FLAG( b ) \
-	if (flags & b) \
-		lua_pushboolean( L, 1 ); \
-	else \
-		lua_pushboolean( L, 0 ); \
+	lua_pushboolean( L, (ifa->ifa_flags & b) ? 1 : 0 ); \
 	lua_setfield( L, -2, #b "" );
-	IF_FLAG( IFF_UP );
-	IF_FLAG( IFF_BROADCAST );
-	IF_FLAG( IFF_DEBUG );
-	IF_FLAG( IFF_LOOPBACK );
-	IF_FLAG( IFF_POINTOPOINT );
-	IF_FLAG( IFF_RUNNING );
-	IF_FLAG( IFF_NOARP );
-	IF_FLAG( IFF_PROMISC );
-	IF_FLAG( IFF_NOTRAILERS );
-	IF_FLAG( IFF_ALLMULTI );
-	IF_FLAG( IFF_MASTER );
-	IF_FLAG( IFF_SLAVE );
-	IF_FLAG( IFF_MULTICAST );
-	IF_FLAG( IFF_PORTSEL );
-	IF_FLAG( IFF_AUTOMEDIA );
-	IF_FLAG( IFF_DYNAMIC );
+		lua_createtable( L, 17, 0 );
+
+		IF_FLAG( IFF_UP );
+		IF_FLAG( IFF_BROADCAST );
+		IF_FLAG( IFF_DEBUG );
+		IF_FLAG( IFF_LOOPBACK );
+		IF_FLAG( IFF_POINTOPOINT );
+		IF_FLAG( IFF_RUNNING );
+		IF_FLAG( IFF_NOARP );
+		IF_FLAG( IFF_PROMISC );
+		IF_FLAG( IFF_NOTRAILERS );
+		IF_FLAG( IFF_ALLMULTI );
+		IF_FLAG( IFF_MASTER );
+		IF_FLAG( IFF_SLAVE );
+		IF_FLAG( IFF_MULTICAST );
+		IF_FLAG( IFF_PORTSEL );
+		IF_FLAG( IFF_AUTOMEDIA );
+		IF_FLAG( IFF_DYNAMIC );
+		lua_setfield( L, -2, "flags" );
 #undef IF_FLAG
-	lua_setfield( L, -2, "flags" );
+	}
 }
 
 
@@ -76,56 +77,40 @@ p_net_ifs_getAddrStats( lua_State *L, struct ifaddrs *ifa )
 {
 	struct rtnl_link_stats *stats = ifa->ifa_data;
 
-	if (AF_PACKET != ifa->ifa_addr->sa_family && NULL == ifa->ifa_data)
-		return;
-	// TODO: find a common ground with windows if possible/necessary
-	lua_createtable( L, 21, 0 );
-	// literally translate to Lua table
-	lua_pushinteger( L, stats->rx_packets );             // total packets received
-	lua_setfield( L, -2, "rx_packets" );
-	lua_pushinteger( L, stats->tx_packets );             // total packets transmitted
-	lua_setfield( L, -2, "tx_packets" );
-	lua_pushinteger( L, stats->rx_bytes );               // total bytes received
-	lua_setfield( L, -2, "rx_bytes" );
-	lua_pushinteger( L, stats->tx_bytes );               // total bytes transmitted
-	lua_setfield( L, -2, "tx_bytes" );
-	lua_pushinteger( L, stats->rx_errors );              // bad packets received
-	lua_setfield( L, -2, "rx_errors" );
-	lua_pushinteger( L, stats->tx_errors );              // packet transmit problems
-	lua_setfield( L, -2, "tx_errors" );
-	lua_pushinteger( L, stats->rx_dropped );             // no space in linux buffers
-	lua_setfield( L, -2, "rx_dropped" );
-	lua_pushinteger( L, stats->tx_dropped );             // no space available in linux
-	lua_setfield( L, -2, "tx_dropped" );
-	lua_pushinteger( L, stats->multicast );              // multicast packets received
-	lua_setfield( L, -2, "multicast" );
-	lua_pushinteger( L, stats->collisions );
-	lua_setfield( L, -2, "collisions" );
-	// detailed rx_errors:
-	lua_pushinteger( L, stats->rx_length_errors );
-	lua_setfield( L, -2, "rx_length_errors" );
-	lua_pushinteger( L, stats->rx_over_errors );         // receiver ring buff overflow
-	lua_setfield( L, -2, "rx_over_errors" );
-	lua_pushinteger( L, stats->rx_crc_errors );          // recved pkt with crc error
-	lua_setfield( L, -2, "rx_crc_errors" );
-	lua_pushinteger( L, stats->rx_frame_errors );        // recv'd frame alignment error
-	lua_setfield( L, -2, "rx_frame_errors" );
-	lua_pushinteger( L, stats->rx_fifo_errors );         // recv'r fifo overrun
-	lua_setfield( L, -2, "rx_fifo_errors" );
-	lua_pushinteger( L, stats->rx_missed_errors );       // receiver missed packet
-	lua_setfield( L, -2, "rx_missed_errors" );
-	// detailed tx_errors
-	lua_pushinteger( L, stats->tx_aborted_errors );
-	lua_setfield( L, -2, "tx_aborted_errors" );
-	lua_pushinteger( L, stats->tx_carrier_errors );
-	lua_setfield( L, -2, "tx_carrier_errors" );
-	lua_pushinteger( L, stats->tx_fifo_errors );
-	lua_setfield( L, -2, "tx_fifo_errors" );
-	lua_pushinteger( L, stats->tx_heartbeat_errors );
-	lua_setfield( L, -2, "tx_heartbeat_errors" );
-	lua_pushinteger( L, stats->tx_window_errors );
-	lua_setfield( L, -2, "tx_window_errors" );
-	lua_setfield( L, -2, "stats" );
+	if (ifa->ifa_addr && ifa->ifa_data && AF_PACKET == ifa->ifa_addr->sa_family)
+	{
+#define DF_FL( FLD )                       \
+   lua_pushinteger( L, stats->FLD );       \
+   lua_setfield( L, -2, #FLD "" );
+
+		lua_createtable( L, 21, 0 );
+
+		DF_FL( rx_packets );             // total packets received
+		DF_FL( tx_packets );             // total packets transmitted
+		DF_FL( rx_bytes );               // total bytes received
+		DF_FL( tx_bytes );               // total bytes transmitted
+		DF_FL( rx_errors );              // bad packets received
+		DF_FL( tx_errors );              // packet transmit problems
+		DF_FL( rx_dropped );             // no space in linux buffers
+		DF_FL( tx_dropped );             // no space available in linux
+		DF_FL( multicast );              // multicast packets received
+		DF_FL( collisions );
+		// detailed rx_errors:
+		DF_FL( rx_length_errors );
+		DF_FL( rx_over_errors );         // receiver ring buff overflow
+		DF_FL( rx_crc_errors );          // recved pkt with crc error
+		DF_FL( rx_frame_errors );        // recv'd frame alignment error
+		DF_FL( rx_fifo_errors );         // recv'r fifo overrun
+		DF_FL( rx_missed_errors );       // receiver missed packet
+		// detailed tx_errors
+		DF_FL( tx_aborted_errors );
+		DF_FL( tx_carrier_errors );
+		DF_FL( tx_fifo_errors );
+		DF_FL( tx_heartbeat_errors );
+		DF_FL( tx_window_errors );
+		lua_setfield( L, -2, "stats" );
+#undef DF_PT
+	}
 }
 
 
@@ -140,11 +125,11 @@ p_net_ifs_getAddrStats( lua_State *L, struct ifaddrs *ifa )
  * \return  int/bool 1 if succesful, else 0.
  * --------------------------------------------------------------------------*/
 static int
-p_net_ifs_makeAddress( lua_State *L, struct sockaddr* addr, int *found )
+p_net_ifs_makeAddress( lua_State *L, struct sockaddr* addr, const char * adr_name )
 {
 	struct sockaddr_storage   *adr;
 
-	if (NULL == addr || (AF_INET6 != addr->sa_family && AF_INET != addr->sa_family))
+	if (NULL == addr)
 		return 0;
 	else
 	{
@@ -152,7 +137,7 @@ p_net_ifs_makeAddress( lua_State *L, struct sockaddr* addr, int *found )
 		memcpy( adr, addr, (AF_INET6 == addr->sa_family)
 				? sizeof( struct sockaddr_in6 )
 				: sizeof( struct sockaddr_in ) );
-		*found = 1;
+		lua_setfield( L, -2, adr_name );
 		return 1;
 	}
 }
@@ -168,30 +153,28 @@ p_net_ifs_makeAddress( lua_State *L, struct sockaddr* addr, int *found )
 static void
 p_net_ifs_getAddrPayload( lua_State *L, struct ifaddrs *ifa )
 {
-	int found = 0;
-	lua_pushinteger( L, ifa->ifa_addr->sa_family );
-	t_net_getFamilyValue( L, -1 );
+	if (ifa->ifa_addr && (AF_INET == ifa->ifa_addr->sa_family || AF_INET6 == ifa->ifa_addr->sa_family))
+	{
+		lua_pushinteger( L, ifa->ifa_addr->sa_family );
+		t_net_getFamilyValue( L, -1 );
 
-	lua_newtable( L );
-	if (p_net_ifs_makeAddress( L, ifa->ifa_addr     , &found ))
-		lua_setfield( L, -2, "address" );
-	if (p_net_ifs_makeAddress( L, ifa->ifa_netmask  , &found ))
-		lua_setfield( L, -2, "netmask" );
-	if (p_net_ifs_makeAddress( L, ifa->ifa_broadaddr, &found ))
-		lua_setfield( L, -2, "broadcast" );
-	if (p_net_ifs_makeAddress( L, ifa->ifa_dstaddr  , &found ))
-		lua_setfield( L, -2, "peeraddress" );
-	if (found)
+		lua_newtable( L );
+		p_net_ifs_makeAddress( L, ifa->ifa_addr     , "address" );
+		p_net_ifs_makeAddress( L, ifa->ifa_netmask  , "netmask" );
+		if (ifa->ifa_flags & IFF_BROADCAST)
+			p_net_ifs_makeAddress( L, ifa->ifa_broadaddr, "broadcast" );
+		else
+			p_net_ifs_makeAddress( L, ifa->ifa_dstaddr  , "peeraddress" );
 		lua_rawset( L, -3 );
-	else
-		lua_pop( L, 2 );
+	}
 }
 
 
 /**--------------------------------------------------------------------------
  * Create an t.Net.Interface Lua table and push to LuaStack.
  * \param   L      Lua state.
- * \lreturn table  t.Net.Interface Lua table instance.
+ * \lreturn table  t.Net.Interface instance or Lua table with all available
+ *                 adapters instances.
  * \return  int    # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 int
@@ -202,40 +185,41 @@ p_net_ifc_get( lua_State *L, const char *if_name )
 	if (0 != getifaddrs( &all_ifas ))
 		return t_push_error( L, "couldn't retrieve interface information" );
 
-	lua_newtable( L );            // create table that lists ALL interfaces
-	for (ifa = all_ifas; ifa ; ifa = ifa->ifa_next)
+	if (NULL == if_name)
+		lua_newtable( L );            // create table that lists ALL interfaces
+	else
+		lua_pushnil( L );             // "fake" empty lua_getfield() result
+	for (ifa = all_ifas; ifa; ifa = ifa->ifa_next)
 	{
-		lua_getfield( L, -1,  ifa->ifa_name );
-		//printf("N: %s(%s)\n", ifa->ifa_name, (ifa->ifa_addr) ?"True":"False" );
+		if (NULL != if_name && 0 != strcmp( ifa->ifa_name, if_name ))
+			continue;
+		if (NULL == if_name)
+			lua_getfield( L, -1,  ifa->ifa_name );
+		//printf("N: %s(%s)\n", ifa->ifa_name, (ifa->ifa_addr) ? "True":"False" );
 		if (lua_isnil( L, -1 ))
 		{
 			lua_pop( L, 1 );        // pop nil
 			lua_newtable( L );      // create table for specific named interface
-			luaL_getmetatable( L, T_NET_IFC_TYPE );
-			lua_setmetatable( L , -2 );
-			lua_pushvalue( L, -1 ); // Repush table
-			lua_setfield( L, -3, ifa->ifa_name );
 			lua_pushstring( L, ifa->ifa_name );
 			lua_setfield( L, -2, "name" );
-		}                          //S: lst ifc
-		if (ifa->ifa_addr && AF_INET   == ifa->ifa_addr->sa_family)
-		{
-			p_net_ifc_parseFlags( L, ifa->ifa_flags );
-			p_net_ifs_getAddrPayload( L, ifa );
+			luaL_getmetatable( L, T_NET_IFC_TYPE );
+			lua_setmetatable( L , -2 );
 		}
-		if (ifa->ifa_addr && AF_INET6  == ifa->ifa_addr->sa_family)
-			p_net_ifs_getAddrPayload( L, ifa );
-		if (ifa->ifa_addr && AF_PACKET == ifa->ifa_addr->sa_family)
-			p_net_ifs_getAddrStats( L, ifa );
-		lua_pop( L, 1 );
+		if (NULL == if_name)
+		{
+			lua_pushvalue( L, -1 ); // Repush table
+			lua_setfield( L, -3, ifa->ifa_name );
+		}
+		p_net_ifc_parseFlags( L, ifa );      // only executes for sa_family = AF_INET
+		p_net_ifs_getAddrPayload( L, ifa );  // only executes for sa_family = AF_INET || AF_INET6
+		p_net_ifs_getAddrStats( L, ifa );   // only executes for sa_family = AF_PACKET
+
+		if (NULL == if_name)
+			lua_pop( L, 1 );
 	}
 
 	freeifaddrs( all_ifas );
-	if (NULL != if_name)
-	{
-		lua_getfield( L, -1, if_name );
-		lua_remove( L, -2 );
-	}
 	return 1;
 }
+
 

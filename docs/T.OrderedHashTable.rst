@@ -18,7 +18,8 @@ instead of returning two values will return three:
            i, k, tostring( v ) )
   end
 
-  for i,v,k in ipairs( instance ) do  -- Note: k and i swapped positions
+  -- Note: using `ipairs` make k and i swap positions
+  for i,v,k in ipairs( instance ) do
     print( string.format( "Order: %d -- Key: '%s' -- Value: %s",
            i, k, tostring( v ) )
   end
@@ -28,19 +29,25 @@ Common Pitfalls:
 
 Why is there no ``OrderedHashTable( { A="foo", B="bar" } )`` constructor?
   The table in this case is already a Lua table by the time it is passed
-  into the constructor.  At this point it the ordering information is
-  already lost.  There is, however, a constructor which is a little more
-  verbose ``OrderedHashTable( { A="foo" }, { B="bar" } )`` which does
-  preserve order.
+  into the constructor.  At this point the ordering information is already
+  lost.  There is, however, a constructor which is a little more verbose
+  ``OrderedHashTable( { A="foo" }, { B="bar" } )`` which does preserve order.
 
 Why is there no ``t.add( element )``?
   ``OrderedHashTable`` uses table syntax for access.  A user might wanna
   create an OrderedHashTable where 'add' is a value such as
   ``t.add = 'something'``.  This would lead to conflicting accessors.
 
-Calling ``OrderedHashTable.getIndex( instance, key )`` seems slow?
-  Above operation is not a lookup but an O(n) scan operation.  Since it is
-  not used all that often it seems to be a fair tradeoff.
+Calling ``OrderedHashTable.getIndex( instance, key )`` can be slow for
+bigger tables?
+  Above operation is not a hash table lookup but as a consequence of the
+  implementation an O(n) scan operation.  Since it is not used all that often
+  it seems to be a reasonable tradeoff.
+
+Can I insert values at arbitrary an index of a ``OrderedHashTable`` instance?
+  No, there can be no "holes" in a an OrderedHashTable.  This is caused by
+  Luas underlying table implementation where tables with missing indexes are
+  actually not numerically indexed but implicitely converted to hash tables.
 
 
 API
@@ -50,17 +57,17 @@ Class Members
 -------------
 
 ``table t = OrderedHashTable.values( oht )``
-  Returns a Lua table with all values ordered and keys discarded.
+  Returns a Lua table with all values in order. Keys are discarded.
 
 ``table t = OrderedHashTable.keys( oht )``
-  Returns a Lua table with all keys ordered and values discarded.
+  Returns a Lua table with all keys in order. Values are discarded.
 
 ``table t = OrderedHashTable.table( oht )``
   Returns a Lua table with keys and values and order discarded.
 
 ``string s = OrderedHashTable.concat( oht, string sep )``
   Returns a string with all the values from the OrderedHashTable ``oht``
-  separated by the string ```sep``.
+  separated by the string ``sep``.  Order in the string is preserved.
 
 ``void OrderedHashTable.insert( oht, idx, key, value )``
   Insert ``key``/``value`` pair into ``oht`` at defined index ``idx``.
@@ -70,7 +77,8 @@ Class Members
 ``integer i = OrderedHashTable.index( oht, value key )``
   Returns the index of the element in ``oht`` which has the given ``key``.
   If that key does not exist return nil.  This operation is a bit more
-  expensive then a lookup because it has to perform a table scan (O^n).
+  expensive then a lookup because it has to perform a table scan O(n)
+  operation.
 
 ``value k = OrderedHashTable.key( oht, integer i )``
   Returns the key of the element in ``oht`` which has the given index ``i``.

@@ -74,7 +74,7 @@ local tests = {
 
 	test_SBindHostPortCreateSockAndAddress = function( self )
 		Test.Case.describe( "Socket.bind(host,port) --> creates TCP IPv4 Socket and address" )
-		local host   = Interface( 'default' ).AF_INET.address.ip
+		local host   = Interface.default( ).AF_INET.address.ip
 		local port   = config.nonPrivPort
 		self.sck, self.address = Socket.bind( host, port )
 		assert( chkSck(  self.sck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' ) )
@@ -83,7 +83,7 @@ local tests = {
 
 	test_SBindAddressCreateSockOnly = function( self )
 		Test.Case.describe( "Socket.bind(address) --> creates TCP IPv4 Socket but no address" )
-		local host   = Interface( 'default' ).AF_INET.address.ip
+		local host   = Interface.default( ).AF_INET.address.ip
 		local port   = config.nonPrivPort
 		local addr   = Address( host, port )
 		self.sck, self.adr = Socket.bind( addr )
@@ -93,7 +93,7 @@ local tests = {
 
 	test_SBindReturnBoundSocket = function( self )
 		Test.Case.describe( "Socket.bind(address) --> returning socket is bound; getsockname()" )
-		local host   = Interface( 'default' ).AF_INET.address.ip
+		local host   = Interface.default( ).AF_INET.address.ip
 		local port   = config.nonPrivPort
 		local addr   = Address( host, port )
 		self.sck, self.address = Socket.bind( addr )
@@ -124,7 +124,7 @@ local tests = {
 
 	test_sBindHostPortCreateAddress = function( self )
 		Test.Case.describe( "s:bind(host,port) --> creates address" )
-		local host   = Interface( 'default' ).AF_INET.address.ip
+		local host   = Interface.default( ).AF_INET.address.ip
 		local port   = config.nonPrivPort
 		self.sck     = Socket()
 		local adr, b = self.sck:bind( host, port )
@@ -134,7 +134,7 @@ local tests = {
 
 	test_sBindAddressCreateNothingButBinds = function( self )
 		Test.Case.describe( "s:bind(address) --> creates nothing but does bind" )
-		local host   = Interface( 'default' ).AF_INET.address.ip
+		local host   = Interface.default( ).AF_INET.address.ip
 		local port   = config.nonPrivPort
 		local addr   = Address( host, port )
 		self.sck     = Socket()

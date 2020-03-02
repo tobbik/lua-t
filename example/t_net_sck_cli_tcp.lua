@@ -1,6 +1,6 @@
 #!../out/bin/lua
 Net,Buffer=require('t.Net'),require't.Buffer'
-ipAddr = arg[2] and arg[2] or Net.Interface( 'default' ).AF_INET.address.ip
+ipAddr = arg[2] and arg[2] or Net.Interface.default( ).AF_INET.address.ip
 port   = arg[2] and arg[2] or 8888
 
 if arg[ 1 ] == 'c' then

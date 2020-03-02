@@ -2,7 +2,7 @@
 */
 /**
  * \file      t_net_sck_sht.c
- * \brief     OOP wrapper for network socketshutdown options
+ * \brief     OOP wrapper for network socket shutdown options
  * \author    tkieslich
  * \copyright See Copyright notice at the end of t.h
  */
@@ -35,9 +35,11 @@ int
 luaopen_t_net_sck_sht( lua_State *L )
 {
 	luaL_newlib( L, t_net_sck_sht_cf );
-#define DF_SD( sdn ) \
-   lua_pushinteger( L, sdn );   \
-   lua_setfield( L, -2, #sdn "" );
+#define DF_SD( sdn )               \
+   lua_pushinteger( L, sdn );      \
+   lua_setfield( L, -2, #sdn "" ); \
+   lua_pushstring( L, #sdn "" );   \
+   lua_rawseti( L, -2, sdn );
 
 #ifdef SHUT_RD
 	DF_SD( SHUT_RD );        // No more receptions.

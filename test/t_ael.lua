@@ -3,7 +3,7 @@
 ---
 -- \file    t_ael.lua
 -- \brief   Test for the Set functionality
-local t_assert  = require"t".assert
+local t_assert  = require't'.assert
 local Test      = require't.Test'
 local Loop      = require't.Loop'
 local Time      = require't.Time'
@@ -15,7 +15,7 @@ local Interface = require't.Net.Interface'
 local   tests = {
 	beforeAll = function( self, done )
 		self.loop = Loop( 5 )
-		done()
+		done( )
 	end,
 
 	beforeEach_cb = function( self, done )
@@ -25,7 +25,7 @@ local   tests = {
 
 	afterEach_cb = function( self, done )  -- not necessary for this suite
 		self.loop:stop( );
-		done()
+		done( )
 	end,
 
 	-- -----------------------------------------------------------------------
@@ -42,14 +42,14 @@ local   tests = {
 			assert( b == arg2, "Second argument should be " .. arg2 )
 			assert( ms_passed > 150 and ms_passed < 250,
 				"Time passed should be between 4500 and 5500 milliseconds" )
-			done()
+			done( )
 		end
 		self.loop:addTimer( tm, success, arg1, arg2 )
 	end,
 
 	test_cb_OverwriteReadHandler = function( self, done )
 		Test.Case.describe( "Overwrite Socket readHandler" )
-		local adr  = Address( Interface( 'default' ).AF_INET.address.ip, 4000 )
+		local adr  = Address( Interface.default( ).AF_INET.address.ip, 4000 )
 		local rSck = Socket( 'udp' )
 		local sSck = Socket( 'udp' )
 		rSck:bind( adr )

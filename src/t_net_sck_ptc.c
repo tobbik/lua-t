@@ -35,9 +35,11 @@ int
 luaopen_t_net_sck_ptc( lua_State *L )
 {
 	luaL_newlib( L, t_net_sck_ptc_cf );
-#define DF_PT( ptc ) \
-   lua_pushinteger( L, ptc );   \
-   lua_setfield( L, -2, #ptc "" );
+#define DF_PT( ptc )                \
+   lua_pushinteger( L, ptc );       \
+   lua_setfield( L, -2, #ptc "" );  \
+   lua_pushstring( L, #ptc "" );    \
+   lua_rawseti( L, -2, ptc );
 
 	// populating the protocols table based on features that are existing at compile time
 #ifdef IPPROTO_IP

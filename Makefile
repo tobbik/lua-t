@@ -36,38 +36,39 @@ TZDATAPATH=build/tz
 
 dev:
 	$(MAKE) MYCFLAGS="-g -O0" \
-	  CC=clang LD=clang \
-	  DEBUG=1 BUILD_EXAMPLE=1 install
+	 INCDIR="$(LUAINC)" \
+	 CC=clang LD=clang \
+	 DEBUG=1 BUILD_EXAMPLE=1 install
 
 all: $(SRCDIR)/*.so
 
 $(SRCDIR)/*.so:
 	$(MAKE) -C $(SRCDIR) CC=$(CC) LD=$(LD) \
-		LVER="$(LVER)" \
-		MYCFLAGS="$(MYCFLAGS)" \
-		LDFLAGS="$(LDFLAGS)" \
-		INCS="$(INCDIR)" \
-		PREFIX="$(PREFIX)"
+	 LVER="$(LVER)" \
+	 MYCFLAGS="$(MYCFLAGS)" \
+	 LDFLAGS="$(LDFLAGS)" \
+	 INCS="$(INCDIR)" \
+	 PREFIX="$(PREFIX)"
 
 install: $(SRCDIR)/$(LIBS)
 	$(MAKE) -C $(SRCDIR) CC=$(CC) LD=$(LD) \
-		INSTALL_CMOD=$(INSTALL_CMOD) \
-		LVER=$(LVER) \
-		MYCFLAGS="$(MYCFLAGS)" \
-		LDFLAGS="$(LDFLAGS)" \
-		INCS=$(INCDIR) \
-		PREFIX="$(PREFIX)" install
+	 INSTALL_CMOD=$(INSTALL_CMOD) \
+	 LVER=$(LVER) \
+	 MYCFLAGS="$(MYCFLAGS)" \
+	 LDFLAGS="$(LDFLAGS)" \
+	 INCS=$(INCDIR) \
+	 PREFIX="$(PREFIX)" install
 	$(MAKE) -C $(LUADIR) \
-		INSTALL_LMOD=$(INSTALL_LMOD) \
-		LVER=$(LVER) \
-		PREFIX="$(PREFIX)" install
+	 INSTALL_LMOD=$(INSTALL_LMOD) \
+	 LVER=$(LVER) \
+	 PREFIX="$(PREFIX)" install
 
 test: $(SRCDIR)
 	$(MAKE) -C $(SRCDIR) CC=$(CC) LD=$(LD) \
-		LVER=$(LVER) \
-		MYCFLAGS="$(MYCFLAGS)" \
-		LDFLAGS="$(LDFLAGS)" \
-		INCDIR=$(INCDIR) test
+	 LVER=$(LVER) \
+	 MYCFLAGS="$(MYCFLAGS)" \
+	 LDFLAGS="$(LDFLAGS)" \
+	 INCDIR=$(INCDIR) test
 
 # echo config parameters
 echo:
@@ -118,10 +119,10 @@ $(TZDATAPATH):
 docker-dev: $(DOCKER) $(TZDATAPATH)
 	$(DOCKER) build  --tag  $(IMAGE)dev -f Dockerfile.dev .
 	$(DOCKER) run    -i -t \
-	  --name   $(IMAGE)dev \
-	  --mount  src="$(CURDIR)",target=/build,type=bind \
-	  $(IMAGE)dev \
-	  /bin/bash
+	 --name   $(IMAGE)dev \
+	 --mount  src="$(CURDIR)",target=/build,type=bind \
+	 $(IMAGE)dev \
+	 /bin/bash
 
 docker-dev-start:
 	$(DOCKER) start -i $(IMAGE)dev

@@ -63,7 +63,7 @@ local tests = {
 	-- wrappers for tests
 	beforeAll = function( self, done )
 		self.loop            = Loop( )
-		self.host            = Interface( 'default' ).AF_INET.address.ip
+		self.host            = Interface.default( ).AF_INET.address.ip
 		self.port            = config.nonPrivPort
 		self.sSck, self.sAdr = Socket.listen( self.host, self.port )
 		assert( chkSck( self.sSck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' ) )

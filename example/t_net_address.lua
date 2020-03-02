@@ -2,7 +2,7 @@ write,fmt   = io.write, string.format
 Address     = require"t.Net.Address"
 Interface   = require"t.Net.Interface"
 
-adr1        = Interface('default').AF_INET.address
+adr1        = Interface.default( ).AF_INET.address
 
 print( adr1.ip )
 

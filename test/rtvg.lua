@@ -83,9 +83,9 @@ local m = {
 	getInteger = function( self )
 		return math.random( 1, self.max )
 	end,
-	getTable = function( self )
+	getTable = function( self, size )
 		local tbl = { }
-		for i=1,math.random(1, 12) do
+		for i=1,math.random(1, size or 12) do
 			table.insert( tbl, math.random( 1, self.max ) )
 		end
 		return tbl

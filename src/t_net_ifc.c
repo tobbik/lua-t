@@ -89,6 +89,7 @@ lt_net_ifc_ToString( lua_State *L )
 {
 	t_net_ifc_check( L, 1 );
 	lua_getfield( L, -1, "name" );
+	t_stackDump(L);
 	lua_pushfstring( L, T_NET_IFC_TYPE"{%s}: %p", lua_tostring( L, -1 ), lua_topointer( L, -2 ) );
 	return 1;
 }

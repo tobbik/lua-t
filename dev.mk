@@ -115,29 +115,21 @@ dev-clean:
 		DEBUG=1 \
 		PREFIX="$(PREFIX)" clean
 
-dev-rmout:
-	-rm -rf $(PREFIX)
-
 dev-rinse:
 	$(MAKE) dev-clean
-	$(MAKE) dev-rmout
-
-dev-rm:
-	$(MAKE) dev-rinse
-	-rm -rf $(COMPDIR)
+	-$(RM) -r $(COMPDIR)/*
+	-$(RM) -r $(PREFIX)/*
 
 dev-pristine:
 	$(MAKE) dev-rinse
-	$(MAKE) dev-rmcomp
-	-rm -rf $(DLDIR)
-
-dev-test:
-	$(MAKE) CC=$(CC) LD=$(LD) \
-		LVER=$(LVER) \
-		MYCFLAGS="$(MYCFLAGS)" \
-		INCDIR="$(LUAINC)" test
+	-$(RM) -r $(DLDIR)
 
 dev-run: $(TINSTALL)
 	LUA_PATH="$(CURDIR)/out/share/lua/5.3/?.lua;;" \
-	  LUA_CPATH="$(CURDIR)/out/lib/lua/5.3/?.so;;" \
-	  $(CURDIR)/out/bin/lua
+	 LUA_CPATH="$(CURDIR)/out/lib/lua/5.3/?.so;;" \
+	 $(CURDIR)/out/bin/lua
+
+dev-test: $(TINSTALL)
+	LUA_PATH="$(CURDIR)/out/share/lua/5.3/?.lua;;" \
+	 LUA_CPATH="$(CURDIR)/out/lib/lua/5.3/?.so;;" \
+	 $(CURDIR)/out/bin/lua $(CURDIR)/test/runner.lua

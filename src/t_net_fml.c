@@ -34,9 +34,13 @@ int
 luaopen_t_net_fml( lua_State *L )
 {
 	luaL_newlib( L, t_net_fml_cf );
-#define DF_AF( fml ) \
-   lua_pushinteger( L, fml );   \
-   lua_setfield( L, -2, #fml "" );
+// reverse setting of fml.AF_INET=2 AND fml[2]='AF_INET' allws basic reverse
+// lookup. Needed by t.Net.Interface without running `require't.Net.Family`
+#define DF_AF( fml )                \
+   lua_pushinteger( L, fml );       \
+   lua_setfield( L, -2, #fml "" );  \
+   lua_pushstring( L, #fml "" );    \
+   lua_rawseti( L, -2, fml );
 
 	// populating the family table based on features that actually exist at compile time
 #ifdef AF_UNSPEC

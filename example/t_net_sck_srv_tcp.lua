@@ -1,6 +1,6 @@
 #!../out/bin/lua
 Net,Buffer,fmt = require't.Net',require't.Buffer',string.format
-ipAddr,port    = Net.Interface( 'default' ).AF_INET.address.ip, 8888
+ipAddr,port    = Net.Interface.default( ).AF_INET.address.ip, 8888
 
 sck, adr      = Net.Socket.listen( ipAddr, port, 5 )
 print( sck, adr )

@@ -1,27 +1,15 @@
 local fmls = require't.net'.fml
+local map  = require't.Table'.map
 
-local setAliases = function( name, value, p )
-	local sn = name:match( "_(.+)" )                       -- 'AF_INET6' -> 'INET6'
-	p[ sn ]                                       = value  -- p['INET6'] = 6
-	p[ sn:sub(1,1):upper() .. sn:sub(2):lower() ] = value  -- p['Inet6'] = 6
-	p[ sn:lower() ]                               = value  -- p['inet6'] = 6
-	p[ value ]                                    = name   -- p[ 6 ]     = 'AF_INET6'
-end
-
-local aliases = { }
-
-for family, val in pairs( fmls ) do
-	setAliases( family, val, aliases )
-end
-
-for alias, val in pairs( aliases ) do
-	fmls[ alias ] = val
+for f_name, value in pairs( map( fmls, function( v, k ) return 'string' == type( k ) and v or nil end ) ) do
+	local sn = f_name:match( "_(.+)" )                        -- 'AF_INET6' -> 'INET6'
+	fmls[ sn ]                                       = value  -- p['INET6'] = 6
+	fmls[ sn:sub(1,1):upper() .. sn:sub(2):lower() ] = value  -- p['Inet6'] = 6
+	fmls[ sn:lower() ]                               = value  -- p['inet6'] = 6
 end
 
 -- define a bunch of convienience aliases
 fmls.any          = fmls.AF_UNSPEC
-
-fmls.unix         = fmls.AF_UNIX
 
 fmls.ip4          = fmls.AF_INET
 fmls.Ip4          = fmls.AF_INET

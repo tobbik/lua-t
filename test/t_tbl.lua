@@ -31,17 +31,24 @@ local   tests = {
 	-- -----------------------------------------------------------------------
 
 	test_mapTostring = function( self )
-		Test.Case.describe( "Table.map( table, tostring )" )
-		local ary = self.rtvg:getVals( self.len )
-		local typeNames = {}
-		for k,v in pairs( ary ) do
-			local t = type( v )
-			if not typeNames[ t ] then typeNames[ t ] = true end
+		Test.Case.describe( "Table.map( table, lower )" )
+		local words, lower, mixed = { }, 0, 0
+		for x = 1, math.random( 500, 1000 ) do
+			local w = self.rtvg:getString( )
+			if x%2==0 then
+				w = w:lower()
+			end
+			table.insert( words, w )
+			if w ~= w:lower( ) then
+				mixed = mixed + 1
+			else
+				lower = lower + 1
+			end
 		end
-		assert( Table.length( typeNames) > 1, "More than one type in array expected" )
-		Table.map( ary, tostring )
-		for k,v in pairs( ary ) do
-			assert( "string" == type( v ), "Type should be string" )
+		assert( lower > 0, "More than one only lowercase word exepcted" )
+		local res = Table.map( words, string.lower )
+		for k,v in pairs( res ) do
+			assert( v:lower() == v, "Value should be lowercased, but was <" ..v.. ">" )
 		end
 	end,
 
@@ -49,37 +56,73 @@ local   tests = {
 		Test.Case.describe( "Table.map( table, mathFunction )" )
 		local nums, sum, sumc = { }, 0, 0
 		for x = 1, math.random( 500, 1000 ) do
-			local i =self.rtvg:getInteger( )
+			local i = self.rtvg:getInteger( )
 			table.insert( nums, i )
 			sum = sum + i
 		end
-		Table.map( nums, function(x) return 2*x end )
+		local res = Table.map( nums, function(x) return 2*x end )
+		for x = 1,#res do sumc = sumc+res[x] end
+		assert( sum * 2 == sumc,
+			"Sum should be " ..(sum*2).. " doubled but was ".. sumc )
+	end,
+
+	test_foreachTostring = function( self )
+		Test.Case.describe( "Table.foreach( table, tostring )" )
+		local ary = self.rtvg:getVals( self.len )
+		local typeNames = {}
+		for k,v in pairs( ary ) do
+			local t = type( v )
+			if not typeNames[ t ] then typeNames[ t ] = true end
+		end
+		assert( Table.length( typeNames) > 1, "More than one type in array expected" )
+		Table.foreach( ary, tostring )
+		for k,v in pairs( ary ) do
+			assert( "string" == type( v ), "Type should be string, but was <" ..type(v).. ">" )
+		end
+	end,
+
+	test_forEach = function( self )
+		Test.Case.describe( "Table.map( table, mathFunction )" )
+		local nums, sum, sumc = { }, 0, 0
+		for x = 1, math.random( 500, 1000 ) do
+			local i = self.rtvg:getInteger( )
+			table.insert( nums, i )
+			sum = sum + i
+		end
+		Table.foreach( nums, function(x) return 2*x end )
 		for x = 1,#nums do sumc = sumc+nums[x] end
 		assert( sum * 2 == sumc,
-			"Sum should be" ..(sum*2).. " doubled but was ".. sumc )
+			"Sum should be " ..(sum*2).. " doubled but was ".. sumc )
 	end,
 
 	test_mergeUnion = function( self )
 		Test.Case.describe( "Table.merge( tblA, tblB, true ) -> Union" )
-		local tblA = {  a=1, b=2, c=3, d=4, e=5, f=6, g=7, h=8, i=9,j=10,k=11,l=12,m=13 }
-		local tblB = { k=11,l=12,m=13,n=14,o=15,p=16,q=17,r=18,s=19,t=20,u=21,v=22,w=23 }
+		local tblA = {   a=1,  b=2,  c=3,  d=4,  e=5,  f=6, g=7, h=8, i=9,j=10, k=11, l=12, m=13 }
+		local tblB = { k=110,l=120,m=130,n=140,o=150,p=160,q=17,r=18,s=19,t=20, u=21, v=22, w=23 }
+		local resU = {   a=1,  b=2,  c=3,  d=4,  e=5,  f=6, g=7, h=8, i=9,j=10,k=110,l=120,m=130,
+		                                 n=140,o=150,p=160,q=17,r=18,s=19,t=20, u=21, v=22, w=23 }
 		local u    = Table.merge( tblA, tblB, true )
-		assert( cnt( tblA ) + cnt( tblB ) - 3 == cnt( u ),
-			"#Union should be: "..(#tblA+#tblB-3).." but was: " .. #u )
+		assert( cnt( resU ) == cnt( u ),
+			"#Union should be: "..cnt(resU).." but was: " .. cnt(u) )
 		checkElm( u, {'a','b','c','d','e','f','g','h','i','j','k','l',
 		              'm', 'n','o','p','q','r','s','t','u','v','w' }, true )
 		checkElm( u, {'x','y','z'}, false )
+		-- make sure tablB overwrites tblA values
+		assert( equals( u, resU ), "Union result didn't match expected values" )
 	end,
 
 	test_mergeIntersect = function( self )
 		Test.Case.describe( "Table.merge( tblA, tblB, false ) -> Intersection" )
-		local tblA = { a=1, b=2, c=3, d=4, e=5, f=6, g=7, h=8, i=9,j=10,k=11,l=12,m=13 }
-		local tblB = { g=7, h=8, i=9,j=10,k=11,l=12,m=13,n=14,o=15,p=16,q=17,r=18,s=19 }
-		local u    = Table.merge( tblA, tblB, false )
-		assert( 7  == cnt( u ),
-			"#Intersection should be: ".. 7 .." but was: " .. cnt(u) )
-		checkElm( u, {'g','h','i','j','k','l','m'}, true )
-		checkElm( u, {'a','b','c','d','e','f','n','o','p','q','r','s','t','u','v','w' }, false )
+		local tblA = {  a=1,  b=2,  c=3,  d=4,  e=5,  f=6,  g=7,  h=8,  i=9, j=10, k=11, l=12, m=13 }
+		local tblB = { g=70, h=80, i=90,j=100,k=110,l=120,m=130,n=140,o=150,p=160,q=170,r=180,s=190 }
+		local resI = { g=70, h=80, i=90,j=100,k=110,l=120,m=130 }
+		local i    = Table.merge( tblA, tblB, false )
+		assert( cnt( resI )  == cnt( i ),
+			"#Intersection should be: ".. cnt(resI) .." but was: " .. cnt(i) )
+		checkElm( i, {'g','h','i','j','k','l','m'}, true )
+		checkElm( i, {'a','b','c','d','e','f','n','o','p','q','r','s','t','u','v','w' }, false )
+		-- make sure tablB overwrites tblA values
+		assert( equals( i, resI ), "Intersection result didn't match expected values" )
 	end,
 
 	test_complement = function( self )

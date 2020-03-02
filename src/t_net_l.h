@@ -105,8 +105,8 @@ int    p_net_sck_mkFdSet        ( lua_State *L, int pos, fd_set *set );
 
 
 int    luaopen_t_net_fml        ( lua_State *L );
-int   luaopen_t_net_sck_ptc     ( lua_State *L );
-int   luaopen_t_net_sck_sht     ( lua_State *L );
+int    luaopen_t_net_sck_ptc    ( lua_State *L );
+int    luaopen_t_net_sck_sht    ( lua_State *L );
 // ---------------------------- MACRO HELPERS FOR IP ADDRESSES ----------------
 //
 #define SOCK_ADDR_PTR(ptr)        ((struct sockaddr *)(ptr))

@@ -20,9 +20,9 @@ INSTALL_CMOD=$(PREFIX)/lib/lua/$(LVER)/t
 
 # How to install. If your install program does not support "-p", then
 # you may have to run ranlib on the installed t.a
-INSTALL= install -p
-INSTALL_DATA= $(INSTALL) -m 0644
-RM = rm -f
+INSTALL=$(shell which install) -p
+INSTALL_DATA=$(INSTALL) -m 0644
+RM=$(shell which rm) -f
 
 T_DBG_SRC=
 ifdef DEBUG
