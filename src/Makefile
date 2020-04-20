@@ -154,7 +154,7 @@ test: $(SRCDIR)
 	$(LD) $(MYCFLAGS) -shared $? -o $@ $(LDFLAGS)
 
 %.o: %.c
-	$(CC) -I$(INCS) $(CFLAGS) -c $< -o $@
+	$(CC) -I$(INCDIR) $(CFLAGS) -c $< -o $@
 
 $(INSTALL_CMOD)/%.so: %.so
 	$(INSTALL_DATA) -Dm644 $< $@
