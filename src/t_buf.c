@@ -47,7 +47,7 @@ struct t_buf_seg
 
 
 /**--------------------------------------------------------------------------
- * Get the char *buffer from either a T.Buffer or a T.Buffer.Segment or Lua string.
+ * Get the char *buffer from either a t.Buffer or a t.Buffer.Segment or Lua string.
  * \param   L     Lua state.
  * \param   pos   position of userdata on stack.
  * \param  *len   size_t pointer that holds avilable length in char*.
@@ -77,12 +77,15 @@ char
 		if (len)
 			*len = seg->len;
 		if (NULL!=cw) *cw  = 1;
-		return seg->b;
+		lua_rawgeti( L, LUA_REGISTRYINDEX, seg->bR );
+		buf = t_buf_check_ud( L, -1, 1 );
+		lua_pop( L, 1 );
+		return &(buf->b[ seg->idx - 1 ]);
 	}
-	else if (lua_isstring( L, pos))
+	else if (LUA_TSTRING == lua_type( L, pos))
 	{
 		if (NULL!=cw) *cw = 0;
-		return (char*) luaL_checklstring( L, pos, len );
+		return (char*) lua_tolstring( L, pos, len );
 	}
 	else
 		return NULL;
@@ -90,7 +93,7 @@ char
 
 
 /**--------------------------------------------------------------------------
- * Get the char *buffer from either a T.Buffer or a T.Buffer.Segment or Lua string.
+ * Get the char *buffer from either a t.Buffer or a t.Buffer.Segment or Lua string.
  * \param   L     Lua state.
  * \param   pos   position of userdata on stack.
  * \param  *len   size_t pointer that holds avilable length in char*.

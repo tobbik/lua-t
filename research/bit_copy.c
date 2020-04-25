@@ -89,7 +89,7 @@ static void  getValue( char *src, size_t sz, size_t ofs, bool is_signed )
 	else
 	{
 		printIntBin( val );
-		printf( "%zu", val );
+		printf( "%lu", val );
 	}
 
 	printf( "\n\n" );

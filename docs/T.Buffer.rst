@@ -36,35 +36,23 @@ Class Metamembers
 ``Buffer buf = Buffer( int length )   [__call]``
   Instantiate a new ``Buffer`` object with a value of ``len`` bytes.
 
-``Buffer  buf = Buffer( string myString )``
+``Buffer  buf = Buffer( string myString[, int len ] )``
   Instantiate a new ``Buffer buf`` object with the content of ``myString``.
-  The length of ``myString`` defines the length of the ``Buffer buf``
-  instance.
+  Unless ``int len`` is defined, the length of ``myString`` determines the
+  length of the ``Buffer buf`` instance.
 
-``Buffer clone = Buffer( Buffer cpy_buf )``
+``Buffer clone = Buffer( Buffer cpy_buf[, int len ] )``
   Instantiate a new ``Buffer clone`` object with the content of ``cpy_buf``.
-  The length of ``cpy_buf`` defines the length of the ``Buffer clone``.  The
-  ``Buffer clone`` is NOT a reference but a true copy of ``cpy_buf``.
+  Unless ``int len`` is defined, the length of ``cpy_buf`` determines the
+  length of the ``Buffer clone`` instance.  The ``Buffer clone`` is NOT a
+  reference but a true copy of ``cpy_buf``.
 
-``Buffer clone = Buffer( Buffer.Segment cpy_seg )``
+``Buffer clone = Buffer( Buffer.Segment cpy_seg[, int len ] )``
   Instantiate a new ``Buffer clone`` object with the content of ``cpy_seg``.
-  The length of ``cpy_seg`` defines the length of the ``Buffer clone``.  The
-  content of ``Buffer clone`` is copied over from ``cpy_seg``.
-
-``Buffer  buf = Buffer( int length, string myString )``
-  Instantiate a new ``Buffer clone`` object with an ``int length`` sized
-  copy of the the content of ``myString``.  ``int length`` bytes from
-  ``myString`` are copied over to ``Buffer clone``.
-
-``Buffer clone = Buffer( int length, Buffer cpy_buf )``
-  Instantiate a new ``Buffer clone`` object with an ``int length`` sized
-  copy of the the content of ``cpy_buf``.  ``int length`` bytes from
-  ``cpy_buf`` are copied over to ``Buffer clone``.
-
-``Buffer clone = Buffer( int length, Buffer.Segment cpy_seg )``
-  Instantiate a new ``Buffer clone`` object with an ``int length`` sized
-  copy of the the content of ``cpy_seg``.  ``int length`` bytes from
-  ``cpy_seg`` are copied over to ``Buffer clone``.
+  Unless ``int len`` is defined, the length of ``cpy_seg`` determines the
+  length of the ``Buffer clone`` instance.  The length of ``cpy_seg``
+  defines the length of the ``Buffer clone``.  The content of
+  ``Buffer clone`` is copied over from ``cpy_seg``.
 
 
 Instance Members

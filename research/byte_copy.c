@@ -48,7 +48,7 @@ void printIntByte( unsigned long *val, size_t sz, int is_signed )
 		printf("(%ld)\n\n", sVal);
 	}
 	else
-		printf("(%zu)\n\n", *val);
+		printf("(%lu)\n\n", *val);
 
 }
 

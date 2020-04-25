@@ -3,10 +3,10 @@ CURL=$(shell which curl)
 TAR=$(shell which tar)
 UNZIP=$(shell which unzip)
 
-LVER=5.3
-LREL=5
-LUASRC=lua-$(LVER).$(LREL).tar.gz
-LUAURL=http://www.lua.org/ftp
+LVER=5.4
+LREL=0
+LUASRC=lua-$(LVER).$(LREL)-rc1.tar.gz
+LUAURL=https://www.lua.org/work
 PLURL=https://codeload.github.com/stevedonovan/Penlight/tar.gz/master
 
 
@@ -24,8 +24,7 @@ MYCFLAGS=" -O0 -g"
 
 all: $(PREFIX)/bin/lua
 
-
-MYCFLAGS=-g -O2 -fbuiltin
+MYCFLAGS=-g -O2 -fbuiltin -march=armv8-a -pipe -fstack-protector-strong -fno-plt
 
 CC=clang
 LD=clang
@@ -34,7 +33,7 @@ dev-all: $(TINSTALL)
 
 dev-54:
 	$(MAKE) \
-		LVER=5.4 LREL=0 LUASRC=lua-5.4.0-work2.tar.gz LUAURL=http://www.lua.org/work \
+		LVER=5.4 LREL=0 LUASRC=lua-5.4.0-rc1.tar.gz LUAURL=http://www.lua.org/work \
 		dev-all
 
 dev-arm:
@@ -125,11 +124,11 @@ dev-pristine:
 	-$(RM) -r $(DLDIR)
 
 dev-run: $(TINSTALL)
-	LUA_PATH="$(CURDIR)/out/share/lua/5.3/?.lua;;" \
-	 LUA_CPATH="$(CURDIR)/out/lib/lua/5.3/?.so;;" \
-	 $(CURDIR)/out/bin/lua
+	LUA_PATH="$(CURDIR)/out/share/lua/5.4/?.lua;;" \
+	 LUA_CPATH="$(CURDIR)/out/lib/lua/5.4/?.so;;" \
+	 $(CURDIR)/out/bin/lua -i scratchpad.lua
 
 dev-test: $(TINSTALL)
-	LUA_PATH="$(CURDIR)/out/share/lua/5.3/?.lua;;" \
-	 LUA_CPATH="$(CURDIR)/out/lib/lua/5.3/?.so;;" \
-	 $(CURDIR)/out/bin/lua $(CURDIR)/test/runner.lua
+	LUA_PATH="$(CURDIR)/out/share/lua/5.4/?.lua;;" \
+	 LUA_CPATH="$(CURDIR)/out/lib/lua/5.4/?.so;;" \
+	 $(CURDIR)/out/bin/lua -i $(CURDIR)/test/runner.lua buf

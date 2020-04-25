@@ -40,7 +40,7 @@ static int lt_tim_get( lua_State *L );  // forward declaration
 static int
 lt_tim__Call( lua_State *L )
 {
-	struct timeval *tv1 = t_tim_check_ud( L, 2, 0); //S: cls tv1
+	struct timeval *tv1 = t_tim_check_ud( L, 2, 0 ); //S: cls tv1
 	struct timeval *tv;
 
 	lua_remove( L, 1 );
@@ -59,7 +59,6 @@ lt_tim__Call( lua_State *L )
 
 	return 1;
 }
-
 
 
 /**--------------------------------------------------------------------------

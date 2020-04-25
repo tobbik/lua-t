@@ -125,7 +125,7 @@ local tests = {
 			local msg,len = s.aSck:recv( sz )
 			assert( type(len)=='number', fmt( "Expected `%s` but got `%s`", 'number', type(len) ) )
 			if msg then
-				assert( sz==len, fmt( "Expected %d bytes but got %d", sz, len ) )
+				assert( len <= sz, fmt( "Expected %d bytes but got %d", sz, len ) )
 				assert( type(msg)=='string', fmt( "Expected `%s` but got `%s`", 'string', type(msg) ) )
 				assert( msg == payload:sub(rcvd+1,rcvd+len), fmt( "Message was %s but should have been %s",
 				          msg, payload:sub(rcvd+1,rcvd+len) ) )
@@ -163,17 +163,17 @@ local tests = {
 
 	test_cb_recvSizedBuffer = function( self, done )
 		Test.Case.describe( "msg,len = sck.recv( buf_seg )  [Small 128 bytes segment]" )
-		local payload  = string.rep( "TestMessage content for recieving bigger buffer -- ", 50000 )
+		local payload  = string.rep( "TestMessage content for recieving into a small sized buffer --- ", 35000 )
 		local buffer   = Buffer( #payload )
-		local seg, cnt = nil, 0
+		local seg, cnt = buffer:Segment( 1, 128 ), 0
 		local receiver = function( s )
-			seg           = seg and seg:next() or buffer:Segment( 1, 128 )
 			local msg,len = s.aSck:recv( seg )
 			assert( type(len)=='number', fmt( "Expected `%s` but got `%s`", 'number', type(len) ) )
 			if msg then
-				assert( #seg==len, fmt( "Expected %d bytes but got %d", #seg, len ) )
+				assert( len <= #seg, fmt( "Expected %d bytes but got %d", #seg, len ) )
 				assert( type(msg)=='boolean', fmt( "Expected `%s` but got `%s`", 'boolean', type(msg) ) )
 				cnt = cnt+len
+				seg:shift( len )
 			else
 				assert( cnt==#payload, fmt( "Expected %d but got %d bytes", #payload, cnt) )
 				assert( buffer:read()==payload, fmt( "Payload should equal received value") )
@@ -194,7 +194,7 @@ local tests = {
 			local msg,len = s.aSck:recv( buf, sz )
 			assert( type(len)=='number', fmt( "Expected `%s` but got `%s`", 'number', type(len) ) )
 			if msg then
-				assert( sz==len, fmt( "Expected %d bytes but got %d", sz, len ) )
+				assert( len <= sz, fmt( "Expected %d bytes but got %d", sz, len ) )
 				assert( buf:read(1,len) == payload:sub(rcvd+1,rcvd+len), fmt( "Message was %s but should have been %s",
 				          buf:read(1,len), payload:sub(rcvd+1,rcvd+len) ) )
 				rcvd = rcvd+len

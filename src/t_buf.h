@@ -30,8 +30,8 @@ struct t_buf {
 /// The userdata struct for t.Buffer.Segment
 struct t_buf_seg {
 	int      bR;    ///<  LUA_REGISTRYINDEX reference for t_buf
-	char    *b;     ///<  pointer to t_buf->b[idx-1]
-	size_t   idx;   ///<  offest from buffer start
+	//char    *b;     ///<  pointer to t_buf->b[ idx-1 ]
+	size_t   idx;   ///<  offset from buffer start
 	size_t   len;   ///<  length of segment
 };
 

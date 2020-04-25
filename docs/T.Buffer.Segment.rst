@@ -19,6 +19,17 @@ USAGE
 A `Buffer.Segment` instance can be used exactly like an actual `Buffer` with
 regards to interoperability with the `Net.Socket` and the `Pack` class.
 
+Schema
+======
+
+Showing the layout of a Segment created from a buffer with the following
+values: ``seg = buffer:Segment( 6, 7 )``. It results in a Segment that looks
+like this: ``seg.start == 6``, ``seg.size == 7`` and the ``seg.last == 12``
+
+idxBuf:  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23
+values:  A  B  C  D  E  F  G  H  I  J  K  L  M  N  O  P  Q  R  S  T  U  V  W
+idxSeg:                 1  2  3  4  5  6  7
+
 
 API
 ===
@@ -50,12 +61,12 @@ Instance Members
   seg.buffer``.  This value can be changed.
 
 ``int start = seg.size``
-  Number of bytes in ``Buffer.Segment seg``. This has the same value as
-  ``#seg`` but is mutable.  This value can be changed.
+  Number of bytes in ``Buffer.Segment seg``.  This value can be changed.  It
+  has the same value as ``#seg``, but accessed as ``seg.size`` it is mutable.
 
-``int end = seg.to``
+``int lastIndex = seg.last``
   Ending index of ``Buffer.Segment seg`` relative to ``Buffer seg.buffer``.
-  It is defined by ``seg.start + seg.size``.  This value can be changed.
+  It is defined by ``seg.start + seg.size - 1``.  This value can be changed.
 
 ``string s = seg:toHex( )``
   Returns a hexadecimal representation of the bytes in the segment as
@@ -80,15 +91,15 @@ Instance Members
 ``void = seg:clear( )``
   Overwrites entire ``Buffer.Segment seg`` content with 0 bytes.
 
-``void = seg:shift( int )``
-  Shifts the Segment within the Buffer. Error if ``seg.start < 1`` or if
+``boolean success = seg:shift( int )``
+  Shifts the segment within the Buffer. Error if ``seg.start < 1`` or if
   ``seg.start+seg.size > #seg.buffer``
 
-``Buffer.Segment seg1 = seg:next( )``
-  Returns a new ``Buffer.Segment seg1`` which is right adjacent to the
-  ``Buffer.Segement seg``.  ``seg1`` has the same lenght as seg if there is
-  enough space left in ``seg.buffer`` otherwise it has the reminder of of
-  ``seg.buffer`` which is defined by ``#seg1 = #seg.buffer-seg.to``
+``boolean success = seg:next( )``
+  Forwards the ``Buffer.Segment seg`` right adjacent to the current
+  position. ``seg`` has the same lenght as seg if there is enough space left
+  in ``seg.buffer`` otherwise it has the reminder of of
+  ``seg.buffer`` which is defined by ``#seg = #seg.buffer-seg.last``
 
 
 Instance Metamembers
@@ -112,4 +123,9 @@ Instance Metamembers
 ``Buffer.Segment seg[ integer n ] = integer byte    [__newindex]``
   Sets the value of the byte at position ``n``. The value of ``byte`` must
   be between 0 and 255.
+
+``Buffer.Segment segA == Buffer.Segment segB [__eq]``
+  Measures equality between segments.  The operation returns true if lenght
+  and content of both Segments are identical.  This does not compare
+  reference values but actual values.
 

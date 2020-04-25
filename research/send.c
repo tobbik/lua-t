@@ -33,6 +33,6 @@ int main( int argc,char *argv[] )
 	printf( "Socket connected: %d\n", conn );
 	//res = sendto( sock, "ABCDEF", 6, 0, NULL, sizeof( NULL ) );
 	res = send( sock, "ABCDEF", 6, 0 );
-	printf( "RESULT: %ld", res );
+	printf( "RESULT: %zd", res );
 	return 0;
 }

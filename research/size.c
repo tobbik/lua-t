@@ -9,9 +9,9 @@
 int main()
 {
 
-	printf( "size_t:      %lu\n", sizeof( size_t ) );
-	printf( "int:         %lu\n", sizeof( int ) );
-	printf( "MAXSIZE:     %lu\n", MAXSIZE );
-	printf( "MAX_SIZET:   %lu\n", MAX_SIZET );
+	printf( "size_t:      %lu\n", (unsigned long) sizeof( size_t ) );
+	printf( "int:         %lu\n", (unsigned long) sizeof( int ) );
+	printf( "MAXSIZE:     %lu\n", (unsigned long) MAXSIZE );
+	printf( "MAX_SIZET:   %lu\n", (unsigned long) MAX_SIZET );
 	return 0;
 }

@@ -34,41 +34,19 @@
 static int
 lt_buf__Call( lua_State *L )
 {
-	size_t            sz;
+	size_t            sz      = lua_isinteger( L, -1 ) ? lua_tointeger( L, -1 ) : 0;
+	size_t           i_sz     = 0;
 	struct t_buf     *buf     = NULL;
-	struct t_buf     *cpy_buf = t_buf_check_ud( L, -1, 0 );
-	struct t_buf_seg *cpy_seg = t_buf_seg_check_ud( L, -1, 0 );
+	char             *inp     = t_buf_tolstring( L, 2, &i_sz, NULL );
 
-	lua_remove( L, 1 );    // remove the T.Buffer Class table
-	if (lua_isinteger( L, 1 ))
-		buf = t_buf_create_ud( L, luaL_checkinteger( L, 1 ) );
-
-	if (NULL != cpy_buf || NULL != cpy_seg)
+	if (inp || sz)
 	{
-		if (buf)
-			luaL_argcheck( L, buf->len >= ((cpy_buf) ? cpy_buf->len : cpy_seg->len), 1,
-				T_BUF_TYPE" size must be at least as big as source to copy from" );
-		else
-			buf = t_buf_create_ud( L, (cpy_buf) ? cpy_buf->len : cpy_seg->len );
-		memcpy( &(buf->b[0]),
-			(cpy_buf) ? &(cpy_buf->b[0]) : &(cpy_seg->b[0]),
-			(cpy_buf) ?   cpy_buf->len   :   cpy_seg->len );
-		return 1;
+		buf  = t_buf_create_ud( L, (sz) ? sz : i_sz );
+		memcpy( &(buf->b[0]), inp, (sz > i_sz) ? i_sz : (sz) ? sz : i_sz );
 	}
+	else
+		return luaL_error( L, "can't create "T_BUF_TYPE" because of wrong argument type" );
 
-	if (LUA_TSTRING == lua_type( L, (buf) ? -2 : -1 ))
-	{
-		luaL_checklstring( L, (buf) ? -2 : -1, &sz );
-		if (buf)
-			luaL_argcheck( L, buf->len >= sz, 1,
-				T_BUF_TYPE" size must be at least as big as source to copy from" );
-		else
-			buf = t_buf_create_ud( L, sz );
-		memcpy( (char*) &(buf->b[0]), lua_tostring( L, -2 ), sz );
-	}
-
-	if (! buf)
-		luaL_error( L, "can't create "T_BUF_TYPE" because of wrong argument type" );
 	return 1;
 }
 
@@ -95,93 +73,6 @@ struct t_buf
 }
 
 
-//////////////////////////////////////////////////////////////////////////////////////
-// -- helpers used for T.Buffer and T.Buffer.Segment
-//
-
-/**--------------------------------------------------------------------------
- * Compares content of two T.Buffer.
- * \param   L    Lua state.
- * \param   bA   Char pointer to buffer content.
- * \param   bB   Char pointer to buffer content to compare to.
- * \param   aLen Length of buffer bA.
- * \param   bLen Length of buffer bB.
- * \lreturn bool true if equal otherwise false.
- * \return  int  # of values pushed onto the stack.
- * --------------------------------------------------------------------------*/
-int
-t_buf_compare( char *bA, char *bB, size_t aLen, size_t bLen )
-{
-	size_t  n;          ///< runner
-
-	if (aLen != bLen)    // different length -> false
-		return 0;
-	if (bA == bB )      // same address and length -> true
-		return 1;
-	else
-		for( n=0; n<aLen; n++ )
-			if (bA[n] !=  bB[n])
-				return 0;
-	return 1;
-}
-
-
-/**--------------------------------------------------------------------------
- * Gets the content of the buffer content as a hexadecimal string.
- * \param   L       Lua state.
- * \param  *char    Char pointer to buffer content.
- * \param   len     Length of char buffer.
- * \lreturn string  T.Buffer content representation as hexadecimal string.
- * \return  int     # of values pushed onto the stack.
- * --------------------------------------------------------------------------*/
-int
-t_buf_getHexString( lua_State *L, char *b, size_t len )
-{
-	size_t        n;
-	char          hexChars[] = "0123456789ABCDEF";
-	luaL_Buffer   lB;
-	luaL_buffinit( L, &lB );
-
-	for (n=0; n<len; n++)
-	{
-		luaL_addchar( &lB, hexChars[ b[n] >> 4 & 0x0F ] );
-		luaL_addchar( &lB, hexChars[ b[n]      & 0x0F ] );
-		if ( n+1<len)
-			luaL_addchar( &lB, ' ' );
-	}
-
-	luaL_pushresult( &lB );
-	return 1;
-}
-
-
-/**--------------------------------------------------------------------------
- * Gets the content of the buffer as a binary string.
- * \param   L       Lua state.
- * \param  *char    Char pointer to buffer content.
- * \param   len     Length of char buffer.
- * \lreturn string  T.Buffer content representation as binary string.
- * \return  int     # of values pushed onto the stack.
- * --------------------------------------------------------------------------*/
-int
-t_buf_getBinString( lua_State *L, char *b, size_t len )
-{
-	size_t       n, x;
-	luaL_Buffer  lB;
-	luaL_buffinit( L, &lB );
-
-	for (n=0; n<len; n++)
-	{
-		for (x=CHAR_BIT; x>0; x--)
-			luaL_addchar( &lB, ((b[ n ] >> (x-1)) & 0x01) ? '1' : '0' );
-		luaL_addchar( &lB, ' ' );
-	}
-
-	luaL_pushresult( &lB );
-	return 1;
-}
-
-
 //
 // ================================= GENERIC LUA API========================
 //
@@ -191,12 +82,24 @@ t_buf_getBinString( lua_State *L, char *b, size_t len )
  * \lparam  ud   T.Buffer userdata instance.
  * \return  int  # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
-static int
+int
 lt_buf_clear( lua_State *L )
 {
-	struct t_buf *buf = t_buf_check_ud( L, 1, 1 );
-	memset( buf->b, 0, buf->len * sizeof( char ) );
+	size_t                   len; // length of buffer/segment
+	char                    *buf = t_buf_checklstring( L, 1, &len, NULL );
+
+	memset( buf, 0, len * sizeof( char ) );
 	return 0;
+}
+
+
+/* translate a relative string position: negative means back from end
+ * Taken from Lua-5.4 source code*/
+static
+lua_Integer posrelat( lua_Integer pos, size_t len )
+{
+  if (pos >= 0) return pos;
+  else return (lua_Integer)len + pos + 1;
 }
 
 
@@ -213,16 +116,24 @@ int
 lt_buf_read( lua_State *L )
 {
 	size_t        bLen;
-	int           cw   = 0;
-	char         *buf  = t_buf_checklstring( L, 1, &bLen, &cw );
-	lua_Integer   idx  = luaL_optinteger( L, 2, 1 ) - 1;
-	lua_Integer   len  = luaL_optinteger( L, 3, bLen-idx );
+	char         *buf  = t_buf_checklstring( L, 1, &bLen, NULL );
+	lua_Integer start  = posrelat( luaL_optinteger( L, 2,  1 ), bLen );
+	lua_Integer   len  = luaL_optinteger( L, 3, (lua_Integer) bLen-start+1 );
 
-	luaL_argcheck( L, cw != 0, 1, "must be "T_BUF_TYPE" or "T_BUF_SEG_TYPE );
-	luaL_argcheck( L, 0 <= idx && (size_t)idx       <= bLen, 2, "index out of range" );
-	luaL_argcheck( L, 0 <= len && (size_t)(idx+len) <= bLen, 3, "requested length out of range" );
+	// luaL_argcheck( L, cw != 0, 1, "must be "T_BUF_TYPE" or "T_BUF_SEG_TYPE );
+	//	printf( "1. S: %lld L: %lld\n", start, len);
+	// handle negative len
+	if (len<0) { len = -len; start = start - len + 1; }
+	//	printf( "2. S: %lld L: %lld\n", start,len);
+	// make sure start in range
+	if (start<1) { len = len + start - 1; start = 1; }
+	//	printf( "3. S: %lld L: %lld\n", start,len);
+	if (start+len > (lua_Integer) bLen) len = (lua_Integer) bLen - start + 1;
+	//	printf( "4. S: %lld L: %lld\n", start,len);
+	if (len>0)
+		lua_pushlstring( L, buf + start - 1, len );
+	else lua_pushliteral( L, "" );
 
-	lua_pushlstring( L, buf + idx, len );
 	return 1;
 }
 
@@ -265,11 +176,26 @@ lt_buf_write( lua_State *L )
  * \lreturn string  T.Buffer representation as hexadecimal string.
  * \return  int     # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
-static int
+int
 lt_buf_toHexString( lua_State *L )
 {
-	struct t_buf *buf   = t_buf_check_ud( L, 1, 1 );
-	return t_buf_getHexString( L, buf->b, buf->len );
+	size_t                   len; // length of buffer/segment/string
+	char                    *buf = t_buf_checklstring( L, 1, &len, NULL );
+	size_t                     n;
+	char              hexChars[] = "0123456789ABCDEF";
+	luaL_Buffer               lB;
+	luaL_buffinit( L, &lB );
+
+	for (n=0; n<len; n++)
+	{
+		luaL_addchar( &lB, hexChars[ buf[n] >> 4 & 0x0F ] );
+		luaL_addchar( &lB, hexChars[ buf[n]      & 0x0F ] );
+		if (n+1<len)
+			luaL_addchar( &lB, ' ' );
+	}
+
+	luaL_pushresult( &lB );
+	return 1;
 }
 
 
@@ -280,11 +206,24 @@ lt_buf_toHexString( lua_State *L )
  * \lreturn string  T.Buffer representation as binary string.
  * \return  int     # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
-static int
+int
 lt_buf_toBinString( lua_State *L )
 {
-	struct t_buf *buf   = t_buf_check_ud( L, 1, 1 );
-	return t_buf_getBinString( L, buf->b, buf->len );
+	size_t                   len; // length of buffer/segment/string
+	char                    *buf = t_buf_checklstring( L, 1, &len, NULL );
+	size_t                  n, x;
+	luaL_Buffer               lB;
+	luaL_buffinit( L, &lB );
+
+	for (n=0; n<len; n++)
+	{
+		for (x=CHAR_BIT; x>0; x--)
+			luaL_addchar( &lB, ((buf[ n ] >> (x-1)) & 0x01) ? '1' : '0' );
+		luaL_addchar( &lB, ' ' );
+	}
+
+	luaL_pushresult( &lB );
+	return 1;
 }
 
 
@@ -296,13 +235,18 @@ lt_buf_toBinString( lua_State *L )
  * \lreturn bool true if equal otherwise false.
  * \return  int  # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
-static int
+int
 lt_buf__eq( lua_State *L )
 {
-	struct t_buf *bA = t_buf_check_ud( L, 1, 1 );
-	struct t_buf *bB = t_buf_check_ud( L, 2, 1 );
+	size_t                   lenA; // length of buffer/segment
+	char                    *bufA = t_buf_checklstring( L, 1, &lenA, NULL );
+	size_t                   lenB; // length of buffer/segment
+	char                    *bufB = t_buf_checklstring( L, 2, &lenB, NULL );
 
-	lua_pushboolean( L, t_buf_compare( bA->b, bB->b, bA->len, bB->len ) );
+	if (lenA != lenB || 0 != strncmp( bufA, bufB, lenA ) )  // different length        -> false
+		lua_pushboolean( L, 0 );
+	else
+		lua_pushboolean( L, 1 );
 	return 1;
 }
 
@@ -334,12 +278,13 @@ lt_buf__add( lua_State *L )
  * \lparam  ud   T.Buffer userdata instance.
  * \return  int  # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
-static int
+int
 lt_buf__len( lua_State *L )
 {
-	struct t_buf *buf = t_buf_check_ud( L, 1, 1 );
+	size_t                   len; // length of buffer/segment
+	char __attribute__ ((unused)) *buf = t_buf_checklstring( L, 1, &len, NULL );
 
-	lua_pushinteger( L, (lua_Integer) buf->len );
+	lua_pushinteger( L, (lua_Integer) len );
 	return 1;
 }
 
@@ -443,7 +388,7 @@ static const luaL_Reg t_buf_m [] = {
 	, { "clear"        , lt_buf_clear }
 	, { "read"         , lt_buf_read }
 	, { "write"        , lt_buf_write }
-	// universal stuff
+	// universal stuff/helpers
 	, { "toHex"        , lt_buf_toHexString }
 	, { "toBin"        , lt_buf_toBinString }
 	, { NULL           , NULL }

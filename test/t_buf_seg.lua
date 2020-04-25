@@ -59,8 +59,8 @@ tests = {
 			"Content of T.Buffer.Segment should be "..self.b:read(ofs, len ).." but was " ..seg:read() )
 	end,
 
-	test_ConstructorPartialSegmentIndexOne = function( self )
-		Test.Case.describe( "Segment starting at index 1 should equal Segment covering full Buffer" )
+	test_ConstructorPartialSegmentStartOne = function( self )
+		Test.Case.describe( "Segment starting at 1 should equal Segment covering full Buffer" )
 		local seg1 = self.b:Segment( 1 )
 		local seg  = self.b:Segment( )
 		assert( #seg1 == #seg, "Length of T.Buffer.Segment should be "..#seg.." but was " ..#seg1 )
@@ -74,7 +74,7 @@ tests = {
 		local f   = function(s) local seg = s.b:Segment( #s.b+5 ) end
 		local r,e = pcall( f, self )
 		assert( not r, "Segement constructor should have failed" )
-		assert( e:match( "Offset relative to length of T.Buffer out of bound" ), "Wrong Error message: "..e )
+		assert( e:match( "offset relative to length of T.Buffer out of bound" ), "Wrong Error message: "..e )
 	end,
 
 	test_ConstructorLengthOverflowFails = function( self )
@@ -112,8 +112,9 @@ tests = {
 
 	test_ConstructorZeroPartialLengthSegmentEnd = function( self )
 		Test.Case.describe( "Create a 0 bytes long segment starting at the end" )
-		local seg         = self.b:Segment( #self.b+1, 0 )
+		local seg         = self.b:Segment( #self.b, 0 )
 		assert( #seg == 0, "Length of T.Buffer.Segment should be ".. 0 .." but was " ..#seg )
+		assert( seg.start == #self.b, "Start of T.Buffer.Segment should be ".. #self.b .." but was " .. seg.start )
 		assert( seg:read() == self.b:read( seg.start, #seg ),
 			"Content of T.Buffer.Segment should be "..self.b:read( seg.start, #seg ).." but was " ..seg:read() )
 	end,
@@ -145,18 +146,16 @@ tests = {
 		end
 	end,
 
-	test_ReadIndexOutOfRangeFails = function( self )
-		Test.Case.describe( "Reading from Buffer.Segment past it's length fails" )
-		local f = function(bs,n) return bs:read( n+2 ) end
-		assert( not pcall( f, self.seg, #self.seg ),
-			"Can't read from Buffer.Segment on index past it's length" )
+	test_ReadIndexOutOfRangeReturnsEmptyString = function( self )
+		Test.Case.describe( "Reading from Buffer.Segment past it's length should retun empty string" )
+		local r = self.seg:read( #self.seg+2 )
+		assert( r == "", "Should be empty string but was " .. r )
 	end,
 
-	test_ReadLengthBeyondSegmentLengthFails = function( self )
-		Test.Case.describe( "Reading from Buffer beyond it's length fails" )
-		local f = function(s,n,l) return s:read(n,l) end
-		assert( not pcall( f, self.seg, #self.seg-100, 200 ),
-			"Can't read a string longer than Buffer.Segment" )
+	test_ReadLengthBeyondSegmentLengthShorterString = function( self )
+		Test.Case.describe( "Reading from Buffer beyond it's length returns shorter string" )
+		local r = self.seg:read( -100, 200 )
+		assert( #r == 100, "Expected 100 but was " .. #r )
 	end,
 
 	test_ReadFullSegment = function( self )
@@ -167,12 +166,12 @@ tests = {
 
 	test_SetSizeIncreaseLength= function( self )
 		local buf,ofs,len = self.seg.buffer, self.seg.start, self.seg.size
-		local nlen        = #buf - ofs - 2
-		Test.Case.describe( format("Change length of %s in %s from %d to %d", self.seg, buf, len, nlen ) )
+		local nLen        = #buf - ofs - 2
+		Test.Case.describe( format("Change length of %s in %s from %d to %d", self.seg, buf, len, nLen ) )
 		local seg = self.b:Segment( ofs, len )
-		seg.size = nlen
-		T.assert( #seg == nlen, "Length of T.Buffer.Segment should be %d but was %d", nlen, #seg )
-		T.assert( seg:read() == self.b:read( ofs, nlen ),
+		seg.size = nLen
+		T.assert( #seg == nLen, "Length of T.Buffer.Segment should be %d but was %d", nLen, #seg )
+		T.assert( seg:read() == self.b:read( ofs, nLen ),
 			"Content of T.Buffer.Segment should be %s but wa %s", self.b:read(ofs, len ), seg:read() )
 	end,
 
@@ -197,7 +196,7 @@ tests = {
 			"Content of T.Buffer.Segment should be %s but wa %s", self.b:read(ofs, len ), seg:read() )
 	end,
 
-	test_SetSizeIncreaseLengthToMuchFails= function( self )
+	test_SetSizeIncreaseLengthPastBufferSizeFails= function( self )
 		local buf,ofs,len = self.seg.buffer, self.seg.start, self.seg.size
 		local errMsg      = "T.Buffer.Segment length out of bound"
 		local nlen        = #buf-ofs+23
@@ -209,23 +208,23 @@ tests = {
 		T.assert( e:match( errMsg), "Error message should contain `%s`, but was `%s`", errMsg, e )
 	end,
 
-	test_SetToIncreaseLength= function( self )
-		local buf,ofs,len = self.seg.buffer, self.seg.start, self.seg.size
-		local nTo         = ofs + len + 6
-		Test.Case.describe( format("Change end of %s in %s length from %d to %d", self.seg, buf, len+ofs, nTo ) )
-		self.seg.to       = nTo
-		local xBuf,xOfs,xLen = self.seg.buffer, self.seg.start, self.seg.size
-		assert( xOfs == ofs, "Offset should remain the same" )
-		assert( xLen == len+6, format( "Length should have increased to %d but was %d", len+6, xLen ) )
+	test_SetLastLengthenSegment= function( self )
+		local buf,ofs,last,len = self.seg.buffer, self.seg.start, self.seg.last, #self
+		local nLast        = last + 6
+		Test.Case.describe( format("Change last index of %s in %s length from %d to %d lengthens segment", self.seg, buf, last, nLast ) )
+		self.seg.last      = nLast
+		local xBuf,xOfs,xLen = self.seg.buffer, self.seg.start, #self.seg
+		assert( xOfs == ofs, "Start should remain the same" )
+		assert( xLen == #self.seg, format( "Length should have increased to %d but was %d", len+6, xLen ) )
 		T.assert( self.seg:read() == self.b:read( ofs, xLen ),
 			"Content of T.Buffer.Segment should be %s but wa %s", self.b:read( ofs, xLen ), self.seg:read() )
 	end,
 
-	test_SetToDecreaseLength= function( self )
+	test_SetLastShortenSegment = function( self )
 		local buf,ofs,len = self.seg.buffer, self.seg.start, self.seg.size
-		local nTo         = ofs + len - 6
-		Test.Case.describe( format("Change end of %s in %s length from %d to %d", self.seg, buf, len+ofs, nTo ) )
-		self.seg.to       = nTo
+		local nLast      = ofs + len - 6
+		Test.Case.describe( format("Change end of %s in %s length from %d to %d", self.seg, buf, len+ofs, nLast ) )
+		self.seg.last     = nLast
 		local xBuf,xOfs,xLen = self.seg.buffer, self.seg.start, self.seg.size
 		assert( xOfs == ofs, "Offset should remain the same" )
 		assert( xLen == len-6, format( "Length should have increased to %d but was %d", len+6, xLen ) )
@@ -235,7 +234,7 @@ tests = {
 
 	test_ShiftRight= function( self )
 		local buf,ofs,len = self.seg.buffer, self.seg.start, self.seg.size
-		local shft        = #buf - self.seg.to - 2
+		local shft        = #buf - self.seg.last - 2
 		Test.Case.describe( format( "Shift %s in %d to the right", self.seg, shft ) )
 		self.seg:shift( shft )
 		local xBuf,xOfs,xLen = self.seg.buffer, self.seg.start, self.seg.size
@@ -258,10 +257,13 @@ tests = {
 	end,
 
 	test_Next= function( self )
-		local seg  = self.b:Segment( 1, math.floor( #self.b/2 ) )
-		local nxt  = seg:next( )
+		local seg  = self.b:Segment( 1, math.floor( #self.b/2 ) - 20 )
 		Test.Case.describe( format( "Next Segment %s", seg ) )
-		assert( #seg == #nxt, "nxt should have same length" )
+		local oLen,oStart = #seg, seg.start
+		assert( seg:next( ), "Forwarding to next segment should be successful" )
+		assert( seg.start == oLen + oStart, format("Next Segment should start at %d but started at %d",
+			 oLen + oStart, seg.start ) )
+		assert( #seg == oLen, "nxt should have same length" )
 	end,
 
 	test_ReadPartialSegment = function( self )
@@ -304,13 +306,12 @@ tests = {
 	test_WritePartialString = function( self )
 		Test.Case.describe( "Writing partial string to Buffer content matches string" )
 		local buf,ofs,len = self.seg.buffer, self.seg.start, self.seg.size
-		local starts = math.random( math.floor(#self.seg/5), math.floor(#self.seg/2 ) )
-		local ends   = math.random( starts, starts+math.floor(#self.seg/3) )
-		local s      = self.rtvg:getString( ends-starts )
-		self.seg:write( s, starts, #s )
-		local readS  = self.seg:read( starts, #s )
-		assert( s == self.seg:read(starts, #s),
-			"Overwritten part of Segment:\n"..self.seg:read(starts, #s).."\n shall equal new string:\n"..s )
+		local starts = math.random( math.floor(len/6), math.floor(len/2 ) )
+		local s,wLen = self.rtvg:getString( len ), math.floor( len/2 )
+		self.seg:write( s, starts, wLen )
+		local readS  = self.seg:read( starts, wLen )
+		assert( s:sub(1,wLen) == self.seg:read(starts, wLen),
+			"Overwritten part of Segment:\n"..self.seg:read(starts, #s).."\n shall equal new string:\n"..s:sub(1,wLen) )
 	end,
 
 	test_Equals = function( self )

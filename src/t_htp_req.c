@@ -324,10 +324,10 @@ t_htp_req_identifyHeader( lua_State *L, const char *k, const char *c,
 			switch (tokens[ (unsigned char) *(k+6) ])
 			{
 				case 'c':     PH( "If-Match" );                       break;
-				case 'g':     PH( "If-Range" );                       break;
 				case 'e':     PH( "If-None-Match" );                  break;
+				case 'g':     PH( "If-Range" );                       break;
 				case 'i':     PH( "If-Modified-Since" );              break;
-				case 'i':     PH( "If-Unmodified-Since" );            break;
+				case 'o':     PH( "If-Unmodified-Since" );            break;
 				default :     break;
 			}
 			break;
@@ -388,6 +388,7 @@ t_htp_req_identifyHeader( lua_State *L, const char *k, const char *c,
  * \param   char*  e Header value end ('\r' or '\n' ... sloppy bastards!).
  * \return  enum   How to parse the heaer value.
  * --------------------------------------------------------------------------*/
+/*
 static void
 t_htp_req_identifyHeader( lua_State *L, const char *k, const char *c,
                                         const char *v, const char *e )
@@ -514,6 +515,7 @@ t_htp_req_identifyHeader( lua_State *L, const char *k, const char *c,
 	lua_rawset( L, -3 );
 #undef PH
 }
+*/
 
 
 /**
