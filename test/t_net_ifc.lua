@@ -23,8 +23,10 @@ local tc = {
 		assert( ifc.flags, "Default interface should have a flags table" )
 		assert( ifc.flags, "Default interface should have a flags table" )
 		assert( ifc.flags.IFF_UP, "Default interface should have a flags.IFF_UP set" )
-		assert( ifc.flags.IFF_BROADCAST, "Default interface should have a flags.IFF_BROADCAST set" )
-		assert( ifc.flags.IFF_MULTICAST, "Default interface should have a flags.IFF_MULTICAST set" )
+		if 'lo' ~= ifc.name then
+			assert( ifc.flags.IFF_BROADCAST, "Default interface should have a flags.IFF_BROADCAST set" )
+			assert( ifc.flags.IFF_MULTICAST, "Default interface should have a flags.IFF_MULTICAST set" )
+		end
 	end,
 
 	test_getSpecificInterface = function( self )

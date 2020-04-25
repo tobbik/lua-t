@@ -44,7 +44,7 @@ LD=clang
 dev-all: $(TINSTALL)
 
 dev-54:
-	$(MAKE) \
+	$(MAKE) -j4 \
 		LVER=5.4 LREL=0 LUASRC=lua-5.4.0-rc1.tar.gz LUAURL=http://www.lua.org/work \
 		dev-all
 
@@ -134,7 +134,7 @@ dev-rinse:
 dev-renew:
 	$(MAKE) dev-clean
 	-$(RM) -r $(PREFIX)/*
-	$(MAKE) -j4 dev-54
+	$(MAKE) dev-54
 
 dev-pristine:
 	$(MAKE) dev-rinse
@@ -148,7 +148,7 @@ dev-run: $(TINSTALL)
 dev-test: $(TINSTALL)
 	LUA_PATH="$(CURDIR)/out/share/lua/5.4/?.lua;;" \
 	 LUA_CPATH="$(CURDIR)/out/lib/lua/5.4/?.so;;" \
-	 $(CURDIR)/out/bin/lua -i $(CURDIR)/test/runner.lua seg
+	 $(CURDIR)/out/bin/lua -i $(CURDIR)/test/runner.lua
 
 dev-gdb: $(TINSTALL)
 	LUA_PATH="$(CURDIR)/out/share/lua/5.4/?.lua;;" \

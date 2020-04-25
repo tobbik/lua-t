@@ -79,7 +79,7 @@ t_ael_dnd_setMaskAndFunction( lua_State *L, struct t_ael_dnd *dnd, enum t_ael_ms
 			luaL_unref( L, LUA_REGISTRYINDEX, dnd->rR );
 		dnd->rR = fR;
 #if PRINT_DEBUGS == 3
-		printf(" ======ADDED HANDLE(READ): %d(%d) \n", dnd->rR, fd );
+		printf(" ======ADDED MASK(READ): %d(%d) \n", dnd->rR, dnd->msk );
 #endif
 	}
 	else
@@ -88,7 +88,7 @@ t_ael_dnd_setMaskAndFunction( lua_State *L, struct t_ael_dnd *dnd, enum t_ael_ms
 			luaL_unref( L, LUA_REGISTRYINDEX, dnd->wR );
 		dnd->wR = fR;
 #if PRINT_DEBUGS == 3
-		printf(" ======ADDED HANDLE(WRITE): %d(%d) \n", dnd->wR, fd );
+		printf(" ======ADDED MASK(WRITE): %d(%d) \n", dnd->wR, dnd->msk );
 #endif
 	}
 }
@@ -108,7 +108,7 @@ t_ael_dnd_removeMaskAndFunction( lua_State *L, struct t_ael_dnd *dnd, enum t_ael
 	if ((T_AEL_RD & msk & dnd->msk) && LUA_REFNIL != dnd->rR)
 	{
 #if PRINT_DEBUGS == 3
-		printf(" ======REMOVING HANDLE(READ): %d for %d(%d)\n", dnd->rR, dnd->hR, fd );
+		printf(" ======REMOVING MASK(READ): %d for %d(%d)\n", dnd->rR, dnd->hR, dnd->msk );
 #endif
 		luaL_unref( L, LUA_REGISTRYINDEX, dnd->rR );
 		dnd->rR = LUA_REFNIL;
@@ -116,7 +116,7 @@ t_ael_dnd_removeMaskAndFunction( lua_State *L, struct t_ael_dnd *dnd, enum t_ael
 	if ((T_AEL_WR & msk & dnd->msk) && LUA_REFNIL != dnd->wR)
 	{
 #if PRINT_DEBUGS == 3
-		printf(" ======REMOVING HANDLE(WRITE): %d for %d(%d)\n", dnd->wR, dnd->hR, fd );
+		printf(" ======REMOVING MASK(WRITE): %d for %d(%d)\n", dnd->wR, dnd->hR, dnd->msk );
 #endif
 		luaL_unref( L, LUA_REGISTRYINDEX, dnd->wR );
 		dnd->wR = LUA_REFNIL;

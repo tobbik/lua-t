@@ -42,80 +42,107 @@ luaopen_t_net_sck_ptc( lua_State *L )
    lua_rawseti( L, -2, ptc );
 
 	// populating the protocols table based on features that are existing at compile time
-#ifdef IPPROTO_IP
-	DF_PT( IPPROTO_IP );        // Dummy protocol for TCP
+#ifdef IPPROTO_HOPOPTS
+	DF_PT( IPPROTO_HOPOPTS );           // 0 IPv6 Hop-by-Hop options.
 #endif
 #ifdef IPPROTO_ICMP
-	DF_PT( IPPROTO_ICMP );      // Internet Control Message Protocol
+	DF_PT( IPPROTO_ICMP );             // 1 Internet Control Message Protocol.
 #endif
 #ifdef IPPROTO_IGMP
-	DF_PT( IPPROTO_IGMP );      // Internet  Group Management Protocol
+	DF_PT( IPPROTO_IGMP );             // 2 Internet Group Management Protocol.
 #endif
 #ifdef IPPROTO_IPIP
-	DF_PT( IPPROTO_IPIP );      // IPIP tunnels (older KA9Q tunnels use 94)
+	DF_PT( IPPROTO_IPIP );             // 4 IPIP tunnels (older KA9Q tunnels use 94).
 #endif
 #ifdef IPPROTO_TCP
-	DF_PT( IPPROTO_TCP );       // Transmission Control Protocol
+	DF_PT( IPPROTO_TCP );              // 6 Transmission Control Protocol.
 #endif
 #ifdef IPPROTO_EGP
-	DF_PT( IPPROTO_EGP );       // Exterior Gateway Protocol
+	DF_PT( IPPROTO_EGP );              // 8 Exterior Gateway Protocol.
 #endif
 #ifdef IPPROTO_PUP
-	DF_PT( IPPROTO_PUP );       // PUP Protocol
+	DF_PT( IPPROTO_PUP );              // 12 PUP protocol.
 #endif
 #ifdef IPPROTO_UDP
-	DF_PT( IPPROTO_UDP );       // User Datagram Protocol
+	DF_PT( IPPROTO_UDP );              // 17 User Datagram Protocol.
 #endif
 #ifdef IPPROTO_IDP
-	DF_PT( IPPROTO_IDP );       // XNS IDP protocol
+	DF_PT( IPPROTO_IDP );              // 22 XNS IDP protocol.
 #endif
 #ifdef IPPROTO_TP
-	DF_PT( IPPROTO_TP );        // SO Transport Protocol Class 4
+	DF_PT( IPPROTO_TP );               // 29 SO Transport Protocol Class 4.
 #endif
 #ifdef IPPROTO_DCCP
-	DF_PT( IPPROTO_DCCP );      // Datagram Congestion Control Protocol
+	DF_PT( IPPROTO_DCCP );             // 33 Datagram Congestion Control Protocol.
 #endif
 #ifdef IPPROTO_IPV6
-	DF_PT( IPPROTO_DCCP );      // IPv6-in-IPv4 tunnelling
+	DF_PT( IPPROTO_IPV6 );             // 41 IPv6 header.
+#endif
+#ifdef IPPROTO_ROUTING
+	DF_PT( IPPROTO_ROUTING );          // 43 IPv6 routing header.
+#endif
+#ifdef IPPROTO_FRAGMENT
+	DF_PT( IPPROTO_FRAGMENT );         // 44 IPv6 fragmentation header.
 #endif
 #ifdef IPPROTO_RSVP
-	DF_PT( IPPROTO_RSVP );      // RSVP Protocol
+	DF_PT( IPPROTO_RSVP );             // 46 Reservation Protocol.
 #endif
 #ifdef IPPROTO_GRE
-	DF_PT( IPPROTO_GRE );       // Cisco GRE tunnels (rfc 1701,1702)
+	DF_PT( IPPROTO_GRE );              // 47 General Routing Encapsulation.
 #endif
 #ifdef IPPROTO_ESP
-	DF_PT( IPPROTO_ESP );       // Encapsulation Security Payload protocol
+	DF_PT( IPPROTO_ESP );              // 50 encapsulating security payload.
 #endif
 #ifdef IPPROTO_AH
-	DF_PT( IPPROTO_AH );        // Authentication Header protocol
+	DF_PT( IPPROTO_AH );               // 51 authentication header.
+#endif
+#ifdef IPPROTO_ICMPV6
+	DF_PT( IPPROTO_ICMPV6 );           // 58 ICMPv6.
+#endif
+#ifdef IPPROTO_NONE
+	DF_PT( IPPROTO_NONE );             // 59 IPv6 no next header.
+#endif
+#ifdef IPPROTO_DSTOPTS
+	DF_PT( IPPROTO_DSTOPTS );          // 60 IPv6 destination options.
+#endif
+#ifdef IPPROTO_OSPF
+	DF_PT( IPPROTO_OSPF );             // 89 not everyone's got this
 #endif
 #ifdef IPPROTO_MTP
-	DF_PT( IPPROTO_MTP );       // Multicast Transport Protocol
+	DF_PT( IPPROTO_MTP );              // 92 Multicast Transport Protocol.
 #endif
 #ifdef IPPROTO_BEETPH
-	DF_PT( IPPROTO_BEETPH );    // IP option pseudo header for BEET
+	DF_PT( IPPROTO_BEETPH );           // 94 IP option pseudo header for BEET.
 #endif
 #ifdef IPPROTO_ENCAP
-	DF_PT( IPPROTO_ENCAP );     // Encapsulation Header
+	DF_PT( IPPROTO_ENCAP );            // 98 Encapsulation Header.
 #endif
 #ifdef IPPROTO_PIM
-	DF_PT( IPPROTO_PIM );       // Protocol Independent Multicast
+	DF_PT( IPPROTO_PIM );              // 103 Protocol Independent Multicast.
 #endif
 #ifdef IPPROTO_COMP
-	DF_PT( IPPROTO_COMP );      // Compression Header Protocol
+	DF_PT( IPPROTO_COMP );             // 108 Compression Header Protocol.
+#endif
+#ifdef IPPROTO_VRRP
+	DF_PT( IPPROTO_VRRP );             // 112 not everyone's got this
+#endif
+#ifdef IPPROTO_L2TP
+	DF_PT( IPPROTO_L2TP );             // 115 L2TP Layer 2 Tunneling Protocol
 #endif
 #ifdef IPPROTO_SCTP
-	DF_PT( IPPROTO_SCTP );      // Stream Control Transport Protocol
+	DF_PT( IPPROTO_SCTP );             // 132 Stream Control Transmission Protocol.
+#endif
+#ifdef IPPROTO_MH
+	DF_PT( IPPROTO_MH );               // 135 IPv6 mobility header.
 #endif
 #ifdef IPPROTO_UDPLITE
-	DF_PT( IPPROTO_UDPLITE );   //  UDP-Lite (RFC 3828)
+	DF_PT( IPPROTO_UDPLITE );          // 136 UDP-Lite protocol.
 #endif
 #ifdef IPPROTO_MPLS
-	DF_PT( IPPROTO_MPLS );      //  MPLS in IP (RFC 4023)
+	DF_PT( IPPROTO_MPLS );             // 137 MPLS in IP.
 #endif
 #ifdef IPPROTO_RAW
-	DF_PT( IPPROTO_RAW );       // Raw IP packets
+	DF_PT( IPPROTO_RAW );              // 255 Raw IP packets.
 #endif
 
 #undef DF_PT

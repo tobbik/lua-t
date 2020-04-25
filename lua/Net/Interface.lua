@@ -23,20 +23,16 @@ debug.getregistry()[ "T.Net.Interface" ] = _mt
 
 Net.ifc.default = function( )
 	local list      = Net.ifc.list( )
-	local candidate = list.lo
+	local candidate = list.lo -- use loopback as default, overwrite if find something better
 	for name,ifc in pairs( list ) do
-		if name:lower():match( 'docker' ) then goto continue end
 		local f = ifc.flags
-		if not f then goto continue end
-		if not f.IFF_RUNNING or not f.IFF_BROADCAST or not f.IFF_UP or not f.IFF_MULTICAST then
-			goto continue
+		if not name:lower():match( 'docker' ) and f and f.IFF_RUNNING and f.IFF_BROADCAST and f.IFF_UP and f.IFF_MULTICAST then
+			if candidate == list.lo or ifc.stats.rx_bytes > candidate.stats.rx_bytes then
+				candidate = ifc
+			end
 		end
-		if not candidate or ifc.stats.rx_bytes > candidate.stats.rx_bytes then
-			candidate = ifc
-		end
-		::continue::
 	end
-	return candidate and candidate or list.lo -- use loopback as fallback
+	return candidate
 end
 
 return Net.ifc

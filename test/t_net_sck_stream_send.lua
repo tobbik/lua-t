@@ -43,7 +43,7 @@ local config    = t_require( "t_cfg" )
 local makeReceiver = function( self, size, payload, done )
 	local inCount, incBuffer, sck, adr = 0, Buffer( size ), nil, nil
 	local rcv = function( )
-		local seg     = incBuffer:Segment( inCount+1 )
+		local seg     = inCount < #incBuffer and incBuffer:Segment( inCount+1 ) or incBuffer:Segment( #incBuffer,0 )
 		local suc,cnt = sck:recv( seg )
 		if suc then
 			assert( incBuffer:read( inCount+1, cnt ) == payload:sub( inCount+1, cnt+inCount ),
@@ -192,26 +192,26 @@ local tests = {
 		local sendCount, outCount, payload = 0, 0,
 			string.rep( 'THis Is a LittLe Test-MEsSage To bE sEnt ACcroSS the WIrE ...!_', 50000 )
 		local buf      = Buffer( payload )
-		local seg      = nil
 		local chunk_sz = 128
+		local seg      = buf:Segment( 1, chunk_sz )
 		local sender   = function( s )
-			seg           = seg and seg:next() or buf:Segment( 1, chunk_sz )
 			local cnt = s.cSck:send( seg )
-			if cnt > 0 then
+			outCount  = outCount + cnt
+			sendCount = sendCount+1
+			if outCount == #buf then
+				assert( sendCount == math.ceil( outCount/chunk_sz ),
+				        fmt( "expected iterations: %d/%d", sendCount, math.ceil( outCount/chunk_sz ) ) )
+				assert( outCount  == #buf, fmt( "send() should accumulate to (%d) but sent(%d)", #buf, outCount ) )
+				s.loop:removeHandle( s.cSck, 'write' )
+				s.cSck:shutdown( 'write' )
+			else
+				seg:next()
 				if cnt < chunk_sz then
 					-- check for proper remainder size
 					assert( cnt == #payload % chunk_sz, fmt('Sent chunk was #%d, expected %d', cnt, #payload % chunk_sz ) )
 				else
 					assert( cnt == chunk_sz, fmt('Sent chunk was #%d, expected %d', cnt, chunk_sz ) )
 				end
-				sendCount = sendCount+1
-				outCount  = cnt + outCount
-			else
-				assert( sendCount == math.ceil( outCount/chunk_sz ),
-				        fmt( "expected iterations: %d/%d", sendCount, math.ceil( outCount/chunk_sz ) ) )
-				assert( outCount  == #buf, fmt( "send() should accumulate to (%d) but sent(%d)", #buf, outCount ) )
-				s.loop:removeHandle( s.cSck, 'write' )
-				s.cSck:shutdown( 'write' )
 			end
 		end
 		makeReceiver( self, #payload, payload, done )
@@ -223,13 +223,19 @@ local tests = {
 		local sendCount, outCount, payload = 0, 0,
 			string.rep( 'THis Is a LittLe Test-MEsSage To bE sEnt ACcroSS the WIrE ...!_', 600000 )
 		local buf    = Buffer( payload )
+		local seg    = buf:Segment( )   -- cover entire Buffer
 		local sender = function( s )
-			local cnt = s.cSck:send( buf:Segment( outCount+1 ) )
+			local cnt = s.cSck:send( seg )
 			if cnt > 0 then
 				sendCount = sendCount+1
 				outCount  = cnt + outCount
+				if outCount < #buf then
+					seg.start = outCount + 1
+				else
+					seg.start = outCount
+					seg.size = 0
+				end
 			else
-				--print("SENT:", outCount, sendCount )
 				assert( sendCount>1, fmt( "Non blocking should have broken up sending: %d ", sendCount) )
 				assert( outCount  == #buf, fmt( "send() should accumulate to (%d) but sent(%d)", #buf, outCount ) )
 				s.loop:removeHandle( s.cSck, 'write' )

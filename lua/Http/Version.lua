@@ -1,4 +1,4 @@
-local Table = require.t.Table
+local Table = require('t.Table')
 
 local versions =  {
 	  [ 0 ]   = "ILLEGAL"

@@ -49,7 +49,8 @@
 
 // global default for T.Pack, can be flipped
 #ifdef IS_LITTLE_ENDIAN
-static int _default_endian = 1;
+//static int _default_endian = 1;
+static int  __attribute__ ((unused)) _default_endian = 1;;
 #else
 static int _default_endian = 0;
 #endif

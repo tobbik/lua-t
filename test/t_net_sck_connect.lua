@@ -45,7 +45,6 @@ local tests = {
 		self.host          = Interface.default( ).AF_INET.address.ip
 		self.port          = config.nonPrivPort
 		self.srv, self.adr = Socket.listen( self.host, self.port )
-		print( self.srv, self.adr )
 		self.loop          = Loop( )
 		self.loop:addHandle( self.srv, 'read', accept, self )
 		done()

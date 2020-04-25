@@ -34,8 +34,8 @@ int
 luaopen_t_net_fml( lua_State *L )
 {
 	luaL_newlib( L, t_net_fml_cf );
-// reverse setting of fml.AF_INET=2 AND fml[2]='AF_INET' allws basic reverse
-// lookup. Needed by t.Net.Interface without running `require't.Net.Family`
+// reverse setting of fml.AF_INET=2 AND fml[2]='AF_INET' allows basic reverse
+// lookup. Needed by t.Net.Interface without running `require't.Net.Family'`
 #define DF_AF( fml )                \
    lua_pushinteger( L, fml );       \
    lua_setfield( L, -2, #fml "" );  \
@@ -181,8 +181,14 @@ luaopen_t_net_fml( lua_State *L )
 #ifdef AF_QIPCRTR
 	DF_AF( AF_QIPCRTR   )  // 42 Qualcomm IPC Router.
 #endif
+#ifdef AF_SMC
+	DF_AF( AF_SMC       )  // 43 SMC Sockets.
+#endif
+#ifdef AF_XDP
+	DF_AF( AF_XDP       )  // 44 XDP Sockets.
+#endif
 #ifdef AF_MAX
-	DF_AF( AF_MAX       )  // 43 For now..
+	DF_AF( AF_MAX       )  // 45 For now..
 #endif
 
 #undef DF_AF

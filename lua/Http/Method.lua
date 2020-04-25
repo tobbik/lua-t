@@ -1,4 +1,4 @@
-local Table = require.t.Table
+local Table = require('t.Table')
 
 local methods = {
 	  [ 0  ]  = "ILLEGAL"

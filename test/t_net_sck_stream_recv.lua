@@ -35,7 +35,7 @@ local config    = t_require( "t_cfg" )
 local makeSender = function( self, msg )
 	self.cSck = Socket.connect( self.sAdr )
 	assert( self.cSck.sendbuffer >= #msg,
-		fmt( "Sendbuffer[%d] is smaller than #msg[%d]. Consider adjusting size.", self.cSck.sendbuffer, #msg ) )
+		fmt( "Sendbuffer[%d] is smaller than #msg[%d]. Consider increasing payload size.", self.cSck.sendbuffer, #msg ) )
 	local f = function( s, m )
 		local snt = s.cSck:send( m )
 		assert( snt == #m, fmt( "Should have sent all(%d bytes) but sent %d bytes", #m, snt ) )
@@ -143,14 +143,18 @@ local tests = {
 	test_cb_recvBuffer = function( self, done )
 		Test.Case.describe( "msg,len = sck.recv( buf_seg )" )
 		local payload  = string.rep( "TestMessage content for recieving bigger buffer -- ", 50000 )
-		local buffer   = Buffer( #payload )
+		local buffer   = Buffer( #payload ) -- empty buffer size of payload
+		local seg      = buffer:Segment()   -- cover entire Buffer
 		local cnt      = 0
 		local receiver = function( s )
-			local msg,len = s.aSck:recv( buffer:Segment( cnt+1 ) )
+			local msg,len = s.aSck:recv( seg )
 			assert( type(len)=='number', fmt( "Expected `%s` but got `%s`", 'number', type(len) ) )
 			if msg then
 				assert( type(msg)=='boolean', fmt( "Expected `%s` but got `%s`", 'boolean', type(msg) ) )
 				cnt = cnt+len
+				if cnt < #buffer then
+					seg.start = cnt+1
+				end
 			else
 				assert( cnt==#payload, fmt( "Expected %d but got %d bytes", #payload, cnt) )
 				assert( buffer:read()==payload, fmt( "Payload should equal received value") )
@@ -173,7 +177,11 @@ local tests = {
 				assert( len <= #seg, fmt( "Expected %d bytes but got %d", #seg, len ) )
 				assert( type(msg)=='boolean', fmt( "Expected `%s` but got `%s`", 'boolean', type(msg) ) )
 				cnt = cnt+len
-				seg:shift( len )
+				if len==#seg then
+					seg:next()
+				else
+					seg:shift( len )
+				end
 			else
 				assert( cnt==#payload, fmt( "Expected %d but got %d bytes", #payload, cnt) )
 				assert( buffer:read()==payload, fmt( "Payload should equal received value") )

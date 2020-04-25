@@ -340,30 +340,30 @@ lt_ael_addhandle( lua_State *L )
 	luaL_checktype( L, 4, LUA_TFUNCTION );
 
 	// get/create dnd userdata
-	lua_rawgeti( L, LUA_REGISTRYINDEX, ael->dR );
-	lua_rawgeti( L, -1, fd );
+	lua_rawgeti( L, LUA_REGISTRYINDEX, ael->dR );//S: ael hnd dir fnc … nds
+	lua_rawgeti( L, -1, fd );                    //S: ael hnd dir fnc … nds ???
 	if (lua_isnil( L, -1 ))
 	{
-		dnd = t_ael_dnd_create_ud( L );          //S: ael hnd dir fnc … nds nil dnd
+		dnd = t_ael_dnd_create_ud( L );           //S: ael hnd dir fnc … nds nil dnd
 		lua_rawseti( L, -3, fd );
 		(ael->fdCount)++;
 	}
 	else
-		dnd = t_ael_dnd_check_ud( L, -1, 1 );    //S: ael hnd dir fnc … nds dnd
-	lua_pop( L, 2 );   // pop nil/dnd and nodes //S: ael hnd dir fnc …
+		dnd = t_ael_dnd_check_ud( L, -1, 1 );     //S: ael hnd dir fnc … nds dnd
+	lua_pop( L, 2 );                             //S: ael hnd dir fnc …
 
 	// implementatuion specific handling
 	p_ael_addhandle_impl( L, ael, dnd, fd, msk );
 
 	// create function reference
-	lua_createtable( L, n-4, 0 );               // create function/parameter table
-	lua_insert( L, 4 );                         //S: ael hdl dir tbl fnc …
+	lua_createtable( L, n-4, 0 );                // create function/parameter table
+	lua_insert( L, 4 );                          //S: ael hdl dir tbl fnc …
 	while (n > 4)
-		lua_rawseti( L, 4, (n--)-4 );            // add arguments and function (pops each item)
+		lua_rawseti( L, 4, (n--)-4 );             // add arguments and function (pops each item)
 
 	t_ael_dnd_setMaskAndFunction( L, dnd, msk, luaL_ref( L, LUA_REGISTRYINDEX ) );
 
-	lua_pop( L, 1 );                            // pop the read/write indicator string/integer
+	lua_pop( L, 1 );                             // pop the read/write indicator string/integer
 	if (LUA_REFNIL == dnd->hR)
 	{
 		dnd->hR = luaL_ref( L, LUA_REGISTRYINDEX );      // keep ref to handle so it doesnt gc
