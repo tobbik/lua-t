@@ -102,6 +102,22 @@ local   tests = {
 		t_assert( t.ms == 739, "Milliseconds should be `%d` but was `%d`", 739, t.ms )
 	end,
 
+	test_Equals = function( self )
+		Test.Case.describe( "__eq metamethod properly compares for equality" )
+		local t1 = Time( 4723 )
+		local t2 = Time( 4723 )
+		assert( t1 == t2, "Identical t.Time values must measure equal" )
+	end,
+
+	test_NotEquals = function( self )
+		Test.Case.describe( "__eq metamethod properly compares for inequality" )
+		local t1 = Time( 4723 )
+		local t2 = Time( 4724 )
+		local t3 = Time( 5723 )
+		assert( t1 ~= t2, "Non Identical microseconds t.Time values must measure inequal" )
+		assert( t1 ~= t3, "Non Identical seconds t.Time values must measure inequal" )
+	end,
+
 }
 
 return Test( tests )

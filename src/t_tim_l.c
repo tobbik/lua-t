@@ -25,7 +25,18 @@
 /////////////////////////////////////////////////////////////////////////////
 
 
-static int lt_tim_get( lua_State *L );  // forward declaration
+/**--------------------------------------------------------------------------
+ * Set milliseconds worth of timeval.
+ * \param  struct timeval *t pointer.
+ * \return void.
+ * --------------------------------------------------------------------------*/
+static void
+t_tim_setms( struct timeval *tv, int ms )
+{
+	tv->tv_sec  = ms/1000;
+	tv->tv_usec = (ms % 1000) * 1000;
+}
+
 
 /**--------------------------------------------------------------------------
  * Construct a timer and return it.
@@ -54,7 +65,7 @@ lt_tim__Call( lua_State *L )
 	else
 	{
 		tv = t_tim_create_ud( L, NULL );
-		t_tim_now( tv, 0 );
+		gettimeofday( tv, 0 );
 	}
 
 	return 1;
@@ -83,7 +94,7 @@ lt_tim_set( lua_State *L )
 	}
 	else
 	{
-		t_tim_now( tv, 0 );
+		gettimeofday( tv, 0 );
 	}
 
 	return 0;
@@ -95,11 +106,11 @@ lt_tim_set( lua_State *L )
  * \param   L        Lua state.
  * \return  int      # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
-int
+static int
 lt_tim_get( lua_State *L )
 {
 	struct timeval *tv = t_tim_check_ud( L, 1, 1 );
-	lua_pushinteger( L, t_tim_getms( tv ) );
+	lua_pushinteger( L, tv->tv_sec*1000 + tv->tv_usec/1000 );
 	return 1;
 }
 
@@ -130,7 +141,7 @@ static int
 lt_tim_now( lua_State *L )
 {
 	struct timeval *tv = t_tim_check_ud( L, 1, 1 );
-	t_tim_now( tv, 0 );
+	gettimeofday( tv, 0 );
 	return 0;
 }
 
@@ -270,7 +281,7 @@ lt_tim__eq( lua_State *L )
 	struct timeval *tA = t_tim_check_ud( L, 1, 1 );
 	struct timeval *tB = t_tim_check_ud( L, 2, 1 );
 
-	lua_pushboolean( L, t_tim_cmp( tA, tB, == ) );
+	lua_pushboolean( L, timercmp( tA, tB, == ) );
 	return 1;
 }
 
@@ -290,7 +301,7 @@ lt_tim__add( lua_State *L )
 	struct timeval *tB = t_tim_check_ud( L, 2, 1 );
 	struct timeval *tC = t_tim_create_ud( L, NULL );
 
-	t_tim_add( tA, tB, tC );
+	timeradd( tA, tB, tC );
 	return 1;
 }
 
@@ -310,7 +321,7 @@ lt_tim__sub( lua_State *L )
 	struct timeval *tB = t_tim_check_ud( L, 2, 1 );
 	struct timeval *tC = t_tim_create_ud( L, NULL );
 
-	t_tim_sub( tA, tB, tC );
+	timersub( tA, tB, tC );
 	return 1;
 }
 

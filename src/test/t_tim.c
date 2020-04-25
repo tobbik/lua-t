@@ -48,7 +48,7 @@ test_t_tim_failure( )
 static int
 test_t_tim_add( )
 {
-	t_tim_add( &tA, &tB, &tC );
+	timeradd( &tA, &tB, &tC );
 	_assert( tC.tv_sec  == secA + secB , "Seconds shall be equal" );
 	_assert( tC.tv_usec == usecA + usecB , "Microseconds shall be equal" );
 	return 0;
@@ -60,7 +60,7 @@ test_t_tim_add_ms_overflow( )
 	tA.tv_usec += tB.tv_usec;
 
 	// test proper microsecond overflow
-	t_tim_add( &tA, &tB, &tC );
+	timeradd( &tA, &tB, &tC );
 	_assert( tC.tv_sec  == secA + secB + 1 , "Seconds shall be equal" );
 	_assert( tC.tv_usec == (usecA + usecB+ usecB) - 1000000  , "Microseconds shall have overflown");
 	return 0;

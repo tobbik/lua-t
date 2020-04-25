@@ -20,6 +20,7 @@
 
 #include <stdlib.h>               // malloc, free
 #include <string.h>               // memset
+#include <sys/time.h>             // timersub
 
 #include "t_tim.h"
 #include "t_net.h"
@@ -28,7 +29,6 @@
 #ifdef DEBUG
 #include "t_dbg.h"
 #endif
-
 
 /**----------------------------------------------------------------------------
  * Get descriptor handle from the stack.
@@ -74,7 +74,7 @@ t_ael_insertTimer( struct t_ael_tnd **tHead, struct t_ael_tnd *tIns )
 {
 	struct t_ael_tnd *tRun;
 
-	if (NULL == *tHead || t_tim_cmp( (*tHead)->tv, tIns->tv, >= ))
+	if (NULL == *tHead || timercmp( (*tHead)->tv, tIns->tv, >= ))
 	{
 #if PRINT_DEBUGS == 2
 		printf( "Make HEAD   {%2ld:%6ld}\t PRE{%2ld:%6ld}\n",
@@ -88,7 +88,7 @@ t_ael_insertTimer( struct t_ael_tnd **tHead, struct t_ael_tnd *tIns )
 	else
 	{
 		tRun = *tHead;
-		while (NULL != tRun->nxt && t_tim_cmp( tRun->nxt->tv, tIns->tv, < ))
+		while (NULL != tRun->nxt && timercmp( tRun->nxt->tv, tIns->tv, < ))
 			tRun = tRun->nxt;
 #if PRINT_DEBUGS == 2
 		printf( "Make NODE   {%2ld:%6ld}\tPAST{%2ld:%6ld}\n",
@@ -121,7 +121,7 @@ t_ael_adjustTimers( struct t_ael_tnd **tHead, struct timeval *tAdj )
 		printf( "  ooooooo ADJUSTING: {%2ld:%6ld}  by  {%2ld:%6ld}  ",
 		       tRun->tv->tv_sec, tRun->tv->tv_usec, tAdj->tv_sec, tAdj->tv_usec );
 #endif
-		t_tim_sub( tRun->tv, tAdj, tRun->tv ); // if tAdj > tRun->tv t_tim_sub( )
+		timersub( tRun->tv, tAdj, tRun->tv ); // if tAdj > tRun->tv timersub( )
 		                                       // adjusts tRun->tv to { 0, 0 }
 
 #if PRINT_DEBUGS == 3
@@ -245,7 +245,8 @@ t_ael_processTimers( lua_State *L, struct t_ael_tnd **tmHead, struct timeval *rt
 
 	// execute every timer that has a value lesser than {0:001000} (1ms)
 	// using 1ms removes jitter
-	while (tmRun && 0==tmRun->tv->tv_sec && tmRun->tv->tv_usec < 1000)
+	//while (tmRun && (tmRun->tv->tv_sec < 1 || tmRun->tv->tv_usec < 1000))
+	while (tmRun && (tmRun->tv->tv_sec*1000 + tmRun->tv->tv_usec/1000 < 1))
 	{
 		*tmHead = (*tmHead)->nxt;           // forward head counter
 		tmExc   = t_ael_executeTimerNode( L, tmHead, tmRun );
@@ -566,7 +567,7 @@ lt_ael_run( lua_State *L )
 	ael->run                = 1;
 	while (ael->run)
 	{
-		t_tim_now( &tv, 0 );
+		gettimeofday( &tv, 0 );
 		if ((n = p_ael_poll_impl( L, ael )) < 0)
 			return t_push_error( L, "Failed to continue the loop" );
 

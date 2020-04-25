@@ -15,6 +15,7 @@
 #ifdef _WIN32
 #include <time.h>
 #else
+#define __USE_MISC
 #include <sys/time.h>    // gettimeofday()
 #endif
 
@@ -27,25 +28,36 @@
 struct timeval *t_tim_create_ud( lua_State *L, struct timeval *tvr );
 struct timeval *t_tim_check_ud ( lua_State *L, int pos, int check );
 
-// helpers
-void t_tim_add  ( struct timeval *tA, struct timeval *tB, struct timeval *tX );
-void t_tim_sub  ( struct timeval *tA, struct timeval *tB, struct timeval *tX );
 void t_tim_since( struct timeval *tA );
-long t_tim_getms( struct timeval *tv );
-void t_tim_setms( struct timeval *tv, int ms );
 
-/**--------------------------------------------------------------------------
- * Compare timeval a to timeval b.
- * reimplements time.h/timercmp to avoid platform incompatibilities.
- * \param  *a  struct timeval pointer
- * \param  *b  struct timeval pointer
- * \param  CMP comparator  (any of ==, <, >)
- * \return 1 if a CMP b is true
- *         0 if a CMP b is false
- * --------------------------------------------------------------------------*/
-#define t_tim_cmp( a, b, CMP )        \
-	(((a)->tv_sec  ==  (b)->tv_sec)   ?   \
-	 ((a)->tv_usec CMP (b)->tv_usec)  :   \
+// these might be needed if there is no reasonable sys/time.h implementation
+#ifndef timercmp
+#define timercmp( a, b, CMP )                      \
+	(((a)->tv_sec  ==  (b)->tv_sec)   ?                  \
+	 ((a)->tv_usec CMP (b)->tv_usec)  :                  \
 	 ((a)->tv_sec  CMP (b)->tv_sec))
+#endif
 
-#define t_tim_now( tv, tz ) gettimeofday( tv, tz )
+#ifndef timeradd
+#define timeradd(a, b, result)                     \
+	do {                                                 \
+	  (result)->tv_sec = (a)->tv_sec + (b)->tv_sec;      \
+	  (result)->tv_usec = (a)->tv_usec + (b)->tv_usec;   \
+	  if ((result)->tv_usec >= 1000000) {                \
+	    ++(result)->tv_sec;                              \
+	    (result)->tv_usec -= 1000000;                    \
+	  }                                                  \
+	} while (0)
+#endif
+
+#ifndef timersub
+#define timersub(a, b, result)                     \
+	do {                                                 \
+	  (result)->tv_sec = (a)->tv_sec - (b)->tv_sec;      \
+	  (result)->tv_usec = (a)->tv_usec - (b)->tv_usec;   \
+	  if ((result)->tv_usec < 0) {                       \
+	    --(result)->tv_sec;                              \
+	    (result)->tv_usec += 1000000;                    \
+	  }                                                  \
+	} while (0)
+#endif

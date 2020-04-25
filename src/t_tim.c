@@ -14,53 +14,8 @@
 #include "t_dbg.h"
 #endif
 
-
 /**--------------------------------------------------------------------------
- * Adds timeval tB to timeval tA and puts value into tX.
- * \param  *tA struct timeval pointer
- * \param  *tB struct timeval pointer
- * \param  *tX struct timeval pointer
- * --------------------------------------------------------------------------*/
-void
-t_tim_add( struct timeval *tA, struct timeval *tB, struct timeval *tX )
-{
-	struct timeval tC;
-
-	tC.tv_sec    = tB->tv_sec  + tA->tv_sec ;  // add seconds
-	tC.tv_usec   = tB->tv_usec + tA->tv_usec ; // add microseconds
-	tC.tv_sec   += tC.tv_usec / 1000000 ;      // add microsecond overflow to seconds
-	tC.tv_usec  %= 1000000 ;                   // subtract overflow from microseconds
-	tX->tv_sec   = tC.tv_sec;
-	tX->tv_usec  = tC.tv_usec;
-}
-
-
-/**--------------------------------------------------------------------------
- * Substract timeval tB from timeval tA and puts value into tX.
- * \param  *tA struct timeval pointer
- * \param  *tB struct timeval pointer
- * \param  *tX struct timeval pointer
- * --------------------------------------------------------------------------*/
-void
-t_tim_sub( struct timeval *tA, struct timeval *tB, struct timeval *tX )
-{
-	struct timeval tC;
-
-	tC.tv_sec    = (tB->tv_usec > tA->tv_usec)
-		? tA->tv_sec - tB->tv_sec - 1
-		: tA->tv_sec - tB->tv_sec;
-
-	tC.tv_usec   = tA->tv_usec;
-	tC.tv_usec   = (tB->tv_usec > tA->tv_usec)
-		? 1000000 - (tB->tv_usec - tA->tv_usec)
-		: tA->tv_usec - tB->tv_usec;
-	tX->tv_sec   = (tC.tv_sec < 0 || tC.tv_usec < 0) ? 0 : tC.tv_sec;
-	tX->tv_usec  = (tC.tv_sec < 0 || tC.tv_usec < 0) ? 0 : tC.tv_usec;
-}
-
-
-/**--------------------------------------------------------------------------
- * Sets tA to time different between tA and now
+ * Sets tA to time difference between tA and now
  * \param  *tv struct timeval pointer
  * --------------------------------------------------------------------------*/
 void
@@ -68,33 +23,8 @@ t_tim_since( struct timeval *tA )
 {
 	struct timeval tC;
 
-	t_tim_now( &tC, 0 );
-	t_tim_sub( &tC, tA, tA );
-}
-
-
-/**--------------------------------------------------------------------------
- * Gets milliseconds worth of timeval.
- * \param  struct timeval *t pointer.
- * \return long            value in milliseconds.
- * --------------------------------------------------------------------------*/
-long
-t_tim_getms( struct timeval *tv )
-{
-	return tv->tv_sec*1000 + tv->tv_usec/1000;
-}
-
-
-/**--------------------------------------------------------------------------
- * Set milliseconds worth of timeval.
- * \param  struct timeval *t pointer.
- * \return void.
- * --------------------------------------------------------------------------*/
-void
-t_tim_setms( struct timeval *tv, int ms )
-{
-	tv->tv_sec  = ms/1000;
-	tv->tv_usec = (ms % 1000) * 1000;
+	gettimeofday( &tC, 0 );
+	timersub( &tC, tA, tA );
 }
 
 
@@ -105,7 +35,6 @@ t_tim_setms( struct timeval *tv, int ms )
 // | |__| |_| | (_| |_____/ ___ \|  __/| |
 // |_____\__,_|\__,_|    /_/   \_\_|  |___|
 /////////////////////////////////////////////////////////////////////////////
-
 
 /**--------------------------------------------------------------------------
  * Create an timer userdata and push to LuaStack.
