@@ -134,7 +134,7 @@ dev-rinse:
 dev-renew:
 	$(MAKE) dev-clean
 	-$(RM) -r $(PREFIX)/*
-	$(MAKE) dev-54
+	$(MAKE) -j4 dev-54
 
 dev-pristine:
 	$(MAKE) dev-rinse
@@ -148,7 +148,7 @@ dev-run: $(TINSTALL)
 dev-test: $(TINSTALL)
 	LUA_PATH="$(CURDIR)/out/share/lua/5.4/?.lua;;" \
 	 LUA_CPATH="$(CURDIR)/out/lib/lua/5.4/?.so;;" \
-	 $(CURDIR)/out/bin/lua -i $(CURDIR)/test/runner.lua ael
+	 $(CURDIR)/out/bin/lua -i $(CURDIR)/test/runner.lua ifc
 
 dev-gdb: $(TINSTALL)
 	LUA_PATH="$(CURDIR)/out/share/lua/5.4/?.lua;;" \

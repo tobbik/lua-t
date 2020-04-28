@@ -10,7 +10,7 @@ local T, Test, Time, format = require"t", require"t.Test", require"t.Time", stri
 local m = {
 	"t_ael",
 	"t_buf"                 , "t_buf_seg",
-	"t_net_adr"             ,
+	"t_net_adr"             , "t_net_ifc",
 	"t_net_sck_create"      , "t_net_sck_bind",
 	"t_net_sck_connect"     , "t_net_sck_listen",
 	"t_net_sck_dgram_recv"  , "t_net_sck_dgram_send",

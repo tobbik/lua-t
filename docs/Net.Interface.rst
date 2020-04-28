@@ -27,13 +27,13 @@ Content of the snapshot when getting information
 ------------------------------------------------
 
 Depending on the platform, the following structure can be expected when
-callung ``Net.Interface.get(name)``:
+calling ``Net.Interface.get(<name>)``:
 
 .. code:: lua
 
   {
     name    :  ens33,
-    AF_INET6: {
+    AF_INET6: {                         // this is of type t.Net.Address
       address:        T.Net.Address{[fe80::7142:62e5:9a72:8c91]:0}: 0x24b3fe8,
       netmask:        T.Net.Address{[ffff:ffff:ffff:ffff::]:0}: 0x24b4098,
     },
@@ -59,7 +59,7 @@ callung ``Net.Interface.get(name)``:
       rx_over_errors:         0,
       rx_packets:             8466734,
       collisions:             0,
-    AF_INET:  {
+    AF_INET: {                          // this is of type t.Net.Address
       netmask:        T.Net.Address{255.255.252.0:0}: 0x24a0198,
       address:        T.Net.Address{172.16.0.120:0}: 0x24a04b8,
       broadcast:      T.Net.Address{172.16.3.255:0}: 0x24a6f18,
@@ -104,14 +104,16 @@ Class Members
   the systems default interface.  In order to be considered the default the
   following must be true: Flags IFF_UP, IFF_BROADCAST, IFF_MULTICAST and
   IFF_RUNNING must be true.  If no external interface suffices the
-  requirement, ``lo(looopback)`` will be returned *IF* it suffices above
-  flags.  In case there are more then one qualifying interface the one with
-  the most transmitted bytes will be returned.
+  requirement, ``lo(loopback)`` will be attempted to be returned *IF* it
+  suffices above flags.  In case there are more then one qualifying
+  interface the one with the most transmitted bytes will be returned.
 
 Class Metamembers
 -----------------
 
-``Net.Interface`` has no class members
+``Net.Interface`` has no class members.  There is noticably no constructor,
+since it shouldn't be bossible to 'construct' an existing system resource
+that already exists.
 
 Instance Members
 ----------------
@@ -143,5 +145,4 @@ Instance Metamembers
   like *`T.Net.Interface{br-963e6d75be2a(172.19.0.1)}: 0x5577dfa00f50`*,
   meaning the systems name is *br-963e6d75be2a* and in it's network it's
   currently connected as IP4 address `172.19.0.1`
-
 
