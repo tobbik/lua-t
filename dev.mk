@@ -3,6 +3,22 @@ CURL=$(shell which curl)
 TAR=$(shell which tar)
 UNZIP=$(shell which unzip)
 
+MYCFLAGS=-g -O2
+UNAME_M := $(shell uname -m)
+ifeq ($(UNAME_M),x86_64)
+   MYCFLAGS += -D AMD64 -march=native
+endif
+ifneq ($(filter %86,$(UNAME_M)),)
+   MYCFLAGS += -D IA32 -march=native
+endif
+ifneq ($(filter arm%,$(UNAME_M)),)
+   MYCFLAGS += -D ARM -fbuiltin -march=native -pipe -fstack-protector-strong -fno-plt
+endif
+ifneq ($(filter aarch%,$(UNAME_M)),)
+   MYCFLAGS += -D ARM -fbuiltin -march=armv8-a -pipe -fstack-protector-strong -fno-plt
+endif
+
+
 LVER=5.4
 LREL=0
 LUASRC=lua-$(LVER).$(LREL)-rc1.tar.gz
@@ -20,11 +36,7 @@ PLZIP=$(DLDIR)/$(PLNAME).tar.gz
 PLINSTALL=$(PREFIX)/share/lua/$(LVER)/pl
 TINSTALL=$(PREFIX)/lib/lua/$(LVER)/t
 
-MYCFLAGS=" -O0 -g"
-
 all: $(PREFIX)/bin/lua
-
-MYCFLAGS=-g -O2 -fbuiltin -march=armv8-a -pipe -fstack-protector-strong -fno-plt
 
 CC=clang
 LD=clang
@@ -119,6 +131,11 @@ dev-rinse:
 	-$(RM) -r $(COMPDIR)/*
 	-$(RM) -r $(PREFIX)/*
 
+dev-renew:
+	$(MAKE) dev-clean
+	-$(RM) -r $(PREFIX)/*
+	$(MAKE) dev-54
+
 dev-pristine:
 	$(MAKE) dev-rinse
 	-$(RM) -r $(DLDIR)
@@ -131,4 +148,9 @@ dev-run: $(TINSTALL)
 dev-test: $(TINSTALL)
 	LUA_PATH="$(CURDIR)/out/share/lua/5.4/?.lua;;" \
 	 LUA_CPATH="$(CURDIR)/out/lib/lua/5.4/?.so;;" \
-	 $(CURDIR)/out/bin/lua -i $(CURDIR)/test/runner.lua tim
+	 $(CURDIR)/out/bin/lua -i $(CURDIR)/test/runner.lua ael
+
+dev-gdb: $(TINSTALL)
+	LUA_PATH="$(CURDIR)/out/share/lua/5.4/?.lua;;" \
+	 LUA_CPATH="$(CURDIR)/out/lib/lua/5.4/?.so;;" \
+	 gdb --args $(CURDIR)/out/bin/lua -i scratchpad.lua

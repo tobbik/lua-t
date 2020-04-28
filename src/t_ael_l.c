@@ -177,6 +177,7 @@ struct t_ael_tnd
 	tv = t_tim_check_ud( L, -1, 0 );
 	if (NULL == tv)                    // remove from list
 	{
+		lua_pop( L, 1 );   // pop the nil
 		luaL_unref( L, LUA_REGISTRYINDEX, tnd->fR );
 		luaL_unref( L, LUA_REGISTRYINDEX, tnd->tR );
 		free( tnd );
@@ -192,9 +193,10 @@ struct t_ael_tnd
 			tnd->tR = luaL_ref( L, LUA_REGISTRYINDEX );
 			tnd->tv = tv;
 		}
+		else
+			lua_pop( L, 1 );   // pop t_tim value to clear the stack
 		t_ael_insertTimer( tmHead, tnd );
 	}
-	lua_pop( L, 1 );   // pop the one value that lua_call allows for being returned
 	return tnd;
 }
 

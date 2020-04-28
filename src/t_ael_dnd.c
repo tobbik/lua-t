@@ -66,7 +66,7 @@ struct t_ael_dnd
  * Set mask and function reference.
  * \param   L      Lua state.
  * \param   msk    t_ael_msk; execution mask.
- * \param   int    reference for function.
+ * \param   fR     int; reference for function.
  * \return  void
  * --------------------------------------------------------------------------*/
 void

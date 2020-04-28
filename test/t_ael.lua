@@ -40,8 +40,8 @@ local   tests = {
 			local ms_passed = tmx:get()
 			assert( a == arg1, "First argument should be " .. arg1 )
 			assert( b == arg2, "Second argument should be " .. arg2 )
-			assert( ms_passed > 150 and ms_passed < 250,
-				"Time passed should be between 4500 and 5500 milliseconds" )
+			assert( ms_passed > 190 and ms_passed < 210,
+				"Time passed should be between 190 and 210 milliseconds" )
 			done( )
 		end
 		self.loop:addTimer( tm, success, arg1, arg2 )
