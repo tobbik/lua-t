@@ -148,7 +148,7 @@ dev-run: $(TINSTALL)
 dev-test: $(TINSTALL)
 	LUA_PATH="$(CURDIR)/out/share/lua/5.4/?.lua;;" \
 	 LUA_CPATH="$(CURDIR)/out/lib/lua/5.4/?.so;;" \
-	 $(CURDIR)/out/bin/lua -i $(CURDIR)/test/runner.lua ifc
+	 $(CURDIR)/out/bin/lua -i $(CURDIR)/test/runner.lua seg
 
 dev-gdb: $(TINSTALL)
 	LUA_PATH="$(CURDIR)/out/share/lua/5.4/?.lua;;" \

@@ -266,6 +266,16 @@ tests = {
 		assert( #seg == oLen, "nxt should have same length" )
 	end,
 
+	test_NextLastSegmentShorter = function( self )
+		local seg  = self.b:Segment( 1, math.floor( #self.b/2 ) - 20 )
+		Test.Case.describe( format( "Next Segment %s last seg:next() should be shorther", seg ) )
+		local len,nxtLen = #seg,#seg
+		while seg:next() do
+			nxtLen = #seg
+		end
+		assert( nxtLen < len, "Last seg:next() segment should be shorter than original" )
+	end,
+
 	test_ReadPartialSegment = function( self )
 		Test.Case.describe( "Reading partial Buffer.Segment content matches string" )
 		local buf,ofs,len = self.seg.buffer, self.seg.start, self.seg.size

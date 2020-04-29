@@ -86,7 +86,7 @@ struct t_buf_seg
 
 	seg = (struct t_buf_seg *) lua_newuserdata( L, sizeof( struct t_buf_seg ) );
 	lua_insert( L, -2 );       // move Segment infront of Buffer
-	seg->bR  =  luaL_ref( L, LUA_REGISTRYINDEX );
+	seg->bR = luaL_ref( L, LUA_REGISTRYINDEX );
 	t_buf_seg_set( L, seg, buf, idx, len );
 
 	luaL_getmetatable( L, T_BUF_SEG_TYPE );
@@ -166,13 +166,18 @@ lt_buf_seg_next( lua_State *L )
 	lua_rawgeti( L, LUA_REGISTRYINDEX, seg->bR );
 	buf = t_buf_check_ud( L, -1, 1 );
 	lua_pop( L, 1 );
-
-	t_buf_seg_set( L, seg, buf,
-		seg->idx + seg->len,
-		(seg->idx + 2*seg->len > buf->len)
-			? buf->len - seg->idx - seg->len + 1
-			: seg->len );
-	lua_pushboolean( L, seg->len == 0? 0 : 1 );
+	if (seg->idx + seg->len > buf->len)
+		lua_pushboolean( L, 0 );
+	else
+	{
+		t_buf_seg_set( L, seg, buf,
+			seg->idx + seg->len,
+			(seg->idx + 2*seg->len > buf->len)
+				? buf->len - seg->idx - seg->len + 1
+				: seg->len
+		);
+		lua_pushboolean( L, 1 );
+	}
 	return 1;
 }
 
