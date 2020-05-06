@@ -31,7 +31,6 @@ local getRequest = function( self )
 	return id, request
 end
 
-
 local destroy = function( self )
 	local dur = o_time() - self.created
 	if dur > 2 then

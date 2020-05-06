@@ -32,7 +32,7 @@ local State = {
 local receive = function( self, data )
 	-- parse( ) calls C code that fills up self.* properties such as
 	-- query, url, headers etc.
-	local tail = self:parse( self.tail and (self.tail..data) or data, self.state )
+	local tail = self:parse( self.tail and (self.tail .. data) or data, self.state )
 	if State.Done == self.state then
 		self.tail = nil
 		return true

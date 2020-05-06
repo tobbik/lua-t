@@ -12,10 +12,10 @@ ifneq ($(filter %86,$(UNAME_M)),)
    MYCFLAGS += -D IA32 -march=native
 endif
 ifneq ($(filter arm%,$(UNAME_M)),)
-   MYCFLAGS += -D ARM -fbuiltin -march=native -pipe -fstack-protector-strong -fno-plt
+   MYCFLAGS += -D ARM -fbuiltin -march=native -pipe -fstack-protector-strong -fno-plt -O0
 endif
 ifneq ($(filter aarch%,$(UNAME_M)),)
-   MYCFLAGS += -D ARM -fbuiltin -march=armv8-a -pipe -fstack-protector-strong -fno-plt
+   MYCFLAGS += -D ARM -fbuiltin -march=armv8-a -pipe -fstack-protector-strong -fno-plt -O0
 endif
 
 

@@ -188,60 +188,7 @@ local tests = {
 		local s = "GET /go/index.html HTTP/1.1\r\n" .. h .. '\r\n'
 		r:receive( s )
 		for k,v in pairs( t ) do
-			assert( v == r.headers[k], format( "req.headers[ %s ] must be `%s` but was `%s`", k, v, r.headers[k] ) )
-		end
-		assert( r.state == Request.State.Body, format( "State must be %d but was %d", Request.State.Body, r.state ) )
-	end,
-
-	test_ReceiveHeadersCorrectCasing = function( self )
-		Test.Case.describe( "request:recv() correct Headers Key Casing" )
-		local r = makeRequest( )
-		-- taken from Wikipedia examples
-		local t = {
-			  [ 'Accept' ]                         = "text/plain"
-			, [ 'Accept-Charset' ]                 = "utf-8"
-			, [ 'Accept-Encoding' ]                = "gzip, deflate"
-			, [ 'Accept-Language' ]                = "en-US"
-			, [ 'Accept-Datetime' ]                = "Thu, 31 May 2007 20:35:00 GMT"
-			, [ 'Access-Control-Request-Method' ]  = "GET"
-			, [ 'Access-Control-Request-Headers' ] = "X-PINGOTHER, Content-Type"
-			, [ 'Authorization' ]                  = "Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ=="
-			, [ 'Cache-Control' ]                  = "no-cache"
-			, [ 'Connection' ]                     = "keep-alive"
-			, [ 'Cookie' ]                         = "$Version=1; Skin=new;"
-			, [ 'Content-Length' ]                 = "348"
-			, [ 'Content-MD5' ]                    = "Q2hlY2sgSW50ZWdyaXR5IQ=="
-			, [ 'Content-Type' ]                   = "application/x-www-form-urlencoded"
-			, [ 'Date' ]                           = "Tue, 15 Nov 1994 08:12:31 GMT"
-			, [ 'Expect' ]                         = "100-continue"
-			, [ 'Forwarded' ]                      = "for=192.0.2.60;proto=http;\r\n" ..
-			                                         " by=203.0.113.43"
-			, [ 'From' ]                           = "user@example.com"
-			, [ 'Host' ]                           = "en.wikipedia.org:8080"
-			, [ 'If-Match' ]                       = '"737060cd8c284d8af7ad3082f209582d"'
-			, [ 'If-Modified-Since' ]              = "Sat, 29 Oct 1994 19:43:31 GMT"
-			, [ 'If-None-Match' ]                  = '"737060cd8c284d8af7ad3082f209582d"'
-			, [ 'If-Range' ]                       = '"737060cd8c284d8af7ad3082f209582d"'
-			, [ 'If-Unmodified-Since' ]            = "Sat, 29 Oct 1994 19:43:31 GMT"
-			, [ 'Max-Forwards' ]                   = "10"
-			, [ 'Origin' ]                         = "http://www.example-social-network.com"
-			, [ 'Pragma' ]                         = "no-cache"
-			, [ 'Proxy-Authorization' ]            = "Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ=="
-			, [ 'Range' ]                          = "bytes=500-999"
-			, [ 'Referer' ]                        = "http://en.wikipedia.org/wiki/Main_Page"
-			, [ 'TE' ]                             = "trailers, deflate"
-			, [ 'User-Agent' ]                     = "Mozilla/5.0 (X11; Linux x86_64; rv:12.0)\r\n" ..
-			                                         "  Gecko/20100101 Firefox/12.0"
-			, [ 'Upgrade' ]                        = "HTTPS/1.3, IRC/6.9, RTA/x11, websocket"
-			, [ 'Via' ]                            = "1.0 fred, 1.1 example.com (Apache/1.1)"
-			, [ 'Warning' ]                        = "199 Miscellaneous warning"
-		}
-		local h = ''
-		for k,v in pairs(t) do h = h ..string.lower( k )..': '..v.. '\r\n' end -- string.lower() for bad casing
-		local s = "GET /go/index.html HTTP/1.1\r\n" .. h .. '\r\n'
-		r:receive( s )
-		for k,v in pairs( t ) do
-			 assert( v == r.headers[k], format( "req.headers[ %s ] must be `%s` but was `%s`", k, v, r.headers[k] ) )
+			assert( v == r.headers[k:lower()], format( "req.headers[ %s ] must be `%s` but was `%s`", k:lower(), v, r.headers[k:lower()] ) )
 		end
 		assert( r.state == Request.State.Body, format( "State must be %d but was %d", Request.State.Body, r.state ) )
 	end,
@@ -262,11 +209,11 @@ local tests = {
 		local s = "GET /go/index.html HTTP/1.1\r\n" .. h .. '\r\n'
 		r:receive( s )
 		local t1 = {
-			  [ 'Content-Length' ] = "12345"
-			, [ 'TE' ]             = "trailers, deflate"
-			, [ 'User-Agent' ]     = "Mozilla/5.0 (X11; Linux x86_64; rv:12.0)"
+			  [ 'content-length' ] = "12345"
+			, [ 'te' ]             = "trailers, deflate"
+			, [ 'user-agent' ]     = "Mozilla/5.0 (X11; Linux x86_64; rv:12.0)"
 			, [ 0 ]                = "Gecko/20100101 Firefox/12.0" -- unparsable headers will be enumerated
-			, [ 'Upgrade' ]        = "HTTPS/1.3, IRC/6.9, RTA/x11, websocket"
+			, [ 'upgrade' ]        = "HTTPS/1.3, IRC/6.9, RTA/x11, websocket"
 		}
 		for k,v in pairs( t1 ) do
 			assert( v == r.headers[ k ], format( "req.headers[ %s ] must be `%s` but was `%s`", k, v, r.headers[k] ) )

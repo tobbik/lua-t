@@ -54,7 +54,7 @@ local run = function( do_pat, no_pat )
 			local metrics = ctx:getMetrics( c_test )
 			total.count = total.count + metrics.count
 			total.pass  = total.pass  + metrics.pass
-			total.skip  = total.skip  + metrics.skip 
+			total.skip  = total.skip  + metrics.skip
 			total.todo  = total.todo  + metrics.todo
 			total.time  = total.time  + metrics.time
 			print( format( "--------- Done in : %.3f s" , ctx:getMetrics( c_test ).time:get()/1000 ) )
