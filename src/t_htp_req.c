@@ -45,13 +45,16 @@ t_htp_req_handleHeader( lua_State *L,       char *k, const char *c,
 	size_t   lk = c-k,
 	         lv = ('\r' == *e) ? e-v-2 : e-v-1;
 	size_t   i, cl;   // Content-Length parsing
+	luaL_Buffer b;
+	char     *p = luaL_buffinitsize( L, &b, lk );
 
+	//printf("\nHeader:\t %.*s(%lu): %.*s(%lu)\n", (int)lk,k,lk,(int)lv,v,lv);
 	// lowercase the key; push header-key for header table
 	for (i=0; i < lk; ++i)
-		k[i] = tolower( k[i] );
-	lua_pushlstring( L, k, lk );
+		p[i] = tolower( k[i] );
+	luaL_pushresultsize( &b, lk );
 
-	switch (*k)
+	switch (tolower(*k))
 	{
 		case 'e':
 			lua_pushstring( L, "expect" );

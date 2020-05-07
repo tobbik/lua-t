@@ -1,0 +1,73 @@
+wrkk lua-t:
+-------------------
+/usr/bin/wrk -t 12 -c 400 -d 15 --latency -H "Connection: keep-alive" "http://127.0.0.1:10000/auth?username=mickey&password=goofey"
+Running 15s test @ http://127.0.0.1:10000/auth?username=mickey&password=goofey
+  12 threads and 400 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    31.55ms  139.72ms   1.99s    97.23%
+    Req/Sec     3.01k   508.61     6.89k    92.03%
+  Latency Distribution
+     50%   10.72ms
+     75%   11.43ms
+     90%   12.88ms
+     99%  849.36ms
+  533866 requests in 15.03s, 66.70MB read
+  Socket errors: connect 0, read 0, write 0, timeout 3
+Requests/sec:  35517.61
+Transfer/sec:      4.44MB
+
+
+wrkk node:
+------------------
+/usr/bin/wrk -t 12 -c 400 -d 15 --latency -H "Connection: keep-alive" "http://127.0.0.1:10000/auth?username=mickey&password=goofey"
+Running 15s test @ http://127.0.0.1:10000/auth?username=mickey&password=goofey
+  12 threads and 400 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    18.06ms    4.55ms 108.72ms   95.73%
+    Req/Sec     1.85k   257.24     2.32k    90.56%
+  Latency Distribution
+     50%   17.23ms
+     75%   18.20ms
+     90%   19.73ms
+     99%   37.67ms
+  332160 requests in 15.04s, 41.39MB read
+Requests/sec:  22083.44
+Transfer/sec:      2.75MB
+
+
+
+wrk lua-t:
+-------------------
+/usr/bin/wrk -t 12 -c 400 -d 15 --latency -H "Connection: close"      "http://127.0.0.1:10000/auth?username=mickey&password=goofey"
+Running 15s test @ http://127.0.0.1:10000/auth?username=mickey&password=goofey
+  12 threads and 400 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    21.15ms    2.08ms  52.91ms   91.26%
+    Req/Sec     1.56k   165.32     5.86k    88.34%
+  Latency Distribution
+     50%   20.99ms
+     75%   21.75ms
+     90%   22.66ms
+     99%   27.66ms
+  279459 requests in 15.08s, 33.58MB read
+Requests/sec:  18537.51
+Transfer/sec:      2.23MB
+
+
+wrkk node:
+------------------
+/usr/bin/wrk -t 12 -c 400 -d 15 --latency -H "Connection: close"      "http://127.0.0.1:10000/auth?username=mickey&password=goofey"
+Running 15s test @ http://127.0.0.1:10000/auth?username=mickey&password=goofey
+  12 threads and 400 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    38.08ms    8.28ms 140.13ms   93.97%
+    Req/Sec     0.87k   164.68     1.49k    81.18%
+  Latency Distribution
+     50%   36.13ms
+     75%   38.15ms
+     90%   43.37ms
+     99%   79.25ms
+  156690 requests in 15.09s, 18.72MB read
+Requests/sec:  10383.74
+Transfer/sec:      1.24MB
+

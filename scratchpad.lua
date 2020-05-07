@@ -35,7 +35,7 @@ t = {
 	, [ 'Accept-Datetime' ]                = "Thu, 31 May 2007 20:35:00 GMT"
 	, [ 'Content-Length' ]                 = #p
 	, [ 'Expect' ]                         = "100-continue"
-	, [ 'Connection' ]                     = "keepAlive"
+	, [ 'Connection' ]                     = "close"
 }
 u = '/go/wherever/it/wil/be/index.html?alpha=1&beta=2&c=gamma&4=delta'
 h = ''
