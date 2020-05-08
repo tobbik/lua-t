@@ -18,13 +18,11 @@ ifneq ($(filter aarch%,$(UNAME_M)),)
    MYCFLAGS += -D ARM -fbuiltin -march=armv8-a -pipe -fstack-protector-strong -fno-plt -O0
 endif
 
-
 LVER=5.4
 LREL=0
-LUASRC=lua-$(LVER).$(LREL)-rc1.tar.gz
+LUASRC=lua-$(LVER).$(LREL)-rc2.tar.gz
 LUAURL=https://www.lua.org/work
 PLURL=https://codeload.github.com/stevedonovan/Penlight/tar.gz/master
-
 
 COMPDIR=$(CURDIR)/compile
 PREFIX=$(CURDIR)/out
@@ -125,6 +123,7 @@ dev-clean:
 		BUILD_EXAMPLE=1 \
 		DEBUG=1 \
 		PREFIX="$(PREFIX)" clean
+	$(MAKE) -C http clean
 
 dev-rinse:
 	$(MAKE) dev-clean

@@ -1,8 +1,9 @@
+S_EXE=s_go
 
 LUA_T=../out/bin/lua
 NODE=$(shell which node)
 
-SCREEN_RC=screen.rc
+GO=$(shell which go)
 SCREEN=$(shell which screen)
 CURL=$(shell which curl)
 WRK=$(shell which wrk)
@@ -12,17 +13,26 @@ USERNAME=mickey
 PASSWORD=goofey
 HOST=127.0.0.1
 PORT=10000
-CONNS=400
-SECONDS=15
+CONNS=1000
+SECONDS=30
 
 
-run: $(SCREEN)
-	$(SCREEN) -S perf2 -c $(CURDIR)/screen.rc
+$(S_EXE): s_go.go $(GO)
+	$(GO) build -o $@ $<
+
+clean:
+	-rm $(S_EXE)
 
 lsrv:
 	LUA_PATH="$(CURDIR)/../out/share/lua/5.4/?.lua;;" \
 	 LUA_CPATH="$(CURDIR)/../out/lib/lua/5.4/?.so;;" \
 	 $(CURDIR)/../out/bin/lua s_t.lua $(PORT)
+
+go: $(S_EXE)
+	$(CURDIR)/${S_EXE} $(PORT) > /dev/null &
+	$(MAKE) USERNAME=$(USERNAME) PORT=$(PORT) user
+	$(MAKE) wrkk
+	killall $<
 
 lua-t: $(LUA_T)
 	LUA_PATH="$(CURDIR)/../out/share/lua/5.4/?.lua;;" \
@@ -30,7 +40,7 @@ lua-t: $(LUA_T)
 	 $(CURDIR)/../out/bin/lua s_t.lua $(PORT) > /dev/null &
 	#$(eval LASTPID := $(shell return $$!))
 	$(MAKE) USERNAME=$(USERNAME) PORT=$(PORT) user
-	$(MAKE) wrkk
+	$(MAKE) wrk
 	#kill $(LASTPID)
 	killall lua
 
