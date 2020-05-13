@@ -107,9 +107,16 @@ lt_tim_set( lua_State *L )
  * \return  int      # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int
-lt_tim_get( lua_State *L )
+lt_tim_Get( lua_State *L )
 {
-	struct timeval *tv = t_tim_check_ud( L, 1, 1 );
+	struct timeval *tv  = t_tim_check_ud( L, 1, 0 );
+	struct timeval  tv1;
+
+	if (! tv)
+	{
+		gettimeofday( &tv1, 0 );
+		tv = &tv1;
+	}
 	lua_pushinteger( L, tv->tv_sec*1000 + tv->tv_usec/1000 );
 	return 1;
 }
@@ -339,6 +346,7 @@ static const struct luaL_Reg t_tim_fm [] = {
  * --------------------------------------------------------------------------*/
 static const luaL_Reg t_tim_cf [] = {
 	  { "sleep"      , lt_tim_Sleep }     // can work on class or instance
+	, { "get"        , lt_tim_Get }       // can work on class or instance
 	, { NULL         , NULL }
 };
 
@@ -355,7 +363,7 @@ static const struct luaL_Reg t_tim_m [] = {
 	, { "__newindex" , lt_tim__newindex }
 	// instance methods
 	, { "set"        , lt_tim_set }
-	, { "get"        , lt_tim_get }
+	, { "get"        , lt_tim_Get }
 	, { "sleep"      , lt_tim_Sleep }
 	, { "now"        , lt_tim_now }
 	, { "since"      , lt_tim_since }

@@ -16,11 +16,13 @@ ifneq ($(filter arm%,$(UNAME_M)),)
 endif
 ifneq ($(filter aarch%,$(UNAME_M)),)
    MYCFLAGS += -D ARM -fbuiltin -march=armv8-a -pipe -fstack-protector-strong -fno-plt -O0
+   # RockChip RK3399 specific flags
+   #MYCFLAGS += -m32 -O2 -mthumb -march=armv8-a -mcpu=cortex-a72 -mtune=cortex-a72.cortex-a53 -mfloat-abi=softfp
 endif
 
 LVER=5.4
 LREL=0
-LUASRC=lua-$(LVER).$(LREL)-rc2.tar.gz
+LUASRC=lua-$(LVER).$(LREL)-rc3.tar.gz
 LUAURL=https://www.lua.org/work
 PLURL=https://codeload.github.com/stevedonovan/Penlight/tar.gz/master
 
@@ -40,20 +42,6 @@ CC=clang
 LD=clang
 
 dev-all: $(TINSTALL)
-
-dev-54:
-	$(MAKE) -j4 \
-		LVER=5.4 LREL=0 LUASRC=lua-5.4.0-rc1.tar.gz LUAURL=http://www.lua.org/work \
-		dev-all
-
-dev-arm:
-	$(MAKE) LVER=5.4 LREL=0 LUASRC=lua-5.4.0-work2.tar.gz LUAURL=http://www.lua.org/work \
-	  MYCFLAGS=" -m32 -O2 -mthumb -march=armv8-a -mcpu=cortex-a72 -mtune=cortex-a72.cortex-a53 -mfloat-abi=softfp" \
-	  CC=clang LD=clang \
-	  LDFLAGS="$(LDFLAGS)" \
-	  INCS="$(LUAINC)" \
-	  PREFIX="$(PREFIX)" \
-	  DEBUG=1 BUILD_EXAMPLE=1 install
 
 # create a local Lua installation
 $(DLDIR):

@@ -8,8 +8,8 @@
 -- \copyright See Copyright notice at the end of src/t.h
 
 local Loop, T, Time = require't.Loop', require't', require't.Time'
-local t_insert    , t_remove    ,  o_time, s_format      =
-      table.insert, table.remove, os.time, string.format
+local t_insert    , t_remove    , s_format      =
+      table.insert, table.remove, string.format
 local getmetatable, setmetatable, assert, type =
       getmetatable, setmetatable, assert, type
 
@@ -32,9 +32,9 @@ local getRequest = function( self )
 end
 
 local destroy = function( self )
-	local dur = o_time() - self.created
-	if dur > 2 then
-		print( s_format( "LONG RUNNING STREAM: `%s`  %d seconds", self.sck, dur ) )
+	local dur = Time.get( ) - self.created
+	if dur > 2000 and not self.keepAlive then
+		print( s_format( "LONG RUNNING STREAM: `%s`  %f seconds", self.sck, dur/1000 ) )
 	end
 	--print( "DESTROY:", self, self.sck )
 	self.requests  = nil
@@ -45,16 +45,19 @@ local destroy = function( self )
 end
 
 local recv = function( self )
-	local data,rcvd = self.sck:recv( )
+	local data, rcvd = self.sck:recv( )
+	local now = Time.get()
 	if not data then
 		-- it means the other side hung up; No more responses
-		print( s_format("----------------REMOVE read handler -> RECEIVE FAILURE on `%s` (%s) Time: %d",
-			self.sck, rcvd, o_time( ) - self.lastAction ) )
+		if 0 ~= rcvd then
+			print( s_format("----------------REMOVE read handler -> RECEIVE FAILURE on `%s` (%s) Time: %d, Dur: %d",
+				self.sck, rcvd, now - self.lastAction, self.lastOut - self.lastIn ) )
+		end
 		-- dispose of itself ... clear requests, buffer etc...
 		self.srv.ael:removeHandle( self.sck, 'readwrite' )
 		destroy( self )
 	else
-		self.lastAction = o_time( )
+		self.lastAction, self.lastIn = now, now
 		local id, request = getRequest( self )
 		if request:receive( data ) then
 			--print("REQUEST DONE")
@@ -114,6 +117,8 @@ send = function( self, response )
 	local buf            = response:getBuffer( )
 	local snt, eMsg, eNo = self.sck:send( buf )
 	if snt then
+		local now            = Time.get( )
+		self.lastAction, self.lastOut = now, now
 		if #buf == snt then
 			removeSocket = true
 			if Response.State.Done == response.state then
@@ -169,6 +174,8 @@ return setmetatable( {
 		--assert( T.type( sck ) == 'T.Net.Socket',  "`T.Net.Socket` is required" )
 		--assert( T.type( adr ) == 'T.Net.Address', "`T.Net.Address` is required" )
 
+		local now = Time.get();
+
 		local stream  = {
 			  srv         = srv     -- Server instance
 			, sck         = sck     -- client socket
@@ -178,8 +185,10 @@ return setmetatable( {
 			, strategy    = 1  -- 1=HTTP1.1; 2=HTTP2
 			, keepAlive   = true
 			, isOnOutLoop = false   -- we must wait for writing to resume again
-			, lastAction  = o_time( )
-			, created     = o_time( )
+			, lastAction  = now
+			, lastOut     = now
+			, lastIn      = now
+			, created     = now
 		}
 
 		--print( "+++++ADDING read handler", sck)

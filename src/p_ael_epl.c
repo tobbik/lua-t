@@ -67,7 +67,7 @@ p_ael_create_ud_impl( lua_State *L )
 	struct p_ael_ste *state;
 	state = (struct p_ael_ste *) lua_newuserdata( L, sizeof( struct p_ael_ste ) );
 
-	state->epfd = epoll_create( P_AEL_EPL_SLOTSZ );   // number is legacy kernel hint
+	state->epfd = epoll_create1( 0 );
 	if (state->epfd == -1)
 		return luaL_error( L, "couldn't create event socket for epoll loop" );
 	else
@@ -86,7 +86,6 @@ p_ael_free_impl( lua_State *L, int ref )
 	struct p_ael_ste *state = p_ael_getState( L, ref );
 	close( state->epfd );
 }
-
 
 /**--------------------------------------------------------------------------
  * Add a File/Socket event handler to the T.Loop.
@@ -187,7 +186,7 @@ p_ael_poll_impl( lua_State *L, struct t_ael *ael )
 	r = epoll_wait(
 	   state->epfd,
 	   state->events,
-	   (ael->fdCount > P_AEL_EPL_SLOTSZ) ? P_AEL_EPL_SLOTSZ : (ael->fdCount>0) ? ael->fdCount : 1,
+	   P_AEL_EPL_SLOTSZ,
 	   tv ? (tv->tv_sec*1000 + tv->tv_usec/1000) : -1 );
 #if PRINT_DEBUGS == 1
 	printf( "    &&&&&&&&&&&& POLL RETURNED[%d]: %d &&&&&&&&&&&&&&&&&&\n", ael->fdCount, r );

@@ -71,6 +71,10 @@ httpServer = http.createServer( (req, res) => {
 	}
 } );
 
+httpServer.on('connection', (socket) => {
+	//console.log("New connection established:", socket.server._connections);
+} );
+
 var port = (process.argv[ 2 ]) ? parseInt( process.argv[ 2 ], 10 ) : 8000;
 httpServer.listen( port, '0.0.0.0', 5000, function ( ) { } );
 

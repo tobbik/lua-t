@@ -3,7 +3,7 @@
 /**
  * \file      t_ael_sel.c
  * \brief     select() specific implementation for T.Loop.
- * Handles    implmentation specific functions such as registreing events and
+ * Handles    implmentation specific functions such as registering events and
  *            executing the loop
  *            Being based on the select() system call this version shall work
  *            on a wide variety of platforms. It is supposed to be the backup
@@ -89,7 +89,8 @@ p_ael_create_ud_impl( lua_State *L )
 void
 p_ael_free_impl( lua_State *L, int ref )
 {
-	UNUSED( L, ref );
+	UNUSED( L );
+	UNUSED( ref );
 }
 
 

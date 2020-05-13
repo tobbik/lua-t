@@ -8,38 +8,50 @@
 local getmetatable, setmetatable =
       getmetatable, setmetatable
 
-local Stream, Socket, Timer  = require't.Http.Stream', require't.Net.Socket', require't.Time'
+local Stream, Socket, Time  = require't.Http.Stream', require't.Net.Socket', require't.Time'
 local t_type  = require't'.type
-local s_format,o_time,t_insert = string.format,os.time,table.insert
+local s_format,t_insert = string.format,os.time,table.insert
 
 local _mt
 local timeout = 5000
 
 -- ---------------------------- general helpers  --------------------
-local accept = function( self )
-	local cli, adr      = self.sck:accept( )
-	if cli then
-		cli.nonblock        = true
-		self.streams[ cli ] = Stream( self, cli, adr )
-	else
-		print( s_format( "Couldn't accept Client Socket: `%s`", adr ) )
-	end
+local accept_cb = function( self )
+	local ac_count = 0
+	-- greedily accept() as much as we can to favour high concurrency
+	repeat
+		local cli, adr      = self.sck:accept( )
+		if cli then
+			ac_count = ac_count + 1
+			cli.nonblock        = true
+			self.streams[ cli ] = Stream( self, cli, adr )
+			if self._event_handlers.connection then
+				self._event_handlers.connection( cli, adr )
+			end
+		else
+			if 0 == ac_count then -- actual error condition
+				print( s_format( "Couldn't accept Client Socket: `%s`", adr ) )
+			else
+				--print( s_format( "Accepted simultaniously: %d", ac_count ) )
+			end
+		end
+	until not cli
 end
 
 local listen = function( self, host, port, bl )
 	self.sck    = Socket( 'tcp' )
 	local eMsg  = nil
 	self.sck.reuseaddr, self.sck.reuseport = true, true
-	if 'number' == type( host ) then
-		self.adr, eMsg = self.sck:listen( host, port and port or 5 )
+	if 'number' == type( host ) then -- host is port, port is backlog, host defaults to 0.0.0.0 (all interfaces)
+		self.adr, eMsg = self.sck:listen( host, port and port or nil )
 	else
-		self.adr, eMsg = self.sck:listen( host, port, bl and bl or 5 )
+		self.adr, eMsg = self.sck:listen( host, port, bl and bl or nil )
 	end
 	if not self.adr then
 		error( "Could not start HTTP Server because: " .. eMsg )
 	end
 	self.sck.nonblock = true
-	self.ael:addHandle( self.sck, 'read', accept, self )
+	self.ael:addHandle( self.sck, 'read', accept_cb, self )
 	return self.sck, self.adr
 end
 
@@ -47,12 +59,16 @@ local removeStream = function( self, stream )
 	self.streams[ stream.cli ] = nil
 end
 
+local on = function( self, event_name, handler )
+	self._event_handlers[ event_name ] = handler
+end
 
 -- ---------------------------- Instance metatable --------------------
 _mt = {       -- local _mt at top of file
 	-- essentials
 	  __name     = "t.Http.Server"
 	, listen     = listen
+	, on         = on
 }
 
 _mt.__index     = _mt
@@ -76,26 +92,28 @@ return setmetatable( {
 		assert( t_type( ael ) == 'T.Loop',   "`T.Loop` is required" )
 		assert( type( cb )    == 'function', s_format( "Callback function required but got `%s`", cb ) )
 		local srv = {
-			  ael      = ael
-			, callback = cb
-			, streams  = { }
+			  ael              = ael
+			, callback         = cb
+			, streams          = { }
+			, _event_handlers  = { }
 		}
-		-- keepAlive handling
-		local timer   = Timer( timeout )
+		-- crude keepAlive handling, rudely remove staleish sockets
+		--[[
+		local timer   = Time( timeout )
 		local remover = (function( srv, tm )
 			local str = srv.streams
 			return function( )
-				local t          = o_time() - 5
+				local t          = Time.get() - timeout
 				print('rinse', srv.ael)
 				local candidates = { }
 				for k,v in pairs( str ) do
-					print(v.lastAction, t, v.lastAction < t)
 					if v.lastAction < t then
+						print(" Overdue:",v.lastAction, t,  t - v.lastAction)
 						t_insert( candidates, v.sck )
 					end
 				end
 				for k,v in pairs( candidates ) do
-					print("Timeout CLOSE Socket:", v, str[ v ] )
+					print("############# Timeout CLOSE Socket:", v, str[ v ] )
 					ael:removeHandle( v, 'readwrite' )
 					v:close( )
 					str[ v ] = nil
@@ -107,7 +125,7 @@ return setmetatable( {
 			end
 		end)( srv, timer )
 		ael:addTimer( timer, remover )
-		print( srv, srv.ael)
+		--]]
 
 		return setmetatable( srv, _mt )
 	end
