@@ -26,9 +26,11 @@ Showing the layout of a Segment created from a buffer with the following
 values: ``seg = buffer:Segment( 6, 7 )``. It results in a Segment that looks
 like this: ``seg.start == 6``, ``seg.size == 7`` and the ``seg.last == 12``
 
-idxBuf:  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23
-values:  A  B  C  D  E  F  G  H  I  J  K  L  M  N  O  P  Q  R  S  T  U  V  W
-idxSeg:                 1  2  3  4  5  6  7
+.. code::
+
+  idxBuf:  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22
+  values:  A  B  C  D  E  F  G  H  I  J  K  L  M  N  O  P  Q  R  S  T  U  V
+  idxSeg:                 1  2  3  4  5  6  7
 
 
 API
@@ -58,38 +60,31 @@ Instance Members
 
 ``int start = seg.start``
   Starting index of ``Buffer.Segment seg`` relative to ``Buffer
-  seg.buffer``.  This value can be changed.
+  seg.buffer``.  It is mutable and changes ``seg.size`` accordingly.
 
 ``int start = seg.size``
-  Number of bytes in ``Buffer.Segment seg``.  This value can be changed.  It
-  has the same value as ``#seg``, but accessed as ``seg.size`` it is mutable.
+  Number of bytes in ``Buffer.Segment seg``.  It has the same value as
+  ``#seg``, but accessed as ``seg.size``. It is mutable.
 
 ``int lastIndex = seg.last``
   Ending index of ``Buffer.Segment seg`` relative to ``Buffer seg.buffer``.
-  It is defined by ``seg.start + seg.size - 1``.  This value can be changed.
+  It is defined by ``seg.start + seg.size - 1``.  It is mutable and changes
+  ``seg.size`` accordingly.
 
 ``string s = seg:toHex( )``
-  Returns a hexadecimal representation of the bytes in the segment as
-  string.
+  Same behaviour as `buffer.toHex() <Buffer.rst#Buffer-toHex>`__.
 
 ``string s = seg:toBin( )``
-  Returns a binary representation of the bytes in the segment as string.
+  Same behaviour as `buffer.toBin() <Buffer.rst#Buffer-toBin>`__.
 
 ``string s = seg:read( [int offset, int len] )``
-  Returns a string from ``Buffer.Segment seg``.  If ``int offset`` is given
-  it will read starting from the ``Buffer.Segment seg`` index ``int offset``
-  otherwise starting at index 1.  If ``int len`` is given it will read for
-  ``int len`` bytes from ``Buffer.Segment seg``, otherwise until the end of
-  ``Buffer.Segment seg``.
+  Same behaviour as `buffer.read() <Buffer.rst#Buffer-read>`__.
 
 ``void = seg:write( string content[, int offset, int len] )``
-  Write a string to ``Buffer.Segment seg``.  If ``int offset`` is given
-  writing within ``Buffer.Segment seg`` starts at that value, otherwise it
-  starts at index 1.  If `int len` parameter is given it will write
-  ``int len`` bytes of ``string content``, otherwise the entire content.
+  Same behaviour as `buffer.write() <Buffer.rst#Buffer-write>`__.
 
 ``void = seg:clear( )``
-  Overwrites entire ``Buffer.Segment seg`` content with 0 bytes.
+  Same behaviour as `buffer.clear() <Buffer.rst#Buffer-clear>`__.
 
 ``boolean success = seg:shift( int )``
   Shifts the segment within the Buffer. Error if ``seg.start < 1`` or if
@@ -106,7 +101,8 @@ Instance Metamembers
 --------------------
 
 ``int x = #seg  [__len]``
-  Returns the length of the T.Buffer.Segment instance in bytes.
+  Returns the length of the T.Buffer.Segment instance in bytes.  Same value
+  as ``seg.size``.
 
 ``string s = tostring( seg )  [__toString]``
   Returns a string representing ``Buffer.Segment seg`` instance.  The string

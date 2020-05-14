@@ -38,7 +38,7 @@ dev:
 	$(MAKE) MYCFLAGS="-g -O0" \
 	 INCDIR="$(LUAINC)" \
 	 CC=clang LD=clang \
-	 DEBUG=1 BUILD_EXAMPLE=1 install
+	 DEBUG=1 BUILD_EXAMPLE=1 dev-all
 
 all: $(SRCDIR)/*.so
 

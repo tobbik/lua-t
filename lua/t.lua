@@ -24,9 +24,11 @@ debug.getregistry( )[ 'T.ProxyTableIndex' ] = proxyTableIndex
 return {
 	require  = function( name )
 		local dir                                           , path        , cpath =
-		      d_getinfo( 2, "S" ).short_src:match( "^(.*)/" ), package.path, package.cpath
-		package.path  = s_format( "%s;%s/?.lua;%s/?/init.lua", path, dir, dir )
-		package.cpath = s_format( "%s;%s/?.so", cpath, dir )
+		      d_getinfo( 2, "S" ).source:match( "^@(.*)/" ), package.path, package.cpath
+		if dir then  -- matched means started with @, means it's a path
+			package.path  = s_format( "%s;%s/?.lua;%s/?/init.lua", path, dir, dir )
+			package.cpath = s_format( "%s;%s/?.so", cpath, dir )
+		end
 		local loaded  = require( name )
 		package.path, package.cpath = path, cpath     --  restore original
 		return loaded

@@ -34,7 +34,7 @@ Class Members
 ``table t = Set.values( Set s )``
   Returns an array table with all elements of ``Set s`` as values.  The
   returned table could be used to create a cloned Set. ``Set(
-  Set.table( set ) )``
+  Set.table( s ) )``, but the clone constructor is preferred.
 
 
 Class Metamembers
@@ -44,11 +44,10 @@ Class Metamembers
   Instantiate new ``Set s`` object.  The constructor will iterate ( like
   pairs( ), including hash and numeric indexes) over all elements in
   ``Table t`` and create ``Set s`` from it's values.  If values exist more
-  than
-  once only one is added to ``Set s``. If ``boolean useKeys`` is ``true``
-  the set will be composed of the keys rather than the values.  Otherwise
-  keys in ``table t`` have no effect on ``Set s``.  An empty table or no
-  argument will result in an empty set ``Set s``.
+  than once only one is added to ``Set s``. If ``boolean useKeys`` is
+  ``true`` the set will be composed of the keys rather than the values.
+  Otherwise keys in ``table t`` have no effect on ``Set s``.  An empty table
+  or no argument will result in an empty set ``Set s``.
 
 ``Set s1 = Set( [Set s] )   [__call]``
   Instantiate a ``Set s1`` object.  The constructor will create a copy of

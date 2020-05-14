@@ -12,12 +12,15 @@ ifneq ($(filter %86,$(UNAME_M)),)
    MYCFLAGS += -D IA32 -march=native
 endif
 ifneq ($(filter arm%,$(UNAME_M)),)
+ifneq ($(filter armv8l%,$(UNAME_M)),)
+   # RockChip RK3399 specific flags
+   MYCFLAGS += -m32 -O2 -mthumb -march=armv8-a -mcpu=cortex-a72 -mtune=cortex-a72.cortex-a53 -mfloat-abi=softfp
+else
    MYCFLAGS += -D ARM -fbuiltin -march=native -pipe -fstack-protector-strong -fno-plt -O0
+endif
 endif
 ifneq ($(filter aarch%,$(UNAME_M)),)
    MYCFLAGS += -D ARM -fbuiltin -march=armv8-a -pipe -fstack-protector-strong -fno-plt -O0
-   # RockChip RK3399 specific flags
-   #MYCFLAGS += -m32 -O2 -mthumb -march=armv8-a -mcpu=cortex-a72 -mtune=cortex-a72.cortex-a53 -mfloat-abi=softfp
 endif
 
 LVER=5.4
@@ -95,7 +98,7 @@ dev-build:
 		PREFIX="$(PREFIX)" all
 
 $(TINSTALL): $(PLINSTALL)
-	$(MAKE)  CC=$(CC) LD=$(LD) \
+	$(MAKE)  -j4 CC=$(CC) LD=$(LD) \
 		LVER=$(LVER) \
 		MYCFLAGS="$(MYCFLAGS)" \
 		INCDIR="$(LUAINC)" \

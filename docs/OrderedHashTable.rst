@@ -24,6 +24,22 @@ instead of returning two values will return three:
            i, k, tostring( v ) )
   end
 
+Usage
+=====
+
+The order of values in the table is determined by order of insertion like
+this:
+
+.. code:: lua
+
+  > oht = OrderedHashTable()
+  > oht.foo = "I'm a value"
+  > oht.bar = "I'm another value"
+  > oht[1]
+  I'm a value
+  > oht[2]
+  I'm another value
+
 Common Pitfalls:
 ----------------
 
@@ -38,14 +54,13 @@ Why is there no ``t.add( element )``?
   create an OrderedHashTable where 'add' is a value such as
   ``t.add = 'something'``.  This would lead to conflicting accessors.
 
-Calling ``OrderedHashTable.getIndex( instance, key )`` can be slow for
-bigger tables?
+Calling ``OrderedHashTable.getIndex( instance, key )`` can be slow for bigger tables?
   Above operation is not a hash table lookup but as a consequence of the
   implementation an O(n) scan operation.  Since it is not used all that often
   it seems to be a reasonable tradeoff.
 
 Can I insert values at arbitrary an index of a ``OrderedHashTable`` instance?
-  No, there can be no "holes" in a an OrderedHashTable.  This is caused by
+  No, there cannot be "holes" in a an OrderedHashTable.  This is caused by
   Luas underlying table implementation where tables with missing indexes are
   actually not numerically indexed but implicitely converted to hash tables.
 

@@ -58,11 +58,31 @@ Class Metamembers
 Instance Members
 ----------------
 
+.. _Buffer-toHex:
+
 ``string s = buf:toHex( )``
   Returns a hexadecimal representation of the bytes in the buffer as string.
+  This is mainly usable for debugging purposes.
+
+  .. code:: lua
+
+    > b= Buffer"DEFGHIJ"
+    > b:toHex()
+    44 45 46 47 48 49
+
+.. _Buffer-toBin:
 
 ``string s = buf:toBin( )``
-  Returns a binary representation of the bytes in the buffer as string.
+  Returns a binary representation of the bytes in the buffer as string. This
+  is mainly usable for debugging purposes.
+
+  .. code:: lua
+
+    > b= Buffer"DEFGHIJ"
+    > b:toBin()
+    01000100 01000101 01000110 01000111 01001000 01001001 01001010
+
+.. _Buffer-read:
 
 ``string s = buf:read( [int offset, int len] )``
   Returns a string from `Buffer buf`.  If the `int offset` parameter is
@@ -71,12 +91,16 @@ Instance Members
   read for `int len` bytes from `Buffer buf`, otherwise until the end of
   `Buffer buf`.
 
+.. _Buffer-write:
+
 ``void buf:write( string content[, int offset, int len] )``
   Write a string to the ``Buffer buf`` instance.  If an ``int offset``
   parameter is given writing within ``Buffer buf`` starts at that value,
   otherwise it starts at index 1.  If ``int len`` parameter is given it will
   write starting ``int len`` bytes to ``Buffer buf``, otherwise all of
   ``string content`` will be written to ``Buffer buf``.
+
+.. _Buffer-clear:
 
 ``void = buf:clear( )``
   Overwrites entire ``Buffer buf`` content with *0* bytes.

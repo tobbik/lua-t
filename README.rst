@@ -54,7 +54,7 @@ Contents (High level overview)
 
  - Networking (t.Net.*)   --> TCP,UDP,Sockets,Addresses,Interfaces etc
  - Buffers (t.Buffer)     --> buffers of defined length with mutable values
- - Packers (t.Pack.*)     --> binary Packer/Parser for several types of data
+ - Packers (t.Pack.*)     --> binary Packer/Parser for several data types
  - Encoding (t.Encoding.*)--> En/Decoding, En/Decryption, Hashes etc.
  - Unit Tests (t.Test)    --> comprehensive unit tests
  - HTTP Server (t.Http)   --> An asynchronous HTTP Server implementation
@@ -67,9 +67,10 @@ Contents (High level overview)
 Compatability
 -------------
 
-lua-t was written with Lua-5.3 in mind.  That is what it uses and it likely
-brakes with older versions.  There are no immidiate plans to make it
-compatible with older versions of Lua.
+lua-t was written with Lua-5.3 in mind. And recent development was performed
+on Lua-5.4.0 Release Candidates.  It is known to work on these versions and
+islikely to brakes with older versions.  There are no immidiate plans to
+make it compatible with older versions of Lua.
 
 
 Documentation
