@@ -44,7 +44,7 @@ local formHeader = function( self, msg )
 		for k,v in pairs( self.headers ) do
 			t_insert( self.buf, k .. ": " ..v.. "\r\n" )
 		end
-		t_insert( self.buf, "\r\n" )
+		t_insert( self.buf, msg and "\r\n"..msg or "\r\n" )
 	end
 end
 

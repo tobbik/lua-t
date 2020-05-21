@@ -10,11 +10,11 @@ handled as a char array.  It provides a definition in length and some
 methods to read and write to it.  Buffer can be utilized as mutable strings.
 
 
-USAGE
+Usage
 =====
 
 ``Buffer`` can be natively used by ``Net`` sockets read/write capabilities.
-It can also be used by ``Pack`` instances to ether read from or write to
+It can also be used by ``Pack`` instances to either read from or write to
 them.  This makes it particularity useful because only parts of the buffer
 get manipulated instead of the entire string having to be rewritten.
 

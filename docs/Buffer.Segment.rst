@@ -7,17 +7,17 @@ Overview
 
 ``Buffer.Segment`` is a simple wrapper around an existing ``Buffer`` which
 defines only a part of the ``Buffer`` with a certain start and a certain
-length. The majority of the API is identical to the `Buffer` API, in fact
+length. The majority of the API is identical to the ``Buffer`` API, in fact
 most of the underlying functions are in fact the same.  Most noticeably,
 ``Buffer.Segment`` instances do not have an ``__add()`` metamethod because
 any implementation would leave too much ambiguity.
 
-
-USAGE
+Usage
 =====
 
-A `Buffer.Segment` instance can be used exactly like an actual `Buffer` with
-regards to interoperability with the `Net.Socket` and the `Pack` class.
+A ``Buffer.Segment`` instance can be used exactly like an actual ``Buffer``
+with regards to interoperability with any function withing *lua-t* that
+supports ``Buffer`` like the ``Net.Socket`` or the ``Pack`` libraries.
 
 Schema
 ======

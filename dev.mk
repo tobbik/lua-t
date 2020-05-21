@@ -44,7 +44,7 @@ all: $(PREFIX)/bin/lua
 CC=clang
 LD=clang
 
-dev-all: $(TINSTALL)
+dev: $(TINSTALL)
 
 # create a local Lua installation
 $(DLDIR):

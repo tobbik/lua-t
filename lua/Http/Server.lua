@@ -26,7 +26,7 @@ local accept_cb = function( self )
 			cli.nonblock        = true
 			self.streams[ cli ] = Stream( self, cli, adr )
 			if self._event_handlers.connection then
-				self._event_handlers.connection( cli, adr )
+				self._event_handlers.connection( self.streams[ cli ] )
 			end
 		else
 			if 0 == ac_count then -- actual error condition

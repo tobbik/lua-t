@@ -14,10 +14,11 @@ USERNAME=mickey
 PASSWORD=goofey
 HOST=127.0.0.1
 PORT=10000
-CONNS=400
-SECONDS=30
+CONNS=100
+SECONDS=20
 THREADS=4
 WRK_URL="http://$(HOST):$(PORT)/auth?username=$(USERNAME)&password=$(PASSWORD)"
+WRK_MULTI="http://$(HOST):$(PORT)/multi?multiplier=1200"
 
 $(S_EXE): s_go.go $(GO)
 	$(GO) build -o $@ $<
@@ -25,10 +26,16 @@ $(S_EXE): s_go.go $(GO)
 clean:
 	-rm $(S_EXE)
 
+gsrv: $(S_EXE)
+	$(CURDIR)/${S_EXE} $(PORT)
+
 lsrv:
 	LUA_PATH="$(CURDIR)/../out/share/lua/5.4/?.lua;;" \
 	  LUA_CPATH="$(CURDIR)/../out/lib/lua/5.4/?.so;;" \
 	  $(CURDIR)/../out/bin/lua s_t.lua $(PORT)
+
+nsrv: $(node)
+	node s_node.js $(PORT)
 
 go: $(S_EXE)
 	$(CURDIR)/${S_EXE} $(PORT) > /dev/null &
@@ -52,7 +59,7 @@ node: $(node)
 	$(MAKE) USERNAME=$(USERNAME) PORT=$(PORT) user
 	$(MAKE) wrkr
 	#kill $(LASTPID)
-	killall node
+	#killall node
 
 user: $(CURL)
 	$(CURL) -i "http://$(HOST):$(PORT)/newUser?username=$(USERNAME)&password=$(PASSWORD)"
@@ -62,3 +69,27 @@ wrk: $(WRK)
 
 wrkr: $(WRK)
 	$(WRK) -t $(THREADS) -c $(CONNS) -s $(CURDIR)/setup.lua -d $(SECONDS) --latency $(WRK_URL)
+
+wrkm: $(WRK)
+	$(WRK) -t $(THREADS) -c $(CONNS) -s $(CURDIR)/setup.lua -d $(SECONDS) --latency $(WRK_MULTI)
+
+lm: $(LUA_T)
+	LUA_PATH="$(CURDIR)/../out/share/lua/5.4/?.lua;;" \
+	  LUA_CPATH="$(CURDIR)/../out/lib/lua/5.4/?.so;;" \
+	  $(CURDIR)/../out/bin/lua s_t.lua $(PORT)  &
+	sleep 1
+	$(MAKE) wrkm
+	killall lua
+
+nm: $(NODE)
+	node s_node.js $(PORT)  &
+	sleep 1
+	$(MAKE) wrkm
+	killall node
+
+gm: $(S_EXE)
+	$(CURDIR)/${S_EXE} $(PORT) > /dev/null &
+	sleep 1
+	$(MAKE) wrkm
+	killall $<
+

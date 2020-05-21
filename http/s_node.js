@@ -2,7 +2,10 @@
 const http    = require( 'http' )
 const url     = require( 'url' )
 const process = require( 'process' )
+const util    = require( 'util' )
 
+const p       = "This is a simple dummy load that is meant to generate some load";
+const payload = p.repeat( 10 )
 //curl -i -X GET "http://localhost:8001/newUser?username=matt&password=password"
 //curl -i "http://localhost:8001/auth?username=matt&password=password"
 //ab -k -c 20 -n 250 "http://localhost:8001/auth?username=matt&password=password"
@@ -16,7 +19,7 @@ var rot47 = function( pw )
 	for( var i=0; i<pw.length; i++)
 	{
 		var k = pw.charCodeAt( i );
-		//ret.push( String.fromCharCode( '!' + (k + '!' - 47) % 94 ) )
+		// ret.push( String.fromCharCode( '!' + (k + '!' - 47) % 94 ) )
 		ret.push( String.fromCharCode( 33 + (k + 14)%94 ) )
 	}
 	return ret.join( '' );
@@ -34,11 +37,14 @@ httpServer = http.createServer( (req, res) => {
 		if (!username || !password || !users[username])
 		{
 			res.statusCode = 400;
-			res.end( )
+			return res.end();
+			return res.end( "Server error bad arguments or empty result" );
 		}
 
-		if (users[ username ] === rot47( password ))
-			res.end( (r_cnt++) + " This user was authorized" );
+		if (users[ username ] === rot47( password )) {
+			res.setHeader( "Content-Type", "text/plain" )
+			res.end( util.format( " %d This user was authorizedn\n", ++r_cnt ) );
+		}
 		else {
 			res.statusCode = 401;
 			res.end( "Authorization failead\n" );
@@ -55,13 +61,28 @@ httpServer = http.createServer( (req, res) => {
 		if (!username || !password || users[ username ])
 		{
 			res.statusCode = 400;
-			res.end("Creating a new user failed\n")
+			res.end( util.format( "Creating a new user failed -> %s\n", users[ username ] ? "User already exists" : "Insufficient arguments" ) )
 		}
 		else
 		{
 			users[ username ] = rot47( password ) ;
 			console.log( "Created User -> %s:%s", username, users[ username ] );
-			res.end( "Created new user `" +username+ "`\n" );
+			res.end( util.format( "Created new user `%s`\n", username ) );
+		}
+	}
+	else if( uri.pathname == "/multi" )
+	{
+		const multiplier = uri.query.multiplier ? parseInt(uri.query.multiplier, 10) : undefined
+
+		if (! multiplier)
+		{
+			res.statusCode = 400;
+			return res.end( "Server error bad arguments" );
+		}
+		else
+		{
+			res.statusCode = 200;
+			return res.end( payload.repeat(multiplier) );
 		}
 	}
 	else
@@ -71,8 +92,12 @@ httpServer = http.createServer( (req, res) => {
 	}
 } );
 
-httpServer.on('connection', (socket) => {
-	//console.log("New connection established:", socket.server._connections);
+httpServer.on('connection', ( socket ) => {
+	// display Socket connection errors. Not that specific. If the client hangs up, it's an error
+	// but the server shouldn't care and keep trucking..
+	//socket.removeAllListeners('error');
+	// socket.addListener('error', (err) => { console.log("Socket Error:", err) });
+	// console.log("New connection established:", socket.server._connections);
 } );
 
 var port = (process.argv[ 2 ]) ? parseInt( process.argv[ 2 ], 10 ) : 8000;

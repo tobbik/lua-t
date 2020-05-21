@@ -34,12 +34,6 @@ VERSION=5.3
 IMAGE=lua$(shell echo $(VERSION) | sed "s/\.//")
 TZDATAPATH=build/tz
 
-dev:
-	$(MAKE) MYCFLAGS="-g -O0" \
-	 INCDIR="$(LUAINC)" \
-	 CC=clang LD=clang \
-	 DEBUG=1 BUILD_EXAMPLE=1 dev-all
-
 all: $(SRCDIR)/*.so
 
 $(SRCDIR)/*.so:

@@ -9,6 +9,9 @@ local s_byte,s_char         = string.byte, string.char
 -- curl -i -X GET "http://localhost:8002/newUser?username=username&password=password"
 -- curl -i "http://localhost:8002/auth?username=username&password=password"
 -- ab -k -c 20 -n 250 "http://localhost:8002/auth?username=username&password=password"
+--
+--
+local payload = string.rep("This is a simple dummy load that is meant to generate some load", 10)
 
 local users = { }  -- Users lookup  table
 local r_cnt = 0    -- Counts all auth operations
@@ -31,12 +34,13 @@ local callback = function( req, res )
 		username = username:gsub( '[!@#$%%^&*]', '' )
 
 		if not username or not password or not users[ username ] then
-			res:finish( 400 )
+			return res:finish( 400, "Server error bad arguments or empty result" )
 		end
 
 		if users[ username ] == rot47( password ) then
 			r_cnt = r_cnt + 1
-			res:finish( fmt( "%6d This user was authorized", r_cnt ) )
+			res.headers = { [ "Content-Type" ] = "text/plain" }
+			res:finish( fmt( "%7d This user was authorized", r_cnt ) )
 		else
 			res:finish( 401, "Authorization failed" )
 		end
@@ -47,14 +51,21 @@ local callback = function( req, res )
 		username = username:gsub( '[!@#$%%^&*]', '' )
 
 		if not username or not password or users[ username ] then
-			res:finish( 400, "Creating new user failed\n" )
+			return res:finish( 400, fmt( "Creating a new user failed -> %s\n", users[ username ] and "User already exists" or "Insufficient arguments" ) )
+		end
+		users[ username ] = rot47( password ) ;
+		print( fmt( "Created User -> %s:%s", username, users[ username ] ) );
+		return res:finish( "Created new user `" .. username .."`\n" );
+	elseif req.path == "/multi" then
+		local multiplier = req.query.multiplier and tonumber(req.query.multiplier) or nil
+
+		if not multiplier then
+			return res:finish( 400, "Server error bad arguments" )
 		else
-			users[ username ] = rot47( password ) ;
-			print( fmt( "Created User -> %s:%s", username, users[ username ] ) );
-			res:finish( "Created new user `" .. username .."`\n" );
+			return res:finish( 200, payload:rep(multiplier) )
 		end
 	else
-		res:finish( 404, "There is nothing to do here\n");
+		return res:finish( 404, "There is nothing to do here\n");
 	end
 end
 
@@ -68,8 +79,8 @@ if arg[ 2 ] then
 	host = arg[ 2 ]
 end
 
---httpServer:on( 'connection', function( client )
---	print("Connected new connection:", client.descriptor)
+--httpServer:on( 'connection', function( stream )
+--	print("Connected new connection:", stream.socket.descriptor)
 --end )
 
 local srv, adr   = httpServer:listen( host, port )

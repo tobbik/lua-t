@@ -34,27 +34,29 @@ end
 local destroy = function( self )
 	local dur = Time.get( ) - self.created
 	if dur > 2000 and not self.keepAlive then
-		print( s_format( "LONG RUNNING STREAM: `%s`  %f seconds", self.sck, dur/1000 ) )
+		print( s_format( "LONG RUNNING STREAM: `%s`  %f seconds", self.socket, dur/1000 ) )
 	end
-	--print( "DESTROY:", self, self.sck )
+	--print( "DESTROY:", self, self.socket )
 	self.requests  = nil
 	self.responses = nil
-	self.srv.streams[ self.sck ] = nil
-	self.sck:close( )
-	self.sck = nil
+	self.srv.streams[ self.socket ] = nil
+	self.socket:close( )
+	self.socket    = nil
 end
 
 local recv = function( self )
-	local data, rcvd = self.sck:recv( )
+	local data, rcvd = self.socket:recv( )
 	local now = Time.get()
 	if not data then
 		-- it means the other side hung up; No more responses
-		if 0 ~= rcvd then
-			print( s_format("----------------REMOVE read handler -> RECEIVE FAILURE on `%s` (%s) Time: %d, Dur: %d",
-				self.sck, rcvd, now - self.lastAction, self.lastOut - self.lastIn ) )
+		if 0 ~= rcvd and self._event_handlers.error then
+			self._event_handlers.error(
+			   s_format("Socket(%s) receive error -> remove client Socket. Reason: (%s)",
+			   self.socket, rcvd )
+			)
 		end
 		-- dispose of itself ... clear requests, buffer etc...
-		self.srv.ael:removeHandle( self.sck, 'readwrite' )
+		self.srv.ael:removeHandle( self.socket, 'readwrite' )
 		destroy( self )
 	else
 		self.lastAction, self.lastIn = now, now
@@ -64,8 +66,8 @@ local recv = function( self )
 			t_remove( self.requests, request.id )
 			self.keepAlive = request.keepAlive
 			if 0 == #self.requests and not self.keepAlive then
-				--print( "-----REMOVE read handler", self.sck)
-				self.srv.ael:removeHandle( self.sck, 'read' )
+				--print( "-----REMOVE read handler", self.socket)
+				self.srv.ael:removeHandle( self.socket, 'read' )
 			end
 		end
 		if request.state > Request.State.Headers then
@@ -83,7 +85,7 @@ local respond = function( self )
 	local destroyStream, removeFromLoop, stopSending = true, true, false
 	for k,v in pairs( self.responses ) do
 		local rspDone, sckRemove, stopSend = send( self, v )
-		if     stopSend   then stopSending    = true; break end -- sck is on the loop; wait for readyness
+		if     stopSend   then stopSending    = true; break end -- socket is on the loop; wait for readyness
 		if not rspDone    then destroyStream  = false end -- when any not done, don't destroy
 		if not sckRemove  then removeFromLoop = false end -- when any not done, don't destroy
 	end
@@ -99,7 +101,7 @@ local respond = function( self )
 			destroy( self )
 		end
 		if self.isOnOutLoop and removeFromLoop then
-			self.srv.ael:removeHandle( self.sck, "write" )
+			self.srv.ael:removeHandle( self.socket, "write" )
 			self.isOnOutLoop = true
 		end
 	end
@@ -115,7 +117,7 @@ end
 send = function( self, response )
 	local responseDone, removeSocket, stopSending   = false, false, false
 	local buf            = response:getBuffer( )
-	local snt, eMsg, eNo = self.sck:send( buf )
+	local snt, eMsg, eNo = self.socket:send( buf )
 	if snt then
 		local now            = Time.get( )
 		self.lastAction, self.lastOut = now, now
@@ -134,12 +136,12 @@ send = function( self, response )
 		stopSending = true
 		if (11 == eNo) then --EAGAIN/EWOULDBLOCK -> put on loop
 			if not self.isOnOutLoop then
-				self.srv.ael:addHandle( self.sck, 'write', respond, self )
+				self.srv.ael:addHandle( self.socket, 'write', respond, self )
 				self.isOnOutLoop = true
 			end
 		else
 			print( "Failed to send:", eMsg, eNo )
-			self.srv.ael:removeHandle( self.sck, 'readwrite' )
+			self.srv.ael:removeHandle( self.socket, 'readwrite' )
 			destroy( self )
 		end
 	end
@@ -156,6 +158,9 @@ local addResponse = function( self, response )
 	end
 end
 
+local on = function( self, event_name, handler )
+	self._event_handlers[ event_name ] = handler
+end
 
 -- ---------------------------- Instance metatable --------------------
 _mt = {       -- local _mt at top of file
@@ -177,18 +182,19 @@ return setmetatable( {
 		local now = Time.get();
 
 		local stream  = {
-			  srv         = srv     -- Server instance
-			, sck         = sck     -- client socket
-			, adr         = adr     -- client Net.Address
-			, requests    = { }
-			, responses   = { }
-			, strategy    = 1  -- 1=HTTP1.1; 2=HTTP2
-			, keepAlive   = true
-			, isOnOutLoop = false   -- we must wait for writing to resume again
-			, lastAction  = now
-			, lastOut     = now
-			, lastIn      = now
-			, created     = now
+			  srv              = srv     -- Server instance
+			, socket           = sck     -- client Net.Socket
+			, address          = adr     -- client Net.Address
+			, requests         = { }
+			, responses        = { }
+			, strategy         = 1       -- 1=HTTP1.1; 2=HTTP2
+			, keepAlive        = true
+			, isOnOutLoop      = false   -- we must wait for writing to resume again
+			, lastAction       = now
+			, lastOut          = now
+			, lastIn           = now
+			, created          = now
+			, _event_handlers  = { }
 		}
 
 		--print( "+++++ADDING read handler", sck)
