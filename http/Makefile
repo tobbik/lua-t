@@ -12,7 +12,7 @@ NODE=$(shell which node)
 
 USERNAME=mickey
 PASSWORD=goofey
-HOST=127.0.0.1
+HOST=pihole
 PORT=10000
 CONNS=100
 SECONDS=20
@@ -68,10 +68,10 @@ wrk: $(WRK)
 	$(WRK) -t $(THREADS) -c $(CONNS) -d $(SECONDS) --latency  $(WRK_URL)
 
 wrkr: $(WRK)
-	$(WRK) -t $(THREADS) -c $(CONNS) -s $(CURDIR)/setup.lua -d $(SECONDS) --latency $(WRK_URL)
+	$(WRK) -t $(THREADS) -c $(CONNS) -s $(CURDIR)/report.lua -d $(SECONDS) --latency $(WRK_URL)
 
 wrkm: $(WRK)
-	$(WRK) -t $(THREADS) -c $(CONNS) -s $(CURDIR)/setup.lua -d $(SECONDS) --latency $(WRK_MULTI)
+	$(WRK) -t $(THREADS) -c $(CONNS) -s $(CURDIR)/report.lua -d $(SECONDS) --latency $(WRK_MULTI)
 
 lm: $(LUA_T)
 	LUA_PATH="$(CURDIR)/../out/share/lua/5.4/?.lua;;" \

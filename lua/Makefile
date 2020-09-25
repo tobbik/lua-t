@@ -5,7 +5,7 @@
 # \author    tkieslich
 # \copyright See Copyright notice at the end of t.h
 #
-LVER=5.3
+LVER=5.4
 PREFIX=$(shell pkg-config --variable=prefix lua)
 INSTALL_LMOD=$(PREFIX)/share/lua/$(LVER)/t
 
@@ -16,6 +16,7 @@ INSTALL_DATA= $(INSTALL) -Dm0644
 
 T_SRC=\
    Buffer.lua \
+   Csv.lua \
    Encode.lua \
    Encode/Base64.lua \
    Encode/Crc.lua \
@@ -47,11 +48,11 @@ T_SRC=\
    Test/Context.lua \
    Time.lua
 
-T_INSTALL=$(T_SRC:%.lua=$(INSTALL_LMOD)/%.lua)
-
 ifdef BUILD_EXAMPLE
 T_SRC:=$(T_SRC) Numarray.lua
 endif
+
+T_INSTALL=$(T_SRC:%.lua=$(INSTALL_LMOD)/%.lua)
 
 all: $(T_SRC)
 

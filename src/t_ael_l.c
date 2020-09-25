@@ -32,11 +32,12 @@
 
 /**----------------------------------------------------------------------------
  * Get descriptor handle from the stack.
- * Ordered insert; walks down linked list and inserts before the next bigger
- * *timer node.
- * \param   **tHead    t_ael_tnd; pointer to Head of timer linked list pointer.
- * \param    *tIns     t_ael_tnd; Timer Node to be inserted in linked list.
- * \return    void.
+ * Discriminate if Socket or file handle
+ * \param   L     Lua state.
+ * \param   pos   int; Reference positon on the stack.
+ * \param   exc   int; check for type safety
+ * \return  check Number of arguments to be called by function.
+ * \return  int   Descriptor number.
  * --------------------------------------------------------------------------*/
 static inline int
 t_ael_getHandle( lua_State *L, int pos, int check )

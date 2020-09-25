@@ -25,8 +25,8 @@ endif
 
 LVER=5.4
 LREL=0
-LUASRC=lua-$(LVER).$(LREL)-rc3.tar.gz
-LUAURL=https://www.lua.org/work
+LUASRC=lua-$(LVER).$(LREL).tar.gz
+LUAURL=https://www.lua.org/ftp
 PLURL=https://codeload.github.com/stevedonovan/Penlight/tar.gz/master
 
 COMPDIR=$(CURDIR)/compile
@@ -44,7 +44,7 @@ all: $(PREFIX)/bin/lua
 CC=clang
 LD=clang
 
-dev: $(TINSTALL)
+dev-all: $(TINSTALL)
 
 # create a local Lua installation
 $(DLDIR):
@@ -90,21 +90,27 @@ $(PLINSTALL): $(COMPDIR)/$(PLNAME) $(PREFIX)/bin/lua
 # compile and install lua-t in local Lua
 dev-build:
 	$(MAKE) CC=$(CC) LD=$(LD) \
-		LVER=$(LVER) \
-		MYCFLAGS="$(MYCFLAGS)" \
-		INCDIR="$(LUAINC)" \
-		BUILD_EXAMPLE=1 \
-		DEBUG=1 \
-		PREFIX="$(PREFIX)" all
+	 LVER=$(LVER) \
+	 MYCFLAGS="$(MYCFLAGS)" \
+	 INCDIR="$(LUAINC)" \
+	 BUILD_EXAMPLE=1 \
+	 DEBUG=1 \
+	 PREFIX="$(PREFIX)" all
 
 $(TINSTALL): $(PLINSTALL)
 	$(MAKE)  -j4 CC=$(CC) LD=$(LD) \
-		LVER=$(LVER) \
-		MYCFLAGS="$(MYCFLAGS)" \
-		INCDIR="$(LUAINC)" \
-		BUILD_EXAMPLE=1 \
-		DEBUG=1 \
-		PREFIX="$(PREFIX)" install
+	 LVER=$(LVER) \
+	 MYCFLAGS="$(MYCFLAGS)" \
+	 INCDIR="$(LUAINC)" \
+	 BUILD_EXAMPLE=1 \
+	 DEBUG=1 \
+	 PREFIX="$(PREFIX)" install
+
+dev:
+	$(MAKE) -j4 \
+	 LVER=5.4 LREL=0 LUASRC=lua-5.4.0.tar.gz LUAURL=http://www.lua.org/ftp \
+	 dev-all
+
 
 dev-clean:
 	$(MAKE) CC=$(CC) LD=$(LD) \

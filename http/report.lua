@@ -49,7 +49,7 @@ function done(summary, latency, requests)
    local f = io.open( 'spectrum.txt', "a+" )
    f:seek( "end", -6 )
    l = f:read( )
-   if not l:match( "%d%d   $" ) then
+   if not l or not l:match( "%d%d   $" ) then
       f:write( "===== ======== ========== ========= ========== ====== ======= ======= ======= ====== ====== ======= ======= ======= ======= ====== ===== ====== ====== ====== ====== ====== =====\n")
       f:write( "conns requests kBytes     requests  kBytes     latncy latency latency latency latncy latncy latency latency latency latency kBytes time  error  error  error  error  error  perc \n" )
       f:write( "      total    total      second    second     min    max     average std-dev 30%    50%    75%     90%     99%     99.99%  req    total conns  reads  writes timeou status averg\n" )

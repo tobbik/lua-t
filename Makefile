@@ -24,8 +24,6 @@ LD=gcc
 SCREEN_RC=screen.rc
 SCREEN=$(shell which screen)
 
-include dev.mk
-
 # Docker build specific
 DOCKER=$(shell which docker)
 DOCKERPS=$(DOCKER) ps --format "table {{.Names}}"
@@ -134,3 +132,7 @@ docker-dev-rinse:
 	$(MAKE) docker-dev-clean
 	$(MAKE) docker-dev-pristine
 	-rm $(TZDATAPATH)
+
+include dev.mk
+
+
