@@ -5,7 +5,7 @@
 # \author    tkieslich
 # \copyright See Copyright notice at the end of t.h
 #
-LVER=5.3
+LVER=5.4
 PREFIX=$(shell pkg-config --variable=prefix lua)
 INCDIR=$(shell pkg-config --variable=includedir lua)
 #LDFLAGS=$(shell pkg-config --libs lua) -lcrypt
@@ -21,7 +21,7 @@ INSTALL_CMOD=$(PREFIX)/lib/lua/$(LVER)/t
 # How to install. If your install program does not support "-p", then
 # you may have to run ranlib on the installed t.a
 INSTALL=$(shell which install) -p
-INSTALL_DATA=$(INSTALL) -m 0644
+INSTALL_DATA=$(INSTALL) -Dm 0644
 RM=$(shell which rm) -f
 
 T_DBG_SRC=
@@ -114,10 +114,9 @@ ifdef BUILD_EXAMPLE
    LIBS:=$(LIBS) $(T_NRY_LIB)
 endif
 
-
 T_INSTALL=$(LIBS:%.so=$(INSTALL_CMOD)/%.so)
 
-# ############################################################
+# ##############################################
 # TARGETS
 all: $(OBJS) $(LIBS)
 
@@ -143,8 +142,8 @@ $(T_TIM_LIB): $(T_TIM_OBJ)
 $(T_NRY_LIB): $(T_NRY_OBJ)
 	$(LD) $(MYCFLAGS) -shared $^ -o $@ $(LDFLAGS)
 
-.c.o:
-	$(CC) $(CFLAGS) $< -o $@
+#.c.o:
+#	$(CC) -I$(INCS) $(CFLAGS) $< -o $@
 
 install: $(LIBS) $(T_INSTALL)
 
@@ -162,7 +161,7 @@ test: $(SRCDIR)
 	$(CC) -I$(INCS) $(CFLAGS) -c $< -o $@
 
 $(INSTALL_CMOD)/%.so: %.so
-	$(INSTALL_DATA) -Dm644 $< $@
+	$(INSTALL_DATA) $< $@
 
 echo:
 	@echo "PLAT= $(PLAT)"
@@ -180,6 +179,7 @@ clean:
 	$(MAKE) -C $(CURDIR)/test clean
 	-$(RM) $(LIBS)
 	-$(RM) $(OBJS)
+	-$(RM) -r $(INSTALL_CMOD)
 
 pristine:
 	-$(RM) *.so

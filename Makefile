@@ -5,7 +5,7 @@
 # \author    tkieslich
 # \copyright See Copyright notice at the end of t.h
 
-LVER=5.3
+LVER=5.4
 
 INSTALL_CMOD=$(PREFIX)/lib/lua/$(LVER)/t
 INSTALL_LMOD=$(PREFIX)/share/lua/$(LVER)/t
@@ -13,7 +13,7 @@ INSTALL_LMOD=$(PREFIX)/share/lua/$(LVER)/t
 PREFIX=$(shell pkg-config --variable=prefix lua)
 INCDIR=$(shell pkg-config --variable=includedir lua)
 LDFLAGS=$(shell pkg-config --libs lua) -lcrypt
-PLAT=linux
+PLAT=linux-readline
 MYCFLAGS=" -O2"
 SRCDIR=$(CURDIR)/src
 LUADIR=$(CURDIR)/lua
@@ -42,18 +42,17 @@ $(SRCDIR)/*.so:
 	 INCS="$(INCDIR)" \
 	 PREFIX="$(PREFIX)"
 
-install: $(SRCDIR)/$(LIBS)
-	$(MAKE) -C $(SRCDIR) CC=$(CC) LD=$(LD) \
-	 INSTALL_CMOD=$(INSTALL_CMOD) \
-	 LVER=$(LVER) \
-	 MYCFLAGS="$(MYCFLAGS)" \
-	 LDFLAGS="$(LDFLAGS)" \
-	 INCS=$(INCDIR) \
-	 PREFIX="$(PREFIX)" install
-	$(MAKE) -C $(LUADIR) \
-	 INSTALL_LMOD=$(INSTALL_LMOD) \
-	 LVER=$(LVER) \
-	 PREFIX="$(PREFIX)" install
+install:
+	@cd $(SRCDIR); $(MAKE) CC=$(CC) LD=$(LD) \
+	                 LVER=$(LVER) \
+	                 MYCFLAGS="$(MYCFLAGS)" \
+	                 INCDIR="$(LUAINC)" \
+	                 BUILD_EXAMPLE=1 \
+	                 DEBUG=1 \
+	                 PREFIX="$(PREFIX)" install
+	@cd $(LUADIR); $(MAKE) \
+	                 LVER=$(LVER) \
+	                 PREFIX="$(PREFIX)" install
 
 test: $(SRCDIR)
 	$(MAKE) -C $(SRCDIR) CC=$(CC) LD=$(LD) \

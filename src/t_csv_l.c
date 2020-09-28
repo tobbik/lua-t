@@ -18,28 +18,40 @@
 #include "t_dbg.h"
 #endif
 
-// the handle_field callback has the following arguments
-// handle_field( column number, field value, charlen of field_value, is last in row )
-enum t_csv_ste iter_fields( lua_State *L, char *line )
+/**--------------------------------------------------------------------------
+ * Eat through a CSV line and add fields to a Lua table on the stack
+ * \param   L       Lua state.
+ * \lparam  table   T.Csv table instance.
+ * \lparam  string  Single row of CSV content.
+ * \lparam  string  Delimiter character.
+ * \lparam  string  Quotation character.
+ * \lparam  boolean Is it double quoted?
+ * \lparam  string  Escape character.
+ * \lreturn boolean Was it complete? False mean more lines are needed.
+ * \return  int     # of values pushed onto the stack.
+ * --------------------------------------------------------------------------*/
+
+//
+//enum t_csv_ste iter_fields( lua_State *L, char *lne, size_t len, char dlm, char qot, char esc, int dbl )
+enum t_csv_ste iter_fields( lua_State *L, char *lne, size_t len, char dlm, char qot )
 {
 	enum t_csv_ste ste = T_CSV_FLDSTART;
-	char *s = line, *e = line;           // start, end
-	int	cl = -1;                       // gets instantly set to 0
-	int	qc = 0;                        // count qoutes in a row
+	char *s  = lne, *r = lne;          // start, runner
+	int	cl = lua_rawlen( L, 3 );     // running index result table
+	int	qc = 0;                      // count qoutes in a row
 
 	// CSV/TSV parsing finite state machine
 	while (T_CSV_ROWDONE != ste)
 	{
-		printf( "[%s][%lu]\t__%s\n", states[ste], e-s, e);
+		printf( "[%s][%zu][%lu]\t__%s\n", states[ste], r-lne, r-s, r );
 		switch (ste)
 		{
 			case T_CSV_FLDSTART:
-				e = s;
-				cl++;
+				s = r;
 				qc = 0;
-				while ('"' == *e)
+				while (qot == *r)
 				{
-					e++;
+					r++;
 					qc++;
 				}
 				if ( qc%2 )
@@ -50,49 +62,52 @@ enum t_csv_ste iter_fields( lua_State *L, char *line )
 				else
 				{
 					ste = T_CSV_NOQOUTE;
-					if ('\t' == *e)
+					if (dlm == *r || 0 == *r)
+					{
+						lua_pushlstring( L, s, r-s );
 						ste = T_CSV_FLDEND;
-					if ('\n'==*e)
-						ste = T_CSV_ROWEND;
+					}
 				}
 				break;
 			case T_CSV_NOQOUTE:
-				e = strchr( e, '\t' );
-				if (! e)
-				{
-					e = strchr( s, 0 );
-					ste = T_CSV_ROWEND;
-				}
-				else
-					ste = T_CSV_FLDEND;
+				r = strchr( r, dlm );
+				r = (! r)
+					? lne+len  // no delimiter -> go to end of line
+					: r;
+				lua_pushlstring( L, s, r-s );
+				ste = T_CSV_FLDEND;
 				break;
 			case T_CSV_INQUOTES:
-				e = strchr( e, '"' );
-				//if (! e)
-				//{
-				//	ste = T_CSV_ROWTRUNCED;
-				//	break;
-				//}
-				if ('"' == *(e+1)) // escaped quote
-					e+=2;
+				r = strchr( r, qot );
+				if (! r)
+				{
+					return T_CSV_ROWTRUNCED;
+					break;
+				}
+				// TODO: check for `doublequoted`
+				if (qot == *(r+1)) // escaped quote
+					r+=2;
 				else
 				{
-					e++;
-					ste = ('\n' == *e) ? T_CSV_ROWEND : T_CSV_FLDEND;
-					e--;// skip the last quote
+					// Dirty: very briefly replace the final quote with a \0 to allow
+					// the use luaL_gsub
+					*r = '\0';
+					luaL_gsub( L, s, "\"\"", "\"" ); // pushes rinsed result onto stack
+					*r = qot;
+					//lua_pushlstring( L, s, r-s );
+					r++;
+					ste = T_CSV_FLDEND;
 				}
 				break;
 			case T_CSV_FLDEND:
-				lua_pushlstring( L, s, e-s );
-				lua_rawseti( L, 3, cl+1 );  // adjust cl for Lua 1 based index
-				s = e+1;
-				e = s;
-				ste = T_CSV_FLDSTART;
-				break;
-			case T_CSV_ROWEND:
-				lua_pushlstring( L, s, e-s );
-				lua_rawseti( L, 3, cl+1 );  // adjust cl for Lua 1 based index
-				ste = T_CSV_ROWDONE;
+				lua_rawseti( L, 3, ++cl );  // adjust cl for Lua 1 based index
+				if (r-lne < (long) len)
+				{
+					r++;
+					ste = T_CSV_FLDSTART;
+				}
+				else
+					ste = T_CSV_ROWDONE;
 				break;
 			default:                           // handle as error -> abort
 				ste = T_CSV_ROWDONE;
@@ -104,23 +119,65 @@ enum t_csv_ste iter_fields( lua_State *L, char *line )
 
 
 /**--------------------------------------------------------------------------
- * Gets the content of the buffer as a hexadecimal string.
+ * Attempts to read a single line of CSV content
  * \param   L       Lua state.
- * \lparam  ud      T.Buffer userdata instance.
- * \lreturn string  T.Buffer representation as hexadecimal string.
+ * \lparam  table   T.Csv table instance.
+ * \lparam  string  Single row of CSV content.
+ * \lparam  string  Delimiter character.
+ * \lparam  string  Quotation character.
+ * \lparam  boolean Is it double quoted?
+ * \lparam  string  Escape character.
+ * \lreturn boolean Was it complete? False mean more lines are needed.
  * \return  int     # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 int
 lt_csv_parseLine( lua_State *L )
 {
-	t_stackDump(L);
-	size_t  len;
-	const char   *line = lua_tolstring( L, 2, &len );
-	t_stackDump(L);
-	// printf("LEN: %lu\n", len);
-	lua_createtable( L, 0, 0 );
-	enum t_csv_ste p_state = iter_fields( L, (char *) line );
-	UNUSED( p_state );
+	//S: csv lne tbl dlm qot dbl esc
+	size_t        len;
+	const char   *lne = lua_tolstring( L, 2, &len );
+	const char    dlm = lua_tostring(  L, 4 )[ 0 ];
+	const char    qot = lua_tostring(  L, 5 )[ 0 ];
+	const char    esc = lua_tostring(  L, 6 )[ 0 ];
+	const int     dbl = lua_toboolean( L, 7 );
+	//t_stackDump( L );
+	//enum t_csv_ste p_state = iter_fields( L, (char *) lne, len, dlm, qot, esc, dbl );
+	enum t_csv_ste ste = iter_fields( L, (char *) lne, len, dlm, qot );
+	lua_pushboolean( L, T_CSV_ROWDONE == ste );
+	return 1;
+}
+
+
+/**--------------------------------------------------------------------------
+ * Build a parser/writer state
+ * \param   L       Lua state.
+ * \lparam  table   T.Csv table instance.
+ * \lparam  string  Single row of CSV content.
+ * \lparam  string  Delimiter character.
+ * \lparam  string  Quotation character.
+ * \lparam  boolean Is it double quoted?
+ * \lparam  string  Escape character.
+ * \lreturn boolean Was it complete? False mean more lines are needed.
+ * \return  int     # of values pushed onto the stack.
+ * --------------------------------------------------------------------------*/
+int
+lt_csv_buildState( lua_State *L )
+{
+	//S: csv dlm qot esc dbl
+	size_t        len;
+
+	struct t_csv *csv = (struct t_csv *) lua_newuserdata( L, sizeof( struct t_csv ) );
+	t_stackDump( L );
+	csv->dlm          = lua_tostring(  L, 2 )[ 0 ];
+	csv->qot          = lua_tostring(  L, 3 )[ 0 ];
+	csv->esc          = lua_tostring(  L, 4 )[ 0 ];
+	csv->dbl          = lua_toboolean( L, 5 );
+	csv->dqot[0]      = csv->qot;
+	csv->dqot[1]      = csv->qot;
+	//csv->lne          = lua_tolstring( L, 2, &(csv->len) );
+	//csv->fld          = (char *) csv->lne;
+	//csv->run          = (char *) csv->lne;
+	t_stackDump( L );
 	return 1;
 }
 
@@ -144,6 +201,7 @@ static const struct luaL_Reg t_csv_cf [] = {
 static const luaL_Reg t_csv_m [] = {
 	// metamethods
 	  { "parse"        , lt_csv_parseLine }
+	, { "build"        , lt_csv_buildState }
 	, { NULL           , NULL }
 };
 

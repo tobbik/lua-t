@@ -10,25 +10,31 @@
 #include "t_csv.h"
 #include "t.h"             // UNUSED()
 
-/// The userdata struct for T.Csv
-struct t_csv
-{
-	FILE           fil;     ///< FileHandle
-	char           sep;     ///< Tsv/Csv separator character
-	char           esc;     ///< Tsv/Csv Quote Escape character
-};
-#define ISDIGIT( c ) ((c) - '0' + 0U <= 9U)
 
 enum t_csv_ste {
 	  T_CSV_FLDSTART      ///< 0 start a brand new field
 	, T_CSV_FLDEND        ///< 1 reached end of a field
 	, T_CSV_NOQOUTE       ///< 2 start of a non quoted field
 	, T_CSV_INQUOTES      ///< 3 within a quoted field
-	, T_CSV_ROWEND        ///< 4 reached end of a data row
 	, T_CSV_ROWTRUNCED    ///< 5 must read more data to continue parsing field
 	, T_CSV_ROWDONE       ///< 6 return control
 };
-char* states[ ] = { "READY","NOQTE","INQTE","F_END","R_END","MORED","R_DNE" };
+char* states[ ] = { "F_SRT", "F_END", "NOQTE","INQTE","R_TRC","R_DNE" };
+
+/// The userdata struct for T.Csv
+struct t_csv
+{
+	enum t_csv_ste ste;     ///< Current parse state
+	char           dlm;     ///< Tsv/Csv delimiter character
+	char           qot;     ///< Quotation character
+	char           esc;     ///< Tsv/Csv escape character
+	int            dbl;     ///< Use double quotation
+	char       dqot[2];     ///< quotation string for substitution
+	size_t         len;     ///< Length of current line load
+	const char    *lne;     ///< Current line load
+	char          *fld;     ///< Current start of field
+	char          *run;     ///< Current runner position in lne
+};
 
 
 // Constructors
