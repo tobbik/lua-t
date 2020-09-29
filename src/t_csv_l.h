@@ -29,7 +29,9 @@ struct t_csv
 	char           qot;     ///< Quotation character
 	char           esc;     ///< Tsv/Csv escape character
 	int            dbl;     ///< Use double quotation
-	char       dqot[2];     ///< quotation string for substitution
+	char       dqot[3];     ///< quotation string for substitution
+	char       sqot[2];     ///< quotation string for substitution
+	int            cnt;     ///< running field count of current line
 	size_t         len;     ///< Length of current line load
 	const char    *lne;     ///< Current line load
 	char          *fld;     ///< Current start of field

@@ -51,7 +51,20 @@ csv_mt.rows      = function( self )
 	return function ( )      -- iterator function
 		while line do         -- repeat while there are lines
 			local parsed = { }
-			self:parse( line, parsed, self.delimiter, self.quotchar, self.escapechar, self.doublequoted )
+			self:parse( line, self.state, parsed )
+			line = self.handle:read( )
+			return parsed
+		end
+		return nil            -- no more lines: end of traversal
+	end
+end
+
+csv_mt.lines      = function( self )
+	local line = self.handle:read( )  -- current line
+	return function ( )      -- iterator function
+		while line do         -- repeat while there are lines
+			local parsed = { }
+			self:p( line, self.state, parsed )
 			line = self.handle:read( )
 			return parsed
 		end
@@ -61,7 +74,7 @@ end
 
 csv_mt.__index    = csv_mt
 
-Csv_mt.__call   = function( self, csv, delimter, quotchar, escapechar, doublequoted )
+Csv_mt.__call     = function( self, csv, delimter, quotchar, escapechar, doublequoted )
 	local handle
 	if 'string' == type(csv) then
 		handle = assert( io_open( csv, 'r' ) )
