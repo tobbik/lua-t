@@ -23,21 +23,18 @@ char* states[ ] = { "F_SRT", "F_END", "NOQTE","INQTE","R_TRC","R_DNE" };
 /// The userdata struct for T.Csv
 struct t_csv
 {
-	enum t_csv_ste        ste;  ///< Current parse state
-	char            dlm;  ///< Tsv/Csv delimiter character
-	char        dlms[2];  ///< Tsv/Csv delimiter character string
-	char            qot;  ///< Quotation character
-	char        qotd[3];  ///< quotation string for substitution
-	char        qots[2];  ///< quotation string for substitution
-	char            esc;  ///< Tsv/Csv escape character
-	char        escs[2];  ///< Tsv/Csv escape character string
-	int             dbl;  ///< Use double quotation
-	lua_Integer      hR;  ///< Reference to file handle in LUA_REGISTRYINDEX
-	lua_Integer     cnt;  ///< running field count of current line
-	size_t          len;  ///< Length of current line load
-	const char           *lne;  ///< Current line load
-	char                 *fld;  ///< Current start of field
-	char                 *run;  ///< Current runner position in lne
+	enum t_csv_ste    ste;  ///< Current parse state
+	char           dlm[2];  ///< Tsv/Csv delimiter character string
+	char           qts[2];  ///< quotation string
+	char           qtd[3];  ///< quotation string for substitution (doublequotes)
+	char           esc[2];  ///< Tsv/Csv escape character string
+	int               dbl;  ///< Use double quotation
+	lua_Integer        hR;  ///< Reference to file handle in LUA_REGISTRYINDEX
+	lua_Integer       cnt;  ///< running field count of current line
+	size_t            len;  ///< Length of current line load
+	const char       *lne;  ///< Current line load
+	char             *fld;  ///< Current start of field
+	char             *run;  ///< Current runner position in lne
 };
 
 

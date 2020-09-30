@@ -28,6 +28,8 @@ lua-t makes an effort to be 'just another library' that can be loaded and
 used in conjunction with all the other software that is available either
 via the distribution or lua-rocks.
 
+Only ``epoll()`` and ``select()`` are currently implemented.
+
 
 Implementation
 ==============
@@ -38,11 +40,11 @@ the common code and then implementation/platform specific code which handles
 the abstraction regarding the use of the underlaying technology.  While not
 fully implemented yet the following platforms are planned to be supported:
 
-  - select() (platform independent with known select() limitations)
-  - epoll()  default on Linux systems, and probably best tested
-  - kqueue() default on OS X and all ***Bsd platforms
-  - evport() Solaris
-  - cpio     Windows (inspiration from Microsoft redis port)
+  - ``select()`` platform independent with known select() limitations
+  - ``epoll()``  default on Linux systems, and probably best tested
+  - ``kqueue()`` default on OS X and all \*Bsd platforms
+  - ``evport()`` Solaris
+  - ``cpio``     Windows (inspiration from Microsoft redis port)
 
 Where ``t.Loop`` differs significantly from redis is the handling of slots
 for descriptors to be watched.  In redis the user is responsible to not add
@@ -67,7 +69,7 @@ Major differences from redis design
  - instead of C functions it directly executes Lua functions with Lua based
    parameters when events are fired
  - using a Lua table to hold the descriptors and their associated
-   event-handlers, so it does not have to be manually resized
+   event-handlers, so it does not have to be manually resized.
 
 
 Important File Handle and Platform Caveats

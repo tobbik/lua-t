@@ -46,9 +46,10 @@ csv_mt.rows      = function( self )
 				line = self.handle:read( )
 				return result
 			else
-				-- IF the line breaks are not \n we are already in trouble because io:lines() strips any kind of line break
+				-- IF the line breaks are not \n we are already in trouble because file:read() strips any kind of line break
 				-- this assumes \n, it's the best we can do
 				line = line .."\n".. self.handle:read( )
+				--line = line .. self.handle:read( 'L' )
 			end
 		end
 		return nil            -- no more lines: end of traversal
