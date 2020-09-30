@@ -210,7 +210,7 @@ lt_buf_seg__index( lua_State *L )
 	}
 	else
 	{
-		key = lua_tolstring( L, 2, NULL );
+		key = lua_tostring( L, 2 );
 		if (0 == strncmp( key, "buffer", 6 ))
 			lua_rawgeti( L, LUA_REGISTRYINDEX, seg->bR );
 		else if (0 == strncmp( key, "start", 5 ) )
@@ -259,7 +259,7 @@ lt_buf_seg__newindex( lua_State *L )
 	}
 	else
 	{
-		key = lua_tostring( L, 2 );
+		key = luaL_checkstring( L, 2 );
 
 		if (0 == strncmp( key, "start", 5 ) )
 			t_buf_seg_set( L, seg, NULL, val, seg->len + seg->idx - val );
@@ -290,7 +290,7 @@ static const struct luaL_Reg t_buf_seg_cf [] = {
 };
 
 /**--------------------------------------------------------------------------
- * Objects metamethods library definition
+ * Instance metamethods library definition
  * --------------------------------------------------------------------------*/
 static const luaL_Reg t_buf_seg_m [] = {
 	// metamethods

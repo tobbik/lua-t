@@ -203,7 +203,6 @@ lt_net_adr__index( lua_State *L )
 	struct sockaddr_storage *adr    = t_net_adr_check_ud( L, 1, 1 );
 	char                     ip[ INET6_ADDRSTRLEN ];
 	const char              *key;
-	size_t                   keyLen;
 
 	if (LUA_TSTRING != lua_type( L, 2 ))
 	{
@@ -211,16 +210,16 @@ lt_net_adr__index( lua_State *L )
 		return 1;
 	}
 	else
-		key = luaL_checklstring( L, 2, &keyLen );
+		key = lua_tostring( L, 2 );
 
-	if (0 == strncmp( key, "ip", keyLen ))
+	if (0 == strncmp( key, "ip", 2 ))
 	{
 		SOCK_ADDR_INET_NTOP( adr, ip );
 		lua_pushstring( L, ip );
 	}
-	else if (0 == strncmp( key, "port", keyLen ))
+	else if (0 == strncmp( key, "port", 4 ))
 		lua_pushinteger( L, ntohs( SOCK_ADDR_SS_PORT( adr ) ) );
-	else if (0 == strncmp( key, "family", keyLen ))
+	else if (0 == strncmp( key, "family", 6 ))
 	{
 		lua_pushinteger( L, SOCK_ADDR_SS_FAMILY( adr ) );
 		t_net_getFamilyValue( L, -1 );
@@ -244,18 +243,17 @@ lt_net_adr__newindex( lua_State *L )
 {
 	struct sockaddr_storage *adr    = t_net_adr_check_ud( L, 1, 1 );
 	const char              *key;
-	size_t                   keyLen;
 
 	if (LUA_TSTRING != lua_type( L, 2 ))
 		return 0;
 	else
-		key = luaL_checklstring( L, 2, &keyLen );
+		key = luaL_checkstring( L, 2 );
 
-	if (0 == strncmp( key, "ip", keyLen ))
+	if (0 == strncmp( key, "ip", 2 ))
 		t_net_adr_setAddr( L, adr, 3 );
-	else if (0 == strncmp( key, "port", keyLen ))
+	else if (0 == strncmp( key, "port", 4 ))
 		t_net_adr_setPort( L, adr, 3 );
-	else if (0 == strncmp( key, "family", keyLen ) )
+	else if (0 == strncmp( key, "family", 6 ) )
 	{
 		if (lua_isnumber( L, 3 ) || t_net_getFamilyValue( L, 3 ))
 			adr->ss_family = luaL_checkinteger( L, 3 );
@@ -364,7 +362,7 @@ static const luaL_Reg t_net_adr_cf [] =
 };
 
 /**--------------------------------------------------------------------------
- * Objects metamethods library definition
+ * Instance metamethods library definition
  * --------------------------------------------------------------------------*/
 static const struct luaL_Reg t_net_adr_m [] = {
 	// metamethods

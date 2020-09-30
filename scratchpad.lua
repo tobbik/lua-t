@@ -13,16 +13,23 @@ httpServer.ael:run( )
 --]]
 
 Csv     = require't.Csv'
-csv     = Csv( 'sample.tsv', '\t' )
---csv     = Csv( 'x.tsv', '\t' )
+--csv     = Csv( 'sample.tsv', '\t' )
+csv     = Csv( 'x.tsv', '\t' )
 
---for k,v in pairs(c) do print(k,v) end
---for k,v in pairs(getmetatable(c)) do print(k,v) end\
+print( csv )
+print( csv.delimiter )
+print( csv.quotchar )
+print( csv.escapechar )
+print( csv.doublequoted )
+print( csv.state )
+print( csv.handle )
+
+for k,v in pairs(getmetatable(csv)) do print(k,v) end
 r = 1
---for row in csv:rows() do
-for row in csv:lines() do
-	print("ROW:", row, #row)
-	for i,v in pairs(row) do
+for row in csv:rows( ) do
+--for row in csv:lines( ) do
+	print( "ROW:", row, #row )
+	for i,v in pairs( row ) do
 		print( r, i, v)
 	end
 	r = r + 1

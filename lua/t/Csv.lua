@@ -12,21 +12,8 @@ local io_open = io.open
 local csv_mt  = debug.getregistry( )[ "T.Csv" ]
 local Csv_mt  = getmetatable( Csv )
 
-csv_mt.__len      = function( self )
-	local count = 1
-	while true do
-		if self.handle:read( ) then
-			count = count+1
-		else
-			self.handle:seek( 'set' )
-			return count
-		end
-	end
-end
 
-csv_mt.__gc       = function( self ) self.handle:close( ) end
-
-csv_mt.__pairs    = function( self ) end
+--csv_mt.__pairs    = function( self ) end
 
 csv_mt.words      = function( self )
 	local line = self.handle:read( )  -- current line
@@ -47,50 +34,40 @@ csv_mt.words      = function( self )
 end
 
 csv_mt.rows      = function( self )
-	local line = self.handle:read( )  -- current line
+	local parsed  = { }
+	local rowdone = true
+	local line    = self.handle:read( )  -- current line
 	return function ( )      -- iterator function
 		while line do         -- repeat while there are lines
-			local parsed = { }
-			self:parse( line, self.state, parsed )
-			line = self.handle:read( )
-			return parsed
+			rowdone = self:parseLine( line, parsed )
+			if rowdone then
+				local result = parsed
+				parsed = { }
+				line = self.handle:read( )
+				return result
+			else
+				-- IF the line breaks are not \n we are already in trouble because io:lines() strips any kind of line break
+				-- this assumes \n, it's the best we can do
+				line = line .."\n".. self.handle:read( )
+			end
 		end
 		return nil            -- no more lines: end of traversal
 	end
 end
 
-csv_mt.lines      = function( self )
-	local line = self.handle:read( )  -- current line
-	return function ( )      -- iterator function
-		while line do         -- repeat while there are lines
-			local parsed = { }
-			self:p( line, self.state, parsed )
-			line = self.handle:read( )
-			return parsed
-		end
-		return nil            -- no more lines: end of traversal
-	end
-end
-
-csv_mt.__index    = csv_mt
-
-Csv_mt.__call     = function( self, csv, delimter, quotchar, escapechar, doublequoted )
-	local handle
-	if 'string' == type(csv) then
-		handle = assert( io_open( csv, 'r' ) )
-	elseif 'userdata' == type(csv) and 'function' == type(csv.read) then
-		handle = csv
+Csv_mt.__call     = function( csvClass, file, delimiter, quotchar, escapechar, doublequoted )
+	local instance        = csvClass.new( )
+	instance.delimiter    = delimiter    or ","
+	instance.quotchar     = quotchar     or "\""
+	instance.escapechar   = escapechar   or "\\"
+	instance.doublequoted = nil == doublequoted and false or true
+	if 'string' == type( file ) then
+		instance.handle = assert( io_open( file, 'r' ) )
+	elseif 'userdata' == type( file ) and 'function' == type( file.read ) then
+		instance.handle = csv
 	else
 		error( 'Expected string or file handle' )
 	end
-	local instance = setmetatable( {
-			delimiter    = delimter     or ",",
-			quotchar     = quotchar     or "\"",
-			escapechar   = escapechar   or "\\",
-			doublequoted = nil == doublequoted and false or true,
-			handle       = handle
-		}, csv_mt )
-	instance.state = instance:build( instance.delimiter, instance.quotchar, instance.escapechar, instance.doublequoted )
 	return instance
 end
 

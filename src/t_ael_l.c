@@ -777,7 +777,7 @@ static const luaL_Reg t_ael_cf [] = {
 };
 
 /**--------------------------------------------------------------------------
- * Objects metamethods library definition
+ * Instance metamethods library definition
  * --------------------------------------------------------------------------*/
 static const struct luaL_Reg t_ael_m [] = {
 	// metamethods
