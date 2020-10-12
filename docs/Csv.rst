@@ -41,12 +41,10 @@ Class Metamembers
 ``Csv csv = Csv( string filename|luaFile file[, string delimiter, string quotchar, string esacapechar, boolean doublequote] )   [__call]``
   Instantiate a new ``Csv`` object. ``fileName`` or ``file`` are mandatory.
   The constructor will automatically determine if what has been passed.  If
-  it is a string it will attempt to open the file.  ``delimiter`` is an
-  optional parameter which defaults to ``.``.  ``quotchar`` is an optional
-  parameter which defaults to ``"``. ``escapechar`` is an optional parameter
-  which defaults to ``\\``.  ``doublequote`` is an optional parameter which
-  defaults to ``true``.  For detailed descriptions of the parameters please
-  refer to the Instance members of the same name.
+  it is a string it will attempt to open the file.  ``delimiter``,
+  ``quotchar``, ``escapechar`` and ``doublequote`` are optional parameters. 
+  For detailed descriptions of the parameters and their default values refer
+  to the Instance members of the same name.
 
 
 Instance Members

@@ -1,5 +1,5 @@
-lua-t t.Net.Address - Network interfaces
-++++++++++++++++++++++++++++++++++++++++
+lua-t t.Net.Address - Network/Socket Adresses
++++++++++++++++++++++++++++++++++++++++++++++
 
 
 Overview
@@ -7,8 +7,9 @@ Overview
 
 lua-t provides a special Class that can create object instances which
 represent network addresses.  On the C-side of the library this userdata is
-straight mapped to ``struct sockaddr_storage`` instances.  Each of them have
-essentially three types of information:
+straight mapped to ``struct sockaddr_storage`` instances which are
+reasonably portable.  There are essentially three types of information
+available:
 
  - Family (AF_INET, AF_INET6, AF_UNIX)
  - Ip (127.0.0.1, ::1, /tmp/mySock)
@@ -22,8 +23,8 @@ General API remarks
 -------------------
 
 While it is possible to to change the family of an ``Net.Address`` instance
-it is only necessary in uncommon cases.  When an IPv4/IPv6 gets assigned the
-family is automatically inferred from the IP address' format.
+it is only necessary in uncommon cases.  When an IPv4 or IPv6 gets assigned
+the family is automatically inferred from the IP address' format.
 
 
 Class Members
@@ -58,6 +59,15 @@ As shown above, depending on platform the following *should* be specified:
 
 ``integer port == adr.port``
   If applicable, the port of the ``Net.Address`` as integer.
+
+``integer scope == adr.scope               [readonly]``
+  If applicable, the scope id of the ``Net.Address`` as integer.  This value
+  is only available for IPv6(AF_INET6) family addresses.
+
+``integer flow == adr.flow               [readonly]``
+  If applicable, the flow information of the ``Net.Address`` as integer.
+  This value is only available for IPv6(AF_INET6) family addresses.
+
 
 Instance Metamembers
 --------------------

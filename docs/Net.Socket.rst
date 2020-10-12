@@ -179,11 +179,17 @@ which can't be duplicated.
 ``Net.Socket sck = Net.Socket( [string protocol, string family, string type] )   [__call]``
   Instantiate new ``Net.Socket sck`` object.  If no arguments are passed it
   will assume ``TCP`` and ``Ipv4`` as default values.  If only one argument
-  is passed it will be interpreted as ``string protocol`` and `ip4` is
+  is passed it will be interpreted as ``string protocol`` and ``ip4`` is
   assumed as default family.  Type can be ``stream``, ``datagram`` or
   ``raw`` or any of the ``C`` based identifiers such as ``SOCK_DCCP`` and
   others.  If not passed it will be inferred from the protocol.
 
+  .. code:: lua
+
+    -- Simple socket constructor examples
+
+    sck = Socket( 'tcp' ) -- TCP Stream socket same as Socket('IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM')
+    sck = Socket( 'udp' ) -- UDP datagram socket same as Socket('IPPROTO_UDP', 'AF_INET', 'SOCK_DGRAM')
 
 Instance Members
 ----------------

@@ -56,7 +56,7 @@ local tests = {
 	-- wrappers for tests
 	beforeAll = function( self, done )
 		self.loop  = Loop( )
-		self.host  = Interface.default( ).AF_INET.address.ip
+		self.host  = Interface.default( ).address.ip
 		self.port  = config.nonPrivPort
 		self.sSck  = Socket( "udp" )
 		self.sAdr  = self.sSck:bind( self.host, self.port )

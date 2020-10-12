@@ -5,7 +5,7 @@
 
 fmt    = string.format
 Socket,Address,Interface,Buffer,Loop  = require't.Net.Socket', require't.Net.Address',require't.Net.Interface',require't.Buffer',require't.Loop'
-host   = arg[1] and arg[1] or Interface.default( ).AF_INET.address.ip
+host   = arg[1] and arg[1] or Interface.default( ).address.ip
 port   = arg[2] and arg[2] or 8888
 l      = Loop( 10 )
 pyl    = string.rep( '0123456789', 40 )

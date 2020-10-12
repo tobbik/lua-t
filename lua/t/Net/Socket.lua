@@ -14,6 +14,7 @@ local sck_binder      = sck_mt.binder
 local sck_connecter   = sck_mt.connecter
 local sck_shutdowner  = sck_mt.shutdowner
 
+-- remove helper functions from socket metatable table
 sck_mt.listener       = nil
 sck_mt.binder         = nil
 sck_mt.connecter      = nil

@@ -224,6 +224,14 @@ lt_net_adr__index( lua_State *L )
 		lua_pushinteger( L, SOCK_ADDR_SS_FAMILY( adr ) );
 		t_net_getFamilyValue( L, -1 );
 	}
+	else if (0 == strncmp( key, "scope", 5 ) && AF_INET6 == SOCK_ADDR_SS_FAMILY( adr ))
+	{
+		lua_pushinteger( L, SOCK_ADDR_IN6_SCOPE( adr ) );
+	}
+	else if (0 == strncmp( key, "flow", 5 ) && AF_INET6 == SOCK_ADDR_SS_FAMILY( adr ))
+	{
+		lua_pushinteger( L, SOCK_ADDR_IN6_FLOW( adr ) );
+	}
 	else
 		lua_pushnil( L );
 	return 1;
@@ -258,6 +266,8 @@ lt_net_adr__newindex( lua_State *L )
 		if (lua_isnumber( L, 3 ) || t_net_getFamilyValue( L, 3 ))
 			adr->ss_family = luaL_checkinteger( L, 3 );
 	}
+	else
+		luaL_argerror( L, 2, "Can't set this value in "T_NET_ADR_TYPE );
 	return 0;
 }
 

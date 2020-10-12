@@ -10,10 +10,10 @@ local T,Time,Context = require"t", require"t.Time", require"t.Test.Context"
 
 local _mt
 local T_TST_CSE_SKIPINDICATOR = "<test_case_skip_indicator>:" -- must have trailing ":"
-local STG_BFE = 1
-local STG_EXC = 2
-local STG_AFE = 3
-local STG_DNE = 4
+local STG_BFE = 1  -- before
+local STG_EXC = 2  -- execute
+local STG_AFE = 3  -- after
+local STG_DNE = 4  -- done
 
 -- ---------------------------- general helpers  --------------------
 -- create a Test.Case instance from a table
@@ -65,7 +65,7 @@ local traceback = function( tbk )
 	end
 end
 
-local getCaseFromStack = function( )
+local getCaseFromCallStack = function( )
 	local t, i = debug.getinfo( 0, "fu" ), 0
 	while t do
 		for k=1,t.nups do
@@ -162,8 +162,8 @@ _mt.__index    = _mt
 
 return setmetatable( {
 	skip     = function( why, ... ) return error( T_TST_CSE_SKIPINDICATOR .. format( why, ... ) ) end,
-	todo     = function( why, ... ) getCaseFromStack().todo        = format( why, ... ) end,
-	describe = function( dsc, ... ) getCaseFromStack().description = format( dsc, ... ) end,
+	todo     = function( why, ... ) getCaseFromCallStack().todo        = format( why, ... ) end,
+	describe = function( dsc, ... ) getCaseFromCallStack().description = format( dsc, ... ) end,
 }, {
 	__call   = function( self, nme, typ, fnc )
 		assert( 'string'   == type( nme ), "`Test.Case` name must be a string" )

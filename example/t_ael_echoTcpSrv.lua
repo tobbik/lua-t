@@ -1,5 +1,5 @@
 Socket,Interface,Buffer,Loop  = require't.Net.Socket', require't.Net.Interface',require't.Buffer',require't.Loop'
-host   = Interface.default( ).AF_INET.address.ip
+host   = Interface.default( ).address.ip
 port   = 8888
 l      = Loop( 10 )
 bInc   = Buffer( 1024*20 )

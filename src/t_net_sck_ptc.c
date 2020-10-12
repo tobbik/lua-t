@@ -34,6 +34,8 @@ static const luaL_Reg t_net_sck_ptc_cf [] =
 int
 luaopen_t_net_sck_ptc( lua_State *L )
 {
+	// reverse setting of ptc.IPPROTO_TCP=6 AND ptc[6]='IPPROTO_TCP' allows basic
+	// reverse lookup.  Needed for Lua code like `prt = sck.protocol` 
 	luaL_newlib( L, t_net_sck_ptc_cf );
 #define DF_PT( ptc )                \
    lua_pushinteger( L, ptc );       \

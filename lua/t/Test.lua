@@ -22,6 +22,7 @@ local getPrx = function( self )
 	T.assert( _mt == getmetatable( self ), "Expected `%s`, got %s", _mt.__name, T.type( self ) )
 	return self[ prxTblIdx ]
 end
+
 -- create a Test instance from a table
 local makeTst = function( prx )
 	return setmetatable( { [ prxTblIdx ] = prx }, _mt )

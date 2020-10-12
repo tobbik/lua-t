@@ -189,17 +189,6 @@ Instance Members
 ``boolean b = loop:removeTimer( t.Time t )``
   Remove ``t.Time t`` from the event loop.
 
-``boolean x loop:resize( [int n] )``
-  Resizes slot capacity of the loop.  If the parameter ``int n is given``
-  the loop will allocate the next higher power of 2 number of slots in the
-  loop.  For example calling ``looo:resize( 25 )`` will allocate 32 slots in
-  the loop.  When called without an argument ``loop:resize( )`` will remove
-  as many slots as it can so it can still accommodate the highest descriptor
-  and shrink itself to the next higest power of 2.  Therefore, a call to
-  ``loop:resize( )`` is not guranteed to shrink the number of slots if the
-  currently highest descriptor forbids that if the currently highest
-  descriptor forbids that.
-
 
 Instance Metamembers
 --------------------

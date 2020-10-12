@@ -33,6 +33,7 @@ local tests = {
 		local s = h:read( '*a' )
 		h:close()
 		self.isPriv = not not s:match( 'uid=0' ) -- isPriviledged? root?
+		self.host   = Interface.default( ).address.ip
 		done( )
 	end,
 
@@ -74,18 +75,16 @@ local tests = {
 
 	test_SBindHostPortCreateSockAndAddress = function( self )
 		Test.Case.describe( "Socket.bind(host,port) --> creates TCP IPv4 Socket and address" )
-		local host   = Interface.default( ).AF_INET.address.ip
 		local port   = config.nonPrivPort
-		self.sck, self.address = Socket.bind( host, port )
+		self.sck, self.address = Socket.bind( self.host, port )
 		assert( chkSck(  self.sck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' ) )
-		assert( chkAdr( self.address, "AF_INET", host, config.nonPrivPort ) )
+		assert( chkAdr( self.address, "AF_INET", self.host, config.nonPrivPort ) )
 	end,
 
 	test_SBindAddressCreateSockOnly = function( self )
 		Test.Case.describe( "Socket.bind(address) --> creates TCP IPv4 Socket but no address" )
-		local host   = Interface.default( ).AF_INET.address.ip
 		local port   = config.nonPrivPort
-		local addr   = Address( host, port )
+		local addr   = Address( self.host, port )
 		self.sck, self.adr = Socket.bind( addr )
 		assert( chkSck(  self.sck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' ) )
 		assert( addr == self.adr, fmt( "The returned address`%s` should equal input `%s`", self.adr, addr ) )
@@ -93,9 +92,8 @@ local tests = {
 
 	test_SBindReturnBoundSocket = function( self )
 		Test.Case.describe( "Socket.bind(address) --> returning socket is bound; getsockname()" )
-		local host   = Interface.default( ).AF_INET.address.ip
 		local port   = config.nonPrivPort
-		local addr   = Address( host, port )
+		local addr   = Address( self.host, port )
 		self.sck, self.address = Socket.bind( addr )
 		assert( chkSck(  self.sck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' ) )
 		assert( addr  == self.sck:getsockname(), "The addresses should be equal" )
@@ -124,25 +122,23 @@ local tests = {
 
 	test_sBindHostPortCreateAddress = function( self )
 		Test.Case.describe( "s:bind(host,port) --> creates address" )
-		local host   = Interface.default( ).AF_INET.address.ip
 		local port   = config.nonPrivPort
 		self.sck     = Socket()
-		local adr, b = self.sck:bind( host, port )
+		local adr, b = self.sck:bind( self.host, port )
 		assert( nil  == b, "The socket should not be returned" )
-		assert( chkAdr( adr, "AF_INET", host, config.nonPrivPort ) )
+		assert( chkAdr( adr, "AF_INET", self.host, config.nonPrivPort ) )
 	end,
 
 	test_sBindAddressCreateNothingButBinds = function( self )
 		Test.Case.describe( "s:bind(address) --> creates nothing but does bind" )
-		local host   = Interface.default( ).AF_INET.address.ip
 		local port   = config.nonPrivPort
-		local addr   = Address( host, port )
+		local addr   = Address( self.host, port )
 		self.sck     = Socket()
 		local adr,b  = self.sck:bind( addr )
 		assert( nil  == b,   "Only address should be returned" )
 		assert( addr  == self.sck:getsockname(), "The addresses should be equal" )
 		assert( addr  == adr, "The addresses should be equal input" )
-		assert( chkAdr( addr, "AF_INET", host, port ) )
+		assert( chkAdr( addr, "AF_INET", self.host, port ) )
 	end,
 
 	test_sBindWrongArgFails = function( self )

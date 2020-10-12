@@ -115,3 +115,9 @@ dev-gdb:
 	LUA_PATH="$(CURDIR)/out/share/lua/5.4/?.lua;;" \
 	 LUA_CPATH="$(CURDIR)/out/lib/lua/5.4/?.so;;" \
 	 gdb --args $(CURDIR)/out/bin/lua -i scratchpad.lua
+
+dev-example:
+	$(MAKE) dev
+	LUA_PATH="$(CURDIR)/out/share/lua/5.4/?.lua;;" \
+	 LUA_CPATH="$(CURDIR)/out/lib/lua/5.4/?.so;;" \
+	 $(CURDIR)/out/bin/lua -i example/t_net_ifc.lua

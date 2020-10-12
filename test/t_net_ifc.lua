@@ -8,6 +8,7 @@ local   Test      = require( 't.Test' )
 local   Time      = require( 't.Time' )
 local   Interface = require( 't.Net.Interface' )
 local   T         = require( 't' )
+local   pp        = require( 't.Table' ).pprint
 local   format    = string.format
 
 local tc = {
@@ -34,10 +35,10 @@ local tc = {
 		local ifs  = Interface.list()
 		for name, ifc in pairs(ifs) do
 			assert(name == ifc.name, format("Name in interface <%s> should equal key<%s> in interface list", ifc.name, name) )
-			local n_ifc = Interface.get(name)
+			local n_ifc = Interface.get( name )
 			-- don't compare flags, if run over ssh the {rx,tx}_packets value change
 			for key,_ in pairs( {AF_INET6=true, AF_INET=true, flags=true}) do
-				assert( T.equals(n_ifc[key], ifc[key]), format( "Interfaces[%s] should be equal", key) )
+				assert( T.equals( n_ifc[key], ifc[key] ), format( "Interfaces[%s] should be equal", key) )
 			end
 		end
 	end,

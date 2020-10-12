@@ -49,7 +49,7 @@ local   tests = {
 
 	test_cb_OverwriteReadHandler = function( self, done )
 		Test.Case.describe( "Overwrite Socket readHandler" )
-		local adr  = Address( Interface.default( ).AF_INET.address.ip, 4000 )
+		local adr  = Address( Interface.default( ).address.ip, 4000 )
 		local rSck = Socket( 'udp' )
 		local sSck = Socket( 'udp' )
 		rSck:bind( adr )

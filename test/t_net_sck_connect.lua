@@ -42,7 +42,7 @@ local tests = {
 	-- #########################################################################
 	-- wrappers for tests
 	beforeAll = function( self, done )
-		self.host          = Interface.default( ).AF_INET.address.ip
+		self.host          = Interface.default( ).address.ip
 		self.port          = config.nonPrivPort
 		self.srv, self.adr = Socket.listen( self.host, self.port )
 		self.loop          = Loop( )
@@ -62,7 +62,7 @@ local tests = {
 		-- executed sequentially
 		self.loop:run()
 	end,
-	
+
 	afterEach_cb = function( self, done )
 		self.loop:stop()
 		done( )

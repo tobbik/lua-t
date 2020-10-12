@@ -781,19 +781,19 @@ static const luaL_Reg t_ael_cf [] = {
  * --------------------------------------------------------------------------*/
 static const struct luaL_Reg t_ael_m [] = {
 	// metamethods
-	  { "__tostring",    lt_ael__tostring }
-	, { "__len",         lt_ael__len }
-	, { "__gc",          lt_ael__gc }
-	, { "__index",       lt_ael__index }
+	  { "__tostring",    lt_ael__tostring     }
+	, { "__len",         lt_ael__len          }
+	, { "__gc",          lt_ael__gc           }
+	, { "__index",       lt_ael__index        }
 	// instance methods
-	, { "addTimer",       lt_ael_addtimer }
-	, { "removeTimer",    lt_ael_removetimer }
-	, { "addHandle",      lt_ael_addhandle }
-	, { "removeHandle",   lt_ael_removehandle }
-	, { "run",            lt_ael_run }
-	, { "stop",           lt_ael_stop }
+	, { "addTimer",      lt_ael_addtimer      }
+	, { "removeTimer",   lt_ael_removetimer   }
+	, { "addHandle",     lt_ael_addhandle     }
+	, { "removeHandle",  lt_ael_removehandle  }
+	, { "run",           lt_ael_run           }
+	, { "stop",          lt_ael_stop          }
 #ifdef DEBUG
-	, { "show",           lt_ael_showloop }
+	, { "show",          lt_ael_showloop      }
 #endif
 	, { NULL,   NULL }
 };
@@ -811,10 +811,18 @@ int
 luaopen_t_ael( lua_State *L )
 {
 	// just make metatable known to be able to register and check userdata
-	luaL_newmetatable( L, T_AEL_TYPE );   // stack: functions meta
+	luaL_newmetatable( L, T_AEL_TYPE );           // stack: functions meta
 	luaL_setfuncs( L, t_ael_m, 0 );
 	luaopen_t_ael_dnd( L );
 	lua_setfield( L, -2, T_AEL_DND_NAME );
+
+	// directions
+	lua_pushinteger( L, T_AEL_RD );
+	lua_setfield( L, -2, "T_AEL_RD" );
+	lua_pushinteger( L, T_AEL_WR );
+	lua_setfield( L, -2, "T_AEL_WR" );
+	lua_pushinteger( L, T_AEL_RW );
+	lua_setfield( L, -2, "T_AEL_RW" );
 
 	// Push the class onto the stack
 	luaL_newlib( L, t_ael_cf );

@@ -29,7 +29,7 @@ int main( int argc,char *argv[] )
     if (sd > 0)
     {
         ifc.ifc_len = sizeof(ifr);
-        ifc.ifc_ifcu.ifcu_buf = (caddr_t)ifr;
+        ifc.ifc_ifcu.ifcu_buf = (caddr_t) ifr;
 
         if (ioctl(sd, SIOCGIFCONF, &ifc) == 0)
         {
@@ -50,18 +50,22 @@ int main( int argc,char *argv[] )
                 if (ioctl(sd, SIOCGIFADDR, &ifr[i]) == 0)
                 {
                     addr = ((struct sockaddr_in *)(&ifr[i].ifr_addr))->sin_addr.s_addr;
-                    printf("%d) address: %d.%d.%d.%d\n", i+1, INT_TO_ADDR(addr));
+                    printf("%d)   address: %d.%d.%d.%d\n", i+1, INT_TO_ADDR(addr));
                 }
                 if (ioctl(sd, SIOCGIFBRDADDR, &ifr[i]) == 0)
                 {
                     bcast = ((struct sockaddr_in *)(&ifr[i].ifr_broadaddr))->sin_addr.s_addr;
-                    printf("%d) broadcast: %d.%d.%d.%d\n", i+1, INT_TO_ADDR(bcast));
+                    printf("%d)   broadcast: %d.%d.%d.%d\n", i+1, INT_TO_ADDR(bcast));
                 }
                 if (ioctl(sd, SIOCGIFNETMASK, &ifr[i]) == 0)
                 {
                     mask = ((struct sockaddr_in *)(&ifr[i].ifr_netmask))->sin_addr.s_addr;
-                    printf("%d) netmask: %d.%d.%d.%d\n", i+1, INT_TO_ADDR(mask));
+                    printf("%d)   netmask: %d.%d.%d.%d\n", i+1, INT_TO_ADDR(mask));
                 }
+                if (ioctl(sd, SIOCGIFINDEX, &ifr[i]) == 0)
+                   printf("%d)   INDEX: %d \n", i+1, *(&ifr[i].ifr_ifindex));
+                if (ioctl(sd, SIOCGIFMTU, &ifr[i]) == 0)
+                   printf("%d)   MTU: %d \n", i+1, *(&ifr[i].ifr_mtu));
 
                 /* Compute the current network value from the address and netmask. */
                 network = addr & mask;

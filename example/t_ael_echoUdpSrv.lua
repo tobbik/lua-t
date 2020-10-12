@@ -4,7 +4,7 @@
 --          with an incremented number.  Keeps track of missing packages.
 
 Socket,Address,Interface,Loop = require't.Net.Socket',require't.Net.Address',require't.Net.Interface',require't.Loop'
-host     = Interface.default( ).AF_INET.address.ip
+host     = Interface.default( ).address.ip
 port     = 8888
 l        = Loop( 10 )
 msg      = nil

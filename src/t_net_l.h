@@ -22,7 +22,7 @@
 #endif
 
 #include "t_net.h"
-#include "t.h"             // t_getType*
+#include "t.h"        // t_getTypeBy*
 
 
 #define INT_TO_ADDR( _addr ) \
@@ -115,11 +115,11 @@ int    luaopen_t_net_sck_sht    ( lua_State *L );
 #define SOCK_ADDR_SS_PTR(ptr)     ((struct sockaddr_storage *)(ptr))
 #define SOCK_ADDR_SS_FAMILY(ptr)  SOCK_ADDR_SS_PTR(ptr)->ss_family
 
-#define SOCK_ADDR_SS_LEN(ss) \
-   (NULL == ss \
-      ? sizeof( ss ) \
-      : (SOCK_ADDR_SS_PTR(ss)->ss_family == AF_INET6 \
-         ? sizeof(struct sockaddr_in6) \
+#define SOCK_ADDR_SS_LEN(ss)                            \
+   (NULL == ss                                          \
+      ? sizeof( ss )                                    \
+      : (SOCK_ADDR_SS_PTR(ss)->ss_family == AF_INET6    \
+         ? sizeof(struct sockaddr_in6)                  \
          : sizeof(struct sockaddr_in) ) )
 
 #define SOCK_ADDR_IN4_PTR(ss)      ((struct sockaddr_in *)(ss))
@@ -133,24 +133,26 @@ int    luaopen_t_net_sck_sht    ( lua_State *L );
 #define SOCK_ADDR_IN6_PORT(ss)     SOCK_ADDR_IN6_PTR(ss)->sin6_port
 #define SOCK_ADDR_IN6_ADDR(ss)     SOCK_ADDR_IN6_PTR(ss)->sin6_addr
 #define SOCK_ADDR_IN6_ADDR_INT(ss) SOCK_ADDR_IN6_PTR(ss)->sin6_addr.s6_addr
+#define SOCK_ADDR_IN6_SCOPE(ss)    SOCK_ADDR_IN6_PTR(ss)->sin6_scope_id
+#define SOCK_ADDR_IN6_FLOW(ss)     SOCK_ADDR_IN6_PTR(ss)->sin6_flowinfo
 
 #define SOCK_ADDR_UNX_PTR(ss)      ((struct sockaddr_un *)(ss))
 #define SOCK_ADDR_UNX_FAMILY(ss)   SOCK_ADDR_UNX_PTR(ss)->sun_family
 #define SOCK_ADDR_UNX_PATH(ss)     SOCK_ADDR_UNX_PTR(ss)->sun_path
 
-#define SOCK_ADDR_SS_PORT(ss) \
-   (SOCK_ADDR_SS_PTR(ss)->ss_family == AF_INET6 \
-      ? SOCK_ADDR_IN6_PORT(ss) \
+#define SOCK_ADDR_SS_PORT(ss)                           \
+   (SOCK_ADDR_SS_PTR(ss)->ss_family == AF_INET6         \
+      ? SOCK_ADDR_IN6_PORT(ss)                          \
       : SOCK_ADDR_IN4_PORT(ss) )
 
-#define SOCK_ADDR_SS_ADDR(ss) \
-   (SOCK_ADDR_SS_PTR(ss)->ss_family == AF_INET6 \
-      ? SOCK_ADDR_IN6_ADDR(ss) \
+#define SOCK_ADDR_SS_ADDR(ss)                           \
+   (SOCK_ADDR_SS_PTR(ss)->ss_family == AF_INET6         \
+      ? SOCK_ADDR_IN6_ADDR(ss)                          \
       : SOCK_ADDR_IN4_ADDR(ss) )
 
-#define SOCK_ADDR_SS_ADDR_INT(ss) \
-   (SOCK_ADDR_SS_PTR(ss)->ss_family == AF_INET6 \
-      ? SOCK_ADDR_IN6_ADDR_INT(ss) \
+#define SOCK_ADDR_SS_ADDR_INT(ss)                       \
+   (SOCK_ADDR_SS_PTR(ss)->ss_family == AF_INET6         \
+      ? SOCK_ADDR_IN6_ADDR_INT(ss)                      \
       : SOCK_ADDR_IN4_ADDR_INT(ss) )
 
 //     ---------------------------- inet_ntop, inet_pton ...
@@ -162,44 +164,44 @@ int    luaopen_t_net_sck_sht    ( lua_State *L );
 #define INET_NTOP inet_ntop
 #endif
 
-#define SOCK_ADDR_IN6_PTON(ss, ips)                     \
+#define SOCK_ADDR_IN6_PTON(ss, ips)                      \
    INET_PTON( AF_INET6, ips, &(SOCK_ADDR_IN6_ADDR( ss )))
 
-#define SOCK_ADDR_IN4_PTON(ss, ips)                     \
+#define SOCK_ADDR_IN4_PTON(ss, ips)                      \
    INET_PTON( AF_INET, ips, &(SOCK_ADDR_IN4_ADDR( ss )))
 
-#define SOCK_ADDR_IN6_NTOP( ss, dst )                       \
-   INET_NTOP( AF_INET6, &(SOCK_ADDR_IN6_ADDR( ss )), dst, SOCK_ADDR_SS_LEN( adr ))
+#define SOCK_ADDR_IN6_NTOP( ss, dst )                    \
+   INET_NTOP( AF_INET6, &(SOCK_ADDR_IN6_ADDR( ss )), dst, INET6_ADDRSTRLEN )
 
-#define SOCK_ADDR_IN4_NTOP( ss, dst )                       \
-   INET_NTOP( AF_INET,  &(SOCK_ADDR_IN4_ADDR( ss )), dst, SOCK_ADDR_SS_LEN( adr ))
+#define SOCK_ADDR_IN4_NTOP( ss, dst )                    \
+   INET_NTOP( AF_INET,  &(SOCK_ADDR_IN4_ADDR( ss )), dst, INET_ADDRSTRLEN )
 
 #define SOCK_ADDR_INET_PTON(ss, ips)                     \
-   (SOCK_ADDR_SS_PTR(ss)->ss_family == AF_INET6              \
+   (SOCK_ADDR_SS_PTR(ss)->ss_family == AF_INET6          \
       ? SOCK_ADDR_IN6_PTON( ss, ips )                    \
       : SOCK_ADDR_IN4_PTON( ss, ips ) )
 
 #define SOCK_ADDR_INET_NTOP(ss, dst)                     \
-   (SOCK_ADDR_SS_PTR(ss)->ss_family == AF_INET6              \
+   (SOCK_ADDR_SS_PTR(ss)->ss_family == AF_INET6          \
       ? SOCK_ADDR_IN6_NTOP( ss, dst )                    \
       : SOCK_ADDR_IN4_NTOP( ss, dst ) )
 
 //    -------------------------- address equality
-#define SOCK_ADDR_EQ_FAMILY(sa, sb) \
+#define SOCK_ADDR_EQ_FAMILY(sa, sb)                                                  \
    (SOCK_ADDR_SS_FAMILY(sa) == SOCK_ADDR_SS_FAMILY(sb) )
 
-#define SOCK_ADDR_EQ_ADDR(sa, sb) \
-   ((SOCK_ADDR_SS_FAMILY(sa) == AF_INET  && SOCK_ADDR_SS_FAMILY(sb) == AF_INET \
-       && SOCK_ADDR_IN4_ADDR(sa).s_addr == SOCK_ADDR_IN4_ADDR(sb).s_addr) \
-    || (SOCK_ADDR_SS_FAMILY(sa) == AF_INET6 && SOCK_ADDR_SS_FAMILY(sb) == AF_INET6 \
-       && memcmp((char *) &(SOCK_ADDR_IN6_ADDR(sa)), \
-                 (char *) &(SOCK_ADDR_IN6_ADDR(sb)), \
+#define SOCK_ADDR_EQ_ADDR(sa, sb)                                                    \
+   ((SOCK_ADDR_SS_FAMILY(sa) == AF_INET  && SOCK_ADDR_SS_FAMILY(sb) == AF_INET       \
+       && SOCK_ADDR_IN4_ADDR(sa).s_addr == SOCK_ADDR_IN4_ADDR(sb).s_addr)            \
+    || (SOCK_ADDR_SS_FAMILY(sa) == AF_INET6 && SOCK_ADDR_SS_FAMILY(sb) == AF_INET6   \
+       && memcmp((char *) &(SOCK_ADDR_IN6_ADDR(sa)),                                 \
+                 (char *) &(SOCK_ADDR_IN6_ADDR(sb)),                                 \
                   sizeof(SOCK_ADDR_IN6_ADDR(sa))) == 0)   )
 
 #define SOCK_ADDR_EQ_PORT(sa, sb) \
-    ((SOCK_ADDR_SS_FAMILY(sa) == AF_INET  && SOCK_ADDR_SS_FAMILY(sb) == AF_INET \
-        && SOCK_ADDR_IN4_PORT(sa) == SOCK_ADDR_IN4_PORT(sb)) \
-  || (SOCK_ADDR_SS_FAMILY(sa) == AF_INET6 && SOCK_ADDR_SS_FAMILY(sb) == AF_INET6 \
+    ((SOCK_ADDR_SS_FAMILY(sa) == AF_INET  && SOCK_ADDR_SS_FAMILY(sb) == AF_INET      \
+        && SOCK_ADDR_IN4_PORT(sa) == SOCK_ADDR_IN4_PORT(sb))                         \
+  || (SOCK_ADDR_SS_FAMILY(sa) == AF_INET6 && SOCK_ADDR_SS_FAMILY(sb) == AF_INET6     \
         && SOCK_ADDR_IN6_PORT(sa) == SOCK_ADDR_IN6_PORT(sb))  )
 
 

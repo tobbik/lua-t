@@ -34,6 +34,8 @@ static const luaL_Reg t_net_sck_sht_cf [] =
 int
 luaopen_t_net_sck_sht( lua_State *L )
 {
+	// reverse setting of sht.SHUT_RD=1 AND sht[1]='SHUT_RD' allows basic reverse
+	// lookup.
 	luaL_newlib( L, t_net_sck_sht_cf );
 #define DF_SD( sdn )               \
    lua_pushinteger( L, sdn );      \

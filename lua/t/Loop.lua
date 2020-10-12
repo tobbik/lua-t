@@ -8,8 +8,6 @@ end
 
 local execDescNode = function( self, func )
 	local x,e = pcall( unpack( fnc ) )
-	
-
 end
 
 local execTimeNode = function( self, node )
@@ -27,5 +25,6 @@ local addDescNode = function( self, hndl, dir, ... )
 	dnd.wfnc = (msk==2) and fnc or nil
 	if not self.dnodes[ hndl ] then self.dnodes[ hndl ] = dnd end
 end
+
 
 return Loop

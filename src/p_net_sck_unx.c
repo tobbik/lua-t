@@ -383,16 +383,12 @@ p_net_sck_getSocketOption( lua_State *L, struct t_net_sck        *sck,
 				lua_pushnil( L );
 			else
 			{
-				//lua_pushinteger( L, ival );
-				//t_net_getProtocolByValue( L, -1, -1 );
-				//t_getTypeByValue( L, -1, -1, t_net_protocolList );
-
 				luaL_getsubtable( L, LUA_REGISTRYINDEX, "_LOADED" );
 				lua_getfield( L, -1, "t."T_NET_IDNT );
 				lua_getfield( L, -1, T_NET_SCK_IDNT );
 				lua_getfield( L, -1, T_NET_SCK_PTC_IDNT );
 				lua_pushinteger( L, ival );
-				lua_rawget( L, -2 );      //S: sck key _LD net sck ptc
+				lua_rawget( L, -2 );      //S: sck key _LD net sck prt
 				lua_rotate( L, -1, 5 );   //S: sck prt key _LD net sck
 				lua_pop( L, 4 );
 			}

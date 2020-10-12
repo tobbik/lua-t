@@ -6,7 +6,7 @@ Socket    = require't.Net.Socket'
 Address   = require't.Net.Address'
 Interface = require't.Net.Interface'
 -- get IP address of most suitable local interface
-ipAddr  = Interface.default( ).AF_INET.address.ip
+ipAddr  = Interface.default( ).address.ip
 port1   = 8001
 port2   = 8002
 port3   = 8003
