@@ -72,7 +72,6 @@ p_net_ifc_parseFlags( lua_State *L, struct ifaddrs *ifa )
 	}
 	else
 		lua_pop(L, 1 );
-
 }
 
 
@@ -182,13 +181,13 @@ p_net_ifs_getAddresses( lua_State *L, struct ifaddrs *ifa )
 	if (ifa->ifa_addr && (AF_INET == ifa->ifa_addr->sa_family || AF_INET6 == ifa->ifa_addr->sa_family))
 	{
 		lua_pushinteger( L, ifa->ifa_addr->sa_family );
-		t_net_getFamilyValue( L, -1 );
+		t_getLoadedValue( L, 2, -1,  "t."T_NET_IDNT, T_NET_FML_IDNT );
 		lua_rawget( L, -2 );
 		if (lua_isnil( L, -1 ))
 		{
 			lua_pop( L, 1 );              // pop nil
 			lua_pushinteger( L, ifa->ifa_addr->sa_family );
-			t_net_getFamilyValue( L, -1 );
+			t_getLoadedValue( L, 2, -1,  "t."T_NET_IDNT, T_NET_FML_IDNT );
 			lua_newtable( L );            // create table that lists ALL addresses for family
 			created = 1;
 		}

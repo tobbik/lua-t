@@ -1,7 +1,7 @@
-local Socket            , Address           =
+local Socket            , Address                =
       require"t.net".sck, require"t.net".adr
-local Protocol                      , Shutdown                       =
-      require"t.Net.Socket.Protocol", require"t.Net.Socket.Shutdown"
+local Protocol                      , Type                       =
+      require"t.Net.Socket.Protocol", require"t.Net.Socket.Type"
 local Family               =
       require"t.Net.Family"
 local t_type         , t_assert         , type, s_lower     , s_format     , type =
@@ -139,12 +139,12 @@ sck_mt.connect = function( sck, host, port )
 	if t then return adr else return t,e end
 end
 
--- lookup shutdownmode and make sure it's callimg with number
+-- lookup shutdown-mode and make sure it's callimg with number
 sck_mt.shutdown = function( sck, mode )
 	local mode_nr =   "number"==type( mode )
 	      and mode
-	      or  Shutdown[ mode ]
-	assert( Shutdown[ mode_nr ], s_format( "Shutdown mode `%s` does not exist.", mode ) )
+	      or  Socket[ mode ]
+	assert( Socket[ mode_nr ], s_format( "Shutdown mode `%s` does not exist.", mode ) )
 	sck_shutdowner( sck, mode_nr )
 end
 
@@ -166,10 +166,26 @@ Sck_mt.__call = function( Sck, protocol, family, typ )
 	f       = ( 'string' == type( f ) ) and Family[ f ] or f  -- lookup name
 	assert( Family[ f ] and 'number' == type( f ), s_format( "Can't find family `%s`", family ))
 
-	typ      = typ      or  ((Protocol.IPPROTO_TCP == p ) and 'SOCK_STREAM')
-	                    or  ((Protocol.IPPROTO_UDP == p ) and 'SOCK_DGRAM')
-	                    or  'SOCK_RAW'
-	return Sck.new( p, f, typ )
+	local t = typ or  ((Protocol.IPPROTO_TCP == p ) and 'SOCK_STREAM')  -- sane default
+	              or  ((Protocol.IPPROTO_UDP == p ) and 'SOCK_DGRAM')
+	              or  'SOCK_RAW'
+	t       = ( 'string' == type( t ) ) and Type[ t ] or t     -- lookup name
+	assert( Type[ t ] and 'number' == type( t ), s_format( "Can't find socket type `%s`", typ ))
+
+	return Sck.new( p, f, t )
+end
+
+-- set up aliases for the Read/Write shutdown directions
+if Socket.SHUT_RD then
+	Socket.r,Socket.rd,Socket.read = Socket.SHUT_RD,Socket.SHUT_RD,Socket.SHUT_RD
+end
+
+if Socket.SHUT_WR then
+	Socket.w,Socket.wr,Socket.write = Socket.SHUT_WR,Socket.SHUT_WR,Socket.SHUT_WR
+end
+
+if Socket.SHUT_RDWR then
+	Socket.rw, Socket.rdwr, Socket.readwrite = Socket.SHUT_RDWR,Socket.SHUT_RDWR,Socket.SHUT_RDWR
 end
 
 return Socket

@@ -335,7 +335,7 @@ lt_ael_addhandle( lua_State *L )
 	int               n   = lua_gettop( L ) + 1;    ///< iterator for arguments
 	enum t_ael_msk    msk;
 
-	luaL_argcheck( L, NULL != t_getTypeByName( L, 3, NULL, t_ael_directionList ),
+	luaL_argcheck( L, t_getLoadedValue( L, 1, 3, "t."T_AEL_IDNT ),
 	      3, "must specify direction" );
 	msk = luaL_checkinteger( L, 3 );
 	luaL_checktype( L, 4, LUA_TFUNCTION );
@@ -395,7 +395,7 @@ lt_ael_removehandle( lua_State *L )
 	struct t_ael_dnd *dnd;
 	enum t_ael_msk    msk;
 
-	luaL_argcheck( L, NULL != t_getTypeByName( L, 3, NULL, t_ael_directionList ),
+	luaL_argcheck( L, t_getLoadedValue( L, 1, 3, "t."T_AEL_IDNT ),
 	      3, "must specify direction" );
 	msk = luaL_checkinteger( L, 3 );
 
@@ -816,16 +816,22 @@ luaopen_t_ael( lua_State *L )
 	luaopen_t_ael_dnd( L );
 	lua_setfield( L, -2, T_AEL_DND_NAME );
 
-	// directions
-	lua_pushinteger( L, T_AEL_RD );
-	lua_setfield( L, -2, "T_AEL_RD" );
-	lua_pushinteger( L, T_AEL_WR );
-	lua_setfield( L, -2, "T_AEL_WR" );
-	lua_pushinteger( L, T_AEL_RW );
-	lua_setfield( L, -2, "T_AEL_RW" );
-
 	// Push the class onto the stack
 	luaL_newlib( L, t_ael_cf );
+	// directions
+	lua_pushinteger( L, T_AEL_RD );     // Observe handle only for being readable
+	lua_setfield( L, -2, "READ" );
+	lua_pushstring( L, "READ" );
+	lua_rawseti( L, -2, T_AEL_RD );
+	lua_pushinteger( L, T_AEL_WR );
+	lua_setfield( L, -2, "WRITE" );     // Observe handle only for being writable
+	lua_pushstring( L, "WRITE" );
+	lua_rawseti( L, -2, T_AEL_WR );
+	lua_pushinteger( L, T_AEL_RW );     // Observe handle only for being readable AND writable
+	lua_setfield( L, -2, "READWRITE" );
+	lua_pushstring( L, "READWRITE" );
+	lua_rawseti( L, -2, T_AEL_RW );
+
 	// set the methods as metatable
 	// this is only avalable a <instance>:func()
 	luaL_newlib( L, t_ael_fm );

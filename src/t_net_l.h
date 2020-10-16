@@ -12,24 +12,17 @@
 #include <stdint.h>
 #include <netdb.h>
 #include <unistd.h>
-#include <fcntl.h>        // O_NONBLOCK,...
-#include <sys/select.h>   // fd_set
-#include <netinet/tcp.h>  // TCP_NODELAY
-#include <netinet/in.h>   // IPPROTO_*
+#include <fcntl.h>         // O_NONBLOCK,...
+#include <sys/select.h>    // fd_set
+#include <netinet/tcp.h>   // TCP_NODELAY
+#include <netinet/in.h>    // IPPROTO_*
 #ifdef __linux
 #include <sys/ioctl.h>
 #include <linux/sockios.h> //SIOCINQ
 #endif
 
 #include "t_net.h"
-#include "t.h"        // t_getTypeBy*
-
-
-#define INT_TO_ADDR( _addr ) \
-	(_addr &       0xFF), \
-	(_addr >> 8  & 0xFF), \
-	(_addr >> 16 & 0xFF), \
-	(_addr >> 24 & 0xFF)
+#include "t.h"             // t_typeerror,t_getLoadedValue
 
 #ifndef T_NET_DEF_FAM_H
 #define T_NET_DEF_FAM_H
@@ -74,7 +67,6 @@ struct sockaddr_storage *t_net_adr_create_ud   ( lua_State *L );
 
 // ----------------------------- INTERFACES -----------------------------------
 // t_netl.c
-int    t_net_getFamilyValue    ( lua_State *L, int pos );
 int    t_net_getStack          ( lua_State *L, const int pos, struct t_net_sck **sck,
                                  struct sockaddr_storage **adr );
 // t_net_ifc.c
@@ -106,7 +98,7 @@ int    p_net_sck_mkFdSet        ( lua_State *L, int pos, fd_set *set );
 
 int    luaopen_t_net_fml        ( lua_State *L );
 int    luaopen_t_net_sck_ptc    ( lua_State *L );
-int    luaopen_t_net_sck_sht    ( lua_State *L );
+int    luaopen_t_net_sck_typ    ( lua_State *L );
 // ---------------------------- MACRO HELPERS FOR IP ADDRESSES ----------------
 //
 #define SOCK_ADDR_PTR(ptr)        ((struct sockaddr *)(ptr))
@@ -206,54 +198,6 @@ int    luaopen_t_net_sck_sht    ( lua_State *L );
 
 
 // ----------------------------- CONSTANT VALUES -----------------------------------
-
-
-static const struct t_typ t_net_typeList[ ] = {
-#ifdef SOCK_STREAM
-	{ "SOCK_STREAM"       , SOCK_STREAM      },  // 1  Sequenced, reliable, connection-based byte streams.
-	{ "stream"            , SOCK_STREAM      },
-	{ "Stream"            , SOCK_STREAM      },
-	{ "STREAM"            , SOCK_STREAM      },
-#endif
-#ifdef SOCK_DGRAM
-	{ "SOCK_DGRAM"        , SOCK_DGRAM       },  // 2  Connectionless, unreliable datagrams of fixed maximum length.
-	{ "dgram"             , SOCK_DGRAM       },
-	{ "Dgram"             , SOCK_DGRAM       },
-	{ "DGRAM"             , SOCK_DGRAM       },
-	{ "datagram"          , SOCK_DGRAM       },
-	{ "Datagram"          , SOCK_DGRAM       },
-	{ "DATAGRAM"          , SOCK_DGRAM       },
-#endif
-#ifdef SOCK_RAW
-	{ "SOCK_RAW"          , SOCK_RAW         },  // 3  Raw protocol interface.
-	{ "raw"               , SOCK_RAW         },
-	{ "Raw"               , SOCK_RAW         },
-	{ "RAW"               , SOCK_RAW         },
-#endif
-#ifdef SOCK_RDM
-	{ "SOCK_RDM"          , SOCK_RDM         },  // 4  Reliably-delivered messages
-#endif
-#ifdef SOCK_SEQPACKET
-	{ "SOCK_SEQPACKET"    , SOCK_SEQPACKET   },  // 5  Sequenced, reliable, connection-based, datagrams of fixed maximum length.
-#endif
-#ifdef SOCK_DCCP
-	{ "SOCK_DCCP"         , SOCK_DCCP        },  // 6  Datagram Congestion Control Protocol.
-#endif
-#ifdef SOCK_PACKET
-	{ "SOCK_PACKET"       , SOCK_PACKET      },  // 10 Linux specific way of getting packets at the dev level.  For writing rarp and other similar things on the user level.
-#endif
-
- // Flags to be ORed into the type parameter o}, socket and socketpair and
- // used for the flags parameter of paccept.
-
-#ifdef SOCK_CLOEXEC
-	{ "SOCK_CLOEXEC"      , SOCK_CLOEXEC     },  // 02000000  Atomically set close-on-exec flag for the new descriptor(s).
-#endif
-#ifdef SOCK_NONBLOCK
-	{ "SOCK_NONBLOCK"     , SOCK_NONBLOCK    },  // 02000000  Atomically mark descriptor(s) as non-blocking.
-#endif
-	{ NULL                , 0                }   // Sentinel
-};
 
 /* ############################################################################
  * Handling of socket, descriptor, protocoll options etc.  After trying a big

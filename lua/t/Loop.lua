@@ -26,5 +26,22 @@ local addDescNode = function( self, hndl, dir, ... )
 	if not self.dnodes[ hndl ] then self.dnodes[ hndl ] = dnd end
 end
 
+Loop.read      = Loop.READ
+Loop.rd        = Loop.READ
+Loop.r         = Loop.READ
+Loop.inc       = Loop.READ
+Loop.incoming  = Loop.READ
+
+Loop.write     = Loop.WRITE
+Loop.wr        = Loop.WRITE
+Loop.w         = Loop.WRITE
+Loop.out       = Loop.WRITE
+Loop.outgoing  = Loop.WRITE
+
+Loop.readwrite = Loop.READWRITE
+Loop.rdwr      = Loop.READWRITE
+Loop.rw        = Loop.READWRITE
+Loop.both      = Loop.READWRITE
+Loop.either    = Loop.READWRITE
 
 return Loop

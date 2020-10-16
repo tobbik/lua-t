@@ -45,7 +45,7 @@ luaopen_t_net_sck_ptc( lua_State *L )
 
 	// populating the protocols table based on features that are existing at compile time
 #ifdef IPPROTO_HOPOPTS
-	DF_PT( IPPROTO_HOPOPTS );           // 0 IPv6 Hop-by-Hop options.
+	DF_PT( IPPROTO_HOPOPTS );          // 0 IPv6 Hop-by-Hop options.
 #endif
 #ifdef IPPROTO_ICMP
 	DF_PT( IPPROTO_ICMP );             // 1 Internet Control Message Protocol.

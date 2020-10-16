@@ -222,7 +222,7 @@ lt_net_adr__index( lua_State *L )
 	else if (0 == strncmp( key, "family", 6 ))
 	{
 		lua_pushinteger( L, SOCK_ADDR_SS_FAMILY( adr ) );
-		t_net_getFamilyValue( L, -1 );
+		t_getLoadedValue( L, 2, -1,  "t."T_NET_IDNT, T_NET_FML_IDNT );
 	}
 	else if (0 == strncmp( key, "scope", 5 ) && AF_INET6 == SOCK_ADDR_SS_FAMILY( adr ))
 	{
@@ -263,7 +263,7 @@ lt_net_adr__newindex( lua_State *L )
 		t_net_adr_setPort( L, adr, 3 );
 	else if (0 == strncmp( key, "family", 6 ) )
 	{
-		if (lua_isnumber( L, 3 ) || t_net_getFamilyValue( L, 3 ))
+		if (lua_isnumber( L, 3 ) || t_getLoadedValue( L, 2, -1,  "t."T_NET_IDNT, T_NET_FML_IDNT ))
 			adr->ss_family = luaL_checkinteger( L, 3 );
 	}
 	else
@@ -318,47 +318,11 @@ lt_net_adr__eq( lua_State *L )
 
 
 /**--------------------------------------------------------------------------
- * Converts an integer into an IP address xxx.xxx.xxx.xxx representation.
- * \param   L      Lua state.
- * \lparam  int    the IPv4 Address as 32 bit integer.
- * \lreturn string IP address in xxx.xxx.xxx.xxx.
- * \return  int    # of values pushed onto the stack.
- * TODO: check compile time endianess and reorder the uint8_t array
- * --------------------------------------------------------------------------*/
-static int
-lt_net_adr_Int2ip( lua_State *L )
-{
-	lua_pushfstring( L, "%d.%d.%d.%d", INT_TO_ADDR( luaL_checkinteger( L, -1 ) ) );
-	return 1;
-}
-
-
-/**--------------------------------------------------------------------------
- * Converts an IPv4 Address into an unisgned integer.
- * \param   L      Lua state.
- * \lparam  string the IPv4 Address as xxx.xxx.xxx.xxx string.
- * \lreturn int    representing the IpAddress.
- * \return  int    # of values pushed onto the stack.
- * TODO: check compile time endianess and reorder the uint8_t array
- * --------------------------------------------------------------------------*/
-static int
-lt_net_adr_Ip2int( lua_State *L )
-{
-	lua_Integer      ip[ 4 ];
-	sscanf( luaL_checkstring( L, 1 ), "%lld.%lld.%lld.%lld",
-		&ip[0], &ip[1], &ip[2], &ip[3] );
-
-	lua_pushinteger( L, ip[0] | ip[1] << 8 | ip[2] << 16 | ip[3] << 24 );
-	return 1;
-}
-
-
-/**--------------------------------------------------------------------------
  * Class metamethods library definition
  * --------------------------------------------------------------------------*/
 static const struct luaL_Reg t_net_adr_fm [] = {
-	  { "__call"     , lt_net_adr__Call }
-	, { NULL         , NULL }
+	  { "__call"     , lt_net_adr__Call      }
+	, { NULL         , NULL                  }
 };
 
 /**--------------------------------------------------------------------------
@@ -366,9 +330,7 @@ static const struct luaL_Reg t_net_adr_fm [] = {
  * --------------------------------------------------------------------------*/
 static const luaL_Reg t_net_adr_cf [] =
 {
-	  { "ip2int"     , lt_net_adr_Ip2int }
-	, { "int2ip"     , lt_net_adr_Int2ip }
-	, { NULL         , NULL }
+	  { NULL         , NULL                  }
 };
 
 /**--------------------------------------------------------------------------
@@ -376,10 +338,10 @@ static const luaL_Reg t_net_adr_cf [] =
  * --------------------------------------------------------------------------*/
 static const struct luaL_Reg t_net_adr_m [] = {
 	// metamethods
-	  { "__tostring" , lt_net_adr__tostring }
-	, { "__eq"       , lt_net_adr__eq }
-	, { "__index"    , lt_net_adr__index }
-	, { "__newindex" , lt_net_adr__newindex }
+	  { "__tostring" , lt_net_adr__tostring  }
+	, { "__eq"       , lt_net_adr__eq        }
+	, { "__index"    , lt_net_adr__index     }
+	, { "__newindex" , lt_net_adr__newindex  }
 	, { NULL         , NULL}
 };
 
@@ -405,9 +367,8 @@ luaopen_t_net_adr( lua_State *L )
 	luaL_newlib( L, t_net_adr_cf );
 
 	// set the methods as metatable
-	// this is only avalable a <instance>.<member>
+	// this is avalable a MetaMethods of class t.Net.Address
 	luaL_newlib( L, t_net_adr_fm );
 	lua_setmetatable( L, -2 );
 	return 1;
 }
-

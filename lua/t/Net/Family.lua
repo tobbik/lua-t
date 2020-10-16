@@ -21,6 +21,7 @@ fmls.Ip6          = fmls.AF_INET6
 fmls.IP6          = fmls.AF_INET6
 fmls.IPv6         = fmls.AF_INET6
 
+-- probably not a good idea ..
 if not fmls.AF_LINK   then fmls.AF_LINK   = fmls.AF_PACKET end
 if not fmls.AF_PACKET then fmls.AF_PACKET = fmls.AF_LINK   end
 

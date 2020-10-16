@@ -19,82 +19,48 @@
 #include "t_dbg.h"
 #endif
 
-
-/**--------------------------------------------------------------------------
- * Read type name from stack and overwrite it with type value.
- * \param   L        Lua state.
- * \param   pos      Position of name on Lua stack.
- * \param   dft      char*; Default type name if pos is empty.
- * \param   types    array of t_typ*;
- * \lparam  string   Name of type.
- * \lreturn integer  Value of type.
- * \return  typeName char*; string of type.
- * --------------------------------------------------------------------------*/
-const char
-*t_getTypeByName( lua_State *L, int pos, const char *dft, const struct t_typ *types )
+/** -------------------------------------------------------------------------
+ * Get a value from a table loaded in the registry.
+ * The key must be on the stack and passed by position on stack.  The key on
+ * the stack will be replaced by the value, or nil if nothing was found.
+ * Iterates through names as subtables. To access Net.Socket.Protocol pass
+ * "Net", "Socket", "Protocol"
+ * \param  L    Lua state.
+ * \param  len  Int. How many sub-table names have been passed.
+ * \param  pos  Position of table key on Lua stack.
+ * \param  ...  variable arguments of table names.
+ * \return bool Was the value found
+ *-------------------------------------------------------------------------*/
+int
+t_getLoadedValue( lua_State *L, size_t len, int pos, ... )
 {
-	const char *name;
-	int         i     = 0;
-
-	// get absolute stack position
-	pos = (pos < 0) ? lua_gettop( L ) + pos + 1 : pos;
-	if (LUA_TSTRING != lua_type( L, pos ))
-		return NULL;
-	else
-		name  = (NULL == dft ) ? luaL_checkstring( L, pos ) : luaL_optstring( L, pos, dft );
-
-	while (NULL != types[i].name)
+	va_list          argp;
+	unsigned int     argc = 0;
+	pos = (pos < 0) ? lua_gettop( L ) + pos + 1 : pos; // get absolute stack position
+	luaL_getsubtable( L, LUA_REGISTRYINDEX, "_LOADED" );
+	va_start( argp, pos );
+	for (argc=0; argc<len; argc++)
 	{
-		if (0 == strcmp( name, types[i].name ))
-			break;
-		i++;
+		// push next sub-table on stack
+		//const char *field = va_arg( argp, const char* );
+		//lua_getfield( L, -1, field );
+		lua_getfield( L, -1, va_arg( argp, const char* ) );
+						/* debug start
+						printf("                 ------------------------ NEXT FIELD: %s\n", field );
+						lua_pushnil(L);  // first key
+						while (lua_next(L, -2) != 0) {
+							t_stackDump(L);
+						    // removes 'value'; keeps 'key' for next iteration
+							lua_pop(L, 1);
+						}
+						end debug */
 	}
-	if (NULL == types[i].name)
-		return NULL;
-	else
-		lua_pushinteger( L, types[i].value );
-	if (lua_gettop( L ) > pos)
-		lua_replace( L, pos );
-	return types[i].name;
-}
-
-
-/**--------------------------------------------------------------------------
- * Read type value from stack and overwrite it with type name.
- * \param   L        Lua state.
- * \param   pos      Position of name on Lua stack.
- * \param   dft      int; Default type value if pos is empty.
- * \param   types    array of t_typ*;
- * \lparam  string   Value of type.
- * \lreturn integer  Name of type.
- * \return  typeName char*; string of type.
- * --------------------------------------------------------------------------*/
-const char
-*t_getTypeByValue( lua_State *L, int pos, const int dft, const struct t_typ *types )
-{
-	int   val;
-	int   i   = 0;
-
-	// get absolute stack position
-	pos = (pos < 0) ? lua_gettop( L ) + pos + 1 : pos;
-	if (LUA_TNUMBER != lua_type( L, pos ))
-		return NULL;
-	else
-		val = (dft < 1) ? luaL_checkinteger( L, pos ) : luaL_optinteger( L, pos, dft );
-
-	while (NULL != types[i].name)
-	{
-		if (types[i].value == val)
-			break;
-		i++;
-	}
-	if (NULL == types[i].name)
-		return NULL;
-	else
-		lua_pushstring( L, types[i].name );
-	if (lua_gettop( L ) > pos)
-		lua_replace( L, pos );
-	return types[i].name;
+	va_end( argp );
+	lua_pushvalue( L, pos );   //S:… key … _LD ___ ___ ___ key
+	lua_rawget( L, -2 );       //S:… key … _LD ___ ___ ___ val
+	lua_replace( L, pos );     //S:… val … _LD ___ ___ ___
+	lua_pop( L, argc+1 );      //S:… fml …
+	return (! lua_isnil( L, pos ));
 }
 
 
@@ -132,21 +98,21 @@ t_push_error( lua_State *L, const char *fmt, ... )
 /** -------------------------------------------------------------------------
  * Type Error formatter, adapted from lauxlib.c
  * \param  L      Lua state.
- * \param  arg    int; position of wrong typed object on stack.
+ * \param  pos    int; position of wrong typed object on stack.
  * \param  tname  Name of expected type.
  * \return  int   # of values pushed onto the stack.
  *-------------------------------------------------------------------------*/
-int t_typeerror( lua_State *L, int arg, const char *tname )
+int t_typeerror( lua_State *L, int pos, const char *tname )
 {
 	const char *msg;
 	const char *typearg;  /* name for the type of the actual argument */
-	if (luaL_getmetafield(L, arg, "__name") == LUA_TSTRING)
+	if (LUA_TSTRING == luaL_getmetafield( L, pos, "__name" ))
 		typearg = lua_tostring(L, -1);  /* use the given type name */
-	else if (lua_type(L, arg) == LUA_TLIGHTUSERDATA)
+	else if (LUA_TLIGHTUSERDATA == lua_type(L, pos))
 		typearg = "light userdata";  /* special name for messages */
 	else
-		typearg = luaL_typename(L, arg);  /* standard name */
-	msg = lua_pushfstring(L, "%s expected, got %s", tname, typearg);
-	return luaL_argerror(L, arg, msg);
+		typearg = luaL_typename( L, pos );  /* standard name */
+	msg = lua_pushfstring( L, "%s expected, got %s", tname, typearg );
+	return luaL_argerror( L, pos, msg );
 }
 

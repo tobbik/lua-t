@@ -127,7 +127,7 @@ local tests = {
 
 	test_CreatesWithGramAliases = function( self )
 		Test.Case.describe( "Socket('udp', 'IPv4', '*dgram', ...) --> all create DGRAM Sockets" )
-		for i,t in pairs( { "SOCK_DGRAM", "dgram", "DGRAM", "Datagram", "datagram", "DATAGRAM" } ) do
+		for i,t in pairs( { "SOCK_DGRAM", "dgram", "DGRAM" } ) do
 			self.sock = Socket( 'UDP', 'ip4', t )
 			assert( chkSck( self.sock, 'IPPROTO_UDP', 'AF_INET', 'SOCK_DGRAM' ) )
 			self.sock:close()

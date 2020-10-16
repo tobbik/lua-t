@@ -44,5 +44,13 @@ pp( ifs )
 r=require't'.require
 I=require't.Net.Interface'
 pp=require't.Table'.pprint
-t=r'test/t_net_ifc'
+map=require't.Table'.map
 
+S=require't.Net.Socket'
+P=require't.Net.Socket.Protocol'
+A=require't.Net.Address'
+t=r'test/t_net_sck_create'
+d=debug.getregistry()
+
+s=S('tcp')
+s1=S('tcp','AF_INET6','stream')

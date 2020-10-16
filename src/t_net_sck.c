@@ -11,7 +11,6 @@
 
 #include "t_net_l.h"
 #include "t_buf.h"
-#include "t.h"        //t_getTypeBy*
 #include <stdlib.h>   // bsearch()
 
 #ifdef DEBUG
@@ -38,12 +37,9 @@ lt_net_sck_New( lua_State *L )
 {
 	struct t_net_sck *sck;
 
-	//t_net_getProtocolByName( L, 1, "TCP" );
-	t_getTypeByName( L, 3, "SOCK_STREAM", t_net_typeList );
-
 	sck  = t_net_sck_create_ud( L );
 	p_net_sck_createHandle( L, sck,
-	   (AF_UNIX==luaL_checkinteger( L, 2 )) ? 0 : lua_tointeger( L, 2 ),
+	   (AF_UNIX == luaL_checkinteger( L, 2 )) ? 0 : lua_tointeger( L, 2 ),
 	   luaL_checkinteger( L, 3 ),
 	   luaL_checkinteger( L, 1 ) );
 
@@ -466,7 +462,7 @@ lt_net_sck__newindex( lua_State *L )
  * Class metamethods library definition
  * --------------------------------------------------------------------------*/
 static const struct luaL_Reg t_net_sck_fm [] = {
-	  { NULL          , NULL }
+	  { NULL          , NULL                   }
 };
 
 /**--------------------------------------------------------------------------
@@ -474,9 +470,9 @@ static const struct luaL_Reg t_net_sck_fm [] = {
  * --------------------------------------------------------------------------*/
 static const luaL_Reg t_net_sck_cf [] =
 {
-	  { "select"      , lt_net_sck_Select }
-	, { "new"         , lt_net_sck_New }
-	, { NULL          , NULL }
+	  { "select"      , lt_net_sck_Select      }
+	, { "new"         , lt_net_sck_New         }
+	, { NULL          , NULL                   }
 };
 
 /**--------------------------------------------------------------------------
@@ -485,21 +481,21 @@ static const luaL_Reg t_net_sck_cf [] =
 static const luaL_Reg t_net_sck_m [] =
 {
 	// metamethods
-	  { "__tostring"  , lt_net_sck__tostring }
-	, { "__index"     , lt_net_sck__index }
-	, { "__newindex"  , lt_net_sck__newindex }
-	, { "__gc"        , lt_net_sck_close }
+	  { "__tostring"  , lt_net_sck__tostring   }
+	, { "__index"     , lt_net_sck__index      }
+	, { "__newindex"  , lt_net_sck__newindex   }
+	, { "__gc"        , lt_net_sck_close       }
 	// object methods
-	, { "listener"    , lt_net_sck_listener }
-	, { "binder"      , lt_net_sck_binder }
-	, { "connecter"   , lt_net_sck_connecter }
-	, { "accept"      , lt_net_sck_accept }
-	, { "close"       , lt_net_sck_close }
-	, { "shutdowner"  , lt_net_sck_shutDown }
-	, { "send"        , lt_net_sck_send }
-	, { "recv"        , lt_net_sck_recv }
+	, { "listener"    , lt_net_sck_listener    }
+	, { "binder"      , lt_net_sck_binder      }
+	, { "connecter"   , lt_net_sck_connecter   }
+	, { "accept"      , lt_net_sck_accept      }
+	, { "close"       , lt_net_sck_close       }
+	, { "shutdowner"  , lt_net_sck_shutDown    }
+	, { "send"        , lt_net_sck_send        }
+	, { "recv"        , lt_net_sck_recv        }
 	, { "getsockname" , lt_net_sck_getsockname }
-	, { NULL          , NULL }
+	, { NULL          , NULL                   }
 };
 
 
@@ -523,9 +519,23 @@ luaopen_t_net_sck( lua_State *L )
 	// Push the class onto the stack
 	// this is avalable as Socket.<member>
 	luaL_newlib( L, t_net_sck_cf );
+
+	lua_pushinteger( L, SHUT_RD );        // No more receptions.
+	lua_setfield( L, -2, "SHUT_RD" );
+	lua_pushstring( L, "SHUT_RD" );
+	lua_rawseti( L, -2, SHUT_RD );
+	lua_pushinteger( L, SHUT_WR );        // No more transmissions.
+	lua_setfield( L, -2, "SHUT_WR" );
+	lua_pushstring( L, "SHUT_WR" );
+	lua_rawseti( L, -2, SHUT_WR );
+	lua_pushinteger( L, SHUT_RDWR );      // No more receptions or transmissions.
+	lua_setfield( L, -2, "SHUT_RDWR" );
+	lua_pushstring( L, "SHUT_RDWR" );
+	lua_rawseti( L, -2, SHUT_RDWR );
+
 	// Load available Shutdown modes
-	luaopen_t_net_sck_sht( L );
-	lua_setfield( L, -2, T_NET_SCK_SHT_IDNT );
+	luaopen_t_net_sck_typ( L );
+	lua_setfield( L, -2, T_NET_SCK_TYP_IDNT );
 	// Load available protocols
 	luaopen_t_net_sck_ptc( L );
 	lua_setfield( L, -2, T_NET_SCK_PTC_IDNT );

@@ -169,6 +169,29 @@ Class Members
     sck,adr = Socket.connect( port )       -- Sck (TCP); Adr 0.0.0.0:port
     sck,adr = Socket.connect( host, port ) -- Sck (TCP); Adr host:port
 
+``int 0 = Net.Socket.SHUT_RD``
+  The constant ``0`` can be used to in ``sck:shutdown(0)``.  It is also
+  available via the aliases ``r``, ``rd`` or ``read``.
+
+``string 'SHUT_RD' = Net.Socket[0]``
+  The string constant ``'SHUT_RD'`` can be used in place of
+  ``sck:shutdown(0)``.
+
+``int 1 = Net.Socket.SHUT_WR``
+  The constant ``1`` can be used to in ``sck:shutdown(1)``.  It is also
+  available via the aliases ``w``, ``wr`` or ``write``.
+
+``string 'SHUT_WR' = Net.Socket[1]``
+  The string constant ``'SHUT_WR'`` can be used in place of
+  ``sck:shutdown(1)``.
+
+``int 2 = Net.Socket.SHUT_RDWR``
+  The constant ``2`` can be used to in ``sck:shutdown(2)``.  It is also
+  available via the aliases ``rw``, ``rdwr`` or ``readwrite``.
+
+``string 'SHUT_RDWR' = Net.Socket[2]``
+  The string constant ``'SHUT_RDWR'`` can be used in place of
+  ``sck:shutdown(2)``.
 
 Class Metamembers
 -----------------
@@ -180,9 +203,10 @@ which can't be duplicated.
   Instantiate new ``Net.Socket sck`` object.  If no arguments are passed it
   will assume ``TCP`` and ``Ipv4`` as default values.  If only one argument
   is passed it will be interpreted as ``string protocol`` and ``ip4`` is
-  assumed as default family.  Type can be ``stream``, ``datagram`` or
-  ``raw`` or any of the ``C`` based identifiers such as ``SOCK_DCCP`` and
-  others.  If not passed it will be inferred from the protocol.
+  assumed as default family.  Type can be any of the ``C`` type identifiers
+  such as ``SOCK_STREAM`` or ``SOCK_DCCP``. Each of thos is available by
+  aliases such as ``STREAM``, ``Stream`` or ``stream``. If not passed it
+  will be inferred from the protocol.
 
   .. code:: lua
 
@@ -274,10 +298,18 @@ Instance Members
     adr = sck:listen( host, port, bl ) -- Adr host:port
 
 ``Net.Socket client, NetAddress addr = Net.Socket sck:accept( )``
-  Accepts a new connection the ``Net.Socket`` instance.  Returns 
+  Accepts a new connection the ``Net.Socket`` instance.  Returns
   ``Net.Address`` client instance and the clients ``Net.Address``
   instance.
 
+``void = Net.Socket sck:close( )``
+  Closes the socket descriptor.
+
+``void = Net.Socket sck:shutdown( int/string )``
+  Operates the shutdown procedure on the socket descriptor.  The constants
+  ``Socket.SHUT_RD``, ``Socket.SHUT_RD`` and ``Socket.SHUT_RDWR`` are
+  available.  It is lso possible to pass a string like ``SHUT_RD`` or any of
+  their aliases.
 
 Overloaded recv() method
 ........................

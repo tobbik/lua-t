@@ -372,7 +372,7 @@ p_net_sck_getSocketOption( lua_State *L, struct t_net_sck        *sck,
 			if (0 == getsockname( sck->fd, SOCK_ADDR_PTR( &adr ), &len ))
 			{
 				lua_pushinteger( L, SOCK_ADDR_SS_FAMILY( &adr ) );
-				t_net_getFamilyValue( L, -1 );
+				t_getLoadedValue( L, 2, -1,  "t."T_NET_IDNT, T_NET_FML_IDNT );
 			}
 			else
 				lua_pushnil( L );
@@ -383,14 +383,8 @@ p_net_sck_getSocketOption( lua_State *L, struct t_net_sck        *sck,
 				lua_pushnil( L );
 			else
 			{
-				luaL_getsubtable( L, LUA_REGISTRYINDEX, "_LOADED" );
-				lua_getfield( L, -1, "t."T_NET_IDNT );
-				lua_getfield( L, -1, T_NET_SCK_IDNT );
-				lua_getfield( L, -1, T_NET_SCK_PTC_IDNT );
 				lua_pushinteger( L, ival );
-				lua_rawget( L, -2 );      //S: sck key _LD net sck prt
-				lua_rotate( L, -1, 5 );   //S: sck prt key _LD net sck
-				lua_pop( L, 4 );
+				t_getLoadedValue( L, 3, -1,  "t."T_NET_IDNT, T_NET_SCK_IDNT, T_NET_SCK_PTC_IDNT );
 			}
 			break;
 		case T_NET_SCK_OTP_TYPE:
@@ -400,12 +394,12 @@ p_net_sck_getSocketOption( lua_State *L, struct t_net_sck        *sck,
 			else
 			{
 				lua_pushinteger( L, ival );
-				t_getTypeByValue( L, -1, -1, t_net_typeList );
+				t_getLoadedValue( L, 3, -1,  "t."T_NET_IDNT, T_NET_SCK_IDNT, T_NET_SCK_TYP_IDNT );
 			}
 			break;
 
 		default:
-			// should never get here
+			// should never get here ... __index should have returned nil already
 			luaL_error( L, "unknown socket option: `%s`", lua_tostring( L, 2 ) );
 	}
 	return 1;
@@ -459,7 +453,7 @@ p_net_sck_setSocketOption( lua_State *L, struct t_net_sck        *sck,
 				return p_net_sck_pushErrno( L, NULL, "Can't set socket option `%s`", lua_tostring( L, 2 ) );
 			break;
 		default:
-			// should never get here
+			// should never get here ... __newindex should have returned nil already
 			return luaL_error( L, "unknown socket option: %s", lua_tostring( L, 2 ) );
 	}
 	return 0;

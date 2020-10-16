@@ -3,7 +3,7 @@ CURL=$(shell which curl)
 TAR=$(shell which tar)
 UNZIP=$(shell which unzip)
 
-MYCFLAGS=-g -O2
+MYCFLAGS=-g -O2 -Winline
 UNAME_M := $(shell uname -m)
 ifeq ($(UNAME_M),x86_64)
    MYCFLAGS += -D AMD64 -march=native
@@ -24,7 +24,7 @@ ifneq ($(filter aarch%,$(UNAME_M)),)
 endif
 
 LVER=5.4
-LREL=0
+LREL=1
 LUASRC=lua-$(LVER).$(LREL).tar.gz
 LUAURL=https://www.lua.org/ftp
 
