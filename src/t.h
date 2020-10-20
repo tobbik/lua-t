@@ -18,13 +18,6 @@
 
 #ifndef T_HELPERLIB_H
 #define T_HELPERLIB_H
-// --------------------------- DATA TYPES --------------------------------------
-// name:integer pairs for grouped constants such as AF_INET, SOCK_STREAM, etc.
-struct t_typ {
-	const char *name;
-	const int   value;
-};
-
 
 // global helpers
 int         t_getLoadedValue( lua_State *L, size_t len, int pos, ... );

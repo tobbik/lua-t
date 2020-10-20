@@ -13,12 +13,14 @@ local sck_listener    = sck_mt.listener
 local sck_binder      = sck_mt.binder
 local sck_connecter   = sck_mt.connecter
 local sck_shutdowner  = sck_mt.shutdowner
+local Socket_new      = Socket.new
 
 -- remove helper functions from socket metatable table
 sck_mt.listener       = nil
 sck_mt.binder         = nil
 sck_mt.connecter      = nil
 sck_mt.shutdowner     = nil
+Socket.new            = nil
 
 -- multi function to negotiate arguments
 local getAddressArgs = function( host, port, bl, default )
@@ -172,7 +174,7 @@ Sck_mt.__call = function( Sck, protocol, family, typ )
 	t       = ( 'string' == type( t ) ) and Type[ t ] or t     -- lookup name
 	assert( Type[ t ] and 'number' == type( t ), s_format( "Can't find socket type `%s`", typ ))
 
-	return Sck.new( p, f, t )
+	return Socket_new( p, f, t )
 end
 
 -- set up aliases for the Read/Write shutdown directions

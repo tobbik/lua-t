@@ -23,10 +23,8 @@
  * Constructor - creates the t.Csv instance.
  * \param   L          Lua state.
  * \lparam  CLASS      table Csv.
- * \lparam  string/hdl Filename or Filehandle.
- * \lparam  idx    Start of Segment. 1-based index in t_buf->b
- * \lparam  len    Length of Segment.
- * \return  int    # of values pushed onto the stack.
+ * \lreturn instance   Userdata Csv.
+ * \return  int        # of values pushed onto the stack.
  *  -------------------------------------------------------------------------*/
 static int
 lt_csv_New( lua_State *L )
@@ -63,14 +61,7 @@ struct t_csv
 /**--------------------------------------------------------------------------
  * Eat through a CSV line and add fields to a Lua table on the stack
  * \param   L       Lua state.
- * \lparam  table   T.Csv table instance.
- * \lparam  string  Single row of CSV content.
- * \lparam  string  Delimiter character.
- * \lparam  string  Quotation character.
- * \lparam  boolean Is it double quoted?
- * \lparam  string  Escape character.
- * \lreturn boolean Was it complete? False mean more lines are needed.
- * \return  int     # of values pushed onto the stack.
+ * \param   csv     t_csv struct userdata.
  * --------------------------------------------------------------------------*/
 static void
 t_csv_parse( lua_State *L, struct t_csv *csv )
@@ -80,7 +71,7 @@ t_csv_parse( lua_State *L, struct t_csv *csv )
 	// CSV/TSV parsing finite state machine
 	while (T_CSV_ROWDONE != csv->ste)
 	{
-		//printf( "[%s][%zu][%lu][%d]\t__%s\n", states[csv->ste], csv->run - csv->lne, csv->run - csv->fld, qc, csv->run );
+		//printf( "[%s][%zu][%lu][%d]\t__%s\n", t_csv_ste_nme[csv->ste], csv->run - csv->lne, csv->run - csv->fld, qc, csv->run );
 		switch (csv->ste)
 		{
 			case T_CSV_FLDSTART:
@@ -126,8 +117,8 @@ t_csv_parse( lua_State *L, struct t_csv *csv )
 					(csv->run) += 2;
 				else
 				{
-					// push a \0 terminated string that can be safely gsub()-ed
-					// creates extra copy that needs to be popped
+					// push a \0 terminated string on stack that can be safely gsub()-ed
+					// creates extra copy on stack that needs to be popped
 					lua_pushlstring( L, csv->fld, csv->run - csv->fld );
 					luaL_gsub( L, lua_tostring( L, -1 ), csv->qtd, csv->qts ); // pushes rinsed result onto stack
 					lua_remove( L, -2 );
@@ -161,12 +152,8 @@ t_csv_parse( lua_State *L, struct t_csv *csv )
 /**--------------------------------------------------------------------------
  * Attempts to read a single line of CSV content
  * \param   L       Lua state.
- * \lparam  table   T.Csv table instance.
+ * \lparam  ud      t_csv userdata..
  * \lparam  string  Single row of CSV content.
- * \lparam  string  Delimiter character.
- * \lparam  string  Quotation character.
- * \lparam  boolean Is it double quoted?
- * \lparam  string  Escape character.
  * \lreturn boolean Was it complete? False mean more lines are needed.
  * \return  int     # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
@@ -174,17 +161,16 @@ static int
 lt_csv_parseLine( lua_State *L )
 {
 	//S: csv lne tbl
-	size_t         len;
 	struct t_csv  *csv = t_csv_check_ud( L, 1, 1 );
 	const char    *lne = luaL_checklstring( L, 2, &(csv->len) );
 
-	t_stackDump( L );
+	//t_stackDump( L );
 
-	printf( "[%s]%s\n", states[csv->ste], lne );
+	printf( "[%s]%s\n", t_csv_ste_nme[csv->ste], lne );
 	// T_CSV_INQUOTES is the only re-entrant state (handle multi-line fields)
 	if (T_CSV_INQUOTES == csv->ste)
 	{
-		printf( "[%lu   %lu]  %lld\n ", csv->fld - csv->lne, csv->run - csv->lne, csv->cnt );
+		//printf( "[%lu   %lu]  %lld\n ", csv->fld - csv->lne, csv->run - csv->lne, csv->cnt );
 		csv->fld  = (char *) lne + (csv->fld - csv->lne);
 		csv->run  = csv->fld;
 		//csv->run  = (char *) lne + (csv->run - csv->lne);
@@ -228,7 +214,6 @@ lt_csv__tostring( lua_State *L )
 }
 
 
-
 /**--------------------------------------------------------------------------
  * __index method for Csv.
  * \param   L      Lua state.
@@ -244,7 +229,6 @@ lt_csv__index( lua_State *L )
 	size_t        keyLen;
 	const char   *key     = luaL_checklstring( L, 2, &keyLen );
 
-	//t_stackDump(L);
 	if (0 == strncmp( key, "delimiter", keyLen ))
 		lua_pushlstring( L, csv->dlm, 1 );
 	else if (0 == strncmp( key, "quotchar", keyLen ))
@@ -254,7 +238,7 @@ lt_csv__index( lua_State *L )
 	else if (0 == strncmp( key, "doublequoted", keyLen ))
 		lua_pushboolean( L, csv->dbl );
 	else if (0 == strncmp( key, "state", keyLen ))
-		lua_pushinteger( L, csv->ste );
+		lua_pushstring( L, t_csv_ste_nme[ csv->ste ] );
 	else if (0 == strncmp( key, "handle", keyLen ))
 		lua_rawgeti( L, LUA_REGISTRYINDEX, csv->hR );
 	else if (0 == strncmp( key, "line", keyLen ))
@@ -284,9 +268,6 @@ lt_csv__newindex( lua_State *L )
 	size_t        keyLen;
 	const char   *key     = luaL_checklstring( L, 2, &keyLen );
 
-	t_stackDump(L);
-
-	// p state, delimter, quotchar, escapechar, doublequoted
 	if (0 == strncmp( key, "delimiter", keyLen ))
 	{
 		csv->dlm[0] = lua_tostring(  L, 3 )[ 0 ];
@@ -308,8 +289,9 @@ lt_csv__newindex( lua_State *L )
 	else if (0 == strncmp( key, "doublequoted", keyLen ))
 		csv->dbl     = lua_toboolean( L, 3 );
 	else if (0 == strncmp( key, "state", keyLen ) )
-		csv->ste     = lua_tointeger( L, 3 );
+		csv->ste     = luaL_checkoption( L, 3, "tex", t_csv_ste_nme );
 	else if (0 == strncmp( key, "handle", keyLen ) )
+		// TODO: either don't allow to set or check it's actually a FILE*
 		csv->hR      = luaL_ref( L, LUA_REGISTRYINDEX );
 	else if (0 == strncmp( key, "line", keyLen ) )
 		csv->lne     = luaL_checklstring( L, 3, &(csv->len) );
@@ -340,15 +322,15 @@ lt_csv__gc( lua_State *L )
  * Class metamethods library definition
  * --------------------------------------------------------------------------*/
 static const struct luaL_Reg t_csv_fm [] = {
-	  { NULL           , NULL }
+	  { NULL           , NULL              }
 };
 
 /**--------------------------------------------------------------------------
  * Class functions library definition
  * --------------------------------------------------------------------------*/
 static const struct luaL_Reg t_csv_cf [] = {
-	  {"new"           , lt_csv_New }
-	, { NULL           , NULL }
+	  {"new"           , lt_csv_New        }
+	, { NULL           , NULL              }
 };
 
 /**--------------------------------------------------------------------------
@@ -356,11 +338,11 @@ static const struct luaL_Reg t_csv_cf [] = {
  * --------------------------------------------------------------------------*/
 static const luaL_Reg t_csv_m [] = {
 	// metamethods
-	  { "__tostring"   , lt_csv__tostring }
-	, { "__index"      , lt_csv__index }
-	, { "__newindex"   , lt_csv__newindex }
-	, { "__gc"         , lt_csv__gc }
-	, { "parseLine"    , lt_csv_parseLine }
+	  { "__tostring"   , lt_csv__tostring  }
+	, { "__index"      , lt_csv__index     }
+	, { "__newindex"   , lt_csv__newindex  }
+	, { "__gc"         , lt_csv__gc        }
+	, { "parseLine"    , lt_csv_parseLine  }
 	, { NULL           , NULL }
 };
 

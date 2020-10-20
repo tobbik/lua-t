@@ -28,8 +28,7 @@ SCREEN=$(shell which screen)
 DOCKER=$(shell which docker)
 DOCKERPS=$(DOCKER) ps --format "table {{.Names}}"
 CONTAINER=luab
-VERSION=5.3
-IMAGE=lua$(shell echo $(VERSION) | sed "s/\.//")
+IMAGE=lua$(shell echo $(LVER) | sed "s/\.//")
 TZDATAPATH=build/tz
 
 all: $(SRCDIR)/*.so
@@ -39,14 +38,15 @@ $(SRCDIR)/*.so:
 	 LVER="$(LVER)" \
 	 MYCFLAGS="$(MYCFLAGS)" \
 	 LDFLAGS="$(LDFLAGS)" \
-	 INCS="$(INCDIR)" \
+	 INCDIR="$(INCDIR)" \
 	 PREFIX="$(PREFIX)"
 
 install:
 	@cd $(SRCDIR); $(MAKE) CC=$(CC) LD=$(LD) \
 	                 LVER=$(LVER) \
 	                 MYCFLAGS="$(MYCFLAGS)" \
-	                 INCDIR="$(LUAINC)" \
+	                 LDFLAGS="$(LDFLAGS)" \
+	                 INCDIR="$(INCDIR)" \
 	                 BUILD_EXAMPLE=1 \
 	                 DEBUG=1 \
 	                 PREFIX="$(PREFIX)" install

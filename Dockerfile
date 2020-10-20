@@ -1,7 +1,7 @@
 FROM       alpine:latest AS luabuilder
 MAINTAINER Tobias Kieslich <tobias.kieslich@gmail.com>
 
-ENV LVER=5.3 LREL=4 LURL=http://www.lua.org/ftp/
+ENV LVER=5.4 LREL=1 LURL=http://www.lua.org/ftp/
 
 # Build dependencies.
 RUN apk update && \
@@ -33,26 +33,23 @@ COPY lua      /lua-t/lua
 COPY test     /lua-t/test
 COPY example  /lua-t/example
 COPY Makefile /lua-t/Makefile
+COPY dev.mk   /lua-t/dev.mk
 RUN cd /lua-t && \
     make BUILD_EXAMPLE=1 pristine && \
     make \
       LVER=${LVER} \
-      MYCFLAGS="-fbuiltin -g -O0" \
-      INCDIR=/usr/include \
-      BUILD_EXAMPLE=1 \
-      DEBUG=1 \
-      PREFIX=/usr all && \
-    make \
-      LVER=${LVER} \
+      CC=gcc LD=gcc \
       MYCFLAGS="-fbuiltin -g -O0" \
       INCDIR=/usr/include \
       BUILD_EXAMPLE=1 \
       DEBUG=1 \
       PREFIX=/usr install
 
+
+
 # second stage: install the build products only and clean out the trash
 FROM       alpine:latest
-ENV LVER=5.3 LREL=4 LURL=http://www.lua.org/ftp/
+ENV LVER=5.4 LREL=1 LURL=http://www.lua.org/ftp/
 RUN apk update && \
     apk --no-cache add bash readline
 COPY --from=luabuilder  /usr/bin/lua         /usr/bin/lua

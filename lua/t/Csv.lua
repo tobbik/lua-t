@@ -1,8 +1,8 @@
 -- \file      lua/t/Csv.lua
--- \brief     CSV?TSV Parser 
+-- \brief     CSV/TSV Parser
 -- \detail    This jumps heavily between C and  Lua because it makes plenty use of
---            io:lines() instead of reimplementing that logic.  Main function is
---            csv:read() and csv:write().
+--            io:read() instead of re-implementing that logic.  Main function is
+--            csv:rows() and csv:write().
 -- \author    tkieslich
 -- \copyright See Copyright notice at the end of src/t.h
 
@@ -12,26 +12,9 @@ local io_open = io.open
 local csv_mt  = debug.getregistry( )[ "T.Csv" ]
 local Csv_mt  = getmetatable( Csv )
 
-
+local csv_new = Csv.new
+Csv.new       = nil
 --csv_mt.__pairs    = function( self ) end
-
-csv_mt.words      = function( self )
-	local line = self.handle:read( )  -- current line
-	local pos = 1           -- current position in the line
-	return function ()      -- iterator function
-		while line do           -- repeat while there are lines
-			local s, e = line:find(  "%w+", pos )
-			if s then            -- found a word?
-				pos = e + 1       -- next position is after this word
-				return line:sub( s, e)     -- return the word
-			else
-				line = self.handle:read( )  -- word not found; try next line
-				pos = 1           -- restart from first position
-			end
-		end
-		return nil            -- no more lines: end of traversal
-	end
-end
 
 csv_mt.rows      = function( self )
 	local parsed  = { }
@@ -47,7 +30,7 @@ csv_mt.rows      = function( self )
 				return result
 			else
 				-- IF the line breaks are not \n we are already in trouble because file:read() strips any kind of line break
-				-- this assumes \n, it's the best we can do
+				-- this assumes \n, it's the best we can do. TODO: smarter detect line breaks
 				line = line .."\n".. self.handle:read( )
 				--line = line .. self.handle:read( 'L' )
 			end
@@ -57,17 +40,27 @@ csv_mt.rows      = function( self )
 end
 
 Csv_mt.__call     = function( csvClass, file, delimiter, quotchar, escapechar, doublequoted )
-	local instance        = csvClass.new( )
-	instance.delimiter    = delimiter    or ","
-	instance.quotchar     = quotchar     or "\""
-	instance.escapechar   = escapechar   or "\\"
-	instance.doublequoted = nil == doublequoted and false or true
-	if 'string' == type( file ) then
-		instance.handle = assert( io_open( file, 'r' ) )
-	elseif 'userdata' == type( file ) and 'function' == type( file.read ) then
-		instance.handle = csv
+	local instance        = csv_new( )
+	local fHandle
+	if 'table' == type( file ) then
+		instance.delimiter    = file.delimiter    or ","
+		instance.quotchar     = file.quotchar     or "\""
+		instance.escapechar   = file.escapechar   or "\\"
+		instance.doublequoted = nil == file.doublequoted and false or true
+		fHandle               = file.handle
 	else
-		error( 'Expected string or file handle' )
+		instance.delimiter    = delimiter    or ","
+		instance.quotchar     = quotchar     or "\""
+		instance.escapechar   = escapechar   or "\\"
+		instance.doublequoted = nil == doublequoted and false or true
+		fHandle               = file
+	end
+	if 'string' == type( fHandle ) then
+		instance.handle = assert( io_open( fHandle, 'r' ) )
+	elseif 'userdata' == type( fHandle ) and 'function' == type( fHandle.read ) then
+		instance.handle = fHandle
+	else
+		error( 'Expected string or Lua file handle' )
 	end
 	return instance
 end

@@ -143,7 +143,7 @@ $(T_NRY_LIB): $(T_NRY_OBJ)
 	$(LD) $(MYCFLAGS) -shared $^ -o $@ $(LDFLAGS)
 
 #.c.o:
-#	$(CC) -I$(INCS) $(CFLAGS) $< -o $@
+#	$(CC) -I$(INCDIR) $(CFLAGS) $< -o $@
 
 install: $(LIBS) $(T_INSTALL)
 
@@ -158,7 +158,7 @@ test: $(SRCDIR)
 	$(LD) $(MYCFLAGS) -shared $? -o $@ $(LDFLAGS)
 
 %.o: %.c
-	$(CC) -I$(INCS) $(CFLAGS) -c $< -o $@
+	$(CC) -I$(INCDIR) $(CFLAGS) -c $< -o $@
 
 $(INSTALL_CMOD)/%.so: %.so
 	$(INSTALL_DATA) $< $@

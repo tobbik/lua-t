@@ -31,14 +31,13 @@ LUAURL=https://www.lua.org/ftp
 COMPDIR=$(CURDIR)/compile
 PREFIX=$(CURDIR)/out
 DLDIR=$(CURDIR)/download
-LUAINC=$(PREFIX)/include
-
-all: $(PREFIX)/bin/lua
+INCDIR=$(PREFIX)/include
 
 CC=clang
 LD=clang
 
-dev-all: $(SO_INSTALL)
+
+all: $(PREFIX)/bin/lua
 
 # create a local Lua installation
 $(DLDIR):
@@ -67,7 +66,7 @@ dev-clean:
 	$(MAKE) CC=$(CC) LD=$(LD) \
 		LVER=$(LVER) \
 		MYCFLAGS="$(MYCFLAGS)" \
-		INCDIR="$(LUAINC)" \
+		INCDIR="$(INCDIR)" \
 		BUILD_EXAMPLE=1 \
 		DEBUG=1 \
 		PREFIX="$(PREFIX)" clean
@@ -84,10 +83,10 @@ dev-pristine:
 
 dev: $(PREFIX)/bin/lua
 	$(MAKE)  -j4 CC=$(CC) LD=$(LD) \
-	 LVER=5.4 LREL=0 LUASRC=lua-5.4.0.tar.gz LUAURL=http://www.lua.org/ftp \
-	 LVER=$(LVER) LREL=$(LREL) \
+	 LVER=$(LVER) LREL=$(LREL) LUASRC=$(LUASRC) LUAURL=$(LUAURL) \
 	 MYCFLAGS="$(MYCFLAGS)" \
-	 INCDIR="$(LUAINC)" \
+	 INCDIR="$(INCDIR)" \
+	 LDFLAGS="$(LDFLAGS)" \
 	 BUILD_EXAMPLE=1 \
 	 DEBUG=1 \
 	 PREFIX="$(PREFIX)" install

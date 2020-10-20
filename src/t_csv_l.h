@@ -6,28 +6,35 @@
  * \copyright See Copyright notice at the end of t.h
  */
 
-
 #include "t_csv.h"
-#include "t.h"             // UNUSED()
+#include "t.h"             // t_typeerror()
 
 enum t_csv_ste {
-	  T_CSV_FLDSTART      ///< 0 start a brand new field
-	, T_CSV_FLDEND        ///< 1 reached end of a field
-	, T_CSV_NOQOUTE       ///< 2 start of a non quoted field
-	, T_CSV_INQUOTES      ///< 3 within a quoted field
-	, T_CSV_ROWTRUNCED    ///< 5 must read more data to continue parsing field
-	, T_CSV_ROWDONE       ///< 6 return control
+	  T_CSV_FLDSTART   = 0  ///< 0 start a brand new field
+	, T_CSV_FLDEND     = 1  ///< 1 reached end of a field
+	, T_CSV_NOQOUTE    = 2  ///< 2 start of a non quoted field
+	, T_CSV_INQUOTES   = 3  ///< 3 within a quoted field
+	, T_CSV_ROWTRUNCED = 4  ///< 4 must read more data to continue parsing field
+	, T_CSV_ROWDONE    = 5  ///< 5 return control
 };
-char* states[ ] = { "F_SRT", "F_END", "NOQTE","INQTE","R_TRC","R_DNE" };
+const char* t_csv_ste_nme[ ] = {
+	  "FieldStart"
+	, "FieldEnd"
+	, "NoQuotes"
+	, "InQoutes"
+	, "RowTruncated"
+	, "RowDone"
+	, NULL
+};
 
-/// The userdata struct for T.Csv
+/// The userdata struct for T.Csv row parser
 struct t_csv
 {
 	enum t_csv_ste    ste;  ///< Current parse state
-	char           dlm[2];  ///< Tsv/Csv delimiter character string
-	char           qts[2];  ///< quotation string
-	char           qtd[3];  ///< quotation string for substitution (doublequotes)
-	char           esc[2];  ///< Tsv/Csv escape character string
+	char           dlm[2];  ///< Tsv/Csv delimiter character string, NUL terminated
+	char           qts[2];  ///< quotation string, NUL terminated
+	char           qtd[3];  ///< quotation string for substitution (doublequotes), NUL terminated
+	char           esc[2];  ///< Tsv/Csv escape character string, NUL terminated
 	int               dbl;  ///< Use double quotation
 	lua_Integer        hR;  ///< Reference to file handle in LUA_REGISTRYINDEX
 	lua_Integer       cnt;  ///< running field count of current line

@@ -16,7 +16,8 @@ local fmt       = string.format
 
 local tests = {
 	beforeAll    = function( self, done )
-		self.ipv6 = (#Interface.default( ).AF_INET6 > 0)
+		local d   = Interface.default( )
+		self.ipv6 = d.AF_INET6 and #d.AF_INET6 > 0
 		done( )
 	end,
 

@@ -90,7 +90,7 @@ p_net_ifs_getStats( lua_State *L, struct ifaddrs *ifa )
 	// TODO: This can hold a MAC Address but not a FireWire address -> needs
 	// hardware to do more dev work.  Consider using sockaddr_ll->sll_halen
 	// properly.
-	char                    hw_buffer[ 18 ];
+	char                    hw_buffer[ 19 ]; // 18+1 for NUL termination
 
 	if (ifa->ifa_addr && ifa->ifa_data && AF_PACKET == ifa->ifa_addr->sa_family)
 	{
@@ -218,10 +218,6 @@ int
 p_net_ifc_get( lua_State *L, const char *if_name )
 {
 	struct ifaddrs   *all_ifas, *ifa;
-	struct ifreq      ifr;       // ifrec truct for ioctl() ops
-	//int               sck;       // socket for ioctl() ops
-	int               crt;       // flag, if i_face table was created in
-	                             // this iteration
 
 	if (0 != getifaddrs( &all_ifas ))
 		return t_push_error( L, "couldn't retrieve interface information" );
@@ -231,10 +227,8 @@ p_net_ifc_get( lua_State *L, const char *if_name )
 	else
 		lua_pushnil( L );             // "fake" empty lua_getfield() result
 
-	//sck = socket( AF_INET, SOCK_DGRAM, 0 );
 	for (ifa = all_ifas; ifa; ifa = ifa->ifa_next)
 	{
-		crt = 0;
 		//printf("N: %s(%d)\n", ifa->ifa_name, (ifa->ifa_addr) ? ifa->ifa_addr->sa_family : -1 );
 		if (NULL != if_name && 0 != strcmp( ifa->ifa_name, if_name ))
 			continue;
@@ -248,7 +242,6 @@ p_net_ifc_get( lua_State *L, const char *if_name )
 			lua_setfield( L, -2, "name" );
 			luaL_getmetatable( L, T_NET_IFC_TYPE );
 			lua_setmetatable( L , -2 );
-			crt = 1;
 		}
 		if (NULL == if_name)
 		{
@@ -258,23 +251,11 @@ p_net_ifc_get( lua_State *L, const char *if_name )
 		p_net_ifc_parseFlags( L, ifa );      // only executes once per ifa_name
 		p_net_ifs_getAddresses( L, ifa );    // only executes for sa_family = AF_INET || AF_INET6
 		p_net_ifs_getStats( L, ifa );        // only executes for sa_family = AF_PACKET
-		// ioctl() for extra information
-		//if (crt)
-		//{
-		//	memset( &ifr, 0, sizeof( struct ifreq ) );
-		//	strcpy( ifr.ifr_name, ifa->ifa_name );
-		//	if (0 == ioctl( sck, SIOCGIFMTU, &ifr ))
-		//	{
-		//		lua_pushinteger( L, ifr.ifr_mtu );
-		//		lua_setfield( L, -2, "mtu" );
-		//	}
-		//}
 
 		if (NULL == if_name)
 			lua_pop( L, 1 );
 	}
 
 	freeifaddrs( all_ifas );
-	//close( sck );
 	return 1;
 }
