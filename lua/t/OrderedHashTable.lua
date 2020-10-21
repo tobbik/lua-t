@@ -155,7 +155,7 @@ end
 -- ---------------------------- Instance metatable --------------------
 -- essentials
 _mt = {       -- local _mt at top of file
-	__name     = "t.OrderedHashTable",
+	__name     = "T.OrderedHashTable",
 	__len      = function( self )           return #(getPrx( self )) end,
 	__index    = function( self, key )      return getElement( getPrx( self ), key ) end,
 	__newindex = function( self, key, val ) setElement( getPrx( self ), key, val )   end,
@@ -165,7 +165,7 @@ _mt = {       -- local _mt at top of file
 	__eq       = function( self, othr )     return equals( getPrx(self), getPrx( othr ) ) end,
 }
 -- allow luaL_getmetatable( L )
-debug.getregistry( )[ 'T.OrderedHashTable' ] = _mt
+debug.getregistry( )[ 't.OrderedHashTable' ] = _mt
 
 
 return setmetatable( {

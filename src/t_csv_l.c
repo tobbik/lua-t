@@ -166,7 +166,7 @@ lt_csv_parseLine( lua_State *L )
 
 	//t_stackDump( L );
 
-	printf( "[%s]%s\n", t_csv_ste_nme[csv->ste], lne );
+	//printf( "[%s]%s\n", t_csv_ste_nme[csv->ste], lne );
 	// T_CSV_INQUOTES is the only re-entrant state (handle multi-line fields)
 	if (T_CSV_INQUOTES == csv->ste)
 	{

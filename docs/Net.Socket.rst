@@ -384,13 +384,14 @@ The following explains what each argument means.
   length of ``Buffer/Segment buf`` or the length or ``BUFSIZ`` ``recv()``
   will throw an error.
 
-``boolean false, string errMsg = Net.Socket sck:recv( ... )``
+``boolean false, string errMsg, int errNo = Net.Socket sck:recv( ... )``
   If ``recv()`` fails the first return value will evaluate to ``false``.  If
   a system err has occured the message will be in the secind return value.
   A return value of 0 bytes is returned as ``nil``, which also evaluates as
   ``false`` and that is usually indicative of the peer having the socket
   closed.  This is normal operation but can be detected via ``if sck:recv()
-  then ...``.  In this case no error meassage is returned.
+  then ...``.  In this case no error meassage is returned. ``int errNo`` is
+  the system internal error number as reported by the kernel.
 
 
 Overloaded send() method
@@ -575,13 +576,13 @@ T.Time (struct timeval) Socket options
 String Socket Options
 ''''''''''''''''''''''
 
-``string str = sck.family"      [readonly ]``
+``string str = sck.family"      [readonly]``
   Sockets family type. (AF_INET, AF_INET6, ...).
 
-``string str = sck.type"        [readonly ] (SO_TYPE)``
+``string str = sck.type"        [readonly] (SO_TYPE)``
   Socket type. (STREAM, DGRAM, ...).
 
-``string str = sck.protocol"    [readonly ] (SO_PROTOCOL)``
+``string str = sck.protocol"    [readonly] (SO_PROTOCOL)``
   Socket protocol. (TCP, UDP, ...).
 
 
@@ -592,8 +593,8 @@ Instance Metamembers
 ``string s = tostring( Net.Socket sck )  [__tostring]``
   Returns a string representing the Net.Socket instance.  The String
   contains type, Socket handle number and memory address information such as
-  ``*t.Net.Socket[TCP,3]: 0xdac2e8*``, meaning it is a TCP Socket with socket
-  handle number 3.
+  ``*t.Net.Socket{4}: 0xdac2e8*``, meaning it is a Socket with socket handle
+  number 4.
 
 ``Net.Socket sck = nil  [__gc]``
   Garbage collector makes sure the socket closes and gets properly disposed

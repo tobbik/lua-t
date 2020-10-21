@@ -10,7 +10,7 @@ local host,port = '0.0.0.0',8000
 local srv, adr   = httpServer:listen( host, port, 1000 )
 print( fmt( "Started `%s` at `%s` (%s)", srv, adr, srv.family ) )
 httpServer.ael:run( )
---]]
+--]
 
 Csv     = require't.Csv'
 --csv     = Csv( 'sample.tsv', '\t' )
@@ -34,26 +34,7 @@ for row in csv:rows( ) do
 	end
 	r = r + 1
 end
---  ]]
---[[
-pp = require't.Table'.pprint
-Interface=require't.Net.Interface'
-
-ifs=Interface.list( )
-pp( ifs )
-
-
-r=require't'.require
-I=require't.Net.Interface'
-pp=require't.Table'.pprint
-map=require't.Table'.map
-
-S=require't.Net.Socket'
-P=require't.Net.Socket.Protocol'
-A=require't.Net.Address'
-t=r'test/t_net_adr'
-d=debug.getregistry()
-
-s=S('tcp')
-s1=S('tcp','AF_INET6','stream')
 --]]
+r=require't'.require
+t=r'test/t_buf'
+t()

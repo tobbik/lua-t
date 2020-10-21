@@ -12,11 +12,45 @@
 #include "t_net_l.h"
 #include "t_buf.h"
 #include <stdlib.h>   // bsearch()
+#include <errno.h>    // errno
 
 #ifdef DEBUG
 #include "t_dbg.h"
 #endif
 
+/**--------------------------------------------------------------------------
+ * Push function related error and format the errno on stack.
+ * \param   L         Lua State.
+ * \param   adr       t_net_adr Address struct.
+ * \param   msg       char pointer to formatting message.
+ * \lreturn false     Boolean, signifies it went wrong.
+ * \lreturn errMsg    String, Error message of `msg`+ system error message.
+ * \lreturn errNo     Int, Error number of system error message.
+ * \return  returns   3 which is # of elements left on stack.
+ * --------------------------------------------------------------------------*/
+static int
+t_net_sck_pushErrno( lua_State *L, struct sockaddr_storage *adr, const char *msg, ... )
+{
+	char                     dst[ INET6_ADDRSTRLEN ];
+	va_list                  argp;
+
+	lua_pushboolean( L, 0==1 );
+	va_start( argp, msg );
+	luaL_where( L, 1 );
+	lua_pushvfstring( L, msg, argp );
+	va_end( argp );
+	if (NULL == adr)
+		lua_pushfstring( L, " (%s)", strerror( errno ) );
+	else
+	{
+		SOCK_ADDR_INET_NTOP( adr, dst );
+		lua_pushfstring( L, " %s:%d (%s)", dst,
+		   ntohs( SOCK_ADDR_SS_PORT( adr ) ), strerror( errno ) );
+	}
+	lua_concat( L, 3 );
+	lua_pushinteger( L, errno );
+	return 3;
+}
 
 /**--------------------------------------------------------------------------
  * Create a socket and push to LuaStack.
@@ -38,10 +72,12 @@ lt_net_sck_New( lua_State *L )
 	struct t_net_sck *sck;
 
 	sck  = t_net_sck_create_ud( L );
-	p_net_sck_createHandle( L, sck,
-	   (AF_UNIX == luaL_checkinteger( L, 2 )) ? 0 : lua_tointeger( L, 2 ),
-	   luaL_checkinteger( L, 3 ),
-	   luaL_checkinteger( L, 1 ) );
+	if (-1 == p_net_sck_createHandle( sck,
+	      (AF_UNIX == luaL_checkinteger( L, 2 )) ? 0 : lua_tointeger( L, 2 ),
+	      luaL_checkinteger( L, 3 ),
+	      luaL_checkinteger( L, 1 ) )
+		)
+		t_push_error( L, "Can't create socket" );
 
 	return 1;
 }
@@ -79,7 +115,10 @@ lt_net_sck_close( lua_State *L )
 {
 	struct t_net_sck *sck = t_net_sck_check_ud( L, 1, 1 );
 	//printf("CLOSING SOCK: %d\n", sck->fd);
-	return p_net_sck_close( L, sck );
+	if (-1 == p_net_sck_close( sck ))
+		return t_net_sck_pushErrno( L, NULL, "Can't close socket" );
+	else
+		return 0;
 }
 
 
@@ -93,7 +132,10 @@ static int
 lt_net_sck_shutDown( lua_State *L )
 {
 	struct t_net_sck *sck     = t_net_sck_check_ud( L, 1, 1 );
-	return p_net_sck_shutDown( L, sck, luaL_checkinteger( L, 2 ) );
+	if (-1 == p_net_sck_shutDown( sck, luaL_checkinteger( L, 2 ) ))
+		return t_net_sck_pushErrno( L, NULL, "Can't shutdown socket" );
+	else
+		return 0;
 }
 
 
@@ -114,7 +156,10 @@ lt_net_sck_listener( lua_State *L )
 	struct t_net_sck   *sck = t_net_sck_check_ud( L, 1, 1 );
 	int                 bl  = luaL_optinteger( L, 2, SOMAXCONN );
 
-	return p_net_sck_listen( L, sck, bl );
+	if (-1 == p_net_sck_listen( sck, bl ))
+		return t_net_sck_pushErrno( L, NULL, "Can't listen on socket" );
+	else
+		return 1;
 }
 
 
@@ -131,7 +176,13 @@ lt_net_sck_binder( lua_State *L )
 	struct t_net_sck        *sck = t_net_sck_check_ud( L, 1, 1 );
 	struct sockaddr_storage *adr = t_net_adr_check_ud( L, 2, 1 );
 
-	return p_net_sck_bind( L, sck, adr );
+	if (-1 == p_net_sck_bind( sck, adr ))
+		return t_net_sck_pushErrno( L, adr, "Can't bind socket to" );
+	else
+	{
+		lua_pushboolean( L, 1 );
+		return 1;
+	}
 }
 
 
@@ -153,7 +204,13 @@ lt_net_sck_connecter( lua_State *L )
 	struct t_net_sck        *sck = t_net_sck_check_ud( L, 1, 1 );
 	struct sockaddr_storage *adr = t_net_adr_check_ud( L, 2, 1 );
 
-	return p_net_sck_connect( L, sck, adr );
+	if (-1 == p_net_sck_connect( sck, adr ))
+		return t_net_sck_pushErrno( L, adr, "Can't connect socket to" );
+	else
+	{
+		lua_pushboolean( L, 1 );
+		return 1;
+	}
 }
 
 
@@ -171,7 +228,10 @@ lt_net_sck_accept( lua_State *L )
 	struct t_net_sck        *srv = t_net_sck_check_ud( L, 1, 1 );// listening socket
 	struct t_net_sck        *cli = t_net_sck_create_ud( L );     // accepted socket
 	struct sockaddr_storage *adr = t_net_adr_create_ud( L );     // peer address
-	return p_net_sck_accept( L, srv, cli, adr );
+	if (-1 == p_net_sck_accept( srv, cli, adr ))
+		return t_net_sck_pushErrno( L, adr, "Can't accept on socket bound" );
+	else
+		return 2;
 }
 
 
@@ -208,10 +268,15 @@ lt_net_sck_send( lua_State *L )
 	                               ? (size_t) luaL_checkinteger( L, (NULL==adr) ?3 :4 )
 	                               : len;
 
-	snt = p_net_sck_send( L, sck, adr, msg, (max<len) ? max : len );
+	snt = p_net_sck_send( sck, adr, msg, (max<len) ? max : len );
 	if (snt > -1)
+	{
 		lua_pushinteger( L, snt );
-	return ((snt < 0) ? 3 : 1);   // for <0 is false, errMsg, errNo on stack
+		return 1;
+	}
+	else
+		return t_net_sck_pushErrno( L, adr,
+			(NULL == adr) ? "Can't send message" : "Can't send Message to" );
 }
 
 
@@ -249,11 +314,11 @@ lt_net_sck_send( lua_State *L )
 static int
 lt_net_sck_recv( lua_State *L )
 {
-	size_t                   len  = 0;  // length of sink
+	size_t                   len  = 0;  // length of sink buffer
 	size_t                   max;       // desired or determined size to recv
-	int                      cw   = 0;  // test buffer to be writeable
+	int                      cw   = 0;  // test buffer to be writeable (can write)
 	ssize_t                  rcvd = 0;  // actually rcvd bytes
-	char                     buf[ BUFSIZ ]; // char buffer if no t.Buffer is passed
+	luaL_Buffer              lB;
 	char                    *msg;       // char pointer to recv into
 	size_t                   args = lua_gettop( L );
 	struct t_net_sck        *sck  = t_net_sck_check_ud( L, 1, 1 );
@@ -264,23 +329,31 @@ lt_net_sck_recv( lua_State *L )
 		msg = t_buf_checklstring( L, (NULL==adr) ?2 :3, &len, &cw );
 		max = (args == ((NULL==adr) ?3 :4)) ? (size_t) luaL_checkinteger( L, (NULL==adr) ?3 :4 ) : len;
 		luaL_argcheck( L, max<=len, (NULL==adr) ?2 :3, "max must be smaller than sink" );
-		rcvd = p_net_sck_recv( L, sck, adr, msg, max );
-		if (rcvd > 0 )  // 0 for nothing received
-			lua_pushboolean( L, 1 );
+		rcvd = p_net_sck_recv( sck, adr, msg, max );
+		if (rcvd > -1 )  // 0 for nothing received
+			lua_pushboolean( L, rcvd > 0 );
 	}
 	else
 	{
 		max = (args == ((NULL==adr) ?2 :3)) ? luaL_checkinteger( L, (NULL==adr) ?2 :3 ) : BUFSIZ-1;
 		luaL_argcheck( L, max<BUFSIZ, (NULL==adr) ? 2:3, "max must be smaller than BUFSIZ" );
-		rcvd = p_net_sck_recv( L, sck, adr, buf, max );
-		if (rcvd > 0 )  // 0 for nothing received, -1 for errno being set
-			lua_pushlstring( L, buf, rcvd );
+		msg = luaL_buffinitsize( L, &lB, max );
+		rcvd = p_net_sck_recv( sck, adr, msg, max );
+		if (rcvd < 1)  // 0 for nothing received, -1 for errno being set
+		{
+			luaL_pushresultsize( &lB, 0 );
+			lua_pop( L, 1 );
+			if (0 == rcvd)  // 0 for nothing received
+				lua_pushnil( L );
+		}
+		else
+			luaL_pushresultsize( &lB, rcvd );
 	}
-	if (rcvd == 0)
-		lua_pushnil( L );
-	if ( rcvd > -1 )
-		lua_pushinteger( L, (lua_Integer) rcvd );
-	return ((rcvd < 0) ? 3 : 2);
+	if (-1 == rcvd)
+		return t_net_sck_pushErrno( L, adr,
+			(NULL == adr) ? "Can't receive message" : "Can't receive Message from" );
+	lua_pushinteger( L, (lua_Integer) rcvd );
+	return 2;
 }
 
 
@@ -300,8 +373,10 @@ lt_net_sck_getsockname( lua_State *L )
 
 	if (NULL == adr)
 		adr = t_net_adr_create_ud( L );
-
-	return p_net_sck_getsockname( L, sck, adr );
+	if (-1 == p_net_sck_getsockname( sck, adr ))
+		return t_net_sck_pushErrno( L, NULL, "Couldn't get Address from" );
+	else
+		return 1;
 }
 
 
@@ -514,7 +589,7 @@ luaopen_t_net_sck( lua_State *L )
 	luaL_newmetatable( L, T_NET_SCK_TYPE );   // stack: functions meta
 	luaL_setfuncs( L, t_net_sck_m, 0 );
 	lua_pop( L, 1 );
-	p_net_sck_open( );    // native initialization
+	p_net_sck_open( );                     // native initialization
 
 	// Push the class onto the stack
 	// this is avalable as Socket.<member>

@@ -20,10 +20,9 @@ tests = {
 		self.s   = self.rtvg:getWords( n )
 		self.b   = Buffer( self.s )
 		local  l = #self.s
-		local st = math.random( math.floor(l/6), math.floor(l/2 ) )
-		local ed = math.random( st, l )
-		while ed==st do ed=math.random(st,l) end -- that's a very weird bug
-		self.seg = self.b:Segment( st, ed-st )
+		self.margin = math.floor(l/8)
+		local st = math.random( self.margin, math.floor(l/2)-self.margin )
+		self.seg = self.b:Segment( st, math.floor(l/2) )
 	end,
 
 	--afterEach = function( self )  -- not necessary for this suite
@@ -154,8 +153,9 @@ tests = {
 
 	test_ReadLengthBeyondSegmentLengthShorterString = function( self )
 		Test.Case.describe( "Reading from Buffer beyond it's length returns shorter string" )
-		local r = self.seg:read( -100, 200 )
-		assert( #r == 100, "Expected 100 but was " .. #r )
+		print( '\n', self.b, self.seg, self.seg.start, self.seg.last, #self.seg )
+		local r = self.seg:read( 0-self.margin, 2*self.margin )
+		assert( #r == self.margin, "Expected 100 but was " .. #r )
 	end,
 
 	test_ReadFullSegment = function( self )

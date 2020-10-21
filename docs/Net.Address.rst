@@ -75,7 +75,7 @@ Instance Metamembers
 ``string s = tostring( Net.Socket sck )  [__tostring]``
   Returns a string representing the ``Net.Address`` instance.  The string
   contains ``ip:port`` and memory address information such as
-  ``*t.Net.Address[[::1]:8000]: 0xdac2e8*``, meaning it is an AF6_INET
+  ``*t.Net.Address{[::1]:8000}: 0xdac2e8*``, meaning it is an AF6_INET
   (IPv6) Address with the destination localhost and port 8000.
 
 ``boolean x = Net.Address adr1 == Net.Address adr2  [__eq]``

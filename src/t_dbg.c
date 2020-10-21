@@ -13,6 +13,7 @@
 #include <stdint.h>     // printf in helpers
 
 #include "t_dbg.h"
+#include "t.h"          // t_getAbsPos()
 
 
 /** -------------------------------------------------------------------------
@@ -95,12 +96,12 @@ t_fmtStackItem( lua_State *L, int idx, int no_tostring )
  * \param  int   last stack element to format.
  *-------------------------------------------------------------------------*/
 void
-t_stackPrint( lua_State *L, int idx, int last, int no_tostring )
+t_stackPrint( lua_State *L, int pos, int last, int no_tostring )
 {
-	idx = (idx < 0) ? lua_gettop( L ) + idx + 1 : idx;  // get absolute stack position
-	for ( ;idx <= last; idx++)
+	pos = t_getAbsPos( L, pos );
+	for ( ;pos <= last; pos++)
 	{
-		t_fmtStackItem( L, idx, no_tostring );
+		t_fmtStackItem( L, pos, no_tostring );
 		printf( "%s  ", lua_tostring( L, -1 ) ); // print serialized item and separator
 		lua_pop( L, 1 );                         // pop serialized item
 	}

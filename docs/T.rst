@@ -44,6 +44,17 @@ Class Members
   field ``t.type()`` will return that value, otherwise it will return the
   same as Lua built-in ``type()``.
 
+.. code:: lua
+
+  T,Socket,Oht=require't',require't.Net.Socket',require't.OrderedHashTable'
+  f,s,o = io.input(), Socket(), Oht()
+  T.type(f)    -- 'FILE*'
+  type(f)      -- 'userdata'
+  T.type(s)    -- 'T.Net.Socket'
+  type(s)      -- 'userdata'
+  T.type(o)    -- 'T.OrderedHashTable'
+  type(o)      -- 'userdata'
+
 ``table prx = t.proxyTableIndex``
   The proxy-table index is a static value that is instantiated upon load
   time.  It is in fact a reference to an empty table.  It is used throughout

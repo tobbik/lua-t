@@ -36,7 +36,7 @@ t_getLoadedValue( lua_State *L, size_t len, int pos, ... )
 {
 	va_list          argp;
 	unsigned int     argc = 0;
-	pos = (pos < 0) ? lua_gettop( L ) + pos + 1 : pos; // get absolute stack position
+	pos = t_getAbsPos( L, pos );
 	luaL_getsubtable( L, LUA_REGISTRYINDEX, "_LOADED" );
 	va_start( argp, pos );
 	for (argc=0; argc<len; argc++)
@@ -78,8 +78,8 @@ t_push_error( lua_State *L, const char *fmt, ... )
 	va_list argp;
 	if (NULL==fmt)
 	{
-		if (0!=errno) return luaL_error( L, strerror( errno ) );
-		else          return luaL_error( L, "Unknown Error" );
+		if (0 != errno) return luaL_error( L, strerror( errno ) );
+		else            return luaL_error( L, "Unknown Error" );
 	}
 	else
 	{

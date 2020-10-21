@@ -26,6 +26,23 @@ tests = {
 		T.assert( size > 0 , "`t.Buffer.Size` should be a greater than 0 but is `%s`", size )
 	end,
 
+	test_ConstructorZeroSizedBufferFails = function( self )
+		Test.Case.describe( "Create a buffer of 0 length fails" )
+		local f   = function(n) local b = Buffer(0) end
+		local r,e = pcall( f, self )
+		print(e)
+		assert( not r, "Segement constructor should have failed" )
+		assert( e:match( "T.Buffer size must be greater than 0" ), "Wrong Error message: "..e )
+	end,
+
+	test_ConstructorNegativeSizedBufferFails = function( self )
+		Test.Case.describe( "Create a buffer of negative length fails" )
+		local f   = function(n) local b = Buffer( 0-math.random(1,1000) ) end
+		local r,e = pcall( f, self )
+		assert( not r, "Segement constructor should have failed" )
+		assert( e:match( "T.Buffer size must be greater than 0" ), "Wrong Error message: "..e )
+	end,
+
 	test_ConstructorEmptySizedBuffer = function( self )
 		Test.Case.describe( "Create an empty buffer of certain length" )
 		local  n = math.random( 100, 500 )
@@ -62,6 +79,8 @@ tests = {
 	end,
 
 	test_ConstructorFromSegment = function( self )
+		--TODO: this code can create a constructor tha calls with Length of -1
+		--How do we create a Segment with that lengths?
 		Test.Case.describe( "t.Buffer constructed from t.Buffer.Segment copy must match original" )
 		local seg = self.b:Segment( 1, math.floor( #self.b/2) )
 		local b   = Buffer( seg )
