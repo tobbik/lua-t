@@ -366,25 +366,25 @@ p_net_sck_setSocketOption( lua_State *L, struct t_net_sck        *sck,
 				else
 					ival &=  opt->option;
 				if (fcntl( sck->fd, opt->setlevel, ival ) < 0)
-					return t_push_error( L, "Can't set socket option `%s`", lua_tostring( L, 2 ) );
+					return t_push_error( L, 1, 1, "Can't set socket option `%s`", lua_tostring( L, 2 ) );
 			}
 			else
-				return t_push_error( L, "Can't set socket option `%s`", lua_tostring( L, 2 ) );
+				return t_push_error( L, 1, 1, "Can't set socket option `%s`", lua_tostring( L, 2 ) );
 			break;
 		case T_NET_SCK_OTP_BOOL:
 			ival = lua_toboolean( L, 3 );
 			if (setsockopt( sck->fd, opt->getlevel, opt->option, &ival, sizeof( ival ) ) < 0)
-				return t_push_error( L, "Can't set socket option `%s`", lua_tostring( L, 2 ) );
+				return t_push_error( L, 1, 1, "Can't set socket option `%s`", lua_tostring( L, 2 ) );
 			break;
 		case T_NET_SCK_OTP_INT:
 			ival = luaL_checkinteger( L, 3 );
 			if (setsockopt( sck->fd, opt->getlevel, opt->option, &ival, sizeof( ival ) ) < 0)
-				return t_push_error( L, "Can't set socket option `%s`", lua_tostring( L, 2 ) );
+				return t_push_error( L, 1, 1, "Can't set socket option `%s`", lua_tostring( L, 2 ) );
 			break;
 		case T_NET_SCK_OTP_TIME:
 			tv = t_tim_check_ud( L, 3, 1 );
 			if (setsockopt( sck->fd, opt->getlevel, opt->option, tv, sizeof( struct timeval ) ) < 0)
-				return t_push_error( L, "Can't set socket option `%s`", lua_tostring( L, 2 ) );
+				return t_push_error( L, 1, 1, "Can't set socket option `%s`", lua_tostring( L, 2 ) );
 			break;
 		default:
 			// should never get here ... __newindex should have returned nil already

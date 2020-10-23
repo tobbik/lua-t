@@ -220,7 +220,7 @@ p_net_ifc_get( lua_State *L, const char *if_name )
 	struct ifaddrs   *all_ifas, *ifa;
 
 	if (0 != getifaddrs( &all_ifas ))
-		return t_push_error( L, "couldn't retrieve interface information" );
+		return t_push_error( L, 0, 0, "couldn't retrieve interface information" );
 
 	if (NULL == if_name)
 		lua_newtable( L );            // create table that lists ALL interfaces

@@ -153,7 +153,6 @@ tests = {
 
 	test_ReadLengthBeyondSegmentLengthShorterString = function( self )
 		Test.Case.describe( "Reading from Buffer beyond it's length returns shorter string" )
-		print( '\n', self.b, self.seg, self.seg.start, self.seg.last, #self.seg )
 		local r = self.seg:read( 0-self.margin, 2*self.margin )
 		assert( #r == self.margin, "Expected 100 but was " .. #r )
 	end,

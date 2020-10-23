@@ -13,7 +13,6 @@
 #include <stdint.h>     // printf in helpers
 
 #include "t_dbg.h"
-#include "t.h"          // t_getAbsPos()
 
 
 /** -------------------------------------------------------------------------
@@ -98,7 +97,7 @@ t_fmtStackItem( lua_State *L, int idx, int no_tostring )
 void
 t_stackPrint( lua_State *L, int pos, int last, int no_tostring )
 {
-	pos = t_getAbsPos( L, pos );
+	pos = lua_absindex( L, pos );
 	for ( ;pos <= last; pos++)
 	{
 		t_fmtStackItem( L, pos, no_tostring );

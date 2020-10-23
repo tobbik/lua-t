@@ -572,7 +572,7 @@ lt_ael_run( lua_State *L )
 	{
 		gettimeofday( &tv, 0 );
 		if ((n = p_ael_poll_impl( L, ael )) < 0)
-			return t_push_error( L, "Failed to continue the loop" );
+			return t_push_error( L, 1, 1, "Failed to continue the loop" );
 
 #if PRINT_DEBUGS == 3
 		printf( "oooooooooooooooooooooo POLL RETURNED: %d oooooooooooooooooooo\n", n );

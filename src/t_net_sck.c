@@ -18,39 +18,23 @@
 #include "t_dbg.h"
 #endif
 
+
 /**--------------------------------------------------------------------------
- * Push function related error and format the errno on stack.
+ * Get a string representation of address for error messages.
  * \param   L         Lua State.
  * \param   adr       t_net_adr Address struct.
- * \param   msg       char pointer to formatting message.
- * \lreturn false     Boolean, signifies it went wrong.
- * \lreturn errMsg    String, Error message of `msg`+ system error message.
- * \lreturn errNo     Int, Error number of system error message.
- * \return  returns   3 which is # of elements left on stack.
+ * \return  *char     string of address.
  * --------------------------------------------------------------------------*/
-static int
-t_net_sck_pushErrno( lua_State *L, struct sockaddr_storage *adr, const char *msg, ... )
+static const char
+*t_net_sck_getAddrString( lua_State *L, struct sockaddr_storage *adr )
 {
-	char                     dst[ INET6_ADDRSTRLEN ];
-	va_list                  argp;
-
-	lua_pushboolean( L, 0==1 );
-	va_start( argp, msg );
-	luaL_where( L, 1 );
-	lua_pushvfstring( L, msg, argp );
-	va_end( argp );
-	if (NULL == adr)
-		lua_pushfstring( L, " (%s)", strerror( errno ) );
-	else
-	{
-		SOCK_ADDR_INET_NTOP( adr, dst );
-		lua_pushfstring( L, " %s:%d (%s)", dst,
-		   ntohs( SOCK_ADDR_SS_PORT( adr ) ), strerror( errno ) );
-	}
-	lua_concat( L, 3 );
-	lua_pushinteger( L, errno );
-	return 3;
+	char      dst[ INET6_ADDRSTRLEN ];
+	SOCK_ADDR_INET_NTOP( adr, dst );
+	lua_pushfstring( L, "%s:%d", dst,
+	   ntohs( SOCK_ADDR_SS_PORT( adr ) ) );
+	return lua_tostring( L, -1 );
 }
+
 
 /**--------------------------------------------------------------------------
  * Create a socket and push to LuaStack.
@@ -77,7 +61,7 @@ lt_net_sck_New( lua_State *L )
 	      luaL_checkinteger( L, 3 ),
 	      luaL_checkinteger( L, 1 ) )
 		)
-		t_push_error( L, "Can't create socket" );
+		t_push_error( L, 0, 0, "Can't create socket" );
 
 	return 1;
 }
@@ -116,7 +100,7 @@ lt_net_sck_close( lua_State *L )
 	struct t_net_sck *sck = t_net_sck_check_ud( L, 1, 1 );
 	//printf("CLOSING SOCK: %d\n", sck->fd);
 	if (-1 == p_net_sck_close( sck ))
-		return t_net_sck_pushErrno( L, NULL, "Can't close socket" );
+		return t_push_error( L, 0, 1, "Can't close socket" );
 	else
 		return 0;
 }
@@ -133,7 +117,7 @@ lt_net_sck_shutDown( lua_State *L )
 {
 	struct t_net_sck *sck     = t_net_sck_check_ud( L, 1, 1 );
 	if (-1 == p_net_sck_shutDown( sck, luaL_checkinteger( L, 2 ) ))
-		return t_net_sck_pushErrno( L, NULL, "Can't shutdown socket" );
+		return t_push_error( L, 0, 1, "Can't shutdown socket" );
 	else
 		return 0;
 }
@@ -157,7 +141,7 @@ lt_net_sck_listener( lua_State *L )
 	int                 bl  = luaL_optinteger( L, 2, SOMAXCONN );
 
 	if (-1 == p_net_sck_listen( sck, bl ))
-		return t_net_sck_pushErrno( L, NULL, "Can't listen on socket" );
+		return t_push_error( L, 0, 1, "Can't listen on socket" );
 	else
 		return 1;
 }
@@ -177,7 +161,7 @@ lt_net_sck_binder( lua_State *L )
 	struct sockaddr_storage *adr = t_net_adr_check_ud( L, 2, 1 );
 
 	if (-1 == p_net_sck_bind( sck, adr ))
-		return t_net_sck_pushErrno( L, adr, "Can't bind socket to" );
+		return t_push_error( L, 0, 0, "Can't bind socket to %s", t_net_sck_getAddrString( L, adr ) );
 	else
 	{
 		lua_pushboolean( L, 1 );
@@ -205,10 +189,10 @@ lt_net_sck_connecter( lua_State *L )
 	struct sockaddr_storage *adr = t_net_adr_check_ud( L, 2, 1 );
 
 	if (-1 == p_net_sck_connect( sck, adr ))
-		return t_net_sck_pushErrno( L, adr, "Can't connect socket to" );
+		return t_push_error( L, 0, 0, "Can't connect socket to %s", t_net_sck_getAddrString( L, adr ) );
 	else
 	{
-		lua_pushboolean( L, 1 );
+		lua_pushboolean( L, 1==1 );
 		return 1;
 	}
 }
@@ -225,11 +209,11 @@ lt_net_sck_connecter( lua_State *L )
 static int
 lt_net_sck_accept( lua_State *L )
 {
-	struct t_net_sck        *srv = t_net_sck_check_ud( L, 1, 1 );// listening socket
-	struct t_net_sck        *cli = t_net_sck_create_ud( L );     // accepted socket
-	struct sockaddr_storage *adr = t_net_adr_create_ud( L );     // peer address
+	struct t_net_sck        *srv = t_net_sck_check_ud( L, 1, 1 ); // listening socket
+	struct t_net_sck        *cli = t_net_sck_create_ud( L );      // accepted socket
+	struct sockaddr_storage *adr = t_net_adr_create_ud( L );      // peer address
 	if (-1 == p_net_sck_accept( srv, cli, adr ))
-		return t_net_sck_pushErrno( L, adr, "Can't accept on socket bound" );
+		return t_push_error( L, 0, 0, "Can't accept on socket bound on %s", t_net_sck_getAddrString( L, adr ) );
 	else
 		return 2;
 }
@@ -275,8 +259,10 @@ lt_net_sck_send( lua_State *L )
 		return 1;
 	}
 	else
-		return t_net_sck_pushErrno( L, adr,
-			(NULL == adr) ? "Can't send message" : "Can't send Message to" );
+		return ((NULL == adr)
+			? t_push_error( L, 0, 1, "Can't send message" )
+			: t_push_error( L, 0, 1, "Can't send Message to %s", t_net_sck_getAddrString( L, adr ) )
+		);
 }
 
 
@@ -350,8 +336,10 @@ lt_net_sck_recv( lua_State *L )
 			luaL_pushresultsize( &lB, rcvd );
 	}
 	if (-1 == rcvd)
-		return t_net_sck_pushErrno( L, adr,
-			(NULL == adr) ? "Can't receive message" : "Can't receive Message from" );
+		return ((NULL == adr)
+			? t_push_error( L, 0, 1, "Can't receive message" )
+			: t_push_error( L, 0, 1, "Can't receive Message from %s", t_net_sck_getAddrString( L, adr ) )
+		);
 	lua_pushinteger( L, (lua_Integer) rcvd );
 	return 2;
 }
@@ -360,8 +348,8 @@ lt_net_sck_recv( lua_State *L )
 /** -------------------------------------------------------------------------
  * Recieve t.Net.Address from a (TCP) socket.
  * \param   L      Lua state.
- * \lparam  ud     t.Net.Socket  userdata instance.
- * \lparam  ud     t.Net.Address userdata instance.
+ * \lparam  sck    t.Net.Socket  userdata instance.
+ * \lparam  adr    t.Net.Address userdata instance.
  * \lreturn ud     t.Net.Address userdata instance.
  * \return  int    # of values pushed onto the stack.
  *-------------------------------------------------------------------------*/
@@ -374,7 +362,7 @@ lt_net_sck_getsockname( lua_State *L )
 	if (NULL == adr)
 		adr = t_net_adr_create_ud( L );
 	if (-1 == p_net_sck_getsockname( sck, adr ))
-		return t_net_sck_pushErrno( L, NULL, "Couldn't get Address from" );
+		return t_push_error( L, 0, 1, "Couldn't get peer address" );
 	else
 		return 1;
 }

@@ -119,7 +119,7 @@ p_ael_addhandle_impl( lua_State *L, struct t_ael *ael, struct t_ael_dnd *dnd, in
 	if (addmsk & T_AEL_WR) ee.events |= EPOLLOUT;
 	ee.data.fd = fd;
 	if (-1 == epoll_ctl( state->epfd, op, fd, &ee ))
-		return t_push_error( L, "Error %s descriptor [%d:%s] to set",
+		return t_push_error( L, 1, 1, "Error %s descriptor [%d:%s] to set",
 				(op == EPOLL_CTL_MOD) ? "modifying" : "adding",
 				fd, t_ael_msk_lst[ addmsk ] );
 	return 1;
@@ -158,7 +158,7 @@ p_ael_removehandle_impl( lua_State *L, struct t_ael *ael, struct t_ael_dnd *dnd,
 	if (delmsk & T_AEL_WR) ee.events |= EPOLLOUT;
 	ee.data.fd = fd;
 	if (-1 == epoll_ctl( state->epfd, op, fd, &ee ))
-		return t_push_error( L, "Error %s descriptor [%d:%s] in set",
+		return t_push_error( L, 1, 1, "Error %s descriptor [%d:%s] in set",
 				(op == EPOLL_CTL_MOD) ? "modifying" : "removing",
 				fd, t_ael_msk_lst[ delmsk ] );
 	return 1;
@@ -174,7 +174,6 @@ p_ael_removehandle_impl( lua_State *L, struct t_ael *ael, struct t_ael_dnd *dnd,
 int
 p_ael_poll_impl( lua_State *L, struct t_ael *ael )
 {
-	UNUSED( L );
 	struct p_ael_ste *state   = p_ael_getState( L, ael->sR );
 	struct timeval     *tv    = (NULL != ael->tmHead)
 	   ? ael->tmHead->tv
@@ -192,7 +191,7 @@ p_ael_poll_impl( lua_State *L, struct t_ael *ael )
 	printf( "    &&&&&&&&&&&& POLL RETURNED[%d]: %d &&&&&&&&&&&&&&&&&&\n", ael->fdCount, r );
 #endif
 	if (r<0)
-		return t_push_error( L, "epoll_wait() failed" );
+		return t_push_error( L, 1, 1, "epoll_wait() failed" );
 
 	if (r > 0)
 	{

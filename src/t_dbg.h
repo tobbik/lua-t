@@ -18,6 +18,8 @@
 #include <stdint.h>     // printf in helpers
 
 #define PRINT_DEBUGS    0
+#define UNUSED(...)   (void)(__VA_ARGS__)
+
 
 void t_fmtStackItem( lua_State *L, int idx, int no_tostring );
 void t_stackPrint  ( lua_State *L, int idx, int last, int no_tostring );

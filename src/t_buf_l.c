@@ -40,7 +40,7 @@ lt_buf__Call( lua_State *L )
 	char             *inp     = t_buf_tolstring( L, 2, &i_sz, NULL );
 
 	if (lua_isinteger( L, -1 ))
-		luaL_argcheck( L, sz > 0, t_getAbsPos( L, -1 ), T_BUF_TYPE" size must be greater than 0" );
+		luaL_argcheck( L, sz > 0, lua_absindex( L, -1 ), T_BUF_TYPE" size must be greater than 0" );
 	buf  = t_buf_create_ud( L, (sz) ? sz : i_sz );
 	if (i_sz)
 		memcpy( &(buf->b[0]), inp,

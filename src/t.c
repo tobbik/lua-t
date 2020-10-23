@@ -36,25 +36,11 @@ t_getLoadedValue( lua_State *L, size_t len, int pos, ... )
 {
 	va_list          argp;
 	unsigned int     argc = 0;
-	pos = t_getAbsPos( L, pos );
+	pos = lua_absindex( L, pos );
 	luaL_getsubtable( L, LUA_REGISTRYINDEX, "_LOADED" );
 	va_start( argp, pos );
 	for (argc=0; argc<len; argc++)
-	{
-		// push next sub-table on stack
-		//const char *field = va_arg( argp, const char* );
-		//lua_getfield( L, -1, field );
 		lua_getfield( L, -1, va_arg( argp, const char* ) );
-						/* debug start
-						printf("                 ------------------------ NEXT FIELD: %s\n", field );
-						lua_pushnil(L);  // first key
-						while (lua_next(L, -2) != 0) {
-							t_stackDump(L);
-						    // removes 'value'; keeps 'key' for next iteration
-							lua_pop(L, 1);
-						}
-						end debug */
-	}
 	va_end( argp );
 	lua_pushvalue( L, pos );   //S:… key … _LD ___ ___ ___ key
 	lua_rawget( L, -2 );       //S:… key … _LD ___ ___ ___ val
@@ -65,33 +51,40 @@ t_getLoadedValue( lua_State *L, size_t len, int pos, ... )
 
 
 /** -------------------------------------------------------------------------
- * Returns an error string to the LUA script.
- * Expands luaL_error by errno support.
- * \param  L The Lua intepretter object.
- * \param  info  Error string.
+ * Returns an error string to the Lua script.
+ * Expands luaL_error by errno support which is useful when system functions
+ * are called, eg. surrounding network functionality and others.
+ * \param  L     The Lua intepretter object.
+ * \param  fail  bool. Raise LuaError.
+ * \param  ops   bool. Operation failed -> return false; else resource failed -> * return nil.
+ * \param  fmt   Error string.
  * \param  ...   variable arguments to fmt
- * \return  int    # of values pushed onto the stack.
+ * \return int   # of values pushed onto the stack.
  *-------------------------------------------------------------------------*/
 int
-t_push_error( lua_State *L, const char *fmt, ... )
+t_push_error( lua_State *L, int fail, int ops, const char *fmt, ... )
 {
 	va_list argp;
-	if (NULL==fmt)
+	if (fail)
+		luaL_where( L, 1 );
+	else
 	{
-		if (0 != errno) return luaL_error( L, strerror( errno ) );
-		else            return luaL_error( L, "Unknown Error" );
+		if (ops)    // semantically an operation failed
+			lua_pushboolean( L, 0==1 );
+		else        // semantically the creation of a resource failed
+			lua_pushnil( L );
 	}
+	if (NULL == fmt)
+		lua_pushstring( L, (errno) ? "" : "Unknown Error" );
 	else
 	{
 		va_start( argp, fmt );
-		luaL_where( L, 1 );
 		lua_pushvfstring( L, fmt, argp );
 		va_end( argp );
-		if (0==errno) lua_pushstring( L, "\n" );
-		else          lua_pushfstring( L, " (%s)\n", strerror( errno ) );
-		lua_concat( L, 3 );
-		return lua_error( L );
 	}
+	if (errno) lua_pushfstring( L, " (%s)", strerror( errno ));
+	lua_concat( L, (fail && errno) ? 3 : (fail || errno) ? 2 : 1 );
+	return ((fail) ? lua_error( L ) : 2);
 }
 
 
@@ -100,7 +93,7 @@ t_push_error( lua_State *L, const char *fmt, ... )
  * \param  L      Lua state.
  * \param  pos    int; position of wrong typed object on stack.
  * \param  tname  Name of expected type.
- * \return  int   # of values pushed onto the stack.
+ * \return int    # of values pushed onto the stack.
  *-------------------------------------------------------------------------*/
 int t_typeerror( lua_State *L, int pos, const char *tname )
 {

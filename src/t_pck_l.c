@@ -215,7 +215,7 @@ struct t_pck
 	struct t_pck_idx *pi  = (NULL == ud) ? NULL : (struct t_pck_idx *) ud;
 	struct t_pck     *pck;
 
-	pos = t_getAbsPos( L, pos );
+	pos = lua_absindex( L, pos );
 
 	if (NULL == pi)
 		return t_pck_check_ud( L, pos, 1 );

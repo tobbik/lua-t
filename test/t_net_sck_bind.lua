@@ -153,7 +153,7 @@ local tests = {
 
 	test_sCloseBoundNoSockname = function( self )
 		Test.Case.describe( "Can't call getsockname on closed socket" )
-		local eMsg      = "Couldn't get Address from (Bad file descriptor)"
+		local eMsg      = "Couldn't get peer address (Bad file descriptor)"
 		self.sck        = Socket()
 		local a,b       = self.sck:getsockname( )
 		assert( chkAdr( a, "AF_INET", '0.0.0.0', 0 ) )

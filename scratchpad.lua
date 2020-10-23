@@ -36,5 +36,12 @@ for row in csv:rows( ) do
 end
 --]]
 r=require't'.require
-t=r'test/t_buf'
+t=r'test/t_net_sck_bind'
 t()
+
+S=require't.Net.Socket'
+s,a=S.bind('192.168.17.197',4000)
+--s:send('foobgar',a)
+--
+f,e=io.open("foobar")
+--f,e=io.open({})

@@ -13,20 +13,12 @@
 #include "lualib.h"
 #include "lauxlib.h"
 
-#define UNUSED(...)   (void)(__VA_ARGS__)
-
-
 #ifndef T_HELPERLIB_H
 #define T_HELPERLIB_H
 
-#define t_getAbsPos( L, pos)     \
-  ((pos) < 0)                    \
-   ? (lua_gettop( L ) + pos + 1) \
-   : (pos)
-
 // global helpers
 int         t_getLoadedValue( lua_State *L, size_t len, int pos, ... );
-int         t_push_error    ( lua_State *L, const char *fmt, ... );
+int         t_push_error    ( lua_State *L, int fail, int ops, const char *fmt, ... );
 int         t_typeerror     ( lua_State *L, int arg, const char *tname );
 #endif //T_HELPERLIB_H
 

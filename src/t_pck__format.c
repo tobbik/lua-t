@@ -171,7 +171,7 @@ struct t_pck
 	int           t = lua_gettop( L );  ///< top of stack before operations
 	const char   *fmt;
 
-	pos = t_getAbsPos( L, pos );
+	pos = lua_absindex( L, pos );
 
 	// T.Pack or T.Pack.Index at pos
 	if (lua_isuserdata( L, pos ))
