@@ -8,7 +8,6 @@
  */
 
 #include <stdio.h>
-#include <stdlib.h>      // calloc
 
 #include "t_enc_l.h"
 
@@ -33,11 +32,9 @@ static const uint32_t      mod_table[ ]    = { 0, 2, 1 };
  * \param  encode, if 1 then return string of size need for encoded result
  * \return size_t
  * --------------------------------------------------------------------------*/
-static size_t
-b64_res_size( size_t len, int for_encode )
-{
-	return (for_encode) ? 4 * ((len + 2) / 3) :  len / 4 * 3;
-}
+#define B64_RESULT_SIZE( LEN, DO_ENCODE ) \
+   ((DO_ENCODE) ? 4 * ((LEN + 2) / 3) :  LEN / 4 * 3)
+
 
 // TODO: improve to not having to test each character for length
 static void
@@ -45,7 +42,7 @@ b64_encode( const char *inbuf, char *outbuf, size_t inbuf_len)
 {
 	uint32_t i, j;
 	uint8_t  dec1, dec2, dec3;
-	size_t   outbuf_len = b64_res_size( inbuf_len, 1 );
+	size_t   outbuf_len = B64_RESULT_SIZE( inbuf_len, 1 );
 
 	for (i = 0, j = 0; i < inbuf_len;)
 	{
@@ -89,7 +86,6 @@ b64_decode( const char *inbuf, char *outbuf, size_t inbuf_len )
 	}
 }
 
-// TODO: use luaL_Buffer instead of manually allocating memory
 /**--------------------------------------------------------------------------
  * Expose Base64 encoding to Lua; wraps native function b64_encode above.
  * \param   L      Lua state.
@@ -97,28 +93,16 @@ b64_decode( const char *inbuf, char *outbuf, size_t inbuf_len )
  * --------------------------------------------------------------------------*/
  // TODO: consider using a Lua_Buffer instead of allocating and freeing memory
 static int
-t_enc_b64_encode( lua_State *L )
+lt_enc_b64_encode( lua_State *L )
 {
-	size_t              bLen;    ///< length of body
-	size_t              rLen;    ///< length of result
-	const char         *body;
-	char               *res;
-	
-	if ( lua_isstring( L, 1 ) )
-		body = luaL_checklstring( L, 1, &bLen );
-	else
-		return luaL_error( L,
-			    T_ENC_B64_TYPE".encode takes at least one string parameter" );
+	luaL_Buffer         lB;
+	size_t              bLen;                                     ///< length of body
+	const char         *body   = luaL_checklstring( L, 1, &bLen );
+	size_t              rLen   = B64_RESULT_SIZE( bLen, 1 );      ///< length of result
+	char               *res    = luaL_buffinitsize( L, &lB, rLen );
 
-	rLen = b64_res_size( bLen, 1 );
-	res  = malloc( rLen );
-	if (res == NULL)
-		return luaL_error( L,
-		        T_ENC_B64_TYPE".encode failed due to internal memory allocation problem" );
-
-	b64_encode( body, res, bLen);
-	lua_pushlstring( L, res, rLen );
-	free(res);
+	b64_encode( body, res, bLen );
+	luaL_pushresultsize( &lB, rLen );
 
 	return 1;
 }
@@ -131,28 +115,16 @@ t_enc_b64_encode( lua_State *L )
  * --------------------------------------------------------------------------*/
  // TODO: consider using a Lua_Buffer instead of allocating and freeing memory
 static int
-t_enc_b64_decode( lua_State *L )
+lt_enc_b64_decode( lua_State *L )
 {
-	size_t              bLen;    ///< length of body
-	size_t              rLen;    ///< length of result
-	const char         *body;
-	char               *res;
-	
-	if ( lua_isstring( L, 1 ) )
-		body = luaL_checklstring( L, 1, &bLen );
-	else
-		return luaL_error( L,
-			    T_ENC_B64_TYPE".decode takes at least one string parameter" );
+	luaL_Buffer         lB;
+	size_t              bLen;                                     ///< length of body
+	const char         *body   = luaL_checklstring( L, 1, &bLen );
+	size_t              rLen   = B64_RESULT_SIZE( bLen, 0 );      ///< length of result
+	char               *res    = luaL_buffinitsize( L, &lB, rLen );
 
-	rLen = b64_res_size( bLen, 0 );
-	res  = malloc( rLen );
-	if (res == NULL)
-		return luaL_error( L,
-		        T_ENC_B64_TYPE".decode failed due to internal memory allocation problem" );
-
-	b64_decode(  body, res, bLen);
-	lua_pushlstring( L, res, rLen );
-	free(res);
+	b64_decode( body, res, bLen );
+	luaL_pushresultsize( &lB, rLen );
 
 	return 1;
 }
@@ -161,8 +133,8 @@ t_enc_b64_decode( lua_State *L )
  * Class functions library definition
  * --------------------------------------------------------------------------*/
 static const struct luaL_Reg t_enc_b64_cf [] = {
-	  { "encode"      ,  t_enc_b64_encode }
-	, { "decode"      ,  t_enc_b64_decode }
+	  { "encode"      ,  lt_enc_b64_encode }
+	, { "decode"      ,  lt_enc_b64_decode }
 	, { NULL          ,  NULL }
 };
 
@@ -181,9 +153,7 @@ luaopen_t_enc_b64( lua_State *L )
 	// initializes the decoder table
 	uint8_t i;
 	for (i=0; i<64; i++)
-	{
 		dec_table[ enc_table[i] ] = i;
-	}
 	// Push the class onto the stack
 	// this is avalable as T.Encode.Base64.(en/de)code
 	luaL_newlib( L, t_enc_b64_cf );

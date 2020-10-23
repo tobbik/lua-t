@@ -11,7 +11,6 @@
  */
 
 #include <stdio.h>
-#include <stdlib.h>      // calloc
 
 #include "t_enc_l.h"
 #include "t.h"           // t_typeerror
@@ -174,17 +173,13 @@ struct t_enc_rc4
 static int
 lt_enc_rc4_crypt( lua_State *L )
 {
-	struct t_enc_rc4    *rc4;
+	struct t_enc_rc4    *rc4  = t_enc_rc4_check_ud( L, 1, 1 );
 	size_t               kLen,bLen;    ///< length of key, length of body
 	const unsigned char *key;
-	const char          *body;
-	char                *res;
-	
-	rc4 = t_enc_rc4_check_ud( L, 1, 1 );
-	if (lua_isstring( L, 2 ))
-		body = luaL_checklstring( L, 2, &bLen );
-	else
-		return luaL_error( L, T_ENC_RC4_TYPE".crypt takes at least one string parameter" );
+	const char          *body = luaL_checklstring( L, 2, &bLen );
+	luaL_Buffer         lB;
+	char                *res  = luaL_buffinitsize( L, &lB, bLen );
+
 	// if a key is provided for encoding,
 	// reset the RC4 state by initializing it with new key
 	if (lua_isstring( L, 3 ))
@@ -193,11 +188,8 @@ lt_enc_rc4_crypt( lua_State *L )
 		t_enc_rc4_init( rc4, key, kLen );
 	}
 
-	res = malloc( bLen * sizeof( unsigned char ) );
-
 	t_enc_rc4_crypt( rc4, body, res, bLen );
-	lua_pushlstring( L, res, bLen );
-	free( res );
+	luaL_pushresultsize( &lB, bLen );
 
 	return 1;
 }

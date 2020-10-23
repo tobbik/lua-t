@@ -45,3 +45,17 @@ s,a=S.bind('192.168.17.197',4000)
 --
 f,e=io.open("foobar")
 --f,e=io.open({})
+B64  = require't.Encode.Base64'
+src  = "This is my Message to you"
+enc  = B64.encode( src )
+dec  = B64.decode( enc )
+print( '\n', src, '\n', enc, '\n', dec )
+
+
+RC4 = require't.Encode.Rc4'
+r   = RC4('thekey')
+r1  = RC4('thekey')
+src = "This is my Message to you"
+enc = r:crypt( src )
+dec = r1:crypt( enc )
+print( '\n', src, '\n', enc, '\n', dec )
