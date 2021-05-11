@@ -42,6 +42,9 @@ $(SRCDIR)/*.so:
 	 PREFIX="$(PREFIX)"
 
 install:
+	@cd $(LUADIR); $(MAKE) \
+	                 LVER=$(LVER) \
+	                 PREFIX="$(PREFIX)" install
 	@cd $(SRCDIR); $(MAKE) CC=$(CC) LD=$(LD) \
 	                 LVER=$(LVER) \
 	                 MYCFLAGS="$(MYCFLAGS)" \
@@ -49,9 +52,6 @@ install:
 	                 INCDIR="$(INCDIR)" \
 	                 BUILD_EXAMPLE=1 \
 	                 DEBUG=1 \
-	                 PREFIX="$(PREFIX)" install
-	@cd $(LUADIR); $(MAKE) \
-	                 LVER=$(LVER) \
 	                 PREFIX="$(PREFIX)" install
 
 test: $(SRCDIR)

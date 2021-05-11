@@ -109,6 +109,7 @@ static struct sockaddr_storage
 	if (LUA_TSTRING != lua_type( L, pos ))
 	{
 		adr->ss_family = _t_net_default_family;
+		//adr->ss_family = AF_INET;
 		t_net_adr_setAddr( L, adr, 0 );
 	}
 	else

@@ -8,6 +8,7 @@
  * \copyright See Copyright notice at the end of t.h
  */
 
+#include <string.h>   // strcmp,memcpy
 
 #include "t_tim_l.h"
 

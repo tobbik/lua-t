@@ -31,7 +31,7 @@
 #ifndef T_NET_DEF_FAM_H
 #define T_NET_DEF_FAM_H
 // Always create sockets or addresses with this family unless specified
-int _t_net_default_family;
+extern int _t_net_default_family;
 #endif  // T_NET_DEF_FAM_H
 
 

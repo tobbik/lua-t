@@ -12,11 +12,6 @@
 #include "lualib.h"
 #include "lauxlib.h"
 
-#include <stdio.h>
-#include <string.h>     // strerror,strrchr
-#include <errno.h>      // errno
-#include <stdint.h>     // printf in helpers
-
 #define PRINT_DEBUGS    0
 #define UNUSED(...)   (void)(__VA_ARGS__)
 

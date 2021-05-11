@@ -8,11 +8,11 @@
  * \copyright See Copyright notice at the end of t.h
  */
 
-
 #include "t_net_l.h"
 #include "t_buf.h"
 #include <stdlib.h>   // bsearch()
 #include <errno.h>    // errno
+#include <string.h>   // strcmp
 
 #ifdef DEBUG
 #include "t_dbg.h"

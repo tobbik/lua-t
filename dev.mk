@@ -24,7 +24,7 @@ ifneq ($(filter aarch%,$(UNAME_M)),)
 endif
 
 LVER=5.4
-LREL=1
+LREL=3
 LUASRC=lua-$(LVER).$(LREL).tar.gz
 LUAURL=https://www.lua.org/ftp
 

@@ -15,6 +15,8 @@
 #include "t_dbg.h"
 #endif
 
+#include <string.h>   // strcmp,memcpy
+
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <netdb.h>

@@ -1,61 +1,69 @@
---[[
-local Loop     = require't.Loop'
-local Server   = require't.Http.Server'
-local fmt      = string.format
+-- vim: ts=2 sw=2 sts=2 et
 
-local httpServer = Server( Loop(), print )
+Tst  = require't.Tst'
+Test = require't.Test'
+pp   = require't.Table'.pprint
+Time = require't.Time'
+Loop = require't.Loop'
+G    = require'gamb'
 
-local host,port = '0.0.0.0',8000
+f = Tst('First test', function()
+  assert(1 == 1, 'One should be equal one')
+end)
 
-local srv, adr   = httpServer:listen( host, port, 1000 )
-print( fmt( "Started `%s` at `%s` (%s)", srv, adr, srv.family ) )
-httpServer.ael:run( )
---]
+s = Tst('Second test', function()
+  Tst.skip("Let's skip it ... it's Monday!")
+  assert(1 == 2, 'One shouldn\'t be equal two')
+end)
 
-Csv     = require't.Csv'
---csv     = Csv( 'sample.tsv', '\t' )
-csv     = Csv( 'x.tsv', '\t' )
+c=Test.Case('DaTest', 'standard', function()
+  assert(1 == 2, 'One shouldn\'t be equal two')
+end)
 
-print( csv )
-print( csv.delimiter )
-print( csv.quotchar )
-print( csv.escapechar )
-print( csv.doublequoted )
-print( csv.state )
-print( csv.handle )
+e = Tst('Second test', function( x, y, z )
+  print(x,y,z)
+  assert(1 == 2, 'One shouldn\'t be equal two')
+end)
 
-for k,v in pairs(getmetatable(csv)) do print(k,v) end
-r = 1
-for row in csv:rows( ) do
---for row in csv:lines( ) do
-	print( "ROW:", row, #row )
-	for i,v in pairs( row ) do
-		print( r, i, v)
-	end
-	r = r + 1
-end
---]]
-r=require't'.require
-t=r'test/t_net_sck_bind'
-t()
+a,b = e( )
 
-S=require't.Net.Socket'
-s,a=S.bind('192.168.17.197',4000)
---s:send('foobgar',a)
---
-f,e=io.open("foobar")
---f,e=io.open({})
-B64  = require't.Encode.Base64'
-src  = "This is my Message to you"
-enc  = B64.encode( src )
-dec  = B64.decode( enc )
-print( '\n', src, '\n', enc, '\n', dec )
+-- ###############################
+l = Loop( )
+g = G( 'delay', function( done )
+  print(Tst.getSource(done))
+  local tm2,tm1 = Time( 2000 ), Time( 1000 )
+  local f2  = function( d )
+    print( 'Entering F2' )
+    print( 'Executing done()' )
+    --l:stop()
+    d( )
+  end
+  local f1  = function( )
+    print( 'Entering F1' )
+  end
+  l:addTimer( tm2, f2, done )
+  l:addTimer( tm1, f1 )
+  print( "Finished G" )
+  l:run( )
+  print( "Ran G" )
+end )
 
+g2 = G( 'delay2', function( done )
+  print(Tst.getSource(done))
+  local tm3,tm4 = Time( 3000 ), Time( 4000 )
+  local f4  = function(  )
+    print( 'Entering F4' )
+    print( 'Executing done()' )
+    --l:stop()
+    done( )
+  end
+  local f3  = function( )
+    print( 'Entering F3' )
+  end
+  l:addTimer( tm3, f3 )
+  l:addTimer( tm4, f4 )
+  print( "Finished G" )
+  l:run( )
+  print( "Ran G" )
+end, true )
 
-RC4 = require't.Encode.Rc4'
-r   = RC4('thekey')
-r1  = RC4('thekey')
-src = "This is my Message to you"
-enc = r:crypt( src )
-dec = r1:crypt( enc )
-print( '\n', src, '\n', enc, '\n', dec )
