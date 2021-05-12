@@ -1,14 +1,12 @@
 ---
 -- \file      test/t_tbl.lua
--- \brief     Test for extended Table functions
+-- \brief     Test for extended Table functions  (excluding equals; see -- test/t_tbl_equals.lua)
 -- \author    tkieslich
 -- \copyright See Copyright notice at the end of src/t.h
 
-local T      = require( 't' )
 local Test   = require( "t.Test" )
 local Table  = require( "t.Table" )
-local equals = require( 't' ).equals
-local Rtvg   = T.require( 'rtvg' )
+local Rtvg   = require('t').require( 'rtvg' )
 
 -- \param  n  true if check for existent key else assert non existence
 local checkElm = function( t, e, n )
@@ -108,7 +106,7 @@ local   tests = {
 		              'm', 'n','o','p','q','r','s','t','u','v','w' }, true )
 		checkElm( u, {'x','y','z'}, false )
 		-- make sure tablB overwrites tblA values
-		assert( equals( u, resU ), "Union result didn't match expected values" )
+		assert( Table.equals( u, resU ), "Union result didn't match expected values" )
 	end,
 
 	test_mergeIntersect = function( self )
@@ -122,7 +120,7 @@ local   tests = {
 		checkElm( i, {'g','h','i','j','k','l','m'}, true )
 		checkElm( i, {'a','b','c','d','e','f','n','o','p','q','r','s','t','u','v','w' }, false )
 		-- make sure tablB overwrites tblA values
-		assert( equals( i, resI ), "Intersection result didn't match expected values" )
+		assert( Table.equals( i, resI ), "Intersection result didn't match expected values" )
 	end,
 
 	test_complement = function( self )
@@ -251,7 +249,7 @@ local   tests = {
 		         " but was: " .. cnt(clone) )
 		assert( cnt(tbl.tbl) == cnt(clone.tbl), "cnt(clone) should be: " .. cnt(tbl.tbl) ..
 		         " but was: " .. cnt(clone.tbl) )
-		assert( equals( tbl, clone), "Orginal and deep clone should be equal" )
+		assert( Table.equals( tbl, clone), "Orginal and deep clone should be equal" )
 	end,
 
 	test_countAndIsempty = function( self )

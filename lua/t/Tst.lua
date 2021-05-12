@@ -5,7 +5,7 @@
 -- \author    tkieslich
 -- \copyright See Copyright notice at the end of t.h
 
-local t_concat    , t_insert    , format       , getmetatable, setmetatable, pairs, assert, type =
+local t_concat    , t_insert    , s_format     , getmetatable, setmetatable, pairs, assert, type =
       table.concat, table.insert, string.format, getmetatable, setmetatable, pairs, assert, type
 local T,Time,t_merge,pp = require"t", require"t.Time", require't.Table'.merge, require't.Table'.pprint
 
@@ -22,7 +22,7 @@ local getFunctionSource = function( f )
   -- TODO: make sure short_src is a file, not stdin or rubbish
   for l in io.lines( dbg.short_src ) do
     if c >= dbg.linedefined and c <= dbg.lastlinedefined then
-      t_insert( src, string.format( "    %d: %s", c, l ) )
+      t_insert( src, s_format( "    %d: %s", c, l ) )
     end
     c = c+1
   end
@@ -59,29 +59,29 @@ local execute = function( _, description, func, async )
 
 end
 
-local call    = function( _, description, func, async )
-  return function( ... )
-    local start   = Time()
-    local ok, err = xpcall( func, traceback, ... )
-    local result  = { description=description, executionTime=(Time()-start).ms, pass=ok, skip=false }
-    if not ok then
-      result = t_merge( result, err, true )
-      result.source = getFunctionSource( func )
-    end
-    return result.pass, result
-  end
-end
-
 return setmetatable(
   {
     _VERSION     = 't.Tst 0.1.0',
-    _DESCRIPTION = 'Lua unit-testing.',
+    _DESCRIPTION = 'lua-t unit-testing.',
     _URL         = 'https://gitlab.com/tobbik/lua-t',
     _LICENSE     = 'MIT',
-    skip         = function( why, ... ) return error( T_TST_CSE_SKIPINDICATOR .. format( why, ... ) ) end,
+    skip         = function( why, ... ) return error( T_TST_CSE_SKIPINDICATOR .. s_format( why, ... ) ) end,
     getSource    = getFunctionSource,
   },
   {
-    __call = call
+    __call = function( _, description, func, async )
+      return function( ... )
+        local rinse = function()
+        end
+        local start   = Time( )
+        local ok, err = xpcall( func, traceback, ... )
+        local result  = { description=description, executionTime=(Time()-start).ms, pass=ok, skip=false }
+        if not ok then
+          result = t_merge( result, err, true )
+          result.source = getFunctionSource( func )
+        end
+        return result.pass, result
+      end
+    end
   }
 )

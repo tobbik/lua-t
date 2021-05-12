@@ -17,13 +17,15 @@
 -- \author    tkieslich
 -- \copyright See Copyright notice at the end of src/t.h
 
-local T, Table   = require( "t" ), require( "t.Table" )
+local Table, T   = require( "t.Table" ), require( "t" )
 local t_concat    , t_insert,     t_remove =
       table.concat, table.insert, table.remove
 local getmetatable, setmetatable, pairs, assert, next, type =
       getmetatable, setmetatable, pairs, assert, next, type
-local t_keys    , t_values    , t_clone    , t_asstring     , equals   , prxTblIdx =
-      Table.keys, Table.values, Table.clone, Table.asstring , T.equals , T.proxyTableIndex
+local t_keys    , t_values    , t_clone    , t_asstring     , t_equals     , prxTblIdx             =
+      Table.keys, Table.values, Table.clone, Table.asstring , Table.equals , Table.proxyTableIndex
+local t_type, t_assert    =
+      T.type, T.assert
 
 local _mt
 
@@ -38,7 +40,7 @@ local _,_,_isCompat = a(b,c)
 -- ---------------------------- general helpers  --------------------
 -- assert Oht type and return the proxy table
 local getPrx     = function( self )
-	T.assert( _mt == getmetatable( self ), "Expected `%s`, got %s", _mt.__name, T.type( self ) )
+	t_assert( _mt == getmetatable( self ), "Expected `%s`, got %s", _mt.__name, t_type( self ) )
 	return self[ prxTblIdx ]
 end
 
@@ -162,7 +164,7 @@ _mt = {       -- local _mt at top of file
 	__pairs    = function( self )           return iters( getPrx( self ), false )    end,
 	__ipairs   = function( self )           return iters( getPrx( self ), true )     end,
 -- comparing operations
-	__eq       = function( self, othr )     return equals( getPrx(self), getPrx( othr ) ) end,
+	__eq       = function( self, othr )     return t_equals( getPrx(self), getPrx( othr ) ) end,
 }
 -- allow luaL_getmetatable( L )
 debug.getregistry( )[ 't.OrderedHashTable' ] = _mt

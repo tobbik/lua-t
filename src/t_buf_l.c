@@ -34,7 +34,7 @@
 static int
 lt_buf__Call( lua_State *L )
 {
-	size_t         sz = lua_isinteger( L, -1 ) ? (size_t) lua_tointeger( L, -1 ) : 0;
+	lua_Integer    sz = lua_isinteger( L, -1 ) ? lua_tointeger( L, -1 ) : 0;
 	size_t       i_sz = 0;
 	struct t_buf *buf = NULL;
 	char         *inp = t_buf_tolstring( L, 2, &i_sz, NULL );
@@ -44,7 +44,7 @@ lt_buf__Call( lua_State *L )
 	buf  = t_buf_create_ud( L, (sz) ? sz : i_sz );
 	if (i_sz)
 		memcpy( &(buf->b[0]), inp,
-			(sz > i_sz)
+			(sz > (lua_Integer) i_sz)
 				? i_sz
 				: (sz)
 					? sz

@@ -1,6 +1,6 @@
 ---
 -- \file      test/t.lua
--- \brief     test helper functions in t.lua (excluding equals; see -- t_equals.lua)
+-- \brief     test helper functions in t.lua
 -- \author    tkieslich
 -- \copyright See Copyright notice at the end of src/t.h
 
@@ -64,14 +64,6 @@ local tc = {
 		local tim = Time()
 		T.assert( 'userdata' ==   type( tim ), "type should be `userdata` but was `%s`",   type(tim) )
 		T.assert( 'T.Time'   == T.type( tim ), "type should be `T.Time`   but was `%s`", T.type(tim) )
-	end,
-
-	test_proxyTableByIndex = function( self )
-		Test.Case.describe( "set( t.proxyTableIndex ) gives proxy table" )
-		local set = Set( {'a','b','c'} )
-		local prx = set[ T.proxyTableIndex ]
-		assert( t_count( prx ) == 3, "proxyTable should have 3 members" )
-		assert(true==prx.a and true==prx.b and true== prx.c, "all three, values should be `true`" )
 	end,
 
 	test_assertFormatter = function( self )

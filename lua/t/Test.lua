@@ -4,15 +4,15 @@
 -- \author    tkieslich
 -- \copyright See Copyright notice at the end of t.h
 
-local          Case ,                Context ,           Time,          T = 
+local          Case ,                Context ,           Time,          T =
 require't.Test.Case', require't.Test.Context', require't.Time', require't'
 
-local prxTblIdx,                   Table,            Oht  =
-      T.proxyTableIndex, require"t.Table", require"t.OrderedHashTable"
+local           Table,            Oht  =
+      require"t.Table", require"t.OrderedHashTable"
 local t_concat    , t_insert    , format       , getmetatable, setmetatable, pairs, assert, type =
       table.concat, table.insert, string.format, getmetatable, setmetatable, pairs, assert, type
-local t_clone     , o_setElement  , o_getElement  , o_iters =
-      Table.clone , Oht.setElement, Oht.getElement, Oht.iters
+local t_clone     , prxTblIdx              ,o_setElement  , o_getElement  , o_iters =
+      Table.clone , Table.proxyTableIndex, Oht.setElement, Oht.getElement, Oht.iters
 
 local _mt
 

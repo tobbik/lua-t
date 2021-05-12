@@ -1,12 +1,12 @@
 ---
--- \file      test/t_t_equals.lua
+-- \file      test/t_tbl_equals.lua
 -- \brief     basic tests to show all equality comparisms
 -- \author    tkieslich
 -- \copyright See Copyright notice at the end of src/t.h
 
 local   Test = require( 't.Test' )
 local   Time = require( 't.Time' )
-local   e    = require( 't' ).equals
+local   e    = require( 't.Table' ).equals
 local   rep  = string.rep
 
 local tc = {

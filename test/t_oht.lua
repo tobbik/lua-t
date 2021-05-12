@@ -2,6 +2,7 @@
 -- \file    t_oht.lua
 -- \brief   Test for the Ordered Hash Table
 local T      = require( 't' )
+local Table  = require( "t.Table" )
 local Test   = require( "t.Test" )
 local Oht    = require( "t.OrderedHashTable" )
 local Rtvg   = T.require( 'rtvg' )
@@ -87,6 +88,17 @@ local tests = {
 		for i=1, self.len do
 			assert( self.o[i] == o[i] , "Indexed value in clone must match original value" )
 		end
+	end,
+
+	test_proxyTableByIndexIsSet = function( self )
+		Test.Case.describe( "An OrderedHashTable proxyTable is indexed by t.Table.proxyTableIndex" )
+		local oht = Oht(
+			  { foo1 = "bar1" }
+			, { foo2 = "bar2" }
+			, { foo3 = "bar3" }
+			)
+		local prx = oht[ Table.proxyTableIndex ]
+		T.assert( Table.count( prx ) == 6, "proxyTable should have 3 members but had %d", Table.count(prx) )
 	end,
 
 	test_PairsIterator = function( self )

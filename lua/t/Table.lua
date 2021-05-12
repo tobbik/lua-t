@@ -2,6 +2,9 @@ local t_insert,t_concat                = table.insert,table.concat
 local s_fmt,s_rep                      = string.format,string.rep
 local pairs,tostring,assert,type,print = pairs,tostring,assert,type,print
 
+local proxyTableIndex = { }
+debug.getregistry( )[ 'T.ProxyTableIndex' ] = proxyTableIndex
+
 local t_map        = nil
 t_map              = function( tbl, func )
 	local ret = { }
@@ -59,6 +62,18 @@ local t_intersects = function( t1, t2 )
 		if (nil ~= t1[ k ]) then return true end
 	end
 	return false
+end
+
+local t_equals = nil      -- recursive
+t_equals= function( o1, o2 )
+	if o1 == o2 then return true end
+	local m1,m2,t1,t2 = getmetatable( o1 ),getmetatable( o2 ), type( o1 ), type( o2 )
+	if (m1 and m1.__eq) or "table" ~= t1 or t1 ~= t2 then return o1==o2 end
+	-- as per condition above only executed for 'table' type
+	if #o1 ~= #o2 then return false end
+	for k1,v1 in pairs( o1 ) do if not t_equals( o2[ k1 ], v1 ) then return false end end
+	for k2,v2 in pairs( o2 ) do if not t_equals( o1[ k2 ], v2 ) then return false end end
+	return true
 end
 
 local t_find       = function( tbl, val, idx )
@@ -137,7 +152,6 @@ t_pprint = function( tbl, idnt )
 	end
 end
 
-
 return {
 	  map          = t_map
 	, foreach      = t_foreach
@@ -145,6 +159,7 @@ return {
 	, complement   = t_complement
 	, contains     = t_contains
 	, intersects   = t_intersects
+	, equals       = t_equals
 	, find         = t_find
 	, keys         = t_keys
 	, values       = t_values
@@ -154,4 +169,15 @@ return {
 	, asstring     = t_asstring
 	, isempty      = t_isempty
 	, pprint       = t_pprint
+--  -------------------------------------------------------------------------
+--  Objects that use a proxy table such as t.Test or t.OrderedHashTable have an
+--  internal tracking or proxy table which holds the data so that __index and
+--  __newindex operations can be used without hassle.  Within the object, the
+--  tracking table is indexed by an empty table:
+--  t.proxyTableIndex = {}    -- a globally (to t) defined empty table
+--  oht = OrderedHashTable()  -- oht is the table instance with the metamethods
+--  oht[ t.proxyTableIndex ]  -- this is the table that actually contains the
+--                            -- values which are accessd and controlled by oht
+--                               __index and __newindex metamethods
+	, proxyTableIndex  = proxyTableIndex
 }

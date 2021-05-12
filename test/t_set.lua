@@ -2,6 +2,7 @@
 -- \file    t_set.lua
 -- \brief   Test for the Set functionality
 local T     = require( 't' )
+local Table = require( 't.Table' )
 local Test  = require( "t.Test" )
 local Set   = require( "t.Set" )
 local Rtvg  = T.require( 'rtvg' )
@@ -125,6 +126,14 @@ local   tests = {
 		assert( "t.Set" == T.type( lSet ), "Type t.Set expected" )
 		assert( #lSet == self.len, "New Set must be size of original array" )
 		assert( lSet == self.setB, "New Set must be equal to setB" )
+	end,
+
+	test_proxyTableByIndexIsSet = function( self )
+		Test.Case.describe( "A sets proxyTable is indexed by t.Table.proxyTableIndex" )
+		local set = Set( {'a','b','c'} )
+		local prx = set[ Table.proxyTableIndex ]
+		assert( Table.count( prx ) == 3, "proxyTable should have 3 members" )
+		assert(true==prx.a and true==prx.b and true==prx.c, "all three, values should be `true`" )
 	end,
 
 	-- -----------------------------------------------------------------------

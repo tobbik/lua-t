@@ -16,19 +16,20 @@
 -- \author    tkieslich
 -- \copyright See Copyright notice at the end of src/t.h
 
-local T, Table  = require( "t" ), require( "t.Table" )
-local prxTblIdx = T.proxyTableIndex
+local Table, T   = require( "t.Table" ), require( "t" )
 local t_concat     , getmetatable, setmetatable, pairs, assert, next, type =
       table.concat , getmetatable, setmetatable, pairs, assert, next, type
-local t_merge,     t_complement,     t_contains,     t_count,     t_keys,     t_asstring =
-      Table.merge, Table.complement, Table.contains, Table.count, Table.keys, Table.asstring
+local t_merge,     t_complement,     t_contains,     t_count,     t_keys,     t_asstring,     prxTblIdx              =
+      Table.merge, Table.complement, Table.contains, Table.count, Table.keys, Table.asstring, Table.proxyTableIndex
+local t_type, t_assert    =
+      T.type, T.assert
 
 local _mt
 
 -- ---------------------------- general helpers  --------------------
 -- assert Set type and return the proxy table
 local getPrx     = function( self )
-	T.assert( _mt == getmetatable( self ), "Expected `%s`, got %s", _mt.__name, T.type( self ) )
+	t_assert( _mt == getmetatable( self ), "Expected `%s`, got %s", _mt.__name, t_type( self ) )
 	return self[ prxTblIdx ]
 end
 
