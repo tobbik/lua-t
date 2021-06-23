@@ -44,8 +44,9 @@ T_SRC=\
    t/Pack/Index.lua \
    t/Set.lua \
    t/Table.lua \
-   t/Test.lua \
    t/Tst.lua \
+   t/Tst/Suite.lua \
+   t/Test.lua \
    t/Test/Case.lua \
    t/Test/Context.lua \
    t/Time.lua \

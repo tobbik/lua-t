@@ -5,83 +5,101 @@
 -- \author    tkieslich
 -- \copyright See Copyright notice at the end of t.h
 
-local t_concat    , t_insert    , s_format     , getmetatable, setmetatable, pairs, assert, type =
-      table.concat, table.insert, string.format, getmetatable, setmetatable, pairs, assert, type
-local T,Time,t_merge,pp = require"t", require"t.Time", require't.Table'.merge, require't.Table'.pprint
+local t_concat    , t_insert    , getmetatable, setmetatable, pairs =
+      table.concat, table.insert, getmetatable, setmetatable, pairs
+local Time,pp = require"t.Time", require't.Table'.pprint
 
-local T_TST_CSE_SKIPINDICATOR = "<test_case_skip_indicator>:" -- must have trailing ":"
-local STG_BFE = 1  -- before
-local STG_EXC = 2  -- execute
-local STG_AFE = 3  -- after
-local STG_DNE = 4  -- done
+local T_TST_CSE_SKIPINDICATOR = "<t.test_skip_indicator>:" -- must have trailing ":"
+local _mt
 
 -- ---------------------------- general helpers  --------------------
-local getFunctionSource = function( f )
-  local dbg, c, src = debug.getinfo( f, "Sl" ), 1, {}
+local getFunctionSource = function( dbg )
+  dbg = 'function'==type( dbg ) and debug.getinfo( dbg, "Sl" ) or dbg
+  if "C" == dbg.what then return "C (Compiled code)" end
+  local c, src, loc = 1, {}, dbg.source:sub( 2 )
   --pp({DBG= dbg})
   -- TODO: make sure short_src is a file, not stdin or rubbish
-  for l in io.lines( dbg.short_src ) do
+  for l in io.lines( loc ) do
     if c >= dbg.linedefined and c <= dbg.lastlinedefined then
-      t_insert( src, s_format( "    %d: %s", c, l ) )
+      t_insert( src, ("  %d: %s"):format( c, l ) )
     end
     c = c+1
   end
-  return t_concat( src, "\n" )
-end
-
-local getDescription    = function( x )
-  if     x.skip then return x.description .. " # SKIP: " .. x.skip
-  elseif x.todo then return x.description .. " # TODO: " .. x.todo
-  else               return x.description end
-end
-
-local reset      = function( s )
-  s.pass,s.skip,s.todo,s.message,s.location,s.executionTime = nil,nil,nil,nil,nil,nil
+  return "\n" .. t_concat( src, "\n" ), loc
 end
 
 local traceback = function( tbk )
   local loc, msg = tbk:match( '^([^:]*:%d+): (.*)' )  -- "foo.lua:22: What went wrong"
   -- level 2 is where it failed, level 1 is this traceback function
-  local tb = debug.traceback( nil, 2 ):gsub( "\n\t+", "\n  " ):gsub( "stack traceback:\n", "" )
+  local tb = debug.traceback( nil, 2 ):gsub( "\n\t+", "\n  " ):gsub( "stack traceback:", "" )
   if msg then
     local skipm = msg:match( T_TST_CSE_SKIPINDICATOR .. "(.*)$" )
     if skipm then
-      return { pass=true,  skip=true,  message=skipm }
+      return { pass=true, status="skipped", message=skipm, location=loc }
     else
-      return { pass=false, skip=false, message=msg, location=loc, traceback=tb }
+      return { pass=false, status="failed", message=msg, location=loc, traceback=tb, failedSource=getFunctionSource( debug.getinfo( 3, "Sl" ) ) }
     end
   else
-    return { pass=false, message=tbk, traceback=tb }
+    return { pass=false, status="failed", message=tbk, location=loc, traceback=tb, failedSource=getFunctionSource( debug.getinfo( 3, "Sl" ) ) }
   end
 end
 
-local execute = function( _, description, func, async )
-
+local findInstanceOnStack = function( )
+  local i, level = 0, debug.getinfo( 0, "fu" )
+  while level do
+    local n, name, val = 1, debug.getlocal(i, 1)
+    while name do
+      if _mt == getmetatable( val ) then return val end
+      n, name, val = n+1, debug.getlocal(i, n+1)
+    end
+    i, level = i+1, debug.getinfo( i+1, "fu" )
+  end
+  return 0
 end
+
+-- ---------------------------- Instance metatable --------------------
+_mt = {       -- local _mt at top of file
+  -- essentials
+  __name     = "t.Test",
+  __tostring = function( self )
+    if     'skipped'==self.status then return self.description .. " # SKIP: " .. self.message
+    elseif 'todo'   ==self.status then return self.description .. " # TODO: " .. self.message
+    else                               return self.description
+    end
+  end
+}
+_mt.__index    = _mt
 
 return setmetatable(
   {
-    _VERSION     = 't.Tst 0.1.0',
+    _VERSION     = 't.Test 0.1.0',
     _DESCRIPTION = 'lua-t unit-testing.',
     _URL         = 'https://gitlab.com/tobbik/lua-t',
     _LICENSE     = 'MIT',
-    skip         = function( why, ... ) return error( T_TST_CSE_SKIPINDICATOR .. s_format( why, ... ) ) end,
+    describe     = function( dsc, ... ) findInstanceOnStack( ).description = dsc:format( ... ) end,
+    todo         = function( dsc, ... ) findInstanceOnStack( ).todo = dsc:format( ... ) end,
+    skip         = function( why, ... ) return error( T_TST_CSE_SKIPINDICATOR .. why:format( ... ) ) end,
     getSource    = getFunctionSource,
   },
   {
-    __call = function( _, description, func, async )
-      return function( ... )
-        local rinse = function()
-        end
-        local start   = Time( )
-        local ok, err = xpcall( func, traceback, ... )
-        local result  = { description=description, executionTime=(Time()-start).ms, pass=ok, skip=false }
-        if not ok then
-          result = t_merge( result, err, true )
-          result.source = getFunctionSource( func )
-        end
-        return result.pass, result
+    __call = function( _, test_func, ... )
+      local test   = setmetatable(
+        { description="Unnamed test", pass=true, status="passed", executionTime = Time( ), testSource = getFunctionSource( test_func ) },
+        _mt
+      )
+      local ok, tbk = xpcall( test_func, traceback, ... )
+      test.executionTime = Time( ) - test.executionTime
+      if not ok then
+        --test.source = getFunctionSource( test_func )
+        for k,v in pairs( tbk ) do test[ k ] = v end
       end
+      if test.todo then
+        test.message = test.todo
+        test.todo    = true
+        test.pass    = true
+        test.status  = 'todo'
+      end
+      return test.pass, test
     end
   }
 )

@@ -44,6 +44,7 @@ local run = function( do_pat, no_pat )
 		--local runit =  v:match( do_pat ) and not v:match( no_pat )
 		--print('------', runit,  do_pat, no_pat, v:match( do_pat ), v:match( no_pat ), v )
 		if v:match( do_pat ) and not v:match( no_pat ) then
+			local start = Time()
 			print( format( "--------- EXECUTING: %s   ---------", v ) )
 			local c_test = T.require( v )
 			local success = c_test( ctx )
@@ -57,7 +58,8 @@ local run = function( do_pat, no_pat )
 			total.skip  = total.skip  + metrics.skip
 			total.todo  = total.todo  + metrics.todo
 			total.time  = total.time  + metrics.time
-			print( format( "--------- Done in : %.3f s" , ctx:getMetrics( c_test ).time:get()/1000 ) )
+			start:since()
+			print( format( "--------- Done in : %.3f s (runtime: %.3f s)" , ctx:getMetrics( c_test ).time:get()/1000, start:get()/1000 ) )
 		end
 	end
 	total.allTime:since( )
