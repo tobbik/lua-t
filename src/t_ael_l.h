@@ -43,13 +43,6 @@ struct t_ael_dnd {
 	int               hR;    ///< handle   LUA_REGISTRYINDEX reference (T.Net.* or Lua file handle)
 };
 
-// element that was fired
-struct t_ael_exc {
-	enum t_ael_msk    msk;   ///< mask, for unset, readable, writable
-	int               fd;    ///< descriptor
-};
-
-
 // definition for timer node
 struct t_ael_tnd {
 	int                fR;    ///< func/arg table reference in LUA_REGISTRYINDEX
@@ -57,7 +50,6 @@ struct t_ael_tnd {
 	struct timeval    *tv;    ///< time to elapse until fire (timval to work with)
 	struct t_ael_tnd  *nxt;   ///< next pointer for linked list
 };
-
 
 // t_ael general implementation; API specifics live behind the *state pointer
 struct t_ael {

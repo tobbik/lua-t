@@ -146,13 +146,8 @@ p_ael_removehandle_impl( lua_State *L, struct t_ael *ael, struct t_ael_dnd *dnd,
 			t_ael_msk_lst[ dnd->msk & (~delmsk) ] );
 #endif
 	delmsk = dnd->msk & (~delmsk);
-	// If the fd remains monitored for some event, we need a MOD
-	// operation. Otherwise we need an DEL operation.
-	int                   op = (T_AEL_NO != delmsk)
-	                           ? EPOLL_CTL_MOD
-	                           : EPOLL_CTL_DEL;
+	int op = (T_AEL_NO != delmsk) ? EPOLL_CTL_MOD : EPOLL_CTL_DEL;
 	struct epoll_event ee    = {0,{0}}; // avoid valgrind warning
-
 	ee.events = 0;
 	if (delmsk & T_AEL_RD) ee.events |= EPOLLIN;
 	if (delmsk & T_AEL_WR) ee.events |= EPOLLOUT;

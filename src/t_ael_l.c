@@ -139,7 +139,7 @@ t_ael_adjustTimers( struct t_ael_tnd **tHead, struct timeval *tAdj )
  * Stack after:   fnc  p1  p2  p3  …
  * \param   L     Lua state.
  * \param   pos   int; Reference positon on the stack.
- * \param   exc   int; Reference positon.
+ * \param   exc   int; Should it be executed?
  * \return  int   Number of arguments to be called by function.
  * --------------------------------------------------------------------------*/
 static inline void
@@ -341,19 +341,19 @@ lt_ael_addhandle( lua_State *L )
 	luaL_checktype( L, 4, LUA_TFUNCTION );
 
 	// get/create dnd userdata
-	lua_rawgeti( L, LUA_REGISTRYINDEX, ael->dR );//S: ael hnd dir fnc … nds
-	lua_rawgeti( L, -1, fd );                    //S: ael hnd dir fnc … nds ???
+	lua_rawgeti( L, LUA_REGISTRYINDEX, ael->dR );//S: ael hdl dir fnc … nds
+	lua_rawgeti( L, -1, fd );                    //S: ael hdl dir fnc … nds ???
 	if (lua_isnil( L, -1 ))
 	{
-		dnd = t_ael_dnd_create_ud( L );           //S: ael hnd dir fnc … nds nil dnd
+		dnd = t_ael_dnd_create_ud( L );           //S: ael hdl dir fnc … nds nil dnd
 		lua_rawseti( L, -3, fd );
 		(ael->fdCount)++;
 	}
 	else
-		dnd = t_ael_dnd_check_ud( L, -1, 1 );     //S: ael hnd dir fnc … nds dnd
-	lua_pop( L, 2 );                             //S: ael hnd dir fnc …
+		dnd = t_ael_dnd_check_ud( L, -1, 1 );     //S: ael hdl dir fnc … nds dnd
+	lua_pop( L, 2 );                             //S: ael hdl dir fnc …
 
-	// implementatuion specific handling
+	// implementation specific handling
 	p_ael_addhandle_impl( L, ael, dnd, fd, msk );
 
 	// create function reference
@@ -399,11 +399,16 @@ lt_ael_removehandle( lua_State *L )
 	      3, "must specify direction" );
 	msk = luaL_checkinteger( L, 3 );
 
-	// get/create dnd userdata
+	// get dnd userdata
 	lua_rawgeti( L, LUA_REGISTRYINDEX, ael->dR );
 	lua_rawgeti( L, -1, fd );
 	if (lua_isnil( L, -1 ))
-		return luaL_error( L, "Descriptor must be observed in Loop" );
+	{
+		lua_pushboolean( L, 0 );
+		lua_pushstring( L, "Descriptor not observed in Loop -> ignoring" );
+		return 2;
+		//return luaL_error( L, "Descriptor must be observed in Loop" );
+	}
 	else
 		dnd = t_ael_dnd_check_ud( L, -1, 1 );    //S: ael hnd dir nds dnd
 	lua_pop( L, 1 );   // pop dnd               //S: ael hnd dir nds
@@ -537,6 +542,7 @@ lt_ael__gc( lua_State *L )
 	struct t_ael     *ael  = t_ael_check_ud( L, 1, 1 );
 	struct t_ael_tnd *tFre;
 	struct t_ael_tnd *tRun = ael->tmHead;
+	printf("Running AEL __gc\n");
 
 	while (NULL != tRun)
 	{
@@ -550,6 +556,7 @@ lt_ael__gc( lua_State *L )
 	p_ael_free_impl( L, ael->sR );
 	luaL_unref( L, LUA_REGISTRYINDEX, ael->sR ); // unref impl state data
 	luaL_unref( L, LUA_REGISTRYINDEX, ael->dR ); // unref nodes table
+	ael->fdCount = 0;
 	return 0;
 }
 
@@ -652,6 +659,8 @@ lt_ael_showloop( lua_State *L )
 	struct t_ael_dnd *dnd;
 	int               i   = 0;
 	int               n   = lua_gettop( L );
+	int               fd;
+
 	printf( T_AEL_TYPE" %p TIMER LIST:\n", ael );
 	while (NULL != tr)
 	{
@@ -667,25 +676,27 @@ lt_ael_showloop( lua_State *L )
 	printf( T_AEL_TYPE" %p HANDLE LIST:\n", ael );
 	lua_rawgeti( L, LUA_REGISTRYINDEX, ael->dR );
 	lua_pushnil( L );
+	n = lua_gettop(L);
 	while (lua_next( L, -2 ))
 	{
 		dnd = t_ael_dnd_check_ud( L, -1, 1 );
+		fd  = luaL_checkinteger( L, -2 );
 		if (T_AEL_NO == dnd->msk)
 			continue;
 		if (T_AEL_RD & dnd->msk)
 		{
-			printf( "%5d  [R]  ", i );
+			printf( "%5d  [R]  ", fd );
 			t_ael_doFunction( L, dnd->rR, -1 );
-			t_stackPrint( L, n+1, lua_gettop( L ), 1 );
-			lua_pop( L, lua_gettop( L ) - n );
+			t_stackPrint( L, n+2, lua_gettop( L ), 1 );
+			lua_pop( L, lua_gettop( L ) - n -1 );
 			printf( "\n" );
 		}
 		if (T_AEL_WR & dnd->msk)
 		{
-			printf( "%5d  [W]  ", i );
+			printf( "%5d  [W]  ", fd );
 			t_ael_doFunction( L, dnd->wR, -1 );
-			t_stackPrint( L, n+1, lua_gettop( L ), 1 );
-			lua_pop( L, lua_gettop( L ) - n );
+			t_stackPrint( L, n+2, lua_gettop( L ), 1 );
+			lua_pop( L, lua_gettop( L ) - n -1 );
 			printf( "\n" );
 		}
 		lua_pop( L, 1 );
@@ -694,6 +705,50 @@ lt_ael_showloop( lua_State *L )
 }
 #endif
 
+
+/**--------------------------------------------------------------------------
+ * Revoe every item and reference from the loop.
+ * \param   t_ael    Loop Struct.
+ * \return  int  # of values pushed onto the stack.
+ * --------------------------------------------------------------------------*/
+static int
+lt_ael_clean( lua_State *L )
+{
+	struct t_ael     *ael = t_ael_check_ud( L, 1, 1 );
+	struct t_ael_tnd *tr  = ael->tmHead;
+	struct t_ael_dnd *dnd;
+	//int               i   = 0;
+	//int               n   = lua_gettop( L );
+
+	// walk down dR table an unref functions and handles
+	printf( T_AEL_TYPE" %p cleaning HANDLE LIST %d  %d:\n", ael, ael->dR, ael->sR );
+	lua_rawgeti( L, LUA_REGISTRYINDEX, ael->dR );
+	lua_pushnil( L );
+	while (lua_next( L, -2 ))
+	{
+		dnd = t_ael_dnd_check_ud( L, -1, 1 );
+		t_stackDump(L);
+		p_ael_removehandle_impl( L, ael, dnd, luaL_checkinteger( L, -2 ), T_AEL_RW );
+		t_ael_dnd_removeMaskAndFunction( L, dnd, T_AEL_RW );
+		if (LUA_REFNIL != dnd->hR)
+			luaL_unref( L, LUA_REGISTRYINDEX, dnd->hR );
+		lua_pushnil( L );
+		lua_rawseti( L, -4, luaL_checkinteger( L, -3 ) );
+		(ael->fdCount)--;
+		lua_pop( L, 1 );
+	}
+	printf( T_AEL_TYPE" %p cleaning TIMER LIST:\n", ael );
+	while (NULL != tr)
+	{
+		ael->tmHead = tr->nxt;
+		printf("    UNREFING TIMER: [%d:%d]\n", tr->fR,tr->tR );
+		luaL_unref( L, LUA_REGISTRYINDEX, tr->fR ); // remove func/arg table from registry
+		luaL_unref( L, LUA_REGISTRYINDEX, tr->tR ); // remove timeval ref from registry
+		tr = tr->nxt;
+		free( tr );
+	}
+	return 0;
+}
 
 /**--------------------------------------------------------------------------
  * Get Element from Loop.
@@ -721,7 +776,7 @@ lt_ael__index( lua_State *L )
 	{
 		lua_rawgeti( L, LUA_REGISTRYINDEX, ael->dR );
 		fd = t_ael_getHandle( L, 2, 0 );
-		if (! fd)  // last chance might be a t.Time
+		if (! fd)  // last chance, it might be a t.Time
 		{
 			if (NULL != (tv  = t_tim_check_ud( L, 2, 0 )))
 			{
@@ -792,6 +847,7 @@ static const struct luaL_Reg t_ael_m [] = {
 	, { "removeHandle",  lt_ael_removehandle  }
 	, { "run",           lt_ael_run           }
 	, { "stop",          lt_ael_stop          }
+	, { "clean",         lt_ael_clean         }
 #ifdef DEBUG
 	, { "show",          lt_ael_showloop      }
 #endif

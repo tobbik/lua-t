@@ -125,10 +125,10 @@ p_ael_addhandle_impl( lua_State *L, struct t_ael *ael, struct t_ael_dnd *dnd, in
 
 
 /* --------------------------------------------------------------------------
- * Remove a File/Socket event handler to the T.Loop.
+ * Remove a File/Socket event handler from the T.Loop.
  * \param  L      lua_State.
  * \param  ael    struct t_ael pointer to loop.
- * \param  dnd    struct assiciated with fd.
+ * \param  dnd    struct associated with fd.
  * \param  fd     int  Socket/file descriptor.
  * \param  delmsk enum t_ael_msk - direction of descriptor to stop observing.
  * \return int    success/fail;

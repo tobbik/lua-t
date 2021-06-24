@@ -101,7 +101,7 @@ dev-exec:
 	$(MAKE) dev
 	LUA_PATH="$(CURDIR)/out/share/lua/5.4/?.lua;;" \
 	 LUA_CPATH="$(CURDIR)/out/lib/lua/5.4/?.so;;" \
-	 $(CURDIR)/out/bin/lua -i scratchpad.lua
+	 $(CURDIR)/out/bin/lua -i scp.lua
 
 dev-test:
 	$(MAKE) dev
@@ -113,7 +113,7 @@ dev-gdb:
 	$(MAKE) dev
 	LUA_PATH="$(CURDIR)/out/share/lua/5.4/?.lua;;" \
 	 LUA_CPATH="$(CURDIR)/out/lib/lua/5.4/?.so;;" \
-	 gdb --args $(CURDIR)/out/bin/lua -i scratchpad.lua
+	 gdb --args $(CURDIR)/out/bin/lua -i scp.lua
 
 dev-example:
 	$(MAKE) dev
