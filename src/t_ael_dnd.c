@@ -14,8 +14,8 @@
 #define _POSIX_C_SOURCE 200809L   //fileno()
 #endif
 
-#include <stdlib.h>               // malloc, free
-#include <string.h>               // memset
+//#include <stdlib.h>               // malloc, free
+//#include <string.h>               // memset
 
 #include "t_tim.h"
 #include "t_net.h"
@@ -26,10 +26,9 @@
 #endif
 
 /**--------------------------------------------------------------------------
- * Create a new t_ael userdata and push to LuaStack.
+ * Create a new t_ael_evt userdata and push to LuaStack.
  * \param   L    Lua state.
- * \param   sz   size_t; how many slots for file/socket events to be created.
- * \return  ael  struct t_ael * pointer to new userdata on Lua Stack.
+ * \return  evt  struct t_ael_evt * pointer to new userdata on Lua Stack.
  * --------------------------------------------------------------------------*/
 struct t_ael_dnd
 *t_ael_dnd_create_ud( lua_State *L )
@@ -52,7 +51,7 @@ struct t_ael_dnd
  * \param   L      Lua state.
  * \param   int    position on the stack
  * \param   int    check(boolean): if true error out on fail
- * \return  struct t_ael*  pointer to userdata on stack
+ * \return  struct t_ael_dnd*  pointer to userdata on stack
  * --------------------------------------------------------------------------*/
 struct t_ael_dnd
 *t_ael_dnd_check_ud( lua_State *L, int pos, int check )
@@ -137,6 +136,8 @@ lt_ael_dnd__gc( lua_State *L )
 {
 	struct t_ael_dnd *dnd  = t_ael_dnd_check_ud( L, 1, 1 );
 
+	// TODO: this makes no sense!!! if a value is NOT LUA_REFNIL it should be
+	// unrefed. However, changing this messes with everything!!! BANG MY HEAD
 	if (LUA_REFNIL == dnd->hR)
 		luaL_unref( L, LUA_REGISTRYINDEX, dnd->hR );
 	if (LUA_REFNIL == dnd->rR)

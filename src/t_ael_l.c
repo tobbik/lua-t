@@ -291,9 +291,9 @@ struct t_ael
 	ael = (struct t_ael *) lua_newuserdata( L, sizeof( struct t_ael ) );
 	ael->tmHead  = NULL;
 	ael->fdCount = 0;
-	lua_newtable( L );
-	ael->dR = luaL_ref( L, LUA_REGISTRYINDEX );
-	ael->sR = p_ael_create_ud_impl( L );
+	lua_newtable( L );                          //S: ael tbl
+	ael->dR = luaL_ref( L, LUA_REGISTRYINDEX ); //S: ael
+	ael->sR = p_ael_create_ud_impl( L );        //S: ael
 	luaL_getmetatable( L, T_AEL_TYPE );
 	lua_setmetatable( L, -2 );
 	return ael;
@@ -452,7 +452,9 @@ lt_ael_addtimer( lua_State *L )
 
 	luaL_checktype( L, 3, LUA_TFUNCTION );
 
-	// try to find the timer in the list first and overwrite instead of re-add
+	// TODO: since tnd->tv is a reference, someone could have altered it and we
+	// would have to relocate it in the linked list
+	// try to find the timer in the list first -> overwrite instead of re-add
 	while (NULL != tRun && NULL != tRun->nxt && tRun->tv != tv)
 		tRun = tRun->nxt;
 	if (tRun && tv == tRun->tv)
@@ -468,21 +470,20 @@ lt_ael_addtimer( lua_State *L )
 		tnd->tv = tv;
 	}
 	//p_ael_addtimer_impl( ael, tv );
-	lua_createtable( L, n-3, 0 );  // create function/parameter table
-	lua_insert( L, 3 );
-	// Stack: ael,tv,tbl,clb,…
+	lua_createtable( L, n-3, 0 );                //S: ael,tv,fnc,…, tbl
+	lua_insert( L, 3 );                          //S: ael,tv,tbl,fnc,…
 	while (n > 3)
-		lua_rawseti( L, 3, (n--)-3 );             // add args and callback (pops each item)
-	tnd->fR = luaL_ref( L, LUA_REGISTRYINDEX );  // pop the function/parameter table
+		lua_rawseti( L, 3, (n--)-3 );             // add args and fnc (pops each item) reversely (fnc is last)
+	tnd->fR = luaL_ref( L, LUA_REGISTRYINDEX );  //S: ael,tv
 	if (! r)
 	{
 		// making the time val part of lua registry guarantees the gc can't destroy it
-		tnd->tR = luaL_ref( L, LUA_REGISTRYINDEX );  // pop the timeval
+		tnd->tR = luaL_ref( L, LUA_REGISTRYINDEX ); //S: ael
 		// insert into ordered linked list of time events
 		t_ael_insertTimer( &(ael->tmHead), tnd );
 	}
 
-	return 1;
+	return 0;
 }
 
 
@@ -518,11 +519,11 @@ lt_ael_removetimer( lua_State *L )
 		tRun = tRun->nxt;
 	}
 	// Last or found timer
-	if (NULL!=tRun && tRun->tv == tv)
+	if (NULL != tRun && tRun->tv == tv)
 	{
 		tCnd->nxt = tRun->nxt;
 		luaL_unref( L, LUA_REGISTRYINDEX, tRun->fR );
-		luaL_unref( L, LUA_REGISTRYINDEX, tCnd->tR );
+		luaL_unref( L, LUA_REGISTRYINDEX, tRun->tR );
 		free( tRun );
 	}
 
@@ -655,23 +656,24 @@ static int
 lt_ael_showloop( lua_State *L )
 {
 	struct t_ael     *ael = t_ael_check_ud( L, 1, 1 );
-	struct t_ael_tnd *tr  = ael->tmHead;
+	struct t_ael_tnd *tnd = ael->tmHead;
 	struct t_ael_dnd *dnd;
 	int               i   = 0;
 	int               n   = lua_gettop( L );
 	int               fd;
 
 	printf( T_AEL_TYPE" %p TIMER LIST:\n", ael );
-	while (NULL != tr)
+	while (NULL != tnd)
 	{
-		printf( "\t%d\t{%2ld:%6ld}\t%p   ", ++i,
-			tr->tv->tv_sec,  tr->tv->tv_usec,
-			tr->tv );
-		t_ael_doFunction( L, tr->fR, -1 );
+		printf( "\t%d\t{%2ld:%6ld} [%i:%i]\t%p [%p->%p]  ", ++i,
+			tnd->tv->tv_sec,  tnd->tv->tv_usec,
+			tnd->fR, tnd->tR,
+			tnd->tv, tnd, tnd->nxt );
+		t_ael_doFunction( L, tnd->fR, -1 );
 		t_stackPrint( L, n+1, lua_gettop( L ), 1 );
 		lua_pop( L, lua_gettop( L ) - n );
 		printf( "\n" );
-		tr = tr->nxt;
+		tnd = tnd->nxt;
 	}
 	printf( T_AEL_TYPE" %p HANDLE LIST:\n", ael );
 	lua_rawgeti( L, LUA_REGISTRYINDEX, ael->dR );
@@ -715,7 +717,7 @@ static int
 lt_ael_clean( lua_State *L )
 {
 	struct t_ael     *ael = t_ael_check_ud( L, 1, 1 );
-	struct t_ael_tnd *tr  = ael->tmHead;
+	struct t_ael_tnd *tnd = ael->tmHead;
 	struct t_ael_dnd *dnd;
 	//int               i   = 0;
 	//int               n   = lua_gettop( L );
@@ -738,14 +740,14 @@ lt_ael_clean( lua_State *L )
 		lua_pop( L, 1 );
 	}
 	printf( T_AEL_TYPE" %p cleaning TIMER LIST:\n", ael );
-	while (NULL != tr)
+	while (NULL != tnd)
 	{
-		ael->tmHead = tr->nxt;
-		printf("    UNREFING TIMER: [%d:%d]\n", tr->fR,tr->tR );
-		luaL_unref( L, LUA_REGISTRYINDEX, tr->fR ); // remove func/arg table from registry
-		luaL_unref( L, LUA_REGISTRYINDEX, tr->tR ); // remove timeval ref from registry
-		tr = tr->nxt;
-		free( tr );
+		ael->tmHead = tnd->nxt;
+		printf("    UNREFING TIMER: [%d:%d]\n", tnd->fR,tnd->tR );
+		luaL_unref( L, LUA_REGISTRYINDEX, tnd->fR ); // remove func/arg table from registry
+		luaL_unref( L, LUA_REGISTRYINDEX, tnd->tR ); // remove timeval ref from registry
+		tnd = tnd->nxt;
+		free( tnd );
 	}
 	return 0;
 }

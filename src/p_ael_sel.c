@@ -67,7 +67,7 @@ static inline struct p_ael_ste
  * select() specific initialization of t_ael->state.
  * \param   L      Lua state.
  * \param   struct t_ael * pointer to new userdata on Lua Stack
- * \return  int.
+ * \return  int
  * --------------------------------------------------------------------------*/
 int
 p_ael_create_ud_impl( lua_State *L )
