@@ -1,10 +1,8 @@
-EXE=getifaddrs getaddr ioctl_addr ioctl_addr2 ioctl_addr3 \
-	 bit_copy byte_copy bind bits show_ip test_if send size
-#	 headers
-#EXE=getaddr
-LIB=fib.so
+ESRC=getifaddrs.c getaddr.c ioctl_addr.c ioctl_addr2.c ioctl_addr3.c \
+	 bit_copy.c byte_copy.c bind.c bits.c show_ip.c test_if.c send.c size.c
+LSRC=udlib.c fib.c
+EXE=$(ESRC:%.c=%)
+LIB=$(LSRC:%.c=%.so)
 
 include $(CURDIR)/instruct.make
 
-#fib.so:  fib.c
-#	$(CC) -O0 -g -shared -fpic -o $@ $<

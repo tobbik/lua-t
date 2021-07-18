@@ -22,20 +22,28 @@
 
 // includes the Lua headers
 #include "t_ael.h"
-#include "t.h"             // t_typ*
+#include "t.h"                 // t_typ*
+
+#include <sys/time.h>          // struct timeval
 
 enum t_ael_msk {
 	// 00000000
-	T_AEL_NO = 0x00,        ///< not set
+	T_AEL_NO = 0x00,            ///< not set
 	// 00000001
-	T_AEL_RD = 0x01,        ///< Read  ready event on handle
+	T_AEL_RD = 0x01,            ///< Read  ready event on handle
 	// 00000010
-	T_AEL_WR = 0x02,        ///< Write ready event on handle
+	T_AEL_WR = 0x02,            ///< Write ready event on handle
 	// 00000011
-	T_AEL_RW = 0x03,        ///< Read and Write on handle
+	T_AEL_RW = 0x03,            ///< Read and Write on handle
 };
 
 // definition for file/socket descriptor node
+// It keeps a reference to the handle to make sure it won't be garbage collected
+// if the calling code looses its reference.  So if it gets called by the loop
+// it won't error out.
+#define T_AEL_DSC_FRDIDX   1   ///< FUNCTION/ARGUMENTS READ INDEX
+#define T_AEL_DSC_FWRIDX   2   ///< FUNCTION/ARGUMENTS WRITE INDEX
+#define T_AEL_DSC_HDLIDX   3   ///< HANDLE INDEX
 struct t_ael_dnd {
 	enum t_ael_msk    msk;   ///< mask, for unset, readable, writable
 	int               rR;    ///< func/arg table reference for read  event in LUA_REGISTRYINDEX
@@ -43,34 +51,65 @@ struct t_ael_dnd {
 	int               hR;    ///< handle   LUA_REGISTRYINDEX reference (T.Net.* or Lua file handle)
 };
 
+// definition for timed task
+// The t_ael_tsk collection is implemented as a "linked list" where the "next"
+// task is a uservalue of the "previous" task.  In Lua 5.4 userdata can have
+// multiple uservalues.  We use index1 as uservalue of the "next" task and
+// index2 as uservalue for the function-table.  This has the benefit that if
+// tasks go out of scope all references get automatically garbage collected.
+#define T_AEL_TSK_NXTIDX   1   ///< NEXT TASK INDEX
+#define T_AEL_TSK_FNCIDX   2   ///< FUNCTION/ARGUMENTS TABLE INDEX
+struct t_ael_tsk {
+	int                fR;      ///< func/arg table reference in LUA_REGISTRYINDEX
+	lua_Integer        tout;    ///< timeout in ms
+	struct t_ael_tsk  *nxt;     ///< next pointer for linked list
+};
+
 // definition for timer node
 struct t_ael_tnd {
-	int                fR;    ///< func/arg table reference in LUA_REGISTRYINDEX
-	int                tR;    ///< T.Time  reference in LUA_REGISTRYINDEX
-	struct timeval    *tv;    ///< time to elapse until fire (timval to work with)
-	struct t_ael_tnd  *nxt;   ///< next pointer for linked list
+	int                fR;      ///< func/arg table reference in LUA_REGISTRYINDEX
+	int                tR;      ///< T.Time  reference in LUA_REGISTRYINDEX
+	struct timeval    *tv;      ///< time to elapse until fire (timval to work with)
+	struct t_ael_tnd  *nxt;     ///< next pointer for linked list
 };
 
 // t_ael general implementation; API specifics live behind the *state pointer
+#define T_AEL_STEIDX   1       ///< PLATFORM SPECIFIC STATE INDEX
+#define T_AEL_DSCIDX   2       ///< DESCRIPTOR TABLE INDEX
+#define T_AEL_TSKIDX   3       ///< TASK LINKED LIST HEAD INDEX
+#define T_AEL_NOTIMEOUT   -1   ///< IF NO TIMER IS IN LIST
 struct t_ael {
 	int                run;      ///< boolean indicator to start/stop the loop
 	int                fdCount;  ///< how many descriptor observed
 	//void              *state;    ///< polling API specific data
 	int                sR;       ///< reference to polling API specific data
 	int                dR;       ///< descriptor table reference
-	struct t_ael_tnd  *tmHead;   ///< Head of timers linked list
+	// for each call of poll it is necessary to reset the next time out
+	// it is expensive to get the linked head, extract the time and pop it
+	// keep a reference to the heads timeout value
+	lua_Integer        tout;     ///< timeout of taskHead
 };
 
 // t_ael_l.c
-struct t_ael     *t_ael_check_ud     ( lua_State *L, int pos, int check );
-struct t_ael     *t_ael_create_ud    ( lua_State *L );
-void              t_ael_executehandle( lua_State *L, struct t_ael_dnd *dnd, enum t_ael_msk msk );
+struct t_ael     *t_ael_check_ud   ( lua_State *L, int pos, int check );
+struct t_ael     *t_ael_create_ud  ( lua_State *L );
+void              t_ael_doFunction( lua_State *L, int pos, int exc );
+
 // t_ael_dnd.c
 struct t_ael_dnd *t_ael_dnd_create_ud( lua_State *L );
 struct t_ael_dnd *t_ael_dnd_check_ud ( lua_State *L, int pos, int check );
+void              t_ael_dnd_execute( lua_State *L, struct t_ael_dnd *dnd, enum t_ael_msk msk );
 void              t_ael_dnd_setMaskAndFunction( lua_State *L, struct t_ael_dnd *dnd, enum t_ael_msk msk, int fR );
 void              t_ael_dnd_removeMaskAndFunction( lua_State *L, struct t_ael_dnd *dnd, enum t_ael_msk msk );
 int               luaopen_t_ael_dnd  ( lua_State *L );
+
+// t_ael_tsk.c
+struct t_ael_tsk *t_ael_tsk_create_ud( lua_State *L, lua_Integer ms );
+struct t_ael_tsk *t_ael_tsk_check_ud( lua_State *L, int pos, int check );
+void              t_ael_tsk_insert( lua_State *L, struct t_ael *ael, struct t_ael_tsk *tIns );
+void              t_ael_tsk_remove( lua_State *L, struct t_ael *ael, struct t_ael_tsk *tCnd );
+void              t_ael_tsk_process( lua_State *L, struct t_ael *ael, lua_Integer et );
+int               luaopen_t_ael_tsk  ( lua_State *L );
 
 // p_ael_(impl).c   (Implementation specific functions) INTERFACE
 int  p_ael_create_ud_impl   ( lua_State *L );

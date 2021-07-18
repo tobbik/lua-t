@@ -95,7 +95,7 @@ dev-run:
 	$(MAKE) dev
 	time LUA_PATH="$(CURDIR)/out/share/lua/5.4/?.lua;;" \
 	 LUA_CPATH="$(CURDIR)/out/lib/lua/5.4/?.so;;" \
-	 $(CURDIR)/out/bin/lua scratchpad.lua
+	 $(CURDIR)/out/bin/lua scp.lua
 
 dev-exec:
 	$(MAKE) dev
@@ -120,3 +120,9 @@ dev-example:
 	LUA_PATH="$(CURDIR)/out/share/lua/5.4/?.lua;;" \
 	 LUA_CPATH="$(CURDIR)/out/lib/lua/5.4/?.so;;" \
 	 $(CURDIR)/out/bin/lua -i example/t_net_ifc.lua
+
+
+run-dev:
+	LUA_PATH="$(CURDIR)/out/share/lua/5.4/?.lua;;" \
+	 LUA_CPATH="$(CURDIR)/out/lib/lua/5.4/?.so;;" \
+	 $(CURDIR)/out/bin/lua -i scp.lua

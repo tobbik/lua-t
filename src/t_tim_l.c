@@ -31,7 +31,7 @@
  * \param  struct timeval *t pointer.
  * \return void.
  * --------------------------------------------------------------------------*/
-static void
+static inline void
 t_tim_setms( struct timeval *tv, int ms )
 {
 	tv->tv_sec  = ms/1000;

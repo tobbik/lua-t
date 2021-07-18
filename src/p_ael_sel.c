@@ -14,11 +14,12 @@
  */
 
 #include "t_ael_l.h"
-#include "t_tim.h"            // struct timeval
 
 #ifdef DEBUG
 #include "t_dbg.h"
 #endif
+#include <string.h>           // memcpy
+#include <sys/time.h>         // struct timeval
 
 #if PRINT_DEBUGS == 1
 static const char* t_ael_msk_lst[ ] = {
@@ -176,16 +177,20 @@ p_ael_poll_impl( lua_State *L, struct t_ael *ael )
 	UNUSED( L );
 	struct p_ael_ste *state = p_ael_getState( L, ael->sR );
 	struct t_ael_dnd *dnd;
-	struct timeval   *tv    = (NULL != ael->tmHead)
-	   ? ael->tmHead->tv
-	   : NULL;
+	struct timeval   tv     = {-1, 0};
 	int               i,r,c = 0;
 	int                 msk;
+
+	if (ael->tout > T_AEL_NOTIMEOUT)
+	{
+		tv.tv_sec  = (ael->tout / 1000);
+		tv.tv_usec = (ael->tout % 1000) * 1000;
+	}
 
 	memcpy( &state->rfds_w, &state->rfds, sizeof( fd_set ) );
 	memcpy( &state->wfds_w, &state->wfds, sizeof( fd_set ) );
 
-	r = select( state->fdMax+1, &state->rfds_w, &state->wfds_w, NULL, tv );
+	r = select( state->fdMax+1, &state->rfds_w, &state->wfds_w, NULL, (tv.tv_sec<0) ? NULL : &tv );
 #if PRINT_DEBUGS == 1
 	printf( "    &&&&&&&&&&&& POLL RETURNED[%d:%d]: %d &&&&&&&&&&&&&&&&&&\n", ael->fdCount, state->fdMax, r );
 #endif
@@ -213,7 +218,7 @@ p_ael_poll_impl( lua_State *L, struct t_ael *ael )
 				msk |= T_AEL_WR;
 			if (T_AEL_NO != msk)
 			{
-				t_ael_executehandle( L, dnd, msk );
+				t_ael_dnd_execute( L, dnd, msk );
 				r--;
 			}
 			lua_pop( L, 1 );

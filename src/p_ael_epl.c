@@ -169,19 +169,20 @@ p_ael_removehandle_impl( lua_State *L, struct t_ael *ael, struct t_ael_dnd *dnd,
 int
 p_ael_poll_impl( lua_State *L, struct t_ael *ael )
 {
-	struct p_ael_ste *state   = p_ael_getState( L, ael->sR );
-	struct timeval     *tv    = (NULL != ael->tmHead)
-	   ? ael->tmHead->tv
-	   : NULL;
+	struct p_ael_ste   *state = p_ael_getState( L, ael->sR );
 	struct epoll_event *e;
 	int                 i,r,c = 0;
 	int                 msk;
 
+	//printf("EPOLL TIMEOUT: %lld -- ", ael->tout); t_stackDump(L);
 	r = epoll_wait(
 	   state->epfd,
 	   state->events,
 	   P_AEL_EPL_SLOTSZ,
-	   tv ? (tv->tv_sec*1000 + tv->tv_usec/1000) : -1 );
+	   (ael->tout > T_AEL_NOTIMEOUT)
+	      ? ael->tout
+	      : -1
+	);
 #if PRINT_DEBUGS == 1
 	printf( "    &&&&&&&&&&&& POLL RETURNED[%d]: %d &&&&&&&&&&&&&&&&&&\n", ael->fdCount, r );
 #endif
@@ -204,13 +205,14 @@ p_ael_poll_impl( lua_State *L, struct t_ael *ael )
 				printf( "  _____ FD: %d triggered[%s]____\n", e->data.fd, t_ael_msk_lst[ msk ] );
 #endif
 				lua_rawgeti( L, -1, e->data.fd );
-				t_ael_executehandle( L, t_ael_dnd_check_ud( L, -1, 1 ), msk );
+				t_ael_dnd_execute( L, t_ael_dnd_check_ud( L, -1, 1 ), msk );
 				lua_pop( L, 1 );
 				c++;
 			}
 		}
 		lua_pop( L, 1 );
 	}
+	//printf("EPOLLED TIMEOUT: %lld -- ", ael->tout); t_stackDump(L);
 	return c;
 }
 

@@ -116,7 +116,7 @@ t_stackDump ( lua_State *L )
 {
 	int top = lua_gettop( L );
 	printf( "STACK[%d]:   ", top );
-	t_stackPrint( L, 1, top, 1 );
+	t_stackPrint( L, 1, top, 0 );
 	printf( "\n" );  // end the listing
 }
 

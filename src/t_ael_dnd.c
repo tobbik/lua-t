@@ -47,6 +47,35 @@ struct t_ael_dnd
 
 
 /**--------------------------------------------------------------------------
+ * Executes a handle event function for the file/socket handles.
+ * \param   L        Lua state.
+ * \param   *dNde    Descriptor node.
+ * \param   msk      execute read or write or both.
+ * \return  void.
+  --------------------------------------------------------------------------*/
+void
+t_ael_dnd_execute( lua_State *L, struct t_ael_dnd *dnd, enum t_ael_msk msk )
+{
+	int rf = 0;      ///< was read() event fired for this descriptor?
+	if (msk & T_AEL_RD & dnd->msk)
+	{
+#if PRINT_DEBUGS == 1
+		//printf( ">>>>> EXECUTE FILE(READ) FOR DESCRIPTOR: %d\n", ael->fdExc[ i ] );
+#endif
+		t_ael_doFunction( L, dnd->rR, 0 );
+		rf = 1;
+	}
+	if ((msk & T_AEL_WR & dnd->msk) && !rf)
+	{
+#if PRINT_DEBUGS == 1
+		//printf( "<<<<< EXECUTE FILE(WRITE) FOR DESCRIPTOR: %d\n", ael->fdExc[ i ] );
+#endif
+		t_ael_doFunction( L, dnd->wR, 0 );
+	}
+}
+
+
+/**--------------------------------------------------------------------------
  * Check a value on the stack for being a struct t_ael_dnd
  * \param   L      Lua state.
  * \param   int    position on the stack

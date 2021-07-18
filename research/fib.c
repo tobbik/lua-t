@@ -3,6 +3,8 @@
 #include "lualib.h"
 #include "lauxlib.h"
 
+#include "t_dbg.h"
+
 typedef struct GeneratorState {
     int a;
     int b;
@@ -29,7 +31,8 @@ int genFib(lua_State* L) {
     return lua_yieldk(L, 1, (lua_KContext)state, nextFib);
 }
 
-int luaopen_fib(lua_State* L) {
+int luaopen_fib( lua_State* L )
+{
     lua_pushcfunction(L, genFib);
     return 1;
 }
