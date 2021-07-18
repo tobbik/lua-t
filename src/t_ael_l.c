@@ -456,7 +456,7 @@ lt_ael_showloop( lua_State *L )
 		tsk = t_ael_tsk_check_ud( L, -1, 0 );
 		printf( "\t%d\t{%5lld} [%i]  ", ++i, tsk->tout, tsk->fR );
 		t_ael_doFunction( L, tsk->fR, -1 );
-		t_stackPrint( L, n+1, lua_gettop( L ), 1 );   //S: ael tsk fnc …
+		t_stackPrint( L, n+1, lua_gettop( L ), 0 );   //S: ael tsk fnc …
 		printf( "\n" );
 		lua_getiuservalue( L, 2, T_AEL_TSK_NXTIDX );  //S: ael prv fnc … nxt
 		lua_rotate( L, 2, 1 );                        //S: ael nxt prv fnc …
@@ -477,7 +477,7 @@ lt_ael_showloop( lua_State *L )
 		{
 			printf( "%5d  [R]  ", fd );
 			t_ael_doFunction( L, dnd->rR, -1 );
-			t_stackPrint( L, n+2, lua_gettop( L ), 1 );
+			t_stackPrint( L, n+2, lua_gettop( L ), 0 );
 			lua_pop( L, lua_gettop( L ) - n -1 );
 			printf( "\n" );
 		}
@@ -485,7 +485,7 @@ lt_ael_showloop( lua_State *L )
 		{
 			printf( "%5d  [W]  ", fd );
 			t_ael_doFunction( L, dnd->wR, -1 );
-			t_stackPrint( L, n+2, lua_gettop( L ), 1 );
+			t_stackPrint( L, n+2, lua_gettop( L ), 0 );
 			lua_pop( L, lua_gettop( L ) - n -1 );
 			printf( "\n" );
 		}
