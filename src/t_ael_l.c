@@ -132,7 +132,8 @@ struct t_ael
 	ael->tout    = T_AEL_NOTIMEOUT;
 	lua_newtable( L );                               //S: ael tbl
 	ael->dR   = luaL_ref( L, LUA_REGISTRYINDEX );    //S: ael
-	ael->sR   = p_ael_create_ud_impl( L );           //S: ael
+	p_ael_create_ud_impl( L );                       //S: ael ste
+	lua_setiuservalue( L, -2, T_AEL_STEIDX );        //S: ael
 	luaL_getmetatable( L, T_AEL_TYPE );
 	lua_setmetatable( L, -2 );
 	return ael;
@@ -194,7 +195,7 @@ lt_ael_addhandle( lua_State *L )
 	lua_pop( L, 2 );                             //S: ael hdl dir fnc …
 
 	// implementation specific handling
-	p_ael_addhandle_impl( L, ael, dnd, fd, msk );
+	p_ael_addhandle_impl( L, 1, dnd, fd, msk );
 
 	// create function reference
 	lua_createtable( L, n-4, 0 );                // create function/parameter table
@@ -253,7 +254,7 @@ lt_ael_removehandle( lua_State *L )
 		dnd = t_ael_dnd_check_ud( L, -1, 1 );    //S: ael hnd dir nds dnd
 	lua_pop( L, 1 );   // pop dnd               //S: ael hnd dir nds
 
-	p_ael_removehandle_impl( L, ael, dnd, fd, msk );
+	p_ael_removehandle_impl( L, 1, dnd, fd, msk );
 
 	t_ael_dnd_removeMaskAndFunction( L, dnd, msk );
 
@@ -289,7 +290,6 @@ lt_ael_addtask( lua_State *L )
 
 	lua_replace( L, 2 );                         //S: ael tsk fnc …
 	luaL_checktype( L, 3, LUA_TFUNCTION );
-	//p_ael_addtimer_impl( ael, tsk );
 	lua_createtable( L, n-3, 0 );                //S: ael tsk fnc … tbl
 	lua_rotate( L, 3, 1 );                       //S: ael tsk tbl fnc …
 	while (n > 3)      // add args and fnc (pops each item) reversely (fnc is last)
@@ -335,11 +335,9 @@ lt_ael__gc( lua_State *L )
 	struct t_ael     *ael  = t_ael_check_ud( L, 1, 1 );
 	printf("Running AEL __gc\n");
 
-	lua_rawgeti( L, LUA_REGISTRYINDEX, ael->dR );
-
 	// walk down dR table an unref functions and handles
-	p_ael_free_impl( L, ael->sR );
-	luaL_unref( L, LUA_REGISTRYINDEX, ael->sR ); // unref impl state data
+	lua_rawgeti( L, LUA_REGISTRYINDEX, ael->dR );
+	p_ael_free_impl( L, 1 );                     // S: ael nds
 	luaL_unref( L, LUA_REGISTRYINDEX, ael->dR ); // unref nodes table
 	ael->fdCount = 0;
 	return 0;
@@ -364,7 +362,7 @@ lt_ael_run( lua_State *L )
 	{
 		gettimeofday( &tvs, 0 );
 
-		if ((n = p_ael_poll_impl( L, ael )) < 0)
+		if ((n = p_ael_poll_impl( L, ael, 1 )) < 0)          //S: ael
 			return t_push_error( L, 1, 1, "Failed to continue the loop" );
 
 #if PRINT_DEBUGS == 3
@@ -526,7 +524,7 @@ lt_ael_clean( lua_State *L )
 	{
 		dnd = t_ael_dnd_check_ud( L, -1, 1 );
 		t_stackDump(L);
-		p_ael_removehandle_impl( L, ael, dnd, luaL_checkinteger( L, -2 ), T_AEL_RW );
+		p_ael_removehandle_impl( L, 1, dnd, luaL_checkinteger( L, -2 ), T_AEL_RW );
 		t_ael_dnd_removeMaskAndFunction( L, dnd, T_AEL_RW );
 		if (LUA_REFNIL != dnd->hR)
 			luaL_unref( L, LUA_REGISTRYINDEX, dnd->hR );

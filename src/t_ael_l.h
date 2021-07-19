@@ -72,8 +72,6 @@ struct t_ael_tsk {
 struct t_ael {
 	int                run;      ///< boolean indicator to start/stop the loop
 	int                fdCount;  ///< how many descriptor observed
-	//void              *state;    ///< polling API specific data
-	int                sR;       ///< reference to polling API specific data
 	int                dR;       ///< descriptor table reference
 	// for each call of poll it is necessary to reset the next time out
 	// it is expensive to get the linked head, extract the time and pop it
@@ -103,11 +101,9 @@ void              t_ael_tsk_process( lua_State *L, struct t_ael *ael, lua_Intege
 int               luaopen_t_ael_tsk  ( lua_State *L );
 
 // p_ael_(impl).c   (Implementation specific functions) INTERFACE
-int  p_ael_create_ud_impl   ( lua_State *L );
-int  p_ael_resize_impl      ( lua_State *L, struct t_ael *ael, size_t old_sz );
-void p_ael_free_impl        ( lua_State *L, int ref );
-int  p_ael_addhandle_impl   ( lua_State *L, struct t_ael *ael, struct t_ael_dnd *dnd, int fd, enum t_ael_msk msk );
-int  p_ael_removehandle_impl( lua_State *L, struct t_ael *ael, struct t_ael_dnd *dnd, int fd, enum t_ael_msk msk );
-void p_ael_addtimer_impl    ( struct t_ael *ael, struct timeval *tv );
-int  p_ael_poll_impl        ( lua_State *L, struct t_ael *ael );
+void p_ael_create_ud_impl   ( lua_State *L );
+void p_ael_free_impl        ( lua_State *L, int aelpos );
+int  p_ael_addhandle_impl   ( lua_State *L, int aelpos, struct t_ael_dnd *dnd, int fd, enum t_ael_msk msk );
+int  p_ael_removehandle_impl( lua_State *L, int aelpos, struct t_ael_dnd *dnd, int fd, enum t_ael_msk msk );
+int  p_ael_poll_impl        ( lua_State *L, struct t_ael *ael, int aelpos );
 

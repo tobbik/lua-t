@@ -45,10 +45,10 @@ struct p_ael_ste {
  * \return  state struct to state.
  * --------------------------------------------------------------------------*/
 static inline struct p_ael_ste
-*p_ael_getState( lua_State *L, int ref )
+*p_ael_getState( lua_State *L, int aelpos )
 {
 	struct p_ael_ste *state;
-	lua_rawgeti( L, LUA_REGISTRYINDEX, ref );
+	lua_getiuservalue(L, aelpos, T_AEL_STEIDX );
 	state = (struct p_ael_ste *) lua_touserdata( L, -1 );
 	lua_pop( L, 1 );
 	return state;
@@ -61,7 +61,7 @@ static inline struct p_ael_ste
  * \param   ael struct t_ael*; pointer to userdata on Lua Stack.
  * \return  int
  * --------------------------------------------------------------------------*/
-int
+void
 p_ael_create_ud_impl( lua_State *L )
 {
 	struct p_ael_ste *state;
@@ -69,9 +69,7 @@ p_ael_create_ud_impl( lua_State *L )
 
 	state->epfd = epoll_create1( 0 );
 	if (state->epfd == -1)
-		return luaL_error( L, "couldn't create event socket for epoll loop" );
-	else
-		return luaL_ref( L, LUA_REGISTRYINDEX );
+		luaL_error( L, "couldn't create event socket for epoll loop" );
 }
 
 
@@ -81,25 +79,25 @@ p_ael_create_ud_impl( lua_State *L )
  * \return  int.
  * --------------------------------------------------------------------------*/
 void
-p_ael_free_impl( lua_State *L, int ref )
+p_ael_free_impl( lua_State *L, int aelpos )
 {
-	struct p_ael_ste *state = p_ael_getState( L, ref );
+	struct p_ael_ste *state = p_ael_getState( L, aelpos );
 	close( state->epfd );
 }
 
 /**--------------------------------------------------------------------------
  * Add a File/Socket event handler to the T.Loop.
  * \param  L      lua_State.
- * \param  ael    struct t_ael pointer to loop.
+ * \param  aelpos int; position of struct t_ael ud on stack.
  * \param  dnd    struct assiciated with fd.
  * \param  fd     int  Socket/file descriptor.
  * \param  addmsk enum t_ael_msk - direction of descriptor to be observed.
  * \return int    success/fail;
  * --------------------------------------------------------------------------*/
 int
-p_ael_addhandle_impl( lua_State *L, struct t_ael *ael, struct t_ael_dnd *dnd, int fd, enum t_ael_msk addmsk )
+p_ael_addhandle_impl( lua_State *L, int aelpos, struct t_ael_dnd *dnd, int fd, enum t_ael_msk addmsk )
 {
-	struct p_ael_ste *state = p_ael_getState( L, ael->sR );
+	struct p_ael_ste *state = p_ael_getState( L, aelpos );
 #if PRINT_DEBUGS == 1
 	printf("+++++ ADDING DESCRIPTOR: %d: {%s + %s = %s}\n", fd,
 			t_ael_msk_lst[ dnd->msk ],
@@ -129,16 +127,16 @@ p_ael_addhandle_impl( lua_State *L, struct t_ael *ael, struct t_ael_dnd *dnd, in
 /**--------------------------------------------------------------------------
  * Remove a File/Socket event handler to the T.Loop.
  * \param  L      lua_State.
- * \param  ael    struct t_ael pointer to loop.
+ * \param  aelpos int; position of struct t_ael ud on stack.
  * \param  dnd    struct assiciated with fd.
  * \param  fd     int  Socket/file descriptor.
  * \param  delmsk enum t_ael_msk - direction of descriptor to stop observing.
  * \return int    success/fail;
  * --------------------------------------------------------------------------*/
 int
-p_ael_removehandle_impl( lua_State *L, struct t_ael *ael, struct t_ael_dnd *dnd, int fd, enum t_ael_msk delmsk )
+p_ael_removehandle_impl( lua_State *L, int aelpos, struct t_ael_dnd *dnd, int fd, enum t_ael_msk delmsk )
 {
-	struct p_ael_ste *state = p_ael_getState( L, ael->sR );
+	struct p_ael_ste *state = p_ael_getState( L, aelpos );
 #if PRINT_DEBUGS == 1
 	printf( "----- REMOVING DESCRIPTOR: %d: {%s - %s = %s}\n", fd,
 			t_ael_msk_lst[ dnd->msk ],
@@ -167,9 +165,9 @@ p_ael_removehandle_impl( lua_State *L, struct t_ael *ael, struct t_ael_dnd *dnd,
  * \return  int  number returns from select.
  * --------------------------------------------------------------------------*/
 int
-p_ael_poll_impl( lua_State *L, struct t_ael *ael )
+p_ael_poll_impl( lua_State *L, struct t_ael *ael, int aelpos )
 {
-	struct p_ael_ste   *state = p_ael_getState( L, ael->sR );
+	struct p_ael_ste   *state = p_ael_getState( L, aelpos );
 	struct epoll_event *e;
 	int                 i,r,c = 0;
 	int                 msk;
