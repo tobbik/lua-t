@@ -131,7 +131,7 @@ struct t_ael
 	ael->fdCount = 0;
 	ael->tout    = T_AEL_NOTIMEOUT;
 	lua_newtable( L );                               //S: ael tbl
-	ael->dR   = luaL_ref( L, LUA_REGISTRYINDEX );    //S: ael
+	lua_setiuservalue( L, 1, T_AEL_DSCIDX );         //S; ael
 	p_ael_create_ud_impl( L );                       //S: ael ste
 	lua_setiuservalue( L, -2, T_AEL_STEIDX );        //S: ael
 	luaL_getmetatable( L, T_AEL_TYPE );
@@ -181,7 +181,7 @@ lt_ael_addhandle( lua_State *L )
 	luaL_checktype( L, 4, LUA_TFUNCTION );
 
 	// get/create dnd userdata
-	lua_rawgeti( L, LUA_REGISTRYINDEX, ael->dR );//S: ael hdl dir fnc … nds
+	lua_getiuservalue( L, 1, T_AEL_DSCIDX );     //S: ael hdl dir fnc … nds
 	//printf("FD: %d  ", fd); t_stackDump(L);
 	lua_rawgeti( L, -1, fd );                    //S: ael hdl dir fnc … nds ???
 	if (lua_isnil( L, -1 ))
@@ -231,17 +231,17 @@ lt_ael_addhandle( lua_State *L )
 static int
 lt_ael_removehandle( lua_State *L )
 {
-	struct t_ael     *ael = t_ael_check_ud( L, 1, 1 );
-	int                fd = t_ael_getHandle( L, 2, 1 );
+	struct t_ael     *ael = t_ael_check_ud( L, 1, 1 );    //S: ael hdl dir
+	int                fd = t_ael_getHandle( L, 2, 1 );   //S: ael hdl dir
 	struct t_ael_dnd *dnd;
 	enum t_ael_msk    msk;
 
 	luaL_argcheck( L, t_getLoadedValue( L, 1, 3, "t."T_AEL_IDNT ),
 	      3, "must specify direction" );
-	msk = luaL_checkinteger( L, 3 );
+	msk = luaL_checkinteger( L, 3 );                      //S: ael hdl msk
 
 	// get dnd userdata
-	lua_rawgeti( L, LUA_REGISTRYINDEX, ael->dR );
+	lua_getiuservalue( L, 1, T_AEL_DSCIDX );              //S: ael hdl msk nds
 	lua_rawgeti( L, -1, fd );
 	if (lua_isnil( L, -1 ))
 	{
@@ -251,8 +251,8 @@ lt_ael_removehandle( lua_State *L )
 		//return luaL_error( L, "Descriptor must be observed in Loop" );
 	}
 	else
-		dnd = t_ael_dnd_check_ud( L, -1, 1 );    //S: ael hnd dir nds dnd
-	lua_pop( L, 1 );   // pop dnd               //S: ael hnd dir nds
+		dnd = t_ael_dnd_check_ud( L, -1, 1 );    //S: ael hnd msk nds dnd
+	lua_pop( L, 1 );   // pop dnd               //S: ael hnd msk nds
 
 	p_ael_removehandle_impl( L, 1, dnd, fd, msk );
 
@@ -335,10 +335,9 @@ lt_ael__gc( lua_State *L )
 	struct t_ael     *ael  = t_ael_check_ud( L, 1, 1 );
 	printf("Running AEL __gc\n");
 
-	// walk down dR table an unref functions and handles
-	lua_rawgeti( L, LUA_REGISTRYINDEX, ael->dR );
-	p_ael_free_impl( L, 1 );                     // S: ael nds
-	luaL_unref( L, LUA_REGISTRYINDEX, ael->dR ); // unref nodes table
+	// walk down nodes table an unref functions and handles
+	lua_getiuservalue( L, 1, T_AEL_DSCIDX );     //S: ael nds
+	p_ael_free_impl( L, 1 );                     //S: ael nds
 	ael->fdCount = 0;
 	return 0;
 }
@@ -362,7 +361,7 @@ lt_ael_run( lua_State *L )
 	{
 		gettimeofday( &tvs, 0 );
 
-		if ((n = p_ael_poll_impl( L, ael, 1 )) < 0)          //S: ael
+		if ((n = p_ael_poll_impl( L, ael->tout, 1 )) < 0)          //S: ael
 			return t_push_error( L, 1, 1, "Failed to continue the loop" );
 
 #if PRINT_DEBUGS == 3
@@ -464,7 +463,7 @@ lt_ael_showloop( lua_State *L )
 	}
 	lua_pop( L, 1 );
 	printf( T_AEL_TYPE" %p HANDLE LIST:\n", ael );
-	lua_rawgeti( L, LUA_REGISTRYINDEX, ael->dR );
+	lua_getiuservalue( L, 1, T_AEL_DSCIDX );         //S: ael nds
 	lua_pushnil( L );
 	n = lua_gettop(L);
 	while (lua_next( L, -2 ))
@@ -516,9 +515,9 @@ lt_ael_clean( lua_State *L )
 	lua_setiuservalue( L, 1, T_AEL_TSKIDX );
 	ael->tout = T_AEL_NOTIMEOUT;
 
-	// walk down dR table an unref functions and handles
-	printf( T_AEL_TYPE" %p cleaning HANDLE LIST %d  %d:\n", ael, ael->dR, ael->sR );
-	lua_rawgeti( L, LUA_REGISTRYINDEX, ael->dR );
+	// walk down nodes table an unref functions and handles
+	printf( T_AEL_TYPE" %p cleaning HANDLE LIST:\n", ael );
+	lua_getiuservalue( L, 1, T_AEL_DSCIDX );         //S: ael nds
 	lua_pushnil( L );
 	while (lua_next( L, -2 ))
 	{
@@ -547,8 +546,7 @@ lt_ael_clean( lua_State *L )
 int
 lt_ael__index( lua_State *L )
 {
-	struct t_ael     *ael = t_ael_check_ud( L, 1, 1 );
-	struct t_ael_dnd *dnd ;
+	struct t_ael __attribute__ ((unused)) *ael = t_ael_check_ud( L, 1, 1 );
 	int               fd  = 0;
 
 	if (LUA_TSTRING == lua_type( L, 2 )) // return method: run, stop, addHandle, …
@@ -559,7 +557,7 @@ lt_ael__index( lua_State *L )
 	}
 	else
 	{
-		lua_rawgeti( L, LUA_REGISTRYINDEX, ael->dR );
+	   lua_getiuservalue( L, 1, T_AEL_DSCIDX );         //S: ael idx nds
 		fd = t_ael_getHandle( L, 2, 0 );
 		if (! fd)  // last chance, it might be a t.Loop.Task
 		{
@@ -567,25 +565,7 @@ lt_ael__index( lua_State *L )
 			lua_rawget( L, -2 );
 		}
 		else
-		{
-			lua_rawgeti( L, -1, fd );
-			if (! lua_isnil( L, -1 ))
-			{
-				dnd = t_ael_dnd_check_ud( L, -1, 1 );
-				lua_createtable( L, 0, 2 );
-				if (LUA_REFNIL != dnd->rR)
-				{
-					lua_rawgeti( L, LUA_REGISTRYINDEX, dnd->rR );
-					lua_setfield( L, -2, "read" );
-				}
-				if (LUA_REFNIL != dnd->wR)
-				{
-					lua_rawgeti( L, LUA_REGISTRYINDEX, dnd->wR );
-					lua_setfield( L, -2, "write" );
-				}
-				// TODO: remove dR ref
-			}
-		}
+			lua_rawgeti( L, -1, fd );                     //S: ael idx nds dnd
 	}
 
 	return 1;

@@ -72,7 +72,6 @@ struct t_ael_tsk {
 struct t_ael {
 	int                run;      ///< boolean indicator to start/stop the loop
 	int                fdCount;  ///< how many descriptor observed
-	int                dR;       ///< descriptor table reference
 	// for each call of poll it is necessary to reset the next time out
 	// it is expensive to get the linked head, extract the time and pop it
 	// keep a reference to the heads timeout value
@@ -105,5 +104,5 @@ void p_ael_create_ud_impl   ( lua_State *L );
 void p_ael_free_impl        ( lua_State *L, int aelpos );
 int  p_ael_addhandle_impl   ( lua_State *L, int aelpos, struct t_ael_dnd *dnd, int fd, enum t_ael_msk msk );
 int  p_ael_removehandle_impl( lua_State *L, int aelpos, struct t_ael_dnd *dnd, int fd, enum t_ael_msk msk );
-int  p_ael_poll_impl        ( lua_State *L, struct t_ael *ael, int aelpos );
+int  p_ael_poll_impl        ( lua_State *L, int timeout, int aelpos );
 

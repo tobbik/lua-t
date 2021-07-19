@@ -153,11 +153,9 @@ t_ael_tsk_insert( lua_State *L, struct t_ael *ael, struct t_ael_tsk *tIns )
 				lua_remove( L, -2 );                              //S: ael ins nxt
 			}
 			//printf("INSERT TASK: %lld -", tRun->tout);t_stackDump(L);
-			if (! lua_isnil( L, -1 ))                            //S: ael ins prv nxt
-				lua_setiuservalue( L, -3, T_AEL_TSK_NXTIDX );     //S: ael ins prv  // link nxt to ins
-			else                                                 //S: ael ins prv nil
-				lua_pop( L, 1 );                                  //S: ael ins prv
-			lua_rotate( L, -2, -1 );                             //S: ael prv ins
+			                                                     //S: ael ins prv nxt/nil
+			lua_setiuservalue( L, -3, T_AEL_TSK_NXTIDX );        //S: ael ins prv
+			lua_rotate( L, -2, 1 );                              //S: ael prv ins
 			lua_setiuservalue( L, -2, T_AEL_TSK_NXTIDX );        //S: ael prv
 			lua_pop( L, 1 );                                     //S: ael
 		}

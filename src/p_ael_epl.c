@@ -160,36 +160,37 @@ p_ael_removehandle_impl( lua_State *L, int aelpos, struct t_ael_dnd *dnd, int fd
 
 /**--------------------------------------------------------------------------
  * Set up a epoll_wait() call for all events in the T.Loop
- * \param   L    Lua state.
- * \param   ael  struct t_ael;   The loop struct.
- * \return  int  number returns from select.
+ * \param   L       Lua state.
+ * \param   aelpos  int; position of t_ael loop struct on stack.
+ * \param   timeout int; timeout for next fallthrough in milliseconds.
+ * \return  int     number returns from select.
  * --------------------------------------------------------------------------*/
 int
-p_ael_poll_impl( lua_State *L, struct t_ael *ael, int aelpos )
+p_ael_poll_impl( lua_State *L, int timeout, int aelpos )
 {
 	struct p_ael_ste   *state = p_ael_getState( L, aelpos );
 	struct epoll_event *e;
 	int                 i,r,c = 0;
 	int                 msk;
 
-	//printf("EPOLL TIMEOUT: %lld -- ", ael->tout); t_stackDump(L);
+	//printf("EPOLL TIMEOUT: %lld -- ", timeout); t_stackDump(L);
 	r = epoll_wait(
 	   state->epfd,
 	   state->events,
 	   P_AEL_EPL_SLOTSZ,
-	   (ael->tout > T_AEL_NOTIMEOUT)
-	      ? ael->tout
+	   (timeout > T_AEL_NOTIMEOUT)
+	      ? timeout
 	      : -1
 	);
 #if PRINT_DEBUGS == 1
-	printf( "    &&&&&&&&&&&& POLL RETURNED[%d]: %d &&&&&&&&&&&&&&&&&&\n", ael->fdCount, r );
+	printf( "    &&&&&&&&&&&& POLL RETURNED: %d &&&&&&&&&&&&&&&&&&\n", r );
 #endif
 	if (r<0)
 		return t_push_error( L, 1, 1, "epoll_wait() failed" );
 
 	if (r > 0)
 	{
-		lua_rawgeti( L, LUA_REGISTRYINDEX, ael->dR );
+		lua_getiuservalue( L, aelpos, T_AEL_DSCIDX );
 		for (i=0; i<r; i++)
 		{
 			msk = T_AEL_NO;
@@ -202,6 +203,7 @@ p_ael_poll_impl( lua_State *L, struct t_ael *ael, int aelpos )
 #if PRINT_DEBUGS == 1
 				printf( "  _____ FD: %d triggered[%s]____\n", e->data.fd, t_ael_msk_lst[ msk ] );
 #endif
+				//printf("EPOLL DND  ");t_stackDump(L);
 				lua_rawgeti( L, -1, e->data.fd );
 				t_ael_dnd_execute( L, t_ael_dnd_check_ud( L, -1, 1 ), msk );
 				lua_pop( L, 1 );
@@ -210,7 +212,7 @@ p_ael_poll_impl( lua_State *L, struct t_ael *ael, int aelpos )
 		}
 		lua_pop( L, 1 );
 	}
-	//printf("EPOLLED TIMEOUT: %lld -- ", ael->tout); t_stackDump(L);
+	//printf("EPOLLED TIMEOUT: %lld -- ", timeout); t_stackDump(L);
 	return c;
 }
 

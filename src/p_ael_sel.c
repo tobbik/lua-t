@@ -166,12 +166,13 @@ p_ael_removehandle_impl( lua_State *L, int aelpos, struct t_ael_dnd *dnd, int fd
 
 /* --------------------------------------------------------------------------
  * Set up a select call for all events in the T.Loop
- * \param   L    Lua state.
- * \param   ael  struct t_ael;   The loop struct.
+ * \param   L       Lua state.
+ * \param   aelpos  int; position of t_ael loop struct on stack.
+ * \param   timeout int; timeout for next fallthrough in milliseconds.
  * \return  int  number returns from select.
  * --------------------------------------------------------------------------*/
 int
-p_ael_poll_impl( lua_State *L, struct t_ael *ael, int aelpos )
+p_ael_poll_impl( lua_State *L, int timeout, int aelpos )
 {
 	UNUSED( L );
 	struct p_ael_ste *state = p_ael_getState( L, aelpos );
@@ -180,10 +181,10 @@ p_ael_poll_impl( lua_State *L, struct t_ael *ael, int aelpos )
 	int               i,r,c = 0;
 	int                 msk;
 
-	if (ael->tout > T_AEL_NOTIMEOUT)
+	if (timeout > T_AEL_NOTIMEOUT)
 	{
-		tv.tv_sec  = (ael->tout / 1000);
-		tv.tv_usec = (ael->tout % 1000) * 1000;
+		tv.tv_sec  = (timeout / 1000);
+		tv.tv_usec = (timeout % 1000) * 1000;
 	}
 
 	memcpy( &state->rfds_w, &state->rfds, sizeof( fd_set ) );
@@ -191,7 +192,7 @@ p_ael_poll_impl( lua_State *L, struct t_ael *ael, int aelpos )
 
 	r = select( state->fdMax+1, &state->rfds_w, &state->wfds_w, NULL, (tv.tv_sec<0) ? NULL : &tv );
 #if PRINT_DEBUGS == 1
-	printf( "    &&&&&&&&&&&& POLL RETURNED[%d:%d]: %d &&&&&&&&&&&&&&&&&&\n", ael->fdCount, state->fdMax, r );
+	printf( "    &&&&&&&&&&&& POLL RETURNED[%d]: %d &&&&&&&&&&&&&&&&&&\n", state->fdMax, r );
 #endif
 
 	if (r<0)
@@ -199,7 +200,7 @@ p_ael_poll_impl( lua_State *L, struct t_ael *ael, int aelpos )
 
 	if (r>0)
 	{
-		lua_rawgeti( L, LUA_REGISTRYINDEX, ael->dR );
+		lua_getiuservalue( L, aelpos, T_AEL_DSCIDX );
 		for (i=0; r>0 && i <= state->fdMax; i++)
 		{
 			lua_rawgeti( L, -1, i );
