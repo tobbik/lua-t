@@ -60,17 +60,8 @@ struct t_ael_dnd {
 #define T_AEL_TSK_NXTIDX   1   ///< NEXT TASK INDEX
 #define T_AEL_TSK_FNCIDX   2   ///< FUNCTION/ARGUMENTS TABLE INDEX
 struct t_ael_tsk {
-	int                fR;      ///< func/arg table reference in LUA_REGISTRYINDEX
+	//int                fR;      ///< func/arg table reference in LUA_REGISTRYINDEX
 	lua_Integer        tout;    ///< timeout in ms
-	struct t_ael_tsk  *nxt;     ///< next pointer for linked list
-};
-
-// definition for timer node
-struct t_ael_tnd {
-	int                fR;      ///< func/arg table reference in LUA_REGISTRYINDEX
-	int                tR;      ///< T.Time  reference in LUA_REGISTRYINDEX
-	struct timeval    *tv;      ///< time to elapse until fire (timval to work with)
-	struct t_ael_tnd  *nxt;     ///< next pointer for linked list
 };
 
 // t_ael general implementation; API specifics live behind the *state pointer
@@ -93,7 +84,7 @@ struct t_ael {
 // t_ael_l.c
 struct t_ael     *t_ael_check_ud   ( lua_State *L, int pos, int check );
 struct t_ael     *t_ael_create_ud  ( lua_State *L );
-void              t_ael_doFunction( lua_State *L, int pos, int exc );
+void              t_ael_doFunction( lua_State *L, int exc );
 
 // t_ael_dnd.c
 struct t_ael_dnd *t_ael_dnd_create_ud( lua_State *L );

@@ -78,15 +78,16 @@ t_ael_getHandle( lua_State *L, int pos, int check )
  * \return  int   Number of arguments to be called by function.
  * --------------------------------------------------------------------------*/
 void
-t_ael_doFunction( lua_State *L, int pos, int exc )
+t_ael_doFunction( lua_State *L, int exc )
 {
 	int n;      ///< number of arguments + 1(function)
 	int p;      ///< position of pickled function and args
 	int i;
 
-	if (LUA_REFNIL != pos)
+	if (lua_isnil( L, -1 ))
+		lua_pop( L, 1);
+	else
 	{
-		lua_rawgeti( L, LUA_REGISTRYINDEX, pos ); //S: … tbl
 		p = lua_gettop( L );
 		n = lua_rawlen( L, p );
 		for (i=0; i<n; i++)
@@ -294,7 +295,7 @@ lt_ael_addtask( lua_State *L )
 	while (n > 3)      // add args and fnc (pops each item) reversely (fnc is last)
 		lua_rawseti( L, 3, (n--)-3 );
 	                                             //S: ael tsk tbl
-	tsk->fR = luaL_ref( L, LUA_REGISTRYINDEX );  //S: ael tsk
+	lua_setiuservalue( L, -2, T_AEL_TSK_FNCIDX );//S: ael tsk
 	lua_pushvalue( L, -1 );                      //S: ael tsk tsk
 	lua_rotate( L, -3, 1 );                      //S: tsk ael tsk
 	t_ael_tsk_insert( L, ael, tsk );             //S: tsk ael
@@ -454,8 +455,9 @@ lt_ael_showloop( lua_State *L )
 	while (! lua_isnil( L, -1 ) && fail-- > 0)
 	{
 		tsk = t_ael_tsk_check_ud( L, -1, 0 );
-		printf( "\t%d\t{%5lld} [%i]  ", ++i, tsk->tout, tsk->fR );
-		t_ael_doFunction( L, tsk->fR, -1 );
+		printf( "\t%d\t{%5lld}  ", ++i, tsk->tout );
+		lua_getiuservalue( L, -1, T_AEL_TSK_FNCIDX ); //S: ael tsk tbl
+		t_ael_doFunction( L, -1 );
 		t_stackPrint( L, n+1, lua_gettop( L ), 0 );   //S: ael tsk fnc …
 		printf( "\n" );
 		lua_getiuservalue( L, 2, T_AEL_TSK_NXTIDX );  //S: ael prv fnc … nxt
@@ -476,7 +478,8 @@ lt_ael_showloop( lua_State *L )
 		if (T_AEL_RD & dnd->msk)
 		{
 			printf( "%5d  [R]  ", fd );
-			t_ael_doFunction( L, dnd->rR, -1 );
+			lua_rawgeti( L, LUA_REGISTRYINDEX, dnd->rR );     //S: ael dnd tbl
+			t_ael_doFunction( L, -1 );                        //S: ael dnd fnc …
 			t_stackPrint( L, n+2, lua_gettop( L ), 0 );
 			lua_pop( L, lua_gettop( L ) - n -1 );
 			printf( "\n" );
@@ -484,7 +487,8 @@ lt_ael_showloop( lua_State *L )
 		if (T_AEL_WR & dnd->msk)
 		{
 			printf( "%5d  [W]  ", fd );
-			t_ael_doFunction( L, dnd->wR, -1 );
+			lua_rawgeti( L, LUA_REGISTRYINDEX, dnd->wR );     //S: ael dnd tbl
+			t_ael_doFunction( L, -1 );                        //S: ael dnd fnc …
 			t_stackPrint( L, n+2, lua_gettop( L ), 0 );
 			lua_pop( L, lua_gettop( L ) - n -1 );
 			printf( "\n" );

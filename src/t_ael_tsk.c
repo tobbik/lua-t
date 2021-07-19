@@ -31,9 +31,8 @@ static inline void
 t_ael_tsk_adjust( lua_State *L, lua_Integer tAdj )
 {
 	struct t_ael_tsk *tRun;
-	int fail=40;
 	lua_pushvalue( L, -1 );     // copy task head    //S: ael hed hed
-	while (! lua_isnil( L, -1 ) && fail-- > 0)                     //S: ael hed tsk
+	while (! lua_isnil( L, -1 ))                     //S: ael hed tsk
 	{
 		tRun       = t_ael_tsk_check_ud( L, -1, 0 );
 		//printf("ADJUST: %lld  %lld  -- ", tRun->tout, tAdj);
@@ -58,17 +57,15 @@ t_ael_tsk_execute( lua_State *L, struct t_ael *ael, struct t_ael_tsk *tsk )
 {
 	lua_Integer        ms = 0;     ///< 0 means sentinel to remove from loop
 
-	t_ael_doFunction( L, tsk->fR, 1 );                           //S: ael tsk ms
+	lua_getiuservalue( L, -1, T_AEL_TSK_FNCIDX );                //S: ael tsk tbl
+	t_ael_doFunction( L, 1 );                                    //S: ael tsk ms
 	ms = (lua_isinteger( L, -1 )) ? lua_tointeger( L, -1 ) : ms; //S: ael tsk ms
 	lua_pop( L, 1 );  // pop the nil or millisecond value        //S: ael tsk
 	//printf("EXEC REMOVE: "); t_stackDump(L);
 	t_ael_tsk_remove( L, ael, tsk );                             //S: ael tsk
 
 	if (ms < 1 )      // remove from list
-	{
-		luaL_unref( L, LUA_REGISTRYINDEX, tsk->fR );
 		lua_pop( L, 1 );                                          //S: ael
-	}
 	else              // re-add node to list if function returned a timer
 	{
 		tsk->tout = ms;                                           //S: ael tsk
@@ -235,7 +232,6 @@ struct t_ael_tsk
 	struct t_ael_tsk    *tsk;
 
 	tsk = (struct t_ael_tsk *) lua_newuserdatauv( L, sizeof( struct t_ael_tsk ), 2 );
-	tsk->fR     = LUA_REFNIL;
 	tsk->tout   = ms;
 	luaL_getmetatable( L, T_AEL_TSK_TYPE );
 	lua_setmetatable( L, -2 );
@@ -271,8 +267,6 @@ lt_ael_tsk__gc( lua_State *L )
 	struct t_ael_tsk *tsk  = t_ael_tsk_check_ud( L, 1, 1 );
 
 	printf( "__GCing: %lldms task\n", tsk->tout );
-	if (LUA_REFNIL != tsk->fR)
-		luaL_unref( L, LUA_REGISTRYINDEX, tsk->fR );
 	return 0;
 }
 
