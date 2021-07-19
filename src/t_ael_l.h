@@ -46,8 +46,6 @@ enum t_ael_msk {
 #define T_AEL_DSC_HDLIDX   3   ///< HANDLE INDEX
 struct t_ael_dnd {
 	enum t_ael_msk    msk;   ///< mask, for unset, readable, writable
-	int               rR;    ///< func/arg table reference for read  event in LUA_REGISTRYINDEX
-	int               wR;    ///< func/arg table reference for write event in LUA_REGISTRYINDEX
 };
 
 // definition for timed task
@@ -86,8 +84,6 @@ void              t_ael_doFunction( lua_State *L, int exc );
 struct t_ael_dnd *t_ael_dnd_create_ud( lua_State *L );
 struct t_ael_dnd *t_ael_dnd_check_ud ( lua_State *L, int pos, int check );
 void              t_ael_dnd_execute( lua_State *L, struct t_ael_dnd *dnd, enum t_ael_msk msk );
-void              t_ael_dnd_setMaskAndFunction( lua_State *L, struct t_ael_dnd *dnd, enum t_ael_msk msk, int fR );
-void              t_ael_dnd_removeMaskAndFunction( lua_State *L, struct t_ael_dnd *dnd, enum t_ael_msk msk );
 int               luaopen_t_ael_dnd  ( lua_State *L );
 
 // t_ael_tsk.c

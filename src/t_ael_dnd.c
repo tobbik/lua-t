@@ -35,9 +35,7 @@ struct t_ael_dnd
 {
 	struct t_ael_dnd    *dnd;
 
-	dnd = (struct t_ael_dnd *) lua_newuserdata( L, sizeof( struct t_ael_dnd ) );
-	dnd->rR     = LUA_REFNIL;
-	dnd->wR     = LUA_REFNIL;
+	dnd = (struct t_ael_dnd *) lua_newuserdatauv( L, sizeof( struct t_ael_dnd ), 3 );
 	dnd->msk    = 0;
 	luaL_getmetatable( L, T_AEL_DND_TYPE );
 	lua_setmetatable( L, -2 );
@@ -59,18 +57,18 @@ t_ael_dnd_execute( lua_State *L, struct t_ael_dnd *dnd, enum t_ael_msk msk )
 	if (msk & T_AEL_RD & dnd->msk)
 	{
 #if PRINT_DEBUGS == 1
-		//printf( ">>>>> EXECUTE FILE(READ) FOR DESCRIPTOR: %d\n", ael->fdExc[ i ] );
+		//printf( ">>>>> EXECUTE DESCRIPTOR(READ) FOR DESCRIPTOR: %d\n", ael->fdExc[ i ] );
 #endif
-		lua_rawgeti( L, LUA_REGISTRYINDEX, dnd->rR );     //S: ael dnd tbl
-		t_ael_doFunction( L, 0 );                         //S: ael dnd fnc …
+		lua_getiuservalue( L, -1, T_AEL_DSC_FRDIDX );     //S: ael dnd tbl
+		t_ael_doFunction( L, 0 );                         //S: ael dnd
 		rf = 1;
 	}
 	if ((msk & T_AEL_WR & dnd->msk) && !rf)
 	{
 #if PRINT_DEBUGS == 1
-		//printf( "<<<<< EXECUTE FILE(WRITE) FOR DESCRIPTOR: %d\n", ael->fdExc[ i ] );
+		//printf( "<<<<< EXECUTE DESCRIPTOR(WRITE) FOR DESCRIPTOR: %d\n", ael->fdExc[ i ] );
 #endif
-		lua_rawgeti( L, LUA_REGISTRYINDEX, dnd->wR );     //S: ael dnd tbl
+		lua_getiuservalue( L, -1, T_AEL_DSC_FWRIDX );     //S: ael dnd tbl
 		t_ael_doFunction( L, 0 );
 	}
 }
@@ -91,69 +89,6 @@ struct t_ael_dnd
 	return (NULL==ud) ? NULL : (struct t_ael_dnd *) ud;
 }
 
-/**--------------------------------------------------------------------------
- * Set mask and function reference.
- * \param   L      Lua state.
- * \param   msk    t_ael_msk; execution mask.
- * \param   fR     int; reference for function.
- * \return  void
- * --------------------------------------------------------------------------*/
-void
-t_ael_dnd_setMaskAndFunction( lua_State *L, struct t_ael_dnd *dnd, enum t_ael_msk msk, int fR )
-{
-	dnd->msk    |= msk;
-	if (T_AEL_RD & msk)                //S: ael hdl dir tbl
-	{
-		if (LUA_REFNIL != dnd->rR)      // if overwriting -> allow for __gc
-			luaL_unref( L, LUA_REGISTRYINDEX, dnd->rR );
-		dnd->rR = fR;
-#if PRINT_DEBUGS == 3
-		printf(" ======ADDED MASK(READ): %d(%d) \n", dnd->rR, dnd->msk );
-#endif
-	}
-	else
-	{
-		if (LUA_REFNIL != dnd->wR)      // if overwriting -> allow for __gc
-			luaL_unref( L, LUA_REGISTRYINDEX, dnd->wR );
-		dnd->wR = fR;
-#if PRINT_DEBUGS == 3
-		printf(" ======ADDED MASK(WRITE): %d(%d) \n", dnd->wR, dnd->msk );
-#endif
-	}
-}
-
-
-/**--------------------------------------------------------------------------
- * Set mask and function reference.
- * \param   L      Lua state.
- * \param   msk    t_ael_msk; execution mask.
- * \param   int    reference for function.
- * \return  void
- * --------------------------------------------------------------------------*/
-void
-t_ael_dnd_removeMaskAndFunction( lua_State *L, struct t_ael_dnd *dnd, enum t_ael_msk msk )
-{
-	// remove function
-	if ((T_AEL_RD & msk & dnd->msk) && LUA_REFNIL != dnd->rR)
-	{
-#if PRINT_DEBUGS == 3
-		printf(" ======REMOVING MASK(READ): %d for (%d)\n", dnd->rR, dnd->msk );
-#endif
-		luaL_unref( L, LUA_REGISTRYINDEX, dnd->rR );
-		dnd->rR = LUA_REFNIL;
-	}
-	if ((T_AEL_WR & msk & dnd->msk) && LUA_REFNIL != dnd->wR)
-	{
-#if PRINT_DEBUGS == 3
-		printf(" ======REMOVING MASK(WRITE): %d for (%d)\n", dnd->wR, dnd->msk );
-#endif
-		luaL_unref( L, LUA_REGISTRYINDEX, dnd->wR );
-		dnd->wR = LUA_REFNIL;
-	}
-	// remove from mask
-	dnd->msk = dnd->msk & (~msk);
-}
-
 
 /**--------------------------------------------------------------------------
  * Garbage Collector. Free events in allocated spots.
@@ -164,14 +99,8 @@ t_ael_dnd_removeMaskAndFunction( lua_State *L, struct t_ael_dnd *dnd, enum t_ael
 static int
 lt_ael_dnd__gc( lua_State *L )
 {
-	struct t_ael_dnd *dnd  = t_ael_dnd_check_ud( L, 1, 1 );
+	struct t_ael_dnd __attribute__ ((unused)) *dnd  = t_ael_dnd_check_ud( L, 1, 1 );
 
-	// TODO: this makes no sense!!! if a value is NOT LUA_REFNIL it should be
-	// unrefed. However, changing this messes with everything!!! BANG MY HEAD
-	if (LUA_REFNIL == dnd->rR)
-		luaL_unref( L, LUA_REGISTRYINDEX, dnd->rR );
-	if (LUA_REFNIL == dnd->wR)
-		luaL_unref( L, LUA_REGISTRYINDEX, dnd->wR );
 	return 0;
 }
 

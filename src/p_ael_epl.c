@@ -204,7 +204,7 @@ p_ael_poll_impl( lua_State *L, int timeout, int aelpos )
 				printf( "  _____ FD: %d triggered[%s]____\n", e->data.fd, t_ael_msk_lst[ msk ] );
 #endif
 				//printf("EPOLL DND  ");t_stackDump(L);
-				lua_rawgeti( L, -1, e->data.fd );
+				lua_rawgeti( L, -1, e->data.fd );           //S: ael nds dnd
 				t_ael_dnd_execute( L, t_ael_dnd_check_ud( L, -1, 1 ), msk );
 				lua_pop( L, 1 );
 				c++;

@@ -169,15 +169,15 @@ struct t_ael
 static int
 lt_ael_addhandle( lua_State *L )
 {
-	struct t_ael     *ael = t_ael_check_ud( L, 1, 1 );      //S: ael hdl dir
-	int               fd  = t_ael_getHandle( L, 2, 1 );     //S: ael hdl dir
+	struct t_ael     *ael = t_ael_check_ud( L, 1, 1 );      //S: ael hdl dir fnc …
+	int               fd  = t_ael_getHandle( L, 2, 1 );     //S: ael hdl dir fnc …
 	struct t_ael_dnd *dnd;
 	int               n   = lua_gettop( L ) + 1;    ///< iterator for arguments
 	enum t_ael_msk    msk;
 
 	luaL_argcheck( L, t_getLoadedValue( L, 1, 3, "t."T_AEL_IDNT ),
 	      3, "must specify direction" );
-	msk = luaL_checkinteger( L, 3 );                        //S: ael hdl msk
+	msk = luaL_checkinteger( L, 3 );                        //S: ael hdl msk fnc …
 	luaL_checktype( L, 4, LUA_TFUNCTION );
 
 	// get/create dnd userdata
@@ -205,8 +205,12 @@ lt_ael_addhandle( lua_State *L )
 	lua_rotate( L, 5, 1 );                       //S: ael dnd hdl msk tbl fnc …
 	while (n > 4)
 		lua_rawseti( L, 5, (n--)-4 );             // add arguments and function (pops each item)
-
-	t_ael_dnd_setMaskAndFunction( L, dnd, msk, luaL_ref( L, LUA_REGISTRYINDEX ) );
+                                                //S: ael dnd hdl msk tbl
+	dnd->msk    |= msk;
+	if (T_AEL_RD & msk)                          //S: ael dnd hdl msk tbl
+		lua_setiuservalue( L, 2, T_AEL_DSC_FRDIDX );
+	else
+		lua_setiuservalue( L, 2, T_AEL_DSC_FWRIDX );
 
 	lua_pop( L, 1 );                             //S: ael dnd hdl       // pop the msk
 	lua_setiuservalue( L, -2, T_AEL_DSC_HDLIDX );//S: ael dnd hdl       // hdl uservalue of dnd
@@ -228,17 +232,17 @@ lt_ael_addhandle( lua_State *L )
 static int
 lt_ael_removehandle( lua_State *L )
 {
-	struct t_ael     *ael = t_ael_check_ud( L, 1, 1 );    //S: ael hdl dir
-	int                fd = t_ael_getHandle( L, 2, 1 );   //S: ael hdl dir
+	struct t_ael     *ael = t_ael_check_ud( L, 1, 1 );   //S: ael hdl dir
+	int                fd = t_ael_getHandle( L, 2, 1 );  //S: ael hdl dir
 	struct t_ael_dnd *dnd;
 	enum t_ael_msk    msk;
 
 	luaL_argcheck( L, t_getLoadedValue( L, 1, 3, "t."T_AEL_IDNT ),
 	      3, "must specify direction" );
-	msk = luaL_checkinteger( L, 3 );                      //S: ael hdl msk
+	msk = luaL_checkinteger( L, 3 );                     //S: ael hdl msk
 
 	// get dnd userdata
-	lua_getiuservalue( L, 1, T_AEL_DSCIDX );              //S: ael hdl msk nds
+	lua_getiuservalue( L, 1, T_AEL_DSCIDX );             //S: ael hdl msk nds
 	lua_rawgeti( L, -1, fd );
 	if (lua_isnil( L, -1 ))
 	{
@@ -248,19 +252,21 @@ lt_ael_removehandle( lua_State *L )
 		//return luaL_error( L, "Descriptor must be observed in Loop" );
 	}
 	else
-		dnd = t_ael_dnd_check_ud( L, -1, 1 );    //S: ael hnd msk nds dnd
-	lua_pop( L, 1 );   // pop dnd               //S: ael hnd msk nds
+		dnd = t_ael_dnd_check_ud( L, -1, 1 );             //S: ael hnd msk nds dnd
 
-	p_ael_removehandle_impl( L, 1, dnd, fd, msk );
+	p_ael_removehandle_impl( L, 1, dnd, fd, msk );       //S: ael hnd msk nds dnd
 
-	t_ael_dnd_removeMaskAndFunction( L, dnd, msk );
-
-	if (T_AEL_NO == dnd->msk)
+	dnd->msk = dnd->msk & (~msk);
+	lua_pushnil( L );                                    //S: ael hnd msk nds dnd nil
+	if (T_AEL_NO != dnd->msk)
+		// if dnd->msk still writeable then set read function to nil!
+		lua_setiuservalue( L, -1 , (T_AEL_WR & dnd->msk) ? T_AEL_DSC_FRDIDX : T_AEL_DSC_FWRIDX );
+	else
 	{
-		lua_pushnil( L );
-		lua_rawseti( L, -2, fd );
+		lua_rawseti( L, -3, fd );                         //S: ael hnd msk nds dnd
 		(ael->fdCount)--;
 	}
+	lua_pop( L, 2 );                                     //S: ael hnd msk
 	return 0;
 }
 
@@ -468,7 +474,7 @@ lt_ael_showloop( lua_State *L )
 		if (T_AEL_RD & dnd->msk)
 		{
 			printf( "%5d  [R]  ", fd );
-			lua_rawgeti( L, LUA_REGISTRYINDEX, dnd->rR );     //S: ael dnd tbl
+			lua_getiuservalue( L, -1, T_AEL_DSC_FRDIDX );     //S: ael dnd tbl
 			t_ael_doFunction( L, -1 );                        //S: ael dnd fnc …
 			t_stackPrint( L, n+2, lua_gettop( L ), 0 );
 			lua_pop( L, lua_gettop( L ) - n -1 );
@@ -477,7 +483,7 @@ lt_ael_showloop( lua_State *L )
 		if (T_AEL_WR & dnd->msk)
 		{
 			printf( "%5d  [W]  ", fd );
-			lua_rawgeti( L, LUA_REGISTRYINDEX, dnd->wR );     //S: ael dnd tbl
+			lua_getiuservalue( L, -1, T_AEL_DSC_FWRIDX );     //S: ael dnd tbl
 			t_ael_doFunction( L, -1 );                        //S: ael dnd fnc …
 			t_stackPrint( L, n+2, lua_gettop( L ), 0 );
 			lua_pop( L, lua_gettop( L ) - n -1 );
@@ -517,7 +523,6 @@ lt_ael_clean( lua_State *L )
 		dnd = t_ael_dnd_check_ud( L, -1, 1 );
 		t_stackDump(L);
 		p_ael_removehandle_impl( L, 1, dnd, luaL_checkinteger( L, -2 ), T_AEL_RW );
-		t_ael_dnd_removeMaskAndFunction( L, dnd, T_AEL_RW );
 		lua_pushnil( L );
 		lua_rawseti( L, -4, luaL_checkinteger( L, -3 ) );
 		(ael->fdCount)--;
