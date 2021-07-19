@@ -73,11 +73,11 @@ t_fmtStackItem( lua_State *L, int idx, int tostring )
 			case LUA_TTABLE:    // tables
 				if (luaL_getmetafield( L, idx, "__name" ))  // does it have a metatable?
 				{
-					printf( "u.%s ", lua_tostring( L, -1 ) );
+					printf( "t.%s ", lua_tostring( L, -1 ) );
 					lua_pop( L, 1 );
 				}
 				else
-					printf( "tbl " );
+					printf( "table " );
 				break;
 
 			default:            // other values

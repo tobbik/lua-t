@@ -38,7 +38,6 @@ struct t_ael_dnd
 	dnd = (struct t_ael_dnd *) lua_newuserdata( L, sizeof( struct t_ael_dnd ) );
 	dnd->rR     = LUA_REFNIL;
 	dnd->wR     = LUA_REFNIL;
-	dnd->hR     = LUA_REFNIL;
 	dnd->msk    = 0;
 	luaL_getmetatable( L, T_AEL_DND_TYPE );
 	lua_setmetatable( L, -2 );
@@ -138,7 +137,7 @@ t_ael_dnd_removeMaskAndFunction( lua_State *L, struct t_ael_dnd *dnd, enum t_ael
 	if ((T_AEL_RD & msk & dnd->msk) && LUA_REFNIL != dnd->rR)
 	{
 #if PRINT_DEBUGS == 3
-		printf(" ======REMOVING MASK(READ): %d for %d(%d)\n", dnd->rR, dnd->hR, dnd->msk );
+		printf(" ======REMOVING MASK(READ): %d for (%d)\n", dnd->rR, dnd->msk );
 #endif
 		luaL_unref( L, LUA_REGISTRYINDEX, dnd->rR );
 		dnd->rR = LUA_REFNIL;
@@ -146,7 +145,7 @@ t_ael_dnd_removeMaskAndFunction( lua_State *L, struct t_ael_dnd *dnd, enum t_ael
 	if ((T_AEL_WR & msk & dnd->msk) && LUA_REFNIL != dnd->wR)
 	{
 #if PRINT_DEBUGS == 3
-		printf(" ======REMOVING MASK(WRITE): %d for %d(%d)\n", dnd->wR, dnd->hR, dnd->msk );
+		printf(" ======REMOVING MASK(WRITE): %d for (%d)\n", dnd->wR, dnd->msk );
 #endif
 		luaL_unref( L, LUA_REGISTRYINDEX, dnd->wR );
 		dnd->wR = LUA_REFNIL;
@@ -169,8 +168,6 @@ lt_ael_dnd__gc( lua_State *L )
 
 	// TODO: this makes no sense!!! if a value is NOT LUA_REFNIL it should be
 	// unrefed. However, changing this messes with everything!!! BANG MY HEAD
-	if (LUA_REFNIL == dnd->hR)
-		luaL_unref( L, LUA_REGISTRYINDEX, dnd->hR );
 	if (LUA_REFNIL == dnd->rR)
 		luaL_unref( L, LUA_REGISTRYINDEX, dnd->rR );
 	if (LUA_REFNIL == dnd->wR)

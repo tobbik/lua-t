@@ -169,50 +169,47 @@ struct t_ael
 static int
 lt_ael_addhandle( lua_State *L )
 {
-	struct t_ael     *ael = t_ael_check_ud( L, 1, 1 );
-	int               fd  = t_ael_getHandle( L, 2, 1 );
+	struct t_ael     *ael = t_ael_check_ud( L, 1, 1 );      //S: ael hdl dir
+	int               fd  = t_ael_getHandle( L, 2, 1 );     //S: ael hdl dir
 	struct t_ael_dnd *dnd;
 	int               n   = lua_gettop( L ) + 1;    ///< iterator for arguments
 	enum t_ael_msk    msk;
 
 	luaL_argcheck( L, t_getLoadedValue( L, 1, 3, "t."T_AEL_IDNT ),
 	      3, "must specify direction" );
-	msk = luaL_checkinteger( L, 3 );
+	msk = luaL_checkinteger( L, 3 );                        //S: ael hdl msk
 	luaL_checktype( L, 4, LUA_TFUNCTION );
 
 	// get/create dnd userdata
-	lua_getiuservalue( L, 1, T_AEL_DSCIDX );     //S: ael hdl dir fnc … nds
+	lua_getiuservalue( L, 1, T_AEL_DSCIDX );     //S: ael hdl msk fnc … nds
 	//printf("FD: %d  ", fd); t_stackDump(L);
-	lua_rawgeti( L, -1, fd );                    //S: ael hdl dir fnc … nds ???
+	lua_rawgeti( L, -1, fd );                    //S: ael hdl msk fnc … nds ???
 	if (lua_isnil( L, -1 ))
 	{
-		dnd = t_ael_dnd_create_ud( L );           //S: ael hdl dir fnc … nds nil dnd
-		lua_rawseti( L, -3, fd );
+		lua_pop( L, 1 );
+		dnd = t_ael_dnd_create_ud( L );           //S: ael hdl msk fnc … nds dnd
+		lua_pushvalue( L, -1 );                   //S: ael hdl msk fnc … nds dnd dnd
+		lua_rawseti( L, -3, fd );                 //S: ael hdl msk fnc … nds dnd
 		(ael->fdCount)++;
 	}
 	else
-		dnd = t_ael_dnd_check_ud( L, -1, 1 );     //S: ael hdl dir fnc … nds dnd
-	lua_pop( L, 2 );                             //S: ael hdl dir fnc …
+		dnd = t_ael_dnd_check_ud( L, -1, 1 );     //S: ael hdl msk fnc … nds dnd
+	lua_rotate( L, 2, 1 );                       //S: ael dnd hdl msk fnc … nds
+	lua_pop( L, 1 );                             //S: ael dnd hdl msk fnc …
 
 	// implementation specific handling
 	p_ael_addhandle_impl( L, 1, dnd, fd, msk );
 
 	// create function reference
-	lua_createtable( L, n-4, 0 );                // create function/parameter table
-	lua_insert( L, 4 );                          //S: ael hdl dir tbl fnc …
+	lua_createtable( L, n-4, 0 );                //S: ael dnd hdl msk fnc … tbl
+	lua_rotate( L, 5, 1 );                       //S: ael dnd hdl msk tbl fnc …
 	while (n > 4)
-		lua_rawseti( L, 4, (n--)-4 );             // add arguments and function (pops each item)
+		lua_rawseti( L, 5, (n--)-4 );             // add arguments and function (pops each item)
 
 	t_ael_dnd_setMaskAndFunction( L, dnd, msk, luaL_ref( L, LUA_REGISTRYINDEX ) );
 
-	lua_pop( L, 1 );                             // pop the read/write indicator string/integer
-	if (LUA_REFNIL == dnd->hR)
-	{
-		dnd->hR = luaL_ref( L, LUA_REGISTRYINDEX );      // keep ref to handle so it doesnt gc
-#if PRINT_DEBUGS == 3
-		printf(" ======ADDED HANDLE(SOCKET): %d(%d) \n", dnd->hR, fd );
-#endif
-	}
+	lua_pop( L, 1 );                             //S: ael dnd hdl       // pop the msk
+	lua_setiuservalue( L, -2, T_AEL_DSC_HDLIDX );//S: ael dnd hdl       // hdl uservalue of dnd
 
 	lua_pushboolean( L, 1 );
 	return  1;
@@ -260,10 +257,6 @@ lt_ael_removehandle( lua_State *L )
 
 	if (T_AEL_NO == dnd->msk)
 	{
-#if PRINT_DEBUGS == 3
-		printf(" ======REMOVING HANDLE(SOCKET): %d \n", dnd->hR );
-#endif
-		luaL_unref( L, LUA_REGISTRYINDEX, dnd->hR );
 		lua_pushnil( L );
 		lua_rawseti( L, -2, fd );
 		(ael->fdCount)--;
@@ -525,8 +518,6 @@ lt_ael_clean( lua_State *L )
 		t_stackDump(L);
 		p_ael_removehandle_impl( L, 1, dnd, luaL_checkinteger( L, -2 ), T_AEL_RW );
 		t_ael_dnd_removeMaskAndFunction( L, dnd, T_AEL_RW );
-		if (LUA_REFNIL != dnd->hR)
-			luaL_unref( L, LUA_REGISTRYINDEX, dnd->hR );
 		lua_pushnil( L );
 		lua_rawseti( L, -4, luaL_checkinteger( L, -3 ) );
 		(ael->fdCount)--;

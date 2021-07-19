@@ -48,7 +48,6 @@ struct t_ael_dnd {
 	enum t_ael_msk    msk;   ///< mask, for unset, readable, writable
 	int               rR;    ///< func/arg table reference for read  event in LUA_REGISTRYINDEX
 	int               wR;    ///< func/arg table reference for write event in LUA_REGISTRYINDEX
-	int               hR;    ///< handle   LUA_REGISTRYINDEX reference (T.Net.* or Lua file handle)
 };
 
 // definition for timed task
