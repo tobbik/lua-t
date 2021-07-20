@@ -8,7 +8,7 @@
 local getmetatable, setmetatable =
       getmetatable, setmetatable
 
-local Stream, Socket, Time  = require't.Http.Stream', require't.Net.Socket', require't.Time'
+local Stream, Socket, Time  = require't.Http.Stream', require't.Net.Socket'
 local t_type  = require't'.type
 local s_format,t_insert = string.format,os.time,table.insert
 
@@ -100,10 +100,10 @@ return setmetatable( {
 		-- crude keepAlive handling, rudely remove staleish sockets
 		--[[
 		local timer   = Time( timeout )
-		local remover = (function( srv, tm )
+		local remover = (function( srv )
 			local str = srv.streams
 			return function( )
-				local t          = Time.get() - timeout
+				local t          = srv.ael:time() - timeout
 				print('rinse', srv.ael)
 				local candidates = { }
 				for k,v in pairs( str ) do
@@ -120,11 +120,10 @@ return setmetatable( {
 				end
 				--dR()
 				--collectgarbage()
-				tm:set( timeout )
-				return tm
+				return timeout
 			end
-		end)( srv, timer )
-		ael:addTimer( timer, remover )
+		end)( srv )
+		ael:addTask( timeout, remover )
 		--]]
 
 		return setmetatable( srv, _mt )

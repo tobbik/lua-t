@@ -13,7 +13,7 @@
  */
 
 #include "t_ael_l.h"
-#include "t_tim.h"            // struct timeval
+#include <sys/time.h>         // struct timeval
 
 #ifdef DEBUG
 #include "t_dbg.h"

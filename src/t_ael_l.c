@@ -18,7 +18,7 @@
 #define _POSIX_C_SOURCE 200809L   //fileno()
 #endif
 
-#include <sys/time.h>             // timersub
+#include <sys/time.h>             // gettimeofday()
 
 #include "t_net.h"
 #include "t_ael_l.h"
@@ -398,6 +398,22 @@ lt_ael_stop( lua_State *L )
 
 
 /**--------------------------------------------------------------------------
+ * Get milliseconds since epoch`
+ * \param   L    Lua state.
+ * \lreturn ms   int; milliseconds since epoch.
+ * \return  int  # of values pushed onto the stack.
+ * --------------------------------------------------------------------------*/
+static int
+lt_ael_time( lua_State *L )
+{
+	struct timeval tv;
+	gettimeofday( &tv, 0 );
+	lua_pushinteger( L, (tv.tv_sec*1000 + tv.tv_usec/1000) );
+	return 1;
+}
+
+
+/**--------------------------------------------------------------------------
  * Prints out the Loop.
  * \param   L      Lua state.
  * \lparam  ud     T.Loop userdata instance.                       // 1
@@ -580,7 +596,8 @@ static const struct luaL_Reg t_ael_fm [] = {
  * Class functions library definition
  * --------------------------------------------------------------------------*/
 static const luaL_Reg t_ael_cf [] = {
-	{ NULL,  NULL }
+	  { "time",          lt_ael_time          }
+	, { NULL,  NULL }
 };
 
 /**--------------------------------------------------------------------------
@@ -600,6 +617,7 @@ static const struct luaL_Reg t_ael_m [] = {
 	, { "run",           lt_ael_run           }
 	, { "stop",          lt_ael_stop          }
 	, { "clean",         lt_ael_clean         }
+	, { "time",          lt_ael_time          }
 #ifdef DEBUG
 	, { "show",          lt_ael_showloop      }
 #endif

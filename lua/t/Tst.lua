@@ -7,7 +7,7 @@
 
 local t_concat    , t_insert    , getmetatable, setmetatable, pairs =
       table.concat, table.insert, getmetatable, setmetatable, pairs
-local Time,pp = require"t.Time", require't.Table'.pprint
+local Loop,pp = require"t.Loop", require't.Table'.pprint
 
 local T_TST_CSE_SKIPINDICATOR = "<t.test_skip_indicator>:" -- must have trailing ":"
 local _mt
@@ -84,11 +84,11 @@ return setmetatable(
   {
     __call = function( _, test_func, ... )
       local test   = setmetatable(
-        { description="Unnamed test", pass=true, status="passed", executionTime = Time( ), testSource = getFunctionSource( test_func ) },
+        { description="Unnamed test", pass=true, status="passed", executionTime = Loop.time( ), testSource = getFunctionSource( test_func ) },
         _mt
       )
       local ok, tbk = xpcall( test_func, traceback, ... )
-      test.executionTime = Time( ) - test.executionTime
+      test.executionTime = Loop.time( ) - test.executionTime
       if not ok then
         --test.source = getFunctionSource( test_func )
         for k,v in pairs( tbk ) do test[ k ] = v end

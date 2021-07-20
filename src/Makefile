@@ -37,11 +37,10 @@ T_BUF_SRC=$(wildcard t_buf*.c) $(T_DBG_SRC) t.c
 T_CSV_SRC=$(wildcard t_csv*.c) $(T_DBG_SRC) t.c
 T_ENC_SRC=$(wildcard t_enc*.c) $(T_DBG_SRC) t.c t_buf.c
 T_HTP_SRC=$(wildcard t_htp*.c) $(T_DBG_SRC) t.c t_buf.c
-T_NET_SRC=$(wildcard t_net*.c) $(T_DBG_SRC) t.c t_buf.c t_tim.c
+T_NET_SRC=$(wildcard t_net*.c) $(T_DBG_SRC) t.c t_buf.c
 T_NRY_SRC=$(wildcard t_nry*.c) $(T_DBG_SRC) t.c
 T_PCK_SRC=$(wildcard t_pck*.c) $(T_DBG_SRC) t.c t_buf.c
-T_TIM_SRC=$(wildcard t_tim*.c) $(T_DBG_SRC) t.c
-#T_TST_SRC=$(wildcard t_tst*.c) $(T_DBG_SRC) t.c t_tim.c
+#T_TST_SRC=$(wildcard t_tst*.c) $(T_DBG_SRC) t.c
 
 # #######################################################################
 # CONDITIONAL INCLUSION OF SOURCES AND OBJETCS
@@ -90,10 +89,9 @@ T_HTP_OBJ=$(T_HTP_SRC:%.c=%.o)
 T_NET_OBJ=$(T_NET_SRC:%.c=%.o)
 T_NRY_OBJ=$(T_NRY_SRC:%.c=%.o)
 T_PCK_OBJ=$(T_PCK_SRC:%.c=%.o)
-T_TIM_OBJ=$(T_TIM_SRC:%.c=%.o)
 #T_TST_OBJ=$(T_TST_SRC:%.c=%.o)
 
-OBJS=$(T_AEL_OBJ) $(T_BUF_OBJ) $(T_CSV_OBJ) $(T_ENC_OBJ) $(T_HTP_OBJ) $(T_NET_OBJ) $(T_PCK_OBJ) $(T_TIM_OBJ)
+OBJS=$(T_AEL_OBJ) $(T_BUF_OBJ) $(T_CSV_OBJ) $(T_ENC_OBJ) $(T_HTP_OBJ) $(T_NET_OBJ) $(T_PCK_OBJ)
 
 # ALL DYNAMIC OBJECTS
 T_AEL_LIB=ael.so
@@ -104,10 +102,9 @@ T_HTP_LIB=htp.so
 T_NET_LIB=net.so
 T_NRY_LIB=nry.so
 T_PCK_LIB=pck.so
-T_TIM_LIB=tim.so
 #T_TST_LIB=tst.so
 
-LIBS=$(T_AEL_LIB) $(T_BUF_LIB) $(T_CSV_LIB) $(T_ENC_LIB) $(T_HTP_LIB) $(T_NET_LIB) $(T_PCK_LIB) $(T_TIM_LIB)
+LIBS=$(T_AEL_LIB) $(T_BUF_LIB) $(T_CSV_LIB) $(T_ENC_LIB) $(T_HTP_LIB) $(T_NET_LIB) $(T_PCK_LIB)
 
 ifdef BUILD_EXAMPLE
    OBJS:=$(OBJS) $(T_NRY_OBJ)
@@ -133,8 +130,6 @@ $(T_HTP_LIB): $(T_HTP_OBJ)
 $(T_NET_LIB): $(T_NET_OBJ)
 	$(LD) $(MYCFLAGS) -shared $^ -o $@ $(LDFLAGS)
 $(T_PCK_LIB): $(T_PCK_OBJ)
-	$(LD) $(MYCFLAGS) -shared $^ -o $@ $(LDFLAGS)
-$(T_TIM_LIB): $(T_TIM_OBJ)
 	$(LD) $(MYCFLAGS) -shared $^ -o $@ $(LDFLAGS)
 #$(T_TST_LIB): $(T_TST_OBJ)
 #	$(LD) $(MYCFLAGS) -shared $^ -o $@ $(LDFLAGS)

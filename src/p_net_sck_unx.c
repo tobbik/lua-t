@@ -24,10 +24,10 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <sys/select.h>
+#include <sys/time.h>   // struct timeval
 #include <signal.h>     // signal( SIGPIPE, SIG_IGN )
 
 #include "t_net_l.h"
-#include "t_tim.h"
 
 #ifdef DEBUG
 #include "t_dbg.h"
@@ -294,7 +294,7 @@ p_net_sck_getSocketOption( lua_State *L, struct t_net_sck        *sck,
 			if (getsockopt( sck->fd, opt->getlevel, opt->option, &tv, &len ) < 0)
 				lua_pushinteger( L, -1 );
 			else
-				t_tim_create_ud( L, &tv );     // push t.Time userdata
+				lua_pushinteger( L, (tv.tv_sec*1000 + tv.tv_usec/1000) );
 			break;
 		case T_NET_SCK_OTP_DSCR:
 			if (-1==sck->fd) lua_pushnil( L );
@@ -353,7 +353,7 @@ p_net_sck_setSocketOption( lua_State *L, struct t_net_sck        *sck,
                                          struct t_net_sck_option *opt )
 {
 	int                       ival;
-	struct timeval           *tv;
+	struct timeval            tv;
 
 	switch (opt->type)
 	{
@@ -382,8 +382,10 @@ p_net_sck_setSocketOption( lua_State *L, struct t_net_sck        *sck,
 				return t_push_error( L, 1, 1, "Can't set socket option `%s`", lua_tostring( L, 2 ) );
 			break;
 		case T_NET_SCK_OTP_TIME:
-			tv = t_tim_check_ud( L, 3, 1 );
-			if (setsockopt( sck->fd, opt->getlevel, opt->option, tv, sizeof( struct timeval ) ) < 0)
+			ival = luaL_checkinteger( L, 3 );
+			tv.tv_sec  = (ival / 1000);
+			tv.tv_usec = (ival % 1000) * 1000;
+			if (setsockopt( sck->fd, opt->getlevel, opt->option, &tv, sizeof( struct timeval ) ) < 0)
 				return t_push_error( L, 1, 1, "Can't set socket option `%s`", lua_tostring( L, 2 ) );
 			break;
 		default:

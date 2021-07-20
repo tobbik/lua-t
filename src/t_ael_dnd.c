@@ -14,10 +14,6 @@
 #define _POSIX_C_SOURCE 200809L   //fileno()
 #endif
 
-//#include <stdlib.h>               // malloc, free
-//#include <string.h>               // memset
-
-#include "t_tim.h"
 #include "t_net.h"
 #include "t_ael_l.h"
 
@@ -100,7 +96,6 @@ static int
 lt_ael_dnd__gc( lua_State *L )
 {
 	struct t_ael_dnd __attribute__ ((unused)) *dnd  = t_ael_dnd_check_ud( L, 1, 1 );
-
 	return 0;
 }
 

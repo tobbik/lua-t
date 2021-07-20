@@ -49,7 +49,6 @@ T_SRC=\
    t/Test.lua \
    t/Test/Case.lua \
    t/Test/Context.lua \
-   t/Time.lua \
    t.lua
 
 ifdef BUILD_EXAMPLE
