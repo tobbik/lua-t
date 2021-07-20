@@ -261,9 +261,9 @@ struct t_ael_tsk
 static int
 lt_ael_tsk__gc( lua_State *L )
 {
-	struct t_ael_tsk *tsk  = t_ael_tsk_check_ud( L, 1, 1 );
+	struct t_ael_tsk __attribute__ ((unused)) *tsk  = t_ael_tsk_check_ud( L, 1, 1 );
 
-	printf( "__GCing: %lldms task\n", tsk->tout );
+	//printf( "__GCing: %lldms task\n", tsk->tout );
 	return 0;
 }
 

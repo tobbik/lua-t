@@ -96,6 +96,7 @@ static int
 lt_ael_dnd__gc( lua_State *L )
 {
 	struct t_ael_dnd __attribute__ ((unused)) *dnd  = t_ael_dnd_check_ud( L, 1, 1 );
+	//printf( "__GCing:  node\n" );
 	return 0;
 }
 

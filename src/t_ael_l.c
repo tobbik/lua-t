@@ -332,7 +332,7 @@ static int
 lt_ael__gc( lua_State *L )
 {
 	struct t_ael     *ael  = t_ael_check_ud( L, 1, 1 );
-	printf("Running AEL __gc\n");
+	//printf("__GCing: ael \n");
 
 	// walk down nodes table an unref functions and handles
 	lua_getiuservalue( L, 1, T_AEL_DSCIDX );     //S: ael nds
@@ -467,10 +467,10 @@ lt_ael_showloop( lua_State *L )
 	while (! lua_isnil( L, -1 ) && fail-- > 0)
 	{
 		tsk = t_ael_tsk_check_ud( L, -1, 0 );
-		printf( "\t%d\t{%5lld}  ", ++i, tsk->tout );
+		printf( "%5d  {%5lldms}  ", ++i, tsk->tout );
 		lua_getiuservalue( L, -1, T_AEL_TSK_FNCIDX ); //S: ael tsk tbl
 		t_ael_doFunction( L, -1 );
-		t_stackPrint( L, n+1, lua_gettop( L ), 0 );   //S: ael tsk fnc …
+		t_stackPrint( L, n+2, lua_gettop( L ), 0 );   //S: ael tsk fnc …
 		printf( "\n" );
 		lua_getiuservalue( L, 2, T_AEL_TSK_NXTIDX );  //S: ael prv fnc … nxt
 		lua_rotate( L, 2, 1 );                        //S: ael nxt prv fnc …
@@ -525,24 +525,21 @@ lt_ael_clean( lua_State *L )
 	//int               i   = 0;
 	//int               n   = lua_gettop( L );
 
-	printf( T_AEL_TYPE" %p cleaning TIMER LIST:\n", ael );
 	lua_pushnil( L );
 	lua_setiuservalue( L, 1, T_AEL_TSKIDX );
 	ael->tout = T_AEL_NOTIMEOUT;
 
 	// walk down nodes table an unref functions and handles
-	printf( T_AEL_TYPE" %p cleaning HANDLE LIST:\n", ael );
-	lua_getiuservalue( L, 1, T_AEL_DSCIDX );         //S: ael nds
-	lua_pushnil( L );
+	lua_getiuservalue( L, 1, T_AEL_DSCIDX );             //S: ael nds
+	lua_pushnil( L );                                    //S: ael nds nil
 	while (lua_next( L, -2 ))
 	{
-		dnd = t_ael_dnd_check_ud( L, -1, 1 );
-		t_stackDump(L);
+		dnd = t_ael_dnd_check_ud( L, -1, 1 );             //S: ael nds fd dnd
 		p_ael_removehandle_impl( L, 1, dnd, luaL_checkinteger( L, -2 ), T_AEL_RW );
-		lua_pushnil( L );
-		lua_rawseti( L, -4, luaL_checkinteger( L, -3 ) );
+		lua_pushnil( L );                                 //S: ael nds fd dnd nil
+		lua_rawseti( L, -4, luaL_checkinteger( L, -3 ) ); //S: ael nds fd dnd
 		(ael->fdCount)--;
-		lua_pop( L, 1 );
+		lua_pop( L, 1 );                                  //S: ael nds fd
 	}
 	return 0;
 }

@@ -101,7 +101,7 @@ dev-exec:
 	$(MAKE) dev
 	LUA_PATH="$(CURDIR)/out/share/lua/5.4/?.lua;;" \
 	 LUA_CPATH="$(CURDIR)/out/lib/lua/5.4/?.so;;" \
-	 $(CURDIR)/out/bin/lua -i tn2.lua
+	 $(CURDIR)/out/bin/lua -i scp.lua
 
 dev-test:
 	$(MAKE) dev
