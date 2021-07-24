@@ -101,13 +101,19 @@ dev-exec:
 	$(MAKE) dev
 	LUA_PATH="$(CURDIR)/out/share/lua/5.4/?.lua;;" \
 	 LUA_CPATH="$(CURDIR)/out/lib/lua/5.4/?.so;;" \
-	 $(CURDIR)/out/bin/lua -i scp.lua
+	 $(CURDIR)/out/bin/lua -i tst.lua
 
 dev-test:
 	$(MAKE) dev
 	LUA_PATH="$(CURDIR)/out/share/lua/5.4/?.lua;;" \
 	 LUA_CPATH="$(CURDIR)/out/lib/lua/5.4/?.so;;" \
-	 $(CURDIR)/out/bin/lua -i $(CURDIR)/test/runner.lua
+	 $(CURDIR)/out/bin/lua -i $(CURDIR)/test/runner.lua\
+
+dev-t1:
+	$(MAKE) dev
+	LUA_PATH="$(CURDIR)/out/share/lua/5.4/?.lua;;" \
+	 LUA_CPATH="$(CURDIR)/out/lib/lua/5.4/?.so;;" \
+	 $(CURDIR)/out/bin/lua -i $(CURDIR)/test/t1.lua
 
 dev-gdb:
 	$(MAKE) dev

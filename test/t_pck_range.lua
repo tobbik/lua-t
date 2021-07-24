@@ -15,10 +15,10 @@ local        unpack,        char,        rep,        format  =
 
 local NB      = Pack.charbits
 
-local tests = {
+return {
 	-- Test cases
-	test_SetOutofRangeIntUnsignedFail = function( self )
-		Test.Case.describe( "Set out of ranged value to unsigned packer fails" )
+	SetOutofRangeIntUnsignedFail = function( self )
+		Test.describe( "Set out of ranged value to unsigned packer fails" )
 		local e ="packed value must fit the value range for the packer size"
 		local b = Buffer( 2 )
 		local p = Pack( 'H' )
@@ -31,8 +31,8 @@ local tests = {
 		T.assert( m:match( e ), "Error Message should have been `%s', but was `%s`", e, m )
 	end,
 
-	test_SetOutofRangeIntSignedFail = function( self )
-		Test.Case.describe( "Set out of ranged value to signed packer fails" )
+	SetOutofRangeIntSignedFail = function( self )
+		Test.describe( "Set out of ranged value to signed packer fails" )
 		local e ="packed value must fit the value range for the packer size"
 		local b = Buffer( 2 )
 		local p = Pack( 'h' )
@@ -46,8 +46,8 @@ local tests = {
 		T.assert( m:match( e ), "Error Message should have been `%s', but was `%s`", e, m )
 	end,
 
-	test_SetMinOrMaxIntUnsigned = function( self )
-		Test.Case.describe( "Set min or max ranged value to unsigned packer" )
+	SetMinOrMaxIntUnsigned = function( self )
+		Test.describe( "Set min or max ranged value to unsigned packer" )
 		local b = Buffer( 2 )
 		local p = Pack( 'H' )
 		p( b, 0 )
@@ -56,8 +56,8 @@ local tests = {
 		T.assert( 2^16-1 == p( b ), "Packed Value should be %d but was %d", 2^16-1, p( b ) )
 	end,
 
-	test_SetMinOrMaxIntSigned = function( self )
-		Test.Case.describe( "Set min or max ranged value to signed packer" )
+	SetMinOrMaxIntSigned = function( self )
+		Test.describe( "Set min or max ranged value to signed packer" )
 		local b = Buffer( 2 )
 		local x = math.tointeger( 2^15 )
 		local p = Pack( 'h' )
@@ -67,8 +67,8 @@ local tests = {
 		T.assert( x-1 == p( b ), "Packed Value should be %d but was %d", x-1, p( b ) )
 	end,
 
-	test_SignedSetWrongTypeFails = function( self )
-		Test.Case.describe( "Set wrong value type to signed packer fails" )
+	SignedSetWrongTypeFails = function( self )
+		Test.describe( "Set wrong value type to signed packer fails" )
 		local e_bool   ="number expected, got boolean"
 		local e_string ="number expected, got string"
 		local e_func   ="number expected, got function"
@@ -87,10 +87,3 @@ local tests = {
 	end,
 
 }
-
---t =  Test( tests )
---t()
---print(t)
-
-return Test( tests )
-

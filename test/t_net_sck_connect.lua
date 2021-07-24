@@ -1,5 +1,3 @@
-#!../out/bin/lua
-
 ---
 -- \file    t_net_sck_connect.lua
 -- \brief   Test assuring Socket.connect(...) and socket:connect(...) handles all use cases
@@ -16,7 +14,6 @@
 
 local t_require = require"t".require
 local Test      = require( "t.Test" )
-local Timer     = require( "t.Time" )
 local Loop      = require( "t.Loop" )
 local Interface = require( "t.Net.Interface" )
 local Socket    = require( "t.Net.Socket" )
@@ -24,131 +21,129 @@ local Address   = require( "t.Net.Address" )
 local chkAdr    = t_require( "assertHelper" ).Adr
 local chkSck    = t_require( "assertHelper" ).Sck
 local config    = t_require( "t_cfg" )
-local fmt       = string.format
 
 
 -- #########################################################################
 -- accept server for each test
-accept = function( self )
-	local c, ip = self.srv:accept( )
-	assert( chkSck( c, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' ) )
-	assert( chkAdr( ip, "AF_INET", self.host2cmp, self.port2cmp ) )
-	self.sck:close() -- close client first to avoid "Address already in use"
-	                 -- http://hea-www.harvard.edu/~fine/Tech/addrinuse.html
-	c:close( )
-end
 
-local tests = {
+local kick = function() end
+return {
 	-- #########################################################################
 	-- wrappers for tests
-	beforeAll = function( self, done )
+	beforeAll = function( self )
 		self.host          = Interface.default( ).address.ip
 		self.port          = config.nonPrivPort
-		self.srv, self.adr = Socket.listen( self.host, self.port )
+		self.srvSck, self.srvAdr = Socket.listen( self.host, self.port )
+		assert( chkSck( self.srvSck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' ) )
+		assert( chkAdr( self.srvAdr, "AF_INET", self.host, self.port ) )
 		self.loop          = Loop( )
-		self.loop:addHandle( self.srv, 'read', accept, self )
-		done()
-	end,
-	afterAll = function( self, done )
-		self.loop:removeHandle( self.srv, 'read' )
-		self.srv:close( )
-		done()
 	end,
 
-	beforeEach_cb = function( self, done )
-		self.loop:addTimer( Timer(1), done )
-		-- loop:run() blocks further execution until the function on the loop
-		-- runs the afterEach_cb and releases the block forcing all tests to be
-		-- executed sequentially
-		self.loop:run()
+	afterAll = function( self )
+		self.srvSck:close( )
 	end,
 
-	afterEach_cb = function( self, done )
-		self.loop:stop()
-		done( )
+	beforeEach = function( self )
+		local accept = function( s )
+			s.rcvSck, s.rcvAdr = s.srvSck:accept( )
+			assert( chkSck( s.rcvSck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' ) )
+			assert( chkAdr( s.rcvAdr, "AF_INET", s.host2cmp, s.port2cmp ) )
+			s.cliSck:close( ) -- close client first to avoid "Address already in use"
+								   -- http://hea-www.harvard.edu/~fine/Tech/addrinuse.html
+			s.rcvSck:close( )
+			s.loop:removeHandle( s.srvSck, "read" )
+		end
+		self.loop:addHandle( self.srvSck, "read", accept, self )
+	end,
+
+	afterEach = function( self )
 	end,
 
 	-- #########################################################################
 	-- Actual Test cases
-	test_cb_SConnectHostPort = function( self, done )
-		Test.Case.describe( "Socket.connect( host, port ) --> Sck IPv4(TCP), Adr host:port" )
+	test_cb_SConnectHostPort = function( self )
+		Test.describe( "Socket.connect( host, port ) --> Sck IPv4(TCP), Adr host:port" )
 		self.host2cmp = self.host
 		self.port2cmp = 'any'
-		self.sck, self.adrc = Socket.connect( self.host, self.port )
-		done( )
+		self.cliSck, self.cliAdr = Socket.connect( self.host, self.port )
+		self.loop:run()
 	end,
 
-	test_cb_SConnectAddress = function( self, done )
-		Test.Case.describe( "Socket.connect( adr ) --> Sck IPv4(TCP)" )
+	test_cb_SConnectAddress = function( self )
+		Test.describe( "Socket.connect( adr ) --> Sck IPv4(TCP)" )
 		self.host2cmp    = self.host
 		self.port2cmp    = 'any'
-		self.adrc        = Address( self.host, self.port )
-		self.sck, self.a = Socket.connect( self.adrc )
-		assert( self.a == self.adrc, "Returned address `%s` should equal input `%s`", self.a, self.adrc )
-		done( )
+		local adrc       = Address( self.host, self.port )
+		self.cliSck, self.cliAdr = Socket.connect( adrc )
+		assert( self.cliAdr == adrc, ("Returned address `%s` should equal input `%s`"):format( self.cliAdr, adrc ) )
+		self.loop:run()
 	end,
 
-	test_cb_sConnectHostPort = function( self, done )
-		Test.Case.describe( "sck:connect( host, port ) --> Adr host:port" )
+	test_cb_sConnectHostPort = function( self )
+		Test.describe( "sck:connect( host, port ) --> Adr host:port" )
 		self.host2cmp    = self.host
 		self.port2cmp    = 'any'
-		self.sck         = Socket( )
-		self.adrc,self._ = self.sck:connect( self.host, self.port )
-		assert( self._  == nil, "No socket should have been returned" )
-		done( )
+		self.cliSck      = Socket( )
+		local adrc       = Address( self.host, self.port )
+		self.cliAdr, _ = self.cliSck:connect( self.host, self.port )
+		assert( _  == nil, "No socket should have been returned" )
+		assert( chkAdr( self.cliAdr, "AF_INET", self.host, self.port ) )
+		self.loop:run()
 	end,
 
-	test_cb_sConnectAddress = function( self, done )
-		Test.Case.describe( "sck:connect( adr ) --> no return value" )
-		self.host2cmp    = self.host
-		self.port2cmp    = 'any'
-		self.adrc        = Address( self.host, self.port )
-		self.sck         = Socket( )
-		local adr,b      = self.sck:connect( self.adrc )
-		assert( b == nil, "No socket  should have been returned" )
-		assert( adr == self.adrc, "Returned address `%s` should equal input `%s`", adr, self.adrc )
-		done( )
+	test_cb_sConnectAddress = function( self )
+		Test.describe( "sck:connect( adr ) --> no return value" )
+		self.host2cmp   = self.host
+		self.port2cmp   = 'any'
+		local adrc      = Address( self.host, self.port )
+		self.cliSck     = Socket( )
+		self.cliAdr,_   = self.cliSck:connect( adrc )
+		assert( _ == nil, "No socket  should have been returned" )
+		assert( self.cliAdr == adrc, ("Returned address `%s` should equal input `%s`"):format( self.cliAdr, adrc ) )
+		self.loop:run()
 	end,
 
-	test_cb_sConnectHostPortBound = function( self, done )
-		Test.Case.describe( "sck:connect( host, port ) bound --> Adr host:port" )
+	test_cb_sConnectHostPortBound = function( self )
+		Test.describe( "sck:connect( host, port ) bound --> Adr host:port" )
 		-- bind socket to outgoing interface/port first
-		self.host2cmp       = self.host
-		self.port2cmp       = config.nonPrivPortAlt
-		self.sck            = Socket()
-		self.sck.reuseaddr  = true
-		self.adrb           = self.sck:bind( self.host2cmp, self.port2cmp )
-		self.adrc,self._    = self.sck:connect( self.host, self.port )
-		assert( self._  == nil, "No socket should have been returned" )
-		done( )
+		self.host2cmp         = self.host
+		self.port2cmp         = config.nonPrivPortAlt
+		self.cliSck           = Socket()
+		self.cliSck.reuseaddr = true
+		local adrb            = self.cliSck:bind( self.host2cmp, self.port2cmp )
+		self.cliAdr, _        = self.cliSck:connect( self.host, self.port )
+		assert( _  == nil, "No socket should have been returned" )
+		assert( chkAdr( self.cliAdr, "AF_INET", self.host, self.port ) )
+		self.loop:run()
 	end,
 
-	test_cb_sConnectAddressBound = function( self, done )
-		Test.Case.describe( "sck:connect( adr ) bound --> no return value" )
+	test_cb_sConnectAddressBound = function( self )
+		Test.describe( "sck:connect( adr ) bound --> no return value" )
 		-- bind socket to outgoing interface/port first
-		self.host2cmp       = self.host
-		self.port2cmp       = config.nonPrivPortAlt
-		self.sck            = Socket()
-		self.sck.reuseaddr  = true
-		self.adrb           = self.sck:bind( self.host2cmp, self.port2cmp )
-		self.adrc           = Address( self.host, self.port )
-		local adr, b        = self.sck:connect( self.adrc )
-		assert( b == nil, "Only address should have been returned" )
-		assert( adr == self.adrc, fmt( "Returned address `%s` should equal input `%s`", adr, self.adrc ) )
-		done( )
+		self.host2cmp         = self.host
+		self.port2cmp         = config.nonPrivPortAlt
+		self.cliSck           = Socket()
+		self.cliSck.reuseaddr = true
+		local adrb            = self.cliSck:bind( self.host2cmp, self.port2cmp )
+		local adrc            = Address( self.host, self.port )
+		self.cliAdr, _        = self.cliSck:connect( adrc )
+		assert( _ == nil, ("Only address should have been returned, but returned <%s>"):format( _ ) )
+		assert( self.cliAdr == adrc, ("Returned address `%s` should equal input `%s`"):format( self.cliAdr, adrc ) )
+		self.loop:run()
 	end,
 
-	test_cb_sConnectWrongArgFails = function( self, done )
-		Test.Case.describe( "sck.connect( adr ) --> fails" )
-		self.sck    = Socket( )
+	test_cb_sConnectWrongArgFails = function( self )
+		Test.describe( "sck.connect( adr ) --> fails" )
+		self.cliSck    = Socket( )
 		local eMsg  = "bad argument #1 to `connect` %(expected `t.Net.Socket`, got `nil`%)"
-		local f     = function() local _,__ = self.sck.connect( ) end
+		local f     = function( )
+			local _,__ = self.cliSck.connect( )
+			--print(_,__)
+		end
 		local ran,e = pcall( f )
 		assert( not ran, "This should have failed" )
-		assert( e:match( eMsg), fmt( "Expected error message:\n%s\n%s", eMsg:gsub('%%',''), e ) )
-		done( )
+		assert( e:match( eMsg), ("Expected error message:\n%s\n%s"):format( eMsg:gsub('%%',''), e ) )
+		self.cliSck:close( )
 	end,
---]]
 }
 
-return  Test( tests )

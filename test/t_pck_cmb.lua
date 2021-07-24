@@ -18,11 +18,11 @@ local        unpack,        char,        rep,        format,      tinsert  =
 
 local NB      = Pack.charbits
 
-local tests = {
+return {
 	
 	-- Test cases
-	test_EqualSizedByteSequence = function( self )
-		Test.Case.describe( "Sequence of equal sized byte Packer" )
+	EqualSizedByteSequence = function( self )
+		Test.describe( "Sequence of equal sized byte Packer" )
 		local p = Pack("<i5>I5i5<I5i5>I5i5<I5")
 		T.assert( 8 == #p, "Packer length was %d, expected %d", #p, 8 )
 		for i=1,#p do
@@ -36,8 +36,8 @@ local tests = {
 		end
 	end,
 
-	test_MultiByteSequence = function( self )
-		Test.Case.describe( "Sequence of differently sized byte Packer" )
+	MultiByteSequence = function( self )
+		Test.describe( "Sequence of differently sized byte Packer" )
 		local p = Pack("bBhHi3I3iIi5I5i6I6i7I7i8I8")
 		T.assert( 16 == #p, "Packer length was %d, expected %d", #p, 16 )
 		for i=1,#p/2 do
@@ -54,8 +54,8 @@ local tests = {
 		end
 	end,
 
-	test_MultiByteArray = function( self )
-		Test.Case.describe( "Array of byte Packer" )
+	MultiByteArray = function( self )
+		Test.describe( "Array of byte Packer" )
 		local n,s = 23, 3
 		local p   = Pack( "<i"..s, n )
 		T.assert( n == #p, "Array Packer length was %d, expected %d", #p, n )
@@ -70,8 +70,8 @@ local tests = {
 		end
 	end,
 
-	test_MultiByteStruct = function( self )
-		Test.Case.describe( "Struct of byte Packer" )
+	MultiByteStruct = function( self )
+		Test.describe( "Struct of byte Packer" )
 		local t = { }
 		for i=1,Pack.numsize do
 			table.insert( t, { ['signedBig'..i]   = '>i'..i } )
@@ -94,8 +94,8 @@ local tests = {
 		end
 	end,
 
-	test_EqualSizedBitSequence = function( self )
-		Test.Case.describe( "Sequence of equal sized bit Packer" )
+	EqualSizedBitSequence = function( self )
+		Test.describe( "Sequence of equal sized bit Packer" )
 		local f = "r%dR%d"
 		for n=1,63 do
 			local p = Pack( rep( format(f,n,n), 20 ) )
@@ -113,8 +113,8 @@ local tests = {
 		end
 	end,
 
-	test_MultiBitSequence = function( self )
-		Test.Case.describe( "Sequence of differently sized bit Packer" )
+	MultiBitSequence = function( self )
+		Test.describe( "Sequence of differently sized bit Packer" )
 		local s = 'r1'
 		for n=2,62,2 do        s = s  .. format( "r%dR%d",n, n+1 )           end
 		local p = Pack(s)
@@ -130,8 +130,8 @@ local tests = {
 		end
 	end,
 
-	test_MultiBitArray = function( self )
-		Test.Case.describe( "Array of bit Packer" )
+	MultiBitArray = function( self )
+		Test.describe( "Array of bit Packer" )
 		local n,s = 120, 27
 		local p   = Pack( "<r"..s, n )
 		T.assert( n == #p, "Array Packer length was %d, expected %d", #p, n )
@@ -146,8 +146,8 @@ local tests = {
 		end
 	end,
 
-	test_MultiBitStruct = function( self )
-		Test.Case.describe( "Struct of bit Packer" )
+	MultiBitStruct = function( self )
+		Test.describe( "Struct of bit Packer" )
 		local t = { }
 		for i=1,31 do table.insert( t, { ['foo'..i] = 'r'..i } ) end
 		local p = Pack( table.unpack( t ) )
@@ -163,8 +163,8 @@ local tests = {
 		end
 	end,
 
-	test_CanReadUnalignedIntegers = function( self )
-		Test.Case.describe( "Read bytes after Bits not aligned at byte border" )
+	CanReadUnalignedIntegers = function( self )
+		Test.describe( "Read bytes after Bits not aligned at byte border" )
 		local p = Pack( "r3HR5" )
 		local s = char(0xFF,0xFF,0xFF,0xFF)
 		local t = p(s)
@@ -173,8 +173,8 @@ local tests = {
 		T.assert( 2^5-1  == t[3], "Expected %d; got %d", 2^5 -1, t[3] )
 	end,
 
-	test_ReadUnalignedFloatFail = function( self )
-		Test.Case.describe( "Floats after Bits fail if not starting at byte border" )
+	ReadUnalignedFloatFail = function( self )
+		Test.describe( "Floats after Bits fail if not starting at byte border" )
 		local p = Pack("r3fr5")
 		local s = char(0xFF,0x01,0x01,0x01,0x01,0xFF)
 		local f = function(p,b) local x = p(b) end
@@ -182,10 +182,3 @@ local tests = {
 	end,
 
 }
-
---t =  Test( tests )
---t()
---print(t)
-
-return Test( tests )
-

@@ -28,7 +28,7 @@ local NB      = Pack.charbits
 -- bin: 10011010 10110010  11101110   00001010   01111100 01100101 00100101
 -- hex:       9A       B2        EE         0A         7C       65       25
 
-local tests = {
+return {
 	b = Buffer( 'aBcDeü' .. string.char( 0x9A, 0xB2, 0xEE, 0x0A, 0x7C, 0x65, 0x25 ) .. 'HiJkLmNoPö' ),
 	v = {
 		  int3ub = 6373987
@@ -51,8 +51,8 @@ local tests = {
 
 	-- Test cases
 
-	test_ReadMixedNumericTypes = function( self )
-		Test.Case.describe( "Read Sequence, struct, array of mixed numeric packers" )
+	ReadMixedNumericTypes = function( self )
+		Test.describe( "Read Sequence, struct, array of mixed numeric packers" )
 		local s = self.b:read()
 		--assert main struct
 		for i,k in ipairs({ 'int3ub', 'int2sl', 'int5sb','int4sl', 'int2s' }) do
@@ -78,8 +78,8 @@ local tests = {
 		end
 	end,
 
-	test_WriteMixedNumericTypes = function( self )
-		Test.Case.describe( "Write Sequence, struct, array of mixed numeric packer values to buffer" )
+	WriteMixedNumericTypes = function( self )
+		Test.describe( "Write Sequence, struct, array of mixed numeric packer values to buffer" )
 		local nb = Buffer( #self.b )
 		for i,k in ipairs({ 'int3ub', 'int2sl', 'int5sb','int4sl', 'int2s' }) do
 			self.p[k]( nb, self.v[k] )
@@ -99,8 +99,8 @@ local tests = {
 		   "Expected buffer not equal actual\n%s\n%s", nb:toHex(), self.b:toHex() )
 	end,
 
-	test_getSize = function( self )
-		Test.Case.describe( "t.Pack.size() on various selected packers" )
+	getSize = function( self )
+		Test.describe( "t.Pack.size() on various selected packers" )
 		local exp,sByte,sBit = 25, Pack.size( self.p )
 		T.assert( exp     == sByte, "Expected %d; got %d bytes of length", exp, sByte )
 		T.assert( exp*NB  == sBit,  "Expected %d; got %d bits  of length", exp*NB, sBit )
@@ -115,8 +115,8 @@ local tests = {
 		T.assert( exp*NB  == sBit,  "Expected %d; got %d bits  of length", exp*NB, sBit )
 	end,
 
-	test_getOffset = function( self )
-		Test.Case.describe( "t.Pack.offset() on various selected packers" )
+	getOffset = function( self )
+		Test.describe( "t.Pack.offset() on various selected packers" )
 		local exp,sByte,sBit = 19, Pack.offset( self.p.int4sl )
 		T.assert( exp     == sByte, "Expected %d; got %d bytes of offset", exp, sByte )
 		T.assert( exp*NB  == sBit,  "Expected %d; got %d bits  of offset", exp*NB, sBit )
@@ -130,9 +130,3 @@ local tests = {
 		T.assert( exp//NB == sByte, "Expected %d; got %d bytes of offset", exp//NB, sByte )
 	end,
 }
-
---t =  Test( tests )
---t()
---print(t)
-
-return Test( tests )

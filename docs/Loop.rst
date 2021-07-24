@@ -8,8 +8,7 @@ Overview
 This provides an asynchronous eventloop that is intended to be platform
 independent.  It is based on redis ae_* code base and basically provides a
 bridge to Lua making it a native member of Lua.  The eventloop is build to
-handle Socket handlers and ``T.Time`` objects which are basically ``struct
-timeval`` wrappers.  General invokation looks like:
+handle Socket handlers and Task objects.  General invokation looks like:
 
   .. code:: lua
 
@@ -22,23 +21,23 @@ can hide a lot of implementation detail from the user.  As a side effect of
 tying the loop and the interpreter tightly together the software is fixed to
 the version of the interpeter which creates the need for their own
 eco-system.  Now, both luvit and node, have a great eco-system and npm is a
-fantastic package manager but in Lua land it remains desirable to just
+fantastic package manager, but in Lua land it remains desirable to just
 choose and pick the lates official Lua distribution from PUC.  Therefore,
 lua-t makes an effort to be 'just another library' that can be loaded and
 used in conjunction with all the other software that is available either
-via the distribution or lua-rocks.
-
-Only ``epoll()`` and ``select()`` are currently implemented.
+via the distribution or lua-rocks.  Overall, the implementation of
+``T.Loop`` is more comparable to Pythons asyncio rather than to luvit or
+nodejs.
 
 
 Implementation
 ==============
 
 ``t.Loop`` is very loosely based on the ae_* eventloop found in redis.
-General architecture is similar as that it have a general part which handles
+General architecture is similar as that it has a general part which handles
 the common code and then implementation/platform specific code which handles
 the abstraction regarding the use of the underlaying technology.  While not
-fully implemented yet the following platforms are planned to be supported:
+fully implemented yet, the following platforms are planned to be supported:
 
   - ``select()`` platform independent with known select() limitations
   - ``epoll()``  default on Linux systems, and probably best tested
@@ -46,13 +45,15 @@ fully implemented yet the following platforms are planned to be supported:
   - ``evport()`` Solaris
   - ``cpio``     Windows (inspiration from Microsoft redis port)
 
-Where ``t.Loop`` differs significantly from redis is the handling of slots
-for descriptors to be watched.  In redis the user is responsible to not add
-a file/socket descriptor to the loop which has a higher descriptor number
-then the slot capacity of the loop and the user must resize the loop (which
-uses realloc()) manually because the slots are managed as a fixed size
-array.  ``t.Loop`` uses a Lua table instead which is garbage collected by
-Lua itself.  There are some performance implications but in the interest of
+Only ``epoll()`` and ``select()`` are currently implemented.  As soon as I
+get my hands on a Mac I will implement ``kqueue``.  Where ``t.Loop`` differs
+significantly from redis is the handling of slots for descriptors to be
+watched.  In redis, the user is responsible to not add a file/socket
+descriptor to the loop which has a higher descriptor number then the slot
+capacity of the loop and the user must resize the loop (which uses
+realloc()) manually because the slots are managed as a fixed size array.
+``t.Loop`` uses a Lua table instead which is garbage collected by Lua
+itself.  There are some performance implications but in the interest of
 easier handling this implementation is much preferable.  It keeps ``t.Loop``
 in the spirit of Lua as a scripting language where the user shall not be
 concerned with those kind of aspects.  On a technical level, ``t.Loop`` sets
@@ -69,7 +70,7 @@ Major differences from redis design
  - instead of C functions it directly executes Lua functions with Lua based
    parameters when events are fired
  - using a Lua table to hold the descriptors and their associated
-   event-handlers, so it does not have to be manually resized.
+   event-handlers, so it does not have to be manually resized
 
 
 Important File Handle and Platform Caveats
@@ -136,16 +137,22 @@ created, **running multiple ``t.Loop`` instances is not defined**.
 API
 ===
 
-Class Members
--------------
+Static Class Members
+--------------------
 
-None
+``void = t.Loop:sleep(int ms)``
+  Makes process sleep for ``int ms`` milliseconds.  This is a busy wait that
+  will also stall other coroutines.
+
+``int ms = t.Loop:time()``
+  Returns the milliseconds since epoch.  It has the same functionality as
+  ``os.time`` but the resolution is in milliseconds instead of seconds.
 
 
 Class Metamembers
 -----------------
 
-``Loop l = Loop( )       [__call]``
+``Loop l = t.Loop( )       [__call]``
   Creates ``Loop l`` instance.  Create only one per application.  Using
   multiple loops is not defined as behaviour.
 
@@ -153,41 +160,93 @@ Class Metamembers
 Instance Members
 ----------------
 
-``string s = loop:show()``
-  Print a list of elements in the loop in a preformatted way.
+``string s = loop:show()    -- only available when compiled with DEBUGsupport``
+  Print a list of elements in the loop in a pre-formatted way.
+
+  .. code::
+
+   T.Loop[1000]: 0x55fc3e7615f8 TIMER LIST:
+     1  { 1000ms}  function 1000
+     2  { 2000ms}  function 2000
+     3  { 3000ms}  function 3000
+     4  { 3500ms}  function 3500 `foo` `bar`
+     5  { 4000ms}  function 4000
+   T.Loop{3} 0x55fc3e7615f8 HANDLE LIST:
+     4  [R]  function `a string` `a` `b` `c`
+     5  [W]  function T.Net.Socket `Message to be sent`
+     5  [R]  function T.Net.Socket
+
+``void = loop:sleep(int ms)``
+  Makes process sleep for ``int ms`` milliseconds.  This is a busy wait that
+  will also stall other coroutines.
+
+``int ms = loop:time()``
+  Returns the milliseconds since epoch.  It has the same functionality as
+  ``os.time`` but the resolution is in milliseconds instead of seconds.
 
 ``void = loop:run()``
-  Starts the event loop.
+  Starts the event loop.  It either runs until ``loop:stop()`` is called, or
+  until no more tasks or event handlers are left on the loop.
 
 ``void = loop:stop()``
   Stops the event loop and returns to the normal flow of execution.
 
-``boolean b = loop:addHandle( handle h, string dir, function f, ...)``
+``void = loop:clean()``
+  Removes all events and tasks from the loop which in turn also will make
+  the loop stop itself.
+
+``T.Loop.Node = loop:addHandle( handle h, string dir, function f, [...])``
   Add the ``handle h`` to the eventloop and define what should be executed
   when an event on the handle is observed.  The ``handle h`` can be a
   ``t.Net.Socket`` or a ``Lua File``.  Limitations apply as explained above
-  in the Caveats.  The direction can be ``'r'`` or ``'w'`` determining if
-  the event would indicate readability or writablity.  Upon the triggered
-  event the ``function f`` will be executed with the parameters passed in
-  ``...``.  ``addHandle()`` is idempotent and each call to it will
-  **replace** the previously added function and parameters.
+  in the caveats.  The direction can be ``'r'`` or ``'w'`` determining if
+  the event would indicate readability or writablity.  For more clarity the
+  following are also supported: ``rd``, ``read``, ``wr`` and ``write``.
+  Upon the triggered event the ``function f`` will be executed with the
+  parameters passed in ``...``.  ``addHandle()`` is idempotent and each call
+  to it will **replace** the previously added function and parameters.  The
+  returned ``T.Loop.Node n`` is a piece of userdata that can have three
+  uservalues attached to it:
 
-``boolean b = loop:removeHandle( handle h, string dir )``
+   - uservalue index 1:  A table with function and arguments for read
+     operation
+   - uservalue index 2:  A table with function and arguments for write
+     operation
+   - uservalue index 3:  Either the ``T.Net.Socket`` or ``Lua File`` object
+     that gets observed
+
+  These uservalues are used for the loops implementation but are exposed for
+  convienience and debugging purposes.
+
+``T.Loop.Node n = loop:removeHandle( handle h, string dir )``
   Remove observing events on the ``handle h`` for the direction ``string
-  dir`` from the event loop.
+  dir`` from the event loop.  For simplicity, ``removehandle`` also supports
+  ``rw``, ``rdwr`` or ``readwrite`` as ``string dir`` which removes the
+  handle for both directions.
 
-``boolean b = loop:addTimer( t.Time t, function f, ...)``
+
+``T.Loop.Task t = loop:addTask( integer ms, function f, ...)``
   Add the ``t.Time t`` to the eventloop and define what should be executed
   when then ``t.Time t`` value has passed  Upon the triggered event the
   ``function f`` will be executed with the parameters passed in ``...``.
   ``addTimer()`` is idempotent and each call to it will **replace** the
   previously added function and parameters.  ``function f`` *can have* a
-  single return value.  If it is an instance of ``T.Time`` it will
-  automatically reschedule itself with the same parameters.  This allows
-  to flexibly implement intervals.
+  single return value.  If it is an integer ``int ms`` greater than 1, the
+  task will automatically reschedule itself in ``int ms`` milliseconds with
+  the same parameters.  This allows to flexibly implement intervals.
+  ``T.Loop.Task t`` is a userdata representing the tasks internal
+  implementation.  It has two uservalues assoiciated with it:
 
-``boolean b = loop:removeTimer( t.Time t )``
-  Remove ``t.Time t`` from the event loop.
+   - uservalue index 1:  The next ``T.Loop Task`` in line.  It's implemented
+     as a linked list based on uservalues.
+   - uservalue index 2:  A table with function and arguments executed when
+     the task fires.
+
+  These uservalues are used for the loops implementation but are exposed for
+  convienience and debugging purposes.
+
+``boolean b = loop:cancelTask( t.Loop.Task )``
+  Remove ``t.Loop.Task t`` from the event loop.
 
 
 Instance Metamembers
@@ -198,25 +257,15 @@ Instance Metamembers
   contains type, length and memory address information such as
   *`t.Loop{7}: 0xdac2e8`*, meaning it is currently observing 7 descriptors.
 
-``table t = Loop l[ idx ] [__index]``
-  Returns a ``table t`` which is different for Timers or Handles.  The index
-  must be a ``t.Time t`` or a valid File or Socket handle. For a time index
-  the table contains ``[ func, arg1, arg2, ... ]``.  For handles it the
-  table looks like:
-  
-  .. code:: lua
-  
-   {
-     read  = { func, arg1,arg2, arg3, ... },
-     write = { func, arg1,arg2, arg3, ... }
-   }
-  
+``t.Loop.Node n = Loop l[ idx ] [__index]``
+  Returns a ``t.Loop.Node`` instance.  The index must be or a valid ``Lua
+  File`` or ``t.Net.Socket`` handle.  The returned node is the same
+  reference as the ``loo:addHandle()`` method would return.
+
   There is no ``__newindex()`` method since ``__index()`` has been
-  implemented merely to provide som debugging and insight capabilities.  To
-  replace values it is much better to call ``addTimer()/addHandle()`` again.
-  It is important to point out, the tables returned by the ``index()``
-  metamethod are just references and changing the values will infact change
-  the executed function or parameter.
+  implemented merely to provide som debugging and insight capabilities.
+  Use ``loop:addtask()`` and ``loop:canceltask()`` instead.
 
 ``int n = #loop         [__len]``
-  Returns the numbers of slots in the loop currently provided as capacity.
+  Returns the numbers of file or socket handles in the loop currently
+  observed.

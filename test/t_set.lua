@@ -2,12 +2,26 @@
 -- \file    t_set.lua
 -- \brief   Test for the Set functionality
 local T     = require( 't' )
+local Rtvg  = T.require( "rtvg" )
 local Table = require( 't.Table' )
 local Test  = require( "t.Test" )
 local Set   = require( "t.Set" )
-local Rtvg  = T.require( 'rtvg' )
 
-local   tests = {
+
+local splitArray = function( arr )
+	local part1, part2 = {},{}
+	for i,v in pairs( arr ) do
+		if math.random(1,1000) % 2 == 1 then
+			table.insert( part1, v )
+		else
+			table.insert( part2, v )
+		end
+	end
+	return part1, part2
+end
+
+	-- ----
+return {
 	len        = 5000,
 	beforeEach = function( self )
 		self.rtvg = Rtvg( )
@@ -21,24 +35,12 @@ local   tests = {
 		self.len  = #self.aryA
 	end,
 
-	splitArray = function( arr )
-		local part1, part2 = {},{}
-		for i,v in pairs( arr ) do
-			if math.random(1,1000) % 2 == 1 then
-				table.insert( part1, v )
-			else
-				table.insert( part2, v )
-			end
-		end
-		return part1, part2
-	end,
-
-	-- -----------------------------------------------------------------------
+-------------------------------------------------------------------
 	-- Constructor Tests
 	-- -----------------------------------------------------------------------
 
-	test_ConstructEmptySet = function( self )
-		Test.Case.describe( "Construct the Empty Set" )
+	ConstructEmptySet = function( self )
+		Test.describe( "Construct the Empty Set" )
 		local eSet = Set()
 		assert( "t.Set" == T.type( eSet ), "Type t.Set expected" )
 		assert( #eSet == 0, "Length must be zero" )
@@ -47,8 +49,8 @@ local   tests = {
 		end
 	end,
 
-	test_ConstructEmptySetFromEmptyTable = function( self )
-		Test.Case.describe( "Construct Empty Set From Empty Array" )
+	ConstructEmptySetFromEmptyTable = function( self )
+		Test.describe( "Construct Empty Set From Empty Array" )
 		local eSet = Set( {} )
 		assert( "t.Set" == T.type( eSet ), "Type t.Set expected" )
 		assert( #eSet == 0, "Length must be zero" )
@@ -58,8 +60,8 @@ local   tests = {
 		assert( eSet == Set(), "Set from empty table must be equal Empty set" )
 	end,
 
-	test_ConstructorFromArray = function( self )
-		Test.Case.describe( "Construct Set from Array" )
+	ConstructorFromArray = function( self )
+		Test.describe( "Construct Set from Array" )
 		local set = Set( self.aryA )
 		assert( "t.Set" == T.type( set ), "Type t.Set expected" )
 		assert( #set == #self.aryA, "Length must be equal number of elements in array" )
@@ -68,8 +70,8 @@ local   tests = {
 		end
 	end,
 
-	test_ConstructorFromTable = function( self )
-		Test.Case.describe( "Construct Set from (Hash) Table" )
+	ConstructorFromTable = function( self )
+		Test.describe( "Construct Set from (Hash) Table" )
 		local tbl = self.rtvg:getHash( self.len )
 		local set = Set( tbl )
 		assert( "t.Set" == T.type( set ), "Type t.Set expected" )
@@ -79,8 +81,8 @@ local   tests = {
 		end
 	end,
 
-	test_ConstructorFromMixTable = function( self )
-		Test.Case.describe( "Construct Set from Mixed (Hash+Numeric) Table" )
+	ConstructorFromMixTable = function( self )
+		Test.describe( "Construct Set from Mixed (Hash+Numeric) Table" )
 		local tbl = self.rtvg:getHash( self.len )
 		for k=1,self.len do table.insert( tbl, self.rtvg:getVal() ) end
 		local set = Set( tbl )
@@ -91,8 +93,8 @@ local   tests = {
 		end
 	end,
 
-	test_ConstructorByCloning = function( self )
-		Test.Case.describe( "Construct Set from existing set" )
+	ConstructorByCloning = function( self )
+		Test.describe( "Construct Set from existing set" )
 		local lSet = Set( self.setB )
 		assert( "t.Set" == T.type( lSet ), "Type t.Set expected" )
 		local cnt  = 0
@@ -104,8 +106,8 @@ local   tests = {
 		assert( cnt == #lSet, "Length must be equal number elements in original set" )
 	end,
 
-	test_ConstructorRoundTrip = function( self )
-		Test.Case.describe( "Turn Set into table and construct an equal Set from table" )
+	ConstructorRoundTrip = function( self )
+		Test.describe( "Turn Set into table and construct an equal Set from table" )
 		local tbl = Set.values( self.setA )
 		assert( #self.setA == #tbl, "Table length must be equal number elements in original set" )
 		for i,v in ipairs( tbl ) do
@@ -116,8 +118,8 @@ local   tests = {
 		assert( cSet == self.setA, "New set must be equal to original set" )
 	end,
 
-	test_ConstructorRemovesDuplicates = function( self )
-		Test.Case.describe( "Constructing Set removes duplicates " )
+	ConstructorRemovesDuplicates = function( self )
+		Test.describe( "Constructing Set removes duplicates " )
 		for i=1,self.len do
 			self.aryB[ self.len+i ] = self.aryB[ i ]
 		end
@@ -128,8 +130,8 @@ local   tests = {
 		assert( lSet == self.setB, "New Set must be equal to setB" )
 	end,
 
-	test_proxyTableByIndexIsSet = function( self )
-		Test.Case.describe( "A sets proxyTable is indexed by t.Table.proxyTableIndex" )
+	proxyTableByIndexIsSet = function( self )
+		Test.describe( "A sets proxyTable is indexed by t.Table.proxyTableIndex" )
 		local set = Set( {'a','b','c'} )
 		local prx = set[ Table.proxyTableIndex ]
 		assert( Table.count( prx ) == 3, "proxyTable should have 3 members" )
@@ -140,8 +142,8 @@ local   tests = {
 	-- Manipulate Elements of Set Add/Remove etc
 	-- -----------------------------------------------------------------------
 
-	test_AddElement = function( self )
-		Test.Case.describe( "Test adding elements to set" )
+	AddElement = function( self )
+		Test.describe( "Test adding elements to set" )
 		local addA = self.rtvg:getVals( self.len )
 
 		for i,v in pairs( addA ) do self.setA[ v ] = true end
@@ -154,8 +156,8 @@ local   tests = {
 		end
 	end,
 
-	test_AddExistingElements = function( self )
-		Test.Case.describe( "Try adding existing set elements don't get added" )
+	AddExistingElements = function( self )
+		Test.describe( "Try adding existing set elements don't get added" )
 		local lSet =  Set( self.setA )
 		for i=1,self.len do
 			lSet[ self.aryA[ i ] ] = true
@@ -163,11 +165,11 @@ local   tests = {
 		assert( #self.setA == self.len, "Adding existing values shall not alter the Set" )
 	end,
 
-	test_RemoveElements = function( self )
-		Test.Case.describe( "Test removing elements from set" )
+	RemoveElements = function( self )
+		Test.describe( "Test removing elements from set" )
 
-		local keepA,removeA = self.splitArray(self.aryA)
-		local keepB,removeB = self.splitArray(self.aryB)
+		local keepA,removeA = splitArray(self.aryA)
+		local keepB,removeB = splitArray(self.aryB)
 		for i,v in pairs( removeA ) do self.setA[ v ] = nil end
 		for i,v in pairs( removeB ) do self.setB[ v ] = nil end
 
@@ -182,13 +184,13 @@ local   tests = {
 		end
 	end,
 
-	test_RemoveNonExistingElements = function( self )
-		Test.Case.describe( "Removing non existing elements from set shall have no effect" )
+	RemoveNonExistingElements = function( self )
+		Test.describe( "Removing non existing elements from set shall have no effect" )
 		local aSet = Set( self.setA )
 		local bSet = Set( self.setB )
 
-		local keepA,removeA = self.splitArray(self.aryA)
-		local keepB,removeB = self.splitArray(self.aryB)
+		local keepA,removeA = splitArray(self.aryA)
+		local keepB,removeB = splitArray(self.aryB)
 		for i,v in pairs( removeB ) do self.setA[ v ] = nil end
 		for i,v in pairs( removeA ) do self.setB[ v ] = nil end
 
@@ -200,8 +202,8 @@ local   tests = {
 	-- Comparative operators
 	-- -----------------------------------------------------------------------
 
-	test_AreEqual = function( self )
-		Test.Case.describe( "Two sets are equal" )
+	AreEqual = function( self )
+		Test.describe( "Two sets are equal" )
 		local aSet1 = Set( self.aryA )
 		local aSet2 = Set( self.aryA )
 
@@ -212,8 +214,8 @@ local   tests = {
 		end
 	end,
 
-	test_AreNotEqual = function( self )
-		Test.Case.describe( "One element makes sets not equal" )
+	AreNotEqual = function( self )
+		Test.describe( "One element makes sets not equal" )
 		local aSet = Set( self.setA )
 
 		assert( aSet == self.setA, "Sets should be equal" )
@@ -221,16 +223,16 @@ local   tests = {
 		assert( aSet ~= self.setA, "Sets should not be equal" )
 	end,
 
-	test_AreDisjoint = function( self )
-		Test.Case.describe( "Two sets with entirely different elements are disjoint" )
+	AreDisjoint = function( self )
+		Test.describe( "Two sets with entirely different elements are disjoint" )
 		local aSet = self.setA
 		local bSet = self.setB
 
 		assert( self.setA % self.setB, "Set should be disjoint" )
 	end,
 
-	test_AreNotDisjoint = function( self )
-		Test.Case.describe( "One common elements makes sets not disjoint" )
+	AreNotDisjoint = function( self )
+		Test.describe( "One common elements makes sets not disjoint" )
 		local aSet = self.setA
 		local bSet = self.setB
 
@@ -239,8 +241,8 @@ local   tests = {
 		assert( not (self.setA % self.setB), "Set should not be disjoint" )
 	end,
 
-	test_IsSubset = function( self )
-		Test.Case.describe( "Test set for being subset" )
+	IsSubset = function( self )
+		Test.describe( "Test set for being subset" )
 		local aSet = Set( self.setA ) -- clone Set
 
 		assert( #self.setA == #aSet, "Length of both sets must be equal" )
@@ -250,17 +252,17 @@ local   tests = {
 		assert( not (aSet < self.setA), "SetB is a Subset of setA, but not a true subset because it's equal" )
 	end,
 
-	test_IsNotSubset = function( self )
-		Test.Case.describe( "Test set for not being subset" )
+	IsNotSubset = function( self )
+		Test.describe( "Test set for not being subset" )
 
 		assert( not (self.setB <  self.setA), "SetB is not a Subset of setA" )
 		assert( not (self.setB <= self.setA), "SetB is not a true Subset of setA" )
 	end,
 
-	test_IsTrueSubset = function( self )
-		Test.Case.describe( "Test set for being a true subset" )
+	IsTrueSubset = function( self )
+		Test.describe( "Test set for being a true subset" )
 		local aSet      = Set( self.setA ) -- clone Set
-		local _,removeA = self.splitArray( self.aryA )
+		local _,removeA = splitArray( self.aryA )
 
 		assert( #self.setA == #aSet, "Length of both sets must be equal" )
 		for i,v in pairs( removeA ) do self.setA[ v ] = nil end
@@ -270,8 +272,8 @@ local   tests = {
 		assert( self.setA <  aSet, "self.setA should be a true Subset of aSet" )
 	end,
 
-	test_IntersectDisjointShallCreateEmptySet = function( self )
-		Test.Case.describe( "The Intersection of 2 disjoint sets shall have no Elements" )
+	IntersectDisjointShallCreateEmptySet = function( self )
+		Test.describe( "The Intersection of 2 disjoint sets shall have no Elements" )
 
 		local iSet = self.setA & self.setB
 
@@ -282,12 +284,12 @@ local   tests = {
 	-- Operators with results
 	-- -----------------------------------------------------------------------
 
-	test_Intersection = function( self )
-		Test.Case.describe( "The Intersection of 2 sets shall have only common Elements" )
+	Intersection = function( self )
+		Test.describe( "The Intersection of 2 sets shall have only common Elements" )
 		local aSet = Set( self.setA )
 
-		local xRemove,aKeep     = self.splitArray( self.aryA )
-		local aRemove1,aRemove2 = self.splitArray( xRemove )
+		local xRemove,aKeep     = splitArray( self.aryA )
+		local aRemove1,aRemove2 = splitArray( xRemove )
 		for i,v in pairs( aRemove1 ) do      aSet[ v ] = nil end
 		for i,v in pairs( aRemove2 ) do self.setA[ v ] = nil end
 
@@ -302,23 +304,23 @@ local   tests = {
 		end
 	end,
 
-	test_IntersectionEqual = function( self )
-		Test.Case.describe( "The Intersection of 2 identical sets is the same set" )
+	IntersectionEqual = function( self )
+		Test.describe( "The Intersection of 2 identical sets is the same set" )
 		local aSet = Set( self.setA )
 		local iSet = self.setA & aSet
 
 		assert( self.setA == iSet, "Set and Intersection shall be equal" )
 	end,
 
-	test_IntersectionDisjunct = function( self )
-		Test.Case.describe( "The Intersection of 2 disjunct sets is the empty set" )
+	IntersectionDisjunct = function( self )
+		Test.describe( "The Intersection of 2 disjunct sets is the empty set" )
 		local iSet = self.setA & self.setB
 
 		assert( Set( ) == iSet, "Set and Intersection shall be equal" )
 	end,
 
-	test_Union = function( self )
-		Test.Case.describe( "The Union of 2 sets shall remove duplicate elements" )
+	Union = function( self )
+		Test.describe( "The Union of 2 sets shall remove duplicate elements" )
 		local aSet1 = Set( self.setA )
 		local aSet2 = Set( self.setA )
 		local add1  = self.rtvg:getVals( self.len )
@@ -340,15 +342,15 @@ local   tests = {
 		end
 	end,
 
-	test_UnionEqual = function( self )
-		Test.Case.describe( "The Union of 2 equal sets shall be the same set" )
+	UnionEqual = function( self )
+		Test.describe( "The Union of 2 equal sets shall be the same set" )
 		local uSet = self.setA | self.setA
 
 		assert( self.setA == uSet, "Union shall be equal both operands" )
 	end,
 
-	test_UnionDisjunct = function( self )
-		Test.Case.describe( "The Union of 2 disjunct sets shall have the sum of their elements" )
+	UnionDisjunct = function( self )
+		Test.describe( "The Union of 2 disjunct sets shall have the sum of their elements" )
 		local uSet = self.setA | self.setB
 
 		assert( #self.setA*2 == #uSet, "Length of Union shall be ".. #self.setB*2 )
@@ -360,11 +362,11 @@ local   tests = {
 		end
 	end,
 
-	test_Complement = function( self )
-		Test.Case.describe( "The Complement of 2 sets shall remove elements in SetB From SetA" )
+	Complement = function( self )
+		Test.describe( "The Complement of 2 sets shall remove elements in SetB From SetA" )
 		local aSet = Set( self.setA )
 
-		local aRemove,aKeep     = self.splitArray( self.aryA )
+		local aRemove,aKeep     = splitArray( self.aryA )
 		for i,v in pairs( aRemove ) do aSet[ v ] = nil end
 
 		local cSet = self.setA - aSet
@@ -379,23 +381,23 @@ local   tests = {
 		end
 	end,
 
-	test_ComplementEqual = function( self )
-		Test.Case.describe( "The Complement of 2 equal sets shall be empty" )
+	ComplementEqual = function( self )
+		Test.describe( "The Complement of 2 equal sets shall be empty" )
 		local aSet = Set( self.setA )
 		local cSet = self.setA - aSet
 
 		assert( Set( ) == cSet, "Complement shall be Empty set" )
 	end,
 
-	test_ComplementDisjoint = function( self )
-		Test.Case.describe( "The Complement of 2 disjoint sets shall be equal 1st Set" )
+	ComplementDisjoint = function( self )
+		Test.describe( "The Complement of 2 disjoint sets shall be equal 1st Set" )
 		local cSet = self.setA - self.setB
 
 		assert( self.setA == cSet, "Complement shall be equal SetB" )
 	end,
 
-	test_SymmetricDifference = function( self )
-		Test.Case.describe( "The Symmetric Difference of 2 equal sets shall be elements not in commmon" )
+	SymmetricDifference = function( self )
+		Test.describe( "The Symmetric Difference of 2 equal sets shall be elements not in commmon" )
 		local bSet1 = Set( self.setB )
 		local bSet2 = Set( self.setB )
 		local add1  = self.rtvg:getVals( self.len )
@@ -405,25 +407,25 @@ local   tests = {
 
 		local dSet = bSet1 ~ bSet2
 
-		assert( #add1 + #add2 == #dSet, "Length of difference shall be ".. #add1 + #add2 )
+		assert( #add1 + #add2 == #dSet, ("Length of difference shall be %d but was %d"):format( #add1 + #add2, #dSet ) )
 		for i,v in ipairs( add1 ) do
-			assert( dSet[ v ], "Add1 Element '"..tostring(v).."' must exist in set" )
+			assert( dSet[ v ], ("Add1 Element '%s' must exist in set"):format( tostring(v) ) )
 		end
 		for i,v in ipairs( add2 ) do
 			assert( dSet[ v ], "Add2 Element '"..tostring(v).."' must exist in set" )
 		end
 	end,
 
-	test_SymmetricDifferenceEqual = function( self )
-		Test.Case.describe( "The Symmetric Difference of 2 equal sets shall be empty" )
+	SymmetricDifferenceEqual = function( self )
+		Test.describe( "The Symmetric Difference of 2 equal sets shall be empty" )
 		local aSet = Set( self.setA )
 		local dSet = self.setA ~ aSet
 
 		assert( Set(  ) == dSet, "Difference shall be Empty set" )
 	end,
 
-	test_SymmetricDifferenceDisjunct = function( self )
-		Test.Case.describe( "The Symmetric Difference of 2 disjunt sets shall be the union of the two" )
+	SymmetricDifferenceDisjunct = function( self )
+		Test.describe( "The Symmetric Difference of 2 disjunt sets shall be the union of the two" )
 		local dSet = self.setA ~ self.setB
 		local uSet = self.setA ~ self.setB
 		--print( #dSet, Set.toString( dSet ) )
@@ -433,4 +435,3 @@ local   tests = {
 	end,
 }
 
-return Test( tests )

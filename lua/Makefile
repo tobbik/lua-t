@@ -44,11 +44,8 @@ T_SRC=\
    t/Pack/Index.lua \
    t/Set.lua \
    t/Table.lua \
-   t/Tst.lua \
-   t/Tst/Suite.lua \
    t/Test.lua \
-   t/Test/Case.lua \
-   t/Test/Context.lua \
+   t/Test/Suite.lua \
    t.lua
 
 ifdef BUILD_EXAMPLE

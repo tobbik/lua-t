@@ -5,9 +5,9 @@
 -- \author    tkieslich
 -- \copyright See Copyright notice at the end of t.h
 
-local T, Test, Time, format = require"t", require"t.Test", require"t.Time", string.format
+local T, Suite = require"t", require"t.Test.Suite"
 
-local m = {
+local suites = {
 	"t_ael",
 	"t_buf"                 , "t_buf_seg",
 	"t_net_adr"             , "t_net_ifc",
@@ -23,59 +23,23 @@ local m = {
 	--"t_pck_bytes"           , "t_pck_bits",
 	--"t_pck_fmt"             , "t_pck_mix",
 	"t_htp_rsp"             , "t_htp_req",
-	"t_tim"                 ,
 }
 
-
-local run = function( do_pat, no_pat )
-	local do_pat, no_pat = do_pat                   or ''    , no_pat                   or '^$'
-	local td_pat, tn_pat = do_pat:match( ':(.*)$' ) or ''    , no_pat:match( ':(.*)$' ) or '^$'
-	local do_pat, no_pat = do_pat:match( '^(.*):' ) or do_pat, no_pat:match( '^(.*):' ) or no_pat
-	local ctx   = Test.Context( td_pat, tn_pat, nil, nil, nil, function() end )
-	local total = {
-		count   = 0,
-		pass    = 0,
-		skip    = 0,
-		todo    = 0,
-		time    = Time( 1 ) - Time( 1 ),
-		allTime = Time( )
-	}
-	for k,v in pairs( m ) do
-		--local runit =  v:match( do_pat ) and not v:match( no_pat )
-		--print('------', runit,  do_pat, no_pat, v:match( do_pat ), v:match( no_pat ), v )
-		if v:match( do_pat ) and not v:match( no_pat ) then
-			local start = Time()
-			print( format( "--------- EXECUTING: %s   ---------", v ) )
-			local c_test = T.require( v )
-			local success = c_test( ctx )
-			if not success then
-				t = c_test --> push test suite into global scope
-				break
-			end
-			local metrics = ctx:getMetrics( c_test )
-			total.count = total.count + metrics.count
-			total.pass  = total.pass  + metrics.pass
-			total.skip  = total.skip  + metrics.skip
-			total.todo  = total.todo  + metrics.todo
-			total.time  = total.time  + metrics.time
-			start:since()
-			print( format( "--------- Done in : %.3f s (runtime: %.3f s)" , ctx:getMetrics( c_test ).time:get()/1000, start:get()/1000 ) )
+local run = function( )
+	local runnerCount, runnerTime = 0, 0
+	for _,suite in ipairs( suites ) do
+		print( ("   --- EXECUTING Suite: <%s>   ---------"):format( suite ) )
+		local suiteResult, suiteTime, failed = Suite( T.require( suite ) )
+		runnerCount, runnerTime = runnerCount + #suiteResult, runnerTime  + suiteTime
+		--t = suiteResult --> push test suite into global scope
+		if failed then
+			f = failed --> push collection of failed tests into global scope
+			t = suiteResult
+			break
 		end
+		print( ("%d tests executed in: %.3f seconds\n\n"):format( #suiteResult, suiteTime/1000) )
 	end
-	total.allTime:since( )
-	print( format( "Executed %d tests in %.3f seconds", total.count, total.allTime:get()/1000 ) )
+	print( ("Executed %d tests in %.3f seconds"):format( runnerCount, runnerTime/1000 ) )
 end
 
-local include_pattern = ""
-local exclude_pattern = "^$"
-if arg[ 1 ] then
-	include_pattern = tostring( arg[ 1 ] )
-end
-if arg[ 2 ] then
-	exclude_pattern = arg[ 2 ]
-end
-
-run( include_pattern, exclude_pattern )
-
---d=debug.getregistry()
---for k,v in pairs(d) do if type(k) ~= type(v) then print(k,v) end end
+run( )

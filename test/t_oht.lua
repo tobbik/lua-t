@@ -1,14 +1,12 @@
 ---
 -- \file    t_oht.lua
 -- \brief   Test for the Ordered Hash Table
-local T      = require( 't' )
+local Rtvg   = require( "t" ).require( "rtvg" )
 local Table  = require( "t.Table" )
 local Test   = require( "t.Test" )
 local Oht    = require( "t.OrderedHashTable" )
-local Rtvg   = T.require( 'rtvg' )
-local fmt    = string.format
 
-local tests = {
+return {
 	len        = 5000,
 	beforeEach = function( self )
 		self.rtvg   = Rtvg( )
@@ -27,14 +25,14 @@ local tests = {
 
 	-- Test cases
 
-	test_LengthMustEqualInserts = function( self )
-		Test.Case.describe( "Length of OrderedHashTable must be equal number of inserts" )
+	LengthMustEqualInserts = function( self )
+		Test.describe( "Length of OrderedHashTable must be equal number of inserts" )
 		assert( #self.o == self.len, "Length must equal number of inserts" )
 	end,
 
 	-- CONSTRUCTOR TESTS
-	test_TableStyleConstructor = function( self )
-		Test.Case.describe( "Oht({a=1},{b=2},{c=3},...) creates proper Oht instance" )
+	TableStyleConstructor = function( self )
+		Test.describe( "Oht({a=1},{b=2},{c=3},...) creates proper Oht instance" )
 		local o = Oht(
 			  { [self.keys[1]] = self.vals[1] }
 			, { [self.keys[2]] = self.vals[2] }
@@ -49,8 +47,8 @@ local tests = {
 		assert( #o == 9, "Length must equal number of constructor arguments" )
 	end,
 
-	test_MixedConstructor = function( self )
-		Test.Case.describe( "0=Oht({a=1},{b=2},{c=3},...) and o.d=4 creates proper Oht instance" )
+	MixedConstructor = function( self )
+		Test.describe( "0=Oht({a=1},{b=2},{c=3},...) and o.d=4 creates proper Oht instance" )
 		local o = Oht(
 			  { [self.keys[1]] = self.vals[1] }
 			, { [self.keys[2]] = self.vals[2] }
@@ -64,8 +62,8 @@ local tests = {
 		                     " in construtor plus number of inserts" )
 	end,
 
-	test_CopyConstructor = function( self )
-		Test.Case.describe( "OrderedHashTable constructed by copy must match original" )
+	CopyConstructor = function( self )
+		Test.describe( "OrderedHashTable constructed by copy must match original" )
 		local o = Oht( self.o )
 		assert( #o == self.len, "Original and clone length must be equal" )
 		for i=1, self.len do
@@ -76,8 +74,8 @@ local tests = {
 		end
 	end,
 
-	test_EmptyConstructor = function( self )
-		Test.Case.describe( "OrderedHashTable constructed from empty must match original" )
+	EmptyConstructor = function( self )
+		Test.describe( "OrderedHashTable constructed from empty must match original" )
 		local o = Oht( )
 		assert( #o == 0, "Empty OrderedHashTable should have length 0" )
 		for k,v,_ in pairs( self.o ) do  -- use pairs() iterator to fill copy
@@ -90,23 +88,23 @@ local tests = {
 		end
 	end,
 
-	test_proxyTableByIndexIsSet = function( self )
-		Test.Case.describe( "An OrderedHashTable proxyTable is indexed by t.Table.proxyTableIndex" )
+	proxyTableByIndexIsSet = function( self )
+		Test.describe( "An OrderedHashTable proxyTable is indexed by t.Table.proxyTableIndex" )
 		local oht = Oht(
 			  { foo1 = "bar1" }
 			, { foo2 = "bar2" }
 			, { foo3 = "bar3" }
 			)
 		local prx = oht[ Table.proxyTableIndex ]
-		T.assert( Table.count( prx ) == 6, "proxyTable should have 3 members but had %d", Table.count(prx) )
+		assert( Table.count( prx ) == 6, ("proxyTable should have 3 members but had %d"):format( Table.count(prx) ) )
 	end,
 
-	test_PairsIterator = function( self )
-		Test.Case.describe( "Function pair() must iterate in proper order" )
+	PairsIterator = function( self )
+		Test.describe( "Function pair() must iterate in proper order" )
 		local ri = 0
 		for k,v,i in pairs( self.o ) do
 			ri = ri+1
-			assert( i == ri, "Iterator index '"..i.."' must match running index '"..ri.."'" )
+			assert( i == ri, ("Iterator index %d must match running index %d"):format( i, ri) )
 			assert( k == self.keys[i], "Iterator hash must match running index hash" )
 			--assert( v == self.vals[i], "Iterator value must match running index value" )
 		end
@@ -115,14 +113,14 @@ local tests = {
 			 ") must be equal to length of OrderedHashTable("..#self.o..")" )
 	end,
 
-	test_IpairsIterator = function( self )
-		Test.Case.describe( "Function ipair() must iterate in proper order" )
+	IpairsIterator = function( self )
+		Test.describe( "Function ipair() must iterate in proper order" )
 		local ri = 0
 		for i,v,k in ipairs( self.o ) do
 			ri = ri+1
-			assert( i == ri, "Iterator index '"..i.."' must match running index '"..ri.."'" )
+			assert( i == ri, ("Iterator index %d must match running index %d"):format( i, ri) )
 			if Oht._isCompat then
-				assert( k == self.keys[i], fmt("Iterator hash[%s] must match running index hash[%s]", k, self.keys[i] ) )
+				assert( k == self.keys[i], ("Iterator hash[%s] must match running index hash[%s]"):format( k, self.keys[i] ) )
 			end
 			--assert( v == self.vals[i], "Iterator value[%s] must match running index value[%s]", v, self.vals[i] ) )
 		end
@@ -131,8 +129,8 @@ local tests = {
 			 ") must be equal to length of OrderedHashTable("..#self.o..")" )
 	end,
 
-	test_ConcatStrings = function( self )
-		Test.Case.describe( "Concat concatenates strings" )
+	ConcatStrings = function( self )
+		Test.describe( "Concat concatenates strings" )
 		local sep = 'willy nilly'
 		local keys = { 'one'  , 'two'   , 'three', 'four'  , 'five' , 'six'   , 'seven'   }
 		local vals = { 'first', 'second', 'third', 'fourth', 'fifth', 'sixth' , 'seventh' }
@@ -147,8 +145,8 @@ local tests = {
 			 "\n must equal normal table concat results:\n" .. table.concat( vals, sep, 2, 7 ) )
 	end,
 
-	test_AccessIndexedElements = function( self )
-		Test.Case.describe( "All elements must be available by their indexes" )
+	AccessIndexedElements = function( self )
+		Test.describe( "All elements must be available by their indexes" )
 		for i=1, self.len do
 			assert( self.o[i] == self.vals[i], "Indexed value must match original value" )
 			assert( self.o[self.keys[i]] == self.o[i], "Hash access must match index access" )
@@ -157,8 +155,8 @@ local tests = {
 		end
 	end,
 
-	test_AddElement = function( self )
-		Test.Case.describe( "Adding element increases size" )
+	AddElement = function( self )
+		Test.describe( "Adding element increases size" )
 		local key   = self.rtvg:getKey()
 		local value = self.rtvg:getVal()
 
@@ -168,8 +166,8 @@ local tests = {
 		assert( self.o[ #self.o ] == value,  "New Element is available as last element" )
 	end,
 
-	test_DeleteHashElement = function( self )
-		Test.Case.describe( "Removing Hash element decreases size and move down higher keys" )
+	DeleteHashElement = function( self )
+		Test.describe( "Removing Hash element decreases size and move down higher keys" )
 		local idx   = math.ceil( self.len / 2 )
 		local key   = self.keys[ idx   ]
 		local klt   = self.keys[ idx-1 ]
@@ -186,8 +184,8 @@ local tests = {
 		assert( self.o[kgt]   == vgt,        "Removing element must keep keys attached" )
 	end,
 
-	test_DeleteIndexElement = function( self )
-		Test.Case.describe( "Removing Index element decreases size and move down higher keys" )
+	DeleteIndexElement = function( self )
+		Test.describe( "Removing Index element decreases size and move down higher keys" )
 		local o     = self.o
 		local idx   = math.ceil( self.len / 2 )
 		local key   = self.keys[ idx   ]
@@ -207,8 +205,8 @@ local tests = {
 		assert( o[key]   == nil,        "Element mustn't exist after removing it" )
 	end,
 
-	test_InsertElement = function( self )
-		Test.Case.describe( "Insert element increases size and move up higher keys" )
+	InsertElement = function( self )
+		Test.describe( "Insert element increases size and move up higher keys" )
 		local k2    = self.keys[2]
 		local k3    = self.keys[3]
 		local v2    = self.o[2]
@@ -227,8 +225,8 @@ local tests = {
 		assert( self.o[idx+1] == v3,         "Inserting element must move up higher keys" )
 	end,
 
-	test_InsertWithExistingKeyFails = function( self )
-		Test.Case.describe( "Insert element with existing key fails" )
+	InsertWithExistingKeyFails = function( self )
+		Test.describe( "Insert element with existing key fails" )
 		local idx   = math.random( 3, #self.o-3 )
 		local key   = self.keys[ idx+2 ]
 		local fnc   = function(o,k,i) Oht.insert( o, k, i, "foobar" )end
@@ -236,8 +234,8 @@ local tests = {
 		assert( not pcall( fnc, self.o, key, idx ), "Not allowed to insert element with duplicated key" )
 	end,
 
-	test_ReplaceHashElement = function( self )
-		Test.Case.describe( "Replace Hash element remains size, indexes and keys" )
+	ReplaceHashElement = function( self )
+		Test.describe( "Replace Hash element remains size, indexes and keys" )
 		local idx    = math.random( 3, #self.o-3 )
 		local key    = self.keys[idx]
 		local val    = "thirdish"
@@ -247,7 +245,7 @@ local tests = {
 		vals[ idx ]  = val
 
 		self.o[ key ] = val
-		assert( self.len == #self.o, "Length is " .. #self.o .. " but should be :"..self.len )
+		assert( self.len == #self.o, ("Length is %d but should be %d"):format( #self.o, self.len ) )
 		for i=1,self.len do
 			assert( self.o[i]       == vals[i], "Indexed Values match after Replace" )
 			assert( self.o[keys[i]] == vals[i], "Hashed  Values match after Replace" )
@@ -255,8 +253,8 @@ local tests = {
 		end
 	end,
 
-	test_ReplaceIndexElement = function( self )
-		Test.Case.describe( "Replace Index element remains size, indexes and keys" )
+	ReplaceIndexElement = function( self )
+		Test.describe( "Replace Index element remains size, indexes and keys" )
 		local idx    = 3
 		local key    = self.keys[idx]
 		local val    = "thirdish"
@@ -274,8 +272,8 @@ local tests = {
 		end
 	end,
 
-	test_CreateIndexOutOfBoundElementFails = function( self )
-		Test.Case.describe( "Can't create an element with an index higher than length" )
+	CreateIndexOutOfBoundElementFails = function( self )
+		Test.describe( "Can't create an element with an index higher than length" )
 		local oob_idx  = #self.o + 1
 		local val      = "doesn't matter"
 		local func     = function() self.o[ oob_idx ] = val end
@@ -283,30 +281,30 @@ local tests = {
 		assert( not pcall( func ), "Not allowed to create elements with indexes" )
 	end,
 
-	test_GetValues = function( self )
-		Test.Case.describe( "GetValues() returns properly ordered list of values" )
-		--Test.Case.todo( "Test.equal should report arrays as equal" )
+	GetValues = function( self )
+		Test.describe( "GetValues() returns properly ordered list of values" )
+		--Test.todo( "Test.equal should report arrays as equal" )
 		local vals  = Oht.values( self.o )
 		for i=1,#vals do
 			assert( vals[i] == self.vals[ i ],
-				tostring( vals[i]) .." should equal ".. tostring( self.vals[i] ) )
+				("%s should equal %s"):format( tostring( vals[i] ), tostring( self.vals[i] ) ) )
 		end
 		--assert( Test.equal( vals == self.vals ), "getValues() shall return self.vals" )
 	end,
 
-	test_GetKeys = function( self )
-		Test.Case.describe( "GetKeys() returns properly ordered list of keys" )
-		--Test.Case.todo( "Test.equal should report arrays as equal" )
+	GetKeys = function( self )
+		Test.describe( "GetKeys() returns properly ordered list of keys" )
+		--Test.todo( "Test.equal should report arrays as equal" )
 		local keys = Oht.keys( self.o )
 		for i=1,#keys do
 			assert( keys[i] == self.keys[ i ],
-				tostring( keys[i]) .." should equal ".. tostring( self.keys[i] ) )
+				("%s should equal %s"):format( tostring( keys[i] ), tostring( self.keys[i] ) ) )
 		end
 		--assert( Test.equal( keys == self.keys ), "getKeys() shall return self.keys" )
 	end,
 
-	test_GetTable = function( self )
-		Test.Case.describe( "GetTable() returns a complete table of keyvalue pairs" )
+	GetTable = function( self )
+		Test.describe( "GetTable() returns a complete table of keyvalue pairs" )
 		local t = Oht.table( self.o )
 		local i = 0
 
@@ -315,19 +313,18 @@ local tests = {
 			i = i+1
 		end
 		assert( #self.o == i,
-			 "Number of elements in simple table ("..i..
-			 ") must be equal to number of elements in OrderedHashTable("..#self.o..")" )
+			 ("Number of elements in simple table (%d) must be equal to number of elements in OrderedHashTable (%d)"):format( i, #self ) )
 	end,
 
-	test_Equals = function( self )
-		Test.Case.describe( "__eq metamethod properly comparse for equality" )
+	Equals = function( self )
+		Test.describe( "__eq metamethod properly comparse for equality" )
 		self.o.inner = Oht( self.o )
 		local o      = Oht( self.o )
 		assert( self.o == o, "Original and clone must be equal" )
 	end,
 
-	test_NotEquals = function( self )
-		Test.Case.describe( "__eq metamethod properly compares for inequality" )
+	NotEquals = function( self )
+		Test.describe( "__eq metamethod properly compares for inequality" )
 		local idx    = math.random( 3, #self.o-3 )
 		local o      = Oht( self.o )
 		o[idx]       = 'Not sixth anymore'
@@ -335,8 +332,8 @@ local tests = {
 		assert( self.o ~= o, "Original and clone mustn't be equal" )
 	end,
 
-	test_NotEqualsRecursively = function( self )
-		Test.Case.describe( "__eq metamethod properly compares for inequality recursively" )
+	NotEqualsRecursively = function( self )
+		Test.describe( "__eq metamethod properly compares for inequality recursively" )
 		local idx    = math.random( 3, #self.o-3 )
 		self.o.inner = Oht( self.o )
 		local o      = Oht( self.o )
@@ -345,5 +342,3 @@ local tests = {
 		assert( self.o ~= o, "Original and clone mustn't be equal" )
 	end
 }
-
-return Test( tests )

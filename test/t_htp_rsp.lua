@@ -28,12 +28,12 @@ local makeResonse = function()
 	}, 1, 3 )
 end
 
-local tests = {
+return {
 	-- Test cases
 
 	-- CONSTRUCTOR TESTS
-	test_Constructor = function( self )
-		Test.Case.describe( "Http.Response( id, keepAlive, version ) creates proper Response" )
+	Constructor = function( self )
+		Test.describe( "Http.Response( id, keepAlive, version ) creates proper Response" )
 		local r = makeResonse( )
 		assert( r.state == Response.State.Zero, format( "State must be %d but was %d", Response.State.Zero, r.state ) )
 		assert( r.keepAlive, "Response must be using keepAlive" )
@@ -43,8 +43,8 @@ local tests = {
 	end,
 
 	--  ##############              WRITE HEAD
-	test_Writehead = function( self )
-		Test.Case.describe( "response:writeHead( status ) HeadBuffer" )
+	Writehead = function( self )
+		Test.describe( "response:writeHead( status ) HeadBuffer" )
 		local r = makeResonse( )
 		r:writeHead( 200 )
 		assert( r.state   == Response.State.Written, format( "State must be %d but was %d", Response.State.Written, r.state ) )
@@ -56,8 +56,8 @@ local tests = {
 		assert( r.buf[1]:match("\r\n" .. dtStr ), format( "Response Buffer should match '%s' but found '%s'", dtStr, r.buf[1] ) )
 	end,
 
-	test_WriteheadLength = function( self )
-		Test.Case.describe( "response:writeHead( status, length ) HeadBuffer" )
+	WriteheadLength = function( self )
+		Test.describe( "response:writeHead( status, length ) HeadBuffer" )
 		local r = makeResonse( )
 		local l = 500
 		r.contentLength = l
@@ -67,8 +67,8 @@ local tests = {
 		assert( r.buf[1]:match("\r\nContent%-Length%: " ..l.. "\r\n"), "Response Buffer should match 'Content-Length: " ..l.. "' but found `%s`", l, r.buf[1] )
 	end,
 
-	test_WriteheadStatusCode = function( self )
-		Test.Case.describe( "response:writeHead( status ) Fetches correct status message" )
+	WriteheadStatusCode = function( self )
+		Test.describe( "response:writeHead( status ) Fetches correct status message" )
 		for cde,msg in pairs( Status ) do
 			local r = makeResonse( )
 			r:writeHead( cde )
@@ -77,8 +77,8 @@ local tests = {
 		end
 	end,
 
-	test_WriteheadHeader = function( self )
-		Test.Case.describe( "response:writeHead( status, headers ) HeadBuffer" )
+	WriteheadHeader = function( self )
+		Test.describe( "response:writeHead( status, headers ) HeadBuffer" )
 		local r = makeResonse( )
 		local l = 500
 		r:writeHead( 200, {['Content-Disposition']='attachment; filename="fname.ext"', ['ETag']='"737060cd8c284d8af7ad3082f209582d"'} )
@@ -90,8 +90,8 @@ local tests = {
 	end,
 
 	--  ##############               RESPONSE finish( )
-	test_FinishFinal = function( self )
-		Test.Case.describe( "response:finish( Message ) Sends content with length when called withoud writehead() or write() before" )
+	FinishFinal = function( self )
+		Test.describe( "response:finish( Message ) Sends content with length when called withoud writehead() or write() before" )
 		local r = makeResonse( )
 		local payload = '{"random":"data of the payload", "is":true, "just":"A simple JSON content"}'
 		r:finish( payload )
@@ -101,8 +101,8 @@ local tests = {
 		assert( r.buf[1]:match(payload), format( "Response Buffer should match `%s` but found `%s`", payload, r.buf[1]) )
 	end,
 
-	test_FinishFinalStatusCode = function( self )
-		Test.Case.describe( "response:finish( Message ) Sends content with length when called withoud writehead() or write() before" )
+	FinishFinalStatusCode = function( self )
+		Test.describe( "response:finish( Message ) Sends content with length when called withoud writehead() or write() before" )
 		local r = makeResonse( )
 		local payload = "This resource doen't exist"
 		r:finish( 404, payload )
@@ -113,8 +113,8 @@ local tests = {
 		assert( r.buf[1]:match(payload), format( "Response Buffer should match `%s` but found `%s`", payload, r.buf[1]) )
 	end,
 
-	test_WriteHeadThenFinish = function( self )
-		Test.Case.describe( "response:writeHead() -> response:finish( Message )" )
+	WriteHeadThenFinish = function( self )
+		Test.describe( "response:writeHead() -> response:finish( Message )" )
 		local r = makeResonse( )
 		local payload = "This is a simple response"
 		r:write( payload )
@@ -126,4 +126,3 @@ local tests = {
 
 }
 
-return Test( tests )

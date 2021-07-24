@@ -1,5 +1,3 @@
-# !../out/bin/lua
-
 ---
 -- \file    t_net_sck_bind.lua
 -- \brief   Test assuring Socket.bind() and socket:bind() handles all use cases
@@ -22,11 +20,10 @@ local Interface =   require( "t.Net.Interface" )
 local chkAdr    = t_require( "assertHelper" ).Adr
 local chkSck    = t_require( "assertHelper" ).Sck
 local config    = t_require( "t_cfg" )
-local fmt       = string.format
 
 
-local tests = {
-	beforeAll  = function( self, done )
+return {
+	beforeAll  = function( self )
 		-- UNIX only
 		-- TODO: make more universal
 		local h = io.popen( 'id' )
@@ -34,7 +31,6 @@ local tests = {
 		h:close()
 		self.isPriv = not not s:match( 'uid=0' ) -- isPriviledged? root?
 		self.host   = Interface.default( ).address.ip
-		done( )
 	end,
 
 	afterEach = function( self )
@@ -45,53 +41,53 @@ local tests = {
 		self.address = nil
 	end,
 
-	test_SBindCreateSockAndInanyAddress = function( self )
-		Test.Case.describe( "Socket.bind() --> creates a TCP IPv4 Socket and 0.0.0.0:0 address" )
+	SocketBindCreateSockAndIanyAddress = function( self )
+		Test.describe( "Socket.bind() --> creates a TCP IPv4 Socket and 0.0.0.0:0 address" )
 		self.sck, self.address = Socket.bind()
 		assert( chkSck( self.sck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' ) )
 		assert( chkAdr( self.address, "AF_INET", '0.0.0.0', 0 ) )
 	end,
 
-	test_SBindPrivPortThrowsPermission = function( self )
+	SocketBindPrivPortThrowsPermission = function( self )
 		-- This Test behaves differently when run as Root (it succeeds)
-		Test.Case.describe( "Socket.bind( priviledged port ) --> throws permission error" )
+		Test.describe( "Socket.bind( priviledged port ) --> throws permission error" )
 		if self.isPriv then
-			Test.Case.skip( "Test is for unauthorized behaviour" )
+			Test.skip( "Test is for unauthorized behaviour" )
 		end
 		local port   = config.privPort
 		local errMsg = "Can't bind socket to 0.0.0.0:"..port.." %(Permission denied%)"
 		local a,e    = Socket.bind( port )
 		assert( not a, "Should fail binding to priviledged port as non root" )
-		assert( e:match( errMsg ), fmt( "Expected error message:\n%s\n%s", errMsg, e ) )
+		assert( e:match( errMsg ), ("Expected error message:\n%s\n%s"):format( errMsg, e ) )
 	end,
 
-	test_SBindPortCreateSockAndInanyAddress = function( self )
-		Test.Case.describe( "Socket.bind( port ) --> creates TCP IPv4 Socket and 0.0.0.0:port address" )
+	SocketBindPortCreateSockAndInanyAddress = function( self )
+		Test.describe( "Socket.bind( port ) --> creates TCP IPv4 Socket and 0.0.0.0:port address" )
 		local port  = config.nonPrivPort
 		self.sck, self.address = Socket.bind( port )
 		assert( chkSck(  self.sck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' ) )
 		assert( chkAdr( self.address, "AF_INET", '0.0.0.0', port ) )
 	end,
 
-	test_SBindHostPortCreateSockAndAddress = function( self )
-		Test.Case.describe( "Socket.bind(host,port) --> creates TCP IPv4 Socket and address" )
+	SocketBindHostPortCreateSockAndAddress = function( self )
+		Test.describe( "Socket.bind(host,port) --> creates TCP IPv4 Socket and address" )
 		local port   = config.nonPrivPort
 		self.sck, self.address = Socket.bind( self.host, port )
 		assert( chkSck(  self.sck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' ) )
 		assert( chkAdr( self.address, "AF_INET", self.host, config.nonPrivPort ) )
 	end,
 
-	test_SBindAddressCreateSockOnly = function( self )
-		Test.Case.describe( "Socket.bind(address) --> creates TCP IPv4 Socket but no address" )
+	SocketBindAddressCreateSockOnly = function( self )
+		Test.describe( "Socket.bind(address) --> creates TCP IPv4 Socket but no address" )
 		local port   = config.nonPrivPort
 		local addr   = Address( self.host, port )
 		self.sck, self.adr = Socket.bind( addr )
 		assert( chkSck(  self.sck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' ) )
-		assert( addr == self.adr, fmt( "The returned address`%s` should equal input `%s`", self.adr, addr ) )
+		assert( addr == self.adr, ("The returned address`%s` should equal input `%s`"):format( self.adr, addr ) )
 	end,
 
-	test_SBindReturnBoundSocket = function( self )
-		Test.Case.describe( "Socket.bind(address) --> returning socket is bound; getsockname()" )
+	SocketBindReturnBoundSocket = function( self )
+		Test.describe( "Socket.bind(address) --> returning socket is bound; getsockname()" )
 		local port   = config.nonPrivPort
 		local addr   = Address( self.host, port )
 		self.sck, self.address = Socket.bind( addr )
@@ -103,16 +99,16 @@ local tests = {
 	-- Do the same test just on an existing socket s:bind( ... )
 	-- ##################################################################
 
-	test_sBindCreateInAnyAddress = function( self )
-		Test.Case.describe( "s:bind() --> creates a 0.0.0.0:0 address" )
+	socketBindCreateInAnyAddress = function( self )
+		Test.describe( "s:bind() --> creates a 0.0.0.0:0 address" )
 		self.sck     = Socket()
 		local adr,b = self.sck:bind()
 		assert( nil  == b, "The socket should not be returned" )
 		assert( chkAdr( adr, "AF_INET", '0.0.0.0', 0 ) )
 	end,
 
-	test_sBindPortCreateInAnyAddress = function( self )
-		Test.Case.describe( "s:bind( port ) --> creates 0.0.0.0:port address" )
+	socketBindPortCreateInAnyAddress = function( self )
+		Test.describe( "s:bind( port ) --> creates 0.0.0.0:port address" )
 		local port   = config.nonPrivPort
 		self.sck     = Socket()
 		local adr, b = self.sck:bind( port)
@@ -120,8 +116,8 @@ local tests = {
 		assert( chkAdr( adr, "AF_INET", '0.0.0.0', config.nonPrivPort ) )
 	end,
 
-	test_sBindHostPortCreateAddress = function( self )
-		Test.Case.describe( "s:bind(host,port) --> creates address" )
+	socketBindHostPortCreateAddress = function( self )
+		Test.describe( "s:bind(host,port) --> creates address" )
 		local port   = config.nonPrivPort
 		self.sck     = Socket()
 		local adr, b = self.sck:bind( self.host, port )
@@ -129,8 +125,8 @@ local tests = {
 		assert( chkAdr( adr, "AF_INET", self.host, config.nonPrivPort ) )
 	end,
 
-	test_sBindAddressCreateNothingButBinds = function( self )
-		Test.Case.describe( "s:bind(address) --> creates nothing but does bind" )
+	socketBindAddressCreateNothingButBinds = function( self )
+		Test.describe( "s:bind(address) --> creates nothing but does bind" )
 		local port   = config.nonPrivPort
 		local addr   = Address( self.host, port )
 		self.sck     = Socket()
@@ -141,29 +137,27 @@ local tests = {
 		assert( chkAdr( addr, "AF_INET", self.host, port ) )
 	end,
 
-	test_sBindWrongArgFails = function( self )
-		Test.Case.describe( "sck.bind( adr ) --> fails" )
+	socketBindWrongArgFails = function( self )
+		Test.describe( "sck.bind( adr ) --> fails" )
 		self.sck    = Socket()
 		local eMsg  = "bad argument #1 to `bind` %(expected `t.Net.Socket`, got `nil`%)"
 		local f     = function() local _,__ = self.sck.bind( ) end
 		local ran,e = pcall( f )
 		assert( not ran, "This should have failed" )
-		assert( e:match( eMsg), fmt( "Expected error message:\n%s\n%s", eMsg:gsub('%%',''), e ) )
+		assert( e:match( eMsg), ("Expected error message:\n%s\n%s"):format( eMsg:gsub('%%',''), e ) )
 	end,
 
-	test_sCloseBoundNoSockname = function( self )
-		Test.Case.describe( "Can't call getsockname on closed socket" )
+	socketCloseBoundNoSockname = function( self )
+		Test.describe( "Can't call getsockname on closed socket" )
 		local eMsg      = "Couldn't get peer address (Bad file descriptor)"
 		self.sck        = Socket()
 		local a,b       = self.sck:getsockname( )
 		assert( chkAdr( a, "AF_INET", '0.0.0.0', 0 ) )
 		self.sck:close( )
 		a,b       = self.sck:getsockname( )
-		assert( not a, fmt( "getsockname() should not have returned a value but got `%s`", a ) )
+		assert( not a, ("getsockname() should not have returned a value but got `%s`"):format( a ) )
 		assert( b:match( eMsg:gsub( "%(", "%%(" ):gsub( "%)", "%%)" ) ),
-		   fmt( "Error Message should have been `%s', but was `%s`", eMsg, b ) )
+		   ("Error Message should have been `%s', but was `%s`"):format( eMsg, b ) )
 	end,
 	--]]
 }
-
-return Test( tests )

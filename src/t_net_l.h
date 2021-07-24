@@ -83,7 +83,7 @@ int    p_net_ifc_get       ( lua_State *L, const char *name );
 int               luaopen_t_net_sck  ( lua_State *L );
 struct t_net_sck *t_net_sck_create_ud( lua_State *L );
 
-// t_net_sck_implementation...
+// t_net_sck platform specific implementation (interface)
 int    p_net_sck_open( void );
 int    p_net_sck_createHandle   (               struct t_net_sck *sck, int family, int type, int protocol );
 int    p_net_sck_listen         (               struct t_net_sck *sck, const int bl );

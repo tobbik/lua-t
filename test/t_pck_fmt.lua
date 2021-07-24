@@ -16,11 +16,11 @@ local fmt     = string.format
 local NB      = Pack.charbits
 
 
-local tests = {
+return {
 
 	-- Test cases
-	test_SizedIntegerPacker = function( self )
-		Test.Case.describe( "Sized Integer Packers    'i1..n', 'I1..n'" )
+	SizedIntegerPacker = function( self )
+		Test.describe( "Sized Integer Packers    'i1..n', 'I1..n'" )
 		local byteSize = (math.tointeger( math.log( math.maxinteger, 2 ) ) + 1) // NB
 		for i=1,byteSize do
 			for k,v in pairs( { b='>', l='<' } ) do
@@ -32,8 +32,8 @@ local tests = {
 		end
 	end,
 
-	test_FloatPacker = function( self )
-		Test.Case.describe( "Float Packers            'f', 'd', 'n'" )
+	FloatPacker = function( self )
+		Test.describe( "Float Packers            'f', 'd', 'n'" )
 		local byteSize = (math.tointeger( math.log( math.maxinteger, 2 ) ) + 1) // NB
 		for k,v in pairs( { b='>', l='<' } ) do
 			local pfl = Pack( v..'f' )
@@ -45,8 +45,8 @@ local tests = {
 		end
 	end,
 
-	test_StandardIntegerPacker = function( self )
-		Test.Case.describe( "Standard Integer Packers 'bB','hH','iI','lL','jJ','T'" )
+	StandardIntegerPacker = function( self )
+		Test.describe( "Standard Integer Packers 'bB','hH','iI','lL','jJ','T'" )
 		local sizeFormat = { b=1, B=1, h=2, H=2, i=4, I=4, l=8, L=8,
 		                     j=Pack.numsize, J=Pack.numsize,
 		                     T=Pack.numsize }
@@ -59,8 +59,8 @@ local tests = {
 		end
 	end,
 
-	test_SequenceConstructor = function( self )
-		Test.Case.describe( "Different Sequence Packers: P('b','B','h','H')  P('bBhH') P('b B h H')" )
+	SequenceConstructor = function( self )
+		Test.describe( "Different Sequence Packers: P('b','B','h','H')  P('bBhH') P('b B h H')" )
 		local f  = { 'b','B','h','H','i','I' }
 		local p1 = Pack( table.unpack( f      ) )   --  Pack('b','B','h','H','i','I')
 		local p2 = Pack( table.concat( f, ''  ) )   --  Pack('bBhHiI')
@@ -74,8 +74,8 @@ local tests = {
 		end
 	end,
 
-	test_SizedBitPacker = function( self )
-		Test.Case.describe( "Sized Bit Packers        'r1..n', 'R1..n'" )
+	SizedBitPacker = function( self )
+		Test.describe( "Sized Bit Packers        'r1..n', 'R1..n'" )
 		local mxBit = math.tointeger( math.log( math.maxinteger, 2 ) )
 		for i=1,mxBit do
 			local ps = Pack( 'r' .. i )
@@ -85,8 +85,8 @@ local tests = {
 		end
 	end,
 
-	test_GenericBitPacker = function( self )
-		Test.Case.describe( "Generic Bit Packers      'r', 'R', 'v'" )
+	GenericBitPacker = function( self )
+		Test.describe( "Generic Bit Packers      'r', 'R', 'v'" )
 		local ps = Pack( 'r' )
 		local pu = Pack( 'R' )
 		local pb = Pack( 'v' )
@@ -95,16 +95,16 @@ local tests = {
 		T.assert( pb,  'Bool' , 0, 1 )
 	end,
 
-	test_StringPacker = function( self )
-		Test.Case.describe( "Sized String Packers     'c1, ... ,cMax'" )
+	StringPacker = function( self )
+		Test.describe( "Sized String Packers     'c1, ... ,cMax'" )
 		for i,n in pairs( {1,7,36,583,9523,12845,778293,1234567,87654321} ) do
 			local pc = Pack( 'c' .. n )
 			T.assert( pc,  'Raw'..n, n, n*NB )
 		end
 	end,
 
-	test_ConstructorReuse = function( self )
-		Test.Case.describe( "Create Packer from Pack.Field instances" )
+	ConstructorReuse = function( self )
+		Test.describe( "Create Packer from Pack.Field instances" )
 		local fmt = '>I3<i2bB>I5<I4h'
 		local p1  = Pack( fmt )
 		T.assert( 7 == #p1, "Got Packer length: %d; expected:%d", #p1, 7 )
@@ -123,8 +123,8 @@ local tests = {
 		end
 	end,
 
-	test_OutOfRangePackerSizeFails = function( self )
-		Test.Case.describe( "Pack( 'i17') " )
+	OutOfRangePackerSizeFails = function( self )
+		Test.describe( "Pack( 'i17') " )
 		local m = 'size %%(%d%%) out of limits %%[1 … 8%%]'
 		local f = function( i ) return Pack('i'..i) end
 		local r,e = pcall( f, 0 )
@@ -136,10 +136,3 @@ local tests = {
 	end,
 
 }
-
---t =  Test( tests )
---t()
---print(t)
-
-return Test( tests )
-

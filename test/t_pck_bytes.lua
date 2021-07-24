@@ -16,10 +16,10 @@ local        unpack,        char,      random,      tpack,      tremove  =
       string.unpack, string.char, math.random, table.pack, table.remove
 
 
-local tests = {
+return {
 	-- Test cases
-	test_SingleByte = function( self )
-		Test.Case.describe( "Single Byte Integer Packer" )
+	SingleByte = function( self )
+		Test.describe( "Single Byte Integer Packer" )
 		local buf    = Buffer( 1 )
 		local pi, pu = Pack('b'), Pack('B')
 		local max    = 0xFF
@@ -38,8 +38,8 @@ local tests = {
 		end
 	end,
 
-	test_ShortInteger = function( self )
-		Test.Case.describe( "Short (2 Byte) Integer Packer" )
+	ShortInteger = function( self )
+		Test.describe( "Short (2 Byte) Integer Packer" )
 		local buf                = Buffer( 2 )
 		local puB, piB, puL, piL = Pack('>H'),Pack('>h'),Pack('<H'),Pack('<h')
 		local mx, max            = 0xFF,0xFFFF
@@ -71,11 +71,11 @@ local tests = {
 		end
 	end,
 
-	test_SequenceOfMixedBytes = function( self )
+	SequenceOfMixedBytes = function( self )
 		-- b   B   <I5          n                    >h     <f              T
 		-- ä       BcDeF        gHiJkLmN              ö     PqRs            TÜvWxYz
 		-- -61 132 439250862946 2.1271305064836e+223 -15466 1040748380160.0 6519339205175067508
-		Test.Case.describe( "Sequence of bytes (integer and float)" )
+		Test.describe( "Sequence of bytes (integer and float)" )
 		local s = 'ÄbCdEfGhIjKlMnÖpQrStüVwXyZ'
 		local f = 'bB<I5n>h<fT'
 		local p = Pack( f )
@@ -88,8 +88,8 @@ local tests = {
 		end
 	end,
 	
-	test_Float = function( self )
-		Test.Case.describe( "Float Packers 'f', 'd', 'n'" )
+	Float = function( self )
+		Test.describe( "Float Packers 'f', 'd', 'n'" )
 		local sfL, sfB = "hGfE"    , "EfGh"
 		local sdL, sdB = "HgFeDcBa", "aBcDeFgH"
 
@@ -109,8 +109,8 @@ local tests = {
 		T.assert( pnL(sdL) == pnB(sdB), "Expected %f, got %f", pnB(sdB), pnB(sdL) )
 	end,
 
-	test_SizedRawByteSequences = function( self )
-		Test.Case.describe( "Sized raw byte sequence Packers(strings) 'c1..n'" )
+	SizedRawByteSequences = function( self )
+		Test.describe( "Sized raw byte sequence Packers(strings) 'c1..n'" )
 		local n = 5000
 		local b = Buffer(n)
 		for i=1,n do b:write( char( random(0,255) ), i ) end
@@ -122,10 +122,3 @@ local tests = {
 	end,
 
 }
-
---t =  Test( tests )
---t()
---print(t)
-
-return Test( tests )
-

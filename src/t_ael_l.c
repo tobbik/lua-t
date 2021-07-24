@@ -412,6 +412,35 @@ lt_ael_time( lua_State *L )
 	return 1;
 }
 
+/**--------------------------------------------------------------------------
+ * System call wrapper to sleep (Lua lacks that)
+ *             Lua has no build in sleep method.
+ * \param   L    Lua state.
+ * \lparam  int  milliseconds to sleep
+ * \return  int  # of values pushed onto the stack.
+ * --------------------------------------------------------------------------*/
+static int
+lt_ael_sleep( lua_State *L )
+{
+#ifdef _WIN32
+	fd_set dummy;
+	int s;
+#endif
+	int            ms = luaL_checkinteger( L, -1 );
+	struct timeval tv;
+
+	tv.tv_sec  = ms/1000;
+	tv.tv_usec = (ms % 1000) * 1000;
+#ifdef _WIN32
+	s = socket( PF_INET, SOCK_STREAM, IPPROTO_TCP );
+	FD_ZERO( &dummy );
+	FD_SET( s, &dummy );
+	select( 0, 0, 0, &dummy, &tv );
+#else
+	select( 0, 0, 0, 0, &tv );
+#endif
+	return 0;
+}
 
 /**--------------------------------------------------------------------------
  * Prints out the Loop.
@@ -513,7 +542,9 @@ lt_ael_showloop( lua_State *L )
 
 
 /**--------------------------------------------------------------------------
- * Revoe every item and reference from the loop.
+ * Remove every taskl and every even from the loop.
+ * Because that makes them go out of scope, they will also remove their own
+ * uservalues.
  * \param   t_ael    Loop Struct.
  * \return  int  # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
@@ -566,7 +597,6 @@ lt_ael__index( lua_State *L )
 	}
 	else
 	{
-	   lua_getiuservalue( L, 1, T_AEL_DSCIDX );         //S: ael idx nds
 		fd = t_ael_getHandle( L, 2, 0 );
 		if (! fd)  // last chance, it might be a t.Loop.Task
 		{
@@ -574,7 +604,10 @@ lt_ael__index( lua_State *L )
 			lua_rawget( L, -2 );
 		}
 		else
-			lua_rawgeti( L, -1, fd );                     //S: ael idx nds dnd
+		{
+			lua_getiuservalue( L, 1, T_AEL_DSCIDX );         //S: ael hdl nds
+			lua_rawgeti( L, -1, fd );                        //S: ael hdl nds dnd
+		}
 	}
 
 	return 1;
@@ -594,6 +627,7 @@ static const struct luaL_Reg t_ael_fm [] = {
  * --------------------------------------------------------------------------*/
 static const luaL_Reg t_ael_cf [] = {
 	  { "time",          lt_ael_time          }
+	, { "sleep",         lt_ael_sleep         }
 	, { NULL,  NULL }
 };
 
@@ -615,6 +649,7 @@ static const struct luaL_Reg t_ael_m [] = {
 	, { "stop",          lt_ael_stop          }
 	, { "clean",         lt_ael_clean         }
 	, { "time",          lt_ael_time          }
+	, { "sleep",         lt_ael_sleep         }
 #ifdef DEBUG
 	, { "show",          lt_ael_showloop      }
 #endif

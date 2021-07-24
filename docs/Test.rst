@@ -1,252 +1,177 @@
-lua-t T.Test - The Unit Test Library
-++++++++++++++++++++++++++++++++++++
+lua-t Test - The Test Case Library
+++++++++++++++++++++++++++++++++++
 
 
 Overview
 ========
 
-``Test`` provides functionality to create and run unit test suites.
-``Test`` allows to write synchronous as well as asynchronous test (callback
-based) and it allows them to be mixed within the same ``Test`` suite.
-
-
-Summary
-=======
-
- - passing a table of ``test_*`` named functions to the ``Test( )``
-   constructor will result in tests running in random order.
- - an actual test case **must start with** ``test_`` as function name.
-   Other names like ``whatEver`` are just gonna be available within the
-   `Test`` as ``self.whatEver``.
- - when persent, the global test suite hooks ``beforeAll( self, done )`` and
-   ``afterAll( self, done )`` **must call** the ``done( )`` callback even
-   when all tests in the test suite are of synchronous nature.
- - running a ``Test`` suite and checking for success is as easy as executing
-   it: ``success = t()``.
+Test is an internal class providing functionality around functions
+executed as a test.  When running a function as a test the will be a result
+be returned indicating the tests success and metrics.
 
 
 Usage
 =====
 
-Some general information on how to write and invoke Test suites.
-
-
-Test runner
------------
-
-``Test`` does not come with a console based runner executable.  This is by
-design because the actual behaviour of a ``Test`` instance is defined by
-metamethods and once a ``Test`` suite is instantiated it gets executed by
-just calling it.
-
-In order to create a test runner that can handle multiple test suites a
-small Lua script is needed that wraps the test suites.  This way it can be
-easily catered towards the application.  In a very simple scenario this
-would look like the following.  Firstly, the several unit test suites will
-get defined as modules:
-
-.. code:: lua
-
-  -- test1.lua
-  Test = require't'.Test
-  return Test(
-     { ... test definition ...}
-  )
-
-A test runner would require all the test suites as modules, potentially
-assisted by some directory reader which ``requires()`` the contents of a
-directory recursively.  Then the runner would iterate over all required
-tests and execute them:
-
-.. code:: lua
-
-  -- test_runner.lua
-  local t_names = { 'test1', 'test2', 'test3', 'test4', ... }
-  for i=i,#t_names do
-     local tst = require(t_names[i])
-     if not tst( ) then
-        print( "Test Suite:" .. t_names[i] .. ' failed!' )
-        print( tst )
-  end
-
-
-Test Execution Order
---------------------
-
-``Test`` can execute test cases in a guaranteed order or, in true unit
-testing fashion, in random order.  The behaviour can be selected via the way
-the ``Test( )`` constructor gets called.  For guaranteed order, create an
-empty ``Test`` instance first and then assign test case functions to it.
-When running the suite tests will get executed in the order they got
-assigned to the ``Test`` instance:
-
-.. code:: lua
-
-  t = Test( )
-  t.test_one   = function( self ) ... end
-  t.test_two   = function( self ) ... end
-  t.test_three = function( self ) ... end
-  t( ) -- this will run the tests in the order specified
-
-To achieve randomly ordered test suite `Test( tbl )` constructor will accept
-a table that has all test functions defined as members.  Upon constructing
-the `Test` instance all members of the table will be iterated via `pairs()`.
-That order will be used as execution order for the `Test` instance.  That
-means the order gets randomized at construction time and each consecutive
-execution of the entire suite will happen in the same random order:
-
-.. code:: lua
-
-  t = Test( {
-     test_one   = function( self ) ... end,
-     test_two   = function( self ) ... end,
-     test_three = function( self ) ... end
-  } )
-  t( ) -- this will run the tests in the order pairs() would iterate over
-       -- the table
-
-
-Constructing a Test Suite
--------------------------
-
-To create a ``Test.Case`` in a ``Test`` suite a function must be assigned to
-the case which name **must begin** with ``test_*``.  When such a function
-with a proper name is passed to ``Test`` it will invoke the ``Test.Case``
-constructor with the proper parameters.  If the function name starts with
-``test_cb_*`` the constructed ``Test.Case`` will be able to execute
-asynchronously because the test runner will pass in a ``done`` callback.
-Any other value that gets assigned to the table will be simply an instance
-variable that within the test is available by ``self.variable_name``.  It is
-**not possible** to create numerically indexed ``Test`` suite elements
-because the numeric part of the table is reserved to define the execution
-order.
-
-
-Hooks
------
-
-`Test` provides some hooks which will influence test execution.  Each of the
-hooks is optional:
-
-``t.beforeAll = function( self, done )``
-  The hook gets called before executing any test case in the suite.  If this
-  hook is present, note that the execution **requires** to be finished by
-  calling the ``done( )`` callback.  The beforeAll hook is especially useful
-  if a Test suite depends on the existence of a remote server or similar
-  things when a connection needs to be setup before executing all tests.  If
-  no elaborate logic is needed to be performed in the beforeAll hook it is
-  simpler to just make the values part of the Test suite definition like
-  this:
-
-.. code:: lua
-
-  tbl = {
-     testValueGenerator = TestValueGenerator(),
-     beforeEach = function( self )
-        self.str = self.testValueGenerator:getString( 500 )
-     end,
-     test_StringForLength = function( self )
-        assert( #self.str == 500, "String should be 500 long" )
-     end
-   }
-   t = Test( tbl )
-   t( )
-
-``t.afterAll = function( self, done )``
-  The hook gets called after all tests in the suite got executed.  If this
-  hook is present, note that the execution **requires** to be finished by
-  calling the ``done( )`` callback.
-
-For other hooks (``beforeEach/afterEach``) that are ``Test.Case`` specific
-refer to the separate ``Test.Case`` documentation.
-
-
-Test Execution Filter
----------------------
-
-Executing the ``Test`` suite can be limited by names of the test functions.
-This allows to group tests or run only single test while the suite will
-still execute all the hooks.  The filters are using ``string.match()`` which
-means Lua pattern apply.
-
-.. code:: lua
-
-  t = Test( {
-     beforeAll  = function( self, done ) ...; done() end,
-     afterAll   = function( self, done ) ...; done() end,
-     test_odd_one   = function( self ) ... end,
-     test_even_two  = function( self ) ... end,
-     test_odd_three = function( self ) ... end
-     test_even_four = function( self ) ... end
-  } )
-  t( 'odd' ) -- this will run the global hooks an all functions that match
-             -- the pattern 'odd' in their name
-
-  t( 'even' ) -- this will run the global hooks an all functions that match
-              -- the pattern 'even' in their name
-
-  t( nil, 'even' ) -- this will run the global hooks an all functions that
-                   -- DO NOT match the pattern 'even' in their name
+Some general information on how to write and invoke ``Test``.
 
 API
 ===
 
+
 Class Members
 -------------
 
-``boolean hasPassed, int pass, int skip, int todo, int time = Test.hasPassed( Test t )``
-  Allows to get metrics from an already ran Test suite.
+``void Test.describe( 'Rich description for this Test.Case' )``
+  This is meant to be called from within a ``Test.Case``.  By default the
+  test is called *"Unnamed test"*. Calling this function will overwrite that
+  default description.
 
-  - hasPassed   Was the Test run successful (nil if any test hasn't run)
-  - pass        Number of Test.Case instances ran successfully
-  - skip        Number of Test.Case instances that were skipped
-  - todo        Number of Test.Case instances that were expected to fail
-  - time        Accumulated runtime of the entire test suite, in millisecs
+  .. code:: lua
+
+    t.WhatEverToTest = function( self )
+      Test.Case.describe( "Explain in nicer words what it does" )
+      ... implementation ...
+    end
+
+``void Test.todo( 'The reason why this Test.Case shall fail' )``
+  This is meant to be called from within a ``Test`` function.  If a call to
+  ``Test.todo()`` happens the test runner will not care if that the test
+  fails and instead returns a ``pass`` status.
+
+``void Test.skip( 'The reason why this Test.Case shall be skipped' )``
+  This is meant to be called from within a ``Test`` function.  It will skip
+  the test at the point where it is called and it will set the skip reason
+  so it can be displayed in the summary.  The function is implemented as a
+  controlled call to ``error()`` which will invoke the traceback for the
+  wrapping ``xpcall()``.  The traceback will recognize the special
+  invocation and act accordingly.  A side effect of implementing skip as a
+  function call may be that a ``Test`` can fail before ``skip()`` gets
+  called.  So it is advisable to call ``skip()`` early in a test function.
+  However, it has the advantage to call ``skip()`` based on a condition:
+
+  .. code:: lua
+
+    t.SkipWhenCalledTooDarnEarly = function( )
+      if os.date('*t').hour < 10 then
+        Test.skip("Sorry, I' don't wake before coffee ...")
+      end
+      ... code that fails without coffee ...
+    end
+
+``string src = getFunctionSource( function f )``
+  Attempts to read the source of a function definition from the file itself.
+  It depends on the source being Lua code that was read from a file and not
+  from <stdin> or othe sources.
+
+``string tapString = Test.tapOutput( tst )``
+  Returns the ``Test`` result as a TAP complient YAML output.
+
+  .. code:: yaml
+
+    ---
+    description: Cancel existing and running Task
+    executionTime: 101
+    status: FAIL
+    message: This task function should not have been executed!
+    location: /home/tobias/RaspberryPi/alarm/mygit/lua-t/test/t_ael.lua:13
+    traceback: 
+      [C]: in function 'assert'
+      /home/tobias/RaspberryPi/alarm/mygit/lua-t/test/t_ael.lua:13: in function </home/tobias/RaspberryPi/alarm/mygit/lua-t/test/t_ael.lua:12>
+      [C]: in method 'run'
+      /home/tobias/RaspberryPi/alarm/mygit/lua-t/test/t_ael.lua:52: in function 't_ael.CancelTask'
+      [C]: in function 'xpcall'
+      ...spberryPi/alarm/mygit/lua-t/out/share/lua/5.4/t/Test.lua:115: in upvalue 'Test'
+      ...yPi/alarm/mygit/lua-t/out/share/lua/5.4/t/Test/Suite.lua:95: in upvalue 'Suite'
+      /home/tobias/RaspberryPi/alarm/mygit/lua-t/test/runner.lua:32: in local 'run'
+      /home/tobias/RaspberryPi/alarm/mygit/lua-t/test/runner.lua:45: in main chunk
+      [C]: in ?
+    testSource: 
+      44:   CancelTask = function( self )
+      45:     Test.describe( "Cancel existing and running Task" )
+      46:     local tsk1, tsk2 = nil, nil
+      47:     local t1 = function( )
+      48:       self.loop:cancelTask( tsk2 )
+      49:     end
+      50:     tsk1 = self.loop:addTask( 500 , t1 )
+      51:     tsk2 = self.loop:addTask( 100, taskNotRun )
+      52:     self.loop:run( )
+      53:   end,
+    failedSource: 
+      12: local taskNotRun = function( )
+      13:   assert( false, "This task function should not have been executed!" )
+      14: end
+    ...
+
 
 Class Metamembers
 -----------------
 
-``Test tc = Test( [ table t ] )   [__call]``
-  Creates a new ``Test`` suite instance.  If a table is passed it will be
-  converted into a unit test.  The table can not contain **ANY** numeric
-  keys.
+``bool ok, Test tst = Test( function tf, [... args] )   [__call]``
+  Creates a new ``Test``.  ``function tf`` is the test function and will be
+  called protected by ``xpcall( tf )`` with the arguments passed in
+  ``args``. ``bool ok`` provides high level information if the test was
+  successful.
 
 
 Instance Members
 ----------------
 
-``Test`` instances do not have any special instance members.  Any test that
-gets passed to a ``Test`` instance as a ``test_*`` named test function gets
-converted to a ``Test.Case`` instance.  They have their own documentation.
+
+``string s = testInstance.description``
+  The name of the ``Test``.  It has the value of *"Unnamed test"* when
+  created.  It can be changed during the execution of the ``Test``
+  function by calling ``Test.describe()``.
+
+``string m = testInstance.message``
+  If execution fails the message contains the error message.  If a call to
+  ``assert()`` fails it contains the assert message.  If the tes function
+  called ``Test.skip(msg)`` or ``Test.todo(msg)`` the value of ``string
+  msg`` will end up in ``testInstance.message``.
+
+``string t = testInstance.traceback``
+  If execution fails the message contains the traceback gathered by the
+  virtual machine.
+
+``string l = testInstance.location``
+  If execution fails the location contains ``filepath:linenumber``.
+
+``string s = testInstance.testSource``
+  Contains the source code of the test case function .
+
+``string s = testInstance.failedSource``
+  If execution fails ``T.Test`` attempts to locate the execution failure.
+  This should containm the source code of the function where execution
+  failed.
+
+``boolean p = testInstance.pass``
+  True if the test case passed, false if it failed.  If execution failed but
+  ``Test.todo()`` was called ``testInstance.pass`` is still ``true``.
+
+``int milliseconds = testInstance.executionTime``
+  Measures the time to execute the actual ``Test`` function.
+
+``int milliseconds = testInstance.runTime``
+  If executed withi a ``Test.Suite`` context it measures the time to execute
+  the ``Test`` function and the ``Test.Suite`` hooks, such as
+  ``beforeEach()`` and ``afterEach()``.
+
+``string status = testInstance.status``
+  Contains string describing the execution status.  There are four
+  possibilities: ``PASS``, ``FAIL``, ``SKIP`` and ``TODO``.
+
 
 
 Instance Metamembers
 --------------------
 
-``boolean x = Test t( [Test.Context ctx] )  [__call]``
-  Executes the `Test t` suite.  Returns true or false depending on weather
-  the execution of the test suite was successful.  The boolean return only
-  works for synchronous tests.  As soon as there is a single asynchronous
-  test case in the ``Test t`` the return value is always ``true``.  If no
-  context is passed, the ``Test`` execution will create an internal
-  ``test.Context`` with default values.
+``string desc = Test( function tf, [... args] )   [__tostring]``
+  Creates a new ``Test``.  ``function tf`` is the test function and will be
+  called protected by ``xpcall( tf )`` with the arguments passed in
+  ``args``. ``bool ok`` provides high level information if the test was
+  successful.
 
-``boolean x = Test t( [string include_pattern, string exclude_pattern] )  [__call]``
-  Executes the `Test t` suite.  Instead of passing in an entire
-  ``Test.Context ctx`` this shortcut allows to pass in only the ``include``
-  and ``exclude`` pattern. This basically is the same as:
-
-  .. code:: lua
-
-    local ctx = Test.Context( include_pattern, exclude_pattern )
-    local x   = t( ctx )
-
-  On details how the include and exclude patterns are evaluated please refer
-  to ``Test.Context`` documentation.
-
-``string s = tostring( Test t )  [__toString]``
-  Returns a string which is a TAP report of the ``Test`` suite.
-
-``int len = #testInstance  [__len]``
-  Returns the number of ``Test.Case`` instances in this suite.
-
+``string s = tostring( Test tst )  [__tostring]``
+  Returns the description of the ``Test tst``.  If the test has a ``SKIP``
+  or a ``TODO`` status the string will be composed TAP compliant by
+  appending *# SKIP: ``test,message``* to the description.

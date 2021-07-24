@@ -15,10 +15,10 @@ local        unpack,        char,        rep,        format  =
 
 local NB      = Pack.charbits
 
-local tests = {
+return {
 	-- Test cases
-	test_SetNegativeIntForUnsignedPackerFail = function( self )
-		Test.Case.describe( "Set negative value to unsigned packer fails" )
+	SetNegativeIntForUnsignedPackerFail = function( self )
+		Test.describe( "Set negative value to unsigned packer fails" )
 		local e ="packed value must fit the value range for the packer size"
 		local b = Buffer( 2 )
 		local p = Pack( 'H' )
@@ -28,8 +28,8 @@ local tests = {
 		T.assert( m:match( e ), "Error Message should have been `%s', but was `%s`", e, m )
 	end,
 
-	test_SetNumberTooBigUnsignedPackerFail = function( self )
-		Test.Case.describe( "Set too high value to unsigned packer fails" )
+	SetNumberTooBigUnsignedPackerFail = function( self )
+		Test.describe( "Set too high value to unsigned packer fails" )
 		local e ="packed value must fit the value range for the packer size"
 		local b = Buffer( 2 )
 		local p = Pack( 'H' )
@@ -39,8 +39,8 @@ local tests = {
 		T.assert( m:match( e ), "Error Message should have been `%s', but was `%s`", e, m )
 	end,
 
-	test_SetNumberTooBigsignedPackerFail = function( self )
-		Test.Case.describe( "Set too high value to signed packer fails" )
+	SetNumberTooBigsignedPackerFail = function( self )
+		Test.describe( "Set too high value to signed packer fails" )
 		local e ="packed value must fit the value range for the packer size"
 		local b = Buffer( 2 )
 		local p = Pack( 'h' )
@@ -50,10 +50,3 @@ local tests = {
 		T.assert( m:match( e ), "Error Message should have been `%s', but was `%s`", e, m )
 	end,
 }
-
---t =  Test( tests )
---t()
---print(t)
-
-return Test( tests )
-

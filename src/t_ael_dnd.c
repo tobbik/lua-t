@@ -97,6 +97,12 @@ lt_ael_dnd__gc( lua_State *L )
 {
 	struct t_ael_dnd __attribute__ ((unused)) *dnd  = t_ael_dnd_check_ud( L, 1, 1 );
 	//printf( "__GCing:  node\n" );
+	// TODO: shall this keep a reference to ael so we can grab the state and run
+	//       p_ael_removehandle_impl() so we make sure a garbage collection
+	//       removes the descriptor from the system specific mechanisms?  The
+	//       problem is that a node does not have to be active and technically
+	//       only the ael itself controls what nodes are and are not active.
+	//       Therefor it might be enough to control that in the ael itself only
 	return 0;
 }
 

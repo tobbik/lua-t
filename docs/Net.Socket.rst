@@ -560,17 +560,14 @@ Integer Socket options
 ``int n = sck.sendlow          [read/write] (SO_SNDLOWAT)``
   Minimum number of bytes to process for socket output operations.
 
-
-T.Time (struct timeval) Socket options
-''''''''''''''''''''''''''''''''''''''
-
-``t.Time t = sck.recvtimeout      [read/write] (SO_RCVTIMEO)``
+``int ms = sck.recvtimeout     [read/write] (SO_RCVTIMEO)``
   Timeout value that specifies the maximum amount of time an input function
-  waits until it completes.
+  waits until it completes.  The value is in milliseconds.
 
-``t.Time t = sck.sendtimeout      [read/write] (SO_SNDTIMEO)``
+``int ms = sck.sendtimeout     [read/write] (SO_SNDTIMEO)``
   Timeout value specifying the amount of time that an output function blocks
-  because flow control prevents data from being sent.
+  because flow control prevents data from being sent.  The value is in
+  milliseconds.
 
 
 String Socket Options

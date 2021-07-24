@@ -37,15 +37,15 @@ local makeRequest = function()
 	}, 1 )
 end
 
-local tests = {
+return {
 	afterEach = function( self )
 		tReq, tRes = nil,nil
 	end,
 
 	-- Test cases
 	-- CONSTRUCTOR TESTS
-	test_Constructor = function( self )
-		Test.Case.describe( "Http.Request( callback ) creates proper Request" )
+	Constructor = function( self )
+		Test.describe( "Http.Request( callback ) creates proper Request" )
 		local r = makeRequest( )
 		assert( r.state   == Request.State.Method, format( "State must be %d but was %d", Request.State.Method, r.state ) )
 		assert( r.method  == Method.ILLEGAL, format( "Method must be %d but was %d", Method.ILLEGAL, r.method ) )
@@ -53,8 +53,8 @@ local tests = {
 	end,
 
 	-- RECEIVE TESTS
-	test_ReceiveMethod = function( self )
-		Test.Case.describe( "request:recv() partial parses METHOD only" )
+	ReceiveMethod = function( self )
+		Test.describe( "request:recv() partial parses METHOD only" )
 		local r = makeRequest( )
 		local s = "GET /index.html?a"
 		r:receive( s )
@@ -63,8 +63,8 @@ local tests = {
 		assert( r.version == Version.ILLEGAL, format( "Version must be %d but was %d", Version.ILLEGAL, r.method ) )
 	end,
 
-	test_ReceiveUrl = function( self )
-		Test.Case.describe( "request:recv() partial parses URL without query" )
+	ReceiveUrl = function( self )
+		Test.describe( "request:recv() partial parses URL without query" )
 		local r = makeRequest( )
 		local u = '/go/wherever/it/wil/be/index.html'
 		local s = "GET " ..u.." "
@@ -75,8 +75,8 @@ local tests = {
 		assert( nil  == r.query, "Query table mustn't exist" )
 	end,
 
-	test_ReceiveUrlAndQuery = function( self )
-		Test.Case.describe( "request:recv() partial parses URL with query" )
+	ReceiveUrlAndQuery = function( self )
+		Test.describe( "request:recv() partial parses URL with query" )
 		local r = makeRequest( )
 		local u = '/go/wherever/it/wil/be/index.html?alpha=1&beta=2&c=gamma&4=delta'
 		local s = "GET " ..u.." "
@@ -92,8 +92,8 @@ local tests = {
 	end,
 
 	-- ################################### HTTP VERSION
-	test_NotReceiveHttpVersion = function( self )
-		Test.Case.describe( "Not Trigger HTTP Version parsing before fully recieved line" )
+	NotReceiveHttpVersion = function( self )
+		Test.describe( "Not Trigger HTTP Version parsing before fully recieved line" )
 		local r = makeRequest( )
 		local v = Version[3]                   -- HTTP/1.1
 		-- must have 2 more Bytes if \r\n or 1 more if just \n
@@ -103,8 +103,8 @@ local tests = {
 		assert( r.state   == Request.State.Version, format( "State must be %d but was %d", Request.State.Version, r.state ) )
 	end,
 
-	test_ReceiveHttpVersion = function( self )
-		Test.Case.describe( "Full Line triggers parsing of HTTP Version" )
+	ReceiveHttpVersion = function( self )
+		Test.describe( "Full Line triggers parsing of HTTP Version" )
 		local r = makeRequest( )
 		local v = Version[3]                   -- HTTP/1.1
 		-- must have 2 more Bytes if \r\n or 1 more if just \n
@@ -114,8 +114,8 @@ local tests = {
 		assert( r.version == Version[ v ]         , format( "Version must be %d but was %d", Version[v], r.version ) )
 	end,
 
-	test_ReceiveHttpVersionDoubleLFCR = function( self )
-		Test.Case.describe( "HTTP Version trailing double \\r\\n\\r\\n triggers Request DONE" )
+	ReceiveHttpVersionDoubleLFCR = function( self )
+		Test.describe( "HTTP Version trailing double \\r\\n\\r\\n triggers Request DONE" )
 		local r = makeRequest( )
 		local v = Version[3]                   -- HTTP/1.1
 		-- must have 2 more Bytes if \r\n or 1 more if just \n
@@ -126,8 +126,8 @@ local tests = {
 		assert( r.version == Version[ v ]      , format( "Version must be %d but was %d", Version[v], r.version ) )
 	end,
 
-	test_ReceiveHttpVersionDoubleLF = function( self )
-		Test.Case.describe( "HTTP Version trailing double \\n\\n triggers Request DONE" )
+	ReceiveHttpVersionDoubleLF = function( self )
+		Test.describe( "HTTP Version trailing double \\n\\n triggers Request DONE" )
 		local r = makeRequest( )
 		local v = Version[3]                   -- HTTP/1.1
 		-- must have 2 more Bytes if \r\n or 1 more if just \n
@@ -140,8 +140,8 @@ local tests = {
 
 
 	-- ################################# HTTP Request Headers
-	test_ReceiveHeaders = function( self )
-		Test.Case.describe( "request:recv() partial parses Headers" )
+	ReceiveHeaders = function( self )
+		Test.describe( "request:recv() partial parses Headers" )
 		local r = makeRequest( )
 		-- taken from Wikipedia examples
 		local t = {
@@ -193,8 +193,8 @@ local tests = {
 		assert( r.state == Request.State.Body, format( "State must be %d but was %d", Request.State.Body, r.state ) )
 	end,
 
-	test_ReceiveHeadersCorrectCasing = function( self )
-		Test.Case.describe( "request:recv() correct Headers Key Casing" )
+	ReceiveHeadersCorrectCasing = function( self )
+		Test.describe( "request:recv() correct Headers Key Casing" )
 		local r = makeRequest( )
 		-- taken from Wikipedia examples
 		local t = {
@@ -246,8 +246,8 @@ local tests = {
 		assert( r.state == Request.State.Body, format( "State must be %d but was %d", Request.State.Body, r.state ) )
 	end,
 
-	test_ReceiveBadHeaders = function( self )
-		Test.Case.describe( "request:recv() Unparsable Headers will be enumerated" )
+	ReceiveBadHeaders = function( self )
+		Test.describe( "request:recv() Unparsable Headers will be enumerated" )
 		local r = makeRequest( )
 		local t = {
 			  [ 'Content-Length' ] = "12345"
@@ -274,8 +274,8 @@ local tests = {
 	end,
 
 	-- #################################### Headers content parsing
-	test_HeaderContentLength = function( self )
-		Test.Case.describe( "Content-Length Header gets parsed" )
+	HeaderContentLength = function( self )
+		Test.describe( "Content-Length Header gets parsed" )
 		local r = makeRequest( )
 		local p = string.rep( 'word ', 2469 ) -- 12345 chars
 		local s = "GET /go/index.html HTTP/1.1\r\nContent-Length: " ..#p.. "\r\n\r\n" .. p
@@ -285,8 +285,8 @@ local tests = {
 		assert( p  == r.tail,          format( "req.tail must be same as payload but was`%s`", r.tail ) )
 	end,
 
-	test_HeaderNoContentLength = function( self )
-		Test.Case.describe( "No Content-Length finishes as Request.State.Done" )
+	HeaderNoContentLength = function( self )
+		Test.describe( "No Content-Length finishes as Request.State.Done" )
 		local r = makeRequest( )
 		-- taken from Wikipedia examples
 		local t = {
@@ -306,8 +306,8 @@ local tests = {
 	end,
 
 	-- #################################### Continous parsing
-	test_ContinuedUrl = function( self )
-		Test.Case.describe( "request:recv() partial URL and finish parsing" )
+	ContinuedUrl = function( self )
+		Test.describe( "request:recv() partial URL and finish parsing" )
 		local r      = Request( dummyCb )
 		local u1, u2 = '/go/wherever/it/wil', 'l/be/index.html'
 		local u      = u1 .. u2
@@ -323,8 +323,8 @@ local tests = {
 		assert( r.state == Request.State.Headers, format( "State must be %d but was %d", Request.State.Headers, r.state ) )
 	end,
 
-	test_HeaderConnectionClose = function( self )
-		Test.Case.describe( "Connection: close shall set request to close" )
+	HeaderConnectionClose = function( self )
+		Test.describe( "Connection: close shall set request to close" )
 		local r = makeRequest( )
 		assert( true == r.keepAlive, format( "Initial req.keepAlive must be `true` but was `%s`", r.keepAlive ) )
 		-- taken from Wikipedia examples
@@ -339,5 +339,3 @@ local tests = {
 	end,
 
 }
-
-return Test( tests )

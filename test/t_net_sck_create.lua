@@ -1,5 +1,3 @@
-#!../out/bin/lua
-
 ---
 -- \file    t_net_sck_create.lua
 -- \brief   Test assuring Socket() constructor handles all intended use cases
@@ -9,17 +7,15 @@ local Test      = require( "t.Test" )
 local Socket    = require( "t.Net.Socket" )
 local Address   = require( "t.Net.Address" )
 local chkSck    = t_require( "assertHelper" ).Sck
-local fmt       = string.format
 
-local tests = {
-	beforeAll  = function( self, done )
+return {
+	beforeAll  = function( self )
 		-- UNIX only
 		-- TODO: make more universal
 		local h = io.popen( 'id' )
 		local s = h:read( '*a' )
 		h:close( )
 		self.isPriv = not not s:match( 'uid=0' )
-		done( )
 	end,
 
 	beforeEach = function( self )
@@ -35,59 +31,59 @@ local tests = {
 		self.address = nil
 	end,
 
-	test_EmptyCreatesTcpIp4 = function( self )
-		Test.Case.describe( "Socket() --> creates a TCP IPv4 Socket" )
+	EmptyCreatesTcpIp4 = function( self )
+		Test.describe( "Socket() --> creates a TCP IPv4 Socket" )
 		self.sock = Socket( )
 		assert( chkSck( self.sock, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' ) )
 	end,
 
-	test_TcpArgsFulLCreatesTcpSocket = function( self )
-		Test.Case.describe( "Socket('IPPROTO_TCP') --> creates a TCP IPv4 Socket" )
+	TcpArgsFulLCreatesTcpSocket = function( self )
+		Test.describe( "Socket('IPPROTO_TCP') --> creates a TCP IPv4 Socket" )
 		self.sock = Socket( 'IPPROTO_TCP' )
 		assert( chkSck( self.sock, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' ) )
 	end,
 
-	test_TcpArgsCreatesTcpSocket = function( self )
-		Test.Case.describe( "Socket('TCP') --> creates a TCP IPv4 Socket" )
+	TcpArgsCreatesTcpSocket = function( self )
+		Test.describe( "Socket('TCP') --> creates a TCP IPv4 Socket" )
 		self.sock = Socket( 'TCP' )
 		assert( chkSck( self.sock, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' ) )
 	end,
 
-	test_LowerCaseProtocolArgs = function( self )
-		Test.Case.describe( "Socket('tcp') --> creates a TCP IPv4 Socket" )
+	LowerCaseProtocolArgs = function( self )
+		Test.describe( "Socket('tcp') --> creates a TCP IPv4 Socket" )
 		self.sock = Socket( 'tcp' )
 		assert( chkSck( self.sock, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' ) )
 	end,
 
-	test_UdpArgsFullCreatesUdpSocket = function( self )
-		Test.Case.describe( "Socket('IPPROTO_UDP') --> creates a UDP IPv4 Socket" )
+	UdpArgsFullCreatesUdpSocket = function( self )
+		Test.describe( "Socket('IPPROTO_UDP') --> creates a UDP IPv4 Socket" )
 		self.sock = Socket( 'IPPROTO_UDP' )
 		assert( chkSck( self.sock, 'IPPROTO_UDP', 'AF_INET', 'SOCK_DGRAM' ) )
 	end,
 
-	test_UdpArgsCreatesUdpSocket = function( self )
-		Test.Case.describe( "Socket('UDP') --> creates a UDP IPv4 Socket" )
+	UdpArgsCreatesUdpSocket = function( self )
+		Test.describe( "Socket('UDP') --> creates a UDP IPv4 Socket" )
 		self.sock = Socket( 'UDP' )
 		assert( chkSck( self.sock, 'IPPROTO_UDP', 'AF_INET', 'SOCK_DGRAM' ) )
 	end,
 
-	test_Ip6ArgsCreatesUdpSocket = function( self )
-		Test.Case.describe( "Socket('UDP', 'AF_INET6') --> creates a UDP IPv6 Socket" )
+	Ip6ArgsCreatesUdpSocket = function( self )
+		Test.describe( "Socket('UDP', 'AF_INET6') --> creates a UDP IPv6 Socket" )
 		self.sock = Socket( 'UDP', 'Ip6', 'SOCK_DGRAM' )
 		assert( chkSck( self.sock, 'IPPROTO_UDP', 'AF_INET6', 'SOCK_DGRAM' ) )
 	end,
 
-	test_CreatesControlMessageSocket = function( self )
-		Test.Case.describe( "Socket('ICMP', 'ip6', 'SOCK_RAW') --> creates a control message  IPv6 Socket" )
+	CreatesControlMessageSocket = function( self )
+		Test.describe( "Socket('ICMP', 'ip6', 'SOCK_RAW') --> creates a control message  IPv6 Socket" )
 		if not self.isPriv then
-			Test.Case.skip( "Must be privileged user (root) to create ICMP Socket" )
+			Test.skip( "Must be privileged user (root) to create ICMP Socket" )
 		end
 		self.sock =  Socket('ICMP', 'ip6', 'SOCK_RAW' )
 		assert( chkSck( self.sock, 'IPPROTO_ICMP', 'AF_INET6', 'SOCK_RAW' ) )
 	end,
 
-	test_CreatesWithIp4Aliases = function( self )
-		Test.Case.describe( "Socket(*,'ip4', 'AF_INET4', 'IPv4') --> all create IPv4 Sockets" )
+	CreatesWithIp4Aliases = function( self )
+		Test.describe( "Socket(*,'ip4', 'AF_INET4', 'IPv4') --> all create IPv4 Sockets" )
 		for i,f in pairs( { "AF_INET", "ip4", "Ip4", "IP4", "IPv4" } ) do
 			local sock = Socket( 'TCP', f )
 			assert( chkSck( sock, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' ) )
@@ -95,8 +91,8 @@ local tests = {
 		end
 	end,
 
-	test_CreatesWithIp6Aliases = function( self )
-		Test.Case.describe( "Socket(*,'ip6', 'AF_INET6', 'IPv6') --> all create IPv6 Sockets" )
+	CreatesWithIp6Aliases = function( self )
+		Test.describe( "Socket(*,'ip6', 'AF_INET6', 'IPv6') --> all create IPv6 Sockets" )
 		for i,f in pairs( { "AF_INET6", "ip6", "Ip6", "IP6", "IPv6" } ) do
 			self.sock = Socket( 'TCP', f )
 			assert( chkSck( self.sock, 'IPPROTO_TCP', 'AF_INET6', 'SOCK_STREAM' ) )
@@ -104,8 +100,8 @@ local tests = {
 		end
 	end,
 
-	test_CreatesWithStreamAliases = function( self )
-		Test.Case.describe( "Socket(*, *, 'stream', ... ) --> all create Stream Sockets" )
+	CreatesWithStreamAliases = function( self )
+		Test.describe( "Socket(*, *, 'stream', ... ) --> all create Stream Sockets" )
 		for i,t in pairs( { "SOCK_STREAM", "stream", "STREAM" } ) do
 			local sock = Socket( 'TCP', 'ip4', t )
 			assert( chkSck( sock, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' ) )
@@ -113,10 +109,10 @@ local tests = {
 		end
 	end,
 
-	test_CreatesWithRawAliases = function( self )
-		Test.Case.describe( "Socket(*, *, 'raw', ...) --> all create RAW Sockets" )
+	CreatesWithRawAliases = function( self )
+		Test.describe( "Socket(*, *, 'raw', ...) --> all create RAW Sockets" )
 		if not self.isPriv then
-			Test.Case.skip( "Must be privileged user (root) to create RAW Sockets" )
+			Test.skip( "Must be privileged user (root) to create RAW Sockets" )
 		end
 		for i,t in pairs( { "SOCK_RAW", "raw", "RAW" } ) do
 			local sock = Socket( 'TCP', 'ip4', t )
@@ -125,8 +121,8 @@ local tests = {
 		end
 	end,
 
-	test_CreatesWithGramAliases = function( self )
-		Test.Case.describe( "Socket('udp', 'IPv4', '*dgram', ...) --> all create DGRAM Sockets" )
+	CreatesWithGramAliases = function( self )
+		Test.describe( "Socket('udp', 'IPv4', '*dgram', ...) --> all create DGRAM Sockets" )
 		for i,t in pairs( { "SOCK_DGRAM", "dgram", "DGRAM" } ) do
 			self.sock = Socket( 'UDP', 'ip4', t )
 			assert( chkSck( self.sock, 'IPPROTO_UDP', 'AF_INET', 'SOCK_DGRAM' ) )
@@ -134,22 +130,20 @@ local tests = {
 		end
 	end,
 
-	test_CreatesHasProperDescriptor = function( self )
-		Test.Case.describe( "Socket( ).descriptor has proper values" )
+	CreatesHasProperDescriptor = function( self )
+		Test.describe( "Socket( ).descriptor has proper values" )
 		self.sock = Socket( )
-		assert( self.sock.descriptor, fmt( "Socket descriptor should be avalid value" ) )
-		assert( 'number' == type( self.sock.descriptor ), fmt( "Socket descriptor should be a `number` but was `%s`", type( self.sock.descriptor ) ) )
-		assert( self.sock.descriptor > 0, fmt( "Socket descriptor should be bigger than 0 but was `%s`", self.sock.descriptor ) )
+		assert( self.sock.descriptor, "Socket descriptor should be avalid value" )
+		assert( 'number' == type( self.sock.descriptor ), ("Socket descriptor should be a `number` but was `%s`"):format( type( self.sock.descriptor ) ) )
+		assert( self.sock.descriptor > 0, ("Socket descriptor should be bigger than 0 but was `%s`"):format( self.sock.descriptor ) )
 	end,
 
-	test_ClosingSocketReleasesDescriptor = function( self )
-		Test.Case.describe( "sck.descriptor should be `nil` after sck.close()" )
+	ClosingSocketReleasesDescriptor = function( self )
+		Test.describe( "sck.descriptor should be `nil` after sck.close()" )
 		self.sock = Socket( )
 		assert( self.sock.descriptor, "Socket descriptor should be avalid value" )
 		self.sock:close( )
-		assert( nil == self.sock.descriptor, fmt( "Closed sockets descriptor should be `nil` but was `%s`", type( self.sock.descriptor ) ) )
+		assert( nil == self.sock.descriptor, ("Closed sockets descriptor should be `nil` but was `%s`"):format( type( self.sock.descriptor ) ) )
 		self.sock = nil -- make self.afterEach() happy
 	end,
 }
-
-return Test( tests )

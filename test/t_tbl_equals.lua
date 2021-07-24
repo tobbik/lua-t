@@ -4,14 +4,14 @@
 -- \author    tkieslich
 -- \copyright See Copyright notice at the end of src/t.h
 
-local   Test = require( 't.Test' )
-local   Time = require( 't.Time' )
-local   e    = require( 't.Table' ).equals
-local   rep  = string.rep
+local   Test    = require( 't.Test' )
+local   Address = require( 't.Net.Address' )
+local   e       = require( 't.Table' ).equals
+local   rep     = string.rep
 
-local tc = {
-	test_EqNumbers = function( self )
-		Test.Case.describe( 'Test for equality of numeric values' )
+return {
+	EqNumbers = function( self )
+		Test.describe( 'Test for equality of numeric values' )
 		local a,b,c = 4,4,5
 		assert(     a == a, "num == num should be true" )
 		assert(     e(a,a), "Simple equals(num,num) should be true" )
@@ -21,8 +21,8 @@ local tc = {
 		assert( not e(a,c), "Simple equals(num,num) should be false" )
 	end,
 
-	test_EqStrings = function( self )
-		Test.Case.describe( 'Test for equality of short string values' )
+	EqStrings = function( self )
+		Test.describe( 'Test for equality of short string values' )
 		local a,b,c,d = 'abcdefgh','abcdefgh','abcdefghs','abcdefgh-'
 		assert(     a == a, "str == str should be true" )
 		assert(     e(a,a), "Simple equals(str,str) should be true" )
@@ -36,9 +36,9 @@ local tc = {
 		assert( not e(c,d), "Simple equals(str,strX) should be false" )
 	end,
 
-	test_EqStringsLong = function( self )
+	EqStringsLong = function( self )
 		-- to test around string interning
-		Test.Case.describe( 'Test for equality of very long string values' )
+		Test.describe( 'Test for equality of very long string values' )
 		local s,n     = "sdGsrTjw rHbtaEdHy ty34qw 5y246j HPgh p7y7 ", 1000000
 		local a,b,c,d = rep( s, n ), rep( s, n ), rep( s, n ) .. 's', rep( s, n ) .. '-' 
 		assert(     a == a, "str == str should be true" )
@@ -53,16 +53,16 @@ local tc = {
 		assert( not e(c,d), "Simple equals(str,strX) should be false" )
 	end,
 
-	test_EqTable = function( self )
-		Test.Case.describe( 'table comparison' )
+	EqTable = function( self )
+		Test.describe( 'table comparison' )
 		assert( e({1,2,3,4,5,6}, {1,2,3,4,5,6}), "{a,b} should equal {a,b}" )
 		assert( e({'a','a','a'}, {'a','a','a'}), "{'a','a'} should equal {'a','a'}" )
 		assert( e({a=1,b=2,c='x'}, {a=1,b=2,c='x'}), "{a=1} should equal {a=1}" )
 		assert( e({a=1,b=2,3,4,5}, {a=1,b=2,3,4,5}), "{a=1,2} should equal {a=1,2}" )
 	end,
 
-	test_EqTableNot = function( self )
-		Test.Case.describe( 'table INequality comparison' )
+	EqTableNot = function( self )
+		Test.describe( 'table INequality comparison' )
 		assert( not e({1,2,3,4,5,6}, {1,2,3,4,5,7}), "{a,b} should not equal {a,c}" )
 		assert( not e({'a','a','a'}, {'a','a','a','a'}), "{'a'} should not equal {'a','a'}" )
 		assert( not e({'a','a','a'}, {'a','a','b'}), "{'a','a'} should not equal {'a','b'}" )
@@ -70,8 +70,8 @@ local tc = {
 		assert( not e({a=1,b=2,3,4,5}, {a=1,b=2,3,4,4}), "{a=1,2,3} should equal {a=1,2,2}" )
 	end,
 
-	test_EqTableRef = function( self )
-		Test.Case.describe( "Simple Table Reference and Table Value comparison" )
+	EqTableRef = function( self )
+		Test.describe( "Simple Table Reference and Table Value comparison" )
 		local k = {x=1,y=2,z={a=1,b=true,c='string'}}
 		local h = k
 		local l = {x=1,y=2,z={a=1,b=true,c='string'}}
@@ -81,8 +81,8 @@ local tc = {
 		assert( e( k, l ), "Table value     equality should be true" )
 	end,
 
-	test_EqTableDeep = function( self )
-		Test.Case.describe( 'Deep table comparison equal' )
+	EqTableDeep = function( self )
+		Test.describe( 'Deep table comparison equal' )
 		local k = {x=1,y=2,z={a=1,b=true,c='string' },1,2,3,4,5,6}
 		local h = {x=1,y=2,z={a=1,b=true,c='string' },1,2,3,4,5,6}
 		local l = {x=1,y=2,z={a=1,b=true,c='stringy'},1,2,3,4,5,6}
@@ -90,15 +90,15 @@ local tc = {
 		assert( not e( k, l ), "Deep table comparison not equal" )
 	end,
 
-	test_EqTableLength = function( self )
-		Test.Case.describe( 'Ensure ALL equality' )
+	EqTableLength = function( self )
+		Test.describe( 'Ensure ALL equality' )
 		local k = {x=1,y=2,z=4,a=1,b=true,c='string'}
 		local h = {x=1,y=2,z=4,a=1,b=true,c='string',d=5}
 		assert( not e( k, h ), "Make sure subsets not equal" )
 	end,
 
-	test_EqTableVeryDeep = function( self )
-		Test.Case.describe( 'Very Deep table comparison equal' )
+	EqTableVeryDeep = function( self )
+		Test.describe( 'Very Deep table comparison equal' )
 		local k = {1,{2,{3,{4,{5,{6,{7,{8,x='z',{9,10}}}}}}}}}
 		local h = {1,{2,{3,{4,{5,{6,{7,{8,x='z',{9,10}}}}}}}}}
 		local l = {1,{2,{3,{4,{5,{6,{7,{8,x='z',{9,11}}}}}}}}}
@@ -106,17 +106,17 @@ local tc = {
 		assert( not e( k, l ), "Very Deep table comparison not equal" )
 	end,
 
-	test_EqByMetaFunction = function(self)
-		Test.Case.describe( 'Test for equality via metatable.__eq' )
+	EqByMetaFunction = function(self)
+		Test.describe( 'Test for equality via metatable.__eq' )
 		local mt  = { __eq = function (o1,o2) return o1.y==o2.y end}
 		local k,h = setmetatable( {x=3,y=2,z=1,1,2}, mt ),
 						setmetatable( {x=1,y=2,z=3,a=0}, mt )
 		assert( k==h, "Metafunction __eq compares sloppy")
-		assert( e(k,h), "equals() handles equality via Metafunction __eq")
+		assert( e(k,h), "equals() shall handle equality via Metafunction __eq, but failed")
 	end,
 
-	test_EqByMetaFunctionNot = function(self)
-		Test.Case.describe( 'Test for INequality via metatable.__eq' )
+	EqByMetaFunctionNot = function(self)
+		Test.describe( 'Test for INequality via metatable.__eq' )
 		local mt  = { __eq = function (o1,o2) return o1.y~=o2.y end} -- compares ~= 
 		local k,h = setmetatable( {x=1,y=2,z=3,a=0,1,2}, mt ),
 						setmetatable( {x=1,y=2,z=3,a=0,1,2}, mt )
@@ -124,9 +124,9 @@ local tc = {
 		assert( not e(k,h), "equals() handles INequality via Metafunction __eq")
 	end,
 
-	test_EqUserdata = function( self )
-		Test.Case.describe( 'Test for equality of userdata' )
-		local a,b,c = Time(300), Time(300), Time(301)
+	EqUserdata = function( self )
+		Test.describe( 'Test for equality of userdata' )
+		local a,b,c = Address("192.168.1.1", 4000), Address("192.168.1.1", 4000), Address("192.168.1.1", 4001)
 		assert(     a == a, "ud == ud should be true" )
 		assert(     e(a,a), "Simple equals(ud,ud) should be true" )
 		assert(     a == b, "ud == ud' should be true" )
@@ -134,8 +134,4 @@ local tc = {
 		assert(     a ~= c, "udX ~= udY should be true" )
 		assert( not e(a,c), "Simple equals(udX,udY) should be false" )
 	end,
-
 }
-
--- The tests in tc will be executed in random order
-return Test( tc )
