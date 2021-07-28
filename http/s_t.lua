@@ -2,9 +2,9 @@
 -- \detail  Modified version of a nodeJS sample app translated to lua-t
 --          -- NEVER USE THAT IN PRODUCTION. ROT47 IS NOT CRYPTO --
 
-local Server,Loop           = require't.Http.Server', require't.Loop'
-local fmt,t_insert,t_concat = string.format, table.insert, table.concat
-local s_byte,s_char         = string.byte, string.char
+local Server,Loop       = require't.Http.Server', require't.Loop'
+local t_insert,t_concat = table.insert, table.concat
+local s_byte,s_char     = string.byte, string.char
 
 -- curl -i -X GET "http://localhost:8002/newUser?username=username&password=password"
 -- curl -i "http://localhost:8002/auth?username=username&password=password"
@@ -40,7 +40,7 @@ local callback = function( req, res )
 		if users[ username ] == rot47( password ) then
 			r_cnt = r_cnt + 1
 			res.headers = { [ "Content-Type" ] = "text/plain" }
-			res:finish( fmt( "%7d This user was authorized", r_cnt ) )
+			res:finish( ("%7d This user was authorized"):format( r_cnt ) )
 		else
 			res:finish( 401, "Authorization failed" )
 		end
@@ -51,10 +51,10 @@ local callback = function( req, res )
 		username = username:gsub( '[!@#$%%^&*]', '' )
 
 		if not username or not password or users[ username ] then
-			return res:finish( 400, fmt( "Creating a new user failed -> %s\n", users[ username ] and "User already exists" or "Insufficient arguments" ) )
+			return res:finish( 400, ("Creating a new user failed -> %s\n"):format( users[ username ] and "User already exists" or "Insufficient arguments" ) )
 		end
 		users[ username ] = rot47( password ) ;
-		print( fmt( "Created User -> %s:%s", username, users[ username ] ) );
+		print( ("Created User -> %s:%s"):format( username, users[ username ] ) );
 		return res:finish( "Created new user `" .. username .."`\n" );
 	elseif req.path == "/multi" then
 		local multiplier = req.query.multiplier and tonumber(req.query.multiplier) or nil
@@ -84,5 +84,5 @@ end
 --end )
 
 local srv, adr   = httpServer:listen( host, port )
-print( fmt( "Started `%s` at `%s` (%s)", srv, adr, srv.family ) )
+print( ("Started `%s` at `%s` (%s)"):format( srv, adr, srv.family ) )
 httpServer.ael:run( )

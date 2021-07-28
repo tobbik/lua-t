@@ -12,7 +12,7 @@ NODE=$(shell which node)
 
 USERNAME=mickey
 PASSWORD=goofey
-HOST=pihole
+HOST=192.168.17.198
 PORT=10000
 CONNS=100
 SECONDS=20
@@ -63,6 +63,9 @@ node: $(node)
 
 user: $(CURL)
 	$(CURL) -i "http://$(HOST):$(PORT)/newUser?username=$(USERNAME)&password=$(PASSWORD)"
+
+get: $(CURL)
+	$(CURL) -i $(WRK_URL)
 
 wrk: $(WRK)
 	$(WRK) -t $(THREADS) -c $(CONNS) -d $(SECONDS) --latency  $(WRK_URL)

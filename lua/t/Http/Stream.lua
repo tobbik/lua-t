@@ -7,9 +7,9 @@
 -- \author    tkieslich
 -- \copyright See Copyright notice at the end of src/t.h
 
-local Loop, T, Time = require't.Loop', require't', require't.Time'
-local t_insert    , t_remove    , s_format      =
-      table.insert, table.remove, string.format
+local Loop, T = require't.Loop', require't'
+local t_insert    , t_remove     =
+      table.insert, table.remove
 local getmetatable, setmetatable, assert, type =
       getmetatable, setmetatable, assert, type
 
@@ -32,9 +32,9 @@ local getRequest = function( self )
 end
 
 local destroy = function( self )
-	local dur = Time.get( ) - self.created
+	local dur = Loop.time( ) - self.created
 	if dur > 2000 and not self.keepAlive then
-		print( s_format( "LONG RUNNING STREAM: `%s`  %f seconds", self.socket, dur/1000 ) )
+		print( ("LONG RUNNING STREAM: `%s`  %f seconds"):format( self.socket, dur/1000 ) )
 	end
 	--print( "DESTROY:", self, self.socket )
 	self.requests  = nil
@@ -46,12 +46,12 @@ end
 
 local recv = function( self )
 	local data, rcvd = self.socket:recv( )
-	local now = Time.get()
+	local now = Loop.time( )
 	if not data then
 		-- it means the other side hung up; No more responses
 		if 0 ~= rcvd and self._event_handlers.error then
 			self._event_handlers.error(
-			   s_format("Socket(%s) receive error -> remove client Socket. Reason: (%s)",
+			   ("Socket(%s) receive error -> remove client Socket. Reason: (%s)"):format(
 			   self.socket, rcvd )
 			)
 		end
@@ -119,7 +119,7 @@ send = function( self, response )
 	local buf            = response:getBuffer( )
 	local snt, eMsg, eNo = self.socket:send( buf )
 	if snt then
-		local now            = Time.get( )
+		local now            = Loop.time( )
 		self.lastAction, self.lastOut = now, now
 		if #buf == snt then
 			removeSocket = true
@@ -179,7 +179,7 @@ return setmetatable( {
 		--assert( T.type( sck ) == 'T.Net.Socket',  "`T.Net.Socket` is required" )
 		--assert( T.type( adr ) == 'T.Net.Address', "`T.Net.Address` is required" )
 
-		local now = Time.get();
+		local now = Loop.time( );
 
 		local stream  = {
 			  srv              = srv     -- Server instance
