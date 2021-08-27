@@ -29,10 +29,10 @@ local makeSuite = function( prx )
   return setmetatable( { [ prxTblIdx ] = prx }, _mt )
 end
 
-local printTst = function( nme, tst, tme )
+local printTst = function( nme, tst )
   -- console colours      green    red      yellow   blue
   local colors        = { PASS=32, FAIL=31, SKIP=33, TODO=36}
-  print( ('[%dm%s[0m [%dms] [%s] %s'):format( colors[ tst.status ], tst.status, tme, nme, tostring(tst) ) )
+  print( ('[%dm%s[0m [%dms] [%dms] [%s] %s'):format( colors[ tst.status ], tst.status, tst.executionTime, tst.runTime, nme, tostring(tst) ) )
 end
 
 -- ---------------------------- Instance metatable --------------------
@@ -62,15 +62,11 @@ _mt = {       -- local _mt at top of file
 
 local function getPlan( tbl )
   local plan = { }
-  if tbl.beforeAll then t_insert(plan, "beforeAll") end
   for name, case in pairs( tbl ) do
-    if type(case)=='function' and name~='beforeAll' and name~='afterAll' and name~='beforeEach' and name~='afterEach' then
-      if tbl.beforeEach then t_insert(plan, "beforeEach") end
+    if type( case )=='function' and name~='beforeAll' and name~='afterAll' and name~='beforeEach' and name~='afterEach' then
       t_insert( plan, name )
-      if tbl.afterEach then t_insert(plan, "afterEach") end
     end
   end
-  if tbl.afterAll then t_insert(plan, "afterAll") end
   return plan
 end
 
@@ -78,23 +74,22 @@ return setmetatable( {
 }, {
   __call   = function( self, tbl, quiet )
     local failedTests = { }
-    if tbl and 'table' == type( tbl ) then
-      local suite, startSuite = makeSuite( { } ), Loop.time( )
-      for _, name in pairs( getPlan(tbl) ) do
-        local startTest = Loop.time( )
-        local ok, result = Test( tbl[name], tbl )
-        if not ok then
-          t_insert( failedTests, result  )
-        end
-        if name~='beforeAll' and name~='afterAll' and name~='beforeEach' and name~='afterEach' then
-          o_setElement( suite[ prxTblIdx ], name, result )
-          result.runTime = Loop.time( ) - startTest
-          if not quiet then printTst( name, result, result.runTime ) end
-        end
+    assert( 'table' == type( tbl ), "Test.Suite() requires a table as argument" )
+    local suite, startSuite = makeSuite( { } ), Loop.time( )
+    if tbl.beforeAll then Test( tbl.beforeAll, tbl ) end
+    for _, name in pairs( getPlan(tbl) ) do
+      local runTimeStart = Loop.time( )
+      if tbl.beforeEach then Test( tbl.beforeEach, tbl ) end
+      local ok, result = Test( tbl[ name ], tbl )
+      o_setElement( suite[ prxTblIdx ], name, result )
+      if tbl.afterEach then Test( tbl.afterEach, tbl ) end
+      result.runTime = Loop.time( ) - runTimeStart
+      if not ok then
+        t_insert( failedTests, result  )
       end
-      return suite, Loop.time() - startSuite, #failedTests~=0 and failedTests or nil
-    else
-      return makeSuite( { } ), 0
+      if not quiet then printTst( name, result ) end
     end
+    if tbl.afterAll then Test( tbl.afterAll, tbl ) end
+    return suite, Loop.time() - startSuite, #failedTests~=0 and failedTests or nil
   end
 } )

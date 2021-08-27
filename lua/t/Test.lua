@@ -1,13 +1,13 @@
 -- vim: ts=2 sw=2 sts=2 et
 -- \file      lua/Test.lua
 -- \brief     lua-t unit testing framework (t.Test)
---            Test Case implemented as Lua Table
+--            Test Case executes a test function and returns a table of results
 -- \author    tkieslich
 -- \copyright See Copyright notice at the end of t.h
 
 local t_concat    , t_insert    , getmetatable, setmetatable, pairs =
       table.concat, table.insert, getmetatable, setmetatable, pairs
-local Loop,pp = require"t.Loop", require't.Table'.pprint
+local Loop = require"t.Loop"
 
 local T_TST_CSE_SKIPINDICATOR = "<t.test_skip_indicator>:" -- must have trailing ":"
 local _mt
@@ -17,7 +17,6 @@ local getFunctionSource = function( dbg )
   dbg = 'function'==type( dbg ) and debug.getinfo( dbg, "Sl" ) or dbg
   if "C" == dbg.what then return "C (Compiled code)" end
   local c, src, loc = 1, {}, dbg.source:sub( 2 )
-  --pp({DBG= dbg})
   -- TODO: make sure short_src is a file, not stdin or rubbish
   for l in io.lines( loc ) do
     if c >= dbg.linedefined and c <= dbg.lastlinedefined then
