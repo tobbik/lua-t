@@ -1,9 +1,16 @@
-local makeWord = function( )
+local words = {}
+
+local createWord = function( )
 	local wrd = {}
-	for i=1,math.random(3,12) do
+	for i=1,math.random(3,17) do
 		table.insert( wrd, string.char( math.random( 32, 123 ) ) )
 	end
 	return table.concat( wrd, '' )
+end
+
+local words = {}
+for n=1,10000 do
+	table.insert( words, createWord() )
 end
 
 local m = {
@@ -60,7 +67,7 @@ local m = {
 		local count = 0
 		n = n or math.random( 1000, 3000 )
 		while count<n do
-			local word = makeWord( )
+			local word = words[ math.random( 1, #words ) ]
 			count = count + #word
 			if count <= n then
 				table.insert( str, word )
@@ -73,7 +80,7 @@ local m = {
 	getWords = function( self, n )
 		local str = {}
 		for i=1,math.random(1, n or 12) do
-			table.insert( str, makeWord( ) )
+			table.insert( str, words[ math.random( 1, #words ) ] )
 		end
 		return table.concat( str, ' ' )
 	end,
