@@ -92,8 +92,8 @@ Instance Members
 
 ``boolean success = seg:next( )``
   Forwards the ``Buffer.Segment seg`` right adjacent to the current
-  position. ``seg`` has the same lenght as seg if there is enough space left
-  in ``seg.buffer`` otherwise it has the reminder of of
+  position. ``seg`` has the same length as ``seg`` if there is enough space
+  left in ``seg.buffer`` otherwise it has the reminder of
   ``seg.buffer`` which is defined by ``#seg = #seg.buffer-seg.last``
 
 

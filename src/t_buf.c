@@ -77,7 +77,7 @@ char
 		if (len)
 			*len = seg->len;
 		if (NULL!=cw) *cw  = 1;
-		lua_rawgeti( L, LUA_REGISTRYINDEX, seg->bR );
+		lua_getiuservalue( L, pos, T_BUF_SEG_BUFIDX );     //S: seg idx buf
 		buf = t_buf_check_ud( L, -1, 1 );
 		lua_pop( L, 1 );
 		return &(buf->b[ seg->idx - 1 ]);

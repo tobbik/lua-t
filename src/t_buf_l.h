@@ -27,5 +27,4 @@ int            lt_buf_clear( lua_State *L );
 // t_buf_seg.c
 // Constructors
 int               luaopen_t_buf_seg  ( lua_State *L );
-struct t_buf_seg *t_buf_seg_create_ud( lua_State *L, struct t_buf *buf, lua_Integer ofs, lua_Integer len );
 

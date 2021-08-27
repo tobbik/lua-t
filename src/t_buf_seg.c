@@ -21,6 +21,42 @@
 #endif
 
 
+/**--------------------------------------------------------------------------
+ * Adjusts T.Buffer.Segment internal values.
+ * \param  *L  Lua state.
+ *
+ * \return struct t_buf_seg*  pointer to the  t_buf_seg struct
+ * --------------------------------------------------------------------------*/
+static void
+t_buf_seg_set( lua_State *L, struct t_buf_seg *seg, struct t_buf *buf, lua_Integer idx, lua_Integer len )
+{
+	//printf( "%lld    %lld    %ld (%zu  %zu)\n", idx, len, buf->len, seg->idx, seg->len );
+	luaL_argcheck( L, 1 <= idx && (size_t) idx         <= buf->len, 1,
+	   T_BUF_SEG_TYPE" offset relative to length of "T_BUF_TYPE" out of bound" );
+	luaL_argcheck( L, len >= 0 && (size_t) (idx+len-1) <= buf->len, 2,
+	   T_BUF_SEG_TYPE" length out of bound" );
+
+	seg->len = (size_t) len;
+	seg->idx = (size_t) idx;
+}
+
+
+/**--------------------------------------------------------------------------
+ * Create a T.Buffer.Segment and push to LuaStack.
+ * \param  L  Lua state.
+ *
+ * \return struct t_buf_seg*  pointer to the  t_buf_seg struct
+ * --------------------------------------------------------------------------*/
+static struct t_buf_seg
+*t_buf_seg_create_ud( lua_State *L )
+{
+	struct t_buf_seg  *seg = (struct t_buf_seg *) lua_newuserdata( L, sizeof( struct t_buf_seg ) );
+	luaL_getmetatable( L, T_BUF_SEG_TYPE );
+	lua_setmetatable( L, -2 );
+	return seg;
+}
+
+
 /** -------------------------------------------------------------------------
  * Constructor - creates the t.Buffer.Segment instance.
  * \param   L      Lua state.
@@ -33,65 +69,17 @@
 int
 lt_buf_seg__Call( lua_State *L )
 {
-	struct t_buf     *buf = t_buf_check_ud( L, 2, 1 );
+	struct t_buf     *buf = t_buf_check_ud( L, 2, 1 );        //S: CLS buf idx len
 	lua_Integer       idx = luaL_optinteger( L, 3, 1 );
 	lua_Integer       len = luaL_optinteger( L, 4, (int) buf->len - idx + 1 );
+	struct t_buf_seg *seg;
 
-	while (lua_isinteger( L, -1 ))
-		lua_pop( L, 1 );
 	//printf( "idx: %lld    LEN: %lld\n", idx, len );
-	t_buf_seg_create_ud( L, buf, idx, len );
-	return 1;
-}
-
-
-/**--------------------------------------------------------------------------
- * Adjusts T.Buffer.Segment internal values.
- * \param  *L  Lua state.
- *
- * \return struct t_buf_seg*  pointer to the  t_buf_seg struct
- * --------------------------------------------------------------------------*/
-static void
-t_buf_seg_set( lua_State *L, struct t_buf_seg *seg, struct t_buf *buf, lua_Integer idx, lua_Integer len )
-{
-	if(! buf)
-	{
-		lua_rawgeti( L, LUA_REGISTRYINDEX, seg->bR );
-		buf = t_buf_check_ud( L, -1, 1 );
-		lua_pop( L, 1 );
-	}
-
-	//printf( "%lld    %lld    %ld (%zu  %zu)\n", idx, len, buf->len, seg->idx, seg->len );
-	luaL_argcheck( L, 1 <= idx && (size_t) idx         <= buf->len, 1,
-	   T_BUF_SEG_TYPE" offset relative to length of "T_BUF_TYPE" out of bound" );
-	luaL_argcheck( L, len >= 0 && (size_t) (idx+len-1) <= buf->len, 2,
-	   T_BUF_SEG_TYPE" length out of bound" );
-
-	seg->len = (size_t) len;
-	seg->idx = (size_t) idx;
-	//seg->b   = &(buf->b[ idx-1 ]);
-}
-
-
-/**--------------------------------------------------------------------------
- * Create a T.Buffer.Segment and push to LuaStack.
- * \param  L  Lua state.
- *
- * \return struct t_buf_seg*  pointer to the  t_buf_seg struct
- * --------------------------------------------------------------------------*/
-struct t_buf_seg
-*t_buf_seg_create_ud( lua_State *L, struct t_buf *buf, lua_Integer idx, lua_Integer len )
-{
-	struct t_buf_seg  *seg;
-
-	seg = (struct t_buf_seg *) lua_newuserdata( L, sizeof( struct t_buf_seg ) );
-	lua_insert( L, -2 );       // move Segment infront of Buffer
-	seg->bR = luaL_ref( L, LUA_REGISTRYINDEX );
+	seg = t_buf_seg_create_ud( L );                           //S: CLS buf idx len seg
+	lua_rotate( L, 2, -1 );                                   //S: CLS idx len seg buf
+	lua_setiuservalue( L, -2, T_BUF_SEG_BUFIDX );             //S: CLS idx len seg
 	t_buf_seg_set( L, seg, buf, idx, len );
-
-	luaL_getmetatable( L, T_BUF_SEG_TYPE );
-	lua_setmetatable( L, -2 );
-	return seg;
+	return 1;
 }
 
 
@@ -116,21 +104,6 @@ lt_buf_seg__tostring( lua_State *L )
 
 
 /**--------------------------------------------------------------------------
- * GC to release reference to t_buf userdata.
- * \param   L    Lua state.
- * \lparam  ud   T.Buffer.Segement userdata instance.
- * \return  int  # of values pushed onto the stack.
- * --------------------------------------------------------------------------*/
-static int
-lt_buf_seg__gc( lua_State *L )
-{
-	struct t_buf_seg *seg = t_buf_seg_check_ud( L, 1, 1 );
-	luaL_unref( L, LUA_REGISTRYINDEX, seg->bR );
-	return 0;
-}
-
-
-/**--------------------------------------------------------------------------
  * shift method for Buffer.Segment to shift along buffer.
  * \param   L      Lua state.
  * \lparam  ud     T.Buffer.Segement userdata instance.
@@ -144,8 +117,11 @@ lt_buf_seg_shift( lua_State *L )
 	struct t_buf_seg *seg   = t_buf_seg_check_ud( L, 1, 1 );
 	lua_Integer       val   = luaL_checkinteger( L, 2 );
 
-	t_buf_seg_set( L, seg, NULL, seg->idx + val, seg->len );
+	lua_getiuservalue( L, 1, T_BUF_SEG_BUFIDX );            //S: seg val buf
+	t_buf_seg_set( L, seg, t_buf_check_ud( L, -1, 1), seg->idx + val, seg->len );
+	lua_pop( L, 1 );
 	lua_pushboolean( L, 1 );
+
 	return 1;
 }
 
@@ -163,7 +139,7 @@ lt_buf_seg_next( lua_State *L )
 	struct t_buf_seg *seg   = t_buf_seg_check_ud( L, 1, 1 );
 	struct t_buf     *buf;
 
-	lua_rawgeti( L, LUA_REGISTRYINDEX, seg->bR );
+	lua_getiuservalue( L, 1, T_BUF_SEG_BUFIDX );            //S: seg buf
 	buf = t_buf_check_ud( L, -1, 1 );
 	lua_pop( L, 1 );
 	if (seg->idx + seg->len > buf->len)
@@ -212,7 +188,7 @@ lt_buf_seg__index( lua_State *L )
 	{
 		key = lua_tostring( L, 2 );
 		if (0 == strncmp( key, "buffer", 6 ))
-			lua_rawgeti( L, LUA_REGISTRYINDEX, seg->bR );
+			lua_getiuservalue( L, T_BUF_SEG_BUFIDX, 1 );
 		else if (0 == strncmp( key, "start", 5 ) )
 			lua_pushinteger( L, seg->idx );
 		else if (0 == strncmp( key, "size", 4 ) )
@@ -260,15 +236,17 @@ lt_buf_seg__newindex( lua_State *L )
 	else
 	{
 		key = luaL_checkstring( L, 2 );
+		lua_getiuservalue( L, 1, T_BUF_SEG_BUFIDX );            //S: seg idx val buf
 
 		if (0 == strncmp( key, "start", 5 ) )
-			t_buf_seg_set( L, seg, NULL, val, seg->len + seg->idx - val );
+			t_buf_seg_set( L, seg, t_buf_check_ud( L, -1, 1 ), val, seg->len + seg->idx - val );
 		else if (0 == strncmp( key, "size", 4 ) )
-			t_buf_seg_set( L, seg, NULL, seg->idx, val );
+			t_buf_seg_set( L, seg, t_buf_check_ud( L, -1, 1 ), seg->idx, val );
 		else if (0 == strncmp( key, "last", 4 ) )
-			t_buf_seg_set( L, seg, NULL, seg->idx, val - seg->idx );
+			t_buf_seg_set( L, seg, t_buf_check_ud( L, -1, 1 ), seg->idx, val - seg->idx );
 		else
 			luaL_argerror( L, 2, "Can't set this value in "T_BUF_SEG_TYPE );
+		lua_pop( L, 1 );                                        //S: seg idx val
 	}
 	return 0;
 }
@@ -299,7 +277,6 @@ static const luaL_Reg t_buf_seg_m [] = {
 	, { "__newindex"   , lt_buf_seg__newindex }
 	, { "__len"        , lt_buf__len }
 	, { "__eq"         , lt_buf__eq }
-	, { "__gc"         , lt_buf_seg__gc }
 	// instance methods
 	, { "shift"        , lt_buf_seg_shift }
 	, { "next"         , lt_buf_seg_next }
