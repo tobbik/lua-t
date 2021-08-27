@@ -93,7 +93,8 @@ return {
 		for i=1,#seg do
 			assert( b[ i ] == seg[ i ],
 				("Value in buffer at position %d should be <%s> but was <%s>"):format(
-				i,  string.char( seg[i] ), string.char( b[ i ] ) )
+				i, string.char( seg[i] ), string.char( b[ i ] )
+			)
 			)
 		end
 	end,

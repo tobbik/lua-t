@@ -1,9 +1,45 @@
-local words = {}
+local words, chars = {}, {}
+local letterFrequency = {
+	['E'] = 12.02,
+	['T'] =  9.10,
+	['A'] =  8.12,
+	['O'] =  7.68,
+	['I'] =  7.31,
+	['N'] =  6.95,
+	['S'] =  6.28,
+	['R'] =  6.02,
+	['H'] =  5.92,
+	['D'] =  4.32,
+	['L'] =  3.98,
+	['U'] =  2.88,
+	['C'] =  2.71,
+	['M'] =  2.61,
+	['F'] =  2.30,
+	['Y'] =  2.11,
+	['W'] =  2.09,
+	['G'] =  2.03,
+	['P'] =  1.82,
+	['B'] =  1.49,
+	['V'] =  1.11,
+	['K'] =  0.69,
+	['X'] =  0.17,
+	['Q'] =  0.11,
+	['J'] =  0.10,
+	['Z'] =  0.07,
+}
+
+for l,f in pairs( letterFrequency ) do
+	for i=1,math.floor(f*100) do
+		table.insert( chars, l:lower() )
+	end
+end
 
 local createWord = function( )
-	local wrd = {}
-	for i=1,math.random(3,17) do
-		table.insert( wrd, string.char( math.random( 32, 123 ) ) )
+	local wrd, bend, ceil, min = {}, 5, 15, 3
+	-- f(x) = x^5 / x^4       for more shorter than long words
+	local length = math.floor(   math.pow( math.random( 1, ceil-min ), bend )  /  math.pow(ceil-min, bend-1) )  + min
+	for i=1,length do
+		table.insert( wrd, chars[ math.random( 1, #chars ) ] )
 	end
 	return table.concat( wrd, '' )
 end
