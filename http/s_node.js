@@ -4,13 +4,25 @@ const url     = require( 'url' )
 const process = require( 'process' )
 const util    = require( 'util' )
 
-const p       = "This is a simple dummy load that is meant to generate some load";
-const payload = p.repeat( 10 )
+const p       = ("This is a simple dummy load that is meant to generate some load").repeat( 10 )
 //curl -i -X GET "http://localhost:8001/newUser?username=matt&password=password"
 //curl -i "http://localhost:8001/auth?username=matt&password=password"
 //ab -k -c 20 -n 250 "http://localhost:8001/auth?username=matt&password=password"
 
-var users = { };
+var getUsers = function(n) {
+	var users    = {};
+	var makeWord = function() {
+		var wrd = [];
+		for (var i=0; i<Math.floor(Math.random() * (12 - 6 + 1)) + 6; i++)
+			wrd[i] = String.fromCharCode( Math.floor(Math.random() * (123 - 32 + 1)) + 32 );
+		return wrd.join('')
+	};
+	for (var x=0; x<n; x++)
+		users[ makeWord() ] = makeWord()
+	return users;
+}
+
+var users = getUsers(5000);
 var r_cnt = 0;
 
 var rot47 = function( pw )
@@ -42,8 +54,8 @@ httpServer = http.createServer( (req, res) => {
 		}
 
 		if (users[ username ] === rot47( password )) {
-			res.setHeader( "Content-Type", "text/plain" )
-			res.end( util.format( " %d This user was authorizedn\n", ++r_cnt ) );
+			res.setHeader( "Content-Type", "text/plain; charset=utf-8" )
+			res.end( util.format( "%s This user was authorized at %d\n", (++r_cnt).toString().padStart(7," "), Date.now() ) );
 		}
 		else {
 			res.statusCode = 401;

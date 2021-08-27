@@ -9,15 +9,35 @@ import (
 	"strings"
 	"strconv"
 	"os"
+	"math/rand"
+	"time"
 )
 
 const (
 	hostname = "0.0.0.0"
 )
 
+const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+func RandStringBytes(n int) string {
+	b := make([]byte, n)
+	for i := range b {
+		b[i] = letterBytes[rand.Intn(len(letterBytes))]
+	}
+	return string(b)
+}
+
+func getUsers( i int ) map[string] string {
+	users    := make( map[string] string )
+	for x := 1; x < i; x++ {
+		users[ RandStringBytes(rand.Intn(12 - 6) + 6) ] = RandStringBytes(rand.Intn(12 - 6) + 6)
+	}
+	return users
+}
+
 var (
 	re       = regexp.MustCompile( "[!@#$%^&*]" )
-	users    = make( map[string] string )
+	users    = getUsers( 5000 )
 	rotLot   = make( map[rune]   rune )
 	r_cnt    = 0
 	payload  = strings.Repeat("This is a simple dummy load that is meant to generate some load", 10 )
@@ -42,6 +62,7 @@ func handlerNew(w http.ResponseWriter, req *http.Request) {
 
 	username = re.ReplaceAllString( username, "" )
 	_, haveUser  := users[ username ]
+	w.Header( ).Set( "Keep-Alive", "timeout=5" )
 
 	//fmt.Printf( "%s   %s   %s", username, password, users[ username ] )
 	if (""==username || ""==password || haveUser) {
@@ -56,7 +77,7 @@ func handlerNew(w http.ResponseWriter, req *http.Request) {
 		fmt.Printf( "Created User -> %s:%s\n", username, users[ username ] )
 		w.WriteHeader( http.StatusOK )
 		w.Header().Set( "Content-Type", "text/plain" )
-		w.Write( []byte( "Created new user\n" ) );
+		w.Write( []byte( fmt.Sprintf( "Created new user `%s`\n", username ) ) );
 	}
 	return
 }
@@ -69,6 +90,8 @@ func handlerAuth( w http.ResponseWriter, req *http.Request ) {
 
 	var username string = strings.Join( uname, "" )
 	var password string = strings.Join( pword, "" )
+	w.Header( ).Set( "Keep-Alive", "timeout=5" )
+	w.Header().Set( "Connection", "keep-alive" )
 
 	username = re.ReplaceAllString( username, "" )
 	_, haveUser  := users[ username ]
@@ -81,7 +104,7 @@ func handlerAuth( w http.ResponseWriter, req *http.Request ) {
 			r_cnt++;
 			w.WriteHeader( http.StatusOK )
 			w.Header( ).Set( "Content-Type", "text/plain" )
-			w.Write( []byte( fmt.Sprintf( "%7d This user was authorized\n", r_cnt ) ) );
+			w.Write( []byte( fmt.Sprintf( "%7d This user was authorized at %d\n", r_cnt, time.Now().UnixNano() / 1e6 ) ) );
 		} else {
 			w.WriteHeader( http.StatusBadRequest )
 			w.Write( []byte( "Authorization failed!" ) );

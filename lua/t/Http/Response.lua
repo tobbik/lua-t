@@ -36,6 +36,7 @@ local formHeader = function( self, msg )
 		Version[ self.version ] .." ".. self.statusCode .." ".. self.statusMessage ..
 		"\r\nDate: ".. now( ) ..
 		"\r\nConnection: " .. (self.keepAlive and "keep-alive" or "close") ..
+		(self.keepAlive and "\r\nKeep-Alive: timeout=5" or "") ..
 		(self.contentLength and "\r\nContent-Length: " .. self.contentLength or "\r\nTransfer-Encoding: chunked") ..
 		"\r\n" .. (self.headers and '' or '\r\n') ..
 		((not self.headers and msg) and (self.chunked and s_format( "%X\r\n%s\r\n", #msg, msg ) or msg) or '' )

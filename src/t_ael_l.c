@@ -18,7 +18,7 @@
 #define _POSIX_C_SOURCE 200809L   //fileno()
 #endif
 
-#include <sys/time.h>             // gettimeofday()
+#include <sys/time.h>             // gettimeofday(); struct timeval
 
 #include "t_net.h"
 #include "t_ael_l.h"
@@ -37,6 +37,35 @@
 	  }                                                  \
 	} while (0)
 
+#ifdef _WIN32
+// PostgreSQL's implementattion of gettimeofday()
+/* FILETIME of Jan 1 1970 00:00:00. */
+static const unsigned __int64 epoch = UINT64CONST(116444736000000000);
+
+/*
+ * timezone information is stored outside the kernel so tzp isn't used anymore.
+ *
+ * Note: this function is not for Win32 high precision timing purpose. See
+ * elapsed_time().
+ */
+int
+gettimeofday( struct timeval *tv, struct timezone * tzp)
+{
+	FILETIME       file_time;
+	SYSTEMTIME     system_time;
+	ULARGE_INTEGER ularge;
+
+	GetSystemTime( &system_time );
+	SystemTimeToFileTime( &system_time, &file_time );
+	ularge.LowPart = file_time.dwLowDateTime;
+	ularge.HighPart = file_time.dwHighDateTime;
+
+	tv->tv_sec  = (long) ((ularge.QuadPart - epoch) / 10000000L);
+	tv->tv_usec = (long) (system_time.wMilliseconds * 1000);
+
+	return 0;
+}
+#endif
 /**----------------------------------------------------------------------------
  * Get descriptor handle from the stack.
  * Discriminate if Socket or file handle
@@ -398,7 +427,7 @@ lt_ael_stop( lua_State *L )
 
 
 /**--------------------------------------------------------------------------
- * Get milliseconds since epoch`
+ * Get milliseconds since epoch
  * \param   L    Lua state.
  * \lreturn ms   int; milliseconds since epoch.
  * \return  int  # of values pushed onto the stack.

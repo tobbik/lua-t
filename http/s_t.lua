@@ -11,9 +11,24 @@ local s_byte,s_char     = string.byte, string.char
 -- ab -k -c 20 -n 250 "http://localhost:8002/auth?username=username&password=password"
 --
 --
-local payload = string.rep("This is a simple dummy load that is meant to generate some load", 10)
+local payload  = ("This is a simple dummy load that is meant to generate some load"):rep( 10 )
 
-local users = { }  -- Users lookup  table
+local getUsers = function(n)
+	local users   = {};
+	local getWord = function()
+		local wrd = {}
+		for i=1,math.random(6,12) do
+			t_insert( wrd, string.char( math.random( 32, 123 ) ) )
+		end
+		return t_concat( wrd,'' )
+	end
+	for x=1,n do
+		users[ getWord() ] = getWord()
+	end
+	return users
+end
+
+local users = getUsers(5000)  -- Users lookup  table
 local r_cnt = 0    -- Counts all auth operations
 
 local rot47 = function( wrd )
@@ -39,8 +54,8 @@ local callback = function( req, res )
 
 		if users[ username ] == rot47( password ) then
 			r_cnt = r_cnt + 1
-			res.headers = { [ "Content-Type" ] = "text/plain" }
-			res:finish( ("%7d This user was authorized"):format( r_cnt ) )
+			res.headers = { [ "Content-Type" ] = "text/plain; charset=utf-8" }
+			res:finish( ("%7d This user was authorized at %d\n"):format( r_cnt, Loop.time( ) ) )
 		else
 			res:finish( 401, "Authorization failed" )
 		end
