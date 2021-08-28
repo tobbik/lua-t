@@ -23,16 +23,18 @@ end
 	-- ----
 return {
 	len        = 5000,
-	beforeEach = function( self )
+	beforeAll  = function( self )
 		self.rtvg = Rtvg( )
-		-- rtvg.getVals() guarantees disjoint arrays!
+		-- self.rtvg.getVals() guarantees disjoint arrays!
 		self.aryA = self.rtvg:getVals( self.len )
 		self.aryB = self.rtvg:getVals( self.len )
 		assert( self.len == #self.aryA, "Length of initial values must be the same" )
+		assert( self.len == #self.aryB, "Length of initial values must be the same" )
+	end,
 
+	beforeEach = function( self )
 		self.setA =  Set( self.aryA )
 		self.setB =  Set( self.aryB )
-		self.len  = #self.aryA
 	end,
 
 -------------------------------------------------------------------
@@ -95,15 +97,14 @@ return {
 
 	ConstructorByCloning = function( self )
 		Test.describe( "Construct Set from existing set" )
-		local lSet = Set( self.setB )
+		local lSet, cnt = Set( self.setB ), 0
 		assert( "t.Set" == T.type( lSet ), "Type t.Set expected" )
-		local cnt  = 0
 		assert( #self.setB == #lSet, "Length must be equal number elements in original set" )
 		for i,v in ipairs( self.aryB ) do
 			assert( self.setB[ v ], "Element '"..tostring(v).."' must exist in set" )
 			cnt = cnt+1
 		end
-		assert( cnt == #lSet, "Length must be equal number elements in original set" )
+		assert( cnt == #lSet, ("Iterated length %d must be equal number elements in original set %d"):format( cnt, #lSet ) )
 	end,
 
 	ConstructorRoundTrip = function( self )
@@ -119,12 +120,13 @@ return {
 	end,
 
 	ConstructorRemovesDuplicates = function( self )
-		Test.describe( "Constructing Set removes duplicates " )
-		for i=1,self.len do
-			self.aryB[ self.len+i ] = self.aryB[ i ]
+		Test.describe( "Constructing Set from table removes duplicate values" )
+		local dupes = {}
+		for i=0,(self.len*2)-1 do
+			dupes[ i+1 ] = self.aryB[ i%self.len + 1 ]
 		end
-		assert( #self.aryB == 2*self.len, "New values must be double size of original array" )
-		local lSet = Set( self.aryB )
+		assert( #dupes == 2*self.len, "New values must be double size of original array" )
+		local lSet = Set( dupes )
 		assert( "t.Set" == T.type( lSet ), "Type t.Set expected" )
 		assert( #lSet == self.len, "New Set must be size of original array" )
 		assert( lSet == self.setB, "New Set must be equal to setB" )
@@ -173,8 +175,8 @@ return {
 		for i,v in pairs( removeA ) do self.setA[ v ] = nil end
 		for i,v in pairs( removeB ) do self.setB[ v ] = nil end
 
-		assert( #self.setA == self.len - #removeA, "Length of SetA shall be " .. self.len - #removeA )
-		assert( #self.setB == self.len - #removeB, "Length of SetB shall be " .. self.len - #removeB )
+		assert( #self.setA == self.len - #removeA, ("Length of SetA (%d) shall be %d"):format( #self.setA, self.len - #removeA ))
+		assert( #self.setB == self.len - #removeB, ("Length of SetB (%d) shall be %d"):format( #self.setB, self.len - #removeB ))
 
 		for i,v in pairs( keepA ) do
 			assert( self.setA[ v ], "Element '".. tostring( v ) .."' shall exist" )

@@ -101,7 +101,7 @@ local setElement = function( tbl, key, val )
 		if idx then tbl[ key ] = nil; table.remove( tbl, idx ) else return end
 	else
 		if idx then  -- can only replace values
-			assert( 0<idx and idx<#tbl,  "Index out of range of #OrderedHashTable" )
+			assert( 0<idx and idx<#tbl,  ("Index[%d] out of range of #OrderedHashTable[%d]"):format(idx,#tbl) )
 			tbl[ tbl[idx] ] = val
 		elseif nil == tbl[ key ] then
 			t_insert( tbl, key )

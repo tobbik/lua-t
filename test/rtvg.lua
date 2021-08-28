@@ -26,6 +26,7 @@ local letterFrequency = {
 	['Q'] =  0.11,
 	['J'] =  0.10,
 	['Z'] =  0.07,
+	--['œ'] =  0.01
 }
 
 for l,f in pairs( letterFrequency ) do

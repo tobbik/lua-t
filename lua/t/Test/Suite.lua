@@ -60,32 +60,32 @@ _mt = {       -- local _mt at top of file
   end
 }
 
-local function getPlan( tbl )
+local function getPlan( tbl, sort )
   local plan = { }
   for name, case in pairs( tbl ) do
     if type( case )=='function' and name~='beforeAll' and name~='afterAll' and name~='beforeEach' and name~='afterEach' then
       t_insert( plan, name )
     end
   end
+  if sort then table.sort(plan) end
   return plan
 end
 
 return setmetatable( {
 }, {
-  __call   = function( self, tbl, quiet )
-    local failedTests = { }
+  __call   = function( self, tbl, sort, quiet )
     assert( 'table' == type( tbl ), "Test.Suite() requires a table as argument" )
-    local suite, startSuite = makeSuite( { } ), Loop.time( )
+    local suite, failedTests, startSuite = makeSuite( { } ), makeSuite( { } ), Loop.time( )
     if tbl.beforeAll then Test( tbl.beforeAll, tbl ) end
-    for _, name in pairs( getPlan(tbl) ) do
+    for _, name in pairs( getPlan(tbl,sort) ) do
       local runTimeStart = Loop.time( )
       if tbl.beforeEach then Test( tbl.beforeEach, tbl ) end
       local ok, result = Test( tbl[ name ], tbl )
-      o_setElement( suite[ prxTblIdx ], name, result )
+      o_setElement( suite[ prxTblIdx ], tostring(name), result )
       if tbl.afterEach then Test( tbl.afterEach, tbl ) end
       result.runTime = Loop.time( ) - runTimeStart
       if not ok then
-        t_insert( failedTests, result  )
+        o_setElement( failedTests[ prxTblIdx ], tostring(name), result )
       end
       if not quiet then printTst( name, result ) end
     end

@@ -23,44 +23,43 @@ return {
 	-- Timer Tests
 	-- -----------------------------------------------------------------------
 	Timer = function( self )
-		Test.describe( "Test simple Timer" )
 		local arg1,arg2  = 100, 'this is a string'
-		local start      = Loop.time()
+		local time,start = math.random(80,600), Loop.time()
+		Test.describe( "Test simple Timer(%dms)", time )
 		local success    = function( a, b )
 			local ms_passed = Loop:time() - start
 			assert( a == arg1, "First argument should be " .. arg1 )
 			assert( b == arg2, "Second argument should be " .. arg2 )
-			assert( ms_passed > 380 and ms_passed < 390,
+			assert( ms_passed > time-5 and ms_passed < time+5,
 				("Time passed should be between 380 and 390 milliseconds, but was %d"):format(ms_passed) )
 		end
-		self.loop:addTask( 385, success, arg1, arg2 )
+		self.loop:addTask( time, success, arg1, arg2 )
 		self.loop:run()
 	end,
 
 	CancelTask = function( self )
-		Test.describe( "Cancel existing and running Task" )
-		local tsk1, tsk2 = nil, nil
+		local tsk1, tsk2, time = nil, nil, math.random(100,500)
+		Test.describe( "Cancel existing from a running Task after %dms", time )
 		local t1 = function( )
 			self.loop:cancelTask( tsk2 )
 		end
 		local t2 = function( )
 			assert( false, "This function should not have run since tsk1 cancelled it!" )
 		end
-		tsk1 = self.loop:addTask( 500 , t1 )
-		tsk2 = self.loop:addTask( 1000, t2 )
+		tsk1 = self.loop:addTask( time, t1 )
+		tsk2 = self.loop:addTask( time*2, t2 )
 		self.loop:run( )
 	end,
 
 	RepeatTask = function( self )
-		Test.describe( "Repeat Task by returning milliseconds from its function" )
-		local msg, time, cnt = 'Message1', 1000, 0
-		local tr = function( a )
-			assert( msg == a, ("Expected `%s`, got `%s`"):format( msg, a ) )
-			time = time - 251
+		local time, cnt = math.random(200,1000), 0
+		Test.describe( "Repeat Task by returning milliseconds(%dms) from its function", time )
+		local tr = function( diff )
+			time = time - diff
 			cnt  = cnt  + 1
 			return time
 		end
-		tskr = self.loop:addTask( time , tr, msg )
+		tskr = self.loop:addTask( time, tr, math.ceil(time/4) )
 		self.loop:run()
 		assert( cnt == 4, ("Expected to be execute `4`, got `%d`"):format( cnt ) )
 	end,
@@ -79,37 +78,37 @@ return {
 	end,
 
 	MultiTimer = function( self )
-		Test.describe( "Execute multiple timers in succession" )
-		local cnt, m_secs = 0, 50
+		local cnt, time = 0, math.random(10,80)
+		Test.describe( "Execute multiple timers in succession after %dms", time )
 		local inc = function( ) cnt = cnt+1 end
 		local chk = function( )
 			t_assert( cnt == 8, "%d timers should have been executed. Counted: %d", 8, cnt )
 		end
-		self.loop:addTask( 1*m_secs, inc )
-		self.loop:addTask( 2*m_secs, inc )
-		self.loop:addTask( 3*m_secs, inc )
-		self.loop:addTask( 4*m_secs, inc )
-		self.loop:addTask( 5*m_secs, inc )
-		self.loop:addTask( 6*m_secs, inc )
-		self.loop:addTask( 7*m_secs, inc )
-		self.loop:addTask( 8*m_secs, inc )
-		self.loop:addTask( 9*m_secs, chk )
+		self.loop:addTask( 1*time, inc )
+		self.loop:addTask( 2*time, inc )
+		self.loop:addTask( 3*time, inc )
+		self.loop:addTask( 4*time, inc )
+		self.loop:addTask( 5*time, inc )
+		self.loop:addTask( 6*time, inc )
+		self.loop:addTask( 7*time, inc )
+		self.loop:addTask( 8*time, inc )
+		self.loop:addTask( 9*time, chk )
 		self.loop:run()
 	end,
 
 	TimerOrder = function( self )
 		Test.describe( "Proper timer insertion requires ordering" )
 		local order = { 5, 7, 1, 4, 2, 9, 3, 8, 6 }  -- insertion order
-		local cnt, m_secs, tasks = 0, 50, { }
+		local cnt, time, tasks = 0, math.random(10,60), { }
 		local inc = function( ) cnt = cnt+1 end
 		local chk = function( )
 			assert( cnt == 9, ("%d timers should have been executed. Counted: %d"):format( 9, cnt ) )
 		end
 		for _, n in ipairs( order ) do
-			tasks[n] = self.loop:addTask( n*m_secs, inc )
+			tasks[n] = self.loop:addTask( n*time, inc )
 		end
-		tasks[10] = self.loop:addTask( 10*m_secs, chk )
-		for i=1,9 do
+		tasks[#order+1] = self.loop:addTask( (#order+1)*time, chk )
+		for i=1,#order do
 			local t_nxt = debug.getuservalue( tasks[ i ], 1 )  -- get the next uservalue
 			assert( t_nxt == tasks[ i+1 ], ("Expected next task <%s>, but was <%s>"):format( t_nxt, tasks[1+1] ) )
 		end

@@ -27,7 +27,7 @@ return {
 	Success = function( self, done )
 		Test.describe( "Test to success" )
 		self.t.Case = function( s ) assert( true, "This better works" ) end
-		local suite, time, fails = Suite( self.t, true )
+		local suite, time, fails = Suite( self.t, false, true )
 		assert( fails == nil               , "No Failed Test should have returned" )
 		assert( suite.Case.pass            , "Test.TestSuccess case suite should have passed" )
 		assert( suite.Case.status == "PASS", "Test.TestSuccess case suite should have passed" )
@@ -40,7 +40,7 @@ return {
 		Test.describe( "Test to fail" )
 		local errorMsg = "This is supposed to fail !!!"
 		self.t.Case = function( s ) assert( false, errorMsg ) end
-		local suite, time, fails = Suite( self.t, true )
+		local suite, time, fails = Suite( self.t, false, true )
 		assert( 'table' == type( fails ), "Failed Test table should have returned" )
 		assert( not suite.Case.pass, "Test.test_Test case suite should NOT have passed" )
 		assert( suite.Case.message == errorMsg, "Error Message should be set" )
@@ -55,7 +55,7 @@ return {
 	Skip = function( self, done )
 		Test.describe( "Skip should skip test" )
 		self.t.Case = function( s ) Test.skip('skip me'); assert( false, "This better fails" ) end
-		local suite, time, fails = Suite( self.t, true )
+		local suite, time, fails = Suite( self.t, false, true )
 		assert( fails == nil                   , "No Failed Test should have returned" )
 		assert( suite.Case.message == "skip me", "Test Skip reason should be set" )
 		assert( suite.Case.pass                , "Test.Case case suite should have passed" )
@@ -66,7 +66,7 @@ return {
 	Description = function( self, done )
 		Test.describe( "Test.describe should set test case description" )
 		self.t.Case = function( s ) Test.describe('describe me'); assert( true,  "This better works" ) end
-		local suite, time, fails = Suite( self.t, true )
+		local suite, time, fails = Suite( self.t, false, true )
 		assert( fails == nil               , "No Failed Test should have returned" )
 		assert( suite.Case.description == "describe me", "Test Description reason should be set" )
 		assert( suite.Case.pass, "Test.test_Test case suite should have passed" )
@@ -75,7 +75,7 @@ return {
 	Todo = function( self, done )
 		Test.describe( "TODO should mark test as todo" )
 		self.t.Case = function( s ) Test.todo('todo me'); assert( false, "This better fails" ) end
-		local suite, time, fails = Suite( self.t, true )
+		local suite, time, fails = Suite( self.t, false, true )
 		assert( fails == nil                   , "No Failed Test should have returned" )
 		assert( suite.Case.message == "todo me", "Test Todo reason should be set" )
 		assert( suite.Case.pass                , "Test.Case case suite should have passed" )

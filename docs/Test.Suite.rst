@@ -70,40 +70,13 @@ Test Execution Order
 --------------------
 
 ``Test`` can execute test cases in a guaranteed order or, in true unit
-testing fashion, in random order.  The behaviour can be selected via the way
-the table of ``Test`` cases is build.  For guaranteed order, create a
-table which is numerically inexed.  For random execution use a normal
-key<->value pair table:
+testing fashion, in random order.  By default, the excution will be ordered
+by running ``pairs(tst)``  over the test cases, which is random everytime a
+new table is build.
 
-.. code:: lua
-
-  test_ordered = {
-    [1] = function( self ) ... end,
-    [2] = function( self ) ... end,
-    [3] = function( self ) ... end,
-  }
-  test_random = {
-    testX = function( self ) ... end,
-    testY = function( self ) ... end,
-    testZ = function( self ) ... end,
-  }
-  so=Suite(test_ordered)
-  sr=Suite(test_random)
-  -- output:
-  PASS [0ms] [1] Test #1
-  PASS [0ms] [2] Test #2
-  PASS [0ms] [3] Test #3
-  PASS [0ms] [TestZ] Test Z
-  PASS [0ms] [testX] Test X
-  PASS [1ms] [testY] Test Y
-
-
-The reason is that ``Suite`` just uses ``pairs(tst)`` toiterate over the
-test cases.
-
-``Test.Suite`` itself is a collection of ``Test`` results and since it is
-implemented like a ``t.OrderedHashTable`` the results are stored in order of
-execution.
+The ``Test.Suite result`` itself is a collection of ``Test`` results and
+since it is implemented as a ``t.OrderedHashTable`` the results are stored
+in order of execution.
 
 
 Hooks
@@ -153,12 +126,16 @@ None.
 Class Metamembers
 -----------------
 
-``Suite suite, int milliseconds, table failed = Suite( [ table tests ] )   [__call]``
+``Suite suite, int milliseconds, table failed = Suite( table tests[, boolean sort, boolean quiet] )   [__call]``
   Creates a new ``Test.Suite`` suite instance.  It returns a collection of
   ``Test`` results in order of execution. ``int milliseconds`` is the
   runtime of the entire ``Test.Suite`` including all hooks.  Each test case
   in the suite which failed execution will be collected in the ``table
   failed``.  If all tests succeded that value will be ``nil``.
+  If ``boolean sort`` is passed as true,  the tests in the ``table tests``
+  will be sorted by their name. The default value is ``false``.
+  If ``boolean quiet`` is passed, the execution will not print status and
+  progress to the terminal. The default value is ``false``.
 
 
 Instance Members

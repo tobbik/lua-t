@@ -8,23 +8,27 @@ local Oht    = require( "t.OrderedHashTable" )
 
 return {
 	len        = 5000,
-	beforeEach = function( self )
+	beforeAll  = function( self )
 		self.rtvg   = Rtvg( )
-		-- rtvg.getVals() guarantees disjoint arrays!
+		-- self.rtvg.getVals() guarantees disjoint arrays!
 		self.keys   = self.rtvg:getKeys( self.len )
 		self.vals   = self.rtvg:getVals( self.len )
-		self.o, len = Oht( ), 0
+		assert( #self.keys == #self.vals, "Keys and Values must be of same length" )
+		assert( #self.keys == self.len,   "Keys and Values must be of same as defined length" )
+	end,
+
+	beforeEach = function( self )
+		self.o    = Oht( )
+		local len = 0
 		-- insertion order is preserved inside the Hash table
 		for i = 1, #self.keys do
 			self.o[ self.keys[i] ] = self.vals[i]
 			len  = len+1   -- count inserts
 		end
-		assert( #self.keys == #self.vals, "Keys and Values must be of same length" )
 		assert( len        == self.len,   "Number of inserts must equal length of Keys" )
 	end,
 
 	-- Test cases
-
 	LengthMustEqualInserts = function( self )
 		Test.describe( "Length of OrderedHashTable must be equal number of inserts" )
 		assert( #self.o == self.len, "Length must equal number of inserts" )
