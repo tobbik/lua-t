@@ -27,6 +27,7 @@ const char* t_csv_ste_nme[ ] = {
 	, NULL
 };
 
+#define T_CSV_HDLIDX   1
 /// The userdata struct for T.Csv row parser
 struct t_csv
 {
@@ -36,8 +37,8 @@ struct t_csv
 	char           qtd[3];  ///< quotation string for substitution (doublequotes), NUL terminated
 	char           esc[2];  ///< Tsv/Csv escape character string, NUL terminated
 	int               dbl;  ///< Use double quotation
-	lua_Integer        hR;  ///< Reference to file handle in LUA_REGISTRYINDEX
 	lua_Integer       cnt;  ///< running field count of current line
+	lua_Integer       rcs;  ///< running number of records in file
 	size_t            len;  ///< Length of current line load
 	const char       *lne;  ///< Current line load
 	char             *fld;  ///< Current start of field

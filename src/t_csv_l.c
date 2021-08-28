@@ -31,8 +31,8 @@ lt_csv_New( lua_State *L )
 {
 	struct t_csv    *csv = (struct t_csv *) lua_newuserdata( L, sizeof( struct t_csv ) );
 	csv->ste       = T_CSV_FLDSTART;  ///< Current parse state
-	csv->hR        = LUA_REFNIL;      ///< Reference to file handle in LUA_REGISTRYINDEX
 	csv->cnt       = 0;               ///< running field count of current line
+	csv->rcs       = 0;               ///< number of records in file
 	csv->len       = 0;               ///< Length of current line load
 	csv->lne       = NULL;            ///< Current line load
 	csv->fld       = NULL;            ///< Current start of field
@@ -137,6 +137,7 @@ t_csv_parse( lua_State *L, struct t_csv *csv )
 				else
 				{
 					csv->ste = T_CSV_ROWDONE;
+					(csv->rcs)++;
 				}
 				lua_rawseti( L, -2, ++(csv->cnt) );  // adjust cl for Lua 1 based index
 				break;
@@ -240,9 +241,11 @@ lt_csv__index( lua_State *L )
 	else if (0 == strncmp( key, "state", keyLen ))
 		lua_pushstring( L, t_csv_ste_nme[ csv->ste ] );
 	else if (0 == strncmp( key, "handle", keyLen ))
-		lua_rawgeti( L, LUA_REGISTRYINDEX, csv->hR );
+		lua_getiuservalue( L, 1, T_CSV_HDLIDX );
 	else if (0 == strncmp( key, "line", keyLen ))
 		lua_pushlstring( L, csv->lne, csv->len );
+	else if (0 == strncmp( key, "records", keyLen ))
+		lua_pushinteger( L, csv->rcs );
 	else
 	{
 		lua_getmetatable( L, 1 );  //S: seg key _mt
@@ -266,7 +269,7 @@ lt_csv__newindex( lua_State *L )
 {
 	struct t_csv *csv     = t_csv_check_ud( L, 1, 1 );
 	size_t        keyLen;
-	const char   *key     = luaL_checklstring( L, 2, &keyLen );
+	const char   *key     = luaL_checklstring( L, 2, &keyLen ); //S: csv idx val
 
 	if (0 == strncmp( key, "delimiter", keyLen ))
 	{
@@ -292,29 +295,12 @@ lt_csv__newindex( lua_State *L )
 		csv->ste     = luaL_checkoption( L, 3, "tex", t_csv_ste_nme );
 	else if (0 == strncmp( key, "handle", keyLen ) )
 		// TODO: either don't allow to set or check it's actually a FILE*
-		csv->hR      = luaL_ref( L, LUA_REGISTRYINDEX );
+		lua_setiuservalue( L, 1, T_CSV_HDLIDX );
 	else if (0 == strncmp( key, "line", keyLen ) )
 		csv->lne     = luaL_checklstring( L, 3, &(csv->len) );
 	else
 		luaL_argerror( L, 2, "Can't set this value in "T_CSV_TYPE );
 	return 1;
-}
-
-
-/**--------------------------------------------------------------------------
- * __gc method for Csv.
- * \param   L      Lua state.
- * \lparam  ud     T.Csv userdata instance.
- * \return  int    # of values pushed onto the stack.
- * --------------------------------------------------------------------------*/
-static int
-lt_csv__gc( lua_State *L )
-{
-	struct t_csv *csv = t_csv_check_ud( L, 1, 1 );
-
-	lua_rawgeti( L, LUA_REGISTRYINDEX, csv->hR );  //S: csv hdl
-	luaL_unref( L, LUA_REGISTRYINDEX, csv->hR );
-	return 0;
 }
 
 
@@ -341,7 +327,6 @@ static const luaL_Reg t_csv_m [] = {
 	  { "__tostring"   , lt_csv__tostring  }
 	, { "__index"      , lt_csv__index     }
 	, { "__newindex"   , lt_csv__newindex  }
-	, { "__gc"         , lt_csv__gc        }
 	, { "parseLine"    , lt_csv_parseLine  }
 	, { NULL           , NULL }
 };

@@ -17,17 +17,14 @@ Csv.new       = nil
 --csv_mt.__pairs    = function( self ) end
 
 csv_mt.rows      = function( self )
-	local parsed  = { }
-	local rowdone = true
-	local line    = self.handle:read( )  -- current line
+	local parsed,rowdone,line  = { }, true, self.handle:read( )  -- current line
 	return function ( )      -- iterator function
 		while line do         -- repeat while there are lines
 			rowdone = self:parseLine( line, parsed )
 			if rowdone then
 				local result = parsed
-				parsed = { }
-				line = self.handle:read( )
-				return result
+				parsed,line = { }, self.handle:read( )
+				return result, self.records
 			else
 				-- IF the line breaks are not \n we are already in trouble because file:read() strips any kind of line break
 				-- this assumes \n, it's the best we can do. TODO: smarter detect line breaks

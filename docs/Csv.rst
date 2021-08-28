@@ -112,9 +112,4 @@ Instance Metamembers
   address information, for example: *`T.Csv[<TAB>:":\\:true]:
   0x5650ce588428`*.
 
-``csv  [__gc]``
-  This releases the filehandle from the csv instance.  It will release the
-  memory reference to the file handle, but will not close the file.  This
-  responsibility remains with the appllication code or with the file handles
-  garbage collector.
 

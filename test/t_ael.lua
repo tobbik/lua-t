@@ -1,7 +1,6 @@
 ---
 -- \file    t_ael.lua
--- \brief   Test for the Set functionality
-local t_assert  = require't'.assert
+-- \brief   Test for the asynchronous Loop
 local Test      = require't.Test'
 local Loop      = require't.Loop'
 local Socket    = require't.Net.Socket'
@@ -82,7 +81,7 @@ return {
 		Test.describe( "Execute multiple timers in succession after %dms", time )
 		local inc = function( ) cnt = cnt+1 end
 		local chk = function( )
-			t_assert( cnt == 8, "%d timers should have been executed. Counted: %d", 8, cnt )
+			assert( cnt == 8, ("%d timers should have been executed. Counted: %d"):format( 8, cnt ) )
 		end
 		self.loop:addTask( 1*time, inc )
 		self.loop:addTask( 2*time, inc )
