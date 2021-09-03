@@ -20,6 +20,14 @@
 #include "t_dbg.h"
 #endif
 
+/* translate a relative string position: negative means back from end
+ * Translated to macro from Lua-5.4 source code */
+#define lua_posrelate( pos, len)    \
+	((pos)>=0)                       \
+		? (pos)                       \
+		: ((len) + pos + 1);
+
+
 /** -------------------------------------------------------------------------
  * Constructor - creates the buffer.
  * \param   L      Lua state.
@@ -97,16 +105,6 @@ lt_buf_clear( lua_State *L )
 }
 
 
-/* translate a relative string position: negative means back from end
- * Taken from Lua-5.4 source code*/
-static
-lua_Integer posrelat( lua_Integer pos, size_t len )
-{
-  if (pos >= 0) return pos;
-  else return (lua_Integer)len + pos + 1;
-}
-
-
 /**--------------------------------------------------------------------------
  * Read a set of chars from T.Buffer at position x for length y.
  * \param   L      Lua state.
@@ -121,7 +119,7 @@ lt_buf_read( lua_State *L )
 {
 	size_t        bLen;
 	char         *buf  = t_buf_checklstring( L, 1, &bLen, NULL );
-	lua_Integer start  = posrelat( luaL_optinteger( L, 2,  1 ), bLen );
+	lua_Integer start  = lua_posrelate( luaL_optinteger( L, 2,  1 ), (lua_Integer) bLen );
 	lua_Integer   len  = luaL_optinteger( L, 3, (lua_Integer) bLen-start+1 );
 
 	// luaL_argcheck( L, cw != 0, 1, "must be "T_BUF_TYPE" or "T_BUF_SEG_TYPE );

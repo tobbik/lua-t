@@ -16,50 +16,42 @@ local csv_new = Csv.new
 Csv.new       = nil
 --csv_mt.__pairs    = function( self ) end
 
-csv_mt.rows      = function( self )
-	local parsed,rowdone,line  = { }, true, self.handle:read( )  -- current line
+csv_mt.rows = function( self, source )
+	assert( 'function' == type(source), "Argument must be an iterator function" )
+	local records,parsed,rowdone,line = 0 ,{ }, true, source( )  -- current line
 	return function ( )      -- iterator function
 		while line do         -- repeat while there are lines
 			rowdone = self:parseLine( line, parsed )
 			if rowdone then
 				local result = parsed
-				parsed,line = { }, self.handle:read( )
-				return result, self.records
+				parsed,line,records = { }, source( ), records+1
+				return result, records
 			else
 				-- IF the line breaks are not \n we are already in trouble because file:read() strips any kind of line break
 				-- this assumes \n, it's the best we can do. TODO: smarter detect line breaks
-				line = line .."\n".. self.handle:read( )
-				--line = line .. self.handle:read( 'L' )
+				line = line .."\n".. source( )
 			end
 		end
 		return nil            -- no more lines: end of traversal
 	end
 end
 
-Csv_mt.__call     = function( csvClass, file, delimiter, quotchar, escapechar, doublequoted )
-	local instance        = csv_new( )
-	local fHandle
-	if 'table' == type( file ) then
-		instance.delimiter    = file.delimiter    or ","
-		instance.quotchar     = file.quotchar     or "\""
-		instance.escapechar   = file.escapechar   or "\\"
-		instance.doublequoted = nil == file.doublequoted and false or true
-		fHandle               = file.handle
+Csv_mt.__call = function( csvClass, delimiter, quotchar, escapechar, doublequoted )
+	local csv  = csv_new( )
+	--delimiter = 'table' = type(delimiter) and delimiter.delimiter or delimiter
+	if 'table' == type( delimiter ) then
+		csv.delimiter    = delimiter.delimiter    or ","
+		csv.quotchar     = delimiter.quotchar     or "\""
+		csv.escapechar   = delimiter.escapechar   or "\\"
+		csv.doublequoted = nil == delimiter.doublequoted and true or delimiter.doublequoted
 	else
-		instance.delimiter    = delimiter    or ","
-		instance.quotchar     = quotchar     or "\""
-		instance.escapechar   = escapechar   or "\\"
-		instance.doublequoted = nil == doublequoted and false or true
-		fHandle               = file
+		csv.delimiter    = delimiter              or ","
+		csv.quotchar     = quotchar               or "\""
+		csv.escapechar   = escapechar             or "\\"
+		--csv.doublequoted = nil == doublequoted and false or true
+		csv.doublequoted = nil == doublequoted and true or doublequoted
 	end
-	if 'string' == type( fHandle ) then
-		instance.handle = assert( io_open( fHandle, 'r' ) )
-	elseif 'userdata' == type( fHandle ) and 'function' == type( fHandle.read ) then
-		instance.handle = fHandle
-	else
-		error( 'Expected string or Lua file handle' )
-	end
-	return instance
+	return csv
 end
 
 return Csv

@@ -10,7 +10,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#include <string.h>               // memset,memcpy
+#include <string.h>               // strchr, strncmp
 
 #include "t_csv_l.h"
 
@@ -31,8 +31,6 @@ lt_csv_New( lua_State *L )
 {
 	struct t_csv    *csv = (struct t_csv *) lua_newuserdata( L, sizeof( struct t_csv ) );
 	csv->ste       = T_CSV_FLDSTART;  ///< Current parse state
-	csv->cnt       = 0;               ///< running field count of current line
-	csv->rcs       = 0;               ///< number of records in file
 	csv->len       = 0;               ///< Length of current line load
 	csv->lne       = NULL;            ///< Current line load
 	csv->fld       = NULL;            ///< Current start of field
@@ -135,11 +133,8 @@ t_csv_parse( lua_State *L, struct t_csv *csv )
 					csv->ste = T_CSV_FLDSTART;
 				}
 				else
-				{
 					csv->ste = T_CSV_ROWDONE;
-					(csv->rcs)++;
-				}
-				lua_rawseti( L, -2, ++(csv->cnt) );  // adjust cl for Lua 1 based index
+				lua_rawseti( L, -2, lua_rawlen( L, -2 ) +1 );  // adjust cl for Lua 1 based index
 				break;
 			default:                           // handle as error -> abort
 				csv->ste = T_CSV_ROWDONE;
@@ -171,7 +166,7 @@ lt_csv_parseLine( lua_State *L )
 	// T_CSV_INQUOTES is the only re-entrant state (handle multi-line fields)
 	if (T_CSV_INQUOTES == csv->ste)
 	{
-		//printf( "[%lu   %lu]  %lld\n ", csv->fld - csv->lne, csv->run - csv->lne, csv->cnt );
+		//printf( "[%lu   %lu]  %lld\n ", csv->fld - csv->lne, csv->run - csv->lne, lua_rawlen(L,-1) );
 		csv->fld  = (char *) lne + (csv->fld - csv->lne);
 		csv->run  = csv->fld;
 		//csv->run  = (char *) lne + (csv->run - csv->lne);
@@ -180,12 +175,78 @@ lt_csv_parseLine( lua_State *L )
 	{
 		csv->fld  = (char *) lne;
 		csv->run  = (char *) lne;
-		csv->cnt  = lua_rawlen( L, -1 );
 		csv->ste  = T_CSV_FLDSTART;
 	}
 	csv->lne     = lne;
 	t_csv_parse( L, csv );
 	lua_pushboolean( L, T_CSV_ROWDONE == csv->ste );
+	return 1;
+}
+
+
+/**--------------------------------------------------------------------------
+ * Closure to split a string by a delimiter
+ * \param   L       Lua state.
+ * \uparam  string  Original text string.
+ * \uparam  string  Delimiter string.
+ * \uparam  int     Index inside uparam text string.
+ * \lreturn string  Last token that was split of from text string.
+ * \return  int     # of values pushed onto the stack.
+ * --------------------------------------------------------------------------*/
+static int
+t_csv_split( lua_State *L )
+{
+	size_t       lns,lnd; // length input, length delim
+	const char  *str = luaL_checklstring( L, lua_upvalueindex( 1 ), &lns );
+	const char  *dlm = luaL_checklstring( L, lua_upvalueindex( 2 ), &lnd );
+	size_t       its = luaL_checkinteger( L, lua_upvalueindex( 3 ) ); // iter input
+	size_t       cnt = luaL_checkinteger( L, lua_upvalueindex( 4 ) ); // token counter
+	size_t       itd = 0, tkn = its;                                  // iter delim, token start
+	//printf("$$$$$$$$$$$$$$$$$$$      ITS(TKN): %zu   LEN: %zu <%c>\n", its, lns, str[tkn]);
+	if (its > lns)
+		lua_pushnil( L );
+	else
+	{
+		for (; its < lns; its++)
+		{
+			//printf("   ITS: %zu <%c><%c> ", its, str[its], dlm[itd]);
+			itd = str[its] == dlm[itd] // string matches delimiter
+				? itd+1                    // advance delimiter
+				: (str[its] == *dlm)       // first character in delimiter matches
+					? 1                        // advance delimiter to one
+					: 0;                       // reset delimiter
+			//printf(" -- %s\n", lnd == itd ? "Yea" : "Neh");
+			if (itd == lnd)            // delimeter completely matched
+				break;
+		}
+		//printf("      TKN: %s   %zu %ld \n", &(str[tkn]), its, its-tkn - ( (its==lns) ? 0 : lnd - 1 ));
+		lua_pushlstring( L, &(str[tkn]), its-tkn - ( (its==lns) ? 0 : lnd - 1 ) );
+		lua_pushinteger( L, its+1 );
+		lua_replace( L, lua_upvalueindex( 3 ) );
+		lua_pushinteger( L, cnt+1 );
+		lua_replace( L, lua_upvalueindex( 4 ) );
+		lua_pushinteger( L, cnt+1 );
+	}
+	return (its>lns) ? 1 : 2;
+}
+
+
+/**--------------------------------------------------------------------------
+ * Function to split a string by a delimiter
+ * \param   L       Lua state.
+ * \lparam  string  Text string to split.
+ * \lparam  string  Delimiter string.
+ * \lreturn func    Iterator function that returns the split tokens one by one.
+ * \return  int     # of values pushed onto the stack.
+ * --------------------------------------------------------------------------*/
+static int
+lt_csv_Split( lua_State *L )
+{
+	const char __attribute__ ((unused)) *str = luaL_checkstring( L, 1 );
+	const char __attribute__ ((unused)) *dlm = luaL_checkstring( L, 2 );
+	lua_pushinteger( L, 0 );                // str iterator
+	lua_pushinteger( L, 0 );                // token counter
+	lua_pushcclosure( L, &t_csv_split, 4 );
 	return 1;
 }
 
@@ -240,12 +301,8 @@ lt_csv__index( lua_State *L )
 		lua_pushboolean( L, csv->dbl );
 	else if (0 == strncmp( key, "state", keyLen ))
 		lua_pushstring( L, t_csv_ste_nme[ csv->ste ] );
-	else if (0 == strncmp( key, "handle", keyLen ))
-		lua_getiuservalue( L, 1, T_CSV_HDLIDX );
 	else if (0 == strncmp( key, "line", keyLen ))
 		lua_pushlstring( L, csv->lne, csv->len );
-	else if (0 == strncmp( key, "records", keyLen ))
-		lua_pushinteger( L, csv->rcs );
 	else
 	{
 		lua_getmetatable( L, 1 );  //S: seg key _mt
@@ -270,6 +327,7 @@ lt_csv__newindex( lua_State *L )
 	struct t_csv *csv     = t_csv_check_ud( L, 1, 1 );
 	size_t        keyLen;
 	const char   *key     = luaL_checklstring( L, 2, &keyLen ); //S: csv idx val
+	//t_stackDump(L);
 
 	if (0 == strncmp( key, "delimiter", keyLen ))
 	{
@@ -292,10 +350,7 @@ lt_csv__newindex( lua_State *L )
 	else if (0 == strncmp( key, "doublequoted", keyLen ))
 		csv->dbl     = lua_toboolean( L, 3 );
 	else if (0 == strncmp( key, "state", keyLen ) )
-		csv->ste     = luaL_checkoption( L, 3, "tex", t_csv_ste_nme );
-	else if (0 == strncmp( key, "handle", keyLen ) )
-		// TODO: either don't allow to set or check it's actually a FILE*
-		lua_setiuservalue( L, 1, T_CSV_HDLIDX );
+		csv->ste     = luaL_checkoption( L, 3, NULL, t_csv_ste_nme );
 	else if (0 == strncmp( key, "line", keyLen ) )
 		csv->lne     = luaL_checklstring( L, 3, &(csv->len) );
 	else
@@ -316,6 +371,7 @@ static const struct luaL_Reg t_csv_fm [] = {
  * --------------------------------------------------------------------------*/
 static const struct luaL_Reg t_csv_cf [] = {
 	  {"new"           , lt_csv_New        }
+	, {"split"         , lt_csv_Split      }
 	, { NULL           , NULL              }
 };
 
