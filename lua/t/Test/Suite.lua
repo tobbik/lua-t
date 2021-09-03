@@ -12,8 +12,8 @@ local           Table,            Oht  =
       require"t.Table", require"t.OrderedHashTable"
 local t_concat    , t_insert    , format       , getmetatable, setmetatable, pairs, assert, type =
       table.concat, table.insert, string.format, getmetatable, setmetatable, pairs, assert, type
-local t_clone     , prxTblIdx              ,o_setElement  , o_getElement  , o_iters =
-      Table.clone , Table.proxyTableIndex, Oht.setElement, Oht.getElement, Oht.iters
+local prxTblIdx              ,o_setElement  , o_getElement  , o_iters =
+      Table.proxyTableIndex, Oht.setElement, Oht.getElement, Oht.iters
 
 local _mt
 
@@ -71,8 +71,8 @@ local function getPlan( tbl, sort )
   return plan
 end
 
-return setmetatable( {
-}, {
+return setmetatable( { },
+{
   __call   = function( self, tbl, sort, quiet )
     assert( 'table' == type( tbl ), "Test.Suite() requires a table as argument" )
     local suite, failedTests, startSuite = makeSuite( { } ), makeSuite( { } ), Loop.time( )
