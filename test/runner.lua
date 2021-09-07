@@ -12,21 +12,22 @@ local prxTblIdx            ,o_setElement   =
       Table.proxyTableIndex, Oht.setElement
 
 local suites = {
-	"t_ael",
-	"t_buf"                 , "t_buf_seg",
-	"t_net_adr"             , "t_net_ifc",
-	"t_net_sck_create"      , "t_net_sck_bind",
-	"t_net_sck_connect"     , "t_net_sck_listen",
-	"t_net_sck_dgram_recv"  , "t_net_sck_dgram_send",
-	"t_net_sck_stream_recv" , "t_net_sck_stream_send",
-	"t_oht"                 , "t_set",
-	"t_t"                   , "t_csv",
-	"t_tbl"                 , "t_tbl_equals",
-	"t_tst"                 ,
+	--"t_ael",
+	--"t_buf"                 , "t_buf_seg",
+	--"t_net_adr"             , "t_net_ifc",
+	--"t_net_sck_create"      , "t_net_sck_bind",
+	--"t_net_sck_connect"     , "t_net_sck_listen",
+	--"t_net_sck_dgram_recv"  , "t_net_sck_dgram_send",
+	--"t_net_sck_stream_recv" , "t_net_sck_stream_send",
+	--"t_oht"                 , "t_set",
+	--"t_t"                   ,
+	--"t_tbl"                 , "t_tbl_equals",
+	--"t_tst"                 ,
+	"t_csv"                 ,
 	--"t_pck_range"           , "t_pck_cmb",
 	--"t_pck_bytes"           , "t_pck_bits",
 	--"t_pck_fmt"             , "t_pck_mix",
-	"t_htp_rsp"             , "t_htp_req",
+	--"t_htp_rsp"             , "t_htp_req",
 }
 
 local failures  = Suite( {} )

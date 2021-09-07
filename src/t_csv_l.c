@@ -303,6 +303,8 @@ lt_csv__index( lua_State *L )
 		lua_pushstring( L, t_csv_ste_nme[ csv->ste ] );
 	else if (0 == strncmp( key, "line", keyLen ))
 		lua_pushlstring( L, csv->lne, csv->len );
+	else if (0 == strncmp( key, "headers", keyLen ))
+		lua_getiuservalue( L, 1, T_CSV_HDRIDX );
 	else
 	{
 		lua_getmetatable( L, 1 );  //S: seg key _mt
@@ -353,6 +355,8 @@ lt_csv__newindex( lua_State *L )
 		csv->ste     = luaL_checkoption( L, 3, NULL, t_csv_ste_nme );
 	else if (0 == strncmp( key, "line", keyLen ) )
 		csv->lne     = luaL_checklstring( L, 3, &(csv->len) );
+	else if (0 == strncmp( key, "headers", keyLen ) )
+		lua_setiuservalue( L, 1, T_CSV_HDRIDX );
 	else
 		luaL_argerror( L, 2, "Can't set this value in "T_CSV_TYPE );
 	return 1;

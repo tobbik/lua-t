@@ -27,6 +27,8 @@ const char* t_csv_ste_nme[ ] = {
 	, NULL
 };
 
+
+#define T_CSV_HDRIDX    1
 /// The userdata struct for T.Csv row parser
 struct t_csv
 {

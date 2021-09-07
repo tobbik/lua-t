@@ -32,7 +32,7 @@ API
 Class Members
 -------------
 
-``function tokenIterator = Csv.split( string text, string delimiter)``
+``function tokenIterator = Csv.split( string text, string delimiter )``
   Returns an iterator that returns tokens from ``string text`` separated by
   ``string delimiter`` until the text is exhausted.  ``function
   tokenIterator()`` returns 2 values ``string token, int count``.
@@ -49,15 +49,16 @@ Class Metamembers
   is also possible to pass a table that contains all relevant fields named
   like in the instance members like so:
 
-.. code:: lua
+  .. code:: lua
 
-  Csv = require"t.Csv"
-  tsv = Csv( {
-    delimiter   = "\t",
-    quotechar   = "'",
-    escapechar  = "\\",
-    doublequote = false
-  } )
+    Csv = require"t.Csv"
+    tsv = Csv( {
+      delimiter   = "\t",
+      quotechar   = "'",
+      escapechar  = "\\",
+      doublequote = false,
+      headers     = { "some", "pre-defined", "headers", "for", "the", "columns" }
+    } )
 
 
 Instance Members
@@ -99,35 +100,59 @@ Instance Members
   accessible for convienience.  Possible values are available in
   src/t_csv_l.h.
 
+``boolean|table headers  = csv.headers``
+  If set to ``boolean true`` the parser will read the first line as column
+  headers and ``csv.headers`` will be replaced by a table that represents
+  the headers in the order of the columns.  If set to ``boolean false`` the
+  first line will be interpreted as a line of data values.  If the
+  constructor gets passed a ``table headers`` it will not read the first
+  line as headers and will use the passed table to define the collumns
+  within the rows.
+
 ``function rowIterator  = csv:rows( function sourceIterator )``
   Rows is an iterator that returns a table of fields for each logical row of
   the CSV file.  It honours properly encapsulated and escaped line breaks in
   the file itself.  the ``csv:rows()``  iterator returns a ``table rowData``
-  and an ``int rowCount`` for each iteration.  ``function sourceIterator``
-  is mandatory and must be of type iterator that returns a new line of text
-  each time it gets called.  For standard files this iseasiest to be used
-  with the ``io.lines()`` iterator provided by Lua itself:
+  and an ``int rowCount`` for each iteration.  The returned ``table
+  rowData`` is a numerically indexed table which holds a value for each
+  column.  If the parser has a ``headers`` definition the table will `also`
+  contain key/ value pairs for the indexd data.  The following example
+  illustrates the behaviour.
 
-.. code:: lua
+  .. code:: lua
 
-  Csv = require"t.Csv"
-  tsv = Csv( '\t' )
-  for rowTable, rowCount in tsv:rows( io.lines("data.tsv") ) do
-    ... rowTable contains all fields of a tsv row
-  end
+    src=[[
+    first,second,third
+    a,b,c
+    x,y,z]]
+    csv=Csv({headers=true})
+    for rowTable, rowCount in tsv:rows( io.lines("data.tsv") ) do
+      ... rowTable looks like: {"a","b","c", first="a", second="b", third="c"}
+    end
 
-For convienience to parse text-only sources that may have been received over
-the network or from a database, the ``Csv`` module provides a static
-``split()`` function that can be used to create an iterator for string only
-variables:
+  For standard files this iseasiest to be used with the ``io.lines()``
+  iterator provided by Lua itself:
 
-.. code:: lua
+  .. code:: lua
 
-  Csv = require"t.Csv"
-  csv = Csv( )
-  for rowTable, rowCount in csv:rows( Csv.split( textCsvData ) ) do
-    ... rowTable contains all fields of a csv row
-  end
+    Csv = require"t.Csv"
+    tsv = Csv( '\t' )
+    for rowTable, rowCount in tsv:rows( io.lines("data.tsv") ) do
+      ... rowTable contains all fields of a tsv row
+    end
+
+  For convienience to parse text-only sources that may have been received over
+  the network or from a database, the ``Csv`` module provides a static
+  ``split()`` function that can be used to create an iterator for string only
+  variables:
+
+  .. code:: lua
+
+    Csv = require"t.Csv"
+    csv = Csv( )
+    for rowTable, rowCount in csv:rows( Csv.split( textCsvData ) ) do
+      ... rowTable contains all fields of a csv row
+    end
 
 
 Instance Metamembers
@@ -138,5 +163,4 @@ Instance Metamembers
   contains type, delimiter, quotchar, escapechar, doublequote and memory
   address information, for example: *`T.Csv[<TAB>:":\\:true]:
   0x5650ce588428`*.
-
 
