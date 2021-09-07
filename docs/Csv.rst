@@ -41,13 +41,13 @@ Class Members
 Class Metamembers
 -----------------
 
-``Csv csv = Csv( [string|table delimiter, string quotchar, string esacapechar, boolean doublequote] )   [__call]``
-  Instantiate a new ``Csv`` object. ``delimiter``, ``quotchar``,
-  ``escapechar`` and ``doublequote`` are optional parameters.  For detailed
-  descriptions of the parameters and their default values refer to the
-  instance members of the same name.  For more descriptive source code, it
-  is also possible to pass a table that contains all relevant fields named
-  like in the instance members like so:
+``Csv csv = Csv( [string|table delimiter, boolean|table headers, string quotchar, string esacapechar, boolean doublequote] )   [__call]``
+  Instantiate a new ``Csv`` object. ``delimiter``, ``headers``, ``quotchar``
+  , ``escapechar`` and ``doublequote`` are optional parameters.  For
+  detailed descriptions of the parameters and their default values refer to
+  the instance members of the same name.  For more descriptive source code,
+  it is also possible to pass a table that contains all relevant fields
+  named like in the instance members like so:
 
   .. code:: lua
 
@@ -89,9 +89,6 @@ Instance Members
   If set, ``quotchar`` appearing within a fiels are protected by a
   proceeding ``quotchar``, otherwise the ``escapechar`` is used.
 
-``luaFile/string source  = csv.source``
-  This is the file that is currently processed.
-
 ``string line  = csv.line``
   The current line the parser works on.
 
@@ -115,9 +112,9 @@ Instance Members
   the file itself.  the ``csv:rows()``  iterator returns a ``table rowData``
   and an ``int rowCount`` for each iteration.  The returned ``table
   rowData`` is a numerically indexed table which holds a value for each
-  column.  If the parser has a ``headers`` definition the table will `also`
-  contain key/ value pairs for the indexd data.  The following example
-  illustrates the behaviour.
+  column.  If the parser has a ``headers`` definition the table will
+  **also** contain key/value pairs for the indexd data.  The following
+  example illustrates the behaviour.
 
   .. code:: lua
 
@@ -130,8 +127,8 @@ Instance Members
       ... rowTable looks like: {"a","b","c", first="a", second="b", third="c"}
     end
 
-  For standard files this iseasiest to be used with the ``io.lines()``
-  iterator provided by Lua itself:
+  For standard files it is easiest to use the ``io.lines()`` iterator
+  provided by Lua itself:
 
   .. code:: lua
 

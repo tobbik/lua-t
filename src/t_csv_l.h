@@ -33,10 +33,9 @@ const char* t_csv_ste_nme[ ] = {
 struct t_csv
 {
 	enum t_csv_ste    ste;  ///< Current parse state
-	char           dlm[2];  ///< Tsv/Csv delimiter character string, NUL terminated
-	char           qts[2];  ///< quotation string, NUL terminated
-	char           qtd[3];  ///< quotation string for substitution (doublequotes), NUL terminated
-	char           esc[2];  ///< Tsv/Csv escape character string, NUL terminated
+	char              dlm;  ///< Tsv/Csv delimiter character string, NUL terminated
+	char              qts;  ///< quotation string, NUL terminated
+	char              esc;  ///< Tsv/Csv escape character string, NUL terminated
 	int               dbl;  ///< Use double quotation
 	size_t            len;  ///< Length of current line load
 	const char       *lne;  ///< Current line load

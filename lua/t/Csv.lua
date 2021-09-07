@@ -7,7 +7,7 @@
 -- \copyright See Copyright notice at the end of src/t.h
 
 local Csv     = require( "t.csv" )
-local io_open = io.open
+local Buffer  = require( "t.Buffer" )
 
 local csv_mt  = debug.getregistry( )[ "T.Csv" ]
 local Csv_mt  = getmetatable( Csv )
@@ -31,6 +31,7 @@ csv_mt.rows = function( self, source )
 	end
 	return function ( )      -- iterator function
 		while line do         -- repeat while there are lines
+			print( Buffer(line):toHex())
 			--print(("LINE:  _%s_"):format(line))
 			rowdone = self:parseLine( line, parsed )
 			if 0==#line then

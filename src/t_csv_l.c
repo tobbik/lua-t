@@ -65,6 +65,8 @@ static void
 t_csv_parse( lua_State *L, struct t_csv *csv )
 {
 	int  qc = 0;
+	char quotes[2] = { csv->qts, 0 };
+	char dbl_quotes[3] = { csv->qts, csv->qts, 0 };
 
 	// CSV/TSV parsing finite state machine
 	while (T_CSV_ROWDONE != csv->ste)
@@ -75,7 +77,7 @@ t_csv_parse( lua_State *L, struct t_csv *csv )
 			case T_CSV_FLDSTART:
 				csv->fld = csv->run;
 				qc = 0;
-				while (csv->qts[0] == *(csv->run))
+				while (csv->qts == *(csv->run))
 				{
 					(csv->run)++;
 					qc++;
@@ -88,7 +90,7 @@ t_csv_parse( lua_State *L, struct t_csv *csv )
 				else
 				{
 					csv->ste = T_CSV_NOQOUTE;
-					if (csv->dlm[0] == *(csv->run) || 0 == *(csv->run))
+					if (csv->dlm == *(csv->run) || 0 == *(csv->run))
 					{
 						lua_pushlstring( L, csv->fld, csv->run - csv->fld );
 						csv->ste = T_CSV_FLDEND;
@@ -96,29 +98,29 @@ t_csv_parse( lua_State *L, struct t_csv *csv )
 				}
 				break;
 			case T_CSV_NOQOUTE:
-				csv->run = strchr( csv->run, csv->dlm[0] );
+				csv->run = strchr( csv->run, csv->dlm );
 				csv->run = (! csv->run)
-					? (char * ) csv->lne + csv->len  // no delimiter -> go to end of line
+					? (char *) csv->lne + csv->len  // no delimiter -> go to end of line
 					: csv->run;
 				lua_pushlstring( L, csv->fld, csv->run - csv->fld );
 				csv->ste = T_CSV_FLDEND;
 				break;
 			case T_CSV_INQUOTES:
-				csv->run = strchr( csv->run, csv->qts[0] );
+				csv->run = strchr( csv->run, csv->qts );
 				if (! csv->run)
 				{
 					return;
 					break;
 				}
 				// TODO: check for `doublequoted`
-				if (csv->qts[0] == *(csv->run + 1)) // escaped quote
+				if (csv->qts == *(csv->run + 1)) // escaped quote
 					(csv->run) += 2;
 				else
 				{
 					// push a \0 terminated string on stack that can be safely gsub()-ed
 					// creates extra copy on stack that needs to be popped
 					lua_pushlstring( L, csv->fld, csv->run - csv->fld );
-					luaL_gsub( L, lua_tostring( L, -1 ), csv->qtd, csv->qts ); // pushes rinsed result onto stack
+					luaL_gsub( L, lua_tostring( L, -1 ), dbl_quotes, quotes ); // pushes rinsed result onto stack
 					lua_remove( L, -2 );
 
 					(csv->run)++;
@@ -266,8 +268,8 @@ static int
 lt_csv__tostring( lua_State *L )
 {
 	struct t_csv *csv = t_csv_check_ud( L, 1, 1 );
-	lua_pushfstring( L, T_CSV_TYPE"[%s:%s:%s:%s]: %p",
-		(csv->dlm[0] == '\t') ? "<TAB>" : csv->dlm,
+	lua_pushfstring( L, T_CSV_TYPE"[%c:%c:%c:%s]: %p",
+		csv->dlm,
 		csv->qts,
 		csv->esc,
 		(csv->dbl) ? "true" : "false",
@@ -292,11 +294,11 @@ lt_csv__index( lua_State *L )
 	const char   *key     = luaL_checklstring( L, 2, &keyLen );
 
 	if (0 == strncmp( key, "delimiter", keyLen ))
-		lua_pushlstring( L, csv->dlm, 1 );
+		lua_pushlstring( L, &(csv->dlm), 1 );
 	else if (0 == strncmp( key, "quotchar", keyLen ))
-		lua_pushlstring( L, csv->qts, 1 );
+		lua_pushlstring( L, &(csv->qts), 1 );
 	else if (0 == strncmp( key, "escapechar", keyLen ))
-		lua_pushlstring( L, csv->esc, 1 );
+		lua_pushlstring( L, &(csv->esc), 1 );
 	else if (0 == strncmp( key, "doublequoted", keyLen ))
 		lua_pushboolean( L, csv->dbl );
 	else if (0 == strncmp( key, "state", keyLen ))
@@ -332,29 +334,17 @@ lt_csv__newindex( lua_State *L )
 	//t_stackDump(L);
 
 	if (0 == strncmp( key, "delimiter", keyLen ))
-	{
-		csv->dlm[0] = lua_tostring(  L, 3 )[ 0 ];
-		csv->dlm[1] = 0;
-	}
+		csv->dlm = lua_tostring(  L, 3 )[ 0 ];
 	else if (0 == strncmp( key, "quotchar", keyLen ))
-	{
-		csv->qts[0] = lua_tostring(  L, 3 )[ 0 ];
-		csv->qts[1] = 0;
-		csv->qtd[0] = csv->qts[0];
-		csv->qtd[1] = csv->qts[0];
-		csv->qtd[2] = 0;
-	}
+		csv->qts = lua_tostring(  L, 3 )[ 0 ];
 	else if (0 == strncmp( key, "escapechar", keyLen ))
-	{
-		csv->esc[0]  = lua_tostring(  L, 3 )[ 0 ];
-		csv->esc[1] = 0;
-	}
+		csv->esc = lua_tostring(  L, 3 )[ 0 ];
 	else if (0 == strncmp( key, "doublequoted", keyLen ))
-		csv->dbl     = lua_toboolean( L, 3 );
+		csv->dbl = lua_toboolean( L, 3 );
 	else if (0 == strncmp( key, "state", keyLen ) )
-		csv->ste     = luaL_checkoption( L, 3, NULL, t_csv_ste_nme );
+		csv->ste = luaL_checkoption( L, 3, NULL, t_csv_ste_nme );
 	else if (0 == strncmp( key, "line", keyLen ) )
-		csv->lne     = luaL_checklstring( L, 3, &(csv->len) );
+		csv->lne = luaL_checklstring( L, 3, &(csv->len) );
 	else if (0 == strncmp( key, "headers", keyLen ) )
 		lua_setiuservalue( L, 1, T_CSV_HDRIDX );
 	else
