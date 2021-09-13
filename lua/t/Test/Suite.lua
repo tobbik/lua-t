@@ -15,6 +15,8 @@ local t_concat    , t_insert    , format       , getmetatable, setmetatable, pai
 local prxTblIdx              ,o_setElement  , o_getElement  , o_iters =
       Table.proxyTableIndex, Oht.setElement, Oht.getElement, Oht.iters
 
+-- console colours  green    red      yellow   blue
+local colors    = { PASS=32, FAIL=31, SKIP=33, TODO=36}
 local _mt
 
 -- ---------------------------- general helpers  --------------------
@@ -30,8 +32,6 @@ local makeSuite = function( prx )
 end
 
 local printTst = function( nme, tst )
-  -- console colours      green    red      yellow   blue
-  local colors        = { PASS=32, FAIL=31, SKIP=33, TODO=36}
   print( ('[%dm%s[0m [%dms] [%dms] [%s] %s'):format( colors[ tst.status ], tst.status, tst.executionTime, tst.runTime, nme, tostring(tst) ) )
 end
 
@@ -43,6 +43,12 @@ _mt = {       -- local _mt at top of file
   __pairs    = function( self )      return o_iters( getPrx( self ), false )     end,
   __ipairs   = function( self )      return o_iters( getPrx( self ), true )      end,
   __index    = function( self, key ) return o_getElement( getPrx( self ), key )  end,
+  __add      = function( self, oth )
+    local res = makeSuite( {} )
+    for k,v in o_iters( self, false ) do o_setElement( getPrx( res ), k, v ) end
+    for k,v in o_iters( oth , false ) do o_setElement( getPrx( res ), k, v ) end
+    return res
+  end,
   __newindex = function( self, key, val )
     assert( false, "Overwriting members is not allowed" )
   end,
