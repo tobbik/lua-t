@@ -10,20 +10,27 @@
 #include "t.h"             // t_typeerror()
 
 enum t_csv_ste {
-	  T_CSV_FLDSTART   = 0  ///< 0 start a brand new field
-	, T_CSV_FLDEND     = 1  ///< 1 reached end of a field
-	, T_CSV_NOQOUTE    = 2  ///< 2 start of a non quoted field
-	, T_CSV_INQUOTES   = 3  ///< 3 within a quoted field
-	, T_CSV_ROWTRUNCED = 4  ///< 4 must read more data to continue parsing field
-	, T_CSV_ROWDONE    = 5  ///< 5 return control
+	  T_CSV_FLDBEG     = 0     ///< begin new field
+	, T_CSV_DATQTE     = 1     ///< data inside quotes
+	, T_CSV_DATNKD     = 2     ///< data without quotes
+	, T_CSV_EMPTY      = 3     ///< end actual value
+	, T_CSV_QTE1ST     = 4     ///< first at field begin
+	, T_CSV_QTE2ND     = 5     ///< end of field
+	, T_CSV_QTEONE     = 6     ///< end actual value
+	, T_CSV_QTETWO     = 7     ///< first quote inseq
+	, T_CSV_RECDNE     = 8     ///< Redord Finished
 };
+
 const char* t_csv_ste_nme[ ] = {
-	  "FieldStart"
-	, "FieldEnd"
-	, "NoQuotes"
-	, "InQoutes"
-	, "RowTruncated"
-	, "RowDone"
+	  "FieldBegin"
+	, "DataQuoted"
+	, "DataNaked"
+	, "EmptyData"
+	, "Quotes1st"
+	, "Quotes2nd"
+	, "QuotesOne"
+	, "QuotesTwo"
+	, "RecordDone"
 	, NULL
 };
 
@@ -32,17 +39,13 @@ const char* t_csv_ste_nme[ ] = {
 /// The userdata struct for T.Csv row parser
 struct t_csv
 {
-	enum t_csv_ste    ste;  ///< Current parse state
-	char              dlm;  ///< Tsv/Csv delimiter character string, NUL terminated
-	char              qts;  ///< quotation string, NUL terminated
-	char              esc;  ///< Tsv/Csv escape character string, NUL terminated
-	int               dbl;  ///< Use double quotation
-	size_t            len;  ///< Length of current line load
-	const char       *lne;  ///< Current line load
-	char             *fld;  ///< Current start of field
-	char             *run;  ///< Current runner position in lne
+	char              dlm;    ///< Tsv/Csv delimiter character string, NUL terminated
+	char              qte;    ///< quotation string, NUL terminated
+	char              esc;    ///< Tsv/Csv escape character string, NUL terminated
+	int               dbl;    ///< Use double quotation
+	enum t_csv_ste    ste;    ///< Current parse state
+	const char       *fld;    ///< Current start of field
 };
-
 
 // Constructors
 int             luaopen_t_csv  ( lua_State *L );

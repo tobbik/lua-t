@@ -8,18 +8,19 @@ Overview
 ``t.Csv`` provides the ability to read through a Csv/Tsv file and parse it's
 contents.  While the line iterator is provided by the use of Lua
 ``io.lines()`` the actual value parser is a finite state machine written in
-C that should provide very good performance even on large files.
+C that should provide very good performance even on large and very large
+files.
 
 
 Usage
 =====
 
-Create a ``Csv`` instance and the loop over the ``csv:rows()`` iterator.
+Create a ``Csv`` instance and loop over the ``csv:rows()`` iterator.
 
 .. code:: lua
 
   Csv = require"t.Csv"
-  csv = Csv( )
+  csv = Csv( )  -- using default settings
 
   for row in csv:rows( io:lines("myCsvFile.csv") ) do
     -- row is { fld1, fld2, etc }
@@ -35,7 +36,7 @@ Class Members
 ``function tokenIterator = Csv.split( string text, string delimiter )``
   Returns an iterator that returns tokens from ``string text`` separated by
   ``string delimiter`` until the text is exhausted.  ``function
-  tokenIterator()`` returns 2 values ``string token, int count``.
+  tokenIterator()`` returns 2 values ``string token, int lineCount``.
 
 
 Class Metamembers
@@ -104,31 +105,30 @@ Instance Members
   first line will be interpreted as a line of data values.  If the
   constructor gets passed a ``table headers`` it will not read the first
   line as headers and will use the passed table to define the collumns
-  within the rows.
-
-``function rowIterator  = csv:rows( function sourceIterator )``
-  Rows is an iterator that returns a table of fields for each logical row of
-  the CSV file.  It honours properly encapsulated and escaped line breaks in
-  the file itself.  the ``csv:rows()``  iterator returns a ``table rowData``
-  and an ``int rowCount`` for each iteration.  The returned ``table
-  rowData`` is a numerically indexed table which holds a value for each
-  column.  If the parser has a ``headers`` definition the table will
-  **also** contain key/value pairs for the indexd data.  The following
-  example illustrates the behaviour.
+  within the rows.  The ``csv.headers`` value effects the ``table rowData``
+  which is returned from the row iterator function provided by
+  ``csv:rows()``.  If there are no headers it will be a numerically indexed
+  table which holds a value for each column.  If the parser has a
+  ``headers`` definition the table will **also** contain key/value pairs for
+  the indexd data.  The following example illustrates the behaviour:
 
   .. code:: lua
 
     src=[[
     first,second,third
-    a,b,c
-    x,y,z]]
+    a,b,c]]
     csv=Csv({headers=true})
-    for rowTable, rowCount in tsv:rows( io.lines("data.tsv") ) do
+    for rowTable, rowCount in tsv:rows( Csv.split(src) ) do
       ... rowTable looks like: {"a","b","c", first="a", second="b", third="c"}
     end
 
-  For standard files it is easiest to use the ``io.lines()`` iterator
-  provided by Lua itself:
+``function rowIterator  = csv:rows( function sourceIterator )``
+  Rows is an iterator that returns a table of fields for each semantic row
+  of the CSV file.  It honours properly encapsulated and escaped line breaks
+  in the file itself.  The ``csv:rows()`` iterator returns a
+  ``table rowData`` and an ``int rowCount`` for each iteration. For standard
+  files it is easiest to use the ``io.lines()`` iterator provided by Lua
+  itself:
 
   .. code:: lua
 
@@ -138,10 +138,10 @@ Instance Members
       ... rowTable contains all fields of a tsv row
     end
 
-  For convienience to parse text-only sources that may have been received over
-  the network or from a database, the ``Csv`` module provides a static
-  ``split()`` function that can be used to create an iterator for string only
-  variables:
+  For convienience to parse text-only sources that are not available as
+  files, such as sources received over the network or from a database, the
+  ``Csv`` module provides a static ``Csv.split(textData)`` function that can
+  be used to create an iterator for string only variables:
 
   .. code:: lua
 

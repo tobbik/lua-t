@@ -30,9 +30,8 @@ static int
 lt_csv_New( lua_State *L )
 {
 	struct t_csv    *csv = (struct t_csv *) lua_newuserdata( L, sizeof( struct t_csv ) );
-	csv->ste       = T_CSV_FLDSTART;  ///< Current parse state
-	csv->len       = 0;               ///< Length of current line load
-	csv->lne       = NULL;            ///< Current line load
+	csv->ste       = T_CSV_FLDBEG;    ///< Current parse state
+	csv->ste       = 0;               ///< Current parse state
 	csv->fld       = NULL;            ///< Current start of field
 	luaL_getmetatable( L, T_CSV_TYPE );
 	lua_setmetatable( L, -2 );
@@ -56,101 +55,121 @@ struct t_csv
 }
 
 
+static inline enum t_csv_ste
+t_csv_pushvalue( lua_State *L, const char *val, int len, enum t_csv_ste ste, char rpl )
+{
+	char sub[2] = { rpl, 0 }, fnd[3] = { rpl, rpl, 0 };
+	if (NULL == val)
+		lua_pushnil( L );
+	else
+	{
+		while ('\r' == val[len-1] && len > 0) len--;
+		// push a \0 terminated string on stack that can be safely gsub()-ed
+		// creates extra copy on stack that needs to be popped
+		if (rpl)
+		{
+			lua_pushlstring( L, val, len );
+			luaL_gsub( L, lua_tostring( L, -1 ), fnd, sub ); // pushes rinsed result onto stack
+			lua_remove( L, -2 );
+		}
+		else
+			lua_pushlstring( L, val, len );       // ,"", -> empty string
+	}
+	//t_stackDump(L);
+	//printf(" P:[%s(%llu)]  ", lua_tostring(L,-1), lua_rawlen( L, -2 ) +1);
+	lua_rawseti( L, -2, lua_rawlen( L, -2 ) +1 );  // push field to row
+	return ste;
+}
+
 /**--------------------------------------------------------------------------
  * Eat through a CSV line and add fields to a Lua table on the stack
  * \param   L       Lua state.
  * \param   csv     t_csv struct userdata.
  * --------------------------------------------------------------------------*/
 static void
-t_csv_parse( lua_State *L, struct t_csv *csv )
+t_csv_parse( lua_State *L, struct t_csv *csv, const char *run )
 {
-	int  qc = 0;
-	char quotes[2] = { csv->qts, 0 };
-	char dbl_quotes[3] = { csv->qts, csv->qts, 0 };
+	const char *val_start = run;
+	const char *val_stop  = run;
+	int  has_dbl_qte =0, has_esc_chr=0;
 
 	// CSV/TSV parsing finite state machine
-	while (T_CSV_ROWDONE != csv->ste)
+	while (csv->ste < T_CSV_RECDNE)
 	{
-		//printf( "[%s][%zu][%lu][%d]\t__%s\n", t_csv_ste_nme[csv->ste], csv->run - csv->lne, csv->run - csv->fld, qc, csv->run );
+		//printf( " [%s]\t-[%c][%c][%c]-   ", t_csv_ste_nme[csv->ste], *run, *val_start, *val_stop );
 		switch (csv->ste)
 		{
-			case T_CSV_FLDSTART:
-				csv->fld = csv->run;
-				qc = 0;
-				while (csv->qts == *(csv->run))
-				{
-					(csv->run)++;
-					qc++;
-				}
-				if ( qc%2 )
-				{
-					csv->ste = T_CSV_INQUOTES;
-					(csv->fld)++; // eat the leading quote
-				}
+			case T_CSV_DATNKD:
+				// TODO: handle escape char
+				if (csv->dlm == *run)                            // regular field end
+					csv->ste = t_csv_pushvalue( L, val_start, val_stop - val_start +1, T_CSV_FLDBEG, '\0' );
+				else if ('\n' == *run)                           // last field end
+					csv->ste = t_csv_pushvalue( L, val_start, val_stop - val_start +1, T_CSV_RECDNE, '\0' );
+				val_stop = (' ' == *run) ? val_stop : run;       // only progress when not space
+				break;
+			case T_CSV_DATQTE:
+				val_stop = run;                            // don't include last enclosing quote
+				if (csv->qte == *run)
+					csv->ste = T_CSV_QTEONE;
+				break;
+			case T_CSV_QTEONE:
+				if (csv->dlm == *run)
+					csv->ste = t_csv_pushvalue( L, val_start, val_stop - val_start, T_CSV_FLDBEG, (has_dbl_qte) ? csv->qte : '\0' );
+				else if ('\n' == *run)
+					csv->ste = t_csv_pushvalue( L, val_start, val_stop - val_start, T_CSV_RECDNE, (has_dbl_qte) ? csv->qte : '\0' );
+				else if (csv->qte == *run)
+					csv->ste = T_CSV_QTETWO;
 				else
-				{
-					csv->ste = T_CSV_NOQOUTE;
-					if (csv->dlm == *(csv->run) || 0 == *(csv->run))
-					{
-						lua_pushlstring( L, csv->fld, csv->run - csv->fld );
-						csv->ste = T_CSV_FLDEND;
-					}
-				}
+					val_stop = (' ' == *run) ? val_stop : run;    // only progress when not space
 				break;
-			case T_CSV_NOQOUTE:
-				csv->run = strchr( csv->run, csv->dlm );
-				csv->run = (! csv->run)
-					? (char *) csv->lne + csv->len  // no delimiter -> go to end of line
-					: csv->run;
-				lua_pushlstring( L, csv->fld, csv->run - csv->fld );
-				csv->ste = T_CSV_FLDEND;
-				break;
-			case T_CSV_INQUOTES:
-				csv->run = strchr( csv->run, csv->qts );
-				if (! csv->run)
-				{
-					return;
-					break;
-				}
-				// TODO: check for `doublequoted`
-				if (csv->qts == *(csv->run + 1)) // escaped quote
-					(csv->run) += 2;
+			case T_CSV_QTETWO:
+				has_dbl_qte = 1;
+				if (csv->qte == *run)
+					csv->ste    = T_CSV_QTEONE;
 				else
-				{
-					// push a \0 terminated string on stack that can be safely gsub()-ed
-					// creates extra copy on stack that needs to be popped
-					lua_pushlstring( L, csv->fld, csv->run - csv->fld );
-					luaL_gsub( L, lua_tostring( L, -1 ), dbl_quotes, quotes ); // pushes rinsed result onto stack
-					lua_remove( L, -2 );
-
-					(csv->run)++;
-					csv->ste = T_CSV_FLDEND;
-				}
+					csv->ste    = T_CSV_DATQTE;
+				val_stop = run;
 				break;
-			case T_CSV_FLDEND:
-				// t_stackDump(L);
-				if (csv->run - csv->lne < (long) csv->len)
-				{
-					(csv->run)++;
-					csv->ste = T_CSV_FLDSTART;
-				}
+			case T_CSV_FLDBEG:
+				has_dbl_qte = has_esc_chr = 0;                // reset doublequote marker
+				val_start = val_stop = csv->fld = run;
+				if (csv->qte == *run)
+					csv->ste     = T_CSV_QTE1ST;
+				else if (' ' == *run)                         // Whitespace ... just keep eating
+					;
+				else if (csv->dlm == *run)                    // ...,,... empty field aka. NULL value
+					csv->ste = t_csv_pushvalue( L, NULL, 0, T_CSV_FLDBEG, '\0' );    // pushing nil
 				else
-					csv->ste = T_CSV_ROWDONE;
-				lua_rawseti( L, -2, lua_rawlen( L, -2 ) +1 );  // adjust cl for Lua 1 based index
+					csv->ste = T_CSV_DATNKD;
 				break;
-			default:                           // handle as error -> abort
-				csv->ste = T_CSV_ROWDONE;
+			case T_CSV_QTE1ST:
+				val_start    = run;
+				if (csv->qte == *run)
+					csv->ste = T_CSV_QTE2ND;
+				else
+					csv->ste = T_CSV_DATQTE;
+				break;
+			case T_CSV_QTE2ND:
+				if (csv->dlm == *run)                        // is ...,"",...
+					csv->ste = t_csv_pushvalue( L, val_start, 0, T_CSV_FLDBEG, '\0' );   // pushing empty string
+				else if (csv->qte == *run)
+					csv->ste = T_CSV_QTETWO;
+				break;
+			default:
 				break;
 		}
+		//printf("  [%c] [%c]   [%s]   __%s", *val_start, *val_stop, t_csv_ste_nme[csv->ste], run );
+		if ('\0' == *run)
+			break;
+		run++;
 	}
 	return;
 }
 
-
 /**--------------------------------------------------------------------------
  * Attempts to read a single line of CSV content
  * \param   L       Lua state.
- * \lparam  ud      t_csv userdata..
+ * \lparam  ud      t_csv userdata.
  * \lparam  string  Single row of CSV content.
  * \lreturn boolean Was it complete? False mean more lines are needed.
  * \return  int     # of values pushed onto the stack.
@@ -160,29 +179,16 @@ lt_csv_parseLine( lua_State *L )
 {
 	//S: csv lne tbl
 	struct t_csv  *csv = t_csv_check_ud( L, 1, 1 );
-	const char    *lne = luaL_checklstring( L, 2, &(csv->len) );
+	const char    *lne = luaL_checkstring( L, 2 );
+	luaL_argcheck( L, (LUA_TTABLE == lua_type( L, 3 )), 3, "Expected a Table" );
 
-	//t_stackDump( L );
-
-	//printf( "[%s]%s\n", t_csv_ste_nme[csv->ste], lne );
-	// T_CSV_INQUOTES is the only re-entrant state (handle multi-line fields)
-	if (T_CSV_INQUOTES == csv->ste)
-	{
-		//printf( "[%lu   %lu]  %lld\n ", csv->fld - csv->lne, csv->run - csv->lne, lua_rawlen(L,-1) );
-		csv->fld  = (char *) lne + (csv->fld - csv->lne);
-		csv->run  = csv->fld;
-		//csv->run  = (char *) lne + (csv->run - csv->lne);
-	}
-	else
-	{
-		csv->fld  = (char *) lne;
-		csv->run  = (char *) lne;
-		csv->ste  = T_CSV_FLDSTART;
-	}
-	csv->lne     = lne;
-	t_csv_parse( L, csv );
-	lua_pushboolean( L, T_CSV_ROWDONE == csv->ste );
-	return 1;
+	csv->fld  = (char *) lne;
+	t_csv_parse( L, csv, lne );
+	lua_pushboolean( L, T_CSV_RECDNE == csv->ste );
+	lua_pushstring( L, csv->fld );
+	//csv->ste  = (T_CSV_RECDNE == csv->ste) ? T_CSV_FLDBEG : csv->ste;
+	csv->ste  = T_CSV_FLDBEG;
+	return 2;
 }
 
 
@@ -212,21 +218,21 @@ t_csv_split( lua_State *L )
 		for (; its < lns; its++)
 		{
 			//printf("   ITS: %zu <%c><%c> ", its, str[its], dlm[itd]);
-			itd = str[its] == dlm[itd] // string matches delimiter
-				? itd+1                    // advance delimiter
-				: (str[its] == *dlm)       // first character in delimiter matches
-					? 1                        // advance delimiter to one
-					: 0;                       // reset delimiter
-			//printf(" -- %s\n", lnd == itd ? "Yea" : "Neh");
-			if (itd == lnd)            // delimeter completely matched
+			itd = (str[its] == dlm[itd])  // string matches delimiter
+				? itd+1                       // advance delimiter
+				: (str[its] == *dlm)          // first character in delimiter matches
+					? 1                           // advance delimiter to one
+					: 0;                          // reset delimiter
+			//printf(" -- %s\n", lnd == itd ? "Yea" : "Nah");
+			if (itd == lnd)               // delimeter completely matched
 				break;
 		}
 		//printf("      TKN: %s   %zu %ld \n", &(str[tkn]), its, its-tkn - ( (its==lns) ? 0 : lnd - 1 ));
 		lua_pushlstring( L, &(str[tkn]), its-tkn - ( (its==lns) ? 0 : lnd - 1 ) );
 		lua_pushinteger( L, its+1 );
-		lua_replace( L, lua_upvalueindex( 3 ) );
+		lua_replace( L, lua_upvalueindex( 3 ) );    // update string iterator position
 		lua_pushinteger( L, cnt+1 );
-		lua_replace( L, lua_upvalueindex( 4 ) );
+		lua_replace( L, lua_upvalueindex( 4 ) );    // update field count
 		lua_pushinteger( L, cnt+1 );
 	}
 	return (its>lns) ? 1 : 2;
@@ -270,7 +276,7 @@ lt_csv__tostring( lua_State *L )
 	struct t_csv *csv = t_csv_check_ud( L, 1, 1 );
 	lua_pushfstring( L, T_CSV_TYPE"[%c:%c:%c:%s]: %p",
 		csv->dlm,
-		csv->qts,
+		csv->qte,
 		csv->esc,
 		(csv->dbl) ? "true" : "false",
 		csv );
@@ -296,15 +302,15 @@ lt_csv__index( lua_State *L )
 	if (0 == strncmp( key, "delimiter", keyLen ))
 		lua_pushlstring( L, &(csv->dlm), 1 );
 	else if (0 == strncmp( key, "quotchar", keyLen ))
-		lua_pushlstring( L, &(csv->qts), 1 );
+		lua_pushlstring( L, &(csv->qte), 1 );
 	else if (0 == strncmp( key, "escapechar", keyLen ))
 		lua_pushlstring( L, &(csv->esc), 1 );
 	else if (0 == strncmp( key, "doublequoted", keyLen ))
 		lua_pushboolean( L, csv->dbl );
 	else if (0 == strncmp( key, "state", keyLen ))
 		lua_pushstring( L, t_csv_ste_nme[ csv->ste ] );
-	else if (0 == strncmp( key, "line", keyLen ))
-		lua_pushlstring( L, csv->lne, csv->len );
+	else if (0 == strncmp( key, "field", keyLen ))
+		lua_pushstring( L, csv->fld );
 	else if (0 == strncmp( key, "headers", keyLen ))
 		lua_getiuservalue( L, 1, T_CSV_HDRIDX );
 	else
@@ -336,15 +342,13 @@ lt_csv__newindex( lua_State *L )
 	if (0 == strncmp( key, "delimiter", keyLen ))
 		csv->dlm = lua_tostring(  L, 3 )[ 0 ];
 	else if (0 == strncmp( key, "quotchar", keyLen ))
-		csv->qts = lua_tostring(  L, 3 )[ 0 ];
+		csv->qte = lua_tostring(  L, 3 )[ 0 ];
 	else if (0 == strncmp( key, "escapechar", keyLen ))
 		csv->esc = lua_tostring(  L, 3 )[ 0 ];
 	else if (0 == strncmp( key, "doublequoted", keyLen ))
 		csv->dbl = lua_toboolean( L, 3 );
 	else if (0 == strncmp( key, "state", keyLen ) )
 		csv->ste = luaL_checkoption( L, 3, NULL, t_csv_ste_nme );
-	else if (0 == strncmp( key, "line", keyLen ) )
-		csv->lne = luaL_checklstring( L, 3, &(csv->len) );
 	else if (0 == strncmp( key, "headers", keyLen ) )
 		lua_setiuservalue( L, 1, T_CSV_HDRIDX );
 	else

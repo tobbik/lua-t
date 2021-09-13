@@ -23,27 +23,29 @@ end
 
 csv_mt.rows = function( self, source )
 	assert( 'function' == type(source), "Argument must be an iterator function" )
-	local records,parsed,rowdone,line = 0 ,{ }, true, source( )  -- current line
+	local records,parsed,rowdone,line,field = 0 ,{ }, true, source( ), nil  -- current line
 	if 'boolean' == type(self.headers) and self.headers then
 		self.headers = { }
-		rowdone = self:parseLine( line, self.headers )
+		rowdone = self:parseLine( line..'\n', self.headers )
 		line    = source( )
 	end
-	return function ( )      -- iterator function
+	return function( )       -- iterator function
 		while line do         -- repeat while there are lines
-			print( Buffer(line):toHex())
-			--print(("LINE:  _%s_"):format(line))
-			rowdone = self:parseLine( line, parsed )
+			local buff =  Buffer(line)
+			--print(("%d BUFF: %s"):format(#buff, buff:toHex() ))
+			--print(("%d LINE: _%s_"):format( #line, line))
+			rowdone,field = self:parseLine( line ..'\n', parsed )
+			--print(("FIELD: _%s_   LINE: _%s_"):format(field, line))
 			if 0==#line then
 				line = source( )
 			elseif rowdone then
 				local result = parsed
 				parsed,line,records = { }, source( ), records+1
-				return self.headers and use_headers(self,result) or result, records
+				return self.headers and use_headers( self,result)  or result, records
 			else
 				-- IF the line breaks are not \n we are already in trouble because file:read() strips any kind of line break
 				-- this assumes \n, it's the best we can do. TODO: smarter detect line breaks
-				line = line .."\n".. source( )
+				line = field .. source( )
 			end
 		end
 		return nil            -- no more lines: end of traversal

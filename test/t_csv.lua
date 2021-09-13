@@ -57,6 +57,8 @@ return {
 			assert( v == csv[k], ("Expeted '%s' <%s>, but was <%s>"):format(k, tostring(v), tostring(csv[k]) ) )
 		end
 	end,
+
+
 	-- ####################################################################################
 	-- Test for Csv.split() function
 	SplitByChar = function( self )
@@ -169,10 +171,9 @@ a,b,c
 
 	CsvParsingSimpleCrlf = function( self )
 		Test.describe("Simple straight forward CSV parsing with CRLF LineBreaks")
-		Test.todo("since io.lines() removes \n and \r lua-t.Csv can't recover that information")
 		local csv = Csv({headers=true})
 		local src =
-			"a,b,\r\n" ..
+			"a,b,c\r\n" ..
 			"1,2,3\r\n"
 		local res = { "1","2","3", a="1", b="2", c="3" }
 		for row,n in csv:rows( Csv.split( src, "\n" ) ) do
@@ -186,7 +187,6 @@ a,b,c
 
 	CsvParsingEmptyStrings = function( self )
 		Test.describe("Parsing empty strings enclosed in quotes")
-		Test.todo("Empty enclosed strings are not implemented yet")
 		local csv = Csv({headers=true})
 		local src = [[
 a,b,c
@@ -198,7 +198,7 @@ a,b,c
 		}
 
 		for row,n in csv:rows( Csv.split( src, "\n" ) ) do
-			pp(row)
+			--pp(row)
 			for i,v in pairs(res) do
 				--print( ("For key <%s> expected <%s> but got <%s>"):format(i, res[i], row[i]) )
 				assert( res[n][i] == row[i], ("For key <%s> expected <%s> but got <%s>"):format(i, res[n][i], row[i]) )
@@ -208,7 +208,6 @@ a,b,c
 
 	CsvParsingEmptyStringsCrlf = function( self )
 		Test.describe("Parsing empty strings enclosed in quotes and CRLF line breaks")
-		Test.todo("Empty enclosed strings are not implemented yet")
 		local csv = Csv({headers=true})
 		local src = 
 			"a,b,c\r\n" ..
@@ -220,7 +219,7 @@ a,b,c
 		}
 
 		for row,n in csv:rows( Csv.split( src, "\n" ) ) do
-			pp(row)
+			--pp(row)
 			for i,v in pairs(res) do
 				--print( ("For key <%s> expected <%s> but got <%s>"):format(i, res[i], row[i]) )
 				assert( res[n][i] == row[i], ("For key <%s> expected <%s> but got <%s>"):format(i, res[n][i], row[i]) )
@@ -294,7 +293,6 @@ a,b,c
 		end
 	end,
 
-
 	CsvParsingQuotesAndNewlines = function( self )
 		Test.describe("Parsing escaped quotes and enclosed newlines")
 		local csv = Csv({headers=true})
@@ -318,16 +316,55 @@ ha"
 		end
 	end,
 
+	CsvParsingEmptyStringsAndNilValues = function( self )
+		Test.describe("Parsing distinguishes between empty string and empty fields")
+		local csv = Csv({headers=true})
+		local src = [[
+a,b,c,d
+1,,"",4
+]]
+		local res = {
+			{ "1", nil, "", "4",a="1", b=nil, c="", d="4"}
+		}
+		for row,n in csv:rows( Csv.split( src, "\n" ) ) do
+			--pp(row)
+			for i,v in pairs(res) do
+				--print( ("For key <%s> expected <%s> but got <%s>"):format(i, res[i], row[i]) )
+				assert( res[n][i] == row[i], ("For key <%s> expected <%s> but got <%s>"):format(i, res[n][i], row[i]) )
+			end
+		end
+	end,
+
+	CsvParsingLeadingSeparatorAsNil = function( self )
+		Test.describe("Parsing line starting with separator as NULL(nil) field")
+		Test.todo("Parsing leading separator needs work")
+		local csv = Csv({headers=true})
+		local src = [[
+a,b,c,d
+,2,3,4
+]]
+		local res = {
+			{ nil, "2", "3", "4",a=nil, b="2", c="3", d="4"}
+		}
+		for row,n in csv:rows( Csv.split( src, "\n" ) ) do
+			--pp(row)
+			for i,v in pairs(res) do
+				--print( ("For key <%s> expected <%s> but got <%s>"):format(i, res[i], row[i]) )
+				assert( res[n][i] == row[i], ("For key <%s> expected <%s> but got <%s>"):format(i, res[n][i], row[i]) )
+			end
+		end
+	end,
+
 	CsvParsingJson = function( self )
 		Test.describe("Parsing doubleQuotes within an JSON value")
-		Test.todo("Can not yet determine between empty string and <nil>")
+		Test.todo("Parsing leading separator needs work")
 		local csv = Csv({headers=true})
-		local src = [=[
+		local src = [==[
 id,prop0,prop1,geojson
 ,value0,,"{""type"": ""Point"", ""coordinates"": [102.0, 0.5]}"
 ,value0,0.0,"{""type"": ""LineString"", ""coordinates"": [[102.0, 0.0], [103.0, 1.0], [104.0, 0.0], [105.0, 1.0]]}"
 ,value0,{u'this': u'that'},"{""type"": ""Polygon"", ""coordinates"": [[[100.0, 0.0], [101.0, 0.0], [101.0, 1.0], [100.0, 1.0], [100.0, 0.0]]]}"
-]=]
+]==]
 		local res = {
 			{ nil, "value0", nil,'{"type": "Point", "coordinates": [102.0, 0.5]}',
 			  id=nil,prop0="value0",prop1=nil,geojson='{"type": "Point", "coordinates": [102.0, 0.5]}' },
@@ -371,7 +408,6 @@ a time",5,6
 
 	CsvParsingQuotesAndNewlinesCrlf = function( self )
 		Test.describe("Parsing escaped quotes and enclosed newlines with CRLF linebreaks")
-		Test.todo("since io.lines() removes \n and \r lua-t.Csv can't recover that information")
 		local csv = Csv({headers=true})
 		-- writing \r into [[ ]] string markers does not put it into the string
 		local src =
@@ -384,6 +420,123 @@ a time",5,6
 			{ "1","2","3", a="1", b="2", c="3" },
 			{ "Once upon \r\na time","5","6", a="Once upon \r\na time", b="5", c="6" },
 			{ "7","8","9", a="7", b="8", c="9" }
+		}
+		for row,n in csv:rows( Csv.split( src, "\n" ) ) do
+			--pp(row)
+			for i,v in pairs(res) do
+				--print( ("For key <%s> expected <%s> but got <%s>"):format(i, res[i], row[i]) )
+				assert( res[n][i] == row[i], ("For key <%s> expected <%s> but got <%s>"):format(i, res[n][i], row[i]) )
+			end
+		end
+	end,
+	--]=]
+
+
+	-- ############################################################  Tests for after rewrite
+	CsvParsingTrimTrailingWhitespace = function( self )
+		Test.describe("Parsing removes WhiteSPace after value and before delimiter")
+		local csv = Csv({headers=true})
+		local src = [[
+a,b,c
+1   ,2  ,3 
+]]
+		local res = {
+			{ "1","2","3", a="1", b="2", c="3" },
+		}
+		for row,n in csv:rows( Csv.split( src, "\n" ) ) do
+			--pp(row)
+			for i,v in pairs(res) do
+				--print( ("For key <%s> expected <%s> but got <%s>"):format(i, res[i], row[i]) )
+				assert( res[n][i] == row[i], ("For key <%s> expected <%s> but got <%s>"):format(i, res[n][i], row[i]) )
+			end
+		end
+	end,
+
+	CsvParsingTrimPreceedingWhitespace = function( self )
+		Test.describe("Parsing removes WhiteSpace after delimiter and before value")
+		local csv = Csv({headers=true})
+		local src = [[
+a,b,c
+  1  ,2,  3
+]]
+		local res = {
+			{ "1","2","3", a="1", b="2", c="3" },
+		}
+		for row,n in csv:rows( Csv.split( src, "\n" ) ) do
+			--pp(row)
+			for i,v in pairs(res) do
+				--print( ("For key <%s> expected <%s> but got <%s>"):format(i, res[i], row[i]) )
+				assert( res[n][i] == row[i], ("For key <%s> expected <%s> but got <%s>"):format(i, res[n][i], row[i]) )
+			end
+		end
+	end,
+
+	CsvParsingTrimSurroundingWhitespace = function( self )
+		Test.describe("Parsing removes WhiteSpace after delimiter and before value")
+		local csv = Csv({headers=true})
+		local src = [[
+a,b,c
+ 1  , 2,  3  
+]]
+		local res = {
+			{ "1","2","3", a="1", b="2", c="3" },
+		}
+		for row,n in csv:rows( Csv.split( src, "\n" ) ) do
+			--pp(row)
+			for i,v in pairs(res) do
+				--print( ("For key <%s> expected <%s> but got <%s>"):format(i, res[i], row[i]) )
+				assert( res[n][i] == row[i], ("For key <%s> expected <%s> but got <%s>"):format(i, res[n][i], row[i]) )
+			end
+		end
+	end,
+
+	CsvParsingTrimPreceedingWhitespaceQuoted = function( self )
+		Test.describe("Parsing removes WhiteSPace after quoted value and before delimiter")
+		local csv = Csv({headers=true})
+		local src = [[
+a,b,c
+ " 1 "," 2",  "3   "
+]]
+		local res = {
+			{ " 1 "," 2","3   ", a=" 1 ", b=" 2", c="3   " },
+		}
+		for row,n in csv:rows( Csv.split( src, "\n" ) ) do
+			--pp(row)
+			for i,v in pairs(res) do
+				--print( ("For key <%s> expected <%s> but got <%s>"):format(i, res[i], row[i]) )
+				assert( res[n][i] == row[i], ("For key <%s> expected <%s> but got <%s>"):format(i, res[n][i], row[i]) )
+			end
+		end
+	end,
+
+	CsvParsingTrimTrailingWhitespaceQuoted = function( self )
+		Test.describe("Parsing removes WhiteSpace after delimiter and before quoted value")
+		local csv = Csv({headers=true})
+		local src = [[
+a,b,c
+" 1 "  ," 2","3   "   
+]]
+		local res = {
+			{ " 1 "," 2","3   ", a=" 1 ", b=" 2", c="3   " },
+		}
+		for row,n in csv:rows( Csv.split( src, "\n" ) ) do
+			--pp(row)
+			for i,v in pairs(res) do
+				--print( ("For key <%s> expected <%s> but got <%s>"):format(i, res[i], row[i]) )
+				assert( res[n][i] == row[i], ("For key <%s> expected <%s> but got <%s>"):format(i, res[n][i], row[i]) )
+			end
+		end
+	end,
+
+	CsvParsingTrimSurroundingWhitespaceQuoted = function( self )
+		Test.describe("Parsing removes WhiteSpace after and before quoted values")
+		local csv = Csv({headers=true})
+		local src = [[
+a,b,c
+ " 1 ",  " 2" ,"3   "   
+]]
+		local res = {
+			{ " 1 "," 2","3   ", a=" 1 ", b=" 2", c="3   " },
 		}
 		for row,n in csv:rows( Csv.split( src, "\n" ) ) do
 			--pp(row)
