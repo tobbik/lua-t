@@ -24,6 +24,12 @@ a,b,c,d
 ]]
 
 src = [[
+"a", " b ", "",,x
+1,2,3,4,5
+]]
+
+
+src = [[
 f1  , g2 H5 ,i3    ,   j4  
    "   p1     "    ,"q2 r5 ",  "  S3    ","T4"
 "   x1     "    ,"y2 z5 ",  "  A3    ","   b4 "
@@ -31,10 +37,6 @@ f1  , g2 H5 ,i3    ,   j4
 "g1", "h2 
  k5 ",  "i3 ""j4"" l  ","m5"   ]]
 
-src = [[
-"a", " b ", "",,x
-1,2,3,4,5
-]]
 
 --for row,r in csv:rows( io.lines('d.csv') ) do
 for row,r in csv:rows( Csv.split(src,'\n') ) do
