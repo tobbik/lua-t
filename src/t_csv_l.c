@@ -55,6 +55,11 @@ struct t_csv
 }
 
 
+/**--------------------------------------------------------------------------
+ * Push the current partse value as a field into the rusult table
+ * \param   L       Lua state.
+ * \param   csv     t_csv struct userdata.
+ * --------------------------------------------------------------------------*/
 static inline enum t_csv_ste
 t_csv_pushvalue( lua_State *L, const char *val, int len, enum t_csv_ste ste, char rpl )
 {
@@ -82,6 +87,39 @@ t_csv_pushvalue( lua_State *L, const char *val, int len, enum t_csv_ste ste, cha
 }
 
 /**--------------------------------------------------------------------------
+ * Push the current partse value as a field into the rusult table
+ * \param   L       Lua state.
+ * \param   csv     t_csv struct userdata.
+ * --------------------------------------------------------------------------*/
+static inline void __attribute__ ((unused))
+t_csv_pushfield( lua_State *L, struct t_csv_row *row, enum t_csv_ste ste )
+{
+	if (row->len)
+		lua_pushnil( L );
+	else
+	{
+		while ('\r' == row->beg[row->len] && row->len > 0) (row->len)--;
+		// push a \0 terminated string on stack that can be safely gsub()-ed
+		// creates extra copy on stack that needs to be popped
+		if (row->hdb)
+		{
+			lua_pushlstring( L, row->beg, row->len );
+			luaL_gsub( L, lua_tostring( L, -1 ), row->sdq, row->ssq ); // pushes rinsed result onto stack
+			lua_remove( L, -2 );
+		}
+		else
+			lua_pushlstring( L, row->beg, row->len );
+	}
+	//t_stackDump(L);
+	//printf(" P:[%s(%d)]  ", lua_tostring(L,-1), row->cnt+1);
+	lua_rawseti( L, -2, ++(row->cnt) );  // push field to row
+	// resetting some vals
+	row->hdb = row->hec = 0;
+	row->ste = ste;
+}
+
+
+/**--------------------------------------------------------------------------
  * Eat through a CSV line and add fields to a Lua table on the stack
  * \param   L       Lua state.
  * \param   csv     t_csv struct userdata.
@@ -92,31 +130,37 @@ t_csv_parse( lua_State *L, struct t_csv_row *row )
 	// CSV/TSV parsing finite state machine
 	while (row->ste < T_CSV_RECDNE)
 	{
-		//printf( " [%s]\t-[%c][%c][%c]-   ", t_csv_ste_nme[row->ste], *(row->run), *(row->beg), *(row->end) );
+		//printf( " [%s]\t-[%c][%c][%c]-   ", t_csv_ste_nme[row->ste], *(row->run), *(row->beg), row->beg[row->len] );
 		switch (row->ste)
 		{
 			case T_CSV_DATNKD:
 				// TODO: handle escape char
-				if (row->dlm == *(row->run))                            // regular field end
-					row->ste = t_csv_pushvalue( L, row->beg, row->end - row->beg +1, T_CSV_FLDBEG, '\0' );
-				else if ('\n' == *(row->run))                           // last field end
-					row->ste = t_csv_pushvalue( L, row->beg, row->end - row->beg +1, T_CSV_RECDNE, '\0' );
-				row->end = (' ' == *(row->run)) ? row->end : row->run;       // only progress when not space
+				if (row->dlm == *(row->run))                                 // regular field end
+				{
+					(row->len)++;
+					row->ste = t_csv_pushvalue( L, row->beg, row->len, T_CSV_FLDBEG, '\0' );
+				}
+				else if ('\n' == *(row->run))                                // last field end
+				{
+					(row->len)++;
+					row->ste = t_csv_pushvalue( L, row->beg, row->len, T_CSV_RECDNE, '\0' );
+				}
+				row->len = (' ' == *(row->run)) ? row->len : row->run - row->beg;       // only progress when not space
 				break;
 			case T_CSV_DATQTE:
-				row->end = row->run;                            // don't include last enclosing quote
+				row->len = row->run - row->beg;                  // don't include last enclosing quote
 				if (row->qte == *(row->run))
 					row->ste = T_CSV_QTEONE;
 				break;
 			case T_CSV_QTEONE:
 				if (row->dlm == *(row->run))
-					row->ste = t_csv_pushvalue( L, row->beg, row->end - row->beg, T_CSV_FLDBEG, (row->hdb) ? row->qte : '\0' );
+					row->ste = t_csv_pushvalue( L, row->beg, row->len, T_CSV_FLDBEG, (row->hdb) ? row->qte : '\0' );
 				else if ('\n' == *(row->run))
-					row->ste = t_csv_pushvalue( L, row->beg, row->end - row->beg, T_CSV_RECDNE, (row->hdb) ? row->qte : '\0' );
+					row->ste = t_csv_pushvalue( L, row->beg, row->len, T_CSV_RECDNE, (row->hdb) ? row->qte : '\0' );
 				else if (row->qte == *(row->run))
 					row->ste = T_CSV_QTETWO;
 				else
-					row->end = (' ' == *(row->run)) ? row->end : row->run;    // only progress when not space
+					row->len = (' ' == *(row->run)) ? row->len : row->run - row->beg;       // only progress when not space
 				break;
 			case T_CSV_QTETWO:
 				row->hdb = 1;
@@ -124,11 +168,11 @@ t_csv_parse( lua_State *L, struct t_csv_row *row )
 					row->ste    = T_CSV_QTEONE;
 				else
 					row->ste    = T_CSV_DATQTE;
-				row->end = row->run;
+				row->len = row->run - row->beg;       // only progress when not space
 				break;
 			case T_CSV_FLDBEG:
-				row->hdb = row->hec = 0;                // reset doublequote marker
-				row->beg = row->end = row->fld = row->run;
+				row->hdb = row->hec = row->len =0;                // reset doublequote marker
+				row->beg = row->fld = row->run;
 				if (row->qte == *(row->run))
 					row->ste     = T_CSV_QTE1ST;
 				else if (' ' == *(row->run))                         // Whitespace ... just keep eating
@@ -154,7 +198,7 @@ t_csv_parse( lua_State *L, struct t_csv_row *row )
 			default:
 				break;
 		}
-		//printf("  [%c] [%c]   [%s]   __%s", *(row->beg), *(row->end), t_csv_ste_nme[row->ste], row->run );
+		//printf("  [%c] [%c]   [%s]   __%s", *(row->beg), row->beg[row->len], t_csv_ste_nme[row->ste], row->run );
 		if ('\0' == *(row->run))
 			break;
 		(row->run)++;
@@ -186,14 +230,14 @@ lt_csv_parseLine( lua_State *L )
 		.dbl = csv->dbl, ///< Use double quotation to escape quotes?
 		.run = lne,
 		.beg = lne,
-		.end = lne,
+		.len = 0,
 		.fld = lne,
 		.hdb = 0,
 		.hec = 0,
 		.cnt = 0,
-		.sqs = { csv->qte, 0 },
-		.dqs = { csv->qte, csv->qte, 0 },
-		.ecs = { csv->esc, 0 },
+		.ssq = { csv->qte, 0 },
+		.sdq = { csv->qte, csv->qte, 0 },
+		.sec = { csv->esc, 0 },
 	};
 	t_csv_parse( L, &row );
 	lua_pushboolean( L, T_CSV_RECDNE == row.ste );

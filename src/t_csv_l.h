@@ -58,14 +58,14 @@ struct t_csv_row
 	int               dbl;    ///< Use double quotation to escape quotes?
 	const char       *run;    ///< Runner for walking down the string
 	const char       *beg;    ///< beginning of current field data
-	const char       *end;    ///< ending of current field data
+	size_t            len;    ///< length of current field data string
 	const char       *fld;    ///< beginning of current field includes quotes and whitespace
 	int               hdb;    ///< current field has a double quote in it
 	int               hec;    ///< current field has an escape char in it
 	int               cnt;    ///< field count per row
-	char              sqs[2]; ///< Single quote string to fill in
-	char              dqs[3]; ///< Double quote string to replace
-	char              ecs[2]; ///< Escape quote string to replace
+	char              ssq[2]; ///< Single quote string to fill in
+	char              sdq[3]; ///< Double quote string to replace
+	char              sec[2]; ///< Escape quote string to replace
 };
 
 
