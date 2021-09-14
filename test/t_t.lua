@@ -22,9 +22,12 @@ return {
 
 	tRequiresRelative = function( self )
 		Test.describe( "t.require('a.b') relative to file which calls" )
+		local path,cpath = package.path, package.cpath
 		local b = T.require'a.b'
 		assert( 'table' == type(b), "Required result should be a table" )
 		assert( "I live 'a/b.lua'" == b.content, "should match proper phrase" )
+		assert( #package.path == #path, "Using T.require polluted the global 'package.path' namespace" )
+		assert( #package.cpath == #cpath, "Using T.require polluted the global 'package.cpath' namespace" )
 		-- "unload" them so NormalRequireFails() doesn't find them cached
 		package.loaded[ 'a.b' ] = nil
 		_G[ 'a.b' ] = nil

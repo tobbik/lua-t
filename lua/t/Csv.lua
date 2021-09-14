@@ -28,9 +28,15 @@ _mt = {       -- local _mt at top of file
 			self.quotchar,
 			self.doublequoted and "true" or "false" )
 	end,
+	__newindex = function(self)
+		error( "Not allowed to change the fields of the CSV dialect once instantiated" )
+	end,
 	-- build in functions
 	rows       = function( self, source )
 		assert( 'function' == type(source), "Argument must be an iterator function" )
+		if self.skip and self.skip>0 then
+			for n=1,self.skip do source( ) end
+		end
 		local records,parsed,rowdone,line,field, fld_cnt = 0 ,{ }, true, source( ), nil, 0
 		if 'boolean' == type(self.headers) and self.headers then
 			self.headers = { }
@@ -49,7 +55,7 @@ _mt = {       -- local _mt at top of file
 				elseif rowdone then
 					local result = parsed
 					parsed,line,records = { }, source( ), records+1
-					return self.headers and use_headers( self,result)  or result, records
+					return self.headers and use_headers( self, result )  or result, records
 				else
 					-- IF the line breaks are not \n we are already in trouble because file:read() strips any kind of line break
 					-- this assumes \n, it's the best we can do. TODO: smarter detect line breaks
@@ -69,7 +75,7 @@ return setmetatable( {
 	_LICENSE     = 'MIT',
 	split        = Csv.split
 }, {
-	__call   = function( csvClass, delimiter, headers, quotchar, escapechar, doublequoted )
+	__call   = function( csvClass, delimiter, headers, quotchar, escapechar, doublequoted, skip )
 		local csv  = { }
 		if 'table' == type( delimiter ) then
 			csv.delimiter    = delimiter.delimiter    or ","
@@ -77,12 +83,14 @@ return setmetatable( {
 			csv.quotchar     = delimiter.quotchar     or "\""
 			csv.escapechar   = delimiter.escapechar   or "\\"
 			csv.doublequoted = nil == delimiter.doublequoted and true or delimiter.doublequoted  -- default to true
+			csv.skip         = delimiter.skip         and delimiter.skip or 0
 		else
 			csv.delimiter    = delimiter              or ","
 			csv.headers      = nil ~= headers      and headers or false      -- default to false
 			csv.quotchar     = quotchar               or "\""
 			csv.escapechar   = escapechar             or "\\"
 			csv.doublequoted = nil == doublequoted and true or doublequoted  -- default to true
+			csv.skip         = skip                and skip or 0
 		end
 		return setmetatable( csv, _mt )
 	end

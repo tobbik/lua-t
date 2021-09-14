@@ -60,7 +60,7 @@ Static Class Members
 Class Metamembers
 -----------------
 
-``Csv csv = Csv( [string|table delimiter, boolean|table headers, string quotchar, string esacapechar, boolean doublequote] )   [__call]``
+``Csv csv = Csv( [string|table delimiter, boolean|table headers, string quotchar, string esacapechar, boolean doublequote, int skip] )   [__call]``
   Instantiate a new ``Csv`` object. ``delimiter``, ``headers``, ``quotchar``
   , ``escapechar`` and ``doublequote`` are optional parameters.  For
   detailed descriptions of the parameters and their default values refer to
@@ -76,7 +76,8 @@ Class Metamembers
       quotechar   = "'",
       escapechar  = "\\",
       doublequote = false,
-      headers     = { "some", "pre-defined", "headers", "for", "the", "columns" }
+      headers     = { "some", "pre-defined", "headers", "for", "the", "columns" },
+      skip        = 0
     } )
 
 
@@ -107,6 +108,10 @@ Instance Members
 ``boolean doublequote  = csv.doublequote``
   If set, ``quotchar`` appearing within a fiels are protected by a
   proceeding ``quotchar``, otherwise the ``escapechar`` is used.
+
+``int skip  = csv.skip``
+  Each call to ``csv:rows( function iter )`` will skip ``int skip``
+  iterations before starting to parse the payload from the iterator.
 
 ``boolean|table headers  = csv.headers``
   If set to ``boolean true`` the parser will read the first line as column

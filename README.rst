@@ -58,6 +58,7 @@ Contents (High level overview)
  - Encoding (t.Encoding.*)--> En/Decoding, En/Decryption, Hashes etc.
  - Unit Tests (t.Test)    --> comprehensive unit tests
  - HTTP Server (t.Http)   --> An asynchronous HTTP Server implementation
+ - Csv Processor (t.Csv)  --> A fast and flexible CSV parser
  - Asynchronous (t.Loop)  --> event/select based asynchronous workings
  - OrderedHashTable       --> Hashtable that preserves insertion order
  - Sets (t.Set)           --> Feature rich Set implementation
@@ -70,7 +71,9 @@ Compatability
 lua-t was written with Lua-5.3 in mind. And recent development was performed
 on Lua-5.4.0 Release Candidates.  It is known to work on these versions and
 islikely to brakes with older versions.  There are no immidiate plans to
-make it compatible with older versions of Lua.
+make it compatible with older versions of Lua.  Recently, the t.Loop library
+makes use of multiple userdata per uservalue, which is a feature that
+requires Lua 5.4 and greater.
 
 
 Documentation
