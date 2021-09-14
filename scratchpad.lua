@@ -38,12 +38,33 @@ f1  , g2 H5 ,i3    ,   j4
  k5 ",  "i3 ""j4"" l  ","m5"   ]]
 
 
+src = [[
+a,b,c,d,e,f,g,h
+ 1  , 2,  "3 " , 4  ,,6, "", 8
+]]
+
+src = [[
+a,b,c
+1,"",""
+,3,]]
+
+src = [[
+a,b
+1,"ha 
+""ha"" 
+ha"
+3,4
+]]
+
+src = "a,b,c\r\n" ..
+      "1,2,3\r\n"
 --for row,r in csv:rows( io.lines('d.csv') ) do
 for row,r in csv:rows( Csv.split(src,'\n') ) do
   print( "ROW:", row, #row )
   pp(row)
-  for i,v in pairs( row ) do
-    print( ("\tROW: %s,  COLUMN: %s,  VALUE: _%s_"):format(r, i, v))
+  --for i,v in pairs( row ) do
+  for i=1,#row do
+    print( ("\tROW: %s,  COLUMN: %s,  VALUE: _%s_"):format(r, i, row[i]))
   end
 end
 

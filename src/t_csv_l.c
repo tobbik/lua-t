@@ -1,5 +1,4 @@
-/* vim: ts=3 sw=3 sts=3 tw=80 sta noet list
-*/
+// vim: ts=3 sw=3 sts=3 tw=80 sta noet list
 /**
  * \file      t_csv_l.c
  * \brief     OOP wrapper for a Csv reader/writer implementation
@@ -18,7 +17,6 @@
 #include "t_dbg.h"
 #endif
 
-
 /** -------------------------------------------------------------------------
  * Constructor - creates the t.Csv instance.
  * \param   L          Lua state.
@@ -29,10 +27,7 @@
 static int
 lt_csv_New( lua_State *L )
 {
-	struct t_csv    *csv = (struct t_csv *) lua_newuserdata( L, sizeof( struct t_csv ) );
-	csv->ste       = T_CSV_FLDBEG;    ///< Current parse state
-	csv->ste       = 0;               ///< Current parse state
-	csv->fld       = NULL;            ///< Current start of field
+	struct t_csv  __attribute__ ((unused))  *csv = (struct t_csv *) lua_newuserdata( L, sizeof( struct t_csv ) );
 	luaL_getmetatable( L, T_CSV_TYPE );
 	lua_setmetatable( L, -2 );
 	return 1;
@@ -54,51 +49,20 @@ struct t_csv
 	return (NULL==ud) ? NULL : (struct t_csv *) ud;
 }
 
-
 /**--------------------------------------------------------------------------
  * Push the current partse value as a field into the rusult table
  * \param   L       Lua state.
- * \param   csv     t_csv struct userdata.
+ * \param   row     t_csv_row struct partsing atete for current row.
+ * \param   ste     t_csv_ste enum to be set in row struct after pushing value
  * --------------------------------------------------------------------------*/
-static inline enum t_csv_ste
-t_csv_pushvalue( lua_State *L, const char *val, int len, enum t_csv_ste ste, char rpl )
-{
-	char sub[2] = { rpl, 0 }, fnd[3] = { rpl, rpl, 0 };
-	if (NULL == val)
-		lua_pushnil( L );
-	else
-	{
-		while ('\r' == val[len-1] && len > 0) len--;
-		// push a \0 terminated string on stack that can be safely gsub()-ed
-		// creates extra copy on stack that needs to be popped
-		if (rpl)
-		{
-			lua_pushlstring( L, val, len );
-			luaL_gsub( L, lua_tostring( L, -1 ), fnd, sub ); // pushes rinsed result onto stack
-			lua_remove( L, -2 );
-		}
-		else
-			lua_pushlstring( L, val, len );       // ,"", -> empty string
-	}
-	//t_stackDump(L);
-	//printf(" P:[%s(%llu)]  ", lua_tostring(L,-1), lua_rawlen( L, -2 ) +1);
-	lua_rawseti( L, -2, lua_rawlen( L, -2 ) +1 );  // push field to row
-	return ste;
-}
-
-/**--------------------------------------------------------------------------
- * Push the current partse value as a field into the rusult table
- * \param   L       Lua state.
- * \param   csv     t_csv struct userdata.
- * --------------------------------------------------------------------------*/
-static inline void __attribute__ ((unused))
+static inline void
 t_csv_pushfield( lua_State *L, struct t_csv_row *row, enum t_csv_ste ste )
 {
-	if (row->len)
+	if (0==row->len && T_CSV_FLDBEG==row->ste)
 		lua_pushnil( L );
 	else
 	{
-		while ('\r' == row->beg[row->len] && row->len > 0) (row->len)--;
+		while ('\r' == row->beg[row->len-1] && row->len > 0) (row->len)--;
 		// push a \0 terminated string on stack that can be safely gsub()-ed
 		// creates extra copy on stack that needs to be popped
 		if (row->hdb)
@@ -111,10 +75,10 @@ t_csv_pushfield( lua_State *L, struct t_csv_row *row, enum t_csv_ste ste )
 			lua_pushlstring( L, row->beg, row->len );
 	}
 	//t_stackDump(L);
-	//printf(" P:[%s(%d)]  ", lua_tostring(L,-1), row->cnt+1);
+#if PRINT_DEBUGS == 3
+	printf(" (P:%s:%zu:%d]  ", lua_tostring(L,-1), row->len, row->cnt+1);
+#endif
 	lua_rawseti( L, -2, ++(row->cnt) );  // push field to row
-	// resetting some vals
-	row->hdb = row->hec = 0;
 	row->ste = ste;
 }
 
@@ -130,7 +94,9 @@ t_csv_parse( lua_State *L, struct t_csv_row *row )
 	// CSV/TSV parsing finite state machine
 	while (row->ste < T_CSV_RECDNE)
 	{
-		//printf( " [%s]\t-[%c][%c][%c]-   ", t_csv_ste_nme[row->ste], *(row->run), *(row->beg), row->beg[row->len] );
+#if PRINT_DEBUGS == 3
+		printf( " [%s]\t-[%c][%c][%zu][%c]-   ", t_csv_ste_nme[row->ste], *(row->run), *(row->beg), row->len, row->beg[row->len] );
+#endif
 		switch (row->ste)
 		{
 			case T_CSV_DATNKD:
@@ -138,12 +104,12 @@ t_csv_parse( lua_State *L, struct t_csv_row *row )
 				if (row->dlm == *(row->run))                                 // regular field end
 				{
 					(row->len)++;
-					row->ste = t_csv_pushvalue( L, row->beg, row->len, T_CSV_FLDBEG, '\0' );
+					t_csv_pushfield( L, row, T_CSV_FLDBEG );
 				}
 				else if ('\n' == *(row->run))                                // last field end
 				{
 					(row->len)++;
-					row->ste = t_csv_pushvalue( L, row->beg, row->len, T_CSV_RECDNE, '\0' );
+					t_csv_pushfield( L, row, T_CSV_RECDNE );
 				}
 				row->len = (' ' == *(row->run)) ? row->len : row->run - row->beg;       // only progress when not space
 				break;
@@ -154,9 +120,9 @@ t_csv_parse( lua_State *L, struct t_csv_row *row )
 				break;
 			case T_CSV_QTEONE:
 				if (row->dlm == *(row->run))
-					row->ste = t_csv_pushvalue( L, row->beg, row->len, T_CSV_FLDBEG, (row->hdb) ? row->qte : '\0' );
+					t_csv_pushfield( L, row, T_CSV_FLDBEG );
 				else if ('\n' == *(row->run))
-					row->ste = t_csv_pushvalue( L, row->beg, row->len, T_CSV_RECDNE, (row->hdb) ? row->qte : '\0' );
+					t_csv_pushfield( L, row, T_CSV_RECDNE );
 				else if (row->qte == *(row->run))
 					row->ste = T_CSV_QTETWO;
 				else
@@ -171,14 +137,17 @@ t_csv_parse( lua_State *L, struct t_csv_row *row )
 				row->len = row->run - row->beg;       // only progress when not space
 				break;
 			case T_CSV_FLDBEG:
-				row->hdb = row->hec = row->len =0;                // reset doublequote marker
+				// resetting some values for the new field
 				row->beg = row->fld = row->run;
+				row->hdb = row->hec = row->len = 0;
 				if (row->qte == *(row->run))
 					row->ste     = T_CSV_QTE1ST;
 				else if (' ' == *(row->run))                         // Whitespace ... just keep eating
 					;
 				else if (row->dlm == *(row->run))                    // ...,,... empty field aka. NULL value
-					row->ste = t_csv_pushvalue( L, NULL, 0, T_CSV_FLDBEG, '\0' );    // pushing nil
+					t_csv_pushfield( L, row, T_CSV_FLDBEG );
+				else if ('\n' == *(row->run))                    // ...,,... empty field aka. NULL value
+					t_csv_pushfield( L, row, T_CSV_RECDNE );
 				else
 					row->ste = T_CSV_DATNKD;
 				break;
@@ -191,14 +160,18 @@ t_csv_parse( lua_State *L, struct t_csv_row *row )
 				break;
 			case T_CSV_QTE2ND:
 				if (row->dlm == *(row->run))                        // is ...,"",...
-					row->ste = t_csv_pushvalue( L, row->beg, 0, T_CSV_FLDBEG, '\0' );   // pushing empty string
+					t_csv_pushfield( L, row, T_CSV_FLDBEG );
+				else if ('\n' == *(row->run))                       // is ...,"",...
+					t_csv_pushfield( L, row, T_CSV_RECDNE );
 				else if (row->qte == *(row->run))
 					row->ste = T_CSV_QTETWO;
 				break;
 			default:
 				break;
 		}
-		//printf("  [%c] [%c]   [%s]   __%s", *(row->beg), row->beg[row->len], t_csv_ste_nme[row->ste], row->run );
+#if PRINT_DEBUGS == 3
+		printf("  [%c][%zu][%c]   [%s]   __%s", *(row->beg), row->len, row->beg[row->len], t_csv_ste_nme[row->ste], row->run );
+#endif
 		if ('\0' == *(row->run))
 			break;
 		(row->run)++;
@@ -217,7 +190,7 @@ t_csv_parse( lua_State *L, struct t_csv_row *row )
 static int
 lt_csv_parseLine( lua_State *L )
 {
-	//S: csv lne tbl
+	//S: csv lne tbl cnt
 	struct t_csv  *csv = t_csv_check_ud( L, 1, 1 );
 	const char    *lne = luaL_checkstring( L, 2 );
 	luaL_argcheck( L, (LUA_TTABLE == lua_type( L, 3 )), 3, "Expected a Table" );
@@ -234,15 +207,17 @@ lt_csv_parseLine( lua_State *L )
 		.fld = lne,
 		.hdb = 0,
 		.hec = 0,
-		.cnt = 0,
+		.cnt = luaL_optinteger( L, 4, 0 ),
 		.ssq = { csv->qte, 0 },
 		.sdq = { csv->qte, csv->qte, 0 },
 		.sec = { csv->esc, 0 },
 	};
+	lua_pop( L, 1 );               // pop the field count
 	t_csv_parse( L, &row );
 	lua_pushboolean( L, T_CSV_RECDNE == row.ste );
 	lua_pushstring( L, row.fld );
-	return 2;
+	lua_pushinteger( L, row.cnt );
+	return 3;
 }
 
 
@@ -361,10 +336,6 @@ lt_csv__index( lua_State *L )
 		lua_pushlstring( L, &(csv->esc), 1 );
 	else if (0 == strncmp( key, "doublequoted", keyLen ))
 		lua_pushboolean( L, csv->dbl );
-	else if (0 == strncmp( key, "state", keyLen ))
-		lua_pushstring( L, t_csv_ste_nme[ csv->ste ] );
-	else if (0 == strncmp( key, "field", keyLen ))
-		lua_pushstring( L, csv->fld );
 	else if (0 == strncmp( key, "headers", keyLen ))
 		lua_getiuservalue( L, 1, T_CSV_HDRIDX );
 	else
@@ -401,8 +372,6 @@ lt_csv__newindex( lua_State *L )
 		csv->esc = lua_tostring(  L, 3 )[ 0 ];
 	else if (0 == strncmp( key, "doublequoted", keyLen ))
 		csv->dbl = lua_toboolean( L, 3 );
-	else if (0 == strncmp( key, "state", keyLen ) )
-		csv->ste = luaL_checkoption( L, 3, NULL, t_csv_ste_nme );
 	else if (0 == strncmp( key, "headers", keyLen ) )
 		lua_setiuservalue( L, 1, T_CSV_HDRIDX );
 	else

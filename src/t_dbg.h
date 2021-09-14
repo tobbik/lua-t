@@ -1,5 +1,4 @@
-/* vim: ts=3 sw=3 sts=3 tw=80 sta noet list
-*/
+// vim: ts=3 sw=3 sts=3 tw=80 sta noet list
 /**
  * \file      t_dbg.c
  * \brief     Debug/Development helper functions for lua-t library.

@@ -316,6 +316,63 @@ ha"
 		end
 	end,
 
+	CsvParsingQuotesAndNewlinesCrlf = function( self )
+		Test.describe("Parsing escaped quotes and enclosed newlines with CRLF linebreaks")
+		local csv = Csv({headers=true})
+		local src = 'a,b,c\r\n'..
+			         '1,2,3\r\n' ..
+			         '"Once upon \r\n' ..
+			         'a ""time"" \r\n' ..
+			         'in ""space""?",5,6\r\n' ..
+			         '7,8,9\r\n'
+		local res = {
+			{ "1","2","3", a="1", b="2", c="3" },
+			{ 'Once upon \r\na "time" \r\nin "space"?',"5","6", a='Once upon \r\na "time" \r\nin "space"?', b="5", c="6" },
+			{ "7","8","9", a="7", b="8", c="9" }
+		}
+		for row,n in csv:rows( Csv.split( src, "\n" ) ) do
+			for i,v in pairs(res) do
+				assert( res[n][i] == row[i], ("For key <%s> expected <%s> but got <%s>"):format(i, res[n][i], row[i]) )
+			end
+		end
+	end,
+
+	CsvParsingDoublequoteInsanity = function( self )
+		Test.describe("Parsing multiple escaped quotes right close to each other")
+		local csv = Csv({headers=true})
+		local src = [[
+a,b,c
+,"foo", """""x"""
+]]
+		local res = {
+			{ nil,"foo",'""x"', a=nil, b="foo", c='""x"' },
+		}
+		for row,n in csv:rows( Csv.split( src, "\n" ) ) do
+			for i,v in pairs(res) do
+				assert( res[n][i] == row[i], ("For key <%s> expected <%s> but got <%s>"):format(i, res[n][i], row[i]) )
+			end
+		end
+	end,
+
+	CsvParsingDoublequoteNewlineInsanity = function( self )
+		Test.describe("Parsing multiple escaped quotes right close to each other with enclosed newlines")
+		local csv = Csv({headers=true})
+		local src = [[
+a,b,c,d
+,"foo", """
+""x""""
+",bar
+]]
+		local res = {
+			{ nil,"foo",'""x""\n', "bar", a=nil, b="foo", c='""x""\n', d="bar" },
+		}
+		for row,n in csv:rows( Csv.split( src, "\n" ) ) do
+			for i,v in pairs(res) do
+				assert( res[n][i] == row[i], ("For key <%s> expected <%s> but got <%s>"):format(i, res[n][i], row[i]) )
+			end
+		end
+	end,
+
 	CsvParsingEmptyStringsAndNilValues = function( self )
 		Test.describe("Parsing distinguishes between empty string and empty fields")
 		local csv = Csv({headers=true})
@@ -337,7 +394,6 @@ a,b,c,d
 
 	CsvParsingLeadingSeparatorAsNil = function( self )
 		Test.describe("Parsing line starting with separator as NULL(nil) field")
-		Test.todo("Parsing leading separator needs work")
 		local csv = Csv({headers=true})
 		local src = [[
 a,b,c,d
@@ -355,9 +411,80 @@ a,b,c,d
 		end
 	end,
 
+	CsvParsingEndingSeparatorAsNil = function( self )
+		Test.describe("Parsing line ending with separator as NULL(nil) field")
+		local csv = Csv({headers=true})
+		local src = [[
+a,b,c,d
+1,2,3,
+]]
+		local res = {
+			{ "1", "2", "3", nil, a="1", b="2", c="3", d=nil}
+		}
+		for row,n in csv:rows( Csv.split( src, "\n" ) ) do
+			--pp(row)
+			for i,v in pairs(res) do
+				--print( ("For key <%s> expected <%s> but got <%s>"):format(i, res[i], row[i]) )
+				assert( res[n][i] == row[i], ("For key <%s> expected <%s> but got <%s>"):format(i, res[n][i], row[i]) )
+			end
+		end
+	end,
+
+	CsvParsingEndingSeparatorAsNilCrlf = function( self )
+		Test.describe("Parsing line ending with separator as NULL(nil) field with CRLF linebreaks")
+		local csv = Csv({headers=true})
+		local src = 
+			"a,b,c,d\r\n" ..
+			"1,2,3,\r\n"
+		local res = {
+			{ "1", "2", "3", nil, a="1", b="2", c="3", d=nil}
+		}
+		for row,n in csv:rows( Csv.split( src, "\n" ) ) do
+			--pp(row)
+			for i,v in pairs(res) do
+				--print( ("For key <%s> expected <%s> but got <%s>"):format(i, res[i], row[i]) )
+				assert( res[n][i] == row[i], ("For key <%s> expected <%s> but got <%s>"):format(i, res[n][i], row[i]) )
+			end
+		end
+	end,
+
+	CsvParsingEndingEmptyString = function( self )
+		Test.describe("Parsing line ending with empty string field")
+		local csv = Csv({headers=true})
+		local src = [[
+a,b,c,d
+1,2,3,""
+]]
+		local res = {
+			{ "1", "2", "3", "", a="1", b="2", c="3", d=""}
+		}
+		for row,n in csv:rows( Csv.split( src, "\n" ) ) do
+			for i,v in pairs(res) do
+				assert( res[n][i] == row[i], ("For key <%s> expected <%s> but got <%s>"):format(i, res[n][i], row[i]) )
+			end
+		end
+	end,
+
+	CsvParsingEndingEmptyStringCrlf = function( self )
+		Test.describe("Parsing line ending with empty string with CRLF linebreaks")
+		local csv = Csv({headers=true})
+		local src = 
+			'a,b,c,d\r\n' ..
+			'1,2,3,""\r\n'
+		local res = {
+			{ "1", "2", "3", "", a="1", b="2", c="3", d=""}
+		}
+		for row,n in csv:rows( Csv.split( src, "\n" ) ) do
+			--pp(row)
+			for i,v in pairs(res) do
+				--print( ("For key <%s> expected <%s> but got <%s>"):format(i, res[i], row[i]) )
+				assert( res[n][i] == row[i], ("For key <%s> expected <%s> but got <%s>"):format(i, res[n][i], row[i]) )
+			end
+		end
+	end,
+
 	CsvParsingJson = function( self )
 		Test.describe("Parsing doubleQuotes within an JSON value")
-		Test.todo("Parsing leading separator needs work")
 		local csv = Csv({headers=true})
 		local src = [==[
 id,prop0,prop1,geojson
@@ -405,32 +532,6 @@ a time",5,6
 			end
 		end
 	end,
-
-	CsvParsingQuotesAndNewlinesCrlf = function( self )
-		Test.describe("Parsing escaped quotes and enclosed newlines with CRLF linebreaks")
-		local csv = Csv({headers=true})
-		-- writing \r into [[ ]] string markers does not put it into the string
-		local src =
-			'a,b,c\r\n'..
-			'1,2,3\r\n' ..
-			'"Once upon \r\n' ..
-			'a time",5,6\r\n' ..
-			'7,8,9\r\n'
-		local res = {
-			{ "1","2","3", a="1", b="2", c="3" },
-			{ "Once upon \r\na time","5","6", a="Once upon \r\na time", b="5", c="6" },
-			{ "7","8","9", a="7", b="8", c="9" }
-		}
-		for row,n in csv:rows( Csv.split( src, "\n" ) ) do
-			--pp(row)
-			for i,v in pairs(res) do
-				--print( ("For key <%s> expected <%s> but got <%s>"):format(i, res[i], row[i]) )
-				assert( res[n][i] == row[i], ("For key <%s> expected <%s> but got <%s>"):format(i, res[n][i], row[i]) )
-			end
-		end
-	end,
-	--]=]
-
 
 	-- ############################################################  Tests for after rewrite
 	CsvParsingTrimTrailingWhitespace = function( self )

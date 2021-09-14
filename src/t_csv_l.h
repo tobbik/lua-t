@@ -43,8 +43,6 @@ struct t_csv
 	char              qte;    ///< Quotation string
 	char              esc;    ///< Tsv/Csv escape character
 	int               dbl;    ///< Use double quotation to escape quotes?
-	enum t_csv_ste    ste;    ///< Current parse state
-	const char       *fld;    ///< Current start of field
 };
 
 

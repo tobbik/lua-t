@@ -23,10 +23,10 @@ end
 
 csv_mt.rows = function( self, source )
 	assert( 'function' == type(source), "Argument must be an iterator function" )
-	local records,parsed,rowdone,line,field = 0 ,{ }, true, source( ), nil  -- current line
+	local records,parsed,rowdone,line,field, fld_cnt = 0 ,{ }, true, source( ), nil, 0
 	if 'boolean' == type(self.headers) and self.headers then
 		self.headers = { }
-		rowdone = self:parseLine( line..'\n', self.headers )
+		rowdone,field,fld_cnt = self:parseLine( line..'\n', self.headers, fld_cnt )
 		line    = source( )
 	end
 	return function( )       -- iterator function
@@ -34,7 +34,7 @@ csv_mt.rows = function( self, source )
 			local buff =  Buffer(line)
 			--print(("%d BUFF: %s"):format(#buff, buff:toHex() ))
 			--print(("%d LINE: _%s_"):format( #line, line))
-			rowdone,field = self:parseLine( line ..'\n', parsed )
+			rowdone,field,fld_cnt = self:parseLine( line ..'\n', parsed, rowdone and 0 or fld_cnt )
 			--print(("FIELD: _%s_   LINE: _%s_"):format(field, line))
 			if 0==#line then
 				line = source( )
