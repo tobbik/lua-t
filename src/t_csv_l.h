@@ -35,17 +35,6 @@ const char* t_csv_ste_nme[ ] = {
 };
 
 
-#define T_CSV_HDRIDX    1
-/// The userdata struct for T.Csv row parser
-struct t_csv
-{
-	char              dlm;    ///< Tsv/Csv delimiter character
-	char              qte;    ///< Quotation string
-	char              esc;    ///< Tsv/Csv escape character
-	int               dbl;    ///< Use double quotation to escape quotes?
-};
-
-
 // The csv row parser state
 struct t_csv_row
 {

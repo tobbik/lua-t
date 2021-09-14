@@ -484,7 +484,7 @@ a,b,c,d
 	end,
 
 	CsvParsingJson = function( self )
-		Test.describe("Parsing doubleQuotes within an JSON value")
+		Test.describe("Parsing doubleQuoted quotes within an JSON value")
 		local csv = Csv({headers=true})
 		local src = [==[
 id,prop0,prop1,geojson

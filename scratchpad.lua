@@ -5,6 +5,7 @@
 
 Csv,pp = require"t.Csv", require't.Table'.pprint
 csv = Csv( ",", true )
+csv = Csv( {separator=",", headers=true} )
 src = 'a,b,c,d\r\n' ..
       '1,2,3,4\r\n' ..
       'Z,Y,"cunt ""FROM"" hell",X\r\n'
@@ -55,6 +56,7 @@ a,b
 ha"
 3,4
 ]]
+
 
 src = "a,b,c\r\n" ..
       "1,2,3\r\n"

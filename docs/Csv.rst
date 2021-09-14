@@ -8,8 +8,7 @@ Overview
 ``t.Csv`` provides the ability to read through a Csv/Tsv file and parse it's
 contents.  While the line iterator is provided by the use of Lua
 ``io.lines()`` the actual value parser is a finite state machine written in
-C that should provide very good performance even on large and very large
-files.
+C it should provide good performance even on large and very large files.
 
 
 Usage
@@ -30,13 +29,32 @@ Create a ``Csv`` instance and loop over the ``csv:rows()`` iterator.
 API
 ===
 
-Class Members
--------------
+Static Class Members
+--------------------
 
 ``function tokenIterator = Csv.split( string text, string delimiter )``
   Returns an iterator that returns tokens from ``string text`` separated by
   ``string delimiter`` until the text is exhausted.  ``function
-  tokenIterator()`` returns 2 values ``string token, int lineCount``.
+  tokenIterator()`` returns 2 values ``string token, int lineCount``.  This
+  is useful to split incoming text sources by newlines before passing them
+  to the Csv parser itself.
+
+.. code:: lua
+
+    Csv = require"t.Csv"
+    source = "foo,bar,foobar,snafu,who,else,got,words"
+    for word,i in Csv.split(source, ",") do
+      print( i .. "   " .. word )
+    end
+    -- will print
+    --    1   foo
+    --    2   bar
+    --    3   foobar
+    --    4   snafu
+    --    5   who
+    --    6   else
+    --    7   got
+    --    8   words
 
 
 Class Metamembers
@@ -90,14 +108,6 @@ Instance Members
   If set, ``quotchar`` appearing within a fiels are protected by a
   proceeding ``quotchar``, otherwise the ``escapechar`` is used.
 
-``string line  = csv.line``
-  The current line the parser works on.
-
-``int state  = csv.state``
-  The current state of the parser.  This is mainly an internal value
-  accessible for convienience.  Possible values are available in
-  src/t_csv_l.h.
-
 ``boolean|table headers  = csv.headers``
   If set to ``boolean true`` the parser will read the first line as column
   headers and ``csv.headers`` will be replaced by a table that represents
@@ -116,11 +126,17 @@ Instance Members
 
     src=[[
     first,second,third
-    a,b,c]]
+    a,b,c
+    1,2,3]]
     csv=Csv({headers=true})
-    for rowTable, rowCount in tsv:rows( Csv.split(src) ) do
-      ... rowTable looks like: {"a","b","c", first="a", second="b", third="c"}
+    for rowData, rowCount in tsv:rows( Csv.split(src) ) do
+      ... rowData looks like: {"a","b","c", first="a", second="b", third="c"}
+      ... rowData looks like: {"1","2","3", first="1", second="2", third="3"}
     end
+
+  If ``csv.headers == true`` upon instantiation, after the parsing has happened
+  via ``csv:rows()`` the value of ``csv.headers`` will be replace with a
+  table that contains the actual header value in propper order.
 
 ``function rowIterator  = csv:rows( function sourceIterator )``
   Rows is an iterator that returns a table of fields for each semantic row
@@ -134,8 +150,8 @@ Instance Members
 
     Csv = require"t.Csv"
     tsv = Csv( '\t' )
-    for rowTable, rowCount in tsv:rows( io.lines("data.tsv") ) do
-      ... rowTable contains all fields of a tsv row
+    for rowData, rowCount in tsv:rows( io.lines("data.tsv") ) do
+      ... rowData contains all fields of a tsv row
     end
 
   For convienience to parse text-only sources that are not available as
@@ -147,8 +163,8 @@ Instance Members
 
     Csv = require"t.Csv"
     csv = Csv( )
-    for rowTable, rowCount in csv:rows( Csv.split( textCsvData ) ) do
-      ... rowTable contains all fields of a csv row
+    for rowData, rowCount in csv:rows( Csv.split( textCsvData, "\n" ) ) do
+      ... rowData contains all fields of a csv row
     end
 
 
@@ -158,6 +174,4 @@ Instance Metamembers
 ``string s = tostring( Csv csv )  [__toString]``
   Returns a string representing ``Csv csv`` instance.  The string
   contains type, delimiter, quotchar, escapechar, doublequote and memory
-  address information, for example: *`T.Csv[<TAB>:":\\:true]:
-  0x5650ce588428`*.
-
+  address information, for example: **``T.Csv[<TAB>:":\\:true]``**.
