@@ -263,8 +263,8 @@ lt_csv_Split( lua_State *L )
 {
 	const char __attribute__ ((unused)) *str = luaL_checkstring( L, 1 );
 	const char __attribute__ ((unused)) *dlm = luaL_checkstring( L, 2 );
-	const int                            dst = lua_toboolean( L, 3 ); // don't strip delimiter
-	if (2==lua_gettop( L )) lua_pushboolean( L, dst );
+	if (2==lua_gettop( L ))
+		lua_pushboolean( L, lua_toboolean( L, 3 ) ); // don't strip delimiter
 	lua_pushinteger( L, 0 );                // str iterator
 	lua_pushinteger( L, 0 );                // token counter
 	lua_pushcclosure( L, &t_csv_split, 5 );
