@@ -20,7 +20,7 @@ local suites = {
 	"t_t"                   ,
 	"t_tbl"                 , "t_tbl_equals",
 	"t_tst"                 ,
-	"t_csv"                 ,
+	"t_csv"                 , "t_csv_extern",
 	"t_csv_split"           , "t_csv_parse",
 	--"t_pck_range"           , "t_pck_cmb",
 	--"t_pck_bytes"           , "t_pck_bits",
