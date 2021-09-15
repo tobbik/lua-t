@@ -32,7 +32,7 @@ API
 Static Class Members
 --------------------
 
-``function tokenIterator = Csv.split( string text, string delimiter )``
+``function tokenIterator = Csv.split( string text, string delimiter[, boolean keepDelimiter] )``
   Returns an iterator that returns tokens from ``string text`` separated by
   ``string delimiter`` until the text is exhausted.  ``function
   tokenIterator()`` returns 2 values ``string token, int lineCount``.  This
@@ -42,31 +42,44 @@ Static Class Members
 .. code:: lua
 
     Csv = require"t.Csv"
-    source = "foo,bar,foobar,snafu,who,else,got,words"
-    for word,i in Csv.split(source, ",") do
+    input = "foo,bar,and,so,on"
+    for word,i in Csv.split(input, ",") do
       print( i .. "   " .. word )
     end
     -- will print
     --    1   foo
     --    2   bar
-    --    3   foobar
-    --    4   snafu
-    --    5   who
-    --    6   else
-    --    7   got
-    --    8   words
+    --    3   and
+    --    4   so
+    --    5   on
+
+  The optional parameter ``boolean keepDelimiter`` defaults to false.  When
+  set to ``true``, the tokens returned will be trailed by the delimiter:
+
+.. code:: lua
+
+    Csv = require"t.Csv"
+    input = "foo||bar||and||so||on"
+    for word,i in Csv.split(input, "||", true) do
+      print( i .. "   " .. word )
+    end
+    -- will print
+    --    1   foo||
+    --    2   bar||
+    --    3   and||
+    --    4   so||
+    --    5   on     -- last field has no delimiter in input
 
 
 Class Metamembers
 -----------------
 
 ``Csv csv = Csv( [string|table delimiter, boolean|table headers, string quotchar, string esacapechar, boolean doublequote, int skip] )   [__call]``
-  Instantiate a new ``Csv`` object. ``delimiter``, ``headers``, ``quotchar``
-  , ``escapechar`` and ``doublequote`` are optional parameters.  For
-  detailed descriptions of the parameters and their default values refer to
-  the instance members of the same name.  For more descriptive source code,
-  it is also possible to pass a table that contains all relevant fields
-  named like in the instance members like so:
+  Instantiate a new ``Csv`` object. All parameters are optional and have
+  respective default values.  For detailed descriptions of the parameters
+  and their default values refer to the instance members of the same name.
+  For more descriptive source code, it is also possible to pass a table that
+  contains all relevant fields named like in the instance members like so:
 
   .. code:: lua
 
@@ -122,10 +135,11 @@ Instance Members
   line as headers and will use the passed table to define the collumns
   within the rows.  The ``csv.headers`` value effects the ``table rowData``
   which is returned from the row iterator function provided by
-  ``csv:rows()``.  If there are no headers it will be a numerically indexed
-  table which holds a value for each column.  If the parser has a
-  ``headers`` definition the table will **also** contain key/value pairs for
-  the indexd data.  The following example illustrates the behaviour:
+  ``csv:rows()``.  If there are no headers it will be an only numerically
+  indexed table which holds a value for each column.  If the parser has a
+  ``headers`` definition the table will **additionally** contain key/value
+  pairs for the indexd data.  The following example illustrates the
+  behaviour:
 
   .. code:: lua
 
@@ -138,10 +152,6 @@ Instance Members
       ... rowData looks like: {"a","b","c", first="a", second="b", third="c"}
       ... rowData looks like: {"1","2","3", first="1", second="2", third="3"}
     end
-
-  If ``csv.headers == true`` upon instantiation, after the parsing has happened
-  via ``csv:rows()`` the value of ``csv.headers`` will be replace with a
-  table that contains the actual header value in propper order.
 
 ``function rowIterator  = csv:rows( function sourceIterator )``
   Rows is an iterator that returns a table of fields for each semantic row

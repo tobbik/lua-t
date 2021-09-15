@@ -213,10 +213,10 @@ t_csv_split( lua_State *L )
 	size_t       lns,lnd; // length input, length delim
 	const char  *str = luaL_checklstring( L, lua_upvalueindex( 1 ), &lns );
 	const char  *dlm = luaL_checklstring( L, lua_upvalueindex( 2 ), &lnd );
-	size_t       its = luaL_checkinteger( L, lua_upvalueindex( 3 ) ); // iter input
-	size_t       cnt = luaL_checkinteger( L, lua_upvalueindex( 4 ) ); // token counter
+	const int    dst = lua_toboolean( L, lua_upvalueindex( 3 ) );     // don't strip delimiter?
+	size_t       its = luaL_checkinteger( L, lua_upvalueindex( 4 ) ); // iter input
+	size_t       cnt = luaL_checkinteger( L, lua_upvalueindex( 5 ) ); // token counter
 	size_t       itd = 0, tkn = its;                                  // iter delim, token start
-	//printf("$$$$$$$$$$$$$$$$$$$      ITS(TKN): %zu   LEN: %zu <%c>\n", its, lns, str[tkn]);
 	if (its > lns)
 		lua_pushnil( L );
 	else
@@ -225,25 +225,30 @@ t_csv_split( lua_State *L )
 		{
 			//printf("   ITS: %zu <%c><%c> ", its, str[its], dlm[itd]);
 			itd = (str[its] == dlm[itd])  // string matches delimiter
-				? itd+1                       // advance delimiter
-				: (str[its] == *dlm)          // first character in delimiter matches
-					? 1                           // advance delimiter to one
-					: 0;                          // reset delimiter
+				? itd+1                    // advance delimiter
+				: (str[its] == *dlm)       // first character in delimiter matches
+					? 1                     // advance delimiter to one
+					: 0;                    // reset delimiter
 			//printf(" -- %s\n", lnd == itd ? "Yea" : "Nah");
 			if (itd == lnd)               // delimeter completely matched
 				break;
 		}
-		//printf("      TKN: %s   %zu %ld \n", &(str[tkn]), its, its-tkn - ( (its==lns) ? 0 : lnd - 1 ));
-		lua_pushlstring( L, &(str[tkn]), its-tkn - ( (its==lns) ? 0 : lnd - 1 ) );
+		//printf("      TKN: %s  %zu %ld \n", &(str[tkn]), its, its-tkn  - ((its<lns) ? ((dst==1) ? -1 : lnd-1) : 0) );
+		lua_pushlstring( L, &(str[tkn]), its-tkn -
+			((its<lns)            // Not end of input text?
+				? ((dst==1)        // strip delimiter?
+					? -1            // Include delimiter
+					: lnd-1)        // Exclude delimiter
+				: 0)               // last field
+		);
 		lua_pushinteger( L, its+1 );
-		lua_replace( L, lua_upvalueindex( 3 ) );    // update string iterator position
+		lua_replace( L, lua_upvalueindex( 4 ) );    // update string iterator position
 		lua_pushinteger( L, cnt+1 );
-		lua_replace( L, lua_upvalueindex( 4 ) );    // update field count
+		lua_replace( L, lua_upvalueindex( 5 ) );    // update field count
 		lua_pushinteger( L, cnt+1 );
 	}
 	return (its>lns) ? 1 : 2;
 }
-
 
 /**--------------------------------------------------------------------------
  * Function to split a string by a delimiter
@@ -258,9 +263,11 @@ lt_csv_Split( lua_State *L )
 {
 	const char __attribute__ ((unused)) *str = luaL_checkstring( L, 1 );
 	const char __attribute__ ((unused)) *dlm = luaL_checkstring( L, 2 );
+	const int                            dst = lua_toboolean( L, 3 ); // don't strip delimiter
+	if (2==lua_gettop( L )) lua_pushboolean( L, dst );
 	lua_pushinteger( L, 0 );                // str iterator
 	lua_pushinteger( L, 0 );                // token counter
-	lua_pushcclosure( L, &t_csv_split, 4 );
+	lua_pushcclosure( L, &t_csv_split, 5 );
 	return 1;
 }
 
@@ -288,7 +295,6 @@ static const struct luaL_Reg t_csv_cf [] = {
 /**--------------------------------------------------------------------------
  * Pushes this library onto the stack.
  *          - creates Metatable with functions
- *          - creates metatable with methods
  * \param   L      The lua state.
  * \lreturn table  the library
  * \return  int    # of values pushed onto the stack.
