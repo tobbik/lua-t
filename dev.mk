@@ -1,134 +1,122 @@
 # vim: ft=make ts=3 sw=3 st=3 sts=3 sta noet tw=80 list
-CURL=$(shell which curl)
-TAR=$(shell which tar)
-UNZIP=$(shell which unzip)
+RM != which rm
 
-MYCFLAGS=-g -O2 -Winline
-UNAME_M := $(shell uname -m)
-ifeq ($(UNAME_M),x86_64)
-   MYCFLAGS += -D AMD64 -march=native
-endif
-ifneq ($(filter %86,$(UNAME_M)),)
-   MYCFLAGS += -D IA32 -march=native
-endif
-ifneq ($(filter arm%,$(UNAME_M)),)
-ifneq ($(filter armv8l%,$(UNAME_M)),)
-   # RockChip RK3399 specific flags
-   MYCFLAGS += -m32 -O2 -mthumb -march=armv8-a -mcpu=cortex-a72 -mtune=cortex-a72.cortex-a53 -mfloat-abi=softfp
-else
-   MYCFLAGS += -D ARM -fbuiltin -march=native -pipe -fstack-protector-strong -fno-plt -O0
-endif
-endif
-ifneq ($(filter aarch%,$(UNAME_M)),)
-   MYCFLAGS += -D ARM -fbuiltin -march=armv8-a -pipe -fstack-protector-strong -fno-plt -O0
-endif
+#DMYCFLAGS:= -pedantic -O3
+TRYFLAGS != /bin/sh guess_platflags.sh
+DMYCFLAGS= -D DEBUG=1 -g -O3 -Winline $(TRYFLAGS)
 
 LVER=5.4
 LREL=3
-LUASRC=lua-$(LVER).$(LREL).tar.gz
-LUAURL=https://www.lua.org/ftp
+CURDIR != pwd
 
-COMPDIR=$(CURDIR)/compile
-PREFIX=$(CURDIR)/out
-DLDIR=$(CURDIR)/download
-INCDIR=$(PREFIX)/include
+D_CC=clang
+D_LD=clang
 
-CC=clang
-LD=clang
-
+PREFIX=$(CURDIR)/local
 
 all: $(PREFIX)/bin/lua
 
-# create a local Lua installation
-$(DLDIR):
-	mkdir -p $@
-
-$(DLDIR)/$(LUASRC): $(DLDIR)
-	$(CURL) -o $@   $(LUAURL)/$(LUASRC)
-
-$(COMPDIR)/$(LVER): $(DLDIR)/$(LUASRC)
-	mkdir -p $@
-	$(TAR) -xzf $< -C $@ --strip-components=1
-	sed -i "s/-O2 //" $@/src/Makefile
-
-$(COMPDIR)/$(LVER)/src/lua: $(COMPDIR)/$(LVER)
-	$(MAKE) -C $< -j 4 CC=$(CC) LD=$(LD) \
-		MYCFLAGS="$(MYCFLAGS)" \
-		linux-readline
-
-$(PREFIX)/bin/lua: $(COMPDIR)/$(LVER)/src/lua
-	$(MAKE) -C $(COMPDIR)/$(LVER) CC=$(CC) LD=$(LD) \
-		LVER=$(LVER) \
-		INSTALL_TOP=$(PREFIX) \
-		install
+$(PREFIX)/bin/lua:
+	$(MAKE) -C $(PREFIX) \
+	 CC=$(D_CC) LD=$(D_LD) \
+	 MYCFLAGS="$(DMYCFLAGS)" \
+	 LVER="$(LVER)" \
+	 PREFIX="$(PREFIX)"
 
 dev-clean:
-	$(MAKE) CC=$(CC) LD=$(LD) \
-		LVER=$(LVER) \
-		MYCFLAGS="$(MYCFLAGS)" \
-		INCDIR="$(INCDIR)" \
-		BUILD_EXAMPLE=1 \
-		DEBUG=1 \
-		PREFIX="$(PREFIX)" clean
-	$(MAKE) -C http clean
+	$(MAKE) CC=$(D_CC) LD=$(D_LD) \
+	 T_DBG_SRC=t_dbg.c \
+	 T_NRY_LIB=nry.so \
+	 clean
+	$(MAKE) \
+	 T_NRY_LIB=nry.so \
+	 PREFIX="$(PREFIX)" uninstall
 
 dev-rinse:
 	$(MAKE) dev-clean
-	-$(RM) -r $(COMPDIR)/*
-	-$(RM) -r $(PREFIX)
+	$(MAKE) -C $(PREFIX) clean
+	$(MAKE) -C $(PREFIX) uninstall
+
+dev-nuke:
+	$(MAKE) -C $(PREFIX) uninstall
+	$(MAKE) -C $(PREFIX) nuke
 
 dev-pristine:
-	$(MAKE) dev-rinse
-	-$(RM) -r $(DLDIR)
+	$(MAKE) dev-nuke
+	$(MAKE) -C $(PREFIX) pristine
 
 dev: $(PREFIX)/bin/lua
-	$(MAKE)  -j4 CC=$(CC) LD=$(LD) \
-	 LVER=$(LVER) LREL=$(LREL) LUASRC=$(LUASRC) LUAURL=$(LUAURL) \
-	 MYCFLAGS="$(MYCFLAGS)" \
-	 INCDIR="$(INCDIR)" \
-	 LDFLAGS="$(LDFLAGS)" \
-	 BUILD_EXAMPLE=1 \
-	 DEBUG=1 \
+	$(MAKE) -j4 CC=$(D_CC) LD=$(D_LD) \
+	 T_DBG_SRC=t_dbg.c \
+	 T_NRY_LIB=nry.so  \
+	 L_SRC_NRY=t/Numarray.lua \
+	 INCDIR="$(PREFIX)/include" \
+	 MYCFLAGS="$(DMYCFLAGS)" \
+	 MYLDFLAGS="$(MYLDFLAGS)" \
+	 PREFIX="$(PREFIX)"
+	$(MAKE) \
+	 LVER=$(LVER) LREL=$(LREL) \
+	 T_NRY_LIB=nry.so  \
+	 L_SRC_NRY=t/Numarray.lua \
 	 PREFIX="$(PREFIX)" install
 
 dev-run:
 	$(MAKE) dev
-	time LUA_PATH="$(CURDIR)/out/share/lua/5.4/?.lua;;" \
-	 LUA_CPATH="$(CURDIR)/out/lib/lua/5.4/?.so;;" \
-	 $(CURDIR)/out/bin/lua scratchpad.lua
+	time LUA_PATH="$(PREFIX)/share/lua/5.4/?.lua;;" \
+	 LUA_CPATH="$(PREFIX)/lib/lua/5.4/?.so;;" \
+	 $(PREFIX)/bin/lua scratchpad.lua
 
 dev-exec:
 	$(MAKE) dev
-	LUA_PATH="$(CURDIR)/out/share/lua/5.4/?.lua;;" \
-	 LUA_CPATH="$(CURDIR)/out/lib/lua/5.4/?.so;;" \
-	 $(CURDIR)/out/bin/lua -i scratchpad.lua
+	LUA_PATH="$(PREFIX)/share/lua/5.4/?.lua;;" \
+	 LUA_CPATH="$(PREFIX)/lib/lua/5.4/?.so;;" \
+	 $(PREFIX)/bin/lua -i scratchpad.lua
 
 dev-test:
 	$(MAKE) dev
-	LUA_PATH="$(CURDIR)/out/share/lua/5.4/?.lua;;" \
-	 LUA_CPATH="$(CURDIR)/out/lib/lua/5.4/?.so;;" \
-	 $(CURDIR)/out/bin/lua -i $(CURDIR)/test/runner.lua\
+	LUA_PATH="$(PREFIX)/share/lua/5.4/?.lua;;" \
+	 LUA_CPATH="$(PREFIX)/lib/lua/5.4/?.so;;" \
+	 $(PREFIX)/bin/lua -i test/runner.lua
 
 dev-t1:
 	$(MAKE) dev
-	LUA_PATH="$(CURDIR)/out/share/lua/5.4/?.lua;;" \
-	 LUA_CPATH="$(CURDIR)/out/lib/lua/5.4/?.so;;" \
-	 $(CURDIR)/out/bin/lua -i $(CURDIR)/test/t1.lua
+	LUA_PATH="$(PREFIX)/share/lua/5.4/?.lua;;" \
+	 LUA_CPATH="$(PREFIX)/lib/lua/5.4/?.so;;" \
+	 $(PREFIX)/bin/lua -i test/t1.lua
 
 dev-gdb:
 	$(MAKE) dev
-	LUA_PATH="$(CURDIR)/out/share/lua/5.4/?.lua;;" \
-	 LUA_CPATH="$(CURDIR)/out/lib/lua/5.4/?.so;;" \
-	 gdb --args $(CURDIR)/out/bin/lua -i scratchpad.lua
+	LUA_PATH="$(PREFIX)/share/lua/5.4/?.lua;;" \
+	 LUA_CPATH="$(PREFIX)/lib/lua/5.4/?.so;;" \
+	 gdb --args $(PREFIX)/bin/lua -i scratchpad.lua
 
 dev-example:
 	$(MAKE) dev
-	LUA_PATH="$(CURDIR)/out/share/lua/5.4/?.lua;;" \
-	 LUA_CPATH="$(CURDIR)/out/lib/lua/5.4/?.so;;" \
-	 $(CURDIR)/out/bin/lua -i example/t_net_ifc.lua
+	LUA_PATH="$(PREFIX)/share/lua/5.4/?.lua;;" \
+	 LUA_CPATH="$(PREFIX)/lib/lua/5.4/?.so;;" \
+	 $(PREFIX)/bin/lua -i example/t_net_ifc.lua
 
+
+dev-echo:
+	@echo "PLAT= $(PLAT)"
+	@echo "LVER= $(LVER)"
+	@echo "PREFIX= $(PREFIX)"
+	@echo "CC= $(CC)"
+	@echo "LD= $(LD)"
+	$(MAKE) -C $(SRCDIR) -s \
+	 PREFIX="$(PREFIX)" \
+	 INCDIR="$(PREFIX)/include" \
+	 MYCFLAGS="$(DMYCFLAGS)" \
+	 MYLDFLAGS="$(MYLDFLAGS)" \
+	 echo
+	$(MAKE) -C $(LUADIR) -s \
+	 PREFIX="$(PREFIX)" \
+	 INCDIR="$(PREFIX)/include" \
+	 MYCFLAGS="$(DMYCFLAGS)" \
+	 MYLDFLAGS="$(MYLDFLAGS)" \
+	 echo
 
 run-dev:
-	LUA_PATH="$(CURDIR)/out/share/lua/5.4/?.lua;;" \
-	 LUA_CPATH="$(CURDIR)/out/lib/lua/5.4/?.so;;" \
-	 $(CURDIR)/out/bin/lua -i scp.lua
+	LUA_PATH="$(PREFIX)/share/lua/5.4/?.lua;;" \
+	 LUA_CPATH="$(PREFIX)/lib/lua/5.4/?.so;;" \
+	 $(PREFIX)/bin/lua -i scp.lua

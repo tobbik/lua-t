@@ -2,6 +2,7 @@ S_EXE=s_go
 
 LUA_T=../out/bin/lua
 NODE=$(shell which node)
+RM=$(shell which rm) -f
 
 GO=$(shell which go)
 SCREEN=$(shell which screen)
@@ -24,7 +25,7 @@ $(S_EXE): s_go.go $(GO)
 	$(GO) build -o $@ $<
 
 clean:
-	-rm $(S_EXE)
+	-$(RM) $(S_EXE)
 
 gsrv: $(S_EXE)
 	$(CURDIR)/${S_EXE} $(PORT)

@@ -16,7 +16,7 @@ local prxTblIdx              ,o_setElement  , o_getElement  , o_iters =
       Table.proxyTableIndex, Oht.setElement, Oht.getElement, Oht.iters
 
 -- console colours  green    red      yellow   blue
-local colors    = { PASS=32, FAIL=31, SKIP=33, TODO=36}
+local colours    = { PASS=32, FAIL=31, SKIP=33, TODO=36}
 local _mt
 
 -- ---------------------------- general helpers  --------------------
@@ -32,7 +32,7 @@ local makeSuite = function( prx )
 end
 
 local printTst = function( nme, tst )
-  print( ('[%dm%s[0m [%dms] [%dms] [%s] %s'):format( colors[ tst.status ], tst.status, tst.executionTime, tst.runTime, nme, tostring(tst) ) )
+  print( ('[%dm%s[0m [%dms] [%dms] [%s] %s'):format( colours[ tst.status ], tst.status, tst.executionTime, tst.runTime, nme, tostring(tst) ) )
 end
 
 -- ---------------------------- Instance metatable --------------------

@@ -6,14 +6,14 @@
 # \copyright See Copyright notice at the end of t.h
 #
 LVER=5.4
-PREFIX=$(shell pkg-config --variable=prefix lua)
+PREFIX=/usr/local
 INSTALL_LMOD=$(PREFIX)/share/lua/$(LVER)
 
 # How to install. If your install program does not support "-p", then
 # you may have to run ranlib on the installed t.a
-INSTALL= install -p
-INSTALL_DATA= $(INSTALL) -Dm0644
-RM=$(shell which rm) -f
+INSTALLER != which install
+INSTALL_DATA=$(INSTALLER) -p -Dm 0644
+RM != which rm
 
 T_SRC=\
    t/Buffer.lua \
@@ -46,11 +46,8 @@ T_SRC=\
    t/Table.lua \
    t/Test.lua \
    t/Test/Suite.lua \
-   t.lua
-
-ifdef BUILD_EXAMPLE
-T_SRC:=$(T_SRC) t/Numarray.lua
-endif
+   t.lua \
+   $(L_SRC_NRY)
 
 T_INSTALL=$(T_SRC:%.lua=$(INSTALL_LMOD)/%.lua)
 
@@ -59,9 +56,15 @@ all: $(T_SRC)
 install: $(T_INSTALL)
 
 $(INSTALL_LMOD)/%.lua: %.lua
-	$(INSTALL_DATA) $< $@
+	$(INSTALL_DATA) $^ $@
 
-clean:
-	-$(RM) -r $(INSTALL_LMOD)/t
+uninstall:
+	-$(RM) -f  $(T_INSTALL)
+	-$(RM) -fr $(INSTALL_LMOD)/t
+
+echo:
+	@echo "LVER= $(LVER)"
+	@echo "PREFIX= $(PREFIX)"
+	@echo "INSTALL_LMOD= $(INSTALL_LMOD)"
 
 .PHONY: all clean

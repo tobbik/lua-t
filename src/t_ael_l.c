@@ -37,7 +37,7 @@
 	  }                                                  \
 	} while (0)
 
-#ifdef _WIN32
+#if defined(LUAT_USE_WINDOWS)
 // PostgreSQL's implementattion of gettimeofday()
 /* FILETIME of Jan 1 1970 00:00:00. */
 static const unsigned __int64 epoch = UINT64CONST(116444736000000000);

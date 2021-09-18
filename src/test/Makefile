@@ -32,4 +32,4 @@ cat: t_unittest_cat.c
 	./cat ../$< ./$< | $(CC) -x c $(INCS) $(CFLAGS) - -o $@ $(LDFLAGS) $(LIBS)
 
 clean:
-	-rm $(T_EXE) cat
+	-rm -f $(T_EXE) cat

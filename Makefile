@@ -7,55 +7,31 @@
 
 LVER=5.4
 
-INSTALL_CMOD=$(PREFIX)/lib/lua/$(LVER)/t
-INSTALL_LMOD=$(PREFIX)/share/lua/$(LVER)/t
-
-PREFIX=$(shell pkg-config --variable=prefix lua)
-INCDIR=$(shell pkg-config --variable=includedir lua)
-LDFLAGS=$(shell pkg-config --libs lua) -lcrypt
-PLAT=linux-readline
-MYCFLAGS=" -O2"
+CURDIR != pwd
 SRCDIR=$(CURDIR)/src
 LUADIR=$(CURDIR)/lua
-
-CC=gcc
-LD=gcc
-
-SCREEN_RC=screen.rc
-SCREEN=$(shell which screen)
-
-# Docker build specific
-DOCKER=$(shell which docker)
-DOCKERPS=$(DOCKER) ps --format "table {{.Names}}"
-CONTAINER=luab
-IMAGE=lua$(shell echo $(LVER) | sed "s/\.//")
-TZDATAPATH=build/tz
+PREFIX != /bin/sh ../guess_prefix.sh
 
 all: $(SRCDIR)/*.so
 
 $(SRCDIR)/*.so:
-	$(MAKE) -C $(SRCDIR) CC=$(CC) LD=$(LD) \
+	$(MAKE) -C $(SRCDIR) \
 	 LVER="$(LVER)" \
-	 MYCFLAGS="$(MYCFLAGS)" \
-	 LDFLAGS="$(LDFLAGS)" \
-	 INCDIR="$(INCDIR)" \
 	 PREFIX="$(PREFIX)"
 
 install:
-	@cd $(LUADIR); $(MAKE) \
-	                 LVER=$(LVER) \
-	                 PREFIX="$(PREFIX)" install
-	@cd $(SRCDIR); $(MAKE) CC=$(CC) LD=$(LD) \
-	                 LVER=$(LVER) \
-	                 MYCFLAGS="$(MYCFLAGS)" \
-	                 LDFLAGS="$(LDFLAGS)" \
-	                 INCDIR="$(INCDIR)" \
-	                 BUILD_EXAMPLE=1 \
-	                 DEBUG=1 \
-	                 PREFIX="$(PREFIX)" install
+	$(MAKE) -C $(SRCDIR) \
+	  LVER=$(LVER) \
+	  MYCFLAGS="$(MYCFLAGS)" \
+	  LDFLAGS="$(LDFLAGS)" \
+	  INCDIR="$(INCDIR)" \
+	  PREFIX="$(PREFIX)" install
+	$(MAKE) -C $(LUADIR) \
+	  LVER=$(LVER) \
+	  PREFIX="$(PREFIX)" install
 
 test: $(SRCDIR)
-	$(MAKE) -C $(SRCDIR) CC=$(CC) LD=$(LD) \
+	$(MAKE) -C $(SRCDIR) \
 	 LVER=$(LVER) \
 	 MYCFLAGS="$(MYCFLAGS)" \
 	 LDFLAGS="$(LDFLAGS)" \
@@ -63,75 +39,26 @@ test: $(SRCDIR)
 
 # echo config parameters
 echo:
-	$(MAKE) -C $(SRCDIR) -s echo
-	@echo "PLAT= $(PLAT)"
 	@echo "LVER= $(LVER)"
 	@echo "PREFIX= $(PREFIX)"
 	@echo "INCDIR= $(INCDIR)"
 	@echo "LDFLAGS= $(LDFLAGS)"
-	@echo "MYCFLAGS= $(MYCFLAGS)"
+	$(MAKE) -C $(SRCDIR) -s echo
+	$(MAKE) -C $(LUADIR) -s echo
 
 clean:
-	$(MAKE) -C $(SRCDIR) clean
-	$(MAKE) -C $(LUADIR) clean
+	$(MAKE) -C $(SRCDIR) \
+	 T_DBG_SRC=t_dbg.c \
+	 T_NRY_LIB=nry.so \
+	 clean
+
+uninstall:
+	$(MAKE) -C $(SRCDIR) uninstall
+	$(MAKE) -C $(LUADIR) uninstall
 
 pristine:
 	$(MAKE) -C $(SRCDIR) pristine
 
-run: $(SCREEN_RC)
-	$(SCREEN) -S lua -c "$(SCREEN_RC)"
-
-perf:
-	$(SCREEN) -S perf -c "screen-perf.rc"
-
-
-# following targets are for docker builds
-docker-build: $(DOCKER)
-	$(DOCKER) build --tag $(IMAGE) .
-
-docker-run:
-	$(DOCKER) run -i -t --name $(IMAGE) $(IMAGE) /bin/bash
-
-docker-start:
-	$(DOCKER) start -i $(IMAGE)
-
-docker-stop:
-	$(DOCKER) stop $(IMAGE)
-
-dclean:
-	$(DOCKER) image rm $(IMAGE)
-
-
-# Docker for development
-#
-$(TZDATAPATH):
-	cat /etc/localtime > $(TZDATAPATH)
-
-docker-dev: $(DOCKER) $(TZDATAPATH)
-	$(DOCKER) build  --tag  $(IMAGE)dev -f Dockerfile.dev .
-	$(DOCKER) run    -i -t \
-	 --name   $(IMAGE)dev \
-	 --mount  src="$(CURDIR)",target=/build,type=bind \
-	 $(IMAGE)dev \
-	 /bin/bash
-
-docker-dev-start:
-	$(DOCKER) start -i $(IMAGE)dev
-
-docker-dev-stop:
-	$(DOCKER) stop $(IMAGE)dev
-
-docker-dev-clean:
-	$(DOCKER) rm $(IMAGE)dev
-
-docker-dev-pristine:
-	$(DOCKER) image rm $(IMAGE)dev
-
-docker-dev-rinse:
-	$(MAKE) docker-dev-clean
-	$(MAKE) docker-dev-pristine
-	-rm $(TZDATAPATH)
-
+include docker.mk
 include dev.mk
-
 

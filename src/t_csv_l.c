@@ -78,7 +78,7 @@ t_csv_parse( lua_State *L, struct t_csv_row *row )
 					(row->len)++;
 					t_csv_pushfield( L, row, T_CSV_RECDNE );
 				}
-				row->len = (' ' == *(row->run)) ? row->len : row->run - row->beg;       // only progress when not space
+				row->len = (' ' == *(row->run)) ? row->len : (size_t) (row->run - row->beg);       // only progress when not space
 				break;
 			case T_CSV_DATQTE:
 				row->len = row->run - row->beg;                  // don't include last enclosing quote
@@ -93,7 +93,7 @@ t_csv_parse( lua_State *L, struct t_csv_row *row )
 				else if (row->qte == *(row->run))
 					row->ste = T_CSV_QTETWO;
 				else
-					row->len = (' ' == *(row->run)) ? row->len : row->run - row->beg;       // only progress when not space
+					row->len = (' ' == *(row->run)) ? row->len : (size_t) (row->run - row->beg);       // only progress when not space
 				break;
 			case T_CSV_QTETWO:
 				row->hdb = 1;
@@ -234,12 +234,12 @@ t_csv_split( lua_State *L )
 				break;
 		}
 		//printf("      TKN: %s  %zu %ld \n", &(str[tkn]), its, its-tkn  - ((its<lns) ? ((dst==1) ? -1 : lnd-1) : 0) );
-		lua_pushlstring( L, &(str[tkn]), its-tkn -
+		lua_pushlstring( L, &(str[tkn]), (its+1)-tkn -
 			((its<lns)            // Not end of input text?
 				? ((dst==1)        // strip delimiter?
-					? -1            // Include delimiter
-					: lnd-1)        // Exclude delimiter
-				: 0)               // last field
+					? 0             // Include delimiter
+					: lnd )         // Exclude delimiter
+				: 1)               // last field
 		);
 		lua_pushinteger( L, its+1 );
 		lua_replace( L, lua_upvalueindex( 4 ) );    // update string iterator position

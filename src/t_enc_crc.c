@@ -363,7 +363,6 @@ static const luaL_Reg t_enc_crc_m [] =
 };
 
 
-
 /**--------------------------------------------------------------------------
  * Pushes the T.Encode.CRC library onto the stack
  *          - creates Metatable with functions

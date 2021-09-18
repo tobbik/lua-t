@@ -7,6 +7,7 @@
 
 local T, Suite, Oht =
      require"t", require"t.Test.Suite", require"t.OrderedHashTable"
+local colours    = { PASS=32, FAIL=31, SKIP=33, TODO=36}
 
 local suites = {
 	"t_ael",
@@ -46,9 +47,20 @@ local run = function( )
 	end
 end
 
-tap = function( )
+r = function( tap )
+	local r = Oht( {PASS=0},{FAIL=0},{TODO=0},{SKIP=0})
 	for s,sR in pairs( results ) do
-		print( ("Suite: %s\n%s"):format( s, sR ) )
+		if tap then print( ("Suite: %s\n%s"):format( s, sR ) ) end
+		for i,tR in pairs(sR) do
+			if     "PASS" == tR.status then r.PASS= r.PASS+1
+			elseif "FAIL" == tR.status then r.FAIL= r.FAIL+1
+			elseif "TODO" == tR.status then r.TODO= r.TODO+1
+			elseif "SKIP" == tR.status then r.SKIP= r.SKIP+1
+			end
+		end
+	end
+	for k,v in pairs( r ) do
+		print( ('[%dm%s[0m:   %d'):format( colours[k], k , v) )
 	end
 end
 
