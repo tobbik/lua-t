@@ -1,18 +1,14 @@
-*.o
-*.so
-*.a
-*.obj
-*.swp
-*.swo
-*.sln
-*.suo
+**/*.o
+**/*.so
+**/*.a
+**/*.obj
+**/*.swp
+**/*.swo
+**/*.sln
+**/*.suo
 research/*.c
 research/*.h
 research/*.o
 research/*.make
 research/Makefile
 build/tz
-# used to build a local Lua
-download
-compile
-out

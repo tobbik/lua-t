@@ -5,16 +5,20 @@
 # \author    tkieslich
 # \copyright See Copyright notice at the end of t.h
 
+PLAT=guess
+PLATS= guess freebsd linux
+
 LVER=5.4
 
 CURDIR != pwd
 SRCDIR=$(CURDIR)/src
 LUADIR=$(CURDIR)/lua
-PREFIX != /bin/sh ../guess_prefix.sh
+PREFIX != /bin/sh guess_prefix.sh
 
-all: $(SRCDIR)/*.so
+all: $(PLAT)
 
-$(SRCDIR)/*.so:
+$(PLATS):
+	echo " I   GOT   HERE    !"
 	$(MAKE) -C $(SRCDIR) \
 	 LVER="$(LVER)" \
 	 PREFIX="$(PREFIX)"
@@ -59,6 +63,8 @@ uninstall:
 pristine:
 	$(MAKE) -C $(SRCDIR) pristine
 
-include docker.mk
+.PHONY: all $(PLATS) clean install test echo clean uninstall pristine
+
+#include docker.mk
 include dev.mk
 

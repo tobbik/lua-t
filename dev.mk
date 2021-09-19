@@ -14,9 +14,7 @@ D_LD=clang
 
 PREFIX=$(CURDIR)/local
 
-all: $(PREFIX)/bin/lua
-
-$(PREFIX)/bin/lua:
+local/bin/lua:
 	$(MAKE) -C $(PREFIX) \
 	 CC=$(D_CC) LD=$(D_LD) \
 	 MYCFLAGS="$(DMYCFLAGS)" \
@@ -38,6 +36,7 @@ dev-rinse:
 	$(MAKE) -C $(PREFIX) uninstall
 
 dev-nuke:
+	$(MAKE) dev-clean
 	$(MAKE) -C $(PREFIX) uninstall
 	$(MAKE) -C $(PREFIX) nuke
 
@@ -45,12 +44,12 @@ dev-pristine:
 	$(MAKE) dev-nuke
 	$(MAKE) -C $(PREFIX) pristine
 
-dev: $(PREFIX)/bin/lua
+dev: local/bin/lua
 	$(MAKE) -j4 CC=$(D_CC) LD=$(D_LD) \
 	 T_DBG_SRC=t_dbg.c \
 	 T_NRY_LIB=nry.so  \
 	 L_SRC_NRY=t/Numarray.lua \
-	 INCDIR="$(PREFIX)/include" \
+	 INCDIR="-I$(PREFIX)/include" \
 	 MYCFLAGS="$(DMYCFLAGS)" \
 	 MYLDFLAGS="$(MYLDFLAGS)" \
 	 PREFIX="$(PREFIX)"

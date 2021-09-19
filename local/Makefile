@@ -18,12 +18,14 @@ $(LUASRC):
 
 $(LVER): $(LUASRC)
 	mkdir -p $@
-	$(TAR) -xzf $< -C $@ --strip-components=1
-	sed -i "s/-O2 //" $@/src/Makefile
+	$(TAR) -xzf $(LUASRC) -C $@ --strip-components=1
+	sed "s/-O2 //" < $@/src/Makefile > $@/src/Makefile.bak \
+	  && mv $@/src/Makefile.bak $@/src/Makefile
 
 $(LVER)/src/lua: $(LVER)
-	$(MAKE) -C $^ -j 4 CC=$(CC) LD=$(LD) \
-		linux-readline
+	$(MAKE) -C $(LVER) -j 4 CC=$(CC) LD=$(LD) \
+		guess
+	#	linux-readline
 
 $(CURDIR)/bin/lua: $(LVER)/src/lua
 	$(MAKE) -C $(LVER) \

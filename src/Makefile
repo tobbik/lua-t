@@ -8,12 +8,12 @@
 LVER=5.4
 CURDIR != pwd
 INCDIR != /bin/sh ../guess_incdir.sh
-LDFLAGS != /bin/sh ../guess_ldflags.sh
+LDFLAGS != /bin/sh ../guess_libs.sh
 
 # clang can be substituted with gcc (command line args compatible)
 CC=gcc
 LD=gcc
-CFLAGS+= -Wall -Wextra -Werror -std=c99 $(SYSCFLAGS) $(MYCFLAGS)
+CFLAGS+= $(INCDIR) -Wall -Wextra -Werror -std=c99 $(SYSCFLAGS) $(MYCFLAGS)
 INSTALL_CMOD=$(PREFIX)/lib/lua/$(LVER)/t
 PLAT= guess
 ALL= all
@@ -23,24 +23,29 @@ ALL= all
 INSTALLER != which install
 INSTALL_DATA=$(INSTALLER) -p -Dm 0644
 RM != which rm
+LS != which ls
 UNAME != which uname
 
 # #######################################################################
 # ALL SOURCES
 T_SRC=t.c $(T_DBG_SRC)
-# Default to Linux sources
-#T_AEL_PLT_SRC=p_ael_epl.c
-#T_NET_PLT_SRC=p_net_sck_unx.c p_net_ifc_lnx.c
-T_AEL_PLT_SRC=
-T_NET_PLT_SRC=
-T_AEL_SRC=$(T_SRC) $(wildcard t_ael*.c) t_net.c $(T_AEL_PLT_SRC)
-T_BUF_SRC=$(T_SRC) $(wildcard t_buf*.c)
-T_CSV_SRC=$(T_SRC) $(wildcard t_csv*.c)
-T_ENC_SRC=$(T_SRC) $(wildcard t_enc*.c) t_buf.c
-T_HTP_SRC=$(T_SRC) $(wildcard t_htp*.c) t_buf.c
-T_NET_SRC=$(T_SRC) $(wildcard t_net*.c) t_buf.c $(T_NET_PLT_SRC)
-T_NRY_SRC=$(T_SRC) $(wildcard t_nry*.c)
-T_PCK_SRC=$(T_SRC) $(wildcard t_pck*.c) t_buf.c
+AEL_FLS != $(LS) t_ael*.c
+BUF_FLS != $(LS) t_buf*.c
+CSV_FLS != $(LS) t_csv*.c
+ENC_FLS != $(LS) t_enc*.c
+HTP_FLS != $(LS) t_htp*.c
+NET_FLS != $(LS) t_net*.c
+NRY_FLS != $(LS) t_nry*.c
+PCK_FLS != $(LS) t_pck*.c
+
+T_AEL_SRC=$(T_SRC) $(AEL_FLS) t_net.c $(T_AEL_PLT_SRC)
+T_BUF_SRC=$(T_SRC) $(BUF_FLS)
+T_CSV_SRC=$(T_SRC) $(CSV_FLS)
+T_ENC_SRC=$(T_SRC) $(ENC_FLS) t_buf.c
+T_HTP_SRC=$(T_SRC) $(HTP_FLS) t_buf.c
+T_NET_SRC=$(T_SRC) $(NET_FLS) t_buf.c $(T_NET_PLT_SRC)
+T_NRY_SRC=$(T_SRC) $(NRY_FLS)
+T_PCK_SRC=$(T_SRC) $(PCK_FLS) t_buf.c
 
 # ALL OBJECTS
 T_AEL_OBJ=$(T_AEL_SRC:%.c=%.o)
@@ -107,6 +112,8 @@ FreeBSD NetBSD OpenBSD freebsd:
 	T_AEL_PLT_SRC= \
 	T_NET_PLT_SRC= \
 	SYSCFLAGS="-D LUAT_USE_POSIX -fpic" \
+	CC=clang \
+	LD=clang \
 	$(ALL)
 
 install: $(LIBS) $(T_INSTALL)
@@ -117,9 +124,6 @@ test: $(SRCDIR)
 	 MYCFLAGS="$(MYCFLAGS)" \
 	 LDFLAGS="$(LDFLAGS)" \
 	 INCDIR=$(INCDIR)
-
-%.o: %.c
-	$(CC) -I$(INCDIR) $(CFLAGS) -c $^ -o $@
 
 $(INSTALL_CMOD)/%.so: %.so
 	$(INSTALL_DATA) $^ $@

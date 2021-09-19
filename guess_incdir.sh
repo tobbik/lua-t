@@ -7,6 +7,6 @@ elif [ "x${PLAT}" = "xFreeBSD" ] || \
      [ "x${PLAT}" = "xNetBSD" ]; then
   echo $(pkgconf --cflags lua)
 else
-  echo "/usr/local/include"
+  echo "-I/usr/local/include"
 fi
 
