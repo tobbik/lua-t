@@ -2,6 +2,8 @@
 CURL!= which curl
 TAR != which tar
 RM != which rm
+UNAME != which uname
+PLAT != $(UNAME)
 
 LVER=5.4
 LREL=3
@@ -19,18 +21,21 @@ $(LUASRC):
 $(LVER): $(LUASRC)
 	mkdir -p $@
 	$(TAR) -xzf $(LUASRC) -C $@ --strip-components=1
-	sed "s/-O2 //" < $@/src/Makefile > $@/src/Makefile.bak \
-	  && mv $@/src/Makefile.bak $@/src/Makefile
+	# `sed` -i is funky in BSD ... makeing it explicit
+	sed "s/-O2 //" < $@/src/Makefile > $@/src/Makefile.bak && \
+	 mv $@/src/Makefile.bak $@/src/Makefile
 
 $(LVER)/src/lua: $(LVER)
-	$(MAKE) -C $(LVER) -j 4 CC=$(CC) LD=$(LD) \
-		guess
-	#	linux-readline
+	if [ "x$(PLAT)" = "xLinux" ]; then \
+	  $(MAKE) -C $(LVER) -j 4 CC=$(CC) LD=$(LD) linux-readline; \
+	else \
+	  $(MAKE) -C $(LVER) -j 4 CC=$(CC) LD=$(LD); \
+	fi
 
 $(CURDIR)/bin/lua: $(LVER)/src/lua
 	$(MAKE) -C $(LVER) \
-		INSTALL_TOP=$(CURDIR) \
-		install
+	 INSTALL_TOP=$(CURDIR) \
+	 install
 
 clean:
 	$(MAKE) -C $(LVER) clean

@@ -34,6 +34,9 @@ FreeBSD
  - qemu-img resize FreeBSD-13.0-RELEASE-amd64.qcow2 +2GB
  - create virtual machine
 
+ Running VM
+ - virsh start freebsd13.0 --console
+
 
 Inside the virtual machine
 --------------------------
@@ -51,3 +54,27 @@ Getting the project
 -------------------
 
 git clone https://github.com/tobbik/lua-t.git
+
+Network to the virtual machine
+------------------------------
+
+Using a bridge for this is over the top.  So a simple NAT should do. Two
+options:
+
+ 1. setup portforwarding on the fly for an already ruinning virtual michine.
+    Use virsh:
+   ``virsh qemu-monitor-command --hmp freebsd13.0 'hostfwd_add ::55555-:22'``
+ 2. edit the ``virsh edit freebsd13.0``
+
+.. code:: xml
+   <domain type='kvm' xmlns:qemu='http://libvirt.org/schemas/domain/qemu/1.0'>
+   ...
+     </devices>
+     <qemu:commandline>
+       <qemu:arg value='-netdev'/>
+       <qemu:arg value='user,id=mynet.0,net=10.0.10.0/24,hostfwd=tcp::55555-:22,hostfwd=tcp::8000-:8000'/>
+       <qemu:arg value='-device'/>
+       <qemu:arg value='e1000,netdev=mynet.0'/>
+     </qemu:commandline>
+   </domain>
+

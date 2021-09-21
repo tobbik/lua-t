@@ -9,6 +9,7 @@
  */
 
 // this header order makes __USE_MISC visible and hence all the POSIX stuff
+#define _DEFAULT_SOURCE 1
 #include "t_net_l.h"
 
 #ifdef DEBUG

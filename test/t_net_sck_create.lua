@@ -31,13 +31,13 @@ return {
 		self.address = nil
 	end,
 
-	EmptyCreatesTcpIp4 = function( self )
-		Test.describe( "Socket() --> creates a TCP IPv4 Socket" )
+	DefaultCreatesTcpIp4 = function( self )
+		Test.describe( "Socket() --> creates a TCP IPv4 Socket by default" )
 		self.sock = Socket( )
 		assert( chkSck( self.sock, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' ) )
 	end,
 
-	TcpArgsFulLCreatesTcpSocket = function( self )
+	TcpArgsFullCreatesTcpSocket = function( self )
 		Test.describe( "Socket('IPPROTO_TCP') --> creates a TCP IPv4 Socket" )
 		self.sock = Socket( 'IPPROTO_TCP' )
 		assert( chkSck( self.sock, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' ) )

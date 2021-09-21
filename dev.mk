@@ -5,6 +5,7 @@ RM != which rm
 TRYFLAGS != /bin/sh guess_platflags.sh
 DMYCFLAGS= -D DEBUG=1 -g -O3 -Winline $(TRYFLAGS)
 
+PLAT=guess
 LVER=5.4
 LREL=3
 CURDIR != pwd

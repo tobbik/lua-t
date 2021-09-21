@@ -7,26 +7,30 @@
  * \copyright See Copyright notice at the end of t.h
  */
 
-#define __USE_MISC
-#define _DEFAULT_SOURCE 1
+#include "t.h"              // t_typeerror,t_getLoadedValue
+
 #include <stdint.h>
 #include <netdb.h>
 #include <unistd.h>
-#include <fcntl.h>         // O_NONBLOCK,...
-#include <sys/select.h>    // fd_set
-#include <netinet/tcp.h>   // TCP_NODELAY
-#include <netinet/in.h>    // IPPROTO_*
-#ifdef __linux
+#include <fcntl.h>          // O_NONBLOCK,...
+#include <sys/select.h>     // fd_set
+#include <netinet/tcp.h>    // TCP_NODELAY
+#include <netinet/in.h>     // IPPROTO_*
+
+#if defined(LUAT_USE_POSIX)
+#include <sys/socket.h>     // SOL_SOCKET
 #include <arpa/inet.h>
 #include <sys/ioctl.h>
-#include <linux/sockios.h> //SIOCINQ
 #endif
-#ifdef _WIN32
+#if defined(LUAT_USE_LINUX)
+#include <linux/sockios.h>  //SIOCINQ
+#endif
+
+#if defined(LUAT_USE_WIN32)
 #include <WinSock2.h>
 #endif
 
 #include "t_net.h"
-#include "t.h"             // t_typeerror,t_getLoadedValue
 
 #ifndef T_NET_DEF_FAM_H
 #define T_NET_DEF_FAM_H

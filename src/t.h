@@ -22,6 +22,10 @@ int         t_push_error    ( lua_State *L, int fail, int ops, const char *fmt, 
 int         t_typeerror     ( lua_State *L, int arg, const char *tname );
 #endif //T_HELPERLIB_H
 
+#if defined(LUAT_USE_LINUX)
+#define LUAT_USE_POSIX
+#endif
+
 
 /******************************************************************************
  * Copyright (C) 2012-2020, Tobias Kieslich (tkieslich). All rights reseved.

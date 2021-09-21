@@ -12,9 +12,9 @@
  */
 
 
-#ifdef _WIN32
+#if defined(_WIN32)
 #include <Windows.h>
-#else
+#elif defined(LUAT_USE_LINUX)
 #define _POSIX_C_SOURCE 200809L   //fileno()
 #endif
 

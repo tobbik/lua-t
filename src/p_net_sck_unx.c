@@ -265,7 +265,7 @@ p_net_sck_getSocketOption( lua_State *L, struct t_net_sck        *sck,
 	{
 		case T_NET_SCK_OTP_FCNTL:
 			if (-1 == (ival = fcntl( sck->fd, opt->getlevel )))
-				lua_pushboolean( L, 0 );
+				lua_pushboolean( L, 1==0 );
 			else
 				lua_pushboolean( L, (ival & opt->option) == opt->option );
 			break;

@@ -12,9 +12,10 @@
 #include <string.h>     // strerror
 #include <errno.h>      // errno
 #include <unistd.h>     // crypt()
-#include <crypt.h>      // crypt()
 #include <time.h>       // time()
-
+#if defined(LUAT_USE_LINUX)
+#include <crypt.h>      // crypt()
+#endif
 #include "t_enc_l.h"
 
 #ifdef DEBUG
