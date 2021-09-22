@@ -32,68 +32,69 @@ calling ``Net.Interface.get(<name>)``:
 .. code:: lua
 
   {
-    mtu        : 1500,                -- MTU as reported by ioctl()
-    hw_address : "ab:cd:ef:12:34:56", -- MAC Address
-    index      : 2,                   -- system index of interface
-    name       : "enp3s0",            -- device name
-    flags      : {                    -- Flags of interface
-      IFF_DYNAMIC        : false,
-      IFF_UP             : true,
-      IFF_AUTOMEDIA      : false,
-      IFF_NOARP          : false,
-      IFF_POINTOPOINT    : false,
-      IFF_LOOPBACK       : false,
-      IFF_NOTRAILERS     : false,
-      IFF_PORTSEL        : false,
-      IFF_MULTICAST      : true,
-      IFF_RUNNING        : true,
-      IFF_BROADCAST      : true,
-      IFF_SLAVE          : false,
-      IFF_PROMISC        : false,
-      IFF_MASTER         : false,
-      IFF_ALLMULTI       : false,
-      IFF_DEBUG          : false
+    hw_address = "ab:cd:ef:12:34:56", -- MAC Address
+    index      = 2,                   -- system index of interface
+    name       = "enp3s0",            -- device name
+    flags      = {                    -- Flags of interface
+      IFF_DYNAMIC        = false,
+      IFF_UP             = true,
+      IFF_AUTOMEDIA      = false,
+      IFF_NOARP          = false,
+      IFF_POINTOPOINT    = false,
+      IFF_LOOPBACK       = false,
+      IFF_NOTRAILERS     = false,
+      IFF_PORTSEL        = false,
+      IFF_MULTICAST      = true,
+      IFF_RUNNING        = true,
+      IFF_BROADCAST      = true,
+      IFF_SLAVE          = false,
+      IFF_PROMISC        = false,
+      IFF_MASTER         = false,
+      IFF_ALLMULTI       = false,
+      IFF_DEBUG          = false
     },
     stats: {                           -- reported stats
-      tx_aborted_errors  : 0,
-      tx_bytes           : 10103771,
-      tx_packets         : 112181,
-      multicast          : 45,
-      tx_window_errors   : 0,
-      collisions         : 0,
-      tx_carrier_errors  : 0,
-      tx_dropped         : 0,
-      rx_over_errors     : 0,
-      rx_missed_errors   : 0,
-      rx_frame_errors    : 0,
-      tx_heartbeat_errors: 0,
-      tx_fifo_errors     : 0,
-      rx_crc_errors      : 0,
-      rx_dropped         : 0,
-      rx_packets         : 225599,
-      rx_errors          : 0,
-      tx_errors          : 0,
-      rx_bytes           : 296155550,
-      rx_fifo_errors     : 0,
-      rx_length_errors   : 0
+      tx_aborted_errors  = 0,
+      tx_bytes           = 10103771,
+      tx_packets         = 112181,
+      multicast          = 45,
+      tx_window_errors   = 0,
+      collisions         = 0,
+      tx_carrier_errors  = 0,
+      tx_dropped         = 0,
+      rx_over_errors     = 0,
+      rx_missed_errors   = 0,
+      rx_frame_errors    = 0,
+      tx_heartbeat_errors= 0,
+      tx_fifo_errors     = 0,
+      rx_crc_errors      = 0,
+      rx_dropped         = 0,
+      rx_packets         = 225599,
+      rx_errors          = 0,
+      tx_errors          = 0,
+      rx_bytes           = 296155550,
+      rx_fifo_errors     = 0,
+      rx_length_errors   = 0
     },
     AF_INET: {                          -- table of AF_INET(IPv4) addresses
       {
-        netmask   : T.Net.Address{255.255.255.0:0}: 0x55eeacd1ebc8,
-        address   : T.Net.Address{192.168.17.197:0}: 0x55eeacd1eb08,
-        broadcast : T.Net.Address{192.168.17.255:0}: 0x55eeacd1ecc8
+        netmask   = T.Net.Address{255.255.255.0:0}: 0x55eeacd1ebc8,
+        address   = T.Net.Address{192.168.17.197:0}: 0x55eeacd1eb08,
+        broadcast = T.Net.Address{192.168.17.255:0}: 0x55eeacd1ecc8
       }
-    AF_INET6:                           -- table of AF_INET6(IPv6) addresses
+    },
+    AF_INET6: {                         -- table of AF_INET6(IPv6) addresses
       {
-        netmask   : T.Net.Address{[ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff]:0}: 0x55eeacd1f3b8,
-        address   : T.Net.Address{[fd53:43e:dbca::60a]:0}: 0x55eeacd1f2f8
+        netmask   = T.Net.Address{[ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff]:0}: 0x55eeacd1f3b8,
+        address   = T.Net.Address{[fd53:43e:dbca::60a]:0}: 0x55eeacd1f2f8
       }, {
-        netmask   : T.Net.Address{[ffff:ffff:ffff:ffff::]:0}: 0x55eeacd1f5b8,
-        address   : T.Net.Address{[fd53:43e:dbca:0:de1f:bea:1f79:7d49]:0}: 0x55eeacd1f4f8
+        netmask   = T.Net.Address{[ffff:ffff:ffff:ffff::]:0}: 0x55eeacd1f5b8,
+        address   = T.Net.Address{[fd53:43e:dbca:0:de1f:bea:1f79:7d49]:0}: 0x55eeacd1f4f8
       }, {
-        netmask   : T.Net.Address{[ffff:ffff:ffff:ffff::]:0}: 0x55eeacd1f7e8,
-        address   : T.Net.Address{[fe80::641c:193a:54ff:2ea6]:0}: 0x55eeacd1f728
+        netmask   = T.Net.Address{[ffff:ffff:ffff:ffff::]:0}: 0x55eeacd1f7e8,
+        address   = T.Net.Address{[fe80::641c:193a:54ff:2ea6]:0}: 0x55eeacd1f728
       }
+    }
   }
 
 
@@ -150,14 +151,16 @@ As shown above, depending on platform the following *should* be specified:
 
 ``table flags == ifc.flags``
   SIOCGIFFLAGS flags recieved from a system call.  Each flag is represented
-  as a boolean value.
+  as a boolean value.  Available flags vary from Platform to platform.  lua-t
+  does what it can.
 
 ``table statistics == ifc.stats``
   General performance stats on the interface regarding transmitted packets,
-  transmitted bytes, error count, collision etc.
-
-``int mtu == ifc.mtu``
-  The Maximum Transmission unit set for the interface.
+  transmitted bytes, error count, collision etc.  Names and available fields
+  vary from platform to platform.  For example ``stats.tx_packets`` exists
+  under Linux but under BSD it is named  ``stats.ifi_opackets``.  For
+  available fields and their meaning please refer to platform specific
+  system information such as man pages.
 
 ``int idx == ifc.index``
   The index of the interface as reported by the system.

@@ -12,7 +12,7 @@
 #define _DEFAULT_SOURCE 1
 #include "t_net_l.h"
 
-#ifdef DEBUG
+#if defined(DEBUG)
 #include "t_dbg.h"
 #endif
 
@@ -25,10 +25,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-
 #include <net/if.h>
+
+#if defined(LUAT_USE_LINUX)
 #include <linux/if_link.h>
 #include <linux/if_packet.h>
+#else
+#include <net/if_dl.h>
+#endif
 
 /**--------------------------------------------------------------------------
  * Parse flags on interface.
@@ -53,22 +57,100 @@ p_net_ifc_parseFlags( lua_State *L, struct ifaddrs *ifa )
    lua_pushboolean( L, (ifa->ifa_flags & FLG) ? 1 : 0 ); \
    lua_setfield( L, -2, #FLG "" );
 
-			IF_FLAG( IFF_UP );
-			IF_FLAG( IFF_BROADCAST );
-			IF_FLAG( IFF_DEBUG );
-			IF_FLAG( IFF_LOOPBACK );
-			IF_FLAG( IFF_POINTOPOINT );
-			IF_FLAG( IFF_RUNNING );
-			IF_FLAG( IFF_NOARP );
-			IF_FLAG( IFF_PROMISC );
-			IF_FLAG( IFF_NOTRAILERS );
-			IF_FLAG( IFF_ALLMULTI );
-			IF_FLAG( IFF_MASTER );
-			IF_FLAG( IFF_SLAVE );
-			IF_FLAG( IFF_MULTICAST );
-			IF_FLAG( IFF_PORTSEL );
-			IF_FLAG( IFF_AUTOMEDIA );
-			IF_FLAG( IFF_DYNAMIC );
+#ifdef  IFF_UP
+			IF_FLAG( IFF_UP            );
+#endif
+#ifdef  IFF_BROADCAST
+			IF_FLAG( IFF_BROADCAST     );
+#endif
+#ifdef  IFF_DEBUG
+			IF_FLAG( IFF_DEBUG         );
+#endif
+#ifdef  IFF_LOOPBACK
+			IF_FLAG( IFF_LOOPBACK      );
+#endif
+#ifdef  IFF_POINTOPOINT
+			IF_FLAG( IFF_POINTOPOINT   );
+#endif
+#ifdef  IFF_RUNNING
+			IF_FLAG( IFF_RUNNING       );
+#endif
+#ifdef  IFF_NOARP
+			IF_FLAG( IFF_NOARP         );
+#endif
+#ifdef  IFF_PROMISC
+			IF_FLAG( IFF_PROMISC       );
+#endif
+#ifdef  IFF_ALLMULTI
+			IF_FLAG( IFF_ALLMULTI      );
+#endif
+#ifdef  IFF_MULTICAST
+			IF_FLAG( IFF_MULTICAST     );
+#endif
+#ifdef  IFF_NOTRAILERS
+			IF_FLAG( IFF_NOTRAILERS    );
+#endif
+#ifdef  IFF_MASTER
+			IF_FLAG( IFF_MASTER        );
+#endif
+#ifdef  IFF_SLAVE
+			IF_FLAG( IFF_SLAVE         );
+#endif
+#ifdef  IFF_PORTSEL
+			IF_FLAG( IFF_PORTSEL       );
+#endif
+#ifdef  IFF_AUTOMEDIA
+			IF_FLAG( IFF_AUTOMEDIA     );
+#endif
+#ifdef  IFF_DYNAMIC
+			IF_FLAG( IFF_DYNAMIC       );
+#endif
+#ifdef  IFF_KNOWSEPOCH
+			IF_FLAG( IFF_KNOWSEPOCH    );
+#endif
+#ifdef  IFF_DRV_RUNNING
+			IF_FLAG( IFF_DRV_RUNNING   );
+#endif
+#ifdef  IFF_DRV_OACTIVE
+			IF_FLAG( IFF_DRV_OACTIVE   );
+#endif
+#ifdef  IFF_SIMPLEX
+			IF_FLAG( IFF_SIMPLEX       );
+#endif
+#ifdef  IFF_LINK0
+			IF_FLAG( IFF_LINK0         );
+#endif
+#ifdef  IFF_LINK1
+			IF_FLAG( IFF_LINK1         );
+#endif
+#ifdef  IFF_LINK2
+			IF_FLAG( IFF_LINK2         );
+#endif
+#ifdef  IFF_ALTPHYS
+			IF_FLAG( IFF_ALTPHYS       );
+#endif
+#ifdef  IFF_CANTCONFIG
+			IF_FLAG( IFF_CANTCONFIG    );
+#endif
+#ifdef  IFF_PPROMISC
+			IF_FLAG( IFF_PPROMISC      );
+#endif
+#ifdef  IFF_MONITOR
+			IF_FLAG( IFF_MONITOR       );
+#endif
+#ifdef  IFF_STATICARP
+			IF_FLAG( IFF_STATICARP     );
+#endif
+#ifdef  IFF_DYING
+			IF_FLAG( IFF_DYING         );
+#endif
+#ifdef  IFF_RENAMING
+			IF_FLAG( IFF_RENAMING      );
+#endif
+#ifdef  IFF_NOGROUP
+			IF_FLAG( IFF_NOGROUP       );
+#endif
+
 			lua_setfield( L, -2, "flags" );
 #undef IF_FLAG
 		}
@@ -85,6 +167,7 @@ p_net_ifc_parseFlags( lua_State *L, struct ifaddrs *ifa )
  * \lreturn table    aggregated statistic data.
  * \return  int/bool 1 if succesful, else 0.
  * --------------------------------------------------------------------------*/
+#if defined(LUAT_USE_LINUX)
 static void
 p_net_ifs_getStats( lua_State *L, struct ifaddrs *ifa )
 {
@@ -143,6 +226,58 @@ p_net_ifs_getStats( lua_State *L, struct ifaddrs *ifa )
 		lua_setfield( L, -2, "index" );
 	}
 }
+#else
+// BSD compatible implementation
+static void
+p_net_ifs_getStats( lua_State *L, struct ifaddrs *ifa )
+{
+	struct if_data         *stats;
+	struct sockaddr_dl     *ll_addr;
+	// TODO: This can hold a MAC Address but not a FireWire address -> needs
+	// hardware to do more dev work.  Consider using sockaddr_ll->sll_halen
+	// properly.
+	char                    hw_buffer[ 19 ]; // 18+1 for NUL termination
+	unsigned char          *mac;
+
+	if (ifa->ifa_addr && ifa->ifa_data && AF_LINK == ifa->ifa_addr->sa_family)
+	{
+		stats    = ifa->ifa_data;
+#define IF_STAT( FLD )                     \
+   lua_pushinteger( L, stats->FLD );       \
+   lua_setfield( L, -2, #FLD "" );
+
+		lua_createtable( L, 12, 0 );
+
+		IF_STAT( ifi_ipackets );           // total packets received
+		IF_STAT( ifi_opackets );           // total packets transmitted
+		IF_STAT( ifi_ibytes );             // total bytes received
+		IF_STAT( ifi_obytes );             // total bytes transmitted
+		IF_STAT( ifi_ierrors );            // bad packets received
+		IF_STAT( ifi_oerrors );            // packet transmit problems
+		IF_STAT( ifi_iqdrops );            // no space in kernel buffers
+		IF_STAT( ifi_oqdrops );            // no space in kernel buffers
+		IF_STAT( ifi_imcasts );            // multicast packets received
+		IF_STAT( ifi_omcasts );            // multicast packets transmitted
+		IF_STAT( ifi_collisions );
+		IF_STAT( ifi_noproto );            // number of package with unknown protocol
+		lua_setfield( L, -2, "stats" );
+#undef IF_STAT
+		mac     = (unsigned char *) LLADDR ((struct sockaddr_dl *)(ifa)->ifa_addr);
+		ll_addr = (struct sockaddr_dl*) ifa->ifa_addr;
+		sprintf( hw_buffer, " %02x:%02x:%02x:%02x:%02x:%02x",
+		    mac[0],
+		    mac[1],
+		    mac[2],
+		    mac[3],
+		    mac[4],
+		    mac[5] );
+		lua_pushlstring( L, hw_buffer, 18 );
+		lua_setfield( L, -2, "hw_address" );
+		lua_pushinteger( L, ll_addr->sdl_index);
+		lua_setfield( L, -2, "index" );
+	}
+}
+#endif
 
 
 /**--------------------------------------------------------------------------

@@ -128,14 +128,14 @@ guess:
 Linux linux:
 	$(MAKE) \
 	T_AEL_PLT_SRC="p_ael_epl.c" \
-	T_NET_PLT_SRC="p_net_sck_unx.c p_net_ifc_lnx.c" \
+	T_NET_PLT_SRC="p_net_sck_unx.c p_net_ifc_unx.c" \
 	SYSCFLAGS="-D _DEFAULT_SOURCE -D LUAT_USE_LINUX -fpic" \
 	$(ALL)
 
 FreeBSD NetBSD OpenBSD freebsd:
 	$(MAKE) \
 	T_AEL_PLT_SRC= \
-	T_NET_PLT_SRC= \
+	T_NET_PLT_SRC="p_net_ifc_unx.c" \
 	SYSCFLAGS="-D _DEFAULT_SOURCE -D LUAT_USE_POSIX -fpic" \
 	CC=clang \
 	LD=clang \
@@ -166,7 +166,7 @@ clean:
 	$(MAKE) -C $(CURDIR)/test clean
 	$(MAKE) -C $(CURDIR) \
 	 T_AEL_PLT_SRC="p_ael_epl.c p_ael_sel.c" \
-	 T_NET_PLT_SRC="p_net_sck_unx.c p_net_ifc_lnx.c" \
+	 T_NET_PLT_SRC="p_net_sck_unx.c p_net_ifc_unx.c" \
 	 delobjects
 
 delobjects:
