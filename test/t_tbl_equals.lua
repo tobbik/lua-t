@@ -5,7 +5,7 @@
 -- \copyright See Copyright notice at the end of src/t.h
 
 local   Test    = require( 't.Test' )
-local   Address = require( 't.Net.Address' )
+local   Buffer  = require( 't.Buffer' )
 local   e       = require( 't.Table' ).equals
 local   rep     = string.rep
 
@@ -126,7 +126,7 @@ return {
 
 	EqUserdata = function( self )
 		Test.describe( 'Test for equality of userdata' )
-		local a,b,c = Address("192.168.1.1", 4000), Address("192.168.1.1", 4000), Address("192.168.1.1", 4001)
+		local a,b,c = Buffer("192.168.1.1:4000"), Buffer("192.168.1.1:4000"), Buffer("192.168.1.1:4001")
 		assert(     a == a, "ud == ud should be true" )
 		assert(     e(a,a), "Simple equals(ud,ud) should be true" )
 		assert(     a == b, "ud == ud' should be true" )

@@ -27,16 +27,6 @@
 #include "t_dbg.h"
 #endif
 
-#define timesub(a, b, result)                           \
-	do {                                                 \
-	  (result)->tv_sec = (a)->tv_sec - (b)->tv_sec;      \
-	  (result)->tv_usec = (a)->tv_usec - (b)->tv_usec;   \
-	  if ((result)->tv_usec < 0) {                       \
-	    --(result)->tv_sec;                              \
-	    (result)->tv_usec += 1000000;                    \
-	  }                                                  \
-	} while (0)
-
 #if defined(LUAT_USE_WINDOWS)
 // PostgreSQL's implementattion of gettimeofday()
 /* FILETIME of Jan 1 1970 00:00:00. */
@@ -314,7 +304,8 @@ lt_ael_addtask( lua_State *L )
 {
 	struct t_ael     *ael = t_ael_check_ud( L, 1, 1 );  //S: ael ms fnc …
 	int               n   = lua_gettop( L ) + 1;    ///< iterator for arguments
-	struct t_ael_tsk *tsk = t_ael_tsk_create_ud( L, luaL_checkinteger( L, 2 ) ); //S: ael ms fnc … tsk
+	struct t_ael_tsk *tsk = t_ael_tsk_create_ud( L, luaL_checkinteger( L, 2 )*1000 );
+	                                                    //S: ael ms fnc … tsk
 
 	lua_replace( L, 2 );                         //S: ael tsk fnc …
 	luaL_checktype( L, 3, LUA_TFUNCTION );
@@ -381,29 +372,33 @@ static int
 lt_ael_run( lua_State *L )
 {
 	struct t_ael      *ael = t_ael_check_ud( L, 1, 1 );
-	struct timeval tvs,tve;      ///< measure time for one iteration
+	struct timeval tvs,tve,tv;   ///< measure time for one iteration
 	int                  n;      ///< how many file events?
 
-	ael->run                = 1;
+	ael->run = 1;
 	while (ael->run)
 	{
 		gettimeofday( &tvs, 0 );
 
-		if ((n = p_ael_poll_impl( L, ael->tout, 1 )) < 0)          //S: ael
+		tv.tv_sec  = ael->tout / 1000000;
+		tv.tv_usec = ael->tout % 1000000;
+
+		if ((n = p_ael_poll_impl( L, &(tv), 1 )) < 0)          //S: ael
 			return t_push_error( L, 1, 1, "Failed to continue the loop" );
 
-#if PRINT_DEBUGS == 3
-		printf( "oooooooooooooooooooooo POLL RETURNED: %d oooooooooooooooooooo\n", n );
+		gettimeofday( &tve, 0 );
+		T_AEL_TIMESUB( &tve, &tvs, &tve );
+
+#if PRINT_DEBUGS == 1
+		printf( "ooooo AEL POLL RETURNED: %d selectors after  %ldusec\n", n,
+			(tve.tv_sec*1000000 + tve.tv_usec) );
 #endif
 
-		gettimeofday( &tve, 0 );
-
 		// execute timer events
-		timesub( &tve, &tvs, &tve );
-		t_ael_tsk_process( L, ael, (tve.tv_sec*1000 + tve.tv_usec/1000) );
+		t_ael_tsk_process( L, ael, (tve.tv_sec*1000000 + tve.tv_usec) );
 
 		// if there are no events left in the loop -> stop processing
-		//printf("RUN__ed: %lld -- ", ael->tout); t_stackDump(L);
+		//printf("RUN__ed: %lld -- ", ael->tout / 1000); t_stackDump(L);
 		ael->run = (ael->tout == T_AEL_NOTIMEOUT && ael->fdCount < 1) ? 0 : ael->run;
 	}
 
@@ -482,7 +477,8 @@ static int
 lt_ael__tostring( lua_State *L )
 {
 	struct t_ael *ael = t_ael_check_ud( L, 1, 1 );
-	lua_pushfstring( L, T_AEL_TYPE"{%d}[%d]: %p", ael->fdCount, ael->tout, ael );
+	lua_pushfstring( L, T_AEL_TYPE"{%d}[%d]: %p",
+	   ael->fdCount, ael->tout/1000, ael );
 	return 1;
 }
 
@@ -508,7 +504,7 @@ lt_ael__len( lua_State *L )
  * \param   t_ael    Loop Struct.
  * \return  int  # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
-#ifdef DEBUG          //t_stackPrint is t_dbg
+#if defined(DEBUG)          //t_stackPrint is t_dbg
 static int
 lt_ael_showloop( lua_State *L )
 {
@@ -520,12 +516,12 @@ lt_ael_showloop( lua_State *L )
 	int               fd;
 	int               fail=40;
 
-	printf( T_AEL_TYPE"{%d}[%lld]: %p TIMER LIST:\n", ael->fdCount, ael->tout, ael );
+	printf( T_AEL_TYPE"{%d}[%lld]: %p TIMER LIST:\n", ael->fdCount, ael->tout/1000, ael );
 	lua_getiuservalue( L, 1 ,T_AEL_TSKIDX );         //S: ael tsk
 	while (! lua_isnil( L, -1 ) && fail-- > 0)
 	{
 		tsk = t_ael_tsk_check_ud( L, -1, 0 );
-		printf( "%5d  {%5lldms}  ", ++i, tsk->tout );
+		printf( "%5d  {%5lldms}  ", ++i, tsk->tout/1000 );
 		lua_getiuservalue( L, -1, T_AEL_TSK_FNCIDX ); //S: ael tsk tbl
 		t_ael_doFunction( L, -1 );
 		t_stackPrint( L, n+2, lua_gettop( L ), 0 );   //S: ael tsk fnc …

@@ -22,9 +22,6 @@
 #include <unistd.h>           // close
 #include <sys/epoll.h>
 
-#define P_AEL_EPL_SLOTSZ 1024 // how many events can be returned for ONE call to epoll_wait()
-                              // NOT how many fd can be observed, which is limited by ulimit!
-
 static const char* t_ael_msk_lst[ ] = {
 	  "NONE"
 	, "READ"
@@ -34,7 +31,7 @@ static const char* t_ael_msk_lst[ ] = {
 
 struct p_ael_ste {
 	int                 epfd;
-	struct epoll_event events[ P_AEL_EPL_SLOTSZ ];
+	struct epoll_event events[ T_AEL_SLOTSIZE ];
 };
 
 
@@ -48,7 +45,7 @@ static inline struct p_ael_ste
 *p_ael_getState( lua_State *L, int aelpos )
 {
 	struct p_ael_ste *state;
-	lua_getiuservalue(L, aelpos, T_AEL_STEIDX );
+	lua_getiuservalue( L, aelpos, T_AEL_STEIDX );
 	state = (struct p_ael_ste *) lua_touserdata( L, -1 );
 	lua_pop( L, 1 );
 	return state;
@@ -70,6 +67,7 @@ p_ael_create_ud_impl( lua_State *L )
 	state->epfd = epoll_create1( 0 );
 	if (state->epfd == -1)
 		luaL_error( L, "couldn't create event socket for epoll loop" );
+	t_ael_hlp_cloexec( state->epfd );
 }
 
 
@@ -162,57 +160,62 @@ p_ael_removehandle_impl( lua_State *L, int aelpos, struct t_ael_dnd *dnd, int fd
  * Set up a epoll_wait() call for all events in the T.Loop
  * \param   L       Lua state.
  * \param   aelpos  int; position of t_ael loop struct on stack.
- * \param   timeout int; timeout for next fallthrough in milliseconds.
+ * \param   timeout struct timeval; timeout until the next fallthrough.
  * \return  int     number returns from select.
  * --------------------------------------------------------------------------*/
 int
-p_ael_poll_impl( lua_State *L, int timeout, int aelpos )
+p_ael_poll_impl( lua_State *L, struct timeval *timeout, int aelpos )
 {
 	struct p_ael_ste   *state = p_ael_getState( L, aelpos );
-	struct epoll_event *e;
-	int                 i,r,c = 0;
-	int                 msk;
+	int    j,retval,numevents = 0;
+	struct epoll_event     *e;
+	int                  mask;
 
-	//printf("EPOLL TIMEOUT: %lld -- ", timeout); t_stackDump(L);
-	r = epoll_wait(
-	   state->epfd,
-	   state->events,
-	   P_AEL_EPL_SLOTSZ,
-	   (timeout > T_AEL_NOTIMEOUT)
-	      ? timeout
-	      : -1
+#if PRINT_DEBUGS == 1
+	printf( "    &&&&&&&&&&&& SETUP EPOLL: %ldms &&&&&&&&&&&&&&&&&&\n", T_AEL_TIMEVAL2MS( timeout ) );
+#endif
+
+	retval = epoll_wait(
+	         state->epfd,
+	         state->events,
+	         T_AEL_SLOTSIZE,
+	         (timeout)
+	            ? ( (timeout->tv_sec * 1000)  +  (timeout->tv_usec / 1000) )
+	            : -1
 	);
 #if PRINT_DEBUGS == 1
-	printf( "    &&&&&&&&&&&& POLL RETURNED: %d &&&&&&&&&&&&&&&&&&\n", r );
+	printf( "    &&&&&&&&&&&& EPOLL RETURNED: %d &&&&&&&&&&&&&&&&&&\n", retval );
 #endif
-	if (r<0)
+	if (retval<0)
 		return t_push_error( L, 1, 1, "epoll_wait() failed" );
 
-	if (r > 0)
+	if (retval > 0)
 	{
 		lua_getiuservalue( L, aelpos, T_AEL_DSCIDX );
-		for (i=0; i<r; i++)
+		for (j=0; j<retval; j++)
 		{
-			msk = T_AEL_NO;
-			e   = state->events + i;
+			mask = T_AEL_NO;
+			e    = state->events + j;
 
-			if (e->events & EPOLLIN)  msk |= T_AEL_RD;
-			if (e->events & EPOLLOUT || e->events & EPOLLERR || e->events & EPOLLHUP) msk |= T_AEL_WR;
-			if (T_AEL_NO != msk)
+			if (e->events & EPOLLIN)  mask |= T_AEL_RD;
+			if (e->events & EPOLLOUT) mask |= T_AEL_WR;
+			if (e->events & EPOLLERR) mask |= T_AEL_WR | T_AEL_RD;
+			if (e->events & EPOLLHUP) mask |= T_AEL_WR | T_AEL_RD;
+			if (T_AEL_NO != mask)
 			{
 #if PRINT_DEBUGS == 1
-				printf( "  _____ FD: %d triggered[%s]____\n", e->data.fd, t_ael_msk_lst[ msk ] );
+				printf( "  _____ FD: %d triggered[%s]____\n", e->data.fd, t_ael_msk_lst[ mask ] );
 #endif
 				//printf("EPOLL DND  ");t_stackDump(L);
 				lua_rawgeti( L, -1, e->data.fd );           //S: ael nds dnd
-				t_ael_dnd_execute( L, t_ael_dnd_check_ud( L, -1, 1 ), msk );
+				t_ael_dnd_execute( L, t_ael_dnd_check_ud( L, -1, 1 ), mask );
 				lua_pop( L, 1 );
-				c++;
+				numevents++;
 			}
 		}
 		lua_pop( L, 1 );
 	}
 	//printf("EPOLLED TIMEOUT: %lld -- ", timeout); t_stackDump(L);
-	return c;
+	return numevents;
 }
 

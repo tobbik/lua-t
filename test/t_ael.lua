@@ -3,9 +3,12 @@
 -- \brief   Test for the asynchronous Loop
 local Test      = require't.Test'
 local Loop      = require't.Loop'
-local Socket    = require't.Net.Socket'
-local Address   = require't.Net.Address'
-local Interface = require't.Net.Interface'
+
+-- TODO: ael should test some socket operation as well, even though a lot is
+-- covered in the t_net_* tests
+--local Socket    = require't.Net.Socket'
+--local Address   = require't.Net.Address'
+--local Interface = require't.Net.Interface'
 
 
 return {

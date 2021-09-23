@@ -65,3 +65,4 @@ r = function( tap )
 end
 
 run( )
+r()

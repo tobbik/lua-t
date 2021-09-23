@@ -290,7 +290,7 @@ p_net_ifs_getStats( lua_State *L, struct ifaddrs *ifa )
  * \lreturn void     Push value to table
  * \return  void
  * --------------------------------------------------------------------------*/
-static void
+static inline void
 p_net_ifs_makeAddress( lua_State *L, struct sockaddr* iadr, const char * adr_name )
 {
 	struct sockaddr_storage   *adr;

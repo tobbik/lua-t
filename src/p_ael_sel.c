@@ -19,6 +19,7 @@
 #include "t_dbg.h"
 #endif
 #include <string.h>           // memcpy
+#include <errno.h>            // errno,EINTR
 #include <sys/time.h>         // struct timeval
 
 #if PRINT_DEBUGS == 1
@@ -168,64 +169,61 @@ p_ael_removehandle_impl( lua_State *L, int aelpos, struct t_ael_dnd *dnd, int fd
  * Set up a select call for all events in the T.Loop
  * \param   L       Lua state.
  * \param   aelpos  int; position of t_ael loop struct on stack.
- * \param   timeout int; timeout for next fallthrough in milliseconds.
+ * \param   timeout struct timeval; timeout until the next fallthrough.
  * \return  int  number returns from select.
  * --------------------------------------------------------------------------*/
 int
-p_ael_poll_impl( lua_State *L, int timeout, int aelpos )
+p_ael_poll_impl( lua_State *L, struct timeval *timeout, int aelpos )
 {
-	UNUSED( L );
-	struct p_ael_ste *state = p_ael_getState( L, aelpos );
-	struct t_ael_dnd *dnd;
-	struct timeval   tv     = {-1, 0};
-	int               i,r,c = 0;
-	int                 msk;
+	struct p_ael_ste   *state = p_ael_getState( L, aelpos );
+	int    j,retval,numevents = 0;
+	struct t_ael_dnd     *dnd;
+	int                  mask;
 
-	if (timeout > T_AEL_NOTIMEOUT)
-	{
-		tv.tv_sec  = (timeout / 1000);
-		tv.tv_usec = (timeout % 1000) * 1000;
-	}
+#if PRINT_DEBUGS == 1
+	printf( "    &&&&&&&&&&&& SETUP SELECT: %ldms &&&&&&&&&&&&&&&&&&\n", T_AEL_TIMEVAL2MS( timeout ) );
+#endif
 
 	memcpy( &state->rfds_w, &state->rfds, sizeof( fd_set ) );
 	memcpy( &state->wfds_w, &state->wfds, sizeof( fd_set ) );
 
-	r = select( state->fdMax+1, &state->rfds_w, &state->wfds_w, NULL, (tv.tv_sec<0) ? NULL : &tv );
+	retval = select( state->fdMax+1, &state->rfds_w, &state->wfds_w, NULL, timeout );
+
 #if PRINT_DEBUGS == 1
-	printf( "    &&&&&&&&&&&& POLL RETURNED[%d]: %d &&&&&&&&&&&&&&&&&&\n", state->fdMax, r );
+	printf( "    &&&&&&&&&&&& SELECT RETURNED[%d]: %d &&&&&&&&&&&&&&&&&&\n", state->fdMax, retval );
 #endif
 
-	if (r<0)
-		return t_push_error( L, 0, 1, "select() failed" );
-
-	if (r>0)
+	if (retval>0)
 	{
 		lua_getiuservalue( L, aelpos, T_AEL_DSCIDX );
-		for (i=0; r>0 && i <= state->fdMax; i++)
+		for (j=0; retval>0 && j <= state->fdMax; j++)
 		{
-			lua_rawgeti( L, -1, i );
-			if (lua_isnil( L, -1 ))
+			mask = T_AEL_NO;
+			lua_rawgeti( L, -1, j );
+			dnd = t_ael_dnd_check_ud( L, -1, 0 );
+			if (! dnd || T_AEL_NO == dnd->msk)  // rawget got nil or msk is not set
 			{
 				lua_pop( L, 1 );
 				continue;
 			}
 
-			dnd = (struct t_ael_dnd*) lua_touserdata( L, -1 );
-			msk = T_AEL_NO;
-			if (dnd->msk & T_AEL_RD  &&  FD_ISSET( i, &state->rfds_w ))
-				msk |= T_AEL_RD;
-			if (dnd->msk & T_AEL_WR  &&  FD_ISSET( i, &state->wfds_w ))
-				msk |= T_AEL_WR;
-			if (T_AEL_NO != msk)
+			if (dnd->msk & T_AEL_RD  &&  FD_ISSET( j, &state->rfds_w ))
+				mask |= T_AEL_RD;
+			if (dnd->msk & T_AEL_WR  &&  FD_ISSET( j, &state->wfds_w ))
+				mask |= T_AEL_WR;
+			if (T_AEL_NO != mask)
 			{
-				t_ael_dnd_execute( L, dnd, msk );
-				r--;
+				t_ael_dnd_execute( L, dnd, mask );
+				retval--;
+				numevents++;
 			}
 			lua_pop( L, 1 );
 		}
 		lua_pop( L, 1 );
 	}
+	else if (-1 == retval && EINTR == errno)
+		return t_push_error( L, 0, 1, "select() failed" );
 
-	return c;
+	return numevents;
 }
 

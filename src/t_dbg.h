@@ -11,7 +11,7 @@
 #include "lualib.h"
 #include "lauxlib.h"
 
-#define PRINT_DEBUGS    0
+#define PRINT_DEBUGS  0
 #define UNUSED(...)   (void)(__VA_ARGS__)
 
 

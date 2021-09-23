@@ -6,7 +6,7 @@
 
 local   Test  = require( 't.Test' )
 local   Set   = require( 't.Set' )
-local   Socket= require( 't.Net.Socket' )
+local   Buffer= require( 't.Buffer' )
 local   T     = require( 't' )
 local   t_count = require( 't.Table' ).count
 
@@ -63,10 +63,10 @@ return {
 	end,
 
 	typeLuatUserdata = function( self )
-		Test.describe( "type( t.Net.Socket() ) gives `t.Net.Socket` (userdata with metatable)" )
-		local sock = Socket()
-		assert( 'userdata' ==   type( sock ), ("type should be `userdata` but was `%s`"):format( type(sock) ) )
-		assert( 'T.Net.Socket'   == T.type( sock ), ("type should be `T.Net.Socket`   but was `%s`"):format( T.type(sock) ) )
+		Test.describe( "type( t.Buffer() ) gives `t.Buffer` (userdata with metatable)" )
+		local buffer = Buffer()
+		assert( 'userdata' ==   type( buffer ), ("type should be `userdata` but was `%s`"):format( type(buffer) ) )
+		assert( 'T.Buffer' == T.type( buffer ), ("type should be `T.Buffer` but was `%s`"):format( T.type(buffer) ) )
 	end,
 
 	assertFormatter = function( self )

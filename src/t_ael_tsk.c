@@ -22,21 +22,23 @@
  * \param   L        Lua state.
  * \lparam  *ael     t_ael; pointer to loop.
  * \lparam  tskHead  t_ael_tsk; Head of task list on stack.
- * \param     tAdj   int; time(ms) value to be substracted from all nodes in
- *                   tasks linked list.
+ * \param     tAdj   u_int64; microsecond value to be substracted from all
+ *                   nodes in tasks linked list.
  * \return  void.
  * --------------------------------------------------------------------------*/
 static inline void
-t_ael_tsk_adjust( lua_State *L, lua_Integer tAdj )
+t_ael_tsk_adjust( lua_State *L, unsigned long long tAdj )
 {
 	struct t_ael_tsk *tRun;
 	lua_pushvalue( L, -1 );     // copy task head    //S: ael hed hed
+	//TODO: make sure that if a socket created the poll fallthrough we also
+	//      update the ael->tout! Is this already happening?
 	while (! lua_isnil( L, -1 ))                     //S: ael hed tsk
 	{
 		tRun       = t_ael_tsk_check_ud( L, -1, 0 );
-		//printf("ADJUST: %lld  %lld  -- ", tRun->tout, tAdj);
-		tRun->tout = (tRun->tout - tAdj > 0) ? tRun->tout - tAdj : 0;
-		//printf("%lld  -- ", tRun->tout); t_stackDump(L);
+		//printf("to ADJUST: %llu  %llu  -- ", tRun->tout, tAdj);
+		tRun->tout = (tRun->tout > tAdj) ? tRun->tout - tAdj : 0;
+		//printf("%llu  -- ", tRun->tout); t_stackDump(L);
 		lua_getiuservalue( L, -1, T_AEL_TSK_NXTIDX ); //S: ael hed tsk tsk
 		lua_remove( L, -2);                           //S: ael hed tsk
 	}                                                //S: ael hed tsk
@@ -49,25 +51,27 @@ t_ael_tsk_adjust( lua_State *L, lua_Integer tAdj )
  * \param   L        Lua state.
  * \lparam  *ael     t_ael; pointer to loop.
  * \lparam  *tsk     t_ael_tsk; pointer to task to execute.
- * \return  void                                                             …
+ * \return  void.                                                            …
  * --------------------------------------------------------------------------*/
 static void
 t_ael_tsk_execute( lua_State *L, struct t_ael *ael, struct t_ael_tsk *tsk )
 {
-	lua_Integer        ms = 0;     ///< 0 means sentinel to remove from loop
+	lua_Integer     tout = 0;     ///< 0 means sentinel to remove from loop
 
 	lua_getiuservalue( L, -1, T_AEL_TSK_FNCIDX );                //S: ael tsk tbl
-	t_ael_doFunction( L, 1 );                                    //S: ael tsk ms
-	ms = (lua_isinteger( L, -1 )) ? lua_tointeger( L, -1 ) : ms; //S: ael tsk ms
+	t_ael_doFunction( L, 1 );                                    //S: ael tsk tim
+	tout = (lua_isinteger( L, -1 ))
+		? lua_tointeger( L, -1 )*1000        // convert milli- to micro-seconds
+		: tout;                                                   //S: ael tsk tim
 	lua_pop( L, 1 );  // pop the nil or millisecond value        //S: ael tsk
 	//printf("EXEC REMOVE: "); t_stackDump(L);
 	t_ael_tsk_remove( L, ael, tsk );                             //S: ael tsk
 
-	if (ms < 1 )      // remove from list
+	if (tout < 1 )      // remove from list
 		lua_pop( L, 1 );                                          //S: ael
-	else              // re-add node to list if function returned a timer
+	else                // re-add node to list if function returned a timer
 	{
-		tsk->tout = ms;                                           //S: ael tsk
+		tsk->tout = tout;                                           //S: ael tsk
 		//printf("EXEC INSERT: "); t_stackDump(L);
 		t_ael_tsk_insert( L, ael, tsk );                          //S: ael
 	}
@@ -78,11 +82,11 @@ t_ael_tsk_execute( lua_State *L, struct t_ael *ael, struct t_ael_tsk *tsk )
  * Pop timer list head, execute and re-add if needed.
  * \param   L        Lua state.
  * \lparam  ael      t_ael; the Loop userdata.
- * \param   et       int; execution time in milliseconds
+ * \param   et       int; execution time in microseconds.
  * \return  void.
  * --------------------------------------------------------------------------*/
 void
-t_ael_tsk_process( lua_State *L, struct t_ael *ael, lua_Integer et )
+t_ael_tsk_process( lua_State *L, struct t_ael *ael, unsigned long long et )
 {
 	struct t_ael_tsk *tRun;                               //S: ael
 	lua_getiuservalue( L, -1, T_AEL_TSKIDX );             //S: ael hed
@@ -221,10 +225,11 @@ t_ael_tsk_remove( lua_State *L, struct t_ael *ael, struct t_ael_tsk *tCnd )
 /**--------------------------------------------------------------------------
  * Create a new t_ael_ts userdata and push to LuaStack.
  * \param   L    Lua state.
+ * \param   ms   int; timeout to pass in microseconds.
  * \return  tsk  struct t_ael_tsk * pointer to new userdata on Lua Stack.
  * --------------------------------------------------------------------------*/
 struct t_ael_tsk
-*t_ael_tsk_create_ud( lua_State *L, lua_Integer ms )
+*t_ael_tsk_create_ud( lua_State *L, unsigned long long ms )
 {
 	struct t_ael_tsk    *tsk;
 
@@ -278,7 +283,7 @@ static int
 lt_ael_tsk__tostring( lua_State *L )
 {
 	struct t_ael_tsk *tsk = t_ael_tsk_check_ud( L, 1, 1 );
-	lua_pushfstring( L, T_AEL_TSK_TYPE"{%dms}: %p", tsk->tout, tsk );
+	lua_pushfstring( L, T_AEL_TSK_TYPE"{%dms}: %p", tsk->tout/1000000, tsk );
 	return 1;
 }
 
