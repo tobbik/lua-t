@@ -10,12 +10,10 @@ local Loop      = require't.Loop'
 --local Address   = require't.Net.Address'
 --local Interface = require't.Net.Interface'
 
-
 return {
 	beforeAll = function( self )
 		self.loop = Loop( )
 	end,
-
 
 	afterEach = function( self )  -- not necessary for this suite
 		self.loop:clean( );
@@ -25,18 +23,45 @@ return {
 	-- Timer Tests
 	-- -----------------------------------------------------------------------
 	Timer = function( self )
-		local arg1,arg2  = 100, 'this is a string'
-		local time,start = math.random(80,600), Loop.time()
-		Test.describe( "Test simple Timer(%dms)", time )
-		local success    = function( a, b )
+		local delay,start = math.random(80,600), Loop.time()
+		-- seems kqueue or select on FreeBSD has some margin here, epoll is
+		-- generally okay with 2-3ms sometimes less. FreeBSD ran in a VM
+		-- though
+		local delta       = 50
+		Test.describe( "Test simple Timer(%dms)", delay )
+		local success    = function( s, d )
 			local ms_passed = Loop:time() - start
-			assert( a == arg1, "First argument should be " .. arg1 )
-			assert( b == arg2, "Second argument should be " .. arg2 )
-			assert( ms_passed > time-5 and ms_passed < time+5,
-				("Time passed should be between 380 and 390 milliseconds, but was %d"):format(ms_passed) )
+			assert( d == delay, ("First argument should be %d but was %d"):format( delay, d ) )
+			assert( d == delay, ("Second argument should be %d but was %d"):format( start, s ) )
+			assert( ms_passed > delay-delta and ms_passed < delay+delta,
+				("Time passed should be between %dms and %dms, but was %dms"):format(delay-delta, delay+delta, ms_passed) )
 		end
-		self.loop:addTask( time, success, arg1, arg2 )
-		self.loop:run()
+		self.loop:addTask( delay, success, start, delay )
+		self.loop:run( )
+	end,
+
+	TimerAccuracy = function( self )
+		Test.describe( "Test Average Timer Accuracy" )
+		Test.todo( "This needs some more dev testing befor we can set expectations" )
+		-- 5950X linux 2-4ms sd: <1
+		-- FreeBSD KVM 4-6ms sd: >3
+		-- RasiPy      30-100ms  sd: 40-60
+		local runs,delta,sd,vari,start = 200, 0, 0, {}, Loop.time()
+		local success = function( s, d )
+			local ms_passed = Loop:time() - start
+			delta = delta + (ms_passed-d)
+			table.insert( vari, ms_passed-d )
+		end
+		for n=1,runs do
+			local delay = math.random(n*8, n*20)
+			self.loop:addTask( delay, success, start, delay )
+		end
+		self.loop:run( )
+		local mean = delta/runs
+		for i,d in ipairs(vari) do sd = sd + ((d-mean) ^ 2) end
+		sd = math.sqrt( sd/runs )
+		print( ("Average delta over %d runs was %fms with standard deviation of %f"):format( runs, mean, sd ) )
+		assert( delta/runs < 20, ("Average delta over %d runs was %fms, hoping for less than 20"):format( runs, delta/runs ) )
 	end,
 
 	CancelTask = function( self )
