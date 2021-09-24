@@ -334,7 +334,7 @@ p_net_ifs_getAddresses( lua_State *L, struct ifaddrs *ifa )
 		p_net_ifs_makeAddress( L, ifa->ifa_netmask  , "netmask" );
 		if (ifa->ifa_flags & IFF_BROADCAST)
 			p_net_ifs_makeAddress( L, ifa->ifa_broadaddr, "broadcast" );
-		else
+		if (ifa->ifa_flags & IFF_POINTOPOINT)
 			p_net_ifs_makeAddress( L, ifa->ifa_dstaddr  , "peer" );
 		lua_rawseti( L, -2, lua_rawlen( L, -2 ) + 1 );
 		if (created)
