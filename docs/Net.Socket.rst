@@ -218,14 +218,7 @@ which can't be duplicated.
 Instance Members
 ----------------
 
-``Net.Address adr = Net.Socket sck:bind( [string host, int port ])``
-  Creates and returns ``Net.Address adr`` instance defined by the
-  ``string ip`` and ``int port`` number and binds the ``Net.Socket sck``
-  instance to it.  ``string ip`` is accepted as **aaa.bbb.ccc.ddd**.  If
-  ``ip string`` is omitted it will automatically bind to **0.0.0.0**, the
-  IP_ANY interface.
-
-``Net.Address adr = Net.Socket sck:bind( Net.Address adr/ [string host, int port] )``
+``Net.Address adr = Net.Socket sck:bind( Net.Address adr / [string host, int port] )``
   Binds ``Net.Socket sck`` instance to ``Net.Address adr`` or the address
   defined via ``string host`` and ``int port``.  The host is accepted as
   **aaa.bbb.ccc.ddd** IPv4 string or as **[::]** IPv string.  If no
@@ -267,6 +260,11 @@ Instance Members
     adr  = sck.connect( adr )        -- perform connect
     adr  = sck.connect( host )       -- Adr host:0
     adr  = sck.connect( host, port ) -- Adr host:port
+
+``Net.Address adr = Net.Socket sck:getsockname( [Net.Address adr ] )``
+  Creates and returns ``Net.Address adr`` instance or fills the values of
+  the ``Net.Address adr`` passed as argument.  The ``Net.Address adr`` will
+  represent the address the ``Net.Socket sck`` is locally bound to.
 
 ``Net.Address adr = Net.Socket sck:listen( Net.Address adr/[string ip, int port], int backlog )``
   Makes ``Net.Socket sck`` listening for connections on ``Net.Address adr``

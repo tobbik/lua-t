@@ -1,4 +1,4 @@
-# vim: ft=make ts=3 sw=3 st=3 sts=3 sta noet tw=80 list
+# vim: ft=make ts=3 sw=3 sts=3 sta noet tw=80 list
 RM != which rm
 
 #DMYCFLAGS:= -pedantic -O3
@@ -10,8 +10,8 @@ LVER=5.4
 LREL=3
 CURDIR != pwd
 
-D_CC=clang
-D_LD=clang
+D_CC=gcc
+D_LD=gcc
 
 PREFIX=$(CURDIR)/local
 
@@ -88,7 +88,7 @@ dev-gdb:
 	$(MAKE) dev
 	LUA_PATH="$(PREFIX)/share/lua/5.4/?.lua;;" \
 	 LUA_CPATH="$(PREFIX)/lib/lua/5.4/?.so;;" \
-	 gdb --args $(PREFIX)/bin/lua -i scratchpad.lua
+	 gdb --args $(PREFIX)/bin/lua -i test/runner.lua
 
 dev-example:
 	$(MAKE) dev
@@ -117,6 +117,17 @@ dev-echo:
 	 echo
 
 run-dev:
+	#$(MAKE) dev
 	LUA_PATH="$(PREFIX)/share/lua/5.4/?.lua;;" \
 	 LUA_CPATH="$(PREFIX)/lib/lua/5.4/?.so;;" \
-	 $(PREFIX)/bin/lua -i scp.lua
+	 $(PREFIX)/bin/lua -i scp1.lua
+
+srv-dev:
+	LUA_PATH="$(PREFIX)/share/lua/5.4/?.lua;;" \
+	 LUA_CPATH="$(PREFIX)/lib/lua/5.4/?.so;;" \
+	 $(PREFIX)/bin/lua srv.lua
+
+cli-dev:
+	LUA_PATH="$(PREFIX)/share/lua/5.4/?.lua;;" \
+	 LUA_CPATH="$(PREFIX)/lib/lua/5.4/?.so;;" \
+	 $(PREFIX)/bin/lua cli.lua

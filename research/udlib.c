@@ -76,7 +76,7 @@ static int ud( lua_State *L )
 }
 
 
-static int walk( lua_State *L )   // Wake down the classic pointer based linked list
+static int walk( lua_State *L )   // Walk down the classic pointer based linked list
 {
 	struct tux *ud  = (struct tux *) lua_touserdata( L, 1 );
 	struct timeval tv1, tv2;
@@ -100,7 +100,7 @@ static int walk( lua_State *L )   // Wake down the classic pointer based linked 
 }
 
 
-static int walkv( lua_State *L )   // Wake down the Lua uservalue based linked list
+static int walkv( lua_State *L )   // walk down the Lua uservalue based linked list
 {
 	struct tux __attribute__ ((unused)) *ud = (struct tux *) lua_touserdata( L, 1 );
 	struct timeval tv1, tv2;

@@ -135,7 +135,7 @@ Linux linux:
 FreeBSD NetBSD OpenBSD freebsd:
 	$(MAKE) \
 	 T_AEL_PLT_SRC="p_ael_kqe.c" \
-	 T_NET_PLT_SRC="p_net_ifc_unx.c" \
+	 T_NET_PLT_SRC="p_net_ifc_unx.c p_net_sck_unx.c" \
 	 SYSCFLAGS="-D _DEFAULT_SOURCE -D LUAT_USE_POSIX -fpic" \
 	 CC=clang \
 	 LD=clang \

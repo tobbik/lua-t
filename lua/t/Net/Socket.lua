@@ -4,8 +4,8 @@ local Protocol                      , Type                       =
       require"t.Net.Socket.Protocol", require"t.Net.Socket.Type"
 local Family               =
       require"t.Net.Family"
-local t_type         , t_assert         , type, s_lower     , s_format     , type =
-      require't'.type, require't'.assert, type, string.lower, string.format, type
+local t_type         , type =
+      require't'.type, type
 local sck_mt = debug.getregistry( )[ "T.Net.Socket" ]
 local Sck_mt = getmetatable( Socket )
 
@@ -59,10 +59,9 @@ local getAddress = function( host, port )
 	end
 end
 
-
 local validateSocket = function( sck, command )
-	t_assert( "T.Net.Socket" == t_type( sck ),
-		"bad argument #1 to `" ..command.. "` (expected `t.Net.Socket`, got `%s`)", t_type( sck ) )
+	assert( "T.Net.Socket" == t_type( sck ),
+		("bad argument #1 to `%s` (expected `t.Net.Socket`, got `%s`)"):format( command, t_type( sck ) ) )
 	return sck
 end
 
@@ -78,7 +77,10 @@ Socket.listen = function( host, port, bl )
 	local sck = Socket( Socket.IPPROTO_TCP, adr.family )
 	local t,e = sck:bind( adr )
 	--print(sck, adr, t, e )
-	if not t then return t, e end -- false, errMsg
+	if not t then
+		sck:close( )
+		return t, e -- false, errMsg
+	end
 	sck_listener( sck, backlog )
 	if 0==adr.port then adr.port = sck:getsockname( ).port end
 	return sck, adr
@@ -110,7 +112,12 @@ Socket.bind = function( host, port )
 	local sck = Socket( Socket.IPPROTO_TCP, adr.family )
 	local t,e = sck_binder( sck, adr )
 	--print(sck, adr, t, e )
-	if t then return sck,adr else return t,e end
+	if t then
+		return sck,adr
+	else
+		sck:close( )
+		return t,e
+	end
 end
 
 -- adr = s:bind()               --> creates a 0.0.0.0:0 address
@@ -130,7 +137,12 @@ Socket.connect = function( host, port )
 	local sck = Socket( 'TCP', adr.family )
 	local t,e = sck_connecter( sck, adr )
 	--print(sck, adr, t, e )
-	if t then return sck,adr else return t,e end
+	if t then
+		return sck,adr
+	else
+		sck:close( )
+		return t,e
+	end
 end
 
 sck_mt.connect = function( sck, host, port )
@@ -146,7 +158,7 @@ sck_mt.shutdown = function( sck, mode )
 	local mode_nr =   "number"==type( mode )
 	      and mode
 	      or  Socket[ mode ]
-	assert( Socket[ mode_nr ], s_format( "Shutdown mode `%s` does not exist.", mode ) )
+	assert( Socket[ mode_nr ], ("Shutdown mode `%s` does not exist."):format( mode ) )
 	sck_shutdowner( sck, mode_nr )
 end
 
@@ -162,17 +174,17 @@ end
 Sck_mt.__call = function( Sck, protocol, family, typ )
 	local p = protocol or Protocol.IPPROTO_TCP       -- sane default
 	p       = ( 'string' == type( p ) ) and Protocol[ p ] or p  -- lookup name
-	assert( Protocol[ p ] and 'number' == type( p ), s_format( "Can't find protocol `%s`", protocol ))
+	assert( Protocol[ p ] and 'number' == type( p ), ("Can't find protocol `%s`"):format( protocol ) )
 
 	local f = family or Family.AF_INET               -- sane default
 	f       = ( 'string' == type( f ) ) and Family[ f ] or f  -- lookup name
-	assert( Family[ f ] and 'number' == type( f ), s_format( "Can't find family `%s`", family ))
+	assert( Family[ f ] and 'number' == type( f ), ("Can't find family `%s`"):format( family ) )
 
 	local t = typ or  ((Protocol.IPPROTO_TCP == p ) and 'SOCK_STREAM')  -- sane default
 	              or  ((Protocol.IPPROTO_UDP == p ) and 'SOCK_DGRAM')
 	              or  'SOCK_RAW'
 	t       = ( 'string' == type( t ) ) and Type[ t ] or t     -- lookup name
-	assert( Type[ t ] and 'number' == type( t ), s_format( "Can't find socket type `%s`", typ ))
+	assert( Type[ t ] and 'number' == type( t ), ("Can't find socket type `%s`"):format( typ ) )
 
 	return Socket_new( p, f, t )
 end
