@@ -37,6 +37,7 @@ return {
 		h:close()
 		self.isPriv = not not s:match( 'uid=0' )
 		self.host   = Interface.default( ).address.ip
+		self.port   = 1503
 	end,
 
 	beforeEach = function( self )
@@ -69,8 +70,7 @@ return {
 
 	SocketListenAddress = function( self )
 		Test.describe( "Socket.listen( adr ) --> Sck IPv4(TCP)" )
-		local port         = config.nonPrivPort
-		local addr         = Address( self.host, port )
+		local addr         = Address( self.host, self.port )
 		self.sck, self.adr = Socket.listen( addr )
 		assert( self.adr == addr, "Returned Address shall be same as input" )
 		assert( chkSck(  self.sck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' ) )
@@ -79,8 +79,7 @@ return {
 
 	SocketListenAddressBacklog = function( self )
 		Test.describe( "Socket.listen( adr, backlog ) --> Sck IPv4(TCP)" )
-		local port         = config.nonPrivPort
-		local addr         = Address( self.host, port )
+		local addr         = Address( self.host, self.port )
 		self.sck, self.adr = Socket.listen( addr, 5 )
 		assert( self.adr == addr, "Returned Address shall be same as input" )
 		assert( chkSck(  self.sck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' ) )
@@ -97,19 +96,17 @@ return {
 
 	SocketListenHostPort = function( self )
 		Test.describe( "Socket.listen( host,port ) --> Sck IPv4(TCP), Adr host:port" )
-		local port         = config.nonPrivPort
-		self.sck, self.adr = Socket.listen( self.host, port )
+		self.sck, self.adr = Socket.listen( self.host, self.port )
 		assert( chkSck( self.sck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' ) )
-		assert( chkAdr( self.adr, "AF_INET", self.host, port ) )
+		assert( chkAdr( self.adr, "AF_INET", self.host, self.port ) )
 		assert( self.sck:getsockname() == self.adr, "Bound and returned address should match" )
 	end,
 
 	SocketListenPortBacklog = function( self )
 		Test.describe( "Socket.listen( port, bl ) --> Sck IPv4(TCP), Adr 0.0.0.0:port" )
-		local port         = config.nonPrivPort
-		self.sck, self.adr = Socket.listen( port, 50 )
+		self.sck, self.adr = Socket.listen( self.port, 50 )
 		assert( chkSck( self.sck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' ) )
-		assert( chkAdr( self.adr, "AF_INET", '0.0.0.0', port ) )
+		assert( chkAdr( self.adr, "AF_INET", '0.0.0.0', self.port ) )
 		assert( self.sck:getsockname() == self.adr, "Bound and returned address should match" )
 	end,
 
@@ -128,10 +125,9 @@ return {
 
 	SocketListenHostAddressBacklog = function( self )
 		Test.describe( "Socket.listen( host,port,backlog ) --> Sck IPv4(TCP), Adr host:port" )
-		local port        = config.nonPrivPort
-		self.sck, self.adr = Socket.listen( self.host, port, 5 )
+		self.sck, self.adr = Socket.listen( self.host, self.port, 5 )
 		assert( chkSck( self.sck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' ) )
-		assert( chkAdr( self.adr, "AF_INET", self.host, port ) )
+		assert( chkAdr( self.adr, "AF_INET", self.host, self.port ) )
 		assert( self.sck:getsockname() == self.adr, "Bound and returned address should match" )
 	end,
 
@@ -140,10 +136,9 @@ return {
 	-- ##################################################################
 	socketListen = function( self )
 		Test.describe( "sck:listen( ) --> void (Assume Socket is already bound)" )
-		local port         = config.nonPrivPort
-		self.sck, self.adr = Socket.bind( self.host, port )
+		self.sck, self.adr = Socket.bind( self.host, self.port )
 		assert( chkSck( self.sck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' ) )
-		assert( chkAdr( self.adr, "AF_INET", self.host, port ) )
+		assert( chkAdr( self.adr, "AF_INET", self.host, self.port ) )
 		local a, b        = self.sck:listen( )
 		assert( b == nil, "No second value should have been returned" )
 		assert( self.adr == a, ("returned address `%s` should equal previously bound `%s`"):format( a, self.adr ) )
@@ -153,10 +148,9 @@ return {
 
 	socketListenBacklog = function( self )
 		Test.describe( "sck:listen( backlog ) --> void (Assume Socket is already bound)" )
-		local port         = config.nonPrivPort
-		self.sck, self.adr = Socket.bind( self.host, port )
+		self.sck, self.adr = Socket.bind( self.host, self.port )
 		assert( chkSck( self.sck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' ) )
-		assert( chkAdr( self.adr, "AF_INET", self.host, port ) )
+		assert( chkAdr( self.adr, "AF_INET", self.host, self.port ) )
 		local a, b        = self.sck:listen( 5 )
 		assert( b == nil, "No second value should have been returned" )
 		assert( a == self.adr, ("returned address `%s` should equal previously bound `%s`"):format( a, self.adr ) )
@@ -166,8 +160,7 @@ return {
 
 	socketListenAddress = function( self )
 		Test.describe( "sck:listen( adr ) --> void" )
-		local port = config.nonPrivPort
-		self.adr   = Address( self.host, port )
+		self.adr   = Address( self.host, self.port )
 		self.sck   = Socket( )
 		local a, b = self.sck:listen( self.adr )
 		assert( b == nil, "No second value should have been returned" )
@@ -178,8 +171,7 @@ return {
 
 	socketListenAddressBacklog = function( self )
 		Test.describe( "sck:listen( adr, backlog ) --> void" )
-		local port = config.nonPrivPort
-		self.adr   = Address( self.host, port )
+		self.adr   = Address( self.host, self.port )
 		self.sck   = Socket( )
 		local a, b = self.sck:listen( self.adr, 5 )
 		assert( b == nil, "No second value should have been returned" )
@@ -201,33 +193,30 @@ return {
 
 	socketListenHostPort = function( self )
 		Test.describe( "sck:listen( host, port ) --> Adr host:port" )
-		local port      = config.nonPrivPort
 		self.sck        = Socket( )
 		assert( chkSck( self.sck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' ) )
-		local a,b       = self.sck:listen( self.host, port )
+		local a,b       = self.sck:listen( self.host, self.port )
 		assert( b == nil, "No values should have been returned" )
-		assert( chkAdr( a, "AF_INET", self.host, port ) )
+		assert( chkAdr( a, "AF_INET", self.host, self.port ) )
 		assert( self.sck:getsockname() == a,
 			("Bound address should equal input `%s` but was `%s`"):format( a, self.sck:getsockname() ) )
 	end,
 
 	socketListenPortBacklog = function( self )
 		Test.describe( "sck:listen( port, bl ) --> Adr 0.0.0.0:port" )
-		local port      = config.nonPrivPort
 		self.sck        = Socket( )
-		self.adr        = self.sck:listen( port, 50 )
-		assert( chkAdr( self.adr, "AF_INET", '0.0.0.0', port ) )
+		self.adr        = self.sck:listen( self.port, 50 )
+		assert( chkAdr( self.adr, "AF_INET", '0.0.0.0', self.port ) )
 		assert( self.sck:getsockname() == self.adr, "Bound and returned address should match" )
 	end,
 
 	socketListenHostPortBacklog = function( self )
 		Test.describe( "sck:listen( host, port, backlog ) --> Adr host:port" )
-		local port      = config.nonPrivPort
 		self.sck        = Socket( )
 		assert( chkSck( self.sck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' ) )
-		local a,b       = self.sck:listen( self.host, port, 5 )
+		local a,b       = self.sck:listen( self.host, self.port, 5 )
 		assert( b == nil, "No second value should have been returned" )
-		assert( chkAdr( a, "AF_INET", self.host, port ) )
+		assert( chkAdr( a, "AF_INET", self.host, self.port ) )
 		assert( self.sck:getsockname() == a,
 			("Bound address should equal input `%s` but was `%s`"):format( a, self.sck:getsockname() ) )
 	end,

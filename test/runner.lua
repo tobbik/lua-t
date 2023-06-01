@@ -23,9 +23,9 @@ local suites = {
 	"t_tst"                 ,
 	"t_csv"                 , "t_csv_extern",
 	"t_csv_split"           , "t_csv_parse",
-	--"t_pck_range"           , "t_pck_cmb",
-	--"t_pck_bytes"           , "t_pck_bits",
-	--"t_pck_fmt"             , "t_pck_mix",
+--"t_pck_range"           , "t_pck_cmb",
+--"t_pck_bytes"           , "t_pck_bits",
+--"t_pck_fmt"             , "t_pck_mix",
 	"t_htp_rsp"             , "t_htp_req",
 }
 

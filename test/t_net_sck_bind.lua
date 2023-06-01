@@ -31,6 +31,7 @@ return {
 		h:close()
 		self.isPriv = not not s:match( 'uid=0' ) -- isPriviledged? root?
 		self.host   = Interface.default( ).address.ip
+		self.port   = 1502
 	end,
 
 	afterEach = function( self )
@@ -38,14 +39,14 @@ return {
 			self.sck:close( )
 			self.sck = nil
 		end
-		self.address = nil
+		self.adr = nil
 	end,
 
 	SocketBindCreateSockAndIanyAddress = function( self )
 		Test.describe( "Socket.bind() --> creates a TCP IPv4 Socket and 0.0.0.0:0 address" )
-		self.sck, self.address = Socket.bind()
-		assert( chkSck( self.sck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' ) )
-		assert( chkAdr( self.address, "AF_INET", '0.0.0.0', 0 ) )
+		self.sck, self.adr = Socket.bind()
+		assert( chkSck( self.sck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM', self.adr ) )
+		assert( chkAdr( self.adr, "AF_INET", '0.0.0.0', 0, self.adr ) )
 	end,
 
 	SocketBindPrivPortThrowsPermission = function( self )
@@ -63,35 +64,33 @@ return {
 
 	SocketBindPortCreateSockAndInanyAddress = function( self )
 		Test.describe( "Socket.bind( port ) --> creates TCP IPv4 Socket and 0.0.0.0:port address" )
-		local port  = config.nonPrivPort
-		self.sck, self.address = Socket.bind( port )
-		assert( chkSck(  self.sck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' ) )
-		assert( chkAdr( self.address, "AF_INET", '0.0.0.0', port ) )
+		self.sck, self.adr = Socket.bind( self.port )
+		assert( chkSck(  self.sck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM', self.adr ) )
+		assert( chkAdr( self.adr, "AF_INET", '0.0.0.0', self.port, self.adr ) )
 	end,
 
 	SocketBindHostPortCreateSockAndAddress = function( self )
 		Test.describe( "Socket.bind(host,port) --> creates TCP IPv4 Socket and address" )
-		local port   = config.nonPrivPort
-		self.sck, self.address = Socket.bind( self.host, port )
+		self.sck, self.adr = Socket.bind( self.host, self.port )
+		assert( chkAdr( self.adr, "AF_INET", self.host, self.port, self.adr ) )
 		assert( chkSck(  self.sck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' ) )
-		assert( chkAdr( self.address, "AF_INET", self.host, config.nonPrivPort ) )
 	end,
 
 	SocketBindAddressCreateSockOnly = function( self )
 		Test.describe( "Socket.bind(address) --> creates TCP IPv4 Socket but no address" )
-		local port   = config.nonPrivPort
-		local addr   = Address( self.host, port )
+		local addr   = Address( self.host, self.port )
 		self.sck, self.adr = Socket.bind( addr )
-		assert( chkSck(  self.sck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' ) )
+		assert( chkSck(  self.sck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM', self.adr ) )
+		assert( chkAdr( self.adr, "AF_INET", self.host, self.port, self.adr ) )
 		assert( addr == self.adr, ("The returned address`%s` should equal input `%s`"):format( self.adr, addr ) )
 	end,
 
 	SocketBindReturnBoundSocket = function( self )
 		Test.describe( "Socket.bind(address) --> returning socket is bound; getsockname()" )
-		local port   = config.nonPrivPort
-		local addr   = Address( self.host, port )
-		self.sck, self.address = Socket.bind( addr )
-		assert( chkSck(  self.sck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' ) )
+		local addr   = Address( self.host, self.port )
+		self.sck, self.adr = Socket.bind( addr )
+		assert( chkSck(  self.sck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM', self.adr ) )
+		assert( chkAdr( self.adr, "AF_INET", self.host, self.port, self.adr ) )
 		assert( addr  == self.sck:getsockname(), "The addresses should be equal" )
 	end,
 
@@ -103,38 +102,31 @@ return {
 		Test.describe( "s:bind() --> creates a 0.0.0.0:0 address" )
 		self.sck     = Socket()
 		local adr,b = self.sck:bind()
-		assert( nil  == b, "The socket should not be returned" )
-		assert( chkAdr( adr, "AF_INET", '0.0.0.0', 0 ) )
+		assert( chkAdr( adr, "AF_INET", '0.0.0.0', 0, b ) )
 	end,
 
 	socketBindPortCreateInAnyAddress = function( self )
 		Test.describe( "s:bind( port ) --> creates 0.0.0.0:port address" )
-		local port   = config.nonPrivPort
 		self.sck     = Socket()
-		local adr, b = self.sck:bind( port)
-		assert( nil  == b, "The socket should not be returned" )
-		assert( chkAdr( adr, "AF_INET", '0.0.0.0', config.nonPrivPort ) )
+		local adr, b = self.sck:bind( self.port )
+		assert( chkAdr( adr, "AF_INET", '0.0.0.0', self.port, b ) )
 	end,
 
 	socketBindHostPortCreateAddress = function( self )
 		Test.describe( "s:bind(host,port) --> creates address" )
-		local port   = config.nonPrivPort
 		self.sck     = Socket()
-		local adr, b = self.sck:bind( self.host, port )
-		assert( nil  == b, "The socket should not be returned" )
-		assert( chkAdr( adr, "AF_INET", self.host, config.nonPrivPort ) )
+		local adr, b = self.sck:bind( self.host, self.port )
+		assert( chkAdr( adr, "AF_INET", self.host, self.port, b ) )
 	end,
 
 	socketBindAddressCreateNothingButBinds = function( self )
 		Test.describe( "s:bind(address) --> creates nothing but does bind" )
-		local port   = config.nonPrivPort
-		local addr   = Address( self.host, port )
+		local addr   = Address( self.host, self.port )
 		self.sck     = Socket()
 		local adr,b  = self.sck:bind( addr )
-		assert( nil  == b,   "Only address should be returned" )
+		assert( chkAdr( addr, "AF_INET", self.host, self.port, b ) )
 		assert( addr  == self.sck:getsockname(), "The addresses should be equal" )
 		assert( addr  == adr, "The addresses should be equal input" )
-		assert( chkAdr( addr, "AF_INET", self.host, port ) )
 	end,
 
 	socketBindWrongArgFails = function( self )
@@ -159,5 +151,16 @@ return {
 		assert( b:match( eMsg:gsub( "%(", "%%(" ):gsub( "%)", "%%)" ) ),
 		   ("Error Message should have been `%s', but was `%s`"):format( eMsg, b ) )
 	end,
-	--]]
+
+	socketBindAlreadyBoundFails = function( self )
+		Test.describe( "sck.bind( adr ) --> already bound to adr fails " )
+		self.sck    = Socket()
+		local addr  = Address( self.host, self.port )
+		local eMsg  = ("Can't bind socket to %s:%s %%(Invalid argument%%)"):format(addr.ip, addr.port)
+		local x,e   = self.sck:bind( addr )  -- success
+		local x,e   = self.sck:bind( addr )  -- fail, already bound
+		assert( not x, "bind() should have failed" )
+		assert( e:match( eMsg), ("Expected error message:\n%s\n%s"):format( eMsg:gsub('%%',''), e ) )
+	end,
+
 }

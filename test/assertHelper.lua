@@ -17,8 +17,11 @@ return {
 	-- called in the test-case itself has the advantage that it throws the
 	-- exception right here which in turn allows the traceback to report the
 	-- proper location of the error better.
-	Sck = function( sck, pro, fam, typ )
+	Sck = function( sck, pro, fam, typ, err )
 		local x,m
+		if nil==sck and err then
+			return false, err
+		end
 		x,m = astFmt( 'T.Net.Socket' == t_type( sck ), "Should be `t.Net.Socket` but was `%s`", t_type( sck ) )
 		if not x then return x,m end
 		x,m = astFmt( pro == sck.protocol, "Protocol should be `%s`but is `%s`", pro, sck.protocol )
@@ -29,8 +32,15 @@ return {
 		if not x then return x,m else return x end
 	end,
 
-	Adr = function( adr, family, ip, port )
+	Adr = function( adr, family, ip, port, err )
 		local x,m
+		if t_type(family) == 'T.Net.Address' then
+			x,m = astFmt( adr == family, ip )
+			return x,m
+		end
+		if nil==adr and err then
+			return false, err
+		end
 		x,m = astFmt( 'T.Net.Address' == t_type( adr ), "Should be `t.Net.Address` but was `%s`", t_type( adr ) )
 		if not x then return x,m end
 		x,m = astFmt( ip     == adr.ip,    "IP should be `%s` but is `%s`",   ip,     adr.ip )
@@ -48,7 +58,6 @@ return {
 			return x
 		end
 	end,
-
 
 	Packer = function( pck, typ, sizByte, sizBit )
 		local expect   = 't.Pack.' .. typ

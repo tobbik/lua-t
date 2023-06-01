@@ -33,11 +33,12 @@ local chkAdr    = t_require( "assertHelper" ).Adr
 local config    = t_require( "t_cfg" )
 
 local pp = require't.Table'.pprint
+local snd_buffer_max = 1048576 -- according to manpage
 
 -- #########################################################################
 -- accept server for each test and set up recv()
 local makeReceiver = function( self, size, payload )
-	local inCount, incBuffer, rCnt = 0, Buffer( size ),0
+	local inCount, incBuffer, rCnt = 0, Buffer( size ), 0
 	local recv = function( )
 		local seg     = inCount < #incBuffer and incBuffer:Segment( inCount+1 ) or incBuffer:Segment( #incBuffer, 0 )
 		local suc,cnt = self.rcvSck:recv( seg )
@@ -60,18 +61,27 @@ local makeReceiver = function( self, size, payload )
 		self.rcvSck, self.rcvAdr = self.srvSck:accept( )
 		assert( chkSck( self.rcvSck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' ) )
 		assert( chkAdr( self.rcvAdr, "AF_INET", self.host, 'any' ) )
+		--print("RCV_SCK:", self.sndSck.sendbuffer, self.sndSck.nonblock, snd_buffer_max, "---", self.rcvSck.recvbuffer, self.rcvSck.nonblock )
 		self.loop:addHandle( self.rcvSck, "read", recv )
 		self.loop:removeHandle( self.srvSck, "read" )
 	end
 	self.loop:addHandle( self.srvSck, "read", acpt )
 end
 
-local makeSender = function( self, sender, nonblock )
+local prepareSender = function( self, msg, nonblock )
 	self.sndSck, self.sndAdr = Socket.connect( self.srvAdr )
 	assert( chkSck( self.sndSck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' ) )
 	assert( chkAdr( self.sndAdr, "AF_INET", self.host, self.port ) )
-	self.loop:addHandle( self.sndSck, 'write', sender, self )
 	if nonblock then self.sndSck.nonblock = true end
+	if self.sndSck.sendbuffer < snd_buffer_max then
+		self.sndSck.sendbuffer = snd_buffer_max
+	end
+	--print("SND_BUF:", self.sndSck, self.sndSck.sendbuffer, self.sndSck.nonblock, snd_buffer_max)
+	return msg:rep( (nonblock and self.sndSck.sendbuffer*10 or self.sndSck.sendbuffer) // #msg - 1000 )
+end
+
+local makeSender = function( self, sender, nonblock )
+	self.loop:addHandle( self.sndSck, 'write', sender, self )
 	self.loop:run( )
 end
 
@@ -85,9 +95,6 @@ return {
 		self.srvSck, self.srvAdr = Socket.listen( self.host, self.port )
 		assert( chkSck( self.srvSck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' ) )
 		assert( chkAdr( self.srvAdr, "AF_INET", self.host, self.port ) )
-		--io.write("Sleeping ... ")
-		--self.loop:sleep( 2000 )
-		--print("Done ")
 	end,
 
 	afterAll = function( self )
@@ -100,7 +107,7 @@ return {
 	-- Actual Test cases
 	sendFullString = function( self )
 		Test.describe( "cnt = sck.send( msg ) -- send all in one go" )
-		local payload = string.rep( 'THis Is a LittLe Test-MEsSage To bE sEnt ACcroSS the WIrE ...!_', 41000 )
+		local payload = prepareSender( self, 'THis Is a LittLe Test-MEsSage To bE sEnt ACcroSS the WIrE ...!_' )
 		local sender  = function( s )
 			assert( s.sndSck.sendbuffer >= #payload,
 			        ("Sendbuffer[%d] is smaller than #msg[%d]. Consider adjusting size."):format( s.sndSck.sendbuffer, #payload ) )
@@ -115,9 +122,8 @@ return {
 
 	sendStringSmallChunks = function( self )
 		Test.describe( "cnt = sck.send( msg, sz ) -- small sized chunks" )
-		local sendCount, outCount, payload = 0, 0,
-			string.rep( 'THis Is a LittLe Test-MEsSage To bE sEnt ACcroSS the WIrE ...!_', 40000 )
-		local chunk_sz = 128
+		local sendCount, outCount, chunk_sz = 0, 0, 128
+		local payload = prepareSender( self, 'THis Is a LittLe Test-MEsSage To bE sEnt ACcroSS the WIrE ...!_' )
 		local sender = function( s )
 			-- the substring only has to be longer than chunksize
 			local cnt = s.sndSck:send( payload:sub( outCount+1, outCount+chunk_sz ), chunk_sz )
@@ -144,7 +150,7 @@ return {
 
 	sendFullBuffer = function( self )
 		Test.describe( "cnt = sck.send( buf ) -- send all in one go" )
-		local payload  = string.rep( 'THis Is a LittLe Test-MEsSage To bE sEnt ACcroSS the WIrE ...!_', 41000 )
+		local payload  = prepareSender( self, 'THis Is a LittLe Test-MEsSage To bE sEnt ACcroSS the WIrE ...!_' )
 		local buf      = Buffer( payload )
 		local sender = function( s )
 			assert( s.sndSck.sendbuffer >= #payload,
@@ -160,10 +166,9 @@ return {
 
 	sendBufferSmallChunks = function( self )
 		Test.describe( "cnt = sck.send( buf_seg ) -- small sized chunks" )
-		local sendCount, outCount, payload = 0, 0,
-			string.rep( 'THis Is a LittLe Test-MEsSage To bE sEnt ACcroSS the WIrE ...!_', 50000 )
+		local sendCount, outCount, chunk_sz = 0, 0, 128
+		local payload = prepareSender( self, 'THis Is a LittLe Test-MEsSage To bE sEnt ACcroSS the WIrE ...!_' )
 		local buf      = Buffer( payload )
-		local chunk_sz = 128
 		local seg      = buf:Segment( 1, chunk_sz )
 		local sender   = function( s )
 			local cnt = s.sndSck:send( seg )
@@ -191,8 +196,8 @@ return {
 
 	sendStringNonBlocking = function( self )
 		Test.describe( "cnt = sck.send( msg ) on nonblocking socket" )
-		local sendCount, outCount, payload = 0, 0,
-			string.rep( 'THis Is a LittLe Test-MEsSage To bE sEnt ACcroSS the WIrE ...!_', 600000 )
+		local sendCount, outCount = 0, 0
+		local payload = prepareSender( self, 'THis Is a LittLe Test-MEsSage To bE sEnt ACcroSS the WIrE ...!_', true )
 		local sender = function( s )
 			local cnt = s.sndSck:send( payload:sub( outCount+1 ) )
 			if cnt > 0 then
@@ -212,7 +217,7 @@ return {
 	sendBufferNonBlocking = function( self )
 		Test.describe( "cnt = sck.send( buf_seg ) -- on nonblocking socket" )
 		local sendCount, outCount, payload = 0, 0,
-			string.rep( 'THis Is a LittLe Test-MEsSage To bE sEnt ACcroSS the WIrE ...!_', 600000 )
+			prepareSender( self, 'THis Is a LittLe Test-MEsSage To bE sEnt ACcroSS the WIrE ...!_', true )
 		local buf    = Buffer( payload )
 		local seg    = buf:Segment( )   -- cover entire Buffer
 		local sender = function( s )
@@ -234,6 +239,6 @@ return {
 			end
 		end
 		makeReceiver( self, #payload, payload )
-		makeSender( self, sender, true )
+		makeSender( self, sender )
 	end,
 }

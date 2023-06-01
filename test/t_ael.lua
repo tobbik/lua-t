@@ -42,20 +42,21 @@ return {
 
 	TimerAccuracy = function( self )
 		Test.describe( "Test Average Timer Accuracy" )
-		Test.todo( "This needs some more dev testing befor we can set expectations" )
+		Test.todo( "This needs some more dev testing before we can set expectations" )
 		-- 5950X linux 2-4ms sd: <1
 		-- FreeBSD KVM 4-6ms sd: >3
 		-- RasiPy      30-100ms  sd: 40-60
-		local runs,delta,sd,vari,start = 200, 0, 0, {}, Loop.time()
-		local success = function( s, d )
+		local runs,delta,sd,vari,start = 200, 0, 0, {}, 0
+		local success = function( d )
 			local ms_passed = Loop:time() - start
 			delta = delta + (ms_passed-d)
 			table.insert( vari, ms_passed-d )
 		end
 		for n=1,runs do
 			local delay = math.random(n*8, n*20)
-			self.loop:addTask( delay, success, start, delay )
+			self.loop:addTask( delay, success, delay )
 		end
+		start = Loop.time()
 		self.loop:run( )
 		local mean = delta/runs
 		for i,d in ipairs(vari) do sd = sd + ((d-mean) ^ 2) end

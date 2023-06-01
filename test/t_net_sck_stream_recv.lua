@@ -27,6 +27,8 @@ local chkSck    = t_require( "assertHelper" ).Sck
 local chkAdr    = t_require( "assertHelper" ).Adr
 local config    = t_require( "t_cfg" )
 
+local snd_buffer_max = 1048576 -- according to manpage
+
 
 -- #########################################################################
 -- accept server for each test and set up recv()
@@ -39,31 +41,44 @@ local makeReceiver = function( self, receiver )
 	self.loop:addHandle( self.srvSck, "read", acpt, self )
 end
 
--- for this test we use blocking sending only.  The test is for recv(); no need
--- to complicate it
-local makeSender = function( self, msg )
-	self.sndSck, self.sndAdr = Socket.connect( self.srvAdr )
-	assert( self.sndSck.sendbuffer >= #msg,
-		("Sendbuffer[%d] is smaller than #msg[%d]. Consider increasing payload size."):format( self.sndSck.sendbuffer, #msg ) )
-	local f = function( n, m )
-		local snt = n.sndSck:send( m )
-		assert( snt == #m, ("Should have sent all(%d bytes) but sent %d bytes"):format( #m, snt ) )
-		n.loop:removeHandle( n.sndSck, "write" )
-		n.sndSck:shutdown( "wr" )
+local prepareSender = function( self, msg )
+	self.sndSck      = Socket( )
+	self.sndSck.reuseaddr, self.sndSck.reuseport = true,true
+	local bndAdr,_   = self.sndSck:bind( self.host, self.portAlt )
+	--print("BOUND", bndAdr, _ )
+	self.sndSck:connect( self.srvAdr )
+	if self.sndSck.sendbuffer < snd_buffer_max then
+		self.sndSck.sendbuffer = snd_buffer_max
 	end
-	self.loop:addHandle( self.sndSck, 'write', f, self, msg )
-	self.loop:run()
+	return msg:rep( self.sndSck.sendbuffer // #msg - 1000 )
 end
 
+-- for this test we use blocking sending only.  The test is for recv(); no need
+-- to complicate it
+local makeSender = function( self, payload )
+	assert( self.sndSck.sendbuffer >= #payload,
+		("Sendbuffer[%d] is smaller than #payload[%d]. Decrease payload size."):format( self.sndSck.sendbuffer, #payload ) )
+	local f = function( n, p )
+		local snt = n.sndSck:send( p )
+		assert( snt == #p, ("Should have sent all(%d bytes) but sent %d bytes"):format( #p, snt ) )
+		n.loop:removeHandle( n.sndSck, "write" )
+		--n.sndSck:shutdown( "wr" )
+		n.sndSck:close( )
+	end
+	self.loop:addHandle( self.sndSck, 'write', f, self, payload )
+	self.loop:run( )
+end
 
 return {
 	-- #########################################################################
 	-- wrappers for tests
 	beforeAll = function( self )
-		self.loop                = Loop( )
-		self.host                = Interface.default( ).address.ip
-		self.port                = config.nonPrivPort
-		self.srvSck, self.srvAdr = Socket.listen( self.host, self.port )
+		self.loop                  = Loop( )
+		self.host                  = Interface.default( ).address.ip
+		self.port, self.portAlt    = 1500, 1501
+		self.srvSck                = Socket()
+		self.srvSck.reuseaddr, self.srvSck.reuseport = true,true
+		self.srvAdr  = self.srvSck:listen( self.host, self.port )
 		assert( chkSck( self.srvSck, 'IPPROTO_TCP', 'AF_INET', 'SOCK_STREAM' ) )
 		assert( chkAdr( self.srvAdr, "AF_INET", self.host, self.port ) )
 	end,
@@ -72,16 +87,16 @@ return {
 		self.srvSck:close( )
 	end,
 
-	afterEach = function( self )
-		self.sndSck:close( )
-		self.rcvSck:close( )
-	end,
+	--afterEach = function( self )
+	--	self.rcvSck:close( )
+	--	self.sndSck:close( )
+	--end,
 
 	-- #########################################################################
 	-- Actual Test cases
 	recvString = function( self )
 		Test.describe( "msg,len = sck.recv( )" )
-		local payload  = string.rep( "TestMessage content for recieving full string -- ", 50000 )
+		local payload  = prepareSender( self, "TestMessage content for recieving full string -- " )
 		local cnt      = 0
 		local receiver = function( s )
 			local msg,len = s.rcvSck:recv( )
@@ -93,7 +108,8 @@ return {
 				cnt = cnt+len
 			else
 				assert( cnt==#payload, ("Expected %d but got %d bytes"):format( #payload, cnt) )
-				self.loop:clean()
+				s.loop:clean()
+				s.rcvSck:close( )
 			end
 		end
 		makeReceiver( self, receiver )
@@ -102,7 +118,7 @@ return {
 
 	recvSizedString = function( self )
 		Test.describe( "msg,len = sck.recv( size )" )
-		local payload  = string.rep( "TestMessage content for recieving chopped up chunky stringes -- ", 35000 )
+		local payload  = prepareSender( self, "TestMessage content for recieving chopped up chunky stringes -- " )
 		-- #payload must be devisible by sz - else test fails on last chunk!
 		local rcvd,sz,cnt  = 0,128,0
 		local receiver = function( s )
@@ -117,7 +133,8 @@ return {
 				cnt  = cnt +1
 			else
 				assert( rcvd==#payload, ("Expected %d but got %d bytes"):format( #payload, rcvd) )
-				self.loop:clean()
+				s.loop:clean()
+				s.rcvSck:close( )
 			end
 		end
 		makeReceiver( self, receiver )
@@ -126,7 +143,7 @@ return {
 
 	recvBuffer = function( self )
 		Test.describe( "msg,len = sck.recv( buf_seg )" )
-		local payload  = string.rep( "TestMessage content for recieving bigger buffer -- ", 50000 )
+		local payload  = prepareSender( self, "TestMessage content for recieving bigger buffer -- " )
 		local buffer   = Buffer( #payload ) -- empty buffer size of payload
 		local seg      = buffer:Segment()   -- cover entire Buffer
 		local cnt      = 0
@@ -142,7 +159,8 @@ return {
 			else
 				assert( cnt==#payload, ("Expected %d but got %d bytes"):format( #payload, cnt) )
 				assert( buffer:read()==payload, "Payload should equal received value" )
-				self.loop:clean()
+				s.loop:clean()
+				s.rcvSck:close( )
 			end
 		end
 		makeReceiver( self, receiver )
@@ -151,7 +169,7 @@ return {
 
 	recvSizedBuffer = function( self )
 		Test.describe( "msg,len = sck.recv( buf_seg )  [Small 128 bytes segment]" )
-		local payload  = string.rep( "TestMessage content for recieving into a small sized buffer --- ", 35000 )
+		local payload  = prepareSender( self, "TestMessage content for recieving into a small sized buffer --- " )
 		local buffer   = Buffer( #payload )
 		local seg, cnt = buffer:Segment( 1, 128 ), 0
 		local receiver = function( s )
@@ -169,7 +187,8 @@ return {
 			else
 				assert( cnt==#payload, ("Expected %d but got %d bytes"):format( #payload, cnt) )
 				assert( buffer:read()==payload, "Payload should equal received value" )
-				self.loop:clean()
+				s.loop:clean()
+				s.rcvSck:close()
 			end
 		end
 		makeReceiver( self, receiver )
@@ -178,7 +197,7 @@ return {
 
 	recvSizedBufferMax = function( self )
 		Test.describe( "msg,len = sck.recv( buffer, size )" )
-		local payload  = string.rep( "TestMessage content for recieving chopped up chunky stringes -- ", 40000 )
+		local payload  = prepareSender( self, "TestMessage content for recieving chopped up chunky stringes -- " )
 		-- #payload must be devisible by sz - else test fails on last chunk!
 		local rcvd,sz,cnt  = 0,128,0
 		local receiver = function( s )
@@ -193,7 +212,8 @@ return {
 				cnt  = cnt +1
 			else
 				assert( rcvd==#payload, ("Expected %d but got %d bytes"):format( #payload, rcvd) )
-				self.loop:clean()
+				s.loop:clean()
+				s.rcvSck:close()
 			end
 		end
 		makeReceiver( self, receiver )
