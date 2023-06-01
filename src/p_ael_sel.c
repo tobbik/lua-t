@@ -14,23 +14,16 @@
  */
 
 #include "t_ael_l.h"
+#include <sys/time.h>         // struct timeval
 
 #ifdef DEBUG
 #include "t_dbg.h"
 #endif
+
 #include <string.h>           // memcpy
 #include <errno.h>            // errno,EINTR
-#include <sys/time.h>         // struct timeval
 
-#if PRINT_DEBUGS == 1
-static const char* t_ael_msk_lst[ ] = {
-	  "NONE"
-	, "READ"
-	, "WRITE"
-	, "READWRITE"
-};
-#endif
-
+extern const char* t_ael_msk_lst[ ];
 
 // implementation specific is that this is limited in size to FD_SETSIZE which
 // ususally is in the neighboorhood of 1024.  That keeps the size very
@@ -221,8 +214,8 @@ p_ael_poll_impl( lua_State *L, struct timeval *timeout, int aelpos )
 		}
 		lua_pop( L, 1 );
 	}
-	else if (-1 == retval && EINTR == errno)
-		return t_push_error( L, 0, 1, "select() failed" );
+	else if (retval == -1 && EINTR != errno)
+		t_push_error(L, 1, 1, "p_ael_poll_impl: select() failed, " );
 
 	return numevents;
 }

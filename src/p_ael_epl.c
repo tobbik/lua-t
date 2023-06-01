@@ -12,6 +12,7 @@
  * \copyright See Copyright notice at the end of t.h
  */
 
+
 #include "t_ael_l.h"
 #include <sys/time.h>         // struct timeval
 
@@ -20,14 +21,11 @@
 #endif
 
 #include <unistd.h>           // close
-#include <sys/epoll.h>
+#include <errno.h>            // errno,EINTR
 
-static const char* t_ael_msk_lst[ ] = {
-	  "NONE"
-	, "READ"
-	, "WRITE"
-	, "READWRITE"
-};
+#include <sys/epoll.h>        // epoll specifics
+
+extern const char* t_ael_msk_lst[ ];
 
 struct p_ael_ste {
 	int                 epfd;
@@ -102,7 +100,7 @@ p_ael_addhandle_impl( lua_State *L, int aelpos, struct t_ael_dnd *dnd, int fd, e
 			t_ael_msk_lst[ addmsk ],
 			t_ael_msk_lst[ addmsk | dnd->msk ] );
 #endif
-	addmsk |= dnd->msk;   // Merge old events
+	addmsk |= dnd->msk;   // Merge existing events
 	// If the fd was already monitored for some event, we need a MOD
 	// operation. Otherwise we need an ADD operation.
 	int                op    = (T_AEL_NO == dnd->msk)
@@ -215,6 +213,9 @@ p_ael_poll_impl( lua_State *L, struct timeval *timeout, int aelpos )
 		}
 		lua_pop( L, 1 );
 	}
+	else if (retval == -1 && EINTR != errno)
+		t_push_error(L, 1, 1, "p_ael_poll_impl: epoll_wait() failed, " );
+
 	//printf("EPOLLED TIMEOUT: %lld -- ", timeout); t_stackDump(L);
 	return numevents;
 }

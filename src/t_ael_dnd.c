@@ -22,9 +22,9 @@
 #endif
 
 /**--------------------------------------------------------------------------
- * Create a new t_ael_evt userdata and push to LuaStack.
+ * Create a new t_ael_dnd userdata and push to LuaStack.
  * \param   L    Lua state.
- * \return  evt  struct t_ael_evt * pointer to new userdata on Lua Stack.
+ * \return  dnd  struct t_ael_dnd * pointer to new userdata on Lua Stack.
  * --------------------------------------------------------------------------*/
 struct t_ael_dnd
 *t_ael_dnd_create_ud( lua_State *L )

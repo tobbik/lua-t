@@ -22,13 +22,15 @@
 
 #include <unistd.h>           // close
 #include <errno.h>            // EINTR,errno
-#include <sys/event.h>        //kqueue'n friends
 
+#include <sys/event.h>        // kqueue'n friends
 
 
 #define EVENT_MASK_MALLOC_SIZE(sz)   (((sz) + 3) / 4)
 #define EVENT_MASK_OFFSET(fd)        ((fd) % 4 * 2)
 #define EVENT_MASK_ENCODE(fd, mask)  (((mask) & 0x3) << EVENT_MASK_OFFSET(fd))
+
+extern const char* t_ael_msk_lst[ ];
 
 static inline int getEventMask( const char *eventsMask, int fd )
 {
@@ -45,12 +47,6 @@ static inline void resetEventMask( char *eventsMask, int fd )
 	eventsMask[ fd/4 ] &= ~EVENT_MASK_ENCODE( fd, 0x3 );
 }
 
-static const char* t_ael_msk_lst[ ] = {
-	  "NONE"
-	, "READ"
-	, "WRITE"
-	, "READWRITE"
-};
 
 struct p_ael_ste {
 	int            kqfd;
@@ -61,6 +57,7 @@ struct p_ael_ste {
 	 * of an event, so that 1 byte will store the mask of 4 events. */
 	char           eventsMask[ (((T_AEL_SLOTSIZE) + 3) / 4) ];
 };
+
 
 /**--------------------------------------------------------------------------
  * get the state struct from the loop userdata.
@@ -137,7 +134,7 @@ p_ael_addhandle_impl( lua_State *L, int aelpos, struct t_ael_dnd *dnd, int fd, e
 	if (addmsk & T_AEL_WR)
 	{
 		EV_SET( &ke, fd, EVFILT_WRITE, EV_ADD, 0, 0, NULL );
-		if (kevent( state->kqfd, &ke, 1, NULL, 0, NULL ) == -1) return -1;
+		if (kevent( state->kqfd, &ke, 1, NULL, 0, NULL ) == -1)
 			return t_push_error( L, 1, 1, "Error observing writebility descriptor [%d:%s]",
 			   fd, t_ael_msk_lst[ addmsk ] );
 	}
@@ -171,7 +168,7 @@ p_ael_removehandle_impl( lua_State *L, int aelpos, struct t_ael_dnd *dnd, int fd
 	if (delmsk & T_AEL_WR)
 	{
 		EV_SET( &ke, fd, EVFILT_WRITE, EV_DELETE, 0, 0, NULL );
-		if (kevent( state->kqfd, &ke, 1, NULL, 0, NULL ) == -1) return -1;
+		if (kevent( state->kqfd, &ke, 1, NULL, 0, NULL ) == -1)
 			return t_push_error( L, 1, 1, "Error removing observing writebility descriptor [%d:%s]",
 			   fd, t_ael_msk_lst[ delmsk ] );
 	}
@@ -256,8 +253,8 @@ p_ael_poll_impl( lua_State *L, struct timeval *timeout, int aelpos )
 			}
 		}
 	}
-	else if (retval == -1 && errno != EINTR)
-		t_push_error(L, 1, 1, "aeApiPoll: kevent, " );
+	else if (retval == -1 && EINTR != errno)
+		t_push_error(L, 1, 1, "p_ael_poll_impl: kevent() failed, " );
 
 	return numevents;
 }

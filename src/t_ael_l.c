@@ -23,8 +23,15 @@
 #include "t_net.h"
 #include "t_ael_l.h"
 
+
 #ifdef DEBUG
 #include "t_dbg.h"
+const char* t_ael_msk_lst[ ] = {
+	  "NONE"
+	, "READ"
+	, "WRITE"
+	, "READWRITE"
+};
 #endif
 
 #if defined(LUAT_USE_WINDOWS)
@@ -591,7 +598,7 @@ lt_ael_clean( lua_State *L )
 	while (lua_next( L, -2 ))
 	{
 		dnd = t_ael_dnd_check_ud( L, -1, 1 );             //S: ael nds fd dnd
-		p_ael_removehandle_impl( L, 1, dnd, luaL_checkinteger( L, -2 ), T_AEL_RW );
+		p_ael_removehandle_impl( L, 1, dnd, luaL_checkinteger( L, -2 ), dnd->msk & T_AEL_RW );
 		lua_pushnil( L );                                 //S: ael nds fd dnd nil
 		lua_rawseti( L, -4, luaL_checkinteger( L, -3 ) ); //S: ael nds fd dnd
 		(ael->fdCount)--;
