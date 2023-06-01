@@ -17,6 +17,19 @@
 #include "t_dbg.h"
 #endif
 
+const char* t_csv_ste_nme[ ] = {
+	  "FieldBegin"
+	, "DataQuoted"
+	, "DataNaked"
+	, "EmptyData"
+	, "Quotes1st"
+	, "Quotes2nd"
+	, "QuotesOne"
+	, "QuotesTwo"
+	, "RecordDone"
+	, NULL
+};
+
 
 /**--------------------------------------------------------------------------
  * Push the current partse value as a field into the rusult table

@@ -10,30 +10,18 @@
 #include "t.h"             // t_typeerror()
 
 enum t_csv_ste {
-	  T_CSV_FLDBEG     = 0     ///< begin new field
-	, T_CSV_DATQTE     = 1     ///< data inside quotes
-	, T_CSV_DATNKD     = 2     ///< data without quotes
-	, T_CSV_EMPTY      = 3     ///< end actual value
-	, T_CSV_QTE1ST     = 4     ///< first at field begin
-	, T_CSV_QTE2ND     = 5     ///< end of field
-	, T_CSV_QTEONE     = 6     ///< end actual value
-	, T_CSV_QTETWO     = 7     ///< first quote inseq
-	, T_CSV_RECDNE     = 8     ///< Redord Finished
+	T_CSV_FLDBEG     = 0,   ///< begin new field
+	T_CSV_DATQTE     = 1,   ///< data inside quotes
+	T_CSV_DATNKD     = 2,   ///< data without quotes
+	T_CSV_EMPTY      = 3,   ///< end actual value
+	T_CSV_QTE1ST     = 4,   ///< first at field begin
+	T_CSV_QTE2ND     = 5,   ///< end of field
+	T_CSV_QTEONE     = 6,   ///< end actual value
+	T_CSV_QTETWO     = 7,   ///< first quote inseq
+	T_CSV_RECDNE     = 8,   ///< Redord Finished
 };
 
-const char* t_csv_ste_nme[ ] = {
-	  "FieldBegin"
-	, "DataQuoted"
-	, "DataNaked"
-	, "EmptyData"
-	, "Quotes1st"
-	, "Quotes2nd"
-	, "QuotesOne"
-	, "QuotesTwo"
-	, "RecordDone"
-	, NULL
-};
-
+extern const char* t_csv_ste_nme[ ];   // defined in t_csv_l.c
 
 // The csv row parser state
 struct t_csv_row
