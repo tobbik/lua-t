@@ -1,3 +1,4 @@
+-- vim: ts=3 sw=3 sts=3 tw=80 sta noet list
 ---
 -- \file    t_ael.lua
 -- \brief   Test for the asynchronous Loop
@@ -23,21 +24,43 @@ return {
 	-- Timer Tests
 	-- -----------------------------------------------------------------------
 	Timer = function( self )
-		local delay,start = math.random(80,600), Loop.time()
 		-- seems kqueue or select on FreeBSD has some margin here, epoll is
 		-- generally okay with 2-3ms sometimes less. FreeBSD ran in a VM
 		-- though
-		local delta       = 50
-		Test.describe( "Test simple Timer(%dms)", delay )
-		local success    = function( s, d )
-			local ms_passed = Loop:time() - start
+		local delay,start, delta_max = math.random(800,1900), Loop.time(), 50
+		Test.describe( "Test simple Timer(%dms) execution, less than %dms jitter", delay, delta_max )
+		local success    = function( s, d, x )
+			local now  = Loop:time()
 			assert( d == delay, ("First argument should be %d but was %d"):format( delay, d ) )
-			assert( d == delay, ("Second argument should be %d but was %d"):format( start, s ) )
-			assert( ms_passed > delay-delta and ms_passed < delay+delta,
-				("Time passed should be between %dms and %dms, but was %dms"):format(delay-delta, delay+delta, ms_passed) )
+			assert( s == start, ("Second argument should be %d but was %d"):format( start, s ) )
+			assert( x == delta_max, ("Third argument should be %d but was %d"):format( delta_max, x ) )
+			local delay_actual  = now - start
+			local jitter         = delay_actual - delay
+			assert( math.abs(jitter) < delta_max, ("Jitter should be less than %dms , but was %dms"):format(delta_max, jitter) )
 		end
-		self.loop:addTask( delay, success, start, delay )
+		local task = self.loop:addTask( delay, success, start, delay, delta_max )
 		self.loop:run( )
+	end,
+
+	EpochTimeReasonable = function( self )
+		Test.describe( "Make sure os.time() and t.Loop.time() are in their ballparks" )
+		local os_epoch, t_epoch_ms = os.time(),Loop.time()
+		local delta  = (t_epoch_ms//1000) - os_epoch
+		assert( math.abs(delta) < 2, ("os and lua-t time should not differ more than %ds but did %ds"):format(1,delta) )
+	end,
+
+	EpochTimeAndMonoTime = function( self )
+		Test.describe( "Make sure and t.Loop.timeepoch() and t.Loop.timemonotonic() are in their ballparks" )
+		local m_s,e_s,delay = Loop.timemonotonic(), Loop.timeepoch(), math.random(600,1500)
+		Loop.sleep(delay)
+		local m_e,e_e = Loop.timemonotonic(), Loop.timeepoch()
+		local m_j,e_j = (m_e-m_s) - delay, (e_e - e_s) - delay
+		Test.notes(("Delay: %d -- Mono: %d(%d) -- Epoch: %d(%d) -- Jitter diff: %d"):format( delay, m_e-m_s, m_j, e_e-e_s, e_j, e_j-m_j))
+		print("Delay:", delay, "Mono:",m_e-m_s, m_j,"Epoch:",e_e-e_s,e_j, "Jitterdiff:", e_j-m_j)
+		assert( math.abs(m_j) < 4, ("monotonic sleep jitter should be less than %dms but was %dms"):format(4,m_j) )
+		assert( math.abs(e_j) < 4, ("epoch sleep jitter should be less than %dms but was %dms"):format(4,e_j) )
+		assert( math.abs(e_j-m_j) < 3,
+			("epoch and monotonic sleep jitter shouldn't differ more than %dms but did %dms"):format(3,math.abs(e_j-m_j)) )
 	end,
 
 	TimerAccuracy = function( self )

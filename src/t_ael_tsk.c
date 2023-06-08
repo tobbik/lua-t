@@ -22,7 +22,7 @@
  * \param   L        Lua state.
  * \lparam  *ael     t_ael; pointer to loop.
  * \lparam  tskHead  t_ael_tsk; Head of task list on stack.
- * \param     tAdj   u_int64; microsecond value to be substracted from all
+ * \param     tAdj   u_int64; nanosecond value to be substracted from all
  *                   nodes in tasks linked list.
  * \return  void.
  * --------------------------------------------------------------------------*/
@@ -61,7 +61,7 @@ t_ael_tsk_execute( lua_State *L, struct t_ael *ael, struct t_ael_tsk *tsk )
 	lua_getiuservalue( L, -1, T_AEL_TSK_FNCIDX );                //S: ael tsk tbl
 	t_ael_doFunction( L, 1 );                                    //S: ael tsk tim
 	tout = (lua_isinteger( L, -1 ))
-		? lua_tointeger( L, -1 )*1000        // convert milli- to micro-seconds
+		? lua_tointeger( L, -1 )*1000000        // convert milli- to nano-seconds
 		: tout;                                                   //S: ael tsk tim
 	lua_pop( L, 1 );  // pop the nil or millisecond value        //S: ael tsk
 	//printf("EXEC REMOVE: "); t_stackDump(L);
@@ -71,7 +71,7 @@ t_ael_tsk_execute( lua_State *L, struct t_ael *ael, struct t_ael_tsk *tsk )
 		lua_pop( L, 1 );                                          //S: ael
 	else                // re-add node to list if function returned a timer
 	{
-		tsk->tout = tout;                                           //S: ael tsk
+		tsk->tout = tout;                                         //S: ael tsk
 		//printf("EXEC INSERT: "); t_stackDump(L);
 		t_ael_tsk_insert( L, ael, tsk );                          //S: ael
 	}
@@ -82,7 +82,7 @@ t_ael_tsk_execute( lua_State *L, struct t_ael *ael, struct t_ael_tsk *tsk )
  * Pop timer list head, execute and re-add if needed.
  * \param   L        Lua state.
  * \lparam  ael      t_ael; the Loop userdata.
- * \param   et       int; execution time in microseconds.
+ * \param   et       int; execution time in nanoseconds.
  * \return  void.
  * --------------------------------------------------------------------------*/
 void
@@ -225,16 +225,16 @@ t_ael_tsk_remove( lua_State *L, struct t_ael *ael, struct t_ael_tsk *tCnd )
 /**--------------------------------------------------------------------------
  * Create a new t_ael_ts userdata and push to LuaStack.
  * \param   L    Lua state.
- * \param   ms   int; timeout to pass in microseconds.
+ * \param   ns   int; timeout to pass in nanoseconds.
  * \return  tsk  struct t_ael_tsk * pointer to new userdata on Lua Stack.
  * --------------------------------------------------------------------------*/
 struct t_ael_tsk
-*t_ael_tsk_create_ud( lua_State *L, unsigned long long ms )
+*t_ael_tsk_create_ud( lua_State *L, unsigned long long ns )
 {
 	struct t_ael_tsk    *tsk;
 
 	tsk = (struct t_ael_tsk *) lua_newuserdatauv( L, sizeof( struct t_ael_tsk ), 2 );
-	tsk->tout   = ms;
+	tsk->tout   = ns;
 	luaL_getmetatable( L, T_AEL_TSK_TYPE );
 	lua_setmetatable( L, -2 );
 	return tsk;

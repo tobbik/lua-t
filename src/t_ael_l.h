@@ -13,7 +13,7 @@
 #include "t_ael.h"
 #include "t.h"                 // t_typ*
 
-#include <sys/time.h>          // struct timeval
+#include <sys/time.h>          // struct timespec
 
 enum t_ael_msk {
 	// 00000000
@@ -51,7 +51,7 @@ struct t_ael_dnd {
 #define T_AEL_TSK_NXTIDX  1   ///< NEXT TASK INDEX
 #define T_AEL_TSK_FNCIDX  2   ///< FUNCTION/ARGUMENTS TABLE INDEX
 struct t_ael_tsk {
-	unsigned long long   tout;    ///< timeout in microseconds until execution
+	unsigned long long   tout;    ///< timeout in nanoseconds until execution
 };
 
 // t_ael general implementation; API specifics live behind the *state pointer
@@ -60,13 +60,13 @@ struct t_ael_tsk {
 #define T_AEL_TSKIDX      3   ///< INDEX FOR TASK TIMER LINKED LIST HEAD
 #define T_AEL_NOTIMEOUT   0   ///< TIMEOUT if no timer is in the list
 struct t_ael {
-	int                run;        ///< boolean indicator to start/stop the loop
-	int                fdCount;    ///< how many descriptor observed
+	int                run;       ///< boolean indicator to start/stop the loop
+	int                fdCount;   ///< how many descriptor observed
 	// for each call of poll it is necessary to reset the next time out
 	// it is expensive to get the linked head, extract the time and pop it
 	// instead, keep track of the heads (aka. earliest timer) timeout value.
 	// Set to T_AEL_NOTIMEOUT if no timers are in the list at all.
-	unsigned long long tout;       ///< timeout in microseconds of taskHead
+	unsigned long long   tout;    ///< timeout in nanoseconds of taskHead
 };
 
 // t_ael_l.c
@@ -104,15 +104,19 @@ int  p_ael_removehandle_impl( lua_State *L, int aelpos, struct t_ael_dnd *dnd, i
 int  p_ael_poll_impl        ( lua_State *L, struct timeval *timeout, int aelpos );
 
 
-#define T_AEL_TIMESUB(a, b, result)                     \
+int  clock_gettime_realtime ( struct timespec *ts );
+int  clock_gettime_monotonic( struct timespec *ts );
+
+
+#define T_AEL_TIMESUB( a, b, result )                   \
 	do {                                                 \
 	  (result)->tv_sec = (a)->tv_sec - (b)->tv_sec;      \
-	  (result)->tv_usec = (a)->tv_usec - (b)->tv_usec;   \
-	  if ((result)->tv_usec < 0) {                       \
+	  (result)->tv_nsec = (a)->tv_nsec - (b)->tv_nsec;   \
+	  if ((result)->tv_nsec < 0) {                       \
 	    --(result)->tv_sec;                              \
-	    (result)->tv_usec += 1000000;                    \
+	    (result)->tv_nsec += 1000000000;                 \
 	  }                                                  \
 	} while (0)
 
 #define T_AEL_TIMEVAL2MS(tv)                            \
-	((tv) ? ( ( (tv)->tv_sec * 1000 )  +  ( (tv)->tv_usec / 1000 ) ) : 0)
+	((tv) ? ( ( (tv)->tv_sec * 1000000 )  +  ( (tv)->tv_nsec / 1000000 ) ) : 0)

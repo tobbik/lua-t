@@ -1,4 +1,4 @@
--- vim: ts=2 sw=2 sts=2 et
+-- vim: ts=2 sw=2 sts=2 et list
 -- \file      lua/Test/Suite.lua
 -- \brief     lua-t unit testing framework (t.Test)
 --            Test suite implemented as Lua Table
@@ -81,21 +81,21 @@ return setmetatable( { },
 {
   __call   = function( self, tbl, sort, quiet )
     assert( 'table' == type( tbl ), "Test.Suite() requires a table as argument" )
-    local suite, failedTests, startSuite = makeSuite( { } ), makeSuite( { } ), Loop.time( )
+    local suite, failedTests, startSuite = makeSuite( { } ), makeSuite( { } ), Loop.timemonotonic( )
     if tbl.beforeAll then Test( tbl.beforeAll, tbl ) end
     for _, name in pairs( getPlan(tbl,sort) ) do
-      local runTimeStart = Loop.time( )
+      local runTimeStart = Loop.timemonotonic( )
       if tbl.beforeEach then Test( tbl.beforeEach, tbl ) end
       local ok, result = Test( tbl[ name ], tbl )
       o_setElement( suite[ prxTblIdx ], tostring(name), result )
       if tbl.afterEach then Test( tbl.afterEach, tbl ) end
-      result.runTime = Loop.time( ) - runTimeStart
+      result.runTime = Loop.timemonotonic( ) - runTimeStart
       if not ok then
         o_setElement( failedTests[ prxTblIdx ], tostring(name), result )
       end
       if not quiet then printTst( name, result ) end
     end
     if tbl.afterAll then Test( tbl.afterAll, tbl ) end
-    return suite, Loop.time() - startSuite, #failedTests~=0 and failedTests or nil
+    return suite, Loop.timemonotonic() - startSuite, #failedTests~=0 and failedTests or nil
   end
 } )

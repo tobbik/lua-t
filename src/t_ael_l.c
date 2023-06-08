@@ -34,35 +34,6 @@ const char* t_ael_msk_lst[ ] = {
 };
 #endif
 
-#if defined(LUAT_USE_WINDOWS)
-// PostgreSQL's implementattion of gettimeofday()
-/* FILETIME of Jan 1 1970 00:00:00. */
-static const unsigned __int64 epoch = UINT64CONST(116444736000000000);
-
-/*
- * timezone information is stored outside the kernel so tzp isn't used anymore.
- *
- * Note: this function is not for Win32 high precision timing purpose. See
- * elapsed_time().
- */
-int
-gettimeofday( struct timeval *tv, struct timezone * tzp)
-{
-	FILETIME       file_time;
-	SYSTEMTIME     system_time;
-	ULARGE_INTEGER ularge;
-
-	GetSystemTime( &system_time );
-	SystemTimeToFileTime( &system_time, &file_time );
-	ularge.LowPart = file_time.dwLowDateTime;
-	ularge.HighPart = file_time.dwHighDateTime;
-
-	tv->tv_sec  = (long) ((ularge.QuadPart - epoch) / 10000000L);
-	tv->tv_usec = (long) (system_time.wMilliseconds * 1000);
-
-	return 0;
-}
-#endif
 /**----------------------------------------------------------------------------
  * Get descriptor handle from the stack.
  * Discriminate if Socket or file handle
@@ -311,7 +282,7 @@ lt_ael_addtask( lua_State *L )
 {
 	struct t_ael     *ael = t_ael_check_ud( L, 1, 1 );  //S: ael ms fnc …
 	int               n   = lua_gettop( L ) + 1;    ///< iterator for arguments
-	struct t_ael_tsk *tsk = t_ael_tsk_create_ud( L, luaL_checkinteger( L, 2 )*1000 );
+	struct t_ael_tsk *tsk = t_ael_tsk_create_ud( L, luaL_checkinteger( L, 2 )*1000000 );
 	                                                    //S: ael ms fnc … tsk
 
 	lua_replace( L, 2 );                         //S: ael tsk fnc …
@@ -378,31 +349,32 @@ lt_ael__gc( lua_State *L )
 static int
 lt_ael_run( lua_State *L )
 {
-	struct t_ael      *ael = t_ael_check_ud( L, 1, 1 );
-	struct timeval tvs,tve,tv;   ///< measure time for one iteration
-	int                  n;      ///< how many file events?
+	struct t_ael      *ael  = t_ael_check_ud( L, 1, 1 );
+	struct timespec tss,tse;   ///< measure time for one iteration
+	struct timeval  tv;        ///< calculated timout reference for poll_impl
+	int                  n;    ///< how many file events?
 
 	ael->run = 1;
 	while (ael->run)
 	{
-		gettimeofday( &tvs, 0 );
+		clock_gettime_monotonic( &tss );
 
-		tv.tv_sec  = ael->tout / 1000000;
-		tv.tv_usec = ael->tout % 1000000;
+		tv.tv_sec  =  ael->tout / 1000000000;
+		tv.tv_usec = (ael->tout / 1000)      % 1000000;
 
 		if ((n = p_ael_poll_impl( L, &(tv), 1 )) < 0)          //S: ael
 			return t_push_error( L, 1, 1, "Failed to continue the loop" );
 
-		gettimeofday( &tve, 0 );
-		T_AEL_TIMESUB( &tve, &tvs, &tve );
+		clock_gettime_monotonic( &tse );
+		T_AEL_TIMESUB( &tse, &tss, &tse );
 
 #if PRINT_DEBUGS == 1
-		printf( "ooooo AEL POLL RETURNED: %d selectors after  %ldusec\n", n,
-			(tve.tv_sec*1000000 + tve.tv_usec) );
+		printf( "ooooo AEL POLL RETURNED: %d selectors after  %ldnsec\n", n,
+			(tse.tv_sec*1000000000 + tse.tv_nsec) );
 #endif
 
 		// execute timer events
-		t_ael_tsk_process( L, ael, (tve.tv_sec*1000000 + tve.tv_usec) );
+		t_ael_tsk_process( L, ael, (tse.tv_sec*1000000000 + tse.tv_nsec) );
 
 		// if there are no events left in the loop -> stop processing
 		//printf("RUN__ed: %lld -- ", ael->tout / 1000); t_stackDump(L);
@@ -435,11 +407,26 @@ lt_ael_stop( lua_State *L )
  * \return  int  # of values pushed onto the stack.
  * --------------------------------------------------------------------------*/
 static int
-lt_ael_time( lua_State *L )
+lt_ael_time_epoch( lua_State *L )
 {
-	struct timeval tv;
-	gettimeofday( &tv, 0 );
-	lua_pushinteger( L, (tv.tv_sec*1000 + tv.tv_usec/1000) );
+	struct timespec ts;
+	clock_gettime_realtime( &ts );
+	lua_pushinteger( L, (ts.tv_sec*1000 + ts.tv_nsec/1000000) );
+	return 1;
+}
+
+/**--------------------------------------------------------------------------
+ * Get milliseconds since arbitrary start (usually `uptime`)
+ * \param   L    Lua state.
+ * \lreturn ms   int; milliseconds.
+ * \return  int  # of values pushed onto the stack.
+ * --------------------------------------------------------------------------*/
+static int
+lt_ael_time_monotonic( lua_State *L )
+{
+	struct timespec ts;
+	clock_gettime_monotonic( &ts );
+	lua_pushinteger( L, (ts.tv_sec*1000 + ts.tv_nsec/1000000) );
 	return 1;
 }
 
@@ -484,8 +471,8 @@ static int
 lt_ael__tostring( lua_State *L )
 {
 	struct t_ael *ael = t_ael_check_ud( L, 1, 1 );
-	lua_pushfstring( L, T_AEL_TYPE"{%d}[%d]: %p",
-	   ael->fdCount, ael->tout/1000, ael );
+	lua_pushfstring( L, T_AEL_TYPE"{%d}[%dms]: %p",
+	   ael->fdCount, ael->tout/1000000, ael );
 	return 1;
 }
 
@@ -658,8 +645,10 @@ static const struct luaL_Reg t_ael_fm [] = {
  * Class functions library definition
  * --------------------------------------------------------------------------*/
 static const luaL_Reg t_ael_cf [] = {
-	  { "time",          lt_ael_time          }
-	, { "sleep",         lt_ael_sleep         }
+	  { "time"           , lt_ael_time_epoch      }
+	, { "timeepoch"      , lt_ael_time_epoch      }
+	, { "timemonotonic"  , lt_ael_time_monotonic  }
+	, { "sleep"          , lt_ael_sleep           }
 	, { NULL,  NULL }
 };
 
@@ -668,22 +657,24 @@ static const luaL_Reg t_ael_cf [] = {
  * --------------------------------------------------------------------------*/
 static const struct luaL_Reg t_ael_m [] = {
 	// metamethods
-	  { "__tostring",    lt_ael__tostring     }
-	, { "__len",         lt_ael__len          }
-	, { "__gc",          lt_ael__gc           }
-	, { "__index",       lt_ael__index        }
+	  { "__tostring"     , lt_ael__tostring       }
+	, { "__len"          , lt_ael__len            }
+	, { "__gc"           , lt_ael__gc             }
+	, { "__index"        , lt_ael__index          }
 	// instance methods
-	, { "addTask",       lt_ael_addtask       }
-	, { "cancelTask",    lt_ael_canceltask    }
-	, { "addHandle",     lt_ael_addhandle     }
-	, { "removeHandle",  lt_ael_removehandle  }
-	, { "run",           lt_ael_run           }
-	, { "stop",          lt_ael_stop          }
-	, { "clean",         lt_ael_clean         }
-	, { "time",          lt_ael_time          }
-	, { "sleep",         lt_ael_sleep         }
+	, { "addTask"        , lt_ael_addtask         }
+	, { "cancelTask"     , lt_ael_canceltask      }
+	, { "addHandle"      , lt_ael_addhandle       }
+	, { "removeHandle"   , lt_ael_removehandle    }
+	, { "run"            , lt_ael_run             }
+	, { "stop"           , lt_ael_stop            }
+	, { "clean"          , lt_ael_clean           }
+	, { "time"           , lt_ael_time_epoch      }
+	, { "timeepoch"      , lt_ael_time_epoch      }
+	, { "timemonotonic"  , lt_ael_time_monotonic  }
+	, { "sleep"          , lt_ael_sleep           }
 #ifdef DEBUG
-	, { "show",          lt_ael_showloop      }
+	, { "show"           , lt_ael_showloop        }
 #endif
 	, { NULL,   NULL }
 };

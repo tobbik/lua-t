@@ -108,11 +108,11 @@ return setmetatable(
   {
     __call = function( _, test_func, ... )
       local test   = setmetatable(
-        { description="Unnamed test", pass=true, status="PASS", executionTime = Loop.time( ), testSource = getFunctionSource( test_func ) },
+        { description="Unnamed test", pass=true, status="PASS", executionTime = Loop.timemonotonic( ), testSource = getFunctionSource( test_func ) },
         _mt
       )
       local ok, tbk = xpcall( test_func, traceback, ... )
-      test.executionTime = Loop.time( ) - test.executionTime
+      test.executionTime = Loop.timemonotonic( ) - test.executionTime
       if not ok then
         for k,v in pairs( tbk ) do test[ k ] = v end
       end

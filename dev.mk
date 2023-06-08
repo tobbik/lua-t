@@ -10,8 +10,8 @@ LVER=5.4
 LREL=3
 CURDIR != pwd
 
-D_CC=gcc
-D_LD=gcc
+D_CC=clang
+D_LD=clang
 
 PREFIX=$(CURDIR)/local
 
@@ -131,3 +131,10 @@ cli-dev:
 	LUA_PATH="$(PREFIX)/share/lua/5.4/?.lua;;" \
 	 LUA_CPATH="$(PREFIX)/lib/lua/5.4/?.so;;" \
 	 $(PREFIX)/bin/lua cli.lua
+
+
+x-dev:
+	#$(MAKE) dev
+	LUA_PATH="$(PREFIX)/share/lua/5.4/?.lua;;" \
+	 LUA_CPATH="$(PREFIX)/lib/lua/5.4/?.so;;" \
+	 $(PREFIX)/bin/lua -i x.lua

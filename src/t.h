@@ -28,7 +28,7 @@ int         t_typeerror     ( lua_State *L, int arg, const char *tname );
 
 
 /******************************************************************************
- * Copyright (C) 2012-2020, Tobias Kieslich (tkieslich). All rights reseved.
+ * Copyright (C) 2012-2023, Tobias Kieslich (tkieslich). All rights reseved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the

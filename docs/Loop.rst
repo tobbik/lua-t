@@ -145,8 +145,21 @@ Static Class Members
   will also stall other coroutines.
 
 ``int ms = t.Loop:time()``
+  Alias for ``t.Loop.timeepoch()``.
+
+``int ms = t.Loop:timeepoch()``
   Returns the milliseconds since epoch.  It has the same functionality as
   ``os.time`` but the resolution is in milliseconds instead of seconds.
+  Underlying implementation uses hardware timers and needs to access them.
+  This makes it affected by time drift (usually from an ntp daemon) etc. It
+  is also slower than ``t.Loop.timemonotonic()`` and therefore should be
+  avoided when measuring performance.
+
+``int ms = t.Loop:timemonotonic()``
+  Returns the milliseconds since an arbitrary point in time.  For most
+  implemetations it will return the milliseconds since the last reboot.  It
+  should not be affected by time drift and should be faster to be accessed
+  than ``t.Loop.timeepoch()``.  This is used for benchmarking.
 
 
 Class Metamembers
@@ -160,7 +173,7 @@ Class Metamembers
 Instance Members
 ----------------
 
-``string s = loop:show()    -- only available when compiled with DEBUGsupport``
+``string s = loop:show()    -- only available when compiled with DEBUG support``
   Print a list of elements in the loop in a pre-formatted way.
 
   .. code::
@@ -181,8 +194,13 @@ Instance Members
   will also stall other coroutines.
 
 ``int ms = loop:time()``
-  Returns the milliseconds since epoch.  It has the same functionality as
-  ``os.time`` but the resolution is in milliseconds instead of seconds.
+  Alias for ``t.Loop.time()``.
+
+``int ms = loop:timeepoch()``
+  Alias for ``t.Loop.timeepoch()``.
+
+``int ms = loop:timemonotonic()``
+  Alias for ``t.Loop.timemonotonic()``.
 
 ``void = loop:run()``
   Starts the event loop.  It either runs until ``loop:stop()`` is called, or
