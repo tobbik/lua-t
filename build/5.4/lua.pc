@@ -1,6 +1,5 @@
 V=%VER%
 R=%REL%
-
 prefix=/usr
 INSTALL_BIN=${prefix}/bin
 INSTALL_INC=${prefix}/include
@@ -11,7 +10,6 @@ INSTALL_CMOD=${prefix}/lib/lua/${V}
 exec_prefix=${prefix}
 libdir=${exec_prefix}/lib
 includedir=${prefix}/include
-
 Name: Lua
 Description: An Extensible Extension Language
 Version: ${R}

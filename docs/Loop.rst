@@ -278,7 +278,7 @@ Instance Metamembers
 ``t.Loop.Node n = Loop l[ idx ] [__index]``
   Returns a ``t.Loop.Node`` instance.  The index must be or a valid ``Lua
   File`` or ``t.Net.Socket`` handle.  The returned node is the same
-  reference as the ``loo:addHandle()`` method would return.
+  reference as the ``loop:addHandle()`` method would return.
 
   There is no ``__newindex()`` method since ``__index()`` has been
   implemented merely to provide som debugging and insight capabilities.

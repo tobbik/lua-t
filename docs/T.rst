@@ -53,7 +53,7 @@ Class Members
   T.type(s)    -- 'T.Net.Socket'
   type(s)      -- 'userdata'
   T.type(o)    -- 'T.OrderedHashTable'
-  type(o)      -- 'userdata'
+  type(o)      -- 'table'
 
 ``table prx = t.proxyTableIndex``
   The proxy-table index is a static value that is instantiated upon load

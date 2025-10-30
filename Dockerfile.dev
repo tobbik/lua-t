@@ -1,38 +1,49 @@
 FROM       alpine:latest AS luabuilder
-MAINTAINER Tobias Kieslich <tobias.kieslich@gmail.com>
 
-ENV LVER=5.4 LREL=1 LURL=http://www.lua.org/ftp/
+ENV LVER=5.4 LREL=8 LURL=http://www.lua.org/ftp/
 
 # this is a dev container allowing to rebuild and rebuildd and rebuild inside
 
 # Build dependencies.
-RUN apk update && \
-    apk --no-cache add \
+RUN apk update \
+    && apk --no-cache add \
       linux-headers git bash unzip wget readline readline-dev \
-      build-base clang gdb && \
-    mkdir /build
-
-# this is extremely dirty and only works on linux, it requires to run 
-# `cat /etc/localtime > build/tz` beforehand
-COPY build/tz /etc/localtime
+      build-base clang gdb \
+    && mkdir -p /tmp
 
 # Build a reasonably vanilla lua version. This models the archlinux package
+WORKDIR /tmp/lua
 COPY build/${LVER}/liblua.so.patch /tmp/
+COPY build/${LVER}/paths.patch     /tmp/
 COPY build/${LVER}/lua.pc          /tmp/
-RUN mkdir -p /tmp/lua && cd /tmp/lua && \
-    wget ${LURL}/lua-${LVER}.${LREL}.tar.gz  -O - | tar xz --strip-components 1 && \
-    patch -p1 -i ../liblua.so.patch && \
-    sed "s/%VER%/${LVER}/g;s/%REL%/${LVER}.${LREL}/g" ../lua.pc > lua.pc && \
-    make MYCFLAGS="-fPIC -fbuiltin -g -O0" linux && \
-    make \
+RUN wget ${LURL}/lua-${LVER}.${LREL}.tar.gz  -O - | tar xz --strip-components 1 \
+    && patch -p1 -i ../liblua.so.patch \
+    && patch -p1 -i ../paths.patch \
+    && sed "s/%VER%/${LVER}/g;s/%REL%/${LVER}.${LREL}/g" ../lua.pc > lua.pc \
+    && make MYCFLAGS="-fPIC -fbuiltin -g -O0" linux-readline \
+    && make \
       TO_LIB="liblua.a liblua.so liblua.so.${LVER} liblua.so.${LVER}.${LREL}" \
       INSTALL_DATA='cp -d' \
       INSTALL_TOP=/usr \
       INSTALL_MAN=/usr/share/man/man1 \
-      install && \
-    ln -sf /usr/bin/lua   /usr/bin/lua${LVER} && \
-    ln -sf /usr/bin/luac  /usr/bin/luac${LVER} && \
-    ln -sf /usr/lib/liblua.so.${LVER}.${LREL} /usr/lib/liblua${LVER}.so && \
-    install -Dm644 lua.pc /usr/lib/pkgconfig/lua54.pc && \
-    ln -sf /usr/lib/pkgconfig/lua54.pc /usr/lib/pkgconfig/lua.pc
+      install \
+    && ln -sf /usr/bin/lua   /usr/bin/lua${LVER}  \
+    && ln -sf /usr/bin/luac  /usr/bin/luac${LVER} \
+    && ln -sf /usr/lib/liblua.so.${LVER}.${LREL} /usr/lib/liblua${LVER}.so \
+    && install -Dm644 lua.pc /usr/lib/pkgconfig/lua54.pc \
+    && ln -sf /usr/lib/pkgconfig/lua54.pc /usr/lib/pkgconfig/lua.pc
 
+RUN mkdir -p /usr/share/lua/${LVER} \
+  && ln -s /source/lua/t     /usr/share/lua/${LVER}/t \
+  && ln -s /source/lua/t.lua /usr/share/lua/${LVER}/t.lua
+
+RUN mkdir -p /usr/lib/lua/${LVER}/t \
+  && ln -s /source/src/ael.so   /usr/lib/lua/${LVER}/t/ael.so \
+  && ln -s /source/src/buf.so   /usr/lib/lua/${LVER}/t/buf.so \
+  && ln -s /source/src/csv.so   /usr/lib/lua/${LVER}/t/csv.so \
+  && ln -s /source/src/enc.so   /usr/lib/lua/${LVER}/t/enc.so \
+  && ln -s /source/src/htp.so   /usr/lib/lua/${LVER}/t/htp.so \
+  && ln -s /source/src/net.so   /usr/lib/lua/${LVER}/t/net.so \
+  && ln -s /source/src/pck.so   /usr/lib/lua/${LVER}/t/pck.so
+
+WORKDIR /source

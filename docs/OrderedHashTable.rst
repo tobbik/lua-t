@@ -18,7 +18,7 @@ instead of returning two values will return three:
            i, k, tostring( v ) )
   end
 
-  -- Note: using `ipairs` make k and i swap positions
+  -- Note: using `ipairs` makes k and i swap positions
   for i,v,k in ipairs( instance ) do
     print( string.format( "Order: %d -- Key: '%s' -- Value: %s",
            i, k, tostring( v ) )
@@ -54,7 +54,7 @@ Why is there no ``t.add( element )``?
   create an OrderedHashTable where 'add' is a value such as
   ``t.add = 'something'``.  This would lead to conflicting accessors.
 
-Calling ``OrderedHashTable.getIndex( instance, key )`` can be slow for bigger tables?
+Calling ``OrderedHashTable.index( instance, key )`` can be slow for bigger tables?
   Above operation is not a hash table lookup but as a consequence of the
   implementation an O(n) scan operation.  Since it is not used all that often
   it seems to be a reasonable tradeoff.

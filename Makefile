@@ -1,4 +1,4 @@
-# vim: ts=3 sw=3 st=3 sts=3 sta noet tw=80 list
+# vim: ts=3 sw=3 sts=3 sta noet tw=80 list
 #
 # \file      Makefile
 # \brief     Makefile for the lua-t library
@@ -29,7 +29,7 @@ $(LUADIR)/$(MK_INSTALL):
 	@cd $(LUADIR) && echo -e "\n\$$(INSTALL_LMOD):\n\t\$$(INSTALL_EXEC) -d \$$(INSTALL_LMOD)" >> $(MK_INSTALL)
 	@cd $(LUADIR) && echo -e "\n\$$(INSTALL_LMOD)/t.lua: t.lua \$$(INSTALL_LMOD)\n\t\$$(INSTALL_DATA) t.lua \$$(INSTALL_LMOD)" >> $(MK_INSTALL)
 	@cd $(LUADIR) && for DIR in `find t -type d`; do  \
-	  echo -e "\n\n### -> DIRECTORY: $${DIR}" >> $(MK_INSTALL); \
+		echo -e "\n\n### -> DIRECTORY: $${DIR}" >> $(MK_INSTALL); \
 	  echo -e "\$$(INSTALL_LMOD)/$${DIR}: $${DIR}\n\t\$$(INSTALL_EXEC) -d \$$(INSTALL_LMOD)/$${DIR}" >> $(MK_INSTALL); \
 	  for FILE in `ls $$DIR/*.lua`; do \
 	    echo -e "\n\$$(INSTALL_LMOD)/$${FILE}: $${FILE} \$$(INSTALL_LMOD)/$${DIR}\n\t\$$(INSTALL_DATA) $${FILE} \$$(INSTALL_LMOD)/$${DIR}" >> $(MK_INSTALL); \
@@ -81,6 +81,5 @@ pristine:
 
 .PHONY: all $(PLATS) clean install test echo clean uninstall pristine
 
-#include docker.mk
 include dev.mk
 

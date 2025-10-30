@@ -1,5 +1,8 @@
 # vim: ft=make ts=3 sw=3 sts=3 sta noet tw=80 list
 RM != which rm
+DOCKER != which docker
+
+DK_IMG=lua-t
 
 #DMYCFLAGS:= -pedantic -O3
 TRYFLAGS != /bin/sh guess_platflags.sh
@@ -7,7 +10,7 @@ DMYCFLAGS= -D DEBUG=1 -g -O3 -Winline $(TRYFLAGS)
 
 PLAT=guess
 LVER=5.4
-LREL=3
+LREL=8
 CURDIR != pwd
 
 D_CC=clang
@@ -78,11 +81,11 @@ dev-test:
 	 LUA_CPATH="$(PREFIX)/lib/lua/5.4/?.so;;" \
 	 $(PREFIX)/bin/lua -i test/runner.lua
 
-dev-t1:
+dev-f:
 	$(MAKE) dev
 	LUA_PATH="$(PREFIX)/share/lua/5.4/?.lua;;" \
 	 LUA_CPATH="$(PREFIX)/lib/lua/5.4/?.so;;" \
-	 $(PREFIX)/bin/lua -i test/t1.lua
+	 $(PREFIX)/bin/lua -i failme.lua
 
 dev-gdb:
 	$(MAKE) dev
@@ -120,7 +123,7 @@ run-dev:
 	#$(MAKE) dev
 	LUA_PATH="$(PREFIX)/share/lua/5.4/?.lua;;" \
 	 LUA_CPATH="$(PREFIX)/lib/lua/5.4/?.so;;" \
-	 $(PREFIX)/bin/lua -i scp1.lua
+	 $(PREFIX)/bin/lua -i scp2.lua
 
 srv-dev:
 	LUA_PATH="$(PREFIX)/share/lua/5.4/?.lua;;" \
@@ -132,9 +135,32 @@ cli-dev:
 	 LUA_CPATH="$(PREFIX)/lib/lua/5.4/?.so;;" \
 	 $(PREFIX)/bin/lua cli.lua
 
-
 x-dev:
 	#$(MAKE) dev
 	LUA_PATH="$(PREFIX)/share/lua/5.4/?.lua;;" \
 	 LUA_CPATH="$(PREFIX)/lib/lua/5.4/?.so;;" \
 	 $(PREFIX)/bin/lua -i x.lua
+
+# Docker based development
+$(DK_IMG):
+	@echo "Checking if Docker image <${DK_IMG}> exists..."
+	@if ! $(DOCKER) image inspect $(DK_IMG) > /dev/null 2>&1; then \
+		$(DOCKER) buildx build --progress=plain --file Dockerfile.dev --tag $(DK_IMG) --build-arg INSTALL_DEV_DEPS=true . ; \
+	else \
+		echo "$(DK_IMG) image already exists. Skipping build."; \
+	fi
+
+dk-rmi:
+	@echo "Checking if Docker image $(DK_IMG) exists..."
+	@if $(DOCKER) image inspect $(DK_IMG) > /dev/null 2>&1; then \
+		$(DOCKER) image rm $(DK_IMG); \
+	else \
+		echo "$(DK_IMG) image does not exists."; \
+	fi
+
+dk-run: $(DK_IMG)
+	$(DOCKER) run -it --rm=true --name=$(DK_IMG)-dev \
+	  -v /etc/localtime:/etc/localtime \
+	  -v $(CURDIR):/source \
+	  $(DK_IMG) /bin/bash;
+

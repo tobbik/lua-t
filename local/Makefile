@@ -1,4 +1,4 @@
-# vim: ft=make ts=3 sw=3 st=3 sts=3 sta noet tw=80 list
+# vim: ft=make ts=3 sw=3 sts=3 sta noet tw=80 list
 CURL!= which curl
 TAR != which tar
 RM != which rm
@@ -6,7 +6,7 @@ UNAME != which uname
 PLAT != $(UNAME)
 
 LVER=5.4
-LREL=3
+LREL=8
 LUASRC=lua-$(LVER).$(LREL).tar.gz
 LUAURL=https://www.lua.org/ftp
 

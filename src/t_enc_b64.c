@@ -15,7 +15,7 @@
 #include "t_dbg.h"
 #endif
 
-static const unsigned char enc_table[ 64 ] =
+static const unsigned char enc_table[ 64 ] __attribute__((nonstring)) =
 	"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 static       unsigned char dec_table[ 256 ];
 

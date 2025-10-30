@@ -1,4 +1,4 @@
-# vim: ts=3 sw=3 st=3 sts=3 sta noet tw=80 list
+# vim: ts=3 sw=3 sts=3 sta noet tw=80 list
 #
 # \file      src/Makefile
 # \brief     Makefile for the lua-t library source code

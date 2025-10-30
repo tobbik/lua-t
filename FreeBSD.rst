@@ -34,13 +34,15 @@ FreeBSD
 
  - Download qcow2.xz image
  - export VMS_FOLDER=/mnt/ext001/vms
+ - export IMG_FOLDER=/mnt/ext001/vm_images
  - export IMG_FOLDER=/home/tobias/Downloads
- - export IMG_NAME=FreeBSD-13.2-RELEASE-amd64.qcow2
- - ``xzcat ${IMG_FOLDER}/FreeBSD-*.xz > "${VMS_FOLDER}/${IMG_NAME}"``
+ - export BSD_VERSION=14.0
+ - export IMG_NAME=FreeBSD-${BSD_VERSION}-RELEASE-amd64.qcow2
+ - ``xzcat ${IMG_FOLDER}/FreeBSD-${BSD_VERSION}*.xz > "${VMS_FOLDER}/${IMG_NAME}"``
  - ``qemu-img resize "${VMS_FOLDER}/${IMG_NAME}" +6G``
- - ``virt-install --name freebsd13.2 --memory 4096 --vcpus 2 \
+ - ``virt-install --name freebsd${BSD_VERSION} --memory 4096 --vcpus 2 \
       --disk ${VMS_FOLDER}/${IMG_NAME},bus=sata \
-      --import --os-variant freebsd13.2 --network default``
+      --import --os-variant freebsd13.1 --network default``
 
 Running VM
  - virsh start freebsd13.2
@@ -125,7 +127,7 @@ options:
 
  1. setup portforwarding on the fly for an already ruinning virtual machine.
     Use virsh:
-   ``virsh qemu-monitor-command --hmp freebsd13.1 'hostfwd_add ::55555-:22'``
+   ``virsh qemu-monitor-command --hmp freebsd14.0 'hostfwd_add ::55555-:22'``
    ``virsh qemu-monitor-command --hmp archlinux   'hostfwd_add ::55556-:22'``
  2. edit the virsh edit freebsd13.1
 
