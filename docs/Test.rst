@@ -37,7 +37,7 @@ Class Members
 ``void Test.todo( 'The reason why this Test shall fail' )``
   This is meant to be called from within a ``Test`` function.  If a call to
   ``Test.todo()`` happens the test runner will not care if that the test
-  fails and instead returns a ``pass`` status.
+  fails and instead returns a ``PASS`` severity.
 
 ``void Test.skip( 'The reason why this Test shall be skipped' )``
   This is meant to be called from within a ``Test`` function.  It will skip
@@ -82,7 +82,7 @@ Class Members
     ---
     description: Cancel existing and running Task
     executionTime: 101
-    status: FAIL
+    severity: FAIL
     message: This task function should not have been executed!
     location: /home/tobias/RaspberryPi/alarm/mygit/lua-t/test/t_ael.lua:13
     traceback: 
@@ -166,8 +166,8 @@ Instance Members
   the ``Test`` function and the ``Test.Suite`` hooks, such as
   ``beforeEach()`` and ``afterEach()``.
 
-``string status = testInstance.status``
-  Contains string describing the execution status.  There are four
+``string severity = testInstance.severity``
+  Contains string describing the execution severity.  There are four
   possibilities: ``PASS``, ``FAIL``, ``SKIP`` and ``TODO``.
 
 ``table info = testInstance.info``
@@ -187,5 +187,5 @@ Instance Metamembers
 
 ``string s = tostring( Test tst )  [__tostring]``
   Returns the description of the ``Test tst``.  If the test has a ``SKIP``
-  or a ``TODO`` status the string will be composed TAP compliant by
+  or a ``TODO`` severity the string will be composed TAP compliant by
   appending *# SKIP: ``test,message``* to the description.

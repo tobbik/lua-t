@@ -35,12 +35,12 @@ local traceback = function( tbk )
   if msg then
     local skipm = msg:match( T_TST_CSE_SKIPINDICATOR .. "(.*)$" )
     if skipm then
-      return { pass=true, status="SKIP", message=skipm, location=loc }
+      return { pass=true, severity="SKIP", message=skipm, location=loc }
     else
-      return { pass=false, status="FAIL", message=msg, location=loc, traceback=tb, failedSource=getFunctionSource( debug.getinfo( 3, "Sl" ) ) }
+      return { pass=false, severity="FAIL", message=msg, location=loc, traceback=tb, failedSource=getFunctionSource( debug.getinfo( 3, "Sl" ) ) }
     end
   else
-    return { pass=false, status="FAIL", message=tbk, location=loc, traceback=tb, failedSource=getFunctionSource( debug.getinfo( 3, "Sl" ) ) }
+    return { pass=false, severity="FAIL", message=tbk, location=loc, traceback=tb, failedSource=getFunctionSource( debug.getinfo( 3, "Sl" ) ) }
   end
 end
 
@@ -62,8 +62,8 @@ end
 local colors    = { PASS=32, FAIL=31, SKIP=33, TODO=36 }
 local verbosity = { "QUIET", "COMPACT", "INFO", "TAP", "TAPVERBOSE" }
 local y_fields  = {
-  v_FULL = { "executionTime", "runTime", "status", "message", "location", "info", "traceback", "testSource", "failedSource" },
-  v_FAIL = { "executionTime", "status", "message", "location", "failedSource", "traceback" },
+  v_FULL = { "executionTime", "runTime", "severity", "message", "location", "info", "traceback", "testSource", "failedSource" },
+  v_FAIL = { "executionTime", "severity", "message", "location", "failedSource", "traceback" },
   v_INFO = { "info" },
 }
 
@@ -79,11 +79,11 @@ _mt = {       -- local _mt at top of file
   __name     = "t.Test",
   __tostring = function(self) return self:describe() end,
   describe   = function(self, color)
-    return ('SKIP'==self.status or "TODO"==self.status)
+    return ('SKIP'==self.severity or "TODO"==self.severity)
         and ('%s # %s: %s'):format(
           self.description,
-          color and colorize(self.status )              or self.status,
-          color and colorize(self.message, self.status) or self.message
+          color and colorize(self.severity )              or self.severity,
+          color and colorize(self.message, self.severity) or self.message
         )
         or  self.description
   end,
@@ -95,7 +95,7 @@ _mt = {       -- local _mt at top of file
   end,
   toCompact  = function(self, color, nme)
     return ('%s [%dms] [%dms] %s %s'):format(
-      color and colorize(self.status) or self.status,
+      color and colorize(self.severity) or self.severity,
       self.executionTime,
       self.runTime,
       nme and "["..nme.."]",
@@ -149,7 +149,7 @@ return setmetatable(
       local result   = setmetatable(
         { description="Unnamed test"
         , pass=true
-        , status="PASS"
+        , severity="PASS"
         , executionTime=Loop.timemonotonic( )
         , testSource=getFunctionSource( test_func ) },
         _mt
@@ -160,10 +160,10 @@ return setmetatable(
         for k,v in pairs( tbk ) do result[ k ] = v end
       end
       if result.todo then
-        result.message = result.todo
-        result.todo    = true
-        result.pass    = true
-        result.status  = 'TODO'
+        result.message  = result.todo
+        result.todo     = true
+        result.pass     = true
+        result.severity = 'TODO'
       end
       return result, result.pass
     end

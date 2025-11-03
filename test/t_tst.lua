@@ -15,7 +15,7 @@ return {
     local result,ok = Test(tfn)
     assert(ok                     , "Test execution should have succeeded")
     assert(result.pass            , "Test.pass should be true" )
-    assert(result.status == "PASS", "Test.severity should be <PASS>" )
+    assert(result.severity == "PASS", "Test.severity should be <PASS>" )
     assert(result.message   == nil, "No Test.Message   should be set" )
     assert(result.location  == nil, "No Test.Location  should be set" )
     assert(result.traceback == nil, "No Test.Traceback should be set" )
@@ -28,7 +28,7 @@ return {
     local result,ok = Test(tfn)
     assert(not ok                    , "Test execution should have failed")
     assert(not result.pass           , "Test.pass should be false")
-    assert(result.status == "FAIL"   , "Test.severity should be <PASS>")
+    assert(result.severity == "FAIL" , "Test.severity should be <PASS>")
     assert(result.message == errorMsg, "No Test.Message   should be set")
     assert(result.location:match(":%d+$"),
       "Error Location should contain trailing line number" )
@@ -43,7 +43,7 @@ return {
     local result,ok = Test(tfn)
     assert(ok                     , "Test execution should have succeeded")
     assert(result.pass            , "Test.pass should be true")
-    assert(result.status == "SKIP", "Test.severity should be <SKIP>")
+    assert(result.severity == "SKIP", "Test.severity should be <SKIP>")
     assert(result.message == "skip me", "Test Skip reason should be set")
     assert(tostring(result):match( "# SKIP: skip me"),
       ("`# SKIP: __reason__` shall occur in test description, but was <%s>"):format(tostring(result)))
@@ -55,7 +55,7 @@ return {
     local result,ok = Test(tfn)
     assert(ok                     , "Test execution should have succeeded")
     assert(result.pass            , "Test.pass should be true")
-    assert(result.status == "TODO", "Test.severity should be <TODO>")
+    assert(result.severity == "TODO", "Test.severity should be <TODO>")
     assert(result.message == "todo me", "Test Todo reason should be set")
     assert(tostring(result):match( "# TODO: todo me"),
       ("`# TODO: __reason__` shall occur in test description, but was <%s>"):format(tostring(result)))
