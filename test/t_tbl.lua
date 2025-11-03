@@ -21,8 +21,10 @@ local fnd = Table.find
 
 return {
 	-- static members; no need for beforeAll
-	len  = math.random( 700, 2000 ),
-	rtvg = Rtvg( ),
+	beforeAll = function(self)
+		self.len  = math.random( 700, 2000 )
+		self.rtvg = Rtvg( )
+	end,
 
 	-- -----------------------------------------------------------------------
 	-- Tests Cases

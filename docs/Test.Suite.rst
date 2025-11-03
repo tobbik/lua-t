@@ -15,8 +15,10 @@ Summary
    result in tests running in random order.
  - an actual test case within a suite can accept the Suite as a ``self``
    argument.
- - other table members, which are not functions will still be available to
-   each test function via the ``self`` parameter.
+ - the table members should all be functions, each of them representing a
+   test case.  If static extra elements would be needed, they must be setup
+   inside the ``beforeAll()`` function.
+
 
 Usage
 =====
@@ -69,12 +71,12 @@ tests and execute them:
 Test Execution Order
 --------------------
 
-``Test`` can execute test cases in a guaranteed order or, in true unit
+``Test.Suite`` can execute test cases in a guaranteed order or, in true unit
 testing fashion, in random order.  By default, the excution will be ordered
-by running ``pairs(tst)``  over the test cases, which is random everytime a
+by running ``pairs(tst)`` over the test cases, which is random everytime a
 new table is build.
 
-The ``Test.Suite result`` itself is a collection of ``Test`` results and
+The ``Test.Suite`` result itself is a collection of ``Test`` results and
 since it is implemented as a ``t.OrderedHashTable`` the results are stored
 in order of execution.
 
@@ -82,29 +84,30 @@ in order of execution.
 Hooks
 -----
 
-`Test` provides some hooks which will influence test execution.  Each of the
-hooks is optional:
+``Test.Suite`` provides some hooks which will influence test execution.
+Each of the hooks is optional:
 
 ``suite.beforeAll = function( self, done )``
   The hook gets called before executing any test case in the suite.  The
   ``beforeAll`` hook is especially useful if a Test suite depends on the
   existence of a remote server or similar things when a connection needs to
-  be setup before executing all tests.  If no elaborate logic is needed to be
-  performed in the beforeAll hook it is simpler to just make the values part
-  of the Test suite definition like this:
+  be setup before executing all tests.  Any member of the table passed to
+  ``Test.Suite`` needed inside the tests must be created inside the
+  ``beforeAll`` function like this:
 
 .. code:: lua
 
   tbl = {
-     testValueGenerator = require( 'TestValueGenerator' ),
-     beforeEach = function( self )
-        self.str = self.testValueGenerator:getString( 500 )
+     beforeAll = function( self )
+        self.testValueGenerator = require('TestValueGenerator')
      end,
      StringForLength = function( self )
-        assert( #self.str == 500, ("String should be 500 characters long but was %d"):format( #self.str ) )
+        Test.describe("Test string for proper length")
+        local str = self.testValueGenerator:getString(500)
+        assert( #str == 500, ("String should be 500 characters long but was %d"):format( #str ) )
      end
    }
-   s = suite( tbl )
+   s = Test.Suite(tbl)
 
 ``suite.afterAll = function( self )``
   The hook gets called after all tests in the suite got executed.
@@ -126,7 +129,7 @@ None.
 Class Metamembers
 -----------------
 
-``Suite suite, int milliseconds, table failed = Suite( table tests[, boolean sort, boolean quiet] )   [__call]``
+``Test.Suite suite, int milliseconds, table failed = Test.Suite( table tests[, boolean sort, boolean quiet] )   [__call]``
   Creates a new ``Test.Suite`` suite instance.  It returns a collection of
   ``Test`` results in order of execution. ``int milliseconds`` is the
   runtime of the entire ``Test.Suite`` including all hooks.  Each test case

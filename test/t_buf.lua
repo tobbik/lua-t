@@ -7,7 +7,10 @@ local Buffer = require( "t.Buffer" )
 local Rtvg   = T.require( "rtvg" )
 
 return {
-	rtvg       = Rtvg( ),
+	beforeAll  = function( self )
+		self.rtvg = Rtvg()
+	end,
+
 	beforeEach = function( self )
 		local      n = math.random( 1000, 2000 )
 		      self.s = self.rtvg:getWords( n )

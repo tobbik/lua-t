@@ -22,8 +22,8 @@ end
 
 	-- ----
 return {
-	len        = 5000,
 	beforeAll  = function( self )
+		self.len  = 5000
 		self.rtvg = Rtvg( )
 		-- self.rtvg.getVals() guarantees disjoint arrays!
 		self.aryA = self.rtvg:getVals( self.len )

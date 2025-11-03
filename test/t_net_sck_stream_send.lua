@@ -49,7 +49,7 @@ local makeReceiver = function( self, size, payload )
 				inCount, cnt, incBuffer:read( inCount+1, cnt ), payload:sub( inCount+1, cnt+inCount  ) ) )
 			inCount = cnt + inCount
 		else
-			Test.notes("ReceiveCount: %d", rCnt)
+			--Test.info("ReceiveCount: %d, inCount: %d, expected: %d ", rCnt, inCount, size)
 			--print("ReceiveCount:", rCnt)
 			assert( inCount  ==  size, ("Send(%d) and Recv(%d) count should be equal"):format( size, inCount ) )
 			assert( incBuffer:read() == payload, "Sent payload shouls equal received overall message" )

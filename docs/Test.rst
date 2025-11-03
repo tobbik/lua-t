@@ -22,24 +22,24 @@ API
 Class Members
 -------------
 
-``void Test.describe( 'Rich description for this Test.Case' )``
-  This is meant to be called from within a ``Test.Case``.  By default the
+``void Test.describe( 'Rich description for this Test' )``
+  This is meant to be called from within a ``Test``.  By default the
   test is called *"Unnamed test"*. Calling this function will overwrite that
   default description.
 
   .. code:: lua
 
     t.WhatEverToTest = function( self )
-      Test.Case.describe( "Explain in nicer words what it does" )
+      Test.describe( "Explain in nicer words what it does" )
       ... implementation ...
     end
 
-``void Test.todo( 'The reason why this Test.Case shall fail' )``
+``void Test.todo( 'The reason why this Test shall fail' )``
   This is meant to be called from within a ``Test`` function.  If a call to
   ``Test.todo()`` happens the test runner will not care if that the test
   fails and instead returns a ``pass`` status.
 
-``void Test.skip( 'The reason why this Test.Case shall be skipped' )``
+``void Test.skip( 'The reason why this Test shall be skipped' )``
   This is meant to be called from within a ``Test`` function.  It will skip
   the test at the point where it is called and it will set the skip reason
   so it can be displayed in the summary.  The function is implemented as a
@@ -48,7 +48,8 @@ Class Members
   invocation and act accordingly.  A side effect of implementing skip as a
   function call may be that a ``Test`` can fail before ``skip()`` gets
   called.  So it is advisable to call ``skip()`` early in a test function.
-  However, it has the advantage to call ``skip()`` based on a condition:
+  However, it has the advantage that ``skip()`` can be called based on a
+  condition:
 
   .. code:: lua
 
@@ -59,10 +60,19 @@ Class Members
       ... code that fails without coffee ...
     end
 
-``string src = getFunctionSource( function f )``
+``void Test.info( 'A runtime variable value stored in test.info table' )``
+  This is meant to be called from within a ``Test`` function.  Each call to
+  ``Test.info()`` amends a line to the ``test.info`` array.  That
+  information is accessible after the execution.
+
+``table src, string loc = getFunctionSource( function f )``
   Attempts to read the source of a function definition from the file itself.
   It depends on the source being Lua code that was read from a file and not
-  from <stdin> or othe sources.
+  from <stdin> or other sources. ``table src`` contains source code lines in
+  the format ``src[n] = "source code line"`` where ``int n`` is the actual
+  line number within the source file.  When iteration over it, remeber that
+  tables with arbitrary indexing in Lua are NOT sorted.  ``string loc`` is a
+  fully qualified file system path to the actual source file.
 
 ``string tapString = Test.tapOutput( tst )``
   Returns the ``Test`` result as a TAP complient YAML output.
@@ -125,7 +135,7 @@ Instance Members
 
 ``string m = testInstance.message``
   If execution fails the message contains the error message.  If a call to
-  ``assert()`` fails it contains the assert message.  If the tes function
+  ``assert()`` fails it contains the assert message.  If the test function
   called ``Test.skip(msg)`` or ``Test.todo(msg)`` the value of ``string
   msg`` will end up in ``testInstance.message``.
 
@@ -137,11 +147,11 @@ Instance Members
   If execution fails the location contains ``filepath:linenumber``.
 
 ``string s = testInstance.testSource``
-  Contains the source code of the test case function .
+  Contains the source code of the test case function.
 
 ``string s = testInstance.failedSource``
   If execution fails ``T.Test`` attempts to locate the execution failure.
-  This should containm the source code of the function where execution
+  This should contain the source code of the function where execution
   failed.
 
 ``boolean p = testInstance.pass``
@@ -160,6 +170,10 @@ Instance Members
   Contains string describing the execution status.  There are four
   possibilities: ``PASS``, ``FAIL``, ``SKIP`` and ``TODO``.
 
+``table info = testInstance.info``
+  Contains a string for each call to ``Test.info('my info')``.  The
+  ``tst.info`` array gets printed by the ``Test.Suite`` runner, depending on
+  verbosity.
 
 
 Instance Metamembers

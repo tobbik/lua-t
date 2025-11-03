@@ -7,8 +7,8 @@ local Test   = require( "t.Test" )
 local Oht    = require( "t.OrderedHashTable" )
 
 return {
-	len        = 5000,
 	beforeAll  = function( self )
+		self.len    = 5000
 		self.rtvg   = Rtvg( )
 		-- self.rtvg.getVals() guarantees disjoint arrays!
 		self.keys   = self.rtvg:getKeys( self.len )

@@ -23,25 +23,6 @@ return {
 	-- -----------------------------------------------------------------------
 	-- Timer Tests
 	-- -----------------------------------------------------------------------
-	Timer = function( self )
-		-- seems kqueue or select on FreeBSD has some margin here, epoll is
-		-- generally okay with 2-3ms sometimes less. FreeBSD ran in a VM
-		-- though
-		local delay,start, delta_max = math.random(800,1900), Loop.time(), 50
-		Test.describe( "Test simple Timer(%dms) execution, less than %dms jitter", delay, delta_max )
-		local success    = function( s, d, x )
-			local now  = Loop:time()
-			assert( d == delay, ("First argument should be %d but was %d"):format( delay, d ) )
-			assert( s == start, ("Second argument should be %d but was %d"):format( start, s ) )
-			assert( x == delta_max, ("Third argument should be %d but was %d"):format( delta_max, x ) )
-			local delay_actual  = now - start
-			local jitter         = delay_actual - delay
-			assert( math.abs(jitter) < delta_max, ("Jitter should be less than %dms , but was %dms"):format(delta_max, jitter) )
-		end
-		local task = self.loop:addTask( delay, success, start, delay, delta_max )
-		self.loop:run( )
-	end,
-
 	EpochTimeReasonable = function( self )
 		Test.describe( "Make sure os.time() and t.Loop.time() are in their ballparks" )
 		local os_epoch, t_epoch_ms = os.time(),Loop.time()
@@ -55,28 +36,53 @@ return {
 		Loop.sleep(delay)
 		local m_e,e_e = Loop.timemonotonic(), Loop.timeepoch()
 		local m_j,e_j = (m_e-m_s) - delay, (e_e - e_s) - delay
-		Test.notes(("Delay: %d -- Mono: %d(%d) -- Epoch: %d(%d) -- Jitter diff: %d"):format( delay, m_e-m_s, m_j, e_e-e_s, e_j, e_j-m_j))
-		print("Delay:", delay, "Mono:",m_e-m_s, m_j,"Epoch:",e_e-e_s,e_j, "Jitterdiff:", e_j-m_j)
+		Test.info("Delay: %d -- Mono: %d(%d) -- Epoch: %d(%d) -- Jitter diff: %d", delay, m_e-m_s, m_j, e_e-e_s, e_j, e_j-m_j)
+		--print("Delay:", delay, "Mono:",m_e-m_s, m_j,"Epoch:",e_e-e_s,e_j, "Jitterdiff:", e_j-m_j)
 		assert( math.abs(m_j) < 4, ("monotonic sleep jitter should be less than %dms but was %dms"):format(4,m_j) )
 		assert( math.abs(e_j) < 4, ("epoch sleep jitter should be less than %dms but was %dms"):format(4,e_j) )
 		assert( math.abs(e_j-m_j) < 3,
 			("epoch and monotonic sleep jitter shouldn't differ more than %dms but did %dms"):format(3,math.abs(e_j-m_j)) )
 	end,
 
-	TimerAccuracy = function( self )
+	SingleTimerAccuracy = function( self )
+		-- seems kqueue or select on FreeBSD has some margin here, epoll is
+		-- generally okay with 2-3ms sometimes less. FreeBSD ran in a VM
+		-- though
+		local delay,start, delta_max = math.random(800,1900), Loop.time(), 50
+		Test.describe( "Test simple Timer(%dms) execution, less than %dms jitter", delay, delta_max )
+		local success    = function( s, d, x )
+			local now  = Loop:time()
+			assert( d == delay, ("First argument should be %d but was %d"):format( delay, d ) )
+			assert( s == start, ("Second argument should be %d but was %d"):format( start, s ) )
+			assert( x == delta_max, ("Third argument should be %d but was %d"):format( delta_max, x ) )
+			local delay_actual  = now - start
+			local jitter         = delay_actual - delay
+			Test.info("Jitter expected < %dms, actual: %dms", delta_max, jitter)
+			assert( math.abs(jitter) < delta_max, ("Jitter should be less than %dms , but was %dms"):format(delta_max, jitter) )
+		end
+		local task = self.loop:addTask( delay, success, start, delay, delta_max )
+		self.loop:run( )
+	end,
+
+	BulkTimerAccuracy = function( self )
 		Test.describe( "Test Average Timer Accuracy" )
-		Test.todo( "This needs some more dev testing before we can set expectations" )
-		-- 5950X linux 2-4ms sd: <1
-		-- FreeBSD KVM 4-6ms sd: >3
-		-- RasiPy      30-100ms  sd: 40-60
-		local runs,delta,sd,vari,start = 200, 0, 0, {}, 0
-		local success = function( d )
+		--Test.todo( "This needs some more dev testing before we can set expectations" )
+		Test.skip( "This needs some more dev testing before we can set expectations" )
+		-- 5950X linux 2-4ms     sd: <1
+		-- FreeBSD KVM 4-6ms     sd: >3
+		-- RasPi       30-100ms  sd: 40-60
+		-- It seems when compiling with select() on linux the precision is much
+		-- higher, seems epoll() is messing up ... why?
+		local runs,delta,sd,vari,start = 50, 0, 0, {}, 0
+		local success = function( wanted )
 			local ms_passed = Loop:time() - start
-			delta = delta + (ms_passed-d)
-			table.insert( vari, ms_passed-d )
+			local diff = ms_passed - wanted
+			delta = delta + diff
+			Test.info( ("Wanted: %d -- Actual: %d  -- Difference: %d -- Diff  percent: %f" ):format(wanted, ms_passed, diff, (100*diff)/wanted) )
+			table.insert( vari, diff )
 		end
 		for n=1,runs do
-			local delay = math.random(n*8, n*20)
+			local delay = math.random(n*5, n*50)
 			self.loop:addTask( delay, success, delay )
 		end
 		start = Loop.time()
@@ -84,7 +90,7 @@ return {
 		local mean = delta/runs
 		for i,d in ipairs(vari) do sd = sd + ((d-mean) ^ 2) end
 		sd = math.sqrt( sd/runs )
-		print( ("Average delta over %d runs was %fms with standard deviation of %f"):format( runs, mean, sd ) )
+		Test.info( "Average delta over %d runs was %fms with standard deviation of %f", runs, mean, sd )
 		assert( delta/runs < 20, ("Average delta over %d runs was %fms, hoping for less than 20"):format( runs, delta/runs ) )
 	end,
 

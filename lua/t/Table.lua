@@ -77,7 +77,7 @@ t_equals= function( o1, o2 )
 end
 
 local t_find       = function( tbl, val, idx )
-	assert( type( tbl ) == "table", "Expected `Table`" )
+	assert( type( tbl ) == "table", ("Expected `Table`, got `%s`"):format(type(tbl)) )
 	if idx then -- index forces to search numeric indizes only
 		for i=idx,#tbl do      if tbl[i]==val then return i end   end
 	else
