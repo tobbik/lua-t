@@ -10,7 +10,7 @@ local T, Suite, Oht =
      require"t", require"t.Test.Suite", require"t.OrderedHashTable"
 
 local suites = {
- --"t_ael",
+ "t_ael"                 ,
  "t_buf"                 , "t_buf_seg",
  "t_net_adr"             , "t_net_ifc",
  "t_net_sck_create"      , "t_net_sck_bind",
@@ -35,7 +35,7 @@ local run = function( )
 	local runnerCount, runnerTime = 0, 0
 	for _,suite in ipairs( suites ) do
 		print( ("   --- EXECUTING Suite: <%s>   ---------"):format( suite ) )
-		local suiteResult, suiteTime, failed = Suite( T.require( suite ), "COMPACTINFO", true )
+		local suiteResult, suiteTime, failed = Suite( T.require( suite ), "COMPACT", true )
 		results[ suite ], failures = suiteResult, failed and failures+failed or failures
 		runnerCount, runnerTime = runnerCount + #suiteResult, runnerTime+suiteTime
 		t = suiteResult --  push test suite into global scope

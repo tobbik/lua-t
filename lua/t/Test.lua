@@ -5,9 +5,9 @@
 -- \author    tkieslich
 -- \copyright See Copyright notice at the end of t.h
 
-local t_concat    , t_insert    , getmetatable, setmetatable, pairs =
-      table.concat, table.insert, getmetatable, setmetatable, pairs
-local Loop = require"t.Loop"
+local Loop, Table = require"t.Loop", require"t.Table"
+local t_concat    , t_insert    , t_sort    ,t_keys    , getmetatable, setmetatable, pairs =
+      table.concat, table.insert, table.sort, Table.keys, getmetatable, setmetatable, pairs
 
 local T_TST_CSE_SKIPINDICATOR = "<t.test_skip_indicator>:" -- must have trailing ":"
 local _mt
@@ -21,7 +21,7 @@ local getFunctionSource = function( dbg )
   -- TODO: make sure short_src is a file, not stdin or rubbish
   for l in io.lines( loc ) do
     if c >= dbg.linedefined and c <= dbg.lastlinedefined then
-      src[ c ] = l
+      src[c] = l
     end
     c = c+1
   end
@@ -57,16 +57,74 @@ local findInstanceOnStack = function( )
   return 0
 end
 
+-- ---------------------------- Formatting helpers --------------------
+
+local colors    = { PASS=32, FAIL=31, SKIP=33, TODO=36 }
+local verbosity = { "QUIET", "COMPACT", "INFO", "TAP", "TAPVERBOSE" }
+local y_fields  = {
+  v_FULL = { "executionTime", "runTime", "status", "message", "location", "info", "traceback", "testSource", "failedSource" },
+  v_FAIL = { "executionTime", "status", "message", "location", "failedSource", "traceback" },
+  v_INFO = { "info" },
+}
+
+local colorize = function( value, style )
+  local colorcode = style and colors[ style ] or colors[ value ]
+  assert( colorcode, "The style for colorization must be in {PASS, FAIL, SKIP, TODO}")
+  return ('[%dm%s[0m'):format( colorcode, value )
+end
 
 -- ---------------------------- Instance metatable --------------------
 _mt = {       -- local _mt at top of file
   -- essentials
   __name     = "t.Test",
-  __tostring = function( self )
+  __tostring = function(self) return self:describe() end,
+  describe   = function(self, color)
     return ('SKIP'==self.status or "TODO"==self.status)
-      and ('%s # %s: %s'):format( self.description, self.status, self.message )
-      or  self.description
-  end
+        and ('%s # %s: %s'):format(
+          self.description,
+          color and colorize(self.status )              or self.status,
+          color and colorize(self.message, self.status) or self.message
+        )
+        or  self.description
+  end,
+  toTap      = function(self, color, idx)
+    local prefix = self.pass
+      and (color and colorize('ok', 'PASS')     or 'ok')
+      or  (color and colorize('not ok', 'FAIL') or 'not ok')
+    return ("%s %s - %s"):format(prefix, idx and idx or "", self:describe(color))
+  end,
+  toCompact  = function(self, color, nme)
+    return ('%s [%dms] [%dms] %s %s'):format(
+      color and colorize(self.status) or self.status,
+      self.executionTime,
+      self.runTime,
+      nme and "["..nme.."]",
+      self:describe(color)
+    )
+  end,
+  toYaml     = function(self, v_level)
+    local buf = { }
+    for _, fld in ipairs(y_fields[v_level]) do
+      if self[fld] then
+        if "info" == fld then
+          t_insert(buf, "  info:")
+          for _,n in ipairs(self.info) do
+            t_insert(buf, ("    - %s"):format(n))
+          end
+        elseif fld:match('.*Source') then
+          t_insert(buf, ("  %s: "):format(fld))
+          local line_numbers = t_keys(self[fld])
+          t_sort(line_numbers)
+          for _,nr in ipairs(line_numbers) do
+            t_insert(buf, ("    %d: %s"):format(nr, self[fld][nr]))
+          end
+        else
+          t_insert(buf, ("  %s: %s"):format(fld, tostring(self[ fld ]):gsub("\n", "\n  ")))
+        end
+      end
+    end
+    return t_concat(buf, "\n")
+  end,
 }
 _mt.__index    = _mt
 

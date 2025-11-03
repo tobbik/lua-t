@@ -16,87 +16,21 @@ local prxTblIdx            , t_keys,     o_setElement  , o_getElement  , o_iters
       Table.proxyTableIndex, Table.keys, Oht.setElement, Oht.getElement, Oht.iters
 local _mt
 
-
--- ---------------------------- output formatters  --------------------
---                  green    red      yellow   blue
-local colors    = { PASS=32, FAIL=31, SKIP=33, TODO=36 }
-local verbosity = { "QUIET", "COMPACT", "INFO", "TAP", "TAPVERBOSE" }
-local v_FULL    = { "executionTime", "runTime", "status", "message", "location", "info", "traceback", "testSource", "failedSource" }
-local v_FAIL    = { "executionTime", "status", "message", "location", "failedSource" }
-local v_INFO    = { "info" }
-
-local colorize = function( value, style )
-  local colorcode = style and colors[ style ] or colors[ value ]
-  assert( colorcode, "The style for colorization must be in {PASS, FAIL, SKIP, TODO}")
-  return ('[%dm%s[0m'):format( colorcode, value )
-end
-
-local yamlFields = function( tst, fields, wrapper )
-  local yaml = wrapper and { "\n  ---"} or { }
-  for _, fld in ipairs( fields ) do
-    if tst[ fld ] then
-      if "info" == fld then
-        t_insert( yaml, "\n  Info:" )
-        for _,n in ipairs( tst.info ) do
-          t_insert( yaml, ("\n    - %s"):format( n ) )
-        end
-      elseif fld:match('.*Source') then
-        t_insert( yaml, ("\n  %s: "):format( fld ) )
-        local line_numbers = t_keys( tst[fld] )
-        t_sort( line_numbers )
-        for _,nr in ipairs( line_numbers ) do
-          t_insert( yaml, ("\n    %d: %s"):format( nr, tst[fld][nr] ) )
-        end
-      else
-        t_insert( yaml, ( "\n  %s: %s" ):format( fld, tostring(tst[ fld ]):gsub( "\n", "\n  " ) ) )
-      end
-    end
-  end
-  return wrapper and t_concat( yaml, "") .. "\n  ...\n" or t_concat( yaml, "" )
-end
-
-local composeDescription = function( tst, color )
-  return ('SKIP'==tst.status or "TODO"==tst.status)
-      and ('%s # %s: %s'):format(
-        tst.description,
-        color  and colorize(tst.status )              or tst.status,
-        color  and colorize(tst.message, tst.status)  or tst.message
-      )
-      or  tst.description
-end
-
 local yamlHeader = function( suite )
   return ("1..%d\n"):format( #suite )
-end
-
-local compactLine = function( nme, tst, color )
-  return ('%s [%dms] [%dms] [%s] %s'):format(
-    color and colorize( tst.status ) or tst.status,
-    tst.executionTime,
-    tst.runTime,
-    nme, composeDescription( tst, color )
-  )
-end
-
-local yamlLine = function( tst, idx, color )
-  if tst.pass then
-    return ( "%s %d - %s"):format( color and colorize('ok', 'PASS') or 'ok', idx, composeDescription(tst, color) )
-  else
-    return ( "%s %d - %s"):format( color and colorize('not ok', 'FAIL') or 'not ok', idx, composeDescription(tst, color) )
-  end
 end
 
 local formatTest = function( nme, idx, tst, verbosity, color )
   if not verbosity or "QUIET" == verbosity then
     return
   elseif "COMPACTINFO" == verbosity then
-    return compactLine( nme, tst, color ) .. yamlFields( tst, v_INFO )
+    return tst:toCompact(color, nme) .. tst:toYaml('v_INFO')
   elseif "TAP" == verbosity then
-    return yamlLine( tst, idx, color ) .. (tst.pass and "" or yamlFields( tst, v_FAIL, true ))
+    return tst:toTap(color, idx) .. (tst.pass and "" or "\n  ---\n"..tst:toYaml('v_FAIL').."\n  ...")
   elseif "TAPVERBOSE" == verbosity then
-    return yamlLine( tst, idx, color ) .. (yamlFields( tst, v_FULL, true ))
+    return tst:toTap(color, idx) .. (tst.pass and "" or "\n  ---\n"..tst:toYaml('v_FULL').."\n  ...")
   else -- default to "COMPACT"
-    return compactLine( nme, tst, color ) .. (tst.pass and "" or yamlFields( tst, v_FAIL ))
+    return tst:toCompact(color,nme) .. (tst.pass and "" or "\n  ---\n"..tst:toYaml('v_FAIL').."\n  ...")
   end
 end
 
@@ -143,9 +77,6 @@ _mt = {       -- local _mt at top of file
     t_insert( buf, yamlHeader( self ))
     for i,tst in ipairs( self ) do
       t_insert( buf, formatTest( _, i, tst, "TAPVERBOSE", false ) )
-      --if "FAIL" == tst.status then
-      --  t_insert( buf, "\n" .. tapOutput( tst ) )
-      --end
     end
     return t_concat( buf, "" )
   end
