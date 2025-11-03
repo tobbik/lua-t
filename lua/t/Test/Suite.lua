@@ -78,7 +78,7 @@ _mt = {       -- local _mt at top of file
     for i,tst in ipairs( self ) do
       t_insert( buf, formatTest( _, i, tst, "TAPVERBOSE", false ) )
     end
-    return t_concat( buf, "" )
+    return t_concat( buf, "\n" )
   end
 }
 
@@ -88,8 +88,6 @@ return setmetatable(
     _DESCRIPTION = 'lua-t unit-testing suite test harness.',
     _URL         = 'https://gitlab.com/tobbik/lua-t',
     _LICENSE     = 'MIT',
-    colorize     = colorize,
-    coloredTap   = coloredTap,
   },
   {
     __call   = function( _, tbl, verbosity, color, sort )
@@ -100,7 +98,7 @@ return setmetatable(
         assert(type(tbl[name]) == "function", ("Expected `Function` for <%s>, got `%s`"):format(name, type(tbl[name])))
         local runTimeStart = Loop.timemonotonic( )
         if tbl.beforeEach then Test(tbl.beforeEach, tbl) end
-        local ok, result = Test(tbl[ name ], tbl)
+        local result, ok = Test(tbl[ name ], tbl)
         o_setElement( suite[ prxTblIdx ], tostring(name), result )
         if tbl.afterEach then Test(tbl.afterEach, tbl) end
         result.runTime = Loop.timemonotonic( ) - runTimeStart

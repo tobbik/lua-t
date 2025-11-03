@@ -165,7 +165,7 @@ return setmetatable(
         result.pass    = true
         result.status  = 'TODO'
       end
-      return result.pass, result
+      return result, result.pass
     end
   }
 )
